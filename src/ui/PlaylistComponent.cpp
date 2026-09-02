@@ -2,6 +2,7 @@
 
 #include "../model/Ids.h"
 #include "../model/ProjectEdits.h"
+#include "TimelineRuler.h"
 #include "design/Tokens.h"
 #include "primitives/DewControls.h"
 
@@ -490,8 +491,29 @@ void PlaylistComponent::mouseDoubleClick (const juce::MouseEvent& event)
     openPatternOf (clip);
 }
 
+void PlaylistComponent::seekToRulerX (int x)
+{
+    // This timeline counts BARS, not steps - so the ruler hit-test gives a bar
+    // and the engine, which counts steps, needs it multiplied back up.
+    const juce::Rectangle<int> strip { headerWidth, 0, juce::jmax (0, getWidth() - headerWidth), rulerHeight };
+    const auto bar = ruler::stepForClick (x, strip, timeline, numBars());
+    const auto stepsPerBar = juce::jmax (1, (int) document.getState()[ids::stepsPerBeat]) * 4;
+
+    engine.setPlayheadSteps (bar * (double) stepsPerBar);
+    repaint();
+}
+
 void PlaylistComponent::mouseDown (const juce::MouseEvent& event)
 {
+    // The ruler used to be excluded outright by this guard, so the playlist's
+    // was as inert as the piano roll's.
+    if (event.x >= headerWidth && event.y < rulerHeight)
+    {
+        gesture = Gesture::scrubbing;
+        seekToRulerX (event.x);
+        return;
+    }
+
     if (event.x < headerWidth || event.y < rulerHeight || event.y >= tracksBottom())
         return;
 
@@ -570,6 +592,12 @@ void PlaylistComponent::mouseDown (const juce::MouseEvent& event)
 
 void PlaylistComponent::mouseDrag (const juce::MouseEvent& event)
 {
+    if (gesture == Gesture::scrubbing)
+    {
+        seekToRulerX (event.x);
+        return;
+    }
+
     if (! draggedClip.isValid())
         return;
 
@@ -769,7 +797,11 @@ void PlaylistComponent::paint (juce::Graphics& g)
     const auto bars = numBars();
     const auto width = (float) timeline.pixelsPerStep;
     const auto bottom = tracksBottom();
-    const auto visible = timeline.visibleStepRange (contentWidth(), bars);
+    // The grid is drawn over the WHOLE width, so bar lines and numbers reach
+    // the edge of the window rather than stopping with the arrangement. The
+    // same change the two pattern editors got - three views that all stopped
+    // mid-panel would have become one that still did.
+    const auto painted = timeline.visibleStepRange (contentWidth());
     const auto anySolo = [this]
     {
         for (const auto& track : playlist())
@@ -789,15 +821,20 @@ void PlaylistComponent::paint (juce::Graphics& g)
     g.fillRect (0, 0, getWidth(), rulerHeight);
     g.setFont (type::font (type::caption));
 
-    for (int bar = visible.getStart(); bar < visible.getEnd(); ++bar)
+    for (int bar = painted.getStart(); bar < painted.getEnd(); ++bar)
     {
         const auto x = (float) headerWidth + timeline.xForStep ((double) bar);
 
-        g.setColour (colour::textSecondary);
+        if (x > (float) getWidth())
+            break;
+
+        const auto beyond = bar >= bars;
+
+        g.setColour (beyond ? colour::textDisabled : colour::textSecondary);
         g.drawText (juce::String (bar + 1), (int) x + 3, 0, (int) width - 4, rulerHeight,
                     juce::Justification::centredLeft, false);
 
-        g.setColour (colour::dividerStrong);
+        g.setColour (beyond ? colour::dividerStrong.withAlpha (0.35f) : colour::dividerStrong);
         g.drawVerticalLine ((int) x, 0.0f, (float) bottom);
     }
 
@@ -876,8 +913,8 @@ void PlaylistComponent::paint (juce::Graphics& g)
     const auto endX = (float) headerWidth + timeline.xForStep ((double) bars);
 
     if (endX < (float) getWidth())
-        paint::inertArea (g, { (int) endX, rulerHeight, getWidth() - (int) endX,
-                               juce::jmax (0, bottom - rulerHeight) });
+        paint::beyondEnd (g, { (int) endX, rulerHeight, getWidth() - (int) endX,
+                               juce::jmax (0, bottom - rulerHeight) }, endX);
 
     g.setColour (colour::dividerStrong);
     g.drawVerticalLine (headerWidth, 0.0f, (float) bottom);

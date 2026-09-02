@@ -40,6 +40,7 @@ add_library(dew_core STATIC
   ui/AudioSettingsPanel.cpp
   ui/StatusBar.cpp
   ui/TransportBar.cpp
+  ui/TimelineRuler.cpp
   ui/StepGridComponent.cpp
   ui/ChannelRackComponent.cpp
   ui/PianoRollComponent.cpp

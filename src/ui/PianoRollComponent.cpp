@@ -3,6 +3,7 @@
 #include "../model/Ids.h"
 #include "../model/ProjectEdits.h"
 #include "DewLookAndFeel.h"
+#include "TimelineRuler.h"
 #include "design/Tokens.h"
 #include "primitives/DewControls.h"
 
@@ -453,6 +454,12 @@ void PianoRollComponent::mouseDoubleClick (const juce::MouseEvent& event)
         zoomToFit();
 }
 
+void PianoRollComponent::seekToRulerX (int x)
+{
+    engine.setPlayheadSteps (ruler::stepForClick (x, rulerArea(), timeline, numSteps()));
+    repaint();
+}
+
 void PianoRollComponent::eraseAlong (juce::Point<int> from, juce::Point<int> to)
 {
     lastErasePosition = to;
@@ -512,6 +519,15 @@ void PianoRollComponent::mouseDown (const juce::MouseEvent& event)
     {
         gesture = Gesture::auditioning;
         startAudition (pitchAtY (event.y));
+        return;
+    }
+
+    // The ruler used to be inert: a press there fell through every branch and
+    // was dropped by the noteArea guard below.
+    if (rulerArea().contains (event.getPosition()))
+    {
+        gesture = Gesture::scrubbing;
+        seekToRulerX (event.x);
         return;
     }
 
@@ -639,6 +655,12 @@ void PianoRollComponent::mouseDrag (const juce::MouseEvent& event)
     if (gesture == Gesture::erasing)
     {
         eraseAlong (lastErasePosition, event.getPosition());
+        return;
+    }
+
+    if (gesture == Gesture::scrubbing)
+    {
+        seekToRulerX (event.x);
         return;
     }
 
@@ -962,53 +984,25 @@ void PianoRollComponent::paintRuler (juce::Graphics& g)
 {
     using namespace tokens;
 
-    const auto area = rulerArea();
-    g.setColour (colour::surface);
-    g.fillRect (area);
-
     const auto stepsPerBeat = juce::jmax (1, (int) document.getState()[ids::stepsPerBeat]);
-    const auto stepsPerBar = stepsPerBeat * 4;
 
-    // Unclamped, so the ruler does not stop numbering half way across the
-    // window. Bars past the end of the pattern are dimmed rather than absent.
-    const auto steps = numSteps();
-    const auto range = timeline.visibleStepRange (contentWidth());
+    ruler::Style style;
+    style.stepsPerBar = stepsPerBeat * 4;
+    style.totalSteps = numSteps();
+    style.playing = engine.isPlaying();
 
-    g.setFont (type::font (type::caption));
+    if (engine.getMode() == Transport::Mode::pattern)
+        style.playheadSteps = (double) ((int) engine.getPlayheadSteps() % juce::jmax (1, numSteps()));
 
-    for (int step = range.getStart(); step <= range.getEnd(); ++step)
-    {
-        const auto x = (float) keyboardWidth + timeline.xForStep ((double) step);
+    // The same ruler the playlist and the channel rack draw. Three views used
+    // to hand-roll three of these, and no two of them behaved alike.
+    ruler::paint (g, rulerArea(), timeline, style);
 
-        if (x > (float) area.getRight())
-            break;
-
-        const auto beyond = step >= steps;
-        const auto fade = [beyond] (juce::Colour c) { return beyond ? c.withAlpha (0.35f) : c; };
-
-        if (step % stepsPerBar == 0)
-        {
-            g.setColour (fade (colour::dividerStrong));
-            g.drawVerticalLine ((int) x, (float) area.getY(), (float) area.getBottom());
-
-            // Bar numbers, but only when there is room for them to be readable.
-            if (timeline.pixelsPerStep * stepsPerBar >= 28.0)
-            {
-                g.setColour (beyond ? colour::textDisabled : colour::textSecondary);
-                g.drawText (juce::String (step / stepsPerBar + 1),
-                            juce::Rectangle<int> ((int) x + 3, area.getY(), 40, area.getHeight()),
-                            juce::Justification::centredLeft, false);
-            }
-        }
-        else if (step % stepsPerBeat == 0 && timeline.pixelsPerStep * stepsPerBeat >= 10.0)
-        {
-            g.setColour (fade (colour::divider));
-            g.drawVerticalLine ((int) x, (float) area.getBottom() - 6.0f, (float) area.getBottom());
-        }
-    }
-
+    // The corner over the keyboard, which the shared ruler knows nothing about.
+    g.setColour (colour::surface);
+    g.fillRect (0, 0, keyboardWidth, rulerHeight);
     g.setColour (colour::dividerStrong);
-    g.drawHorizontalLine (area.getBottom() - 1, (float) area.getX(), (float) area.getRight());
+    g.drawHorizontalLine (rulerHeight - 1, 0.0f, (float) keyboardWidth);
 }
 
 void PianoRollComponent::paintNotes (juce::Graphics& g)

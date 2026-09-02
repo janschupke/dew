@@ -179,6 +179,24 @@ void AudioEngine::rewind()
     playheadSamples.store (0);
 }
 
+void AudioEngine::setPlayheadSteps (double steps)
+{
+    const auto clamped = juce::jmax (0.0, steps);
+
+    seekToSteps.store (clamped);
+    seekRequested.store (true);
+
+    // Reflected immediately, for the same reason rewind() does it: the UI
+    // should follow the pointer, not the next audio block - and a device that
+    // is not calling back would otherwise never move at all.
+    const auto sps = Transport::samplesPerStepFor (transport.getTempo(),
+                                                   transport.getStepsPerBeat(),
+                                                   currentSampleRate);
+
+    if (sps > 0.0)
+        playheadSamples.store ((juce::int64) (clamped * sps));
+}
+
 void AudioEngine::setMode (Transport::Mode mode)
 {
     requestedMode.store (mode);
@@ -373,6 +391,20 @@ void AudioEngine::processBlock (juce::AudioBuffer<float>& buffer) noexcept
 
     const auto loopSteps = Sequencer::loopLengthSteps (snapshot, mode, patternIndex);
     transport.setLoopLengthSteps (loopSteps);
+
+    if (seekRequested.exchange (false))
+    {
+        const auto sps = Transport::samplesPerStepFor (transport.getTempo(),
+                                                       transport.getStepsPerBeat(),
+                                                       currentSampleRate);
+
+        transport.setPositionSamples ((juce::int64) (seekToSteps.load() * sps));
+
+        // Same reason as rewind below: jumping leaves anything that was
+        // sounding with no note-off ahead of it.
+        for (auto& channel : channels)
+            channel.reset();
+    }
 
     if (rewindRequested.exchange (false))
     {

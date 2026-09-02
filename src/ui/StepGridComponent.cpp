@@ -32,6 +32,11 @@ int StepGridComponent::numSteps() const
     return pattern.isValid() ? juce::jmax (1, (int) pattern[ids::lengthSteps]) : 16;
 }
 
+int StepGridComponent::getNumSteps() const
+{
+    return numSteps();
+}
+
 void StepGridComponent::updateZoom()
 {
     const auto steps = numSteps();
@@ -58,6 +63,9 @@ void StepGridComponent::updateZoom()
     horizontalScroll.setRangeLimits (0.0, (double) steps, juce::dontSendNotification);
     horizontalScroll.setCurrentRange (timeline.scrollOffsetSteps,
                                       timeline.visibleSteps (width), juce::dontSendNotification);
+
+    if (onTimelineChanged != nullptr)
+        onTimelineChanged();
 }
 
 bool StepGridComponent::isScrollable() const
@@ -78,6 +86,9 @@ void StepGridComponent::scrollBarMoved (juce::ScrollBar*, double start)
 
     timeline.scrollOffsetSteps = start;
     repaint();
+
+    if (onTimelineChanged != nullptr)
+        onTimelineChanged();
 }
 
 void StepGridComponent::mouseWheelMove (const juce::MouseEvent&, const juce::MouseWheelDetails& wheel)

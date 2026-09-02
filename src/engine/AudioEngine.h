@@ -39,6 +39,17 @@ public:
     void play();
     void stop();
     void rewind();
+
+    /** Moves the transport to a position, in steps from the start.
+
+        Follows the same request-atomic shape as rewind(): the audio thread
+        owns the Transport, so the conversion to samples happens there, where
+        the sample rate cannot be stale. Voices are reset on arrival for the
+        same reason rewind resets them - a note that was sounding before the
+        jump has no note-off after it.
+    */
+    void setPlayheadSteps (double steps);
+
     void setMode (Transport::Mode);
     Transport::Mode getMode() const noexcept  { return requestedMode.load(); }
     bool isPlaying() const noexcept           { return playing.load(); }
@@ -156,6 +167,8 @@ private:
 
     std::atomic<bool> playing { false };
     std::atomic<bool> rewindRequested { false };
+    std::atomic<bool> seekRequested { false };
+    std::atomic<double> seekToSteps { 0.0 };
     std::atomic<Transport::Mode> requestedMode { Transport::Mode::pattern };
     std::atomic<int> requestedPatternId { 1 };
     std::atomic<juce::int64> playheadSamples { 0 };

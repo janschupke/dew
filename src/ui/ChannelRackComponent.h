@@ -5,6 +5,7 @@
 #include "../engine/AudioEngine.h"
 #include "../model/ProjectDocument.h"
 #include "EditorState.h"
+#include "TimelineRuler.h"
 #include "StepGridComponent.h"
 #include "primitives/DewControls.h"
 
@@ -48,6 +49,10 @@ private:
 
     juce::OwnedArray<ChannelHeader> headers;
     StepGridComponent grid;
+
+    // Above the viewport, not inside it. The grid scrolls vertically, so a
+    // ruler drawn as part of the grid would scroll away with the channels.
+    RulerStrip ruler;
     juce::Viewport viewport;
     juce::Component contentHolder;
     DewButton addChannelButton { "+ Channel", DewButton::Role::primary };

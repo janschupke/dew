@@ -161,7 +161,30 @@ ChannelRackComponent::ChannelRackComponent (ProjectDocument& d, AudioEngine& e, 
     contentHolder.setComponentID ("channelRackContent");
     viewport.setComponentID ("channelRackViewport");
 
-    juce::ignoreUnused (engine);
+    // The channel rack had no ruler at all: no bar numbers, and nothing to
+    // click to move the transport. It reads the grid's timeline rather than
+    // keeping a copy, so the two cannot drift apart.
+    ruler.timelineSource = [this]() -> const TimelineView& { return grid.getTimeline(); };
+
+    ruler.styleSource = [this]
+    {
+        ruler::Style style;
+        style.stepsPerBar = juce::jmax (1, (int) document.getState()[ids::stepsPerBeat]) * 4;
+        style.totalSteps = grid.getNumSteps();
+        style.playing = engine.isPlaying();
+
+        if (engine.getMode() == Transport::Mode::pattern)
+            style.playheadSteps = (double) ((int) engine.getPlayheadSteps() % style.totalSteps);
+
+        return style;
+    };
+
+    ruler.onSeek = [this] (double steps) { engine.setPlayheadSteps (steps); };
+
+    grid.onTimelineChanged = [this] { ruler.repaint(); };
+
+    ruler.setComponentID ("channelRackRuler");
+    addAndMakeVisible (ruler);
 
     contentHolder.addAndMakeVisible (grid);
     viewport.setViewedComponent (&contentHolder, false);
@@ -288,6 +311,10 @@ void ChannelRackComponent::resized()
     addChannelButton.setBounds (footer.removeFromLeft (104).withHeight (size::controlHeight));
     footer.removeFromLeft (space::sm);
     removeChannelButton.setBounds (footer.removeFromLeft (104).withHeight (size::controlHeight));
+
+    // The ruler spans the step columns only; the header column keeps its own
+    // corner, which the shared ruler knows nothing about.
+    ruler.setBounds (area.removeFromTop (size::rulerHeight).withTrimmedLeft (size::headerWidth));
 
     viewport.setBounds (area);
 

@@ -83,6 +83,7 @@ public:
     juce::Rectangle<int> getNoteArea() const     { return noteArea(); }
     juce::Rectangle<int> getKeyboardArea() const { return keyboardArea(); }
     juce::Rectangle<int> getVelocityArea() const { return velocityArea(); }
+    juce::Rectangle<int> getRulerArea() const    { return rulerArea(); }
     juce::Rectangle<float> getVelocityBarBounds (const juce::ValueTree& note) const
     {
         return velocityBarBounds (note);
@@ -96,7 +97,7 @@ public:
     void applyView (double zoom, double scroll, double pitchScroll);
 
 private:
-    enum class Gesture { none, moving, resizing, selecting, velocity, auditioning, erasing };
+    enum class Gesture { none, moving, resizing, selecting, velocity, auditioning, erasing, scrubbing };
 
     void timerCallback() override;
     void valueTreePropertyChanged (juce::ValueTree&, const juce::Identifier&) override;
@@ -115,6 +116,9 @@ private:
         you only look where the pointer happened to be reported.
     */
     void eraseAlong (juce::Point<int> from, juce::Point<int> to);
+
+    /** Moves the transport to the position a ruler x means. */
+    void seekToRulerX (int x);
     int numSteps() const;
 
     // --- geometry ------------------------------------------------------------

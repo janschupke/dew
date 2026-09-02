@@ -71,7 +71,10 @@ public:
 private:
     class TrackHeader;
 
-    enum class Gesture { none, moving, resizing, draggingPoint };
+    enum class Gesture { none, moving, resizing, draggingPoint, scrubbing };
+
+    /** Moves the transport to the position a ruler x means. */
+    void seekToRulerX (int x);
 
     void timerCallback() override;
     void valueTreePropertyChanged (juce::ValueTree&, const juce::Identifier&) override;

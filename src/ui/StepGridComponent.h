@@ -45,8 +45,21 @@ public:
     /** Height the rows occupy; anything below this is inert. */
     int getRowsHeight() const;
 
+    /** Length of the pattern being shown, in steps. The ruler above the grid
+        needs it and does not have the document.
+    */
+    int getNumSteps() const;
+
     const TimelineView& getTimeline() const noexcept { return timeline; }
     bool isScrollable() const;
+
+    /** Fired whenever the zoom or the scroll offset changes.
+
+        The channel rack's ruler lives OUTSIDE the grid - the grid sits in a
+        vertically scrolling Viewport, so a ruler drawn inside it would scroll
+        away - and it has to stay aligned with a timeline it does not own.
+    */
+    std::function<void()> onTimelineChanged;
 
 private:
     void timerCallback() override;
