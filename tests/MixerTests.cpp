@@ -315,3 +315,86 @@ TEST_CASE ("the mixer is two rows: strips above, the effect chain below", "[mixe
     // And the strips still get the larger share.
     REQUIRE (stripArea->getHeight() > chainHost->getHeight());
 }
+
+TEST_CASE ("dragging a mixer fader is one undo step", "[ui][mixer]")
+{
+    // beginNewTransaction arms a new transaction rather than being a no-op when
+    // one is open, so calling it per value change made every pixel of a drag its
+    // own undo step - on the fader whose whole point is being dragged.
+    const juce::ScopedJuceInitialiser_GUI juceInit;
+
+    ProjectDocument document;
+    EditorState editorState;
+
+    document.setState (ProjectFactory::createDemo(), true);
+
+    MixerComponent mixer { document, editorState };
+    mixer.setSize (1000, 600);
+    mixer.setVisible (true);
+    mixer.refresh();
+    mixer.resized();
+
+    juce::Slider* fader = nullptr;
+    juce::Slider* pan = nullptr;
+
+    std::function<void (juce::Component&)> walk = [&] (juce::Component& c)
+    {
+        for (auto* child : c.getChildren())
+        {
+            if (auto* slider = dynamic_cast<juce::Slider*> (child))
+            {
+                if (fader == nullptr && slider->getSliderStyle() == juce::Slider::LinearVertical)
+                    fader = slider;
+                else if (pan == nullptr && slider->getRange().getStart() < 0.0)
+                    pan = slider;
+            }
+
+            walk (*child);
+        }
+    };
+
+    walk (mixer);
+
+    REQUIRE (fader != nullptr);
+    REQUIRE (pan != nullptr);
+
+    // A gesture needs an end as much as a start: without one the transaction
+    // opened at onDragStart is never released and every later change joins it.
+    REQUIRE (fader->onDragStart != nullptr);
+    REQUIRE (fader->onDragEnd != nullptr);
+    REQUIRE (pan->onDragEnd != nullptr);
+
+    auto track = ProjectEdits::findMixerTrack (document.getState(), 1);
+    REQUIRE (track.isValid());
+
+    const auto gainBefore = (double) track[ids::gain];
+
+    fader->onDragStart();
+
+    for (int i = 1; i <= 20; ++i)
+        fader->setValue ((double) i / 40.0, juce::sendNotificationSync);
+
+    if (fader->onDragEnd != nullptr) fader->onDragEnd();
+
+    REQUIRE ((double) track[ids::gain] == Approx (0.5));
+
+    document.getUndoManager().undo();
+
+    REQUIRE ((double) track[ids::gain] == Approx (gainBefore));
+
+    // and the same for the pan knob beside it
+    const auto panBefore = (double) track[ids::pan];
+
+    pan->onDragStart();
+
+    for (int i = 1; i <= 20; ++i)
+        pan->setValue ((double) -i / 40.0, juce::sendNotificationSync);
+
+    if (pan->onDragEnd != nullptr) pan->onDragEnd();
+
+    REQUIRE ((double) track[ids::pan] == Approx (-0.5));
+
+    document.getUndoManager().undo();
+
+    REQUIRE ((double) track[ids::pan] == Approx (panBefore));
+}

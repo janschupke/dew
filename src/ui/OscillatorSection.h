@@ -112,6 +112,9 @@ private:
     int selectedSlot = 0;
     bool updating = false;
 
+    /** True between a knob's onEditStart and onEditEnd - see write(). */
+    bool dragging = false;
+
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (OscillatorSection)
 };
 

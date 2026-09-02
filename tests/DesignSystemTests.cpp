@@ -184,6 +184,35 @@ TEST_CASE ("primitives paint in every state", "[design][primitives]")
         REQUIRE (coverageOf (high, tokens::colour::accent)
                  > coverageOf (low, tokens::colour::accent));
     }
+
+    SECTION ("a stock rotary spanning zero fills from the centre")
+    {
+        // A DewKnob is told it is bipolar; a stock juce::Slider cannot be, so
+        // the LookAndFeel reads it off the range. Without that, the mixer's pan
+        // knob and the instrument panel's drew a half-turned arc at dead centre
+        // while the channel rack's, a DewKnob, drew the empty ring they should.
+        DewLookAndFeel lookAndFeel;
+
+        const auto arcAtCentre = [&] (double minimum, double maximum)
+        {
+            juce::Slider slider { juce::Slider::RotaryHorizontalVerticalDrag,
+                                  juce::Slider::NoTextBox };
+            slider.setLookAndFeel (&lookAndFeel);
+            slider.setRange (minimum, maximum, 0.001);
+            slider.setValue ((minimum + maximum) * 0.5, juce::dontSendNotification);
+            slider.setSize (44, 44);
+            slider.resized();
+
+            const auto coverage = coverageOf (render (slider), tokens::colour::accent);
+            slider.setLookAndFeel (nullptr);
+            return coverage;
+        };
+
+        // Half a ring of accent for the unipolar one; effectively none for the
+        // bipolar one, whose value IS the centre it fills from.
+        REQUIRE (arcAtCentre (0.0, 1.0) > 0.02f);
+        REQUIRE (arcAtCentre (-1.0, 1.0) < arcAtCentre (0.0, 1.0) * 0.25f);
+    }
 }
 
 TEST_CASE ("the number field changes by dragging, and up means more", "[design][primitives]")

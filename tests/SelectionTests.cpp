@@ -131,15 +131,56 @@ TEST_CASE ("a channel header has no click-swallowing dead zones", "[ui][selectio
 
     for (auto* header : headers)
     {
+        // M/S and the volume and pan knobs are meant to take their own clicks;
+        // they select the row explicitly instead.
         juce::Array<juce::Component*> allowed;
 
         for (auto* button : findAll<juce::Button> (*header))
             allowed.add (button);
 
+        for (auto* slider : findAll<juce::Slider> (*header))
+            allowed.add (slider);
+
         const auto dead = deadSpots (*header, allowed);
         INFO ("dead spots on a channel header: " << dead.size()
               << (dead.isEmpty() ? "" : juce::String (" first at ") + dead[0].toString()));
         REQUIRE (dead.isEmpty());
+    }
+}
+
+TEST_CASE ("a channel row's knobs select their channel", "[ui][selection]")
+{
+    // Same rule as a mixer fader: a knob has to move when dragged, so it cannot
+    // give its click away, and the row's own mouseDown never sees it. Selection
+    // goes through the knob's own callback, which is the part a headless test
+    // can verify.
+    const juce::ScopedJuceInitialiser_GUI juceInit;
+
+    ProjectDocument document;
+    AudioEngine engine;
+    EditorState editorState;
+
+    document.setState (ProjectFactory::createDemo(), true);
+
+    ChannelRackComponent rack { document, engine, editorState };
+    rack.setSize (1000, 600);
+    rack.setVisible (true);
+    rack.refresh();
+    rack.resized();
+
+    const auto knobs = findAll<juce::Slider> (rack);
+
+    // Two per channel, and the demo has at least four.
+    REQUIRE (knobs.size() >= 8);
+
+    for (auto* knob : knobs)
+    {
+        REQUIRE (knob->onDragStart != nullptr);
+
+        editorState.setSelectedChannelId (-1);
+        knob->onDragStart();
+
+        REQUIRE (editorState.getSelectedChannelId() != -1);
     }
 }
 

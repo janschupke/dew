@@ -13,9 +13,11 @@ Start with **Demos → Getting Started** in the menu bar; there are four.
 ## What it does
 
 - **Channel rack** — a step grid, one row per channel, click or drag to write steps.
-  Mute and solo per channel. A pattern longer than the width scrolls rather than
-  shrinking its steps into hairlines. Right-click a row to rename, add or remove that
-  channel; **+ Channel** sits under the last one, where the next will appear.
+  Volume, pan, mute and solo per channel, on the row itself, so a pattern is balanced
+  where it is written rather than by selecting each channel in turn. A pattern longer
+  than the width scrolls rather than shrinking its steps into hairlines. Right-click a
+  row to rename, add or remove that channel; **+ Channel** sits under the last one,
+  where the next will appear.
 - **Piano roll** — scroll and zoom in time (wheel, ⌘-wheel or a trackpad pinch),
   rubber-band select, move a chord without losing its shape, grab and drag velocity bars
   in the lane below, click the keys to hear them, and let the pattern grow when a note is
@@ -115,6 +117,16 @@ that must keep their click — a fader cannot give one away and still be draggab
 their row through their own callback instead. The tests count points in a row that land
 on a click-swallowing child: 168 on a header and 68 on a strip before, zero after.
 
+### One transaction per gesture, which it was not
+
+`UndoManager::beginNewTransaction` **arms** a new transaction rather than being a no-op
+when one is already open. Every knob called it on each value change, so a drag that
+produced two hundred value changes produced two hundred undo steps — the opposite of what
+the call was there for, and invisible until something counted. A knob now opens its
+transaction at `onEditStart` and stops re-opening it until `onEditEnd`, which leaves
+`ValueTree`'s own coalescing to fold the gesture into one action. Wheel and keyboard
+changes produce no drag, so they still open their own.
+
 ## Design system
 
 `src/ui/design/` holds the vocabulary — semantic colour roles, a 4px spacing scale, a
@@ -124,6 +136,13 @@ is the drag-up-and-down number entry used for every numeric value.
 
 `dew_shot gallery out.png` renders every token, icon and primitive in every state onto
 one page, which is both how the design system is reviewed and how it is tested.
+
+Every rotary in the app is drawn by one routine, whether it is a `DewKnob` or a stock
+`juce::Slider` the LookAndFeel picks up. A `DewKnob` is *told* it is bipolar; a stock
+slider cannot be, so the LookAndFeel reads it off the range — below zero to above it is a
+pan, a detune or an EQ gain, and all of them fill out from the centre. Until it did, a
+pan at dead centre drew a half-turned arc on the mixer and in the instrument panel, and
+an empty ring in the channel rack, which is the one built on the primitive.
 
 The type scale is five sizes, and it is enforced rather than merely documented. Twelve
 distinct sizes were reaching the screen: six font paths fell through to JUCE's defaults
@@ -337,7 +356,7 @@ project it was overwriting.
 
 ## Testing
 
-Catch2 via CTest. `ctest --preset release` runs all 433.
+Catch2 via CTest. `ctest --preset release` runs all 487.
 
 MP3 is the one thing here that needs a tool dew does not ship. JUCE can only decode MP3
 on its own, so encoding drives an installed `lame` binary as a child process - which is

@@ -171,8 +171,18 @@ void DewLookAndFeel::drawRotarySlider (juce::Graphics& g, int x, int y, int widt
 {
     // Delegates to the same routine DewKnob uses, so a stock juce::Slider and a
     // dew primitive cannot end up looking like two different products.
+    //
+    // DewKnob is told whether it is bipolar; a stock slider cannot be, so the
+    // range says it instead. A control that runs from below zero to above it is
+    // a pan, a detune or an EQ gain, and every one of them should fill out from
+    // the centre. Without this the mixer's pan knob and the instrument panel's
+    // drew a half-turned arc at dead centre while the channel rack's, which is a
+    // DewKnob, drew the empty ring they all should.
+    const auto range = slider.getRange();
+    const auto bipolar = range.getStart() < 0.0 && range.getEnd() > 0.0;
+
     paint::rotary (g, juce::Rectangle<int> (x, y, width, height).toFloat(),
-                   sliderPos, slider.isEnabled(), false);
+                   sliderPos, slider.isEnabled(), bipolar);
 }
 
 void DewLookAndFeel::drawButtonBackground (juce::Graphics& g, juce::Button& button,

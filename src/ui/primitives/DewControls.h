@@ -91,10 +91,26 @@ public:
     /** Bipolar knobs fill out from the centre - pan, detune, EQ gain. */
     void setBipolar (bool);
 
+    /** Drops the caption and the value readout and gives the rotary the whole
+        component, for a knob that has to fit on a 34px row. The caption then has
+        nowhere to be drawn, so a compact knob says what it is through its
+        tooltip and through being bipolar or not.
+    */
+    void setCompact (bool);
+
+    /** Forwards to the slider, which is what the pointer is actually over. */
+    void setTooltip (const juce::String&);
+
     juce::Slider& getSlider() noexcept { return slider; }
 
     std::function<void()> onValueChange;
+
+    /** A drag begins and ends. Both halves matter: a caller opens one undo
+        transaction on the first and stops re-opening it on the second, which is
+        what makes a whole gesture a single undo step.
+    */
     std::function<void()> onEditStart;
+    std::function<void()> onEditEnd;
 
     void paint (juce::Graphics&) override;
     void resized() override;
@@ -104,6 +120,7 @@ private:
     juce::Slider slider { juce::Slider::RotaryHorizontalVerticalDrag, juce::Slider::NoTextBox };
     int decimalPlaces = 3;
     bool bipolar = false;
+    bool compact = false;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (DewKnob)
 };

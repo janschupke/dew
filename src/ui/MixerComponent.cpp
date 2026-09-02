@@ -44,12 +44,21 @@ public:
         gainSlider.onDragStart = [this]
         {
             select();
+            dragging = true;
             document.getUndoManager().beginNewTransaction ("Change level");
         };
+        gainSlider.onDragEnd = [this] { dragging = false; };
         gainSlider.onValueChange = [this]
         {
             auto& undo = document.getUndoManager();
-            undo.beginNewTransaction ("Change level");
+
+            // beginNewTransaction ARMS a new transaction rather than being a
+            // no-op when one is open, so calling it per value change made every
+            // pixel of a drag its own undo step. During a drag the transaction
+            // opened at onDragStart is left to coalesce.
+            if (! dragging)
+                undo.beginNewTransaction ("Change level");
+
             track.setProperty (ids::gain, gainSlider.getValue(), &undo);
         };
         addAndMakeVisible (gainSlider);
@@ -63,12 +72,17 @@ public:
             panSlider.onDragStart = [this]
             {
                 select();
+                dragging = true;
                 document.getUndoManager().beginNewTransaction ("Change pan");
             };
+            panSlider.onDragEnd = [this] { dragging = false; };
             panSlider.onValueChange = [this]
             {
                 auto& undo = document.getUndoManager();
-                undo.beginNewTransaction ("Change pan");
+
+                if (! dragging)
+                    undo.beginNewTransaction ("Change pan");
+
                 track.setProperty (ids::pan, panSlider.getValue(), &undo);
             };
             addAndMakeVisible (panSlider);
@@ -362,6 +376,11 @@ private:
     juce::Array<juce::var> routedNames;
     juce::Array<juce::Colour> routedColours;
     juce::Array<int> routedIds;
+
+    /** True between a fader's onDragStart and onDragEnd. One flag for the strip:
+        only one control can be under the pointer at a time.
+    */
+    bool dragging = false;
 
     juce::Label nameLabel;
     juce::Slider gainSlider;

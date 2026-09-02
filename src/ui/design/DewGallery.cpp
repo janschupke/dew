@@ -96,6 +96,21 @@ DewGallery::DewGallery()
     pan->setBipolar (true);
     add (pan);
 
+    // The compact pair, as a channel rack row carries them: no caption and no
+    // value, so the only thing telling volume from pan is which way each fills.
+    auto* compactVolume = new DewKnob ("VOL", 0.0, 1.0, 0.001);
+    compactVolume->setCompact (true);
+    compactVolume->setTooltip ("Volume");
+    compactVolume->setValue (0.8, juce::dontSendNotification);
+    add (compactVolume);
+
+    auto* compactPan = new DewKnob ("PAN", -1.0, 1.0, 0.001);
+    compactPan->setCompact (true);
+    compactPan->setBipolar (true);
+    compactPan->setTooltip ("Pan");
+    compactPan->setValue (-0.4, juce::dontSendNotification);
+    add (compactPan);
+
     // --- number fields -------------------------------------------------------
     auto* tempo = new DewNumberField();
     tempo->setRange (20.0, 300.0, 0.1);
@@ -243,6 +258,16 @@ int DewGallery::layOut (juce::Rectangle<int> area, bool apply)
         {
             place (controls[index++], row.removeFromLeft (72));
             row.removeFromLeft (space::lg);
+        }
+
+        // The compact pair sits on the same baseline as the captioned knobs'
+        // rotaries, which is where it would be if it were on a row.
+        auto compact = row.withSizeKeepingCentre (row.getWidth(), size::knobSm);
+
+        for (int i = 0; i < 2; ++i)
+        {
+            place (controls[index++], compact.removeFromLeft (size::knobSm));
+            compact.removeFromLeft (space::lg);
         }
     }
 

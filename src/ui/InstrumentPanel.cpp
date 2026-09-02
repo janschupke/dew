@@ -103,8 +103,11 @@ void InstrumentPanel::attachRotary (juce::Slider& slider, juce::Label& label, co
     // rather than several hundred.
     slider.onDragStart = [this, transactionName]
     {
+        dragging = true;
         document.getUndoManager().beginNewTransaction (transactionName);
     };
+
+    slider.onDragEnd = [this] { dragging = false; };
 
     slider.onValueChange = [this, &slider, owner, property, transactionName]
     {
@@ -118,9 +121,14 @@ void InstrumentPanel::attachRotary (juce::Slider& slider, juce::Label& label, co
 
         auto& undo = document.getUndoManager();
 
-        // Buttons and typed values produce no drag, so there may be no
-        // transaction open; beginNewTransaction is a no-op if one already is.
-        undo.beginNewTransaction (transactionName);
+        // beginNewTransaction ARMS a new transaction rather than being a no-op
+        // when one is open, so calling it per value change made every pixel of a
+        // drag its own undo step - the thing the comment above claims it
+        // prevents. During a drag the transaction opened at onDragStart is left
+        // to coalesce; buttons and typed values produce no drag, so they open
+        // their own.
+        if (! dragging)
+            undo.beginNewTransaction (transactionName);
 
         // Integer-valued properties must stay integers in the file: writing a
         // double would change the JSON from `0` to `0.0` and, worse, make the

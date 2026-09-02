@@ -179,6 +179,7 @@ DewKnob::DewKnob (const juce::String& c, double minimum, double maximum, double 
     slider.setLookAndFeel (&invisibleRotary());
     slider.onValueChange = [this] { if (onValueChange != nullptr) onValueChange(); repaint(); };
     slider.onDragStart = [this] { if (onEditStart != nullptr) onEditStart(); };
+    slider.onDragEnd = [this] { if (onEditEnd != nullptr) onEditEnd(); };
     addAndMakeVisible (slider);
 }
 
@@ -200,11 +201,31 @@ void DewKnob::setBipolar (bool shouldBeBipolar)
     repaint();
 }
 
+void DewKnob::setCompact (bool shouldBeCompact)
+{
+    if (compact == shouldBeCompact)
+        return;
+
+    compact = shouldBeCompact;
+    resized();
+    repaint();
+}
+
+void DewKnob::setTooltip (const juce::String& text)
+{
+    slider.setTooltip (text);
+}
+
 void DewKnob::resized()
 {
     auto area = getLocalBounds();
-    area.removeFromTop (13);        // caption
-    area.removeFromBottom (14);     // value
+
+    if (! compact)
+    {
+        area.removeFromTop (13);        // caption
+        area.removeFromBottom (14);     // value
+    }
+
     slider.setBounds (area);
 }
 
@@ -212,16 +233,25 @@ void DewKnob::paint (juce::Graphics& g)
 {
     auto area = getLocalBounds();
 
+    const auto range = slider.getRange();
+    const auto span = range.getLength();
+    const auto proportion = span > 0.0 ? (float) ((slider.getValue() - range.getStart()) / span)
+                                       : 0.0f;
+
+    // A compact knob has room for the rotary and nothing else. Its caption
+    // lives in the tooltip and its meaning in the fill: unipolar volume fills
+    // from the left, bipolar pan from the centre.
+    if (compact)
+    {
+        paint::rotary (g, area.toFloat(), proportion, isEnabled(), bipolar);
+        return;
+    }
+
     g.setColour (colour::textSecondary);
     g.setFont (type::font (type::caption));
     g.drawText (caption, area.removeFromTop (13), juce::Justification::centred, false);
 
     auto valueArea = area.removeFromBottom (14);
-
-    const auto range = slider.getRange();
-    const auto span = range.getLength();
-    const auto proportion = span > 0.0 ? (float) ((slider.getValue() - range.getStart()) / span)
-                                       : 0.0f;
 
     paint::rotary (g, area.toFloat(), proportion, isEnabled(), bipolar);
 

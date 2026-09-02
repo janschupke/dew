@@ -126,8 +126,10 @@ OscillatorSection::OscillatorSection (ProjectDocument& d, EditorState& s)
     octaveSlider.setTextBoxStyle (juce::Slider::TextBoxLeft, false, 44, size::controlHeightSm);
     octaveSlider.onDragStart = [this]
     {
+        dragging = true;
         document.getUndoManager().beginNewTransaction ("Change octave");
     };
+    octaveSlider.onDragEnd = [this] { dragging = false; };
     octaveSlider.onValueChange = [this]
     {
         // Integer-valued in the file: writing a double would change the JSON
@@ -140,8 +142,10 @@ OscillatorSection::OscillatorSection (ProjectDocument& d, EditorState& s)
     detuneKnob.setNumDecimalPlaces (0);
     detuneKnob.onEditStart = [this]
     {
+        dragging = true;
         document.getUndoManager().beginNewTransaction ("Change detune");
     };
+    detuneKnob.onEditEnd = [this] { dragging = false; };
     detuneKnob.onValueChange = [this]
     {
         // detuneCents is a double in the schema, so it is written as one.
@@ -152,8 +156,10 @@ OscillatorSection::OscillatorSection (ProjectDocument& d, EditorState& s)
     gainKnob.setNumDecimalPlaces (2);
     gainKnob.onEditStart = [this]
     {
+        dragging = true;
         document.getUndoManager().beginNewTransaction ("Change oscillator gain");
     };
+    gainKnob.onEditEnd = [this] { dragging = false; };
     gainKnob.onValueChange = [this]
     {
         write (ids::gain, gainKnob.getValue(), "Change oscillator gain");
@@ -258,9 +264,13 @@ void OscillatorSection::write (const juce::Identifier& property, const juce::var
 
     auto& undo = document.getUndoManager();
 
-    // A button or a typed value produces no drag, so there may be no
-    // transaction open; beginNewTransaction is a no-op if one already is.
-    undo.beginNewTransaction (transactionName);
+    // beginNewTransaction ARMS a new transaction rather than being a no-op when
+    // one is open, so calling it per value change made every pixel of a drag its
+    // own undo step. During a drag the transaction opened at onEditStart is left
+    // to coalesce; a button or a typed value produces no drag, so it opens its own.
+    if (! dragging)
+        undo.beginNewTransaction (transactionName);
+
     slot.setProperty (property, value, &undo);
 }
 

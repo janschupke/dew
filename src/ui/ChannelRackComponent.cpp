@@ -11,7 +11,7 @@ namespace dew
 
 using namespace tokens;
 
-/** One channel's header: colour tab, name, mute and solo. */
+/** One channel's header: colour tab, name, volume, pan, mute and solo. */
 class ChannelRackComponent::ChannelHeader : public juce::Component
 {
 public:
@@ -53,7 +53,17 @@ public:
         };
         addAndMakeVisible (soloButton);
 
-        // M and S must keep their clicks, so they select the row explicitly.
+        // Volume and pan on the row itself, so a pattern can be balanced without
+        // selecting each channel in turn and reaching for the instrument panel.
+        // Same ranges as the panel's VOLUME and PAN, so the two read the same
+        // number, and no caption fits on a 34px row - pan is told from volume by
+        // filling out from the centre.
+        attachKnob (volumeKnob, ids::volume, "Change volume", "Volume");
+        attachKnob (panKnob, ids::pan, "Change pan", "Pan");
+        panKnob.setBipolar (true);
+
+        // M, S and the knobs must keep their clicks, so they select the row
+        // explicitly.
         muteButton.onStateChange = [this] { select(); };
         soloButton.onStateChange = [this] { select(); };
 
@@ -66,9 +76,16 @@ public:
 
     void refresh()
     {
+        // Guarded because this runs on every property change of this channel,
+        // including the knob's own write: without it a drag would feed its value
+        // back into the slider it came from.
+        const juce::ScopedValueSetter<bool> quiet (updating, true);
+
         nameLabel.setText (channel[ids::name].toString(), juce::dontSendNotification);
         muteButton.setToggleState ((bool) channel[ids::muted], juce::dontSendNotification);
         soloButton.setToggleState ((bool) channel[ids::solo], juce::dontSendNotification);
+        volumeKnob.setValue ((double) channel[ids::volume], juce::dontSendNotification);
+        panKnob.setValue ((double) channel[ids::pan], juce::dontSendNotification);
         repaint();
     }
 
@@ -189,6 +206,11 @@ public:
         pitchBounds = area.removeFromRight (26);
         area.removeFromRight (space::xs);
 
+        panKnob.setBounds (area.removeFromRight (size::knobSm));
+        area.removeFromRight (space::xs);
+        volumeKnob.setBounds (area.removeFromRight (size::knobSm));
+        area.removeFromRight (space::xs);
+
         nameLabel.setBounds (area);
     }
 
@@ -196,6 +218,49 @@ private:
     ProjectDocument& document;
     EditorState& editorState;
     juce::ValueTree channel;
+
+    /** Wires one compact knob to one of the channel's properties.
+
+        `onEditStart` selects the row: a knob keeps its own clicks, so the row's
+        mouseDown never sees them, and a control that cannot select its row is
+        the bug this rack was already fixed for once.
+    */
+    void attachKnob (DewKnob& knob, const juce::Identifier& property,
+                     const juce::String& transactionName, const juce::String& tooltip)
+    {
+        knob.setCompact (true);
+        knob.setTooltip (tooltip);
+        knob.setValue ((double) channel[property], juce::dontSendNotification);
+
+        knob.onEditStart = [this, transactionName]
+        {
+            select();
+            dragging = true;
+            document.getUndoManager().beginNewTransaction (transactionName);
+        };
+
+        knob.onEditEnd = [this] { dragging = false; };
+
+        knob.onValueChange = [this, &knob, property, transactionName]
+        {
+            if (updating)
+                return;
+
+            auto& undo = document.getUndoManager();
+
+            // beginNewTransaction ARMS a new transaction rather than being a
+            // no-op when one is open, so calling it per value change would make
+            // every pixel of a drag its own undo step. During a drag the
+            // transaction opened at onEditStart is left to coalesce; a wheel or
+            // keyboard change produces no drag, so it opens its own.
+            if (! dragging)
+                undo.beginNewTransaction (transactionName);
+
+            channel.setProperty (property, knob.getValue(), &undo);
+        };
+
+        addAndMakeVisible (knob);
+    }
 
     void setHovered (bool shouldBeHovered)
     {
@@ -206,8 +271,12 @@ private:
     juce::Label nameLabel;
     juce::Rectangle<int> pitchBounds;
     bool hovered = false;
+    bool updating = false;
+    bool dragging = false;
     DewLetterToggle muteButton { "M", colour::warning, "Mute this channel" };
     DewLetterToggle soloButton { "S", colour::success, "Solo this channel" };
+    DewKnob volumeKnob { "VOL", 0.0, 1.0, 0.001 };
+    DewKnob panKnob { "PAN", -1.0, 1.0, 0.001 };
 };
 
 // -----------------------------------------------------------------------------

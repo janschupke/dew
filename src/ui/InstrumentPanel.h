@@ -45,6 +45,9 @@ private:
     ProjectDocument& document;
     EditorState& editorState;
 
+    /** True between a knob's onDragStart and onDragEnd - see attachRotary. */
+    bool dragging = false;
+
     juce::Label titleLabel;
 
     /** The channel's oscillator slots. Its own component: it carries its own

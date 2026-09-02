@@ -118,8 +118,9 @@ namespace size
     inline constexpr int controlHeightSm = 20;
     inline constexpr int iconButton      = 24;
     inline constexpr int knob            = 44;
+    inline constexpr int knobSm          = 26;  ///< a knob on a row, drawn without its caption
     inline constexpr int rowHeight       = 34;  ///< channel rack and playlist rows
-    inline constexpr int headerWidth     = 208; ///< channel rack / playlist track headers
+    inline constexpr int headerWidth     = 264; ///< the channel rack's header column
     inline constexpr int rulerHeight     = 22;
     inline constexpr int minTouchTarget  = 20;  ///< nothing clickable smaller than this
 }
