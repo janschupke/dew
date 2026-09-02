@@ -35,15 +35,60 @@ inline constexpr int kMaxVoicesPerChannel  = 16;
 inline constexpr int kMaxEffectUnits       = 32;
 inline constexpr int kMaxAutomations       = 32;
 
+/** How many detuned copies of itself one wavetable slot may stack.
+
+    Capped because a voice preallocates every copy's phase, and 64 channels of
+    16 voices exist at all times. Seven is odd on purpose: the spread is
+    symmetric about a centre voice that sits at the note's own pitch.
+*/
+inline constexpr int kMaxUnisonVoices = 7;
+
 enum class Waveform { sine, saw, square, triangle };
+
+/** Which generator an oscillator slot runs.
+
+    A property of the SLOT rather than of the channel, so a wavetable can be
+    layered under a classic saw without the two being different instruments.
+*/
+enum class OscMode { classic, wavetable };
+
+/** What drives a wavetable slot's position over the length of a note. */
+enum class PositionSource { envelope, lfo };
 
 Waveform waveformFromString (const juce::String&);
 juce::String waveformToString (Waveform);
 
+OscMode oscModeFromString (const juce::String&);
+juce::String oscModeToString (OscMode);
+
+PositionSource positionSourceFromString (const juce::String&);
+juce::String positionSourceToString (PositionSource);
+
+/** One oscillator slot, resolved.
+
+    Carries both modes' settings, the way EffectSnapshot carries every effect
+    type's. `wave` is read in classic mode and the wavetable fields in wavetable
+    mode; the unused half costs a few bytes and saves the audio thread a branch
+    on which shape of struct it was handed.
+
+    `table` is an INDEX into the factory bank, never a pointer, so the whole
+    snapshot stays trivially copyable.
+*/
 struct OscSettings
 {
     bool enabled = true;
+    OscMode mode = OscMode::classic;
+
     Waveform wave = Waveform::saw;
+
+    int table = 0;
+    float position = 0.0f;         ///< 0..1 through the table's frames
+    float positionMod = 0.0f;      ///< -1..1, added to position over the note
+    PositionSource positionSource = PositionSource::envelope;
+    float positionRate = 1.0f;     ///< Hz, when the source is the LFO
+    int unisonVoices = 1;
+    float unisonDetune = 0.0f;     ///< cents, edge to edge
+
     int octave = 0;
     float detuneCents = 0.0f;
     float gain = 0.8f;
@@ -174,6 +219,7 @@ enum class AutomationParam
 {
     none,
     volume, pan, gain,
+    position,
     cutoff, resonance, mix, roomSize, damping, width,
     delayMs, feedback, drive, outputGain, rate, depth,
     lowGainDb, midGainDb, midFreq, highGainDb

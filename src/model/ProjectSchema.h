@@ -78,8 +78,15 @@ struct NodeSpec
     needed. The version is bumped anyway because an OLDER build reading a v7
     file would drop the audio silently rather than refuse it, which is exactly
     what the version gate is for.
+
+    v8 added the wavetable oscillator: `mode` on an oscillator slot plus the
+    seven properties a wavetable slot reads. Additive with declared defaults
+    like v7, so a v6 or v7 file needs no migration - every slot in it simply
+    predates the mode and loads as "classic", which is what it was. Bumped for
+    the same reason v7 was: an older build would drop the wavetable settings
+    without a word rather than say it cannot read the file.
 */
-inline constexpr int kFormatVersion = 7;
+inline constexpr int kFormatVersion = 8;
 
 /** How many effects one channel or mixer track may carry. A document limit
     rather than an engine one: a chain longer than this cannot be saved, so it

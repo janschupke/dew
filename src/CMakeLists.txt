@@ -27,6 +27,7 @@ add_library(dew_core STATIC
   engine/SnapshotBridge.cpp
   engine/Transport.cpp
   engine/Sequencer.cpp
+  engine/Wavetable.cpp
   engine/SynthVoice.cpp
   engine/SynthChannel.cpp
   engine/SamplePlayer.cpp

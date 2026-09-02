@@ -184,8 +184,8 @@ TEST_CASE ("a loop dragged backwards means the same as one dragged forwards",
     h.engine.setLoopRangeSteps (Transport::Mode::song, 32.0, 16.0);
 
     const auto region = h.engine.getLoopRegion (Transport::Mode::song);
-    REQUIRE (region.startSteps == 16.0f);
-    REQUIRE (region.endSteps == 32.0f);
+    REQUIRE (juce::exactlyEqual (region.startSteps, 16.0f));
+    REQUIRE (juce::exactlyEqual (region.endSteps, 32.0f));
 
     REQUIRE (h.renderUntilAtLeast (16.0));
 
@@ -303,8 +303,8 @@ TEST_CASE ("the loop region reads back as the pair that was set", "[loop]")
     engine.setLoopRangeSteps (Transport::Mode::pattern, 8.0, 16.0);
 
     REQUIRE (engine.hasLoopRegion (Transport::Mode::pattern));
-    REQUIRE (engine.getLoopRegion (Transport::Mode::pattern).startSteps == 8.0f);
-    REQUIRE (engine.getLoopRegion (Transport::Mode::pattern).endSteps == 16.0f);
+    REQUIRE (juce::exactlyEqual (engine.getLoopRegion (Transport::Mode::pattern).startSteps, 8.0f));
+    REQUIRE (juce::exactlyEqual (engine.getLoopRegion (Transport::Mode::pattern).endSteps, 16.0f));
 
     // One region per mode: the piano roll's selection must not become the
     // playlist's, or switching mode would silently change what loops.
@@ -319,6 +319,6 @@ TEST_CASE ("a negative loop range is clamped rather than inverted", "[loop]")
     AudioEngine engine;
     engine.setLoopRangeSteps (Transport::Mode::song, -8.0, 4.0);
 
-    REQUIRE (engine.getLoopRegion (Transport::Mode::song).startSteps == 0.0f);
-    REQUIRE (engine.getLoopRegion (Transport::Mode::song).endSteps == 4.0f);
+    REQUIRE (juce::exactlyEqual (engine.getLoopRegion (Transport::Mode::song).startSteps, 0.0f));
+    REQUIRE (juce::exactlyEqual (engine.getLoopRegion (Transport::Mode::song).endSteps, 4.0f));
 }

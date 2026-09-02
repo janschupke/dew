@@ -422,7 +422,7 @@ struct OscHarness
     OscHarness()
     {
         document.setState (ProjectFactory::createDemo(), true);
-        section.setSize (300, OscillatorSection::requiredHeight);
+        section.setSize (300, OscillatorSection::heightFor (false));
         section.setVisible (true);
         section.setOwner (channel().getChildWithName (ids::INSTRUMENT));
     }

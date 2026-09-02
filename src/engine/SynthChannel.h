@@ -37,9 +37,16 @@ public:
         controllers, applied to every sounding voice before the block is
         rendered. They default to nothing, so a caller that has no controller
         renders exactly what it always did.
+
+        `live` is the channel's oscillator bank as it stands THIS block, with
+        any automation already folded in. Only the wavetable position is read
+        from it - everything else a voice needs was latched at note-on. Null is
+        allowed and means "nothing has moved", which is what every caller that
+        predates automated positions passes.
     */
     void renderAdd (float* buffer, int numSamples,
-                    float bendSemitones = 0.0f, float modulation = 0.0f) noexcept;
+                    float bendSemitones = 0.0f, float modulation = 0.0f,
+                    const OscBankSnapshot* live = nullptr) noexcept;
 
     int countActiveVoices() const noexcept;
 

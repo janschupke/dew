@@ -31,6 +31,7 @@ add_executable(dew_tests
   EngineTests.cpp
   MixerTests.cpp
   OscillatorTests.cpp
+  WavetableTests.cpp
   TimelineViewTests.cpp
   TimelineRulerTests.cpp
   TypographyTests.cpp

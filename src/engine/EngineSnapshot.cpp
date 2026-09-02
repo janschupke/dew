@@ -2,6 +2,7 @@
 
 #include "../model/AssetPaths.h"
 #include "SamplePool.h"
+#include "Wavetable.h"
 
 #include <atomic>
 #include <cmath>
@@ -30,6 +31,36 @@ juce::String waveformToString (Waveform w)
         case Waveform::saw:      break;
     }
     return "saw";
+}
+
+OscMode oscModeFromString (const juce::String& s)
+{
+    return s == "wavetable" ? OscMode::wavetable : OscMode::classic;
+}
+
+juce::String oscModeToString (OscMode m)
+{
+    switch (m)
+    {
+        case OscMode::wavetable: return "wavetable";
+        case OscMode::classic:   break;
+    }
+    return "classic";
+}
+
+PositionSource positionSourceFromString (const juce::String& s)
+{
+    return s == "lfo" ? PositionSource::lfo : PositionSource::envelope;
+}
+
+juce::String positionSourceToString (PositionSource p)
+{
+    switch (p)
+    {
+        case PositionSource::lfo:      return "lfo";
+        case PositionSource::envelope: break;
+    }
+    return "envelope";
 }
 
 int EngineSnapshot::patternIndexForId (int patternId) const
@@ -120,10 +151,28 @@ OscBankSnapshot readOscBank (const juce::ValueTree& instrument,
 
         auto& s = bank.slots[(size_t) bank.numSlots++];
         s.enabled     = (bool) osc.getProperty (ids::enabled, true);
+        s.mode        = oscModeFromString (osc[ids::mode].toString());
         s.wave        = waveformFromString (osc[ids::wave].toString());
         s.octave      = juce::jlimit (-4, 4, (int) osc[ids::octave]);
         s.detuneCents = juce::jlimit (-1200.0f, 1200.0f, (float) (double) osc[ids::detuneCents]);
         s.gain        = juce::jlimit (0.0f, 1.0f, (float) (double) osc[ids::gain]);
+
+        const auto tableName = osc[ids::wavetable].toString();
+        const auto tableIndex = wavetableIndexFor (tableName);
+
+        // A name this build does not know is a fault in the FILE, not a
+        // different sound: say so rather than quietly play something else.
+        if (tableIndex < 0 && s.mode == OscMode::wavetable)
+            warn (ownerName + " asks for wavetable \"" + tableName
+                  + "\", which this build does not have; using the first one.");
+
+        s.table          = juce::jmax (0, tableIndex);
+        s.position       = juce::jlimit (0.0f, 1.0f, (float) (double) osc[ids::wavePosition]);
+        s.positionMod    = juce::jlimit (-1.0f, 1.0f, (float) (double) osc[ids::wavePositionMod]);
+        s.positionSource = positionSourceFromString (osc[ids::wavePositionSource].toString());
+        s.positionRate   = juce::jlimit (0.01f, 20.0f, (float) (double) osc[ids::wavePositionRate]);
+        s.unisonVoices   = juce::jlimit (1, kMaxUnisonVoices, (int) osc[ids::unisonVoices]);
+        s.unisonDetune   = juce::jlimit (0.0f, 50.0f, (float) (double) osc[ids::unisonDetune]);
 
         bank.anyEnabled = bank.anyEnabled || s.enabled;
     }
@@ -186,6 +235,7 @@ AutomationParam automationParamFromString (const juce::String& name)
     static const std::pair<const char*, AutomationParam> table[] {
         { "volume", AutomationParam::volume }, { "pan", AutomationParam::pan },
         { "gain", AutomationParam::gain }, { "cutoff", AutomationParam::cutoff },
+        { "wavePosition", AutomationParam::position },
         { "resonance", AutomationParam::resonance }, { "mix", AutomationParam::mix },
         { "roomSize", AutomationParam::roomSize }, { "damping", AutomationParam::damping },
         { "width", AutomationParam::width }, { "delayMs", AutomationParam::delayMs },
@@ -618,12 +668,24 @@ EngineSnapshot buildSnapshot (const juce::ValueTree& project, juce::StringArray*
                 break;
 
             case AutomationScope::channel:
+            case AutomationScope::channelOsc:
             case AutomationScope::channelEffect:
                 for (size_t i = 0; i < snapshot.channels.size(); ++i)
                     if (snapshot.channels[i].id == targetId)
                         a.targetIndex = (int) i;
 
                 resolved = a.targetIndex >= 0;
+
+                // An oscillator slot that is no longer in wavetable mode has
+                // nothing to drive, so the clip is dropped rather than left
+                // pointing at a parameter the voice will not read.
+                if (resolved && a.scope == AutomationScope::channelOsc)
+                {
+                    const auto& slots = snapshot.channels[(size_t) a.targetIndex].osc;
+
+                    resolved = a.slotIndex >= 0 && a.slotIndex < slots.numSlots
+                            && slots.slots[(size_t) a.slotIndex].mode == OscMode::wavetable;
+                }
 
                 if (resolved && a.scope == AutomationScope::channelEffect)
                 {

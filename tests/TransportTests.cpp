@@ -162,8 +162,8 @@ TEST_CASE ("setLoopLengthSteps is a loop range anchored at zero", "[transport][l
     transport.setTempo (120.0, 4);
     transport.setLoopLengthSteps (16);
 
-    REQUIRE (transport.getLoopStartSteps() == 0.0);
-    REQUIRE (transport.getLoopEndSteps() == 16.0);
+    REQUIRE (juce::exactlyEqual (transport.getLoopStartSteps(), 0.0));
+    REQUIRE (juce::exactlyEqual (transport.getLoopEndSteps(), 16.0));
     REQUIRE (transport.hasLoop());
 
     // The same two assertions the length-based case above makes, so the compat
@@ -182,8 +182,8 @@ TEST_CASE ("a negative loop start is clamped to the top", "[transport][loop]")
     transport.setTempo (120.0, 4);
     transport.setLoopRange (-4.0, 8.0);
 
-    REQUIRE (transport.getLoopStartSteps() == 0.0);
-    REQUIRE (transport.getLoopEndSteps() == 8.0);
+    REQUIRE (juce::exactlyEqual (transport.getLoopStartSteps(), 0.0));
+    REQUIRE (juce::exactlyEqual (transport.getLoopEndSteps(), 8.0));
 
     transport.setPositionSamples (48000);
     transport.wrapIntoLoop();

@@ -71,6 +71,18 @@ DEW_DECLARE_ID (octave)
 DEW_DECLARE_ID (detuneCents)
 DEW_DECLARE_ID (gain)
 
+// An oscillator slot in "wavetable" mode reads these and ignores `wave`; one in
+// "classic" mode does the reverse. Both sets live on the same node, the way
+// every effect type's parameters share one EFFECT node.
+DEW_DECLARE_ID (mode)
+DEW_DECLARE_ID (wavetable)
+DEW_DECLARE_ID (wavePosition)
+DEW_DECLARE_ID (wavePositionMod)
+DEW_DECLARE_ID (wavePositionSource)
+DEW_DECLARE_ID (wavePositionRate)
+DEW_DECLARE_ID (unisonVoices)
+DEW_DECLARE_ID (unisonDetune)
+
 DEW_DECLARE_ID (attack)
 DEW_DECLARE_ID (decay)
 DEW_DECLARE_ID (sustain)

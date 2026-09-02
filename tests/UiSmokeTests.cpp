@@ -313,8 +313,8 @@ TEST_CASE ("a span selected in the editor loops the editor's own engine", "[ui][
     component.getEditorState().dispatchPendingMessages();
 
     REQUIRE (engine.hasLoopRegion (dew::Transport::Mode::song));
-    REQUIRE (engine.getLoopRegion (dew::Transport::Mode::song).startSteps == 16.0f);
-    REQUIRE (engine.getLoopRegion (dew::Transport::Mode::song).endSteps == 48.0f);
+    REQUIRE (juce::exactlyEqual (engine.getLoopRegion (dew::Transport::Mode::song).startSteps, 16.0f));
+    REQUIRE (juce::exactlyEqual (engine.getLoopRegion (dew::Transport::Mode::song).endSteps, 48.0f));
 
     juce::AudioBuffer<float> block (2, 512);
 

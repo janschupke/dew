@@ -35,6 +35,11 @@ InstrumentPanel::InstrumentPanel (ProjectDocument& d, EditorState& s, SamplePool
     titleLabel.setColour (juce::Label::textColourId, Palette::text);
     addAndMakeVisible (titleLabel);
 
+    // The oscillator section's height depends on the mode of the slot it is
+    // showing, and that mode lives on an OSC node this panel does not listen to
+    // - by design, since a change to another channel's oscillator is none of
+    // its business. So the section says when its height moved.
+    oscSection.onHeightChanged = [this] { resized(); };
     addAndMakeVisible (oscSection);
 
     mixerBox.onChange = [this]
@@ -250,7 +255,7 @@ void InstrumentPanel::resized()
     if (showingAudio)
         sampleSection.setBounds (row (SampleSection::requiredHeight));
     else
-        oscSection.setBounds (row (OscillatorSection::requiredHeight));
+        oscSection.setBounds (row (oscSection.getRequiredHeight()));
 
     // Routing and base pitch share a row. The oscillator section costs the panel
     // about 120px more than the single wave combo it replaces, and at the

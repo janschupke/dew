@@ -19,6 +19,7 @@ namespace dew
 enum class AutomationScope
 {
     channel,        ///< a channel's own volume or pan
+    channelOsc,     ///< a parameter of one oscillator slot on a channel
     channelEffect,  ///< a parameter of one slot in a channel's chain
     mixerTrack,     ///< a mixer track's gain or pan
     mixerEffect,    ///< a parameter of one slot in a mixer track's chain
@@ -66,6 +67,14 @@ const std::vector<AutomationParamSpec>& mixerTrackParams();
 /** Parameters automatable on the master. */
 const std::vector<AutomationParamSpec>& masterParams();
 
+/** Parameters automatable on one oscillator slot.
+
+    Only offered for a slot in wavetable mode - see availableAutomationTargets.
+    A classic oscillator has nothing here that means anything to move over time,
+    and offering position for one would be a control that silently did nothing.
+*/
+const std::vector<AutomationParamSpec>& oscParams();
+
 /** Parameters automatable on an effect of this type. */
 const std::vector<AutomationParamSpec>& effectParams (const juce::String& effectType);
 
@@ -81,7 +90,7 @@ struct AutomationTarget
 {
     AutomationScope scope = AutomationScope::channel;
     int targetId = 0;       ///< channel id or mixer track id; 0 for master
-    int slot = -1;          ///< effect slot index, -1 when the scope is not an effect
+    int slot = -1;          ///< effect or oscillator slot index, -1 when the scope has none
     juce::Identifier property;
     juce::String displayName;   ///< "Kick > Filter > Cutoff"
     double minimum = 0.0;

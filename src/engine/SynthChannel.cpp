@@ -5,6 +5,11 @@ namespace dew
 
 void SynthChannel::prepare (double sampleRate)
 {
+    // Touching the bank here is deliberate. Generating it allocates and runs a
+    // few hundred FFTs, and it is built on first use - so the FIRST caller must
+    // never be the audio thread. prepare() is always the message thread.
+    (void) wavetableAt (0);
+
     for (auto& voice : voices)
         voice.prepare (sampleRate);
 }
@@ -63,11 +68,16 @@ void SynthChannel::allNotesOff() noexcept
 }
 
 void SynthChannel::renderAdd (float* buffer, int numSamples,
-                              float bendSemitones, float modulation) noexcept
+                              float bendSemitones, float modulation,
+                              const OscBankSnapshot* live) noexcept
 {
     for (auto& voice : voices)
     {
         voice.setPitchModulation (bendSemitones, modulation, numSamples);
+
+        if (live != nullptr)
+            voice.setWavetablePosition (*live);
+
         voice.renderAdd (buffer, numSamples);
     }
 }

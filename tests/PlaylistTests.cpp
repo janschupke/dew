@@ -599,7 +599,7 @@ TEST_CASE ("a mod-click on the playlist ruler does not move the transport",
 
     // It selects instead of scrubbing, or the span would always start where the
     // click landed and "from the playhead" would mean nothing.
-    REQUIRE (h.engine.getPlayheadSteps() == 0.0);
+    REQUIRE (juce::exactlyEqual (h.engine.getPlayheadSteps(), 0.0));
 }
 
 // --- track rows and the clip menu --------------------------------------------

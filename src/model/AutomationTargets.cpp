@@ -7,6 +7,7 @@ namespace dew
 
 AutomationScope automationScopeFromString (const juce::String& s)
 {
+    if (s == "channelOsc")    return AutomationScope::channelOsc;
     if (s == "channelEffect") return AutomationScope::channelEffect;
     if (s == "mixerTrack")    return AutomationScope::mixerTrack;
     if (s == "mixerEffect")   return AutomationScope::mixerEffect;
@@ -19,6 +20,7 @@ juce::String automationScopeToString (AutomationScope scope)
 {
     switch (scope)
     {
+        case AutomationScope::channelOsc:    return "channelOsc";
         case AutomationScope::channelEffect: return "channelEffect";
         case AutomationScope::mixerTrack:    return "mixerTrack";
         case AutomationScope::mixerEffect:   return "mixerEffect";
@@ -61,6 +63,17 @@ const std::vector<AutomationParamSpec>& masterParams()
 {
     static const std::vector<AutomationParamSpec> specs {
         { &ids::gain, "Gain", 0.0, 1.0, false },
+    };
+    return specs;
+}
+
+const std::vector<AutomationParamSpec>& oscParams()
+{
+    // One row. Position is the only thing on an oscillator worth drawing a
+    // curve for: octave and the mode are steps, and detune and gain are set
+    // once for a sound rather than moved through it.
+    static const std::vector<AutomationParamSpec> specs {
+        { &ids::wavePosition, "Position", 0.0, 1.0, false },
     };
     return specs;
 }
@@ -138,6 +151,7 @@ const AutomationParamSpec* findParamSpec (AutomationScope scope, const juce::Str
     switch (scope)
     {
         case AutomationScope::channel:       return findIn (channelParams(), property);
+        case AutomationScope::channelOsc:    return findIn (oscParams(), property);
         case AutomationScope::mixerTrack:    return findIn (mixerTrackParams(), property);
         case AutomationScope::master:        return findIn (masterParams(), property);
         case AutomationScope::channelEffect:
@@ -185,6 +199,30 @@ std::vector<AutomationTarget> availableAutomationTargets (const juce::ValueTree&
             targets.push_back ({ AutomationScope::channel, id, -1, *spec.property,
                                  name + " > " + spec.displayName,
                                  spec.minimum, spec.maximum, spec.logarithmic });
+
+        // Oscillator slots, but only the ones actually running a wavetable. A
+        // slot switched back to classic drops out of the picker and leaves any
+        // clip pointing at it inert, which is what an effect slot that changes
+        // type already does.
+        const auto instrument = channel.getChildWithName (ids::INSTRUMENT);
+        int oscSlot = 0;
+
+        for (const auto& osc : instrument)
+        {
+            if (! osc.hasType (ids::OSC))
+                continue;
+
+            const auto slot = oscSlot++;
+
+            if (osc[ids::mode].toString() != "wavetable")
+                continue;
+
+            for (const auto& spec : oscParams())
+                targets.push_back ({ AutomationScope::channelOsc, id, slot, *spec.property,
+                                     name + " > Osc " + juce::String (slot + 1) + " > "
+                                         + spec.displayName,
+                                     spec.minimum, spec.maximum, spec.logarithmic });
+        }
 
         addChain (channel, name, AutomationScope::channelEffect, id);
     }

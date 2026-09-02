@@ -371,6 +371,7 @@ void applyToEffect (EffectParams& params, AutomationParam param, float value) no
         case AutomationParam::volume:
         case AutomationParam::pan:
         case AutomationParam::gain:
+        case AutomationParam::position:
             break;
     }
 }
@@ -424,6 +425,12 @@ void AudioEngine::applyAutomation (ChannelSnapshot& channel, int channelIndex) c
                 channel.volume = active.value;
             else if (active.param == AutomationParam::pan)
                 channel.pan = active.value;
+        }
+        else if (active.scope == AutomationScope::channelOsc
+                 && active.param == AutomationParam::position
+                 && active.slotIndex >= 0 && active.slotIndex < channel.osc.numSlots)
+        {
+            channel.osc.slots[(size_t) active.slotIndex].position = active.value;
         }
         else if (active.scope == AutomationScope::channelEffect
                  && active.slotIndex >= 0 && active.slotIndex < channel.effects.numSlots)
@@ -645,6 +652,12 @@ void AudioEngine::processBlock (juce::AudioBuffer<float>& buffer) noexcept
 
         auto channelSnapshot = snapshot.channels[(size_t) i];
 
+        // Before the render, not after it. Volume, pan and the effect chain are
+        // all consumed further down, so this used to sit below; a wavetable
+        // position has to be in the bank the voices read THIS block, or an
+        // automated sweep would lag a block behind everything else.
+        applyAutomation (channelSnapshot, i);
+
         if (channelSnapshot.source == ChannelSource::audio)
         {
             // Audio clips live in the arrangement, so they sound in song mode
@@ -660,13 +673,12 @@ void AudioEngine::processBlock (juce::AudioBuffer<float>& buffer) noexcept
             // One read of each controller per block, like the transport's atomics.
             channels[(size_t) i].renderAdd (mono, numSamples,
                                             channelBend[(size_t) i].load (std::memory_order_relaxed),
-                                            channelModulation[(size_t) i].load (std::memory_order_relaxed));
+                                            channelModulation[(size_t) i].load (std::memory_order_relaxed),
+                                            &channelSnapshot.osc);
         }
 
         if (! snapshot.isChannelAudible (channelSnapshot))
             continue;
-
-        applyAutomation (channelSnapshot, i);
 
         const auto mixerIndex = channelSnapshot.mixerTrackIndex;
 

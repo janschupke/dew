@@ -5,6 +5,7 @@
 #include <array>
 
 #include "EngineSnapshot.h"
+#include "Wavetable.h"
 
 namespace dew
 {
@@ -39,6 +40,21 @@ public:
 
     /** Age in samples since the note started - used for voice stealing. */
     juce::int64 getAge() const noexcept { return samplesSinceStart; }
+
+    /** Pushes the CURRENT wavetable positions from a channel's bank into the
+        voices already sounding.
+
+        The one oscillator setting that is not latched at note-on, and
+        deliberately so: a wavetable whose position can only change between
+        notes is a wavetable that never moves, which is the whole reason to have
+        one. Everything else still latches - turning the detune knob changes the
+        next note, not this one.
+
+        Costs nothing when nothing is automated: the bank still holds what
+        note-on read, so each slot is assigned its own value back and the render
+        is bit-identical to one with no automation at all.
+    */
+    void setWavetablePosition (const OscBankSnapshot&) noexcept;
 
     /** Bends this voice, in semitones, and applies vibrato of `modulation`
         depth (0..1). Called once per block rather than per sample: at a 256
@@ -90,14 +106,71 @@ private:
         float nextSample() noexcept;
     };
 
+    /** One wavetable oscillator, with its unison stack inside it.
+
+        A separate struct rather than a fifth case in Oscillator::nextSample().
+        Two reasons, both load-bearing: the classic switch above stays byte for
+        byte what it was, which pinned renders depend on; and seven phases of
+        unison state would otherwise be carried by every classic slot that will
+        never use them.
+    */
+    struct WavetableOscillator
+    {
+        const Wavetable* table = nullptr;
+
+        std::array<double, kMaxUnisonVoices> phase {};
+        std::array<double, kMaxUnisonVoices> phaseIncrement {};
+
+        /** The increments latched at note-on, before any bend - the same
+            reasoning as Oscillator::baseIncrement.
+        */
+        std::array<double, kMaxUnisonVoices> baseIncrement {};
+
+        int numUnison = 1;
+
+        /** Which bank slot this came from, so a live position can be pushed
+            back into a voice whose enabled slots were compacted at note-on.
+        */
+        int slot = -1;
+
+        /** Which band-limited copy of the table to read. Recomputed per block
+            with the increments, never per sample.
+        */
+        int mip = 0;
+
+        /** Already divided by sqrt(numUnison) - see start(). */
+        float gain = 0.8f;
+
+        float basePosition = 0.0f;
+        float positionMod = 0.0f;
+        PositionSource source = PositionSource::envelope;
+
+        double lfoPhase = 0.0;
+        double lfoIncrement = 0.0;
+
+        /** `envelope` is the amplitude envelope's value for this sample, which
+            doubles as the modulation source when the slot asks for it - so an
+            envelope-driven position needs no second envelope's parameters.
+        */
+        float nextSample (float envelope) noexcept;
+
+        void updateMip() noexcept;
+    };
+
     double currentSampleRate = 44100.0;
 
     std::array<Oscillator, kMaxOscillators> oscillators;
+    std::array<WavetableOscillator, kMaxOscillators> wavetables;
 
     /** How many of `oscillators` this note is actually running. Switched-off
         slots are skipped once at note-on rather than tested every sample.
     */
     int numOscillators = 0;
+
+    /** How many of `wavetables` this note is running. Zero on a voice whose
+        slots are all classic, which is what keeps that path untouched.
+    */
+    int numWavetables = 0;
 
     float level = 1.0f;
 

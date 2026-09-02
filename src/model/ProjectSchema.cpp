@@ -27,7 +27,23 @@ const NodeSpec& oscSpec()
           { ids::wave,        "saw" },
           { ids::octave,      0 },
           { ids::detuneCents, 0.0 },
-          { ids::gain,        0.8 } },
+          { ids::gain,        0.8 },
+
+          // The wavetable half of the slot. Flat beside the classic half rather
+          // than a child node of its own, for the reason effectSpec() gives:
+          // one declared table stays one walk in the reader, and a mode is a
+          // row here instead of a new node type and a new branch.
+          //
+          // Every one of these has a declared default, so a file written before
+          // they existed loads as a classic oscillator with no migration.
+          { ids::mode,               "classic" },
+          { ids::wavetable,          "basic" },
+          { ids::wavePosition,       0.0 },
+          { ids::wavePositionMod,    0.0 },
+          { ids::wavePositionSource, "envelope" },
+          { ids::wavePositionRate,   1.0 },
+          { ids::unisonVoices,       1 },
+          { ids::unisonDetune,       0.0 } },
         {}
     };
     return spec;
