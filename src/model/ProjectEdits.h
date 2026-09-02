@@ -96,7 +96,27 @@ struct ProjectEdits
 
     static void moveClip (juce::ValueTree clip, int newStartBar, juce::UndoManager*);
 
+    /** Moves a clip to another track, and to a new bar, as one undo step.
+
+        Returns the clip that ends up on the target track. A ValueTree cannot be
+        in two parents at once, so this removes and re-adds rather than
+        reparenting, and the caller must use the returned tree afterwards - the
+        original is detached.
+    */
+    static juce::ValueTree moveClipToTrack (juce::ValueTree fromTrack, juce::ValueTree clip,
+                                            juce::ValueTree toTrack, int newStartBar,
+                                            juce::UndoManager*);
+
     static void resizeClip (juce::ValueTree clip, int newLengthBars, juce::UndoManager*);
+
+    /** Bars needed to contain every clip on every track. */
+    static int barsNeededForClips (const juce::ValueTree& project);
+
+    /** Grows the song so every clip fits, and returns true if it had to.
+        Never shrinks, for the same reason a pattern never shrinks: trailing
+        empty bars are a deliberate silence.
+    */
+    static bool growSongToFitClips (juce::ValueTree project, juce::UndoManager*);
 
     /** The clip covering this bar on this track, or an invalid tree. */
     static juce::ValueTree findClipAtBar (const juce::ValueTree& playlistTrack, int bar);

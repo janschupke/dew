@@ -335,3 +335,50 @@ TEST_CASE ("a pattern length that fits its notes covers the last one entirely", 
     ProjectEdits::addNote (pattern, 1, 15, 1, 64, 1.0f, &undo);
     REQUIRE (ProjectEdits::lengthNeededForNotes (pattern) == 20);
 }
+
+TEST_CASE ("a clip can be moved to another track", "[edits][playlist]")
+{
+    auto project = ProjectFactory::createDefault();
+    juce::UndoManager undo;
+
+    auto playlist = project.getChildWithName (ids::PLAYLIST);
+    auto first  = playlist.getChild (0);
+    auto second = playlist.getChild (1);
+
+    REQUIRE (first.hasType (ids::PLAYLIST_TRACK));
+    REQUIRE (second.hasType (ids::PLAYLIST_TRACK));
+
+    auto clip = ProjectEdits::addClip (first, 1, 0, 2, &undo);
+    REQUIRE (countChildren (first, ids::CLIP) == 1);
+
+    undo.beginNewTransaction ("Move clip to track");
+    auto moved = ProjectEdits::moveClipToTrack (first, clip, second, 5, &undo);
+
+    REQUIRE (countChildren (first, ids::CLIP) == 0);
+    REQUIRE (countChildren (second, ids::CLIP) == 1);
+
+    // It kept everything except where it is.
+    REQUIRE ((int) moved[ids::patternId] == 1);
+    REQUIRE ((int) moved[ids::lengthBars] == 2);
+    REQUIRE ((int) moved[ids::startBar] == 5);
+
+    // And crossing tracks is a single undo step, not two.
+    REQUIRE (undo.undo());
+    REQUIRE (countChildren (first, ids::CLIP) == 1);
+    REQUIRE (countChildren (second, ids::CLIP) == 0);
+}
+
+TEST_CASE ("moving a clip onto its own track is an ordinary move", "[edits][playlist]")
+{
+    auto project = ProjectFactory::createDefault();
+    juce::UndoManager undo;
+
+    auto track = project.getChildWithName (ids::PLAYLIST).getChild (0);
+    auto clip  = ProjectEdits::addClip (track, 1, 0, 1, &undo);
+
+    const auto same = ProjectEdits::moveClipToTrack (track, clip, track, 3, &undo);
+
+    REQUIRE (same == clip);
+    REQUIRE ((int) clip[ids::startBar] == 3);
+    REQUIRE (countChildren (track, ids::CLIP) == 1);
+}

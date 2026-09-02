@@ -23,6 +23,10 @@ EditorTabs::EditorTabs (ProjectDocument& document, AudioEngine& engine, EditorSt
     // and the velocity lane stay pinned to the edges they belong to.
     addTab ("Piano Roll", Palette::background, &pianoRoll, false);
 
+    // Double-clicking a clip is the obvious way to go and edit its pattern.
+    // The playlist does not know about tabs, so the wiring lives here.
+    playlist.onOpenPatternInPianoRoll = [this] { setCurrentTabIndex (1); };
+
     addTab ("Playlist", Palette::background, &playlist, false);
     addTab ("Mixer", Palette::background, &mixer, false);
 }

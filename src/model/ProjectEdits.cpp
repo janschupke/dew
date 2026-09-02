@@ -343,6 +343,33 @@ void ProjectEdits::removeClip (juce::ValueTree playlistTrack, juce::ValueTree cl
         playlistTrack.removeChild (index, undo);
 }
 
+juce::ValueTree ProjectEdits::moveClipToTrack (juce::ValueTree fromTrack, juce::ValueTree clip,
+                                               juce::ValueTree toTrack, int newStartBar,
+                                               juce::UndoManager* undo)
+{
+    if (! clip.isValid() || ! toTrack.isValid())
+        return clip;
+
+    if (fromTrack == toTrack)
+    {
+        moveClip (clip, newStartBar, undo);
+        return clip;
+    }
+
+    // Copy first: removing the child drops the only reference the caller may
+    // hold, and a detached tree carries its properties but no parent to undo to.
+    auto moved = clip.createCopy();
+    moved.setProperty (ids::startBar, juce::jmax (0, newStartBar), nullptr);
+
+    const auto index = fromTrack.indexOf (clip);
+
+    if (index >= 0)
+        fromTrack.removeChild (index, undo);
+
+    toTrack.appendChild (moved, undo);
+    return moved;
+}
+
 void ProjectEdits::moveClip (juce::ValueTree clip, int newStartBar, juce::UndoManager* undo)
 {
     clip.setProperty (ids::startBar, juce::jmax (0, newStartBar), undo);
@@ -351,6 +378,35 @@ void ProjectEdits::moveClip (juce::ValueTree clip, int newStartBar, juce::UndoMa
 void ProjectEdits::resizeClip (juce::ValueTree clip, int newLengthBars, juce::UndoManager* undo)
 {
     clip.setProperty (ids::lengthBars, juce::jmax (1, newLengthBars), undo);
+}
+
+int ProjectEdits::barsNeededForClips (const juce::ValueTree& project)
+{
+    int needed = 1;
+
+    for (const auto& track : project.getChildWithName (ids::PLAYLIST))
+    {
+        if (! track.hasType (ids::PLAYLIST_TRACK))
+            continue;
+
+        for (const auto& clip : track)
+            if (clip.hasType (ids::CLIP))
+                needed = juce::jmax (needed, (int) clip[ids::startBar]
+                                                 + juce::jmax (1, (int) clip[ids::lengthBars]));
+    }
+
+    return needed;
+}
+
+bool ProjectEdits::growSongToFitClips (juce::ValueTree project, juce::UndoManager* undo)
+{
+    const auto needed = barsNeededForClips (project);
+
+    if (needed <= (int) project[ids::barsInSong])
+        return false;
+
+    project.setProperty (ids::barsInSong, needed, undo);
+    return true;
 }
 
 juce::ValueTree ProjectEdits::findClipAtBar (const juce::ValueTree& playlistTrack, int bar)
