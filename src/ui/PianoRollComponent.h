@@ -207,6 +207,7 @@ private:
     juce::Array<juce::Point<int>> selectionOrigins;
 
     int lastPlayheadStep = -1;
+    bool lastPlaying = false;
     bool didFitOnce = false;
 
     /** The key currently sounding under the pointer, so it can be lit and

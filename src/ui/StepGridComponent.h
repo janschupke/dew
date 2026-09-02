@@ -93,6 +93,7 @@ private:
 
     juce::Point<int> hoverCell { -1, -1 };
     int lastPlayheadStep = -1;
+    bool lastPlaying = false;
     int lastLayoutSteps = -1;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (StepGridComponent)

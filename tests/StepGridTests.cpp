@@ -319,3 +319,114 @@ TEST_CASE ("a left-drag on the step grid still paints", "[stepgrid][erase]")
 
     REQUIRE (stepsLitOnRow (h, channelId) == 4);
 }
+
+TEST_CASE ("rewind zeroes the position even when nothing is processing", "[stepgrid][transport]")
+{
+    ProjectDocument document;
+    document.setState (ProjectFactory::createDefault(), true);
+
+    AudioEngine engine;
+    engine.prepare (44100.0, 512);
+    engine.setProject (document.getState());
+    engine.setMode (Transport::Mode::pattern);
+    engine.play();
+
+    juce::AudioBuffer<float> block (2, 512);
+
+    for (int i = 0; i < 400; ++i)
+    {
+        block.clear();
+        engine.processBlock (block);
+    }
+
+    REQUIRE (engine.getPlayheadSteps() > 1.0);
+
+    // Now the callback stops - the device was closed from Audio Settings, or
+    // lost. rewindRequested is consumed ONLY inside processBlock, so before
+    // this the position would stay wherever it happened to stop, forever, and
+    // the transport readout with it.
+    engine.stop();
+    engine.rewind();
+
+    REQUIRE (juce::exactlyEqual (engine.getPlayheadSteps(), 0.0));
+}
+
+TEST_CASE ("the indicator is drawn while stopped, and Stop puts it back", "[stepgrid][transport]")
+{
+    const juce::ScopedJuceInitialiser_GUI juceInit;
+
+    GridHarness h;
+
+    const auto rowsHeight = h.grid.getRowsHeight();
+
+    /** Where the brightest playhead-coloured column is, or -1. */
+    const auto indicatorX = [rowsHeight] (const juce::Image& image, int width)
+    {
+        int best = -1;
+        double bestScore = 0.0;
+
+        for (int x = 0; x < width - 1; ++x)
+        {
+            double score = 0.0;
+
+            for (int y = 2; y < rowsHeight - 2; ++y)
+            {
+                const auto pixel = image.getPixelAt (x, y);
+
+                // Playhead yellow: strongly red and green, comparatively weak
+                // blue. The grid's own greys are blue-leaning, so this does not
+                // pick them up.
+                if (pixel.getRed() > 90 && pixel.getGreen() > 70
+                    && (float) pixel.getBlue() < (float) pixel.getRed() * 0.7f)
+                    score += 1.0;
+            }
+
+            if (score > bestScore)
+            {
+                bestScore = score;
+                best = x;
+            }
+        }
+
+        return bestScore > (double) rowsHeight * 0.5 ? best : -1;
+    };
+
+    // Stopped and at zero: there should still be an indicator, at the start.
+    // Before this it was gated on isPlaying() and there was none at all.
+    const auto atRest = indicatorX (h.render(), h.grid.getWidth());
+
+    INFO ("indicator column while stopped at zero: " << atRest);
+    REQUIRE (atRest >= 0);
+    REQUIRE (atRest < (int) h.grid.getTimeline().pixelsPerStep);
+
+    // Run the transport far enough to move it, then Stop.
+    h.engine.prepare (44100.0, 512);
+    h.engine.setProject (h.document.getState());
+    h.engine.setMode (Transport::Mode::pattern);
+    h.engine.play();
+
+    juce::AudioBuffer<float> block (2, 512);
+
+    for (int i = 0; i < 400; ++i)
+    {
+        block.clear();
+        h.engine.processBlock (block);
+    }
+
+    const auto whilePlaying = indicatorX (h.render(), h.grid.getWidth());
+
+    INFO ("indicator column while playing: " << whilePlaying);
+    REQUIRE (whilePlaying > atRest + (int) h.grid.getTimeline().pixelsPerStep);
+
+    // Stop and rewind, exactly as the transport bar's Stop button does. The
+    // indicator has to be back at the start in the very next frame, without
+    // another processBlock and without pressing Play again.
+    h.engine.stop();
+    h.engine.rewind();
+
+    const auto afterStop = indicatorX (h.render(), h.grid.getWidth());
+
+    INFO ("indicator column after Stop: " << afterStop);
+    REQUIRE (afterStop >= 0);
+    REQUIRE (afterStop < (int) h.grid.getTimeline().pixelsPerStep);
+}

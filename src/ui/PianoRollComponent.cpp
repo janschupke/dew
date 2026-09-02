@@ -840,12 +840,17 @@ void PianoRollComponent::applyVelocityAt (juce::Point<int> position)
 void PianoRollComponent::timerCallback()
 {
     const auto step = (int) engine.getPlayheadSteps();
+    const auto playing = engine.isPlaying();
 
-    if (step != lastPlayheadStep)
+    // Playing state is part of the trigger, not a filter on it: a stop that
+    // happens not to change the integer step would otherwise leave the last
+    // frame on screen.
+    if (step != lastPlayheadStep || playing != lastPlaying)
     {
         lastPlayheadStep = step;
+        lastPlaying = playing;
 
-        if (engine.isPlaying() && engine.getMode() == Transport::Mode::pattern)
+        if (playing && engine.getMode() == Transport::Mode::pattern)
         {
             const auto wrapped = (double) (step % juce::jmax (1, numSteps()));
             const auto before = timeline.scrollOffsetSteps;
@@ -1123,15 +1128,23 @@ void PianoRollComponent::paintNotes (juce::Graphics& g)
         g.drawRoundedRectangle (bounds, 2.0f, isSelected (note) ? 1.6f : 1.0f);
     }
 
-    // --- playhead ------------------------------------------------------------
-    if (engine.isPlaying() && engine.getMode() == Transport::Mode::pattern)
+    // --- position indicator --------------------------------------------------
+    // Drawn while stopped as well, dimmed. Hiding it on stop made "reset the
+    // position" look identical to "lose the position", and left nothing for a
+    // click on the ruler to move.
+    if (engine.getMode() == Transport::Mode::pattern)
     {
+        const auto playing = engine.isPlaying();
         const auto step = (double) ((int) engine.getPlayheadSteps() % steps);
         const auto x = (float) keyboardWidth + timeline.xForStep (step);
 
-        g.setColour (colour::playhead.withAlpha (0.2f));
-        g.fillRect (x, (float) area.getY(), (float) timeline.pixelsPerStep, (float) area.getHeight());
-        g.setColour (colour::playhead);
+        if (playing)
+        {
+            g.setColour (colour::playhead.withAlpha (0.2f));
+            g.fillRect (x, (float) area.getY(), (float) timeline.pixelsPerStep, (float) area.getHeight());
+        }
+
+        g.setColour (playing ? colour::playhead : colour::playhead.withAlpha (0.5f));
         g.fillRect (x, (float) area.getY(), 1.5f, (float) area.getHeight());
     }
 

@@ -138,6 +138,7 @@ private:
     // The playhead is repainted on its own strip at 60Hz; repainting the whole
     // arrangement that often is what made the line jump a bar at a time.
     float lastPaintedPlayheadX = -1.0f;
+    bool lastPlaying = false;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (PlaylistComponent)
 };

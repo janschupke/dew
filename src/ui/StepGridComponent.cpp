@@ -140,13 +140,18 @@ void StepGridComponent::timerCallback()
     }
 
     const auto step = (int) engine.getPlayheadSteps();
+    const auto playing = engine.isPlaying();
 
-    if (step != lastPlayheadStep)
+    // The playing state has to be part of the trigger, not a filter on it.
+    // This used to see the step drop to zero on stop, update lastPlayheadStep,
+    // and then swallow the repaint because isPlaying() was already false - so
+    // the last painted frame stayed on screen until the next Play. That is
+    // exactly "the indicator only resets when you press play again".
+    if (step != lastPlayheadStep || playing != lastPlaying)
     {
         lastPlayheadStep = step;
-
-        if (engine.isPlaying())
-            repaint (0, 0, getWidth(), getRowsHeight());
+        lastPlaying = playing;
+        repaint (0, 0, getWidth(), getRowsHeight());
     }
 }
 
@@ -274,16 +279,23 @@ void StepGridComponent::paint (juce::Graphics& g)
     if (endX < (float) getWidth())
         paint::beyondEnd (g, { (int) endX, 0, getWidth() - (int) endX, rowsHeight }, endX);
 
-    // --- playhead ------------------------------------------------------------
-    if (engine.isPlaying() && engine.getMode() == Transport::Mode::pattern && rows > 0)
+    // --- position indicator --------------------------------------------------
+    // Drawn while stopped too, dimmed. It used to vanish on stop, which made
+    // "reset the position" indistinguishable from "lose the position", and
+    // leaves nothing for a click on the ruler to move.
+    if (engine.getMode() == Transport::Mode::pattern && rows > 0)
     {
+        const auto playing = engine.isPlaying();
         const auto step = ((int) engine.getPlayheadSteps()) % steps;
         const auto x = timeline.xForStep ((double) step);
 
-        g.setColour (colour::playhead.withAlpha (0.22f));
-        g.fillRect (juce::Rectangle<float> (x, 0.0f, width, (float) rowsHeight));
+        if (playing)
+        {
+            g.setColour (colour::playhead.withAlpha (0.22f));
+            g.fillRect (juce::Rectangle<float> (x, 0.0f, width, (float) rowsHeight));
+        }
 
-        g.setColour (colour::playhead);
+        g.setColour (playing ? colour::playhead : colour::playhead.withAlpha (0.5f));
         g.drawVerticalLine ((int) x, 0.0f, (float) rowsHeight);
     }
 

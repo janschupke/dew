@@ -165,6 +165,18 @@ void AudioEngine::stop()
 void AudioEngine::rewind()
 {
     rewindRequested.store (true);
+
+    // Also zeroed here, on the calling thread, so the reset is immediate and
+    // does not depend on a device being open. audioHost.start() failing is
+    // non-fatal - it only puts a message in the status bar - and without this
+    // line processBlock never runs, so the position would stay wherever it
+    // stopped forever.
+    //
+    // The cost is one block of race: a processBlock already in flight can
+    // re-store the pre-rewind position. The next block consumes
+    // rewindRequested and stores zero again, so it corrects itself within a
+    // few milliseconds, which is below what anyone can see.
+    playheadSamples.store (0);
 }
 
 void AudioEngine::setMode (Transport::Mode mode)

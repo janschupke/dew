@@ -631,7 +631,10 @@ void PlaylistComponent::mouseUp (const juce::MouseEvent&)
 
 void PlaylistComponent::timerCallback()
 {
-    if (! engine.isPlaying() || engine.getMode() != Transport::Mode::song)
+    // Not gated on isPlaying any more: the indicator stays put when the
+    // transport stops, so Stop visibly returns it to the start rather than
+    // making it disappear. Only the wrong MODE has nothing to show.
+    if (engine.getMode() != Transport::Mode::song)
     {
         if (lastPaintedPlayheadX >= 0.0f)
         {
@@ -644,8 +647,10 @@ void PlaylistComponent::timerCallback()
 
     const auto x = playheadX();
 
-    if (std::abs (x - lastPaintedPlayheadX) < 0.5f)
+    if (std::abs (x - lastPaintedPlayheadX) < 0.5f && lastPlaying == engine.isPlaying())
         return;
+
+    lastPlaying = engine.isPlaying();
 
     // Repaint the strip the line was in and the one it moved to, rather than the
     // whole arrangement. Repainting on a bar change was what made the playhead
@@ -879,13 +884,14 @@ void PlaylistComponent::paint (juce::Graphics& g)
     g.drawHorizontalLine (rulerHeight - 1, 0.0f, (float) getWidth());
 
     // --- playhead ------------------------------------------------------------
-    if (engine.isPlaying() && engine.getMode() == Transport::Mode::song)
+    if (engine.getMode() == Transport::Mode::song)
     {
         const auto x = playheadX();
 
         if (x >= (float) headerWidth)
         {
-            g.setColour (colour::playhead);
+            g.setColour (engine.isPlaying() ? colour::playhead
+                                            : colour::playhead.withAlpha (0.5f));
             g.fillRect (juce::Rectangle<float> (x - 1.0f, (float) rulerHeight,
                                                 2.0f, (float) (bottom - rulerHeight)));
 
