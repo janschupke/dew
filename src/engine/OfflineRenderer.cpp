@@ -649,7 +649,10 @@ RenderReport OfflineRenderer::renderStems (const juce::ValueTree& project,
 
         report.files.add (destination);
 
+        // The loudest stem stands for the set. There is no single peak or rms
+        // across N files, and reporting zero would read as "nothing came out".
         report.peak = juce::jmax (report.peak, pass.peak);
+        report.rms = juce::jmax (report.rms, pass.rms);
         report.numSamples = juce::jmax (report.numSamples, pass.numSamples);
         report.seconds = juce::jmax (report.seconds, pass.seconds);
     }

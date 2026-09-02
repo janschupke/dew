@@ -11,14 +11,36 @@ namespace
 constexpr const char* usage = R"(dew_render - render a dew project to audio without an audio device
 
 Usage:
-  dew_render <project.dew> <output.wav> [options]
+  dew_render <project.dew> <output> [options]
+  dew_render <project.dew> --stems <directory> [options]
   dew_render --write-demo <project.dew>
 
-Options:
+Scope:
   --seconds <n>      Render exactly n seconds (default: the length of the material)
   --pattern <id>     Render one pattern on a loop instead of the playlist
   --song             Render the playlist (default)
-  --rate <hz>        Sample rate (default 44100)
+  --bars <a>:<b>     Render bars a to b, counting from 1, b exclusive of itself.
+                     The earlier bars are still rendered, so tails and automation
+                     arrive at bar a in the state playing there would leave them.
+
+Format:
+  --format <f>       wav (default), flac, mp3 or midi
+  --rate <hz>        Sample rate (default 44100; mp3 takes 32000, 44100 or 48000)
+  --bit-depth <n>    16 or 24 (default 24)
+  --float            32-bit floating point instead, for wav
+  --mp3-quality <i>  0-9 are VBR best to smallest, 10-23 are CBR 32 to 320 kb/s
+  --no-dither        Leave 16-bit truncation undithered
+
+Dynamics:
+  --normalize        Scale so the file peaks at --peak
+  --peak <db>        Where --normalize aims (default -1)
+  --fade-in <s>      Ramp up over s seconds
+  --fade-out <s>     Ramp down over s seconds
+  --tail <s>         Time rendered after the material ends (default 1)
+
+Other:
+  --stems <dir>      One file per mixer track, into dir
+  --keep-silent      Write stems for tracks nothing is routed to
   --version          Print build provenance and exit
   --help             Print this message
 
@@ -34,6 +56,16 @@ int fail (const juce::String& message)
     return 1;
 }
 
+/** True for something like "-1" or "-.5", as opposed to an option. */
+bool looksLikeNegativeNumber (const juce::String& text)
+{
+    if (! text.startsWith ("-") || text.length() < 2)
+        return false;
+
+    const auto next = text[1];
+    return juce::CharacterFunctions::isDigit (next) || next == '.';
+}
+
 /** Command line, parsed so that both `--opt value` and `--opt=value` work.
 
     juce::ArgumentList deliberately supports only the `=` form for long options
@@ -41,6 +73,9 @@ int fail (const juce::String& message)
     only for short options). Accepting `--seconds 4` silently as "no value" is
     exactly the kind of thing nobody notices until a render comes out the wrong
     length, so the parsing is done here instead.
+
+    A value that is a negative number is taken as a value rather than as the next
+    option, so `--peak -1` means what it looks like.
 */
 struct CommandLine
 {
@@ -55,7 +90,7 @@ struct CommandLine
         {
             const auto& arg = raw[i];
 
-            if (! arg.startsWith ("-"))
+            if (! arg.startsWith ("-") || looksLikeNegativeNumber (arg))
             {
                 positional.add (arg);
                 continue;
@@ -67,7 +102,8 @@ struct CommandLine
             {
                 options.set (name, arg.fromFirstOccurrenceOf ("=", false, false));
             }
-            else if (i + 1 < raw.size() && ! raw[i + 1].startsWith ("-"))
+            else if (i + 1 < raw.size()
+                     && (! raw[i + 1].startsWith ("-") || looksLikeNegativeNumber (raw[i + 1])))
             {
                 options.set (name, raw[i + 1]);
                 ++i;
@@ -89,6 +125,47 @@ struct CommandLine
     juce::StringPairArray options;
     juce::StringArray positional;
 };
+
+bool parseFormat (const juce::String& text, dew::RenderFormat& format)
+{
+    const auto lower = text.toLowerCase();
+
+    if (lower == "wav")                      { format = dew::RenderFormat::wav;  return true; }
+    if (lower == "flac")                     { format = dew::RenderFormat::flac; return true; }
+    if (lower == "mp3")                      { format = dew::RenderFormat::mp3;  return true; }
+    if (lower == "midi" || lower == "mid")   { format = dew::RenderFormat::midi; return true; }
+
+    return false;
+}
+
+/** "5:9" as bars counted from 1, into the half-open, 0-based range the renderer
+    uses. Bar 1 is where the playhead starts, so the CLI counts the way the
+    playlist's ruler does.
+*/
+bool parseBars (const juce::String& text, dew::BarRange& range)
+{
+    const auto separator = text.containsChar (':') ? ":" : "-";
+
+    const auto first = text.upToFirstOccurrenceOf (separator, false, false).trim();
+    const auto last = text.fromFirstOccurrenceOf (separator, false, false).trim();
+
+    if (first.isEmpty() || last.isEmpty()
+        || ! first.containsOnly ("0123456789") || ! last.containsOnly ("0123456789"))
+        return false;
+
+    range.firstBar = juce::jmax (0, first.getIntValue() - 1);
+    range.lastBar = juce::jmax (range.firstBar + 1, last.getIntValue() - 1);
+
+    return true;
+}
+
+/** The extension the chosen format wants, if the given path has none. */
+juce::File withExtensionFor (const juce::File& file, dew::RenderFormat format)
+{
+    return file.getFileExtension().isEmpty()
+             ? file.withFileExtension (dew::OfflineRenderer::extensionFor (format))
+             : file;
+}
 
 } // namespace
 
@@ -154,17 +231,21 @@ int main (int argc, char* argv[])
     }
 
     const auto& positional = args.positional;
+    const auto renderingStems = args.has ("--stems");
 
-    if (positional.size() < 2)
+    // With --stems the destination is the directory it names, so only the
+    // project is positional.
+    const auto neededPositional = renderingStems ? 1 : 2;
+
+    if (positional.size() < neededPositional)
     {
         std::cerr << usage << std::endl;
-        return fail ("expected a project file and an output file");
+        return fail (renderingStems ? "expected a project file"
+                                    : "expected a project file and an output file");
     }
 
     const juce::File projectFile (juce::File::getCurrentWorkingDirectory()
                                       .getChildFile (positional[0]));
-    const juce::File outputFile (juce::File::getCurrentWorkingDirectory()
-                                     .getChildFile (positional[1]));
 
     const auto loaded = dew::ProjectSerializer::readFromFile (projectFile);
 
@@ -176,12 +257,38 @@ int main (int argc, char* argv[])
 
     dew::RenderOptions options;
 
-    if (args.has ("--seconds"))
-        options.seconds = args.value ("--seconds").getDoubleValue();
+    // --- format ---------------------------------------------------------------
+    if (args.has ("--format") && ! parseFormat (args.value ("--format"), options.format))
+        return fail ("unknown format '" + args.value ("--format") + "'; try wav, flac, mp3 or midi");
 
     if (args.has ("--rate"))
         options.sampleRate = juce::jlimit (8000.0, 192000.0,
                                            args.value ("--rate", "44100").getDoubleValue());
+
+    if (args.has ("--bit-depth"))
+        options.bitDepth = args.value ("--bit-depth", "24").getIntValue();
+
+    if (args.has ("--float"))
+    {
+        options.floatingPoint = true;
+        options.bitDepth = 32;
+    }
+
+    if (args.has ("--mp3-quality"))
+        options.mp3QualityIndex = args.value ("--mp3-quality", "4").getIntValue();
+
+    if (args.has ("--no-dither"))
+        options.dither = false;
+
+    // --- scope ----------------------------------------------------------------
+    if (args.has ("--seconds"))
+        options.seconds = args.value ("--seconds").getDoubleValue();
+
+    if (args.has ("--tail"))
+        options.tailSeconds = juce::jmax (0.0, args.value ("--tail", "1").getDoubleValue());
+
+    if (args.has ("--bars") && ! parseBars (args.value ("--bars"), options.barRange))
+        return fail ("--bars wants something like 5:9");
 
     if (args.has ("--pattern"))
     {
@@ -193,7 +300,47 @@ int main (int argc, char* argv[])
         options.mode = dew::Transport::Mode::song;
     }
 
-    const auto report = dew::OfflineRenderer::renderToFile (loaded.tree, outputFile, options);
+    // --- dynamics -------------------------------------------------------------
+    if (args.has ("--normalize"))
+        options.normalize = true;
+
+    if (args.has ("--peak"))
+    {
+        options.normalize = true;
+        options.normalizePeakDb = (float) args.value ("--peak", "-1").getDoubleValue();
+    }
+
+    if (args.has ("--fade-in"))
+        options.fadeInSeconds = juce::jmax (0.0, args.value ("--fade-in").getDoubleValue());
+
+    if (args.has ("--fade-out"))
+        options.fadeOutSeconds = juce::jmax (0.0, args.value ("--fade-out").getDoubleValue());
+
+    if (args.has ("--keep-silent"))
+        options.skipSilentStems = false;
+
+    // --- go -------------------------------------------------------------------
+    dew::RenderReport report;
+
+    if (renderingStems)
+    {
+        const auto directory = args.value ("--stems");
+
+        if (directory.isEmpty())
+            return fail ("--stems needs a directory to write into");
+
+        report = dew::OfflineRenderer::renderStems (
+            loaded.tree,
+            juce::File::getCurrentWorkingDirectory().getChildFile (directory),
+            options);
+    }
+    else
+    {
+        const auto outputFile = withExtensionFor (
+            juce::File::getCurrentWorkingDirectory().getChildFile (positional[1]), options.format);
+
+        report = dew::OfflineRenderer::renderToFile (loaded.tree, outputFile, options);
+    }
 
     for (const auto& warning : report.warnings)
         std::cerr << "dew_render: warning: " << warning << std::endl;
@@ -201,17 +348,38 @@ int main (int argc, char* argv[])
     if (! report.ok())
         return fail (report.result.getErrorMessage());
 
-    std::cout << "wrote " << outputFile.getFullPathName() << "\n"
-              << "  " << juce::String (report.seconds, 2) << " s"
+    for (const auto& file : report.files)
+        std::cout << "wrote " << file.getFullPathName() << std::endl;
+
+    if (options.format == dew::RenderFormat::midi)
+    {
+        std::cout << "  " << report.numSamples << " notes" << std::endl;
+        return 0;
+    }
+
+    std::cout << "  " << juce::String (report.seconds, 2) << " s"
               << "  ·  " << report.numSamples << " frames"
               << "  ·  " << juce::String (options.sampleRate, 0) << " Hz"
               << "\n  peak " << juce::String (report.peak, 4)
-              << "  ·  rms " << juce::String (report.rms, 4)
-              << std::endl;
+              << "  ·  rms " << juce::String (report.rms, 4);
+
+    if (report.normalizationGainDb != 0.0f)
+        std::cout << "  ·  normalized " << juce::String (report.normalizationGainDb, 2) << " dB";
+
+    std::cout << std::endl;
 
     // A render that produced silence is a failure, not a success with a quiet
-    // file - it is the exact symptom of a project that loaded but did not play.
-    if (report.peak <= 0.0f)
+    // file - it is the exact symptom of a project that loaded but did not play,
+    // and of a --bars range that fell past the end of the material.
+    //
+    // The threshold is not zero. An effect tail decays towards zero without ever
+    // reaching it, so a range long past the end of a project with a reverb on it
+    // comes back at around 1e-30: silent by any measure that matters, and not
+    // caught by a test for exactly zero. -120 dBFS is far below anything audible
+    // and far above that residue.
+    static constexpr float silenceThreshold = 1.0e-6f;
+
+    if (report.peak <= silenceThreshold)
         return fail ("the render is silent");
 
     return 0;
