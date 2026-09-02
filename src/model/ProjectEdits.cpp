@@ -125,6 +125,27 @@ void ProjectEdits::resizeNote (juce::ValueTree note, int newLengthSteps, juce::U
     note.setProperty (ids::lengthSteps, juce::jmax (1, newLengthSteps), undo);
 }
 
+void ProjectEdits::setNoteVelocity (juce::ValueTree note, double velocity, juce::UndoManager* undo)
+{
+    // Zero velocity is a note that exists but cannot be heard, which reads as a
+    // bug rather than an edit; the floor keeps a quiet note audible.
+    note.setProperty (ids::velocity, juce::jlimit (0.05, 1.0, velocity), undo);
+}
+
+bool ProjectEdits::growPatternToFitNotes (juce::ValueTree pattern, juce::UndoManager* undo)
+{
+    if (! pattern.isValid())
+        return false;
+
+    const auto needed = lengthNeededForNotes (pattern);
+
+    if (needed <= (int) pattern[ids::lengthSteps])
+        return false;
+
+    pattern.setProperty (ids::lengthSteps, needed, undo);
+    return true;
+}
+
 juce::ValueTree ProjectEdits::addChannel (juce::ValueTree project, const juce::String& name,
                                           juce::UndoManager* undo)
 {

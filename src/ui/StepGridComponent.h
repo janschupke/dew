@@ -5,6 +5,7 @@
 #include "../engine/AudioEngine.h"
 #include "../model/ProjectDocument.h"
 #include "EditorState.h"
+#include "TimelineView.h"
 
 namespace dew
 {
@@ -22,7 +23,8 @@ namespace dew
     which is what "channel rack clicks don't go through" turned out to mean.
 */
 class StepGridComponent : public juce::Component,
-                          private juce::Timer
+                          private juce::Timer,
+                          private juce::ScrollBar::Listener
 {
 public:
     StepGridComponent (ProjectDocument&, AudioEngine&, EditorState&);
@@ -34,6 +36,8 @@ public:
     void mouseUp (const juce::MouseEvent&) override;
     void mouseMove (const juce::MouseEvent&) override;
     void mouseExit (const juce::MouseEvent&) override;
+    void mouseWheelMove (const juce::MouseEvent&, const juce::MouseWheelDetails&) override;
+    void resized() override;
 
     /** Number of channel rows currently drawn. */
     int getNumRows() const;
@@ -41,12 +45,21 @@ public:
     /** Height the rows occupy; anything below this is inert. */
     int getRowsHeight() const;
 
+    const TimelineView& getTimeline() const noexcept { return timeline; }
+    bool isScrollable() const;
+
 private:
     void timerCallback() override;
+    void scrollBarMoved (juce::ScrollBar*, double) override;
 
     juce::ValueTree currentPattern() const;
     int numSteps() const;
-    float stepWidth() const;
+
+    /** Sets the zoom so the pattern fills the width, within limits: below the
+        minimum a step is too small to hit, above the maximum a short pattern
+        turns into four enormous blocks. Outside those, the grid scrolls.
+    */
+    void updateZoom();
     int stepAtX (int x) const;
     int rowAtY (int y) const;
     juce::ValueTree channelForRow (int row) const;
@@ -65,8 +78,17 @@ private:
     int lastPaintedStep = -1;
     int lastPaintedRow = -1;
 
+    TimelineView timeline;
+    juce::ScrollBar horizontalScroll { false };
+    bool updatingScrollBar = false;
+
+    static constexpr float minCellWidth = 18.0f;
+    static constexpr float maxCellWidth = 64.0f;
+    static constexpr int scrollThickness = 10;
+
     juce::Point<int> hoverCell { -1, -1 };
     int lastPlayheadStep = -1;
+    int lastLayoutSteps = -1;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (StepGridComponent)
 };

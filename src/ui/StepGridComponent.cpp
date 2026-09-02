@@ -14,6 +14,8 @@ StepGridComponent::StepGridComponent (ProjectDocument& d, AudioEngine& e, Editor
     : document (d), engine (e), editorState (s)
 {
     setComponentID ("stepGrid");
+    horizontalScroll.addListener (this);
+    addChildComponent (horizontalScroll);
     startTimerHz (motion::playheadHz);
 }
 
@@ -30,15 +32,67 @@ int StepGridComponent::numSteps() const
     return pattern.isValid() ? juce::jmax (1, (int) pattern[ids::lengthSteps]) : 16;
 }
 
-float StepGridComponent::stepWidth() const
+void StepGridComponent::updateZoom()
 {
-    return (float) getWidth() / (float) numSteps();
+    const auto steps = numSteps();
+    const auto width = (float) getWidth();
+
+    if (width <= 0.0f)
+        return;
+
+    // Fill the width when the pattern can, and fall back to scrolling when a
+    // step would otherwise be too narrow to aim at. A 16-step pattern fits; a
+    // 128-step one scrolls at a workable cell size instead of becoming hairlines.
+    timeline.pixelsPerStep = juce::jlimit ((double) minCellWidth, (double) maxCellWidth,
+                                           (double) width / (double) steps);
+
+    const auto scrollable = isScrollable();
+    horizontalScroll.setVisible (scrollable);
+
+    if (! scrollable)
+        timeline.scrollOffsetSteps = 0.0;
+
+    timeline.clampScroll (width, steps);
+
+    const juce::ScopedValueSetter<bool> quiet (updatingScrollBar, true);
+    horizontalScroll.setRangeLimits (0.0, (double) steps, juce::dontSendNotification);
+    horizontalScroll.setCurrentRange (timeline.scrollOffsetSteps,
+                                      timeline.visibleSteps (width), juce::dontSendNotification);
+}
+
+bool StepGridComponent::isScrollable() const
+{
+    return timeline.visibleSteps ((float) getWidth()) < (double) numSteps() - 1e-9;
+}
+
+void StepGridComponent::resized()
+{
+    horizontalScroll.setBounds (0, getHeight() - scrollThickness, getWidth(), scrollThickness);
+    updateZoom();
+}
+
+void StepGridComponent::scrollBarMoved (juce::ScrollBar*, double start)
+{
+    if (updatingScrollBar)
+        return;
+
+    timeline.scrollOffsetSteps = start;
+    repaint();
+}
+
+void StepGridComponent::mouseWheelMove (const juce::MouseEvent&, const juce::MouseWheelDetails& wheel)
+{
+    if (! isScrollable())
+        return;
+
+    timeline.scrollOffsetSteps -= (double) (wheel.deltaX + wheel.deltaY) * 6.0;
+    updateZoom();
+    repaint();
 }
 
 int StepGridComponent::stepAtX (int x) const
 {
-    const auto width = stepWidth();
-    return width > 0.0f ? juce::jlimit (0, numSteps() - 1, (int) ((float) x / width)) : 0;
+    return juce::jlimit (0, numSteps() - 1, timeline.stepAtX ((float) x));
 }
 
 int StepGridComponent::rowAtY (int y) const
@@ -75,6 +129,16 @@ juce::ValueTree StepGridComponent::channelForRow (int row) const
 
 void StepGridComponent::timerCallback()
 {
+    // Editing the pattern length changes how many steps have to fit, and the
+    // zoom is derived from that. Nothing resizes the component when it happens,
+    // so the grid would keep drawing at the old cell width until the next layout.
+    if (const auto steps = numSteps(); steps != lastLayoutSteps)
+    {
+        lastLayoutSteps = steps;
+        updateZoom();
+        repaint();
+    }
+
     const auto step = (int) engine.getPlayheadSteps();
 
     if (step != lastPlayheadStep)
@@ -90,7 +154,8 @@ void StepGridComponent::paint (juce::Graphics& g)
 {
     const auto pattern = currentPattern();
     const auto steps = numSteps();
-    const auto width = stepWidth();
+    const auto width = (float) timeline.pixelsPerStep;
+    const auto visible = timeline.visibleStepRange ((float) getWidth(), steps);
     const auto stepsPerBeat = juce::jmax (1, (int) document.getState()[ids::stepsPerBeat]);
     const auto rows = getNumRows();
     const auto rowsHeight = getRowsHeight();
@@ -102,7 +167,7 @@ void StepGridComponent::paint (juce::Graphics& g)
     g.fillRect (0, 0, getWidth(), rowsHeight);
 
     // --- beat and bar shading ------------------------------------------------
-    for (int step = 0; step < steps; ++step)
+    for (int step = visible.getStart(); step < visible.getEnd(); ++step)
     {
         const auto beat = step / stepsPerBeat;
         const auto isBarStart = beat % 4 == 0;
@@ -110,7 +175,7 @@ void StepGridComponent::paint (juce::Graphics& g)
         if (beat % 2 == 0 || isBarStart)
         {
             g.setColour (isBarStart ? colour::barShade : colour::beatShade);
-            g.fillRect (juce::Rectangle<float> ((float) step * width, 0.0f,
+            g.fillRect (juce::Rectangle<float> (timeline.xForStep ((double) step), 0.0f,
                                                 width, (float) rowsHeight));
         }
     }
@@ -133,9 +198,9 @@ void StepGridComponent::paint (juce::Graphics& g)
 
         const auto muted = (bool) channel[ids::muted];
 
-        for (int step = 0; step < steps; ++step)
+        for (int step = visible.getStart(); step < visible.getEnd(); ++step)
         {
-            const auto cell = juce::Rectangle<float> ((float) step * width,
+            const auto cell = juce::Rectangle<float> (timeline.xForStep ((double) step),
                                                       (float) (row * size::rowHeight),
                                                       width, (float) size::rowHeight)
                                   .reduced (2.0f, 4.0f);
@@ -173,9 +238,9 @@ void StepGridComponent::paint (juce::Graphics& g)
     }
 
     // --- grid lines ----------------------------------------------------------
-    for (int step = 0; step <= steps; ++step)
+    for (int step = visible.getStart(); step <= visible.getEnd(); ++step)
     {
-        const auto x = (float) step * width;
+        const auto x = timeline.xForStep ((double) step);
         const auto isBarLine = (step % (stepsPerBeat * 4)) == 0;
 
         g.setColour (isBarLine ? colour::dividerStrong : colour::divider);
@@ -188,17 +253,23 @@ void StepGridComponent::paint (juce::Graphics& g)
         g.drawHorizontalLine (row * size::rowHeight, 0.0f, (float) getWidth());
     }
 
+    // Past the end of a short pattern is not part of the pattern.
+    const auto endX = timeline.xForStep ((double) steps);
+
+    if (endX < (float) getWidth())
+        paint::inertArea (g, { (int) endX, 0, getWidth() - (int) endX, rowsHeight });
+
     // --- playhead ------------------------------------------------------------
     if (engine.isPlaying() && engine.getMode() == Transport::Mode::pattern && rows > 0)
     {
         const auto step = ((int) engine.getPlayheadSteps()) % steps;
+        const auto x = timeline.xForStep ((double) step);
 
         g.setColour (colour::playhead.withAlpha (0.22f));
-        g.fillRect (juce::Rectangle<float> ((float) step * width, 0.0f,
-                                            width, (float) rowsHeight));
+        g.fillRect (juce::Rectangle<float> (x, 0.0f, width, (float) rowsHeight));
 
         g.setColour (colour::playhead);
-        g.drawVerticalLine ((int) ((float) step * width), 0.0f, (float) rowsHeight);
+        g.drawVerticalLine ((int) x, 0.0f, (float) rowsHeight);
     }
 
     if (rows == 0)

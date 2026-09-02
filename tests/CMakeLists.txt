@@ -14,6 +14,8 @@ add_executable(dew_tests
   SnapshotBridgeTests.cpp
   EngineTests.cpp
   MixerTests.cpp
+  TimelineViewTests.cpp
+  PianoRollTests.cpp
   UiSmokeTests.cpp
 )
 

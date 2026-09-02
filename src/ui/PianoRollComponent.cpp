@@ -14,7 +14,7 @@ namespace
 
 bool isBlackKey (int pitch)
 {
-    switch (pitch % 12)
+    switch (((pitch % 12) + 12) % 12)
     {
         case 1: case 3: case 6: case 8: case 10: return true;
         default: return false;
@@ -24,7 +24,7 @@ bool isBlackKey (int pitch)
 juce::String noteName (int pitch)
 {
     static const char* names[] = { "C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B" };
-    return juce::String (names[pitch % 12]) + juce::String (pitch / 12 - 1);
+    return juce::String (names[((pitch % 12) + 12) % 12]) + juce::String (pitch / 12 - 1);
 }
 
 } // namespace
@@ -33,12 +33,20 @@ PianoRollComponent::PianoRollComponent (ProjectDocument& d, AudioEngine& e, Edit
     : document (d), engine (e), editorState (s)
 {
     setComponentID ("pianoRoll");
+    setWantsKeyboardFocus (true);
+
     document.getState().addListener (this);
     editorState.addChangeListener (this);
 
-    // Width is set by the viewport in resized(); only the height is intrinsic,
-    // because it is fixed by the pitch range.
-    setSize (900, numRows * rowHeight);
+    horizontalScroll.addListener (this);
+    verticalScroll.addListener (this);
+    addAndMakeVisible (horizontalScroll);
+    addAndMakeVisible (verticalScroll);
+
+    // Middle C somewhere near the middle, rather than at the very top where the
+    // default scroll position would leave it.
+    pitchScrollPx = (double) ((highestPitch - 72) * rowHeight);
+
     startTimerHz (tokens::motion::playheadHz);
 }
 
@@ -51,8 +59,13 @@ PianoRollComponent::~PianoRollComponent()
 void PianoRollComponent::refresh()
 {
     document.getState().addListener (this);
+    selection.clearQuick();
+    didFitOnce = false;
+    updateScrollBars();
     repaint();
 }
+
+// --- lookup ------------------------------------------------------------------
 
 juce::ValueTree PianoRollComponent::currentPattern() const
 {
@@ -65,44 +78,84 @@ int PianoRollComponent::numSteps() const
     return pattern.isValid() ? juce::jmax (1, (int) pattern[ids::lengthSteps]) : 16;
 }
 
-float PianoRollComponent::stepWidth() const
+juce::Colour PianoRollComponent::channelColour() const
 {
-    return (float) juce::jmax (1, getWidth() - keyboardWidth) / (float) numSteps();
+    const auto channel = ProjectEdits::findChannel (document.getState(),
+                                                    editorState.getSelectedChannelId());
+
+    if (! channel.isValid())
+        return tokens::colour::accent;
+
+    return juce::Colour::fromString ("ff" + channel[ids::colour].toString().getLastCharacters (6));
+}
+
+// --- geometry ----------------------------------------------------------------
+
+juce::Rectangle<int> PianoRollComponent::rulerArea() const
+{
+    return { keyboardWidth, 0, juce::jmax (0, getWidth() - keyboardWidth - scrollThickness), rulerHeight };
+}
+
+juce::Rectangle<int> PianoRollComponent::noteArea() const
+{
+    const auto top = rulerHeight;
+    const auto bottom = juce::jmax (top, getHeight() - scrollThickness - velocityHeight);
+
+    return { keyboardWidth, top,
+             juce::jmax (0, getWidth() - keyboardWidth - scrollThickness), bottom - top };
+}
+
+juce::Rectangle<int> PianoRollComponent::keyboardArea() const
+{
+    const auto notes = noteArea();
+    return { 0, notes.getY(), keyboardWidth, notes.getHeight() };
+}
+
+juce::Rectangle<int> PianoRollComponent::velocityArea() const
+{
+    const auto top = juce::jmax (0, getHeight() - scrollThickness - velocityHeight);
+
+    return { keyboardWidth, top,
+             juce::jmax (0, getWidth() - keyboardWidth - scrollThickness), velocityHeight };
+}
+
+float PianoRollComponent::contentWidth() const
+{
+    return (float) noteArea().getWidth();
 }
 
 int PianoRollComponent::stepAtX (int x) const
 {
-    return juce::jlimit (0, numSteps() - 1, (int) ((float) (x - keyboardWidth) / stepWidth()));
+    // Deliberately not clamped to the pattern length. Writing past the end is
+    // how a pattern gets longer - the region beyond is painted as inert so it
+    // is clearly outside the pattern, but it is still writable, and doing so
+    // grows the pattern to fit. Clamping here made growPatternToFitNotes
+    // unreachable from the mouse.
+    return juce::jmax (0, timeline.stepAtX ((float) (x - keyboardWidth)));
+}
+
+int PianoRollComponent::firstVisiblePitch() const
+{
+    return highestPitch - (int) (pitchScrollPx / rowHeight);
 }
 
 int PianoRollComponent::pitchAtY (int y) const
 {
-    return juce::jlimit (lowestPitch, highestPitch, highestPitch - y / rowHeight);
+    const auto rowsDown = (int) std::floor (((double) (y - noteArea().getY()) + pitchScrollPx) / rowHeight);
+    return juce::jlimit (lowestPitch, highestPitch, highestPitch - rowsDown);
 }
 
 juce::Rectangle<float> PianoRollComponent::boundsForNote (const juce::ValueTree& note) const
 {
-    const auto step = (int) note[ids::step];
+    const auto step   = (int) note[ids::step];
     const auto length = juce::jmax (1, (int) note[ids::lengthSteps]);
-    const auto pitch = (int) note[ids::pitch];
+    const auto pitch  = (int) note[ids::pitch];
 
-    return { (float) keyboardWidth + (float) step * stepWidth(),
-             (float) ((highestPitch - pitch) * rowHeight),
-             (float) length * stepWidth(),
-             (float) rowHeight };
-}
+    const auto notes = noteArea();
+    const auto x = (float) keyboardWidth + timeline.xForStep ((double) step);
+    const auto y = (float) notes.getY() + (float) ((highestPitch - pitch) * rowHeight) - (float) pitchScrollPx;
 
-juce::ValueTree PianoRollComponent::noteAt (juce::Point<int> position) const
-{
-    const auto pattern = currentPattern();
-    const auto channelId = editorState.getSelectedChannelId();
-
-    for (const auto& note : pattern)
-        if (note.hasType (ids::NOTE) && (int) note[ids::ch] == channelId
-            && boundsForNote (note).contains (position.toFloat()))
-            return note;
-
-    return {};
+    return { x, y, (float) (length * timeline.pixelsPerStep), (float) rowHeight };
 }
 
 bool PianoRollComponent::isOnRightEdge (const juce::ValueTree& note, juce::Point<int> position) const
@@ -113,8 +166,238 @@ bool PianoRollComponent::isOnRightEdge (const juce::ValueTree& note, juce::Point
     return (float) position.x >= bounds.getRight() - edge;
 }
 
+juce::ValueTree PianoRollComponent::noteAt (juce::Point<int> position) const
+{
+    const auto pattern = currentPattern();
+    const auto channelId = editorState.getSelectedChannelId();
+
+    // Backwards, so the note painted on top is the one you grab.
+    for (int i = pattern.getNumChildren(); --i >= 0;)
+    {
+        const auto note = pattern.getChild (i);
+
+        if (note.hasType (ids::NOTE) && (int) note[ids::ch] == channelId
+            && boundsForNote (note).contains (position.toFloat()))
+            return note;
+    }
+
+    return {};
+}
+
+// --- selection ---------------------------------------------------------------
+
+bool PianoRollComponent::isSelected (const juce::ValueTree& note) const
+{
+    return selection.contains (note);
+}
+
+void PianoRollComponent::selectOnly (const juce::ValueTree& note)
+{
+    selection.clearQuick();
+
+    if (note.isValid())
+        selection.add (note);
+}
+
+void PianoRollComponent::selectAllOnChannel()
+{
+    selection.clearQuick();
+
+    const auto channelId = editorState.getSelectedChannelId();
+
+    for (const auto& note : currentPattern())
+        if (note.hasType (ids::NOTE) && (int) note[ids::ch] == channelId)
+            selection.add (note);
+
+    repaint();
+}
+
+void PianoRollComponent::deleteSelection()
+{
+    if (selection.isEmpty())
+        return;
+
+    auto pattern = currentPattern();
+    auto& undo = document.getUndoManager();
+
+    undo.beginNewTransaction (selection.size() == 1 ? "Delete note"
+                                                    : "Delete " + juce::String (selection.size()) + " notes");
+
+    // Removing a note calls back into valueTreeChildRemoved, which drops it from
+    // `selection` - iterating the live array skipped every other note and left
+    // most of a multi-note selection behind.
+    const auto doomed = selection;
+    selection.clearQuick();
+
+    for (const auto& note : doomed)
+        ProjectEdits::removeNote (pattern, note, &undo);
+
+    repaint();
+}
+
+// --- scrolling ---------------------------------------------------------------
+
+void PianoRollComponent::updateScrollBars()
+{
+    const juce::ScopedValueSetter<bool> quiet (updatingScrollBars, true);
+
+    const auto notes = noteArea();
+
+    timeline.clampScroll (contentWidth(), numSteps());
+
+    horizontalScroll.setRangeLimits (0.0, (double) numSteps(), juce::dontSendNotification);
+    horizontalScroll.setCurrentRange (timeline.scrollOffsetSteps,
+                                      timeline.visibleSteps (contentWidth()),
+                                      juce::dontSendNotification);
+
+    const auto contentHeight = (double) (numRows * rowHeight);
+    pitchScrollPx = juce::jlimit (0.0, juce::jmax (0.0, contentHeight - notes.getHeight()), pitchScrollPx);
+
+    verticalScroll.setRangeLimits (0.0, contentHeight, juce::dontSendNotification);
+    verticalScroll.setCurrentRange (pitchScrollPx, (double) notes.getHeight(), juce::dontSendNotification);
+}
+
+void PianoRollComponent::scrollBarMoved (juce::ScrollBar* bar, double start)
+{
+    if (updatingScrollBars)
+        return;
+
+    if (bar == &horizontalScroll)
+        timeline.scrollOffsetSteps = start;
+    else
+        pitchScrollPx = start;
+
+    repaint();
+}
+
+void PianoRollComponent::centreOnPitch (int pitch)
+{
+    const auto rowTop = (double) ((highestPitch - juce::jlimit (lowestPitch, highestPitch, pitch)) * rowHeight);
+    pitchScrollPx = rowTop - noteArea().getHeight() * 0.5 + rowHeight * 0.5;
+    updateScrollBars();
+}
+
+void PianoRollComponent::scrollToNotesIfOffscreen()
+{
+    const auto area = noteArea();
+
+    if (area.getHeight() <= 0)
+        return;
+
+    const auto channelId = editorState.getSelectedChannelId();
+
+    int lowest = highestPitch + 1;
+    int highest = lowestPitch - 1;
+    bool anyVisible = false;
+
+    for (const auto& note : currentPattern())
+    {
+        if (! note.hasType (ids::NOTE) || (int) note[ids::ch] != channelId)
+            continue;
+
+        const auto pitch = (int) note[ids::pitch];
+        lowest = juce::jmin (lowest, pitch);
+        highest = juce::jmax (highest, pitch);
+
+        if (area.toFloat().intersects (boundsForNote (note)))
+            anyVisible = true;
+    }
+
+    if (anyVisible)
+        return;
+
+    if (highest >= lowest)
+    {
+        centreOnPitch ((lowest + highest) / 2);
+        return;
+    }
+
+    // No notes yet: the channel's own pitch is where writing will start.
+    const auto channel = ProjectEdits::findChannel (document.getState(), channelId);
+    centreOnPitch (channel.isValid() ? (int) channel[ids::basePitch] : 72);
+}
+
+void PianoRollComponent::zoomToFit()
+{
+    timeline.fit (numSteps(), contentWidth());
+    updateScrollBars();
+    repaint();
+}
+
+void PianoRollComponent::mouseWheelMove (const juce::MouseEvent& event,
+                                         const juce::MouseWheelDetails& wheel)
+{
+    if (event.mods.isCommandDown() || event.mods.isCtrlDown())
+    {
+        // Zoom around the pointer. deltaY is small; exaggerate it or a zoom
+        // takes a dozen notches to be noticeable.
+        const auto factor = std::pow (2.0, (double) wheel.deltaY * 3.0);
+        timeline.zoomAround (factor, (float) (event.x - keyboardWidth));
+    }
+    else if (event.mods.isShiftDown())
+    {
+        timeline.scrollOffsetSteps -= (double) wheel.deltaX * 8.0 + (double) wheel.deltaY * 8.0;
+    }
+    else
+    {
+        pitchScrollPx -= (double) wheel.deltaY * 3.0 * rowHeight;
+        timeline.scrollOffsetSteps -= (double) wheel.deltaX * 8.0;
+    }
+
+    updateScrollBars();
+    repaint();
+}
+
+bool PianoRollComponent::keyPressed (const juce::KeyPress& key)
+{
+    if (key == juce::KeyPress::deleteKey || key == juce::KeyPress::backspaceKey)
+    {
+        deleteSelection();
+        return true;
+    }
+
+    if (key.getTextCharacter() == 'a' && (key.getModifiers().isCommandDown()))
+    {
+        selectAllOnChannel();
+        return true;
+    }
+
+    if (key.getKeyCode() == juce::KeyPress::escapeKey)
+    {
+        selection.clearQuick();
+        repaint();
+        return true;
+    }
+
+    if (key.getTextCharacter() == '+' || key.getTextCharacter() == '=')
+    {
+        timeline.zoomAround (1.5, contentWidth() * 0.5f);
+        updateScrollBars();
+        repaint();
+        return true;
+    }
+
+    if (key.getTextCharacter() == '-' || key.getTextCharacter() == '_')
+    {
+        timeline.zoomAround (1.0 / 1.5, contentWidth() * 0.5f);
+        updateScrollBars();
+        repaint();
+        return true;
+    }
+
+    return false;
+}
+
+// --- mouse -------------------------------------------------------------------
+
 void PianoRollComponent::mouseMove (const juce::MouseEvent& event)
 {
+    if (! noteArea().contains (event.getPosition()))
+    {
+        setMouseCursor (juce::MouseCursor::NormalCursor);
+        return;
+    }
+
     const auto note = noteAt (event.getPosition());
 
     setMouseCursor (note.isValid() && isOnRightEdge (note, event.getPosition())
@@ -122,11 +405,34 @@ void PianoRollComponent::mouseMove (const juce::MouseEvent& event)
                         : juce::MouseCursor::NormalCursor);
 }
 
+void PianoRollComponent::mouseDoubleClick (const juce::MouseEvent& event)
+{
+    // Double-clicking the keyboard gutter or the ruler frames the pattern, which
+    // is the quickest way back after zooming into a detail.
+    if (keyboardArea().contains (event.getPosition()) || rulerArea().contains (event.getPosition()))
+        zoomToFit();
+}
+
 void PianoRollComponent::mouseDown (const juce::MouseEvent& event)
 {
+    grabKeyboardFocus();
+
     auto pattern = currentPattern();
 
-    if (! pattern.isValid() || event.x < keyboardWidth)
+    if (! pattern.isValid())
+        return;
+
+    dragOrigin = event.getPosition();
+
+    if (velocityArea().contains (event.getPosition()))
+    {
+        gesture = Gesture::velocity;
+        document.getUndoManager().beginNewTransaction ("Change velocity");
+        applyVelocityAt (event.getPosition());
+        return;
+    }
+
+    if (! noteArea().contains (event.getPosition()))
         return;
 
     auto& undo = document.getUndoManager();
@@ -139,6 +445,7 @@ void PianoRollComponent::mouseDown (const juce::MouseEvent& event)
         {
             undo.beginNewTransaction ("Delete note");
             ProjectEdits::removeNote (pattern, note, &undo);
+            selection.removeAllInstancesOf (note);
             repaint();
         }
         return;
@@ -146,6 +453,20 @@ void PianoRollComponent::mouseDown (const juce::MouseEvent& event)
 
     if (note.isValid())
     {
+        if (event.mods.isShiftDown())
+        {
+            if (isSelected (note))
+                selection.removeAllInstancesOf (note);
+            else
+                selection.add (note);
+
+            repaint();
+            return;
+        }
+
+        if (! isSelected (note))
+            selectOnly (note);
+
         draggedNote = note;
 
         if (isOnRightEdge (note, event.getPosition()))
@@ -158,28 +479,75 @@ void PianoRollComponent::mouseDown (const juce::MouseEvent& event)
             gesture = Gesture::moving;
             dragStepOffset = stepAtX (event.x) - (int) note[ids::step];
             dragPitchOffset = pitchAtY (event.y) - (int) note[ids::pitch];
-            undo.beginNewTransaction ("Move note");
+
+            selectionOrigins.clearQuick();
+
+            for (const auto& selected : selection)
+                selectionOrigins.add ({ (int) selected[ids::step], (int) selected[ids::pitch] });
+
+            undo.beginNewTransaction (selection.size() == 1 ? "Move note" : "Move notes");
         }
 
         return;
     }
 
-    // Empty space: add a note there and let the same drag resize it, so a note
-    // can be drawn at a length in one gesture.
+    // Empty space with a modifier: rubber band. Without one: draw a note, and
+    // let the same drag set its length, so a note is one gesture.
+    if (event.mods.isCommandDown() || event.mods.isCtrlDown())
+    {
+        gesture = Gesture::selecting;
+        selectionAtDragStart = selection;
+        rubberBand = { event.x, event.y, 0, 0 };
+        return;
+    }
+
     undo.beginNewTransaction ("Add note");
 
     draggedNote = ProjectEdits::addNote (pattern, editorState.getSelectedChannelId(),
-                                         stepAtX (event.x), 1, pitchAtY (event.y), 1.0f, &undo);
+                                         stepAtX (event.x),
+                                         editorState.getLastNoteLengthSteps(),
+                                         pitchAtY (event.y),
+                                         (float) editorState.getLastNoteVelocity(),
+                                         &undo);
+    selectOnly (draggedNote);
+    ProjectEdits::growPatternToFitNotes (pattern, &undo);
+
     gesture = Gesture::resizing;
     repaint();
 }
 
 void PianoRollComponent::mouseDrag (const juce::MouseEvent& event)
 {
+    auto& undo = document.getUndoManager();
+
+    if (gesture == Gesture::velocity)
+    {
+        applyVelocityAt (event.getPosition());
+        return;
+    }
+
+    if (gesture == Gesture::selecting)
+    {
+        rubberBand = juce::Rectangle<int>::leftTopRightBottom (
+            juce::jmin (dragOrigin.x, event.x), juce::jmin (dragOrigin.y, event.y),
+            juce::jmax (dragOrigin.x, event.x), juce::jmax (dragOrigin.y, event.y));
+
+        selection = selectionAtDragStart;
+
+        const auto channelId = editorState.getSelectedChannelId();
+
+        for (const auto& note : currentPattern())
+            if (note.hasType (ids::NOTE) && (int) note[ids::ch] == channelId
+                && boundsForNote (note).toNearestInt().intersects (rubberBand)
+                && ! selection.contains (note))
+                selection.add (note);
+
+        repaint();
+        return;
+    }
+
     if (! draggedNote.isValid())
         return;
-
-    auto& undo = document.getUndoManager();
 
     if (gesture == Gesture::resizing)
     {
@@ -188,20 +556,74 @@ void PianoRollComponent::mouseDrag (const juce::MouseEvent& event)
     }
     else if (gesture == Gesture::moving)
     {
-        ProjectEdits::moveNote (draggedNote,
-                                juce::jlimit (0, numSteps() - 1, stepAtX (event.x) - dragStepOffset),
-                                pitchAtY (event.y) - dragPitchOffset,
-                                &undo);
+        const auto targetStep  = juce::jmax (0, stepAtX (event.x) - dragStepOffset);
+        const auto targetPitch = pitchAtY (event.y) - dragPitchOffset;
+
+        const auto deltaStep  = targetStep - (int) draggedNote[ids::step];
+        const auto deltaPitch = targetPitch - (int) draggedNote[ids::pitch];
+
+        if (deltaStep == 0 && deltaPitch == 0)
+            return;
+
+        // Move every selected note by the same delta, clamped as a group, so a
+        // chord keeps its shape when it hits step 0 or the top of the keyboard.
+        int allowedStep = deltaStep;
+        int allowedPitch = deltaPitch;
+
+        for (const auto& note : selection)
+        {
+            allowedStep  = juce::jmax (allowedStep, -(int) note[ids::step]);
+            allowedPitch = juce::jlimit (lowestPitch - (int) note[ids::pitch],
+                                         highestPitch - (int) note[ids::pitch], allowedPitch);
+        }
+
+        for (auto note : selection)
+            ProjectEdits::moveNote (note,
+                                    (int) note[ids::step] + allowedStep,
+                                    (int) note[ids::pitch] + allowedPitch, &undo);
     }
 
+    ProjectEdits::growPatternToFitNotes (currentPattern(), &undo);
     repaint();
 }
 
 void PianoRollComponent::mouseUp (const juce::MouseEvent&)
 {
+    // The next note drawn takes the shape of the last one, so writing a passage
+    // of held or quiet notes does not mean re-editing every one.
+    if (draggedNote.isValid() && (gesture == Gesture::resizing || gesture == Gesture::moving))
+        editorState.rememberNote ((int) draggedNote[ids::lengthSteps],
+                                  (double) draggedNote[ids::velocity]);
+
     draggedNote = {};
     gesture = Gesture::none;
+    rubberBand = {};
+    selectionAtDragStart.clearQuick();
+    repaint();
 }
+
+void PianoRollComponent::applyVelocityAt (juce::Point<int> position)
+{
+    const auto lane = velocityArea();
+    const auto value = 1.0 - juce::jlimit (0.0, 1.0,
+                                           (double) (position.y - lane.getY()) / juce::jmax (1, lane.getHeight()));
+
+    auto& undo = document.getUndoManager();
+    const auto channelId = editorState.getSelectedChannelId();
+    const auto step = stepAtX (position.x);
+
+    // Only notes that start under the pointer, so dragging across the lane
+    // paints a velocity curve without also hitting every held note under it.
+    for (auto note : currentPattern())
+        if (note.hasType (ids::NOTE) && (int) note[ids::ch] == channelId
+            && (int) note[ids::step] == step
+            && (selection.isEmpty() || isSelected (note)))
+            ProjectEdits::setNoteVelocity (note, value, &undo);
+
+    repaint();
+}
+
+// --- notifications -----------------------------------------------------------
 
 void PianoRollComponent::timerCallback()
 {
@@ -210,130 +632,324 @@ void PianoRollComponent::timerCallback()
     if (step != lastPlayheadStep)
     {
         lastPlayheadStep = step;
+
+        if (engine.isPlaying() && engine.getMode() == Transport::Mode::pattern)
+        {
+            const auto wrapped = (double) (step % juce::jmax (1, numSteps()));
+            const auto before = timeline.scrollOffsetSteps;
+            timeline.ensureVisible (wrapped, contentWidth());
+
+            if (! juce::exactlyEqual (before, timeline.scrollOffsetSteps))
+                updateScrollBars();
+        }
+
         repaint();
     }
 }
 
-void PianoRollComponent::valueTreePropertyChanged (juce::ValueTree&, const juce::Identifier&) { repaint(); }
+void PianoRollComponent::valueTreePropertyChanged (juce::ValueTree&, const juce::Identifier& property)
+{
+    // The pattern length bounds how far the view can scroll, so a change to it
+    // has to reach the scrollbars, not only the paint.
+    if (property == ids::lengthSteps)
+        updateScrollBars();
+
+    repaint();
+}
 void PianoRollComponent::valueTreeChildAdded (juce::ValueTree&, juce::ValueTree&)             { repaint(); }
-void PianoRollComponent::valueTreeChildRemoved (juce::ValueTree&, juce::ValueTree&, int)      { repaint(); }
-void PianoRollComponent::changeListenerCallback (juce::ChangeBroadcaster*)                    { repaint(); }
+
+void PianoRollComponent::valueTreeChildRemoved (juce::ValueTree&, juce::ValueTree& child, int)
+{
+    // A selection holding removed notes would delete or move nothing on the next
+    // gesture, and looks like the editor ignoring input.
+    selection.removeAllInstancesOf (child);
+    repaint();
+}
+
+void PianoRollComponent::changeListenerCallback (juce::ChangeBroadcaster*)
+{
+    selection.clearQuick();
+    scrollToNotesIfOffscreen();
+    repaint();
+}
 
 void PianoRollComponent::resized()
 {
-    // Height is fixed by the pitch range; the viewport scrolls it. The width
-    // must follow the viewport, or the roll paints a 900px strip in a wider
-    // panel and the rest of the tab looks broken.
-    if (auto* viewport = findParentComponentOfClass<juce::Viewport>())
-    {
-        const auto wanted = juce::jmax (320, viewport->getMaximumVisibleWidth());
+    horizontalScroll.setBounds (keyboardWidth, getHeight() - scrollThickness,
+                                juce::jmax (0, getWidth() - keyboardWidth - scrollThickness),
+                                scrollThickness);
 
-        if (getWidth() != wanted)
+    const auto notes = noteArea();
+    verticalScroll.setBounds (getWidth() - scrollThickness, notes.getY(), scrollThickness, notes.getHeight());
+
+    // The first layout frames the pattern; after that the user's zoom is theirs.
+    if (! didFitOnce && contentWidth() > 0.0f)
+    {
+        didFitOnce = true;
+        timeline.fit (numSteps(), contentWidth());
+        updateScrollBars();
+        scrollToNotesIfOffscreen();
+        return;
+    }
+
+    updateScrollBars();
+}
+
+// --- painting ----------------------------------------------------------------
+
+void PianoRollComponent::paintRuler (juce::Graphics& g)
+{
+    using namespace tokens;
+
+    const auto area = rulerArea();
+    g.setColour (colour::surface);
+    g.fillRect (area);
+
+    const auto stepsPerBeat = juce::jmax (1, (int) document.getState()[ids::stepsPerBeat]);
+    const auto stepsPerBar = stepsPerBeat * 4;
+    const auto range = timeline.visibleStepRange (contentWidth(), numSteps() + 1);
+
+    g.setFont (juce::FontOptions ((float) type::caption));
+
+    for (int step = range.getStart(); step <= range.getEnd(); ++step)
+    {
+        const auto x = (float) keyboardWidth + timeline.xForStep ((double) step);
+
+        if (x > (float) area.getRight())
+            break;
+
+        if (step % stepsPerBar == 0)
         {
-            setSize (wanted, numRows * rowHeight);
-            return;
+            g.setColour (colour::dividerStrong);
+            g.drawVerticalLine ((int) x, (float) area.getY(), (float) area.getBottom());
+
+            // Bar numbers, but only when there is room for them to be readable.
+            if (timeline.pixelsPerStep * stepsPerBar >= 28.0)
+            {
+                g.setColour (colour::textSecondary);
+                g.drawText (juce::String (step / stepsPerBar + 1),
+                            juce::Rectangle<int> ((int) x + 3, area.getY(), 40, area.getHeight()),
+                            juce::Justification::centredLeft, false);
+            }
+        }
+        else if (step % stepsPerBeat == 0 && timeline.pixelsPerStep * stepsPerBeat >= 10.0)
+        {
+            g.setColour (colour::divider);
+            g.drawVerticalLine ((int) x, (float) area.getBottom() - 6.0f, (float) area.getBottom());
         }
     }
 
-    if (getHeight() != numRows * rowHeight)
-        setSize (getWidth(), numRows * rowHeight);
+    g.setColour (colour::dividerStrong);
+    g.drawHorizontalLine (area.getBottom() - 1, (float) area.getX(), (float) area.getRight());
 }
 
-void PianoRollComponent::paint (juce::Graphics& g)
+void PianoRollComponent::paintNotes (juce::Graphics& g)
 {
-    g.fillAll (Palette::panelDark);
+    using namespace tokens;
 
-    const auto steps = numSteps();
-    const auto width = stepWidth();
+    const auto area = noteArea();
+    const auto keys = keyboardArea();
+
+    g.setColour (colour::wellDeep);
+    g.fillRect (area);
+
+    const juce::Graphics::ScopedSaveState clip (g);
+    g.reduceClipRegion (juce::Rectangle<int> (0, area.getY(), getWidth(), area.getHeight()));
+
     const auto stepsPerBeat = juce::jmax (1, (int) document.getState()[ids::stepsPerBeat]);
-    const auto channel = ProjectEdits::findChannel (document.getState(), editorState.getSelectedChannelId());
+    const auto stepsPerBar = stepsPerBeat * 4;
 
     // --- rows ----------------------------------------------------------------
-    for (int pitch = lowestPitch; pitch <= highestPitch; ++pitch)
+    const auto firstRow = juce::jmax (0, (int) (pitchScrollPx / rowHeight));
+    const auto lastRow  = juce::jmin (numRows - 1, (int) ((pitchScrollPx + area.getHeight()) / rowHeight));
+
+    for (int row = firstRow; row <= lastRow; ++row)
     {
-        const auto y = (float) ((highestPitch - pitch) * rowHeight);
-        const auto rowArea = juce::Rectangle<float> (0.0f, y, (float) getWidth(), (float) rowHeight);
+        const auto pitch = highestPitch - row;
+        const auto y = (float) area.getY() + (float) (row * rowHeight) - (float) pitchScrollPx;
 
         if (isBlackKey (pitch))
         {
-            g.setColour (Palette::background);
-            g.fillRect (rowArea.withLeft ((float) keyboardWidth));
+            g.setColour (colour::well);
+            g.fillRect ((float) area.getX(), y, (float) area.getWidth(), (float) rowHeight);
         }
 
-        // Keyboard gutter.
-        g.setColour (isBlackKey (pitch) ? Palette::background : Palette::panel);
-        g.fillRect (rowArea.withWidth ((float) keyboardWidth));
+        // Keyboard gutter: a real keyboard, so a pitch can be read off it.
+        g.setColour (isBlackKey (pitch) ? juce::Colour (0xff1c1f24) : juce::Colour (0xffd8dce3));
+        g.fillRect ((float) keys.getX(), y, (float) (keys.getWidth() - 1), (float) (rowHeight - 1));
 
         if (pitch % 12 == 0)
         {
-            g.setColour (Palette::textDim);
-            g.setFont (juce::FontOptions (9.0f));
-            g.drawText (noteName (pitch), 2, (int) y, keyboardWidth - 4, rowHeight,
-                        juce::Justification::centredLeft);
+            g.setColour (colour::textOnAccent);
+            g.setFont (juce::FontOptions ((float) type::caption));
+            g.drawText (noteName (pitch), keys.getX() + 3, (int) y, keys.getWidth() - 6, rowHeight,
+                        juce::Justification::centredLeft, false);
 
-            g.setColour (Palette::lineStrong);
-            g.drawHorizontalLine ((int) y, (float) keyboardWidth, (float) getWidth());
+            g.setColour (colour::dividerStrong);
+            g.drawHorizontalLine ((int) y, (float) area.getX(), (float) area.getRight());
         }
         else
         {
-            g.setColour (Palette::line.withAlpha (0.4f));
-            g.drawHorizontalLine ((int) y, (float) keyboardWidth, (float) getWidth());
+            g.setColour (colour::divider.withAlpha (0.4f));
+            g.drawHorizontalLine ((int) y, (float) area.getX(), (float) area.getRight());
         }
     }
 
     // --- columns -------------------------------------------------------------
-    for (int step = 0; step <= steps; ++step)
+    const auto steps = numSteps();
+    const auto range = timeline.visibleStepRange (contentWidth(), steps + 1);
+
+    for (int step = range.getStart(); step <= range.getEnd(); ++step)
     {
-        const auto x = (float) keyboardWidth + (float) step * width;
-        g.setColour (step % stepsPerBeat == 0 ? Palette::lineStrong : Palette::line.withAlpha (0.5f));
-        g.drawVerticalLine ((int) x, 0.0f, (float) getHeight());
+        const auto x = (float) keyboardWidth + timeline.xForStep ((double) step);
+
+        if (x > (float) area.getRight())
+            break;
+
+        if (step % stepsPerBar == 0)
+            g.setColour (colour::dividerStrong);
+        else if (step % stepsPerBeat == 0)
+            g.setColour (colour::divider);
+        else if (timeline.pixelsPerStep >= 6.0)
+            g.setColour (colour::divider.withAlpha (0.4f));
+        else
+            continue;
+
+        g.drawVerticalLine ((int) x, (float) area.getY(), (float) area.getBottom());
     }
+
+    // Past the end of the pattern is not part of the pattern, and should not
+    // look like empty bars you can write into.
+    const auto endX = (float) keyboardWidth + timeline.xForStep ((double) steps);
+
+    if (endX < (float) area.getRight())
+        paint::inertArea (g, juce::Rectangle<float> (endX, (float) area.getY(),
+                                                     (float) area.getRight() - endX,
+                                                     (float) area.getHeight()).toNearestInt());
 
     // --- notes ---------------------------------------------------------------
     const auto pattern = currentPattern();
     const auto channelId = editorState.getSelectedChannelId();
-    const auto colour = channel.isValid()
-                          ? juce::Colour::fromString ("ff" + channel[ids::colour].toString().getLastCharacters (6))
-                          : Palette::accent;
+    const auto colourForChannel = channelColour();
 
     for (const auto& note : pattern)
     {
         if (! note.hasType (ids::NOTE))
             continue;
 
-        const auto bounds = boundsForNote (note).reduced (1.0f, 1.0f);
-        const auto isSelectedChannel = (int) note[ids::ch] == channelId;
+        const auto bounds = boundsForNote (note).reduced (0.5f, 1.0f);
 
-        if (isSelectedChannel)
+        if (! bounds.intersects (area.toFloat()))
+            continue;
+
+        if ((int) note[ids::ch] != channelId)
         {
-            g.setColour (colour.withAlpha (0.85f));
+            // Other channels' notes are context, not something editable here.
+            g.setColour (colour::dividerStrong.withAlpha (0.35f));
             g.fillRoundedRectangle (bounds, 2.0f);
-            g.setColour (colour.brighter (0.4f));
-            g.drawRoundedRectangle (bounds, 2.0f, 1.0f);
+            continue;
         }
-        else
-        {
-            // Other channels' notes are visible but obviously not editable here.
-            g.setColour (Palette::lineStrong.withAlpha (0.4f));
-            g.fillRoundedRectangle (bounds, 2.0f);
-        }
+
+        // Velocity is visible on the note itself, not only in the lane, so a
+        // quiet note reads as quiet while you are writing the melody.
+        const auto velocity = (float) juce::jlimit (0.0, 1.0, (double) note[ids::velocity]);
+
+        g.setColour (colourForChannel.withAlpha (0.35f + 0.6f * velocity));
+        g.fillRoundedRectangle (bounds, 2.0f);
+
+        g.setColour (isSelected (note) ? colour::textPrimary : colourForChannel.brighter (0.4f));
+        g.drawRoundedRectangle (bounds, 2.0f, isSelected (note) ? 1.6f : 1.0f);
     }
 
     // --- playhead ------------------------------------------------------------
     if (engine.isPlaying() && engine.getMode() == Transport::Mode::pattern)
     {
-        const auto step = (int) engine.getPlayheadSteps() % steps;
-        g.setColour (Palette::playhead.withAlpha (0.25f));
-        g.fillRect (juce::Rectangle<float> ((float) keyboardWidth + (float) step * width, 0.0f,
-                                            width, (float) getHeight()));
+        const auto step = (double) ((int) engine.getPlayheadSteps() % steps);
+        const auto x = (float) keyboardWidth + timeline.xForStep (step);
+
+        g.setColour (colour::playhead.withAlpha (0.2f));
+        g.fillRect (x, (float) area.getY(), (float) timeline.pixelsPerStep, (float) area.getHeight());
+        g.setColour (colour::playhead);
+        g.fillRect (x, (float) area.getY(), 1.5f, (float) area.getHeight());
     }
 
-    if (! channel.isValid())
+    // --- rubber band ---------------------------------------------------------
+    if (gesture == Gesture::selecting && ! rubberBand.isEmpty())
     {
-        g.setColour (Palette::textDim);
-        g.setFont (juce::FontOptions (14.0f));
-        g.drawText ("Select a channel in the Channel Rack", getLocalBounds(),
+        g.setColour (colour::accent.withAlpha (0.18f));
+        g.fillRect (rubberBand);
+        g.setColour (colour::accent);
+        g.drawRect (rubberBand, 1);
+    }
+}
+
+void PianoRollComponent::paintVelocityLane (juce::Graphics& g)
+{
+    using namespace tokens;
+
+    const auto area = velocityArea();
+
+    g.setColour (colour::well);
+    g.fillRect (area);
+    g.setColour (colour::dividerStrong);
+    g.drawHorizontalLine (area.getY(), 0.0f, (float) getWidth());
+
+    // Label gutter, so the lane is identifiable rather than a mystery strip.
+    paint::caption (g, { 0, area.getY(), keyboardWidth, area.getHeight() }, "VEL",
                     juce::Justification::centred);
+
+    const auto channelId = editorState.getSelectedChannelId();
+    const auto colourForChannel = channelColour();
+    const auto barWidth = (float) juce::jlimit (2.0, 14.0, timeline.pixelsPerStep * 0.7);
+
+    const juce::Graphics::ScopedSaveState clip (g);
+    g.reduceClipRegion (area);
+
+    for (const auto& note : currentPattern())
+    {
+        if (! note.hasType (ids::NOTE) || (int) note[ids::ch] != channelId)
+            continue;
+
+        const auto velocity = (float) juce::jlimit (0.0, 1.0, (double) note[ids::velocity]);
+        const auto x = (float) keyboardWidth + timeline.xForStep ((double) (int) note[ids::step]);
+
+        if (x < (float) area.getX() - barWidth || x > (float) area.getRight())
+            continue;
+
+        const auto height = velocity * (float) (area.getHeight() - 8);
+        const auto bar = juce::Rectangle<float> (x + 1.0f, (float) area.getBottom() - 4.0f - height,
+                                                 barWidth, height);
+
+        g.setColour (isSelected (note) ? colour::textPrimary : colourForChannel.withAlpha (0.85f));
+        g.fillRect (bar);
+        g.setColour (colour::wellDeep);
+        g.fillEllipse (bar.getX() - 1.0f, bar.getY() - 2.0f, barWidth + 2.0f, 4.0f);
+        g.setColour (isSelected (note) ? colour::textPrimary : colourForChannel);
+        g.fillEllipse (bar.getX(), bar.getY() - 1.5f, barWidth, 3.0f);
+    }
+}
+
+void PianoRollComponent::paint (juce::Graphics& g)
+{
+    using namespace tokens;
+
+    g.fillAll (colour::background);
+
+    paintNotes (g);
+    paintRuler (g);
+    paintVelocityLane (g);
+
+    // Corner above the keyboard, where the ruler and the gutter meet.
+    g.setColour (colour::surface);
+    g.fillRect (0, 0, keyboardWidth, rulerHeight);
+    g.setColour (colour::dividerStrong);
+    g.drawHorizontalLine (rulerHeight - 1, 0.0f, (float) keyboardWidth);
+
+    if (! ProjectEdits::findChannel (document.getState(), editorState.getSelectedChannelId()).isValid())
+    {
+        g.setColour (colour::textSecondary);
+        g.setFont (juce::FontOptions ((float) type::body));
+        g.drawText ("Select a channel in the Channel Rack", noteArea(), juce::Justification::centred);
     }
 }
 

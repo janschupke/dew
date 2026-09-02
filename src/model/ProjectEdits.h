@@ -49,6 +49,15 @@ struct ProjectEdits
 
     static void resizeNote (juce::ValueTree note, int newLengthSteps, juce::UndoManager*);
 
+    static void setNoteVelocity (juce::ValueTree note, double velocity, juce::UndoManager*);
+
+    /** Grows a pattern so every note fits, and returns true if it had to.
+
+        Never shrinks: a pattern deliberately left longer than its notes is a
+        rest at the end, and silently trimming it would destroy that.
+    */
+    static bool growPatternToFitNotes (juce::ValueTree pattern, juce::UndoManager*);
+
     // --- channels ------------------------------------------------------------
     static juce::ValueTree addChannel (juce::ValueTree project, const juce::String& name,
                                        juce::UndoManager*);
