@@ -825,6 +825,23 @@ void ProjectEdits::removeClip (juce::ValueTree playlistTrack, juce::ValueTree cl
         playlistTrack.removeChild (index, undo);
 }
 
+juce::ValueTree ProjectEdits::copyClip (juce::ValueTree targetTrack, const juce::ValueTree& clip,
+                                        int startBar, juce::UndoManager* undo)
+{
+    if (! clip.isValid() || ! targetTrack.isValid())
+        return {};
+
+    // Whole-node rather than dispatching on the kind: a clip carries what it
+    // refers to - a pattern, a channel or an automation lane - and copying the
+    // node carries all three without this having to learn the table. Clips have
+    // no id of their own, so nothing has to be reassigned.
+    auto copy = clip.createCopy();
+    copy.setProperty (ids::startBar, juce::jmax (0, startBar), nullptr);
+
+    targetTrack.appendChild (copy, undo);
+    return copy;
+}
+
 juce::ValueTree ProjectEdits::moveClipToTrack (juce::ValueTree fromTrack, juce::ValueTree clip,
                                                juce::ValueTree toTrack, int newStartBar,
                                                juce::UndoManager* undo)

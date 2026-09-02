@@ -166,6 +166,17 @@ public:
         lastNoteVelocity = juce::jlimit (0.05, 1.0, velocity);
     }
 
+    /** The same idea one level up: the length of the last clip sized, so the
+        playlist's paint tool lays a run of clips at the length being worked in
+        rather than one bar at a time.
+    */
+    int getLastClipLengthBars() const noexcept { return lastClipLengthBars; }
+
+    void rememberClip (int lengthBars)
+    {
+        lastClipLengthBars = juce::jmax (1, lengthBars);
+    }
+
 private:
     int selectedChannelId = 1;
     int currentPatternId = 1;
@@ -175,6 +186,7 @@ private:
 
     int lastNoteLengthSteps = 1;
     double lastNoteVelocity = 1.0;
+    int lastClipLengthBars = 1;
 
     juce::Range<int> selectedBars;
     juce::Range<int> selectedSteps;

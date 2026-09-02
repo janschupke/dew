@@ -66,6 +66,7 @@ add_library(dew_core STATIC
   ui/RandomizePanel.cpp
   ui/PianoRollComponent.cpp
   ui/PlaylistComponent.cpp
+  ui/PlaylistToolbar.cpp
   ui/MixerComponent.cpp
   ui/InstrumentPanel.cpp
   ui/EditorTabs.cpp

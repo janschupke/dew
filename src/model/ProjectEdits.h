@@ -232,6 +232,16 @@ struct ProjectEdits
         reparenting, and the caller must use the returned tree afterwards - the
         original is detached.
     */
+    /** Copies a clip onto a track, leaving the original where it is.
+
+        Whole-node, so it carries whatever kind the clip is - MIDI, audio or
+        automation - rather than needing to know the clip-kind table the way
+        the three addXClip functions do. This is moveClipToTrack minus its
+        removal, which is precisely what a copy-drag wants.
+    */
+    static juce::ValueTree copyClip (juce::ValueTree targetTrack, const juce::ValueTree& clip,
+                                     int startBar, juce::UndoManager*);
+
     static juce::ValueTree moveClipToTrack (juce::ValueTree fromTrack, juce::ValueTree clip,
                                             juce::ValueTree toTrack, int newStartBar,
                                             juce::UndoManager*);

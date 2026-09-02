@@ -86,8 +86,11 @@ juce::Point<int> pointFor (PlaylistHarness& h, int bar, int trackIndex)
 
 /** A point on the ruler above a bar.
 
-    Track zero's top edge IS the bottom of the ruler, so the geometry comes from
-    the component rather than from a copy of its private constants.
+    Both coordinates come from the component: the x from where it would paint a
+    clip in that bar, the y from the ruler strip it publishes. This used to take
+    half of track zero's top edge, which was the middle of the ruler only for as
+    long as the ruler started at the very top of the component - it does not,
+    now there is a tool strip above it.
 */
 juce::Point<int> rulerPointFor (PlaylistHarness& h, int bar)
 {
@@ -96,7 +99,8 @@ juce::Point<int> rulerPointFor (PlaylistHarness& h, int bar)
     const auto bounds = h.playlist.getBoundsForClip (probe, 0);
     ProjectEdits::removeClip (h.track (0), probe, &scratch);
 
-    return { (int) (bounds.getX() + bounds.getWidth() * 0.5f), (int) (bounds.getY() * 0.5f) };
+    return { (int) (bounds.getX() + bounds.getWidth() * 0.5f),
+             h.playlist.getRulerArea().getCentreY() };
 }
 
 const juce::ModifierKeys shift { juce::ModifierKeys::shiftModifier };
@@ -602,6 +606,219 @@ TEST_CASE ("a mod-click on the playlist ruler does not move the transport",
     REQUIRE (juce::exactlyEqual (h.engine.getPlayheadSteps(), 0.0));
 }
 
+// --- zoom, tools and copies ---------------------------------------------------
+
+TEST_CASE ("the playlist zooms, and a resize does not undo it", "[ui][playlist][zoom]")
+{
+    // Zoom used to be a formula - the song's length divided into the window -
+    // recomputed on every resized(). So it could not be zoomed at all: any
+    // change, a clip moved or a track added, put it straight back.
+    const juce::ScopedJuceInitialiser_GUI juceInit;
+    PlaylistHarness h;
+
+    const auto fitted = h.playlist.getTimeline().pixelsPerStep;
+    REQUIRE (fitted > 0.0);
+
+    auto& toolbar = h.playlist.getToolbar();
+    REQUIRE (toolbar.onZoom != nullptr);
+
+    toolbar.onZoom (1.5);
+    const auto zoomed = h.playlist.getTimeline().pixelsPerStep;
+    REQUIRE (zoomed > fitted);
+
+    h.playlist.resized();
+    CHECK (juce::exactlyEqual (h.playlist.getTimeline().pixelsPerStep, zoomed));
+
+    // Adding a track is a change that used to re-fit as well.
+    h.playlist.addTrack();
+    CHECK (juce::exactlyEqual (h.playlist.getTimeline().pixelsPerStep, zoomed));
+
+    toolbar.onZoom (0.0);
+    CHECK (h.playlist.getTimeline().pixelsPerStep < zoomed);
+    CHECK (juce::exactlyEqual (h.playlist.getTimeline().scrollOffsetSteps, 0.0));
+}
+
+TEST_CASE ("zoomed out, the view reaches past the end of the song", "[ui][playlist][zoom]")
+{
+    const juce::ScopedJuceInitialiser_GUI juceInit;
+    PlaylistHarness h;
+
+    // Zoom right in, so the song is much wider than the window and there is
+    // somewhere to scroll to.
+    for (int i = 0; i < 6; ++i)
+        h.playlist.getToolbar().onZoom (1.5);
+
+    auto& timeline = const_cast<TimelineView&> (h.playlist.getTimeline());
+    timeline.scrollOffsetSteps = 1e6;
+    h.playlist.resized();
+
+    const auto bars = juce::jmax (4, (int) h.document.getState()[ids::barsInSong]);
+    const auto offset = h.playlist.getTimeline().scrollOffsetSteps;
+
+    // Clamped to a screen short of the end, so the last bar can be worked on
+    // with empty space beside it rather than jammed against the window edge -
+    // which is what the piano roll has always done and the playlist could not,
+    // because the re-fit put the scroll back to zero every time.
+    INFO ("scrolled to " << offset << " of " << bars << " bars");
+    CHECK (offset > 0.0);
+    CHECK (offset < (double) bars);
+}
+
+TEST_CASE ("the paint tool lays a clip in every bar it crosses", "[ui][playlist]")
+{
+    const juce::ScopedJuceInitialiser_GUI juceInit;
+    PlaylistHarness h;
+
+    REQUIRE (h.countClips (0) == 0);
+
+    h.playlist.setTool (PlaylistTool::paint);
+
+    const auto from = pointFor (h, 1, 0);
+    const auto to = pointFor (h, 4, 0);
+
+    h.playlist.mouseDown (eventAt (h.playlist, from));
+
+    for (int bar = 2; bar <= 4; ++bar)
+        h.playlist.mouseDrag (eventAt (h.playlist, pointFor (h, bar, 0), 1, {}, true));
+
+    h.playlist.mouseUp (eventAt (h.playlist, to, 1, {}, true));
+
+    INFO ("clips on track 0: " << h.countClips (0));
+    CHECK (h.countClips (0) == 4);
+
+    for (int bar = 1; bar <= 4; ++bar)
+        CHECK (ProjectEdits::findClipAtBar (h.track (0), bar).isValid());
+}
+
+TEST_CASE ("the paint tool does not stack a clip on one already there", "[ui][playlist]")
+{
+    const juce::ScopedJuceInitialiser_GUI juceInit;
+    PlaylistHarness h;
+
+    juce::UndoManager setup;
+    ProjectEdits::addClip (h.track (0), 1, 2, 1, &setup);
+
+    h.playlist.setTool (PlaylistTool::paint);
+
+    h.playlist.mouseDown (eventAt (h.playlist, pointFor (h, 1, 0)));
+    h.playlist.mouseDrag (eventAt (h.playlist, pointFor (h, 2, 0), 1, {}, true));
+    h.playlist.mouseDrag (eventAt (h.playlist, pointFor (h, 3, 0), 1, {}, true));
+    h.playlist.mouseUp   (eventAt (h.playlist, pointFor (h, 3, 0), 1, {}, true));
+
+    // Three bars crossed, one of them already occupied.
+    CHECK (h.countClips (0) == 3);
+}
+
+TEST_CASE ("a mod-drag copies a clip and leaves the original", "[ui][playlist]")
+{
+    const juce::ScopedJuceInitialiser_GUI juceInit;
+    PlaylistHarness h;
+
+    juce::UndoManager setup;
+    auto original = ProjectEdits::addClip (h.track (0), 1, 1, 1, &setup);
+    const auto patternId = (int) original[ids::patternId];
+
+    const juce::ModifierKeys mod { juce::ModifierKeys::commandModifier };
+
+    h.playlist.mouseDown (eventAt (h.playlist, pointFor (h, 1, 0), 1, mod));
+    h.playlist.mouseDrag (eventAt (h.playlist, pointFor (h, 5, 0), 1, mod, true));
+    h.playlist.mouseUp   (eventAt (h.playlist, pointFor (h, 5, 0), 1, mod, true));
+
+    INFO ("clips on track 0: " << h.countClips (0));
+    CHECK (h.countClips (0) == 2);
+
+    // The original stays where it was, and both name the same pattern - a plain
+    // copy is another instance of the same phrase.
+    auto stayed = ProjectEdits::findClipAtBar (h.track (0), 1);
+    auto copy = ProjectEdits::findClipAtBar (h.track (0), 5);
+
+    REQUIRE (stayed.isValid());
+    REQUIRE (copy.isValid());
+    CHECK ((int) copy[ids::patternId] == patternId);
+}
+
+TEST_CASE ("a mod-drag that never moves makes no copy", "[ui][playlist]")
+{
+    const juce::ScopedJuceInitialiser_GUI juceInit;
+    PlaylistHarness h;
+
+    juce::UndoManager setup;
+    ProjectEdits::addClip (h.track (0), 1, 1, 1, &setup);
+
+    const juce::ModifierKeys mod { juce::ModifierKeys::commandModifier };
+
+    h.playlist.mouseDown (eventAt (h.playlist, pointFor (h, 1, 0), 1, mod));
+    h.playlist.mouseUp   (eventAt (h.playlist, pointFor (h, 1, 0), 1, mod));
+
+    // Otherwise a mod-press litters a copy directly on top of its own original.
+    CHECK (h.countClips (0) == 1);
+}
+
+TEST_CASE ("a mod-shift-drag gives the copy a pattern of its own", "[ui][playlist]")
+{
+    const juce::ScopedJuceInitialiser_GUI juceInit;
+    PlaylistHarness h;
+
+    juce::UndoManager setup;
+    auto original = ProjectEdits::addClip (h.track (0), 1, 1, 1, &setup);
+    const auto patternId = (int) original[ids::patternId];
+
+    // Something in the pattern, so the copy can be shown to have carried it.
+    auto pattern = ProjectEdits::findPattern (h.document.getState(), patternId);
+    ProjectEdits::addNote (pattern, 1, 3, 1, 64, 0.8f, &setup);
+
+    const juce::ModifierKeys modShift { juce::ModifierKeys::commandModifier
+                                          | juce::ModifierKeys::shiftModifier };
+
+    h.playlist.mouseDown (eventAt (h.playlist, pointFor (h, 1, 0), 1, modShift));
+    h.playlist.mouseDrag (eventAt (h.playlist, pointFor (h, 5, 0), 1, modShift, true));
+    h.playlist.mouseUp   (eventAt (h.playlist, pointFor (h, 5, 0), 1, modShift, true));
+
+    auto copy = ProjectEdits::findClipAtBar (h.track (0), 5);
+    REQUIRE (copy.isValid());
+
+    const auto freshId = (int) copy[ids::patternId];
+    INFO ("original pattern " << patternId << ", copy's " << freshId);
+
+    // Its own pattern, so editing this repeat does not edit every other one.
+    CHECK (freshId != patternId);
+
+    auto fresh = ProjectEdits::findPattern (h.document.getState(), freshId);
+    REQUIRE (fresh.isValid());
+
+    int notes = 0;
+
+    for (const auto& note : fresh)
+        if (note.hasType (ids::NOTE))
+            ++notes;
+
+    CHECK (notes == 1);
+}
+
+TEST_CASE ("the clip menu duplicates a pattern, for that clip alone", "[ui][playlist]")
+{
+    const juce::ScopedJuceInitialiser_GUI juceInit;
+    PlaylistHarness h;
+
+    juce::UndoManager setup;
+    ProjectEdits::addClip (h.track (0), 1, 2, 1, &setup);
+    auto other = ProjectEdits::addClip (h.track (1), 1, 2, 1, &setup);
+
+    const auto items = h.playlist.clipMenuItems (0, 2);
+    INFO ("items: " << items.joinIntoString (", "));
+    REQUIRE (items.contains ("Duplicate pattern"));
+
+    REQUIRE (h.playlist.applyClipMenuChoice (0, 2, 5));
+
+    auto changed = ProjectEdits::findClipAtBar (h.track (0), 2);
+    REQUIRE (changed.isValid());
+
+    // Only the clip it was asked about. A pattern is shared by every clip that
+    // names it, so duplicating for one must not re-point the rest.
+    CHECK ((int) changed[ids::patternId] != 1);
+    CHECK ((int) other[ids::patternId] == 1);
+}
+
 // --- track rows and the clip menu --------------------------------------------
 
 TEST_CASE ("the add-track button is the row after the last track", "[ui][playlist]")
@@ -617,7 +834,10 @@ TEST_CASE ("the add-track button is the row after the last track", "[ui][playlis
     REQUIRE (button->getX() >= 0);
     REQUIRE (button->getRight() <= 156);
 
-    const auto lastTrackBottom = 22 + h.playlist.getNumTracks() * 34;
+    // Asked of the component: the lanes start at the bottom of the ruler, which
+    // is no longer the top of the component now there is a tool strip above it.
+    const auto lastTrackBottom = h.playlist.getRulerArea().getBottom()
+                               + h.playlist.getNumTracks() * 34;
     REQUIRE (button->getY() >= lastTrackBottom);
     REQUIRE (button->getY() < lastTrackBottom + 34);
 }

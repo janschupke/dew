@@ -185,6 +185,20 @@ PlaylistComponent::PlaylistComponent (ProjectDocument& d, AudioEngine& e, Editor
     addTrackButton.setComponentID ("addTrackButton");
     addAndMakeVisible (addTrackButton);
 
+    toolbar.onToolChanged = [this] { repaint(); };
+    toolbar.onZoom = [this] (double factor)
+    {
+        // Zero means "fit the song", the same shape the piano roll's strip
+        // reports so the two mean one thing.
+        if (juce::exactlyEqual (factor, 0.0))
+            zoomToFit();
+        else
+            zoomBy (factor, contentWidth() * 0.5f);
+    };
+    addAndMakeVisible (toolbar);
+
+    setWantsKeyboardFocus (true);
+
     // The ruler works in BARS here, so everything the gesture is handed is in
     // bars and only the seek converts - one place, rather than a conversion in
     // each of the three branches this used to have.
@@ -240,7 +254,7 @@ void PlaylistComponent::refresh()
 {
     document.getState().addListener (this);
     rebuildHeaders();
-    updateZoom();
+    updateScrollBar();
     repaint();
 }
 
@@ -282,7 +296,7 @@ juce::ValueTree PlaylistComponent::trackAt (int index) const
 
 int PlaylistComponent::tracksBottom() const
 {
-    return rulerHeight + getNumTracks() * rowHeight;
+    return lanesTop() + getNumTracks() * rowHeight;
 }
 
 float PlaylistComponent::contentWidth() const
@@ -300,7 +314,7 @@ int PlaylistComponent::barAtX (int x) const
 
 int PlaylistComponent::trackAtY (int y) const
 {
-    return (y - rulerHeight) / rowHeight;
+    return (y - lanesTop()) / rowHeight;
 }
 
 juce::Rectangle<float> PlaylistComponent::boundsForClip (const juce::ValueTree& clip, int trackIndex) const
@@ -309,7 +323,7 @@ juce::Rectangle<float> PlaylistComponent::boundsForClip (const juce::ValueTree& 
     const auto length = juce::jmax (1, (int) clip[ids::lengthBars]);
 
     return { (float) headerWidth + timeline.xForStep ((double) start),
-             (float) (rulerHeight + trackIndex * rowHeight),
+             (float) (lanesTop() + trackIndex * rowHeight),
              (float) (length * timeline.pixelsPerStep),
              (float) rowHeight };
 }
@@ -333,15 +347,39 @@ float PlaylistComponent::playheadX() const
 
 // --- layout ------------------------------------------------------------------
 
-void PlaylistComponent::updateZoom()
+void PlaylistComponent::zoomToFit()
 {
     if (getWidth() <= 0)
         return;
 
-    timeline.pixelsPerStep = juce::jlimit ((double) minBarWidth, (double) maxBarWidth,
-                                           (double) contentWidth() / (double) numBars());
+    // Framing on request still counts as taking the view: it is a zoom someone
+    // asked for at a size they can see, not the default one.
+    viewIsUsers = true;
+    timeline.fit (numBars(), contentWidth());
+    updateScrollBar();
+    repaint();
+}
 
-    const auto scrollable = timeline.visibleSteps (contentWidth()) < (double) numBars() - 1e-9;
+void PlaylistComponent::zoomBy (double factor, float anchorX)
+{
+    viewIsUsers = true;
+    timeline.zoomAround (factor, anchorX);
+    updateScrollBar();
+    repaint();
+}
+
+void PlaylistComponent::updateScrollBar()
+{
+    if (getWidth() <= 0)
+        return;
+
+    // The scroll range reaches a screen PAST the song, which is what
+    // TimelineView::clampScroll already allows and what the piano roll has
+    // always done. Pinning it to the song's length is what made the empty
+    // space beyond the last bar unreachable - there was nowhere to scroll to.
+    const auto visible = timeline.visibleSteps (contentWidth());
+    const auto scrollable = visible < (double) numBars() - 1e-9;
+
     horizontalScroll.setVisible (scrollable);
 
     if (! scrollable)
@@ -351,8 +389,8 @@ void PlaylistComponent::updateZoom()
 
     const juce::ScopedValueSetter<bool> quiet (updatingScrollBar, true);
     horizontalScroll.setRangeLimits (0.0, (double) numBars(), juce::dontSendNotification);
-    horizontalScroll.setCurrentRange (timeline.scrollOffsetSteps,
-                                      timeline.visibleSteps (contentWidth()), juce::dontSendNotification);
+    horizontalScroll.setCurrentRange (timeline.scrollOffsetSteps, visible,
+                                      juce::dontSendNotification);
 }
 
 void PlaylistComponent::rebuildHeaders()
@@ -373,27 +411,36 @@ void PlaylistComponent::rebuildHeaders()
 
 void PlaylistComponent::resized()
 {
+    toolbar.setBounds (0, 0, getWidth(), toolbarHeight);
+
     horizontalScroll.setBounds (headerWidth, getHeight() - scrollThickness,
                                 (int) contentWidth(), scrollThickness);
 
     // In the corner above the track headers, where the ruler does not reach.
-    addAutomationButton.setBounds (juce::Rectangle<int> (0, 0, headerWidth, rulerHeight)
+    addAutomationButton.setBounds (juce::Rectangle<int> (0, rulerTop(), headerWidth, rulerHeight)
                                        .reduced (space::xs, space::xxs));
 
     for (int i = 0; i < headers.size(); ++i)
-        headers[i]->setBounds (0, rulerHeight + i * rowHeight, headerWidth, rowHeight);
+        headers[i]->setBounds (0, lanesTop() + i * rowHeight, headerWidth, rowHeight);
 
     // Directly below the last track, and never over the horizontal scrollbar -
     // an add button you cannot reach because a scrollbar is on top of it is the
     // same as no add button.
-    const auto buttonTop = rulerHeight + headers.size() * rowHeight;
+    const auto buttonTop = lanesTop() + headers.size() * rowHeight;
     const auto room = getHeight() - scrollThickness - buttonTop;
 
     addTrackButton.setVisible (room >= rowHeight);
     addTrackButton.setBounds (juce::Rectangle<int> (0, buttonTop, headerWidth, rowHeight)
                                   .reduced (space::sm, space::xs));
 
-    updateZoom();
+    // Until someone has zoomed or scrolled, a layout frames the whole song.
+    // Latching after the FIRST layout instead would hand the zoom to whatever
+    // size the component happened to be built at, which is not the size it ends
+    // up; re-fitting always is what made the playlist unzoomable.
+    if (! viewIsUsers && getWidth() > 0)
+        timeline.fit (numBars(), contentWidth());
+
+    updateScrollBar();
 }
 
 void PlaylistComponent::scrollBarMoved (juce::ScrollBar*, double start)
@@ -401,18 +448,62 @@ void PlaylistComponent::scrollBarMoved (juce::ScrollBar*, double start)
     if (updatingScrollBar)
         return;
 
+    viewIsUsers = true;
     timeline.scrollOffsetSteps = start;
     repaint();
 }
 
-void PlaylistComponent::mouseWheelMove (const juce::MouseEvent&, const juce::MouseWheelDetails& wheel)
+void PlaylistComponent::mouseWheelMove (const juce::MouseEvent& event,
+                                        const juce::MouseWheelDetails& wheel)
 {
-    if (! horizontalScroll.isVisible())
+    // Mod-wheel zooms around the pointer, exactly as it does over the piano
+    // roll. The playlist answered only to scrolling, and only when there was
+    // something to scroll.
+    if (event.mods.isCommandDown() || event.mods.isCtrlDown())
+    {
+        zoomBy (std::pow (2.0, (double) wheel.deltaY * 3.0),
+                (float) (event.x - headerWidth));
         return;
+    }
 
+    viewIsUsers = true;
     timeline.scrollOffsetSteps -= (double) (wheel.deltaX + wheel.deltaY) * 4.0;
-    updateZoom();
+    updateScrollBar();
     repaint();
+}
+
+void PlaylistComponent::mouseMagnify (const juce::MouseEvent& event, float scaleFactor)
+{
+    zoomBy ((double) scaleFactor, (float) (event.x - headerWidth));
+}
+
+bool PlaylistComponent::keyPressed (const juce::KeyPress& key)
+{
+    if (key.getTextCharacter() == '+' || key.getTextCharacter() == '=')
+    {
+        zoomBy (1.5, contentWidth() * 0.5f);
+        return true;
+    }
+
+    if (key.getTextCharacter() == '-' || key.getTextCharacter() == '_')
+    {
+        zoomBy (1.0 / 1.5, contentWidth() * 0.5f);
+        return true;
+    }
+
+    if (key.getTextCharacter() == '1')
+    {
+        toolbar.setTool (PlaylistTool::select);
+        return true;
+    }
+
+    if (key.getTextCharacter() == '2')
+    {
+        toolbar.setTool (PlaylistTool::paint);
+        return true;
+    }
+
+    return false;
 }
 
 // --- gestures ----------------------------------------------------------------
@@ -543,7 +634,7 @@ juce::ValueTree PlaylistComponent::createAutomationClip (const AutomationTarget&
         auto clip = ProjectEdits::addAutomationClip (track, (int) automation[ids::id],
                                                      startBar, lengthBars, &undo);
         ProjectEdits::growSongToFitClips (document.getState(), &undo);
-        updateZoom();
+        updateScrollBar();
         repaint();
         return clip;
     }
@@ -556,7 +647,17 @@ juce::ValueTree PlaylistComponent::createAutomationClip (const AutomationTarget&
 
 namespace
 {
-    enum class ClipMenuItem { openPattern = 1, deleteClip, deletePoint, addClip };
+    // Numbered EXPLICITLY. These ids are what applyClipMenuChoice takes, so a
+    // test names an item by its number - and inserting an item in the middle
+    // would silently re-aim every one of them at something else.
+    enum class ClipMenuItem
+    {
+        openPattern      = 1,
+        deleteClip       = 2,
+        deletePoint      = 3,
+        addClip          = 4,
+        duplicatePattern = 5
+    };
 }
 
 juce::PopupMenu PlaylistComponent::buildClipMenu (const juce::ValueTree& track, int bar) const
@@ -580,7 +681,15 @@ juce::PopupMenu PlaylistComponent::buildClipMenu (const juce::ValueTree& track, 
     // would be an item that does nothing on some of the clips in the
     // arrangement.
     if (ProjectEdits::isMidiClip (clip))
+    {
         menu.addItem ((int) ClipMenuItem::openPattern, "Open pattern");
+
+        // Gives THIS clip a pattern of its own. A pattern is shared by every
+        // clip that names it, so the only way to vary one repeat of a phrase
+        // was to make a pattern in the transport bar and re-point the clip by
+        // hand.
+        menu.addItem ((int) ClipMenuItem::duplicatePattern, "Duplicate pattern");
+    }
 
     if (menu.getNumItems() > 0)
         menu.addSeparator();
@@ -598,6 +707,27 @@ void PlaylistComponent::applyClipChoice (juce::ValueTree track, int bar, int cho
     {
         case ClipMenuItem::openPattern:
             openPatternOf (clip);
+            break;
+
+        case ClipMenuItem::duplicatePattern:
+            if (clip.isValid() && ProjectEdits::isMidiClip (clip))
+            {
+                auto pattern = ProjectEdits::findPattern (document.getState(),
+                                                          (int) clip[ids::patternId]);
+
+                if (pattern.isValid())
+                {
+                    undo.beginNewTransaction ("Duplicate pattern");
+
+                    // One transaction covers both halves: a copy nothing points
+                    // at, or a clip pointing at a pattern that undo took away,
+                    // are each worse than the state this started in.
+                    if (auto fresh = ProjectEdits::duplicatePattern (document.getState(),
+                                                                     pattern, &undo);
+                        fresh.isValid())
+                        clip.setProperty (ids::patternId, (int) fresh[ids::id], &undo);
+                }
+            }
             break;
 
         case ClipMenuItem::deleteClip:
@@ -620,7 +750,7 @@ void PlaylistComponent::applyClipChoice (juce::ValueTree track, int bar, int cho
             undo.beginNewTransaction ("Add clip");
             ProjectEdits::addClip (track, editorState.getCurrentPatternId(), bar, 1, &undo);
             ProjectEdits::growSongToFitClips (document.getState(), &undo);
-            updateZoom();
+            updateScrollBar();
             break;
 
         default:
@@ -738,13 +868,13 @@ void PlaylistComponent::mouseDoubleClick (const juce::MouseEvent& event)
 {
     // On the ruler, a double-click clears the span - one rule, shared with the
     // piano roll and the channel rack rather than repeated in each of them.
-    if (event.x >= headerWidth && event.y < rulerHeight)
+    if (event.x >= headerWidth && event.y >= rulerTop() && event.y < lanesTop())
     {
         rulerGesture.mouseDoubleClick (event);
         return;
     }
 
-    if (event.x < headerWidth || event.y < rulerHeight)
+    if (event.x < headerWidth || event.y < lanesTop())
         return;
 
     const auto track = trackAt (trackAtY (event.y));
@@ -780,13 +910,13 @@ void PlaylistComponent::mouseDown (const juce::MouseEvent& event)
     // was as inert as the piano roll's. Everything it does now lives in
     // ruler::Gesture, which is why this is one line rather than three branches
     // the piano roll also had a copy of.
-    if (event.x >= headerWidth && event.y < rulerHeight)
+    if (event.x >= headerWidth && event.y >= rulerTop() && event.y < lanesTop())
     {
         rulerGesture.mouseDown (event);
         return;
     }
 
-    if (event.x < headerWidth || event.y < rulerHeight || event.y >= tracksBottom())
+    if (event.x < headerWidth || event.y < lanesTop() || event.y >= tracksBottom())
         return;
 
     const auto trackIndex = trackAtY (event.y);
@@ -865,10 +995,32 @@ void PlaylistComponent::mouseDown (const juce::MouseEvent& event)
         }
         else
         {
+            // Mod copies rather than moves, and mod-shift gives the copy a
+            // pattern of its own. Latched here rather than read on every drag
+            // sample: a modifier let go halfway through a drag must not turn a
+            // copy back into a move, and the copy has to be made exactly once.
+            dragCopies = event.mods.isCommandDown() || event.mods.isCtrlDown();
+            dragCopyIsUnique = dragCopies && event.mods.isShiftDown();
+
             gesture = Gesture::moving;
             dragBarOffset = bar - (int) clip[ids::startBar];
-            undo.beginNewTransaction ("Move clip");
+            undo.beginNewTransaction (dragCopies ? "Copy clip" : "Move clip");
         }
+
+        return;
+    }
+
+    // The paint tool lays a clip per cell the pointer crosses. Placing one and
+    // sizing it with the same drag is the select tool's gesture and is not
+    // duplicated here.
+    if (toolbar.getTool() == PlaylistTool::paint)
+    {
+        gesture = Gesture::painting;
+        lastPaintedCell = { -1, -1 };
+        undo.beginNewTransaction ("Paint clips");
+
+        if (paintClipAt (event.getPosition()))
+            repaint();
 
         return;
     }
@@ -879,14 +1031,100 @@ void PlaylistComponent::mouseDown (const juce::MouseEvent& event)
     dropTrackIndex = trackIndex;
     gesture = Gesture::resizing;
     ProjectEdits::growSongToFitClips (document.getState(), &undo);
-    updateZoom();
+    updateScrollBar();
     repaint();
+}
+
+bool PlaylistComponent::paintClipAt (juce::Point<int> position)
+{
+    if (position.x < headerWidth || position.y < lanesTop() || position.y >= tracksBottom())
+        return false;
+
+    const auto trackIndex = trackAtY (position.y);
+    auto track = trackAt (trackIndex);
+
+    if (! track.isValid())
+        return false;
+
+    const auto bar = barAtX (position.x);
+
+    if (bar == lastPaintedCell.x && trackIndex == lastPaintedCell.y)
+        return false;
+
+    lastPaintedCell = { bar, trackIndex };
+
+    // Anything already occupying this bar, whether it starts here or runs
+    // through it - painting over a clip should not stack a second one inside it.
+    if (ProjectEdits::findClipAtBar (track, bar).isValid())
+        return false;
+
+    auto& undo = document.getUndoManager();
+
+    ProjectEdits::addClip (track, editorState.getCurrentPatternId(), bar,
+                           editorState.getLastClipLengthBars(), &undo);
+    ProjectEdits::growSongToFitClips (document.getState(), &undo);
+    return true;
+}
+
+void PlaylistComponent::beginCopyDrag (int targetTrackIndex, int targetBar)
+{
+    auto targetTrack = trackAt (targetTrackIndex);
+
+    if (! targetTrack.isValid() || ! draggedClip.isValid())
+        return;
+
+    auto& undo = document.getUndoManager();
+    auto source = draggedClip;
+
+    // A unique copy gets a pattern of its own, so editing it afterwards does
+    // not edit every clip that shared the original.
+    if (dragCopyIsUnique && ProjectEdits::isMidiClip (source))
+    {
+        auto pattern = ProjectEdits::findPattern (document.getState(),
+                                                  (int) source[ids::patternId]);
+
+        if (pattern.isValid())
+        {
+            auto fresh = ProjectEdits::duplicatePattern (document.getState(), pattern, &undo);
+
+            if (fresh.isValid())
+            {
+                source = source.createCopy();
+                source.setProperty (ids::patternId, (int) fresh[ids::id], nullptr);
+            }
+        }
+    }
+
+    // The gesture rebinds to the COPY and leaves the original where it was -
+    // the same rebinding a cross-track move already forces, for the same reason:
+    // the rest of the drag would otherwise edit a node nothing is looking at.
+    if (auto copy = ProjectEdits::copyClip (targetTrack, source, targetBar, &undo);
+        copy.isValid())
+    {
+        draggedClip = copy;
+        draggedClipTrack = targetTrack;
+        dropTrackIndex = targetTrackIndex;
+    }
+
+    dragCopies = false;
+    dragCopyIsUnique = false;
 }
 
 void PlaylistComponent::mouseDrag (const juce::MouseEvent& event)
 {
     if (rulerGesture.mouseDrag (event))
         return;
+
+    if (gesture == Gesture::painting)
+    {
+        if (paintClipAt (event.getPosition()))
+        {
+            updateScrollBar();
+            repaint();
+        }
+
+        return;
+    }
 
     if (! draggedClip.isValid())
         return;
@@ -912,6 +1150,13 @@ void PlaylistComponent::mouseDrag (const juce::MouseEvent& event)
         const auto targetBar = juce::jmax (0, barAtX (event.x) - dragBarOffset);
         const auto targetTrackIndex = juce::jlimit (0, juce::jmax (0, getNumTracks() - 1),
                                                     trackAtY (event.y));
+
+        // On the first drag that actually goes somewhere, so a mod-press that
+        // never moves does not litter a copy on top of its own original.
+        if (dragCopies && (targetBar != (int) draggedClip[ids::startBar]
+                           || targetTrackIndex != dropTrackIndex))
+            beginCopyDrag (targetTrackIndex, targetBar);
+
         auto targetTrack = trackAt (targetTrackIndex);
 
         if (targetTrack.isValid() && targetTrack != draggedClipTrack)
@@ -931,7 +1176,7 @@ void PlaylistComponent::mouseDrag (const juce::MouseEvent& event)
     }
 
     ProjectEdits::growSongToFitClips (document.getState(), &undo);
-    updateZoom();
+    updateScrollBar();
     repaint();
 }
 
@@ -941,11 +1186,19 @@ void PlaylistComponent::mouseUp (const juce::MouseEvent& event)
     // clip-dragging state set, so the reset below is a no-op for it.
     rulerGesture.mouseUp (event);
 
+    // The next clip painted takes the length of the last one sized, so laying a
+    // run of four-bar clips does not mean resizing every one.
+    if (draggedClip.isValid() && (gesture == Gesture::resizing || gesture == Gesture::moving))
+        editorState.rememberClip ((int) draggedClip[ids::lengthBars]);
+
     draggedClip = {};
     draggedClipTrack = {};
     draggedPoint = {};
     dropTrackIndex = -1;
     gesture = Gesture::none;
+    dragCopies = false;
+    dragCopyIsUnique = false;
+    lastPaintedCell = { -1, -1 };
     repaint();
 }
 
@@ -981,13 +1234,13 @@ void PlaylistComponent::timerCallback()
     const auto to   = juce::jmax (x, lastPaintedPlayheadX < 0.0f ? x : lastPaintedPlayheadX);
 
     lastPaintedPlayheadX = x;
-    repaint ((int) from - 3, 0, (int) (to - from) + 7, tracksBottom());
+    repaint ((int) from - 3, rulerTop(), (int) (to - from) + 7, tracksBottom() - rulerTop());
 }
 
 void PlaylistComponent::valueTreePropertyChanged (juce::ValueTree& tree, const juce::Identifier& property)
 {
     if (property == ids::barsInSong)
-        updateZoom();
+        updateScrollBar();
 
     if (tree.hasType (ids::PLAYLIST_TRACK))
         for (auto* header : headers)
@@ -1173,9 +1426,10 @@ void PlaylistComponent::paint (juce::Graphics& g)
     // Below the last track is not a lane that stopped working.
     paint::inertArea (g, { 0, bottom, getWidth(), juce::jmax (0, getHeight() - bottom) });
 
+
     // --- ruler ---------------------------------------------------------------
     g.setColour (colour::surface);
-    g.fillRect (0, 0, getWidth(), rulerHeight);
+    g.fillRect (0, rulerTop(), getWidth(), rulerHeight);
 
     // The selection's strip goes down before the bar numbers, so the numbers
     // inside it stay legible instead of being washed out by it.
@@ -1187,9 +1441,9 @@ void PlaylistComponent::paint (juce::Graphics& g)
         const auto toX = (float) headerWidth + timeline.xForStep ((double) selection.getEnd());
 
         g.setColour (colour::accent.withAlpha (0.55f));
-        g.fillRect (juce::Rectangle<float> (fromX, 0.0f, juce::jmax (1.0f, toX - fromX),
-                                            (float) rulerHeight)
-                        .getIntersection ({ (float) headerWidth, 0.0f,
+        g.fillRect (juce::Rectangle<float> (fromX, (float) rulerTop(),
+                                            juce::jmax (1.0f, toX - fromX), (float) rulerHeight)
+                        .getIntersection ({ (float) headerWidth, (float) rulerTop(),
                                             (float) getWidth() - (float) headerWidth,
                                             (float) rulerHeight }));
     }
@@ -1206,11 +1460,11 @@ void PlaylistComponent::paint (juce::Graphics& g)
         const auto beyond = bar >= bars;
 
         g.setColour (beyond ? colour::textDisabled : colour::textSecondary);
-        g.drawText (juce::String (bar + 1), (int) x + 3, 0, (int) width - 4, rulerHeight,
+        g.drawText (juce::String (bar + 1), (int) x + 3, rulerTop(), (int) width - 4, rulerHeight,
                     juce::Justification::centredLeft, false);
 
         g.setColour (beyond ? colour::dividerStrong.withAlpha (0.35f) : colour::dividerStrong);
-        g.drawVerticalLine ((int) x, 0.0f, (float) bottom);
+        g.drawVerticalLine ((int) x, (float) rulerTop(), (float) bottom);
     }
 
     // --- the selected span ----------------------------------------------------
@@ -1224,12 +1478,13 @@ void PlaylistComponent::paint (juce::Graphics& g)
         const auto fromX = (float) headerWidth + timeline.xForStep ((double) selection.getStart());
         const auto toX = (float) headerWidth + timeline.xForStep ((double) selection.getEnd());
 
-        const juce::Rectangle<float> content ((float) headerWidth, 0.0f,
+        const juce::Rectangle<float> content ((float) headerWidth, (float) rulerTop(),
                                               (float) getWidth() - (float) headerWidth,
-                                              (float) bottom);
+                                              (float) (bottom - rulerTop()));
 
-        const juce::Rectangle<float> band (fromX, 0.0f, juce::jmax (1.0f, toX - fromX),
-                                           (float) bottom);
+        const juce::Rectangle<float> band (fromX, (float) rulerTop(),
+                                           juce::jmax (1.0f, toX - fromX),
+                                           (float) (bottom - rulerTop()));
 
         const auto visible = band.getIntersection (content);
 
@@ -1240,13 +1495,14 @@ void PlaylistComponent::paint (juce::Graphics& g)
         // contain. The ruler is where the span can be stated outright without
         // covering anything up.
         g.setColour (colour::accent.withAlpha (0.10f));
-        g.fillRect (visible.withTrimmedTop ((float) rulerHeight));
+        g.fillRect (visible.withTrimmedTop ((float) rulerHeight));   // below the ruler strip
 
         g.setColour (colour::accent);
 
         for (const auto edge : { fromX, toX })
             if (edge >= (float) headerWidth && edge <= (float) getWidth())
-                g.fillRect (edge - stroke::regular * 0.5f, 0.0f, stroke::regular, (float) bottom);
+                g.fillRect (edge - stroke::regular * 0.5f, (float) rulerTop(), stroke::regular,
+                            (float) (bottom - rulerTop()));
     }
 
     // --- tracks --------------------------------------------------------------
@@ -1257,7 +1513,7 @@ void PlaylistComponent::paint (juce::Graphics& g)
         if (! track.hasType (ids::PLAYLIST_TRACK))
             continue;
 
-        const auto y = rulerHeight + trackIndex * rowHeight;
+        const auto y = lanesTop() + trackIndex * rowHeight;
         const auto audible = ! (bool) track[ids::mute] && (! anySolo || (bool) track[ids::solo]);
 
         if (trackIndex % 2 == 1)
@@ -1284,8 +1540,9 @@ void PlaylistComponent::paint (juce::Graphics& g)
 
             const auto bounds = boundsForClip (clip, trackIndex).reduced (2.0f, 3.0f);
 
-            if (! bounds.intersects (juce::Rectangle<float> ((float) headerWidth, 0.0f,
-                                                             contentWidth(), (float) bottom)))
+            if (! bounds.intersects (juce::Rectangle<float> ((float) headerWidth, (float) lanesTop(),
+                                                             contentWidth(),
+                                                             (float) (bottom - lanesTop()))))
                 continue;
 
             if (ProjectEdits::isAutomationClip (clip))
@@ -1330,12 +1587,12 @@ void PlaylistComponent::paint (juce::Graphics& g)
     const auto endX = (float) headerWidth + timeline.xForStep ((double) bars);
 
     if (endX < (float) getWidth())
-        paint::beyondEnd (g, { (int) endX, rulerHeight, getWidth() - (int) endX,
-                               juce::jmax (0, bottom - rulerHeight) }, endX);
+        paint::beyondEnd (g, { (int) endX, lanesTop(), getWidth() - (int) endX,
+                               juce::jmax (0, bottom - lanesTop()) }, endX);
 
     g.setColour (colour::dividerStrong);
-    g.drawVerticalLine (headerWidth, 0.0f, (float) bottom);
-    g.drawHorizontalLine (rulerHeight - 1, 0.0f, (float) getWidth());
+    g.drawVerticalLine (headerWidth, (float) rulerTop(), (float) bottom);
+    g.drawHorizontalLine (lanesTop() - 1, 0.0f, (float) getWidth());
 
     // --- playhead ------------------------------------------------------------
     if (engine.getMode() == Transport::Mode::song)
@@ -1346,14 +1603,14 @@ void PlaylistComponent::paint (juce::Graphics& g)
         {
             g.setColour (engine.isPlaying() ? colour::playhead
                                             : colour::playhead.withAlpha (0.5f));
-            g.fillRect (juce::Rectangle<float> (x - 1.0f, (float) rulerHeight,
-                                                2.0f, (float) (bottom - rulerHeight)));
+            g.fillRect (juce::Rectangle<float> (x - 1.0f, (float) lanesTop(),
+                                                2.0f, (float) (bottom - lanesTop())));
 
             // A head on the ruler, so the position is findable at a glance.
             juce::Path head;
-            head.addTriangle (x - 5.0f, (float) rulerHeight - 8.0f,
-                              x + 5.0f, (float) rulerHeight - 8.0f,
-                              x, (float) rulerHeight);
+            head.addTriangle (x - 5.0f, (float) lanesTop() - 8.0f,
+                              x + 5.0f, (float) lanesTop() - 8.0f,
+                              x, (float) lanesTop());
             g.fillPath (head);
         }
     }

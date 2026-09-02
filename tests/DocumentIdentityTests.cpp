@@ -5,6 +5,7 @@
 #include "model/ProjectEdits.h"
 #include "model/ProjectFactory.h"
 #include "ui/MainComponent.h"
+#include "ui/TransportBar.h"
 
 using namespace dew;
 
@@ -82,6 +83,61 @@ TEST_CASE ("a listener registered once keeps working after the document is repla
     listener.stopListening (document.getState());
 }
 
+TEST_CASE ("the pattern dropdown offers a way to make one", "[ui][transport]")
+{
+    // The + beside the box is easy to miss when the box is what you were
+    // already looking at, so the list someone opens looking for their patterns
+    // is also where a new one comes from.
+    const juce::ScopedJuceInitialiser_GUI juceInit;
+
+    MainComponent component;
+    component.setSize (1280, 800);
+
+    juce::ComboBox* box = nullptr;
+
+    std::function<void (juce::Component&)> findBox = [&] (juce::Component& parent)
+    {
+        for (auto* child : parent.getChildren())
+        {
+            if (auto* asBox = dynamic_cast<juce::ComboBox*> (child); asBox != nullptr && box == nullptr)
+                box = asBox;
+            else
+                findBox (*child);
+        }
+    };
+
+    REQUIRE_FALSE (component.getChildren().isEmpty());
+    findBox (*component.getChildren().getFirst());
+    REQUIRE (box != nullptr);
+
+    REQUIRE (box->indexOfItemId (TransportBar::newPatternItemId) >= 0);
+    CHECK (box->getItemText (box->indexOfItemId (TransportBar::newPatternItemId)) == "New pattern");
+
+    const auto countPatterns = [&component]
+    {
+        int n = 0;
+
+        for (const auto& child : component.getDocument().getState())
+            if (child.hasType (ids::PATTERN))
+                ++n;
+
+        return n;
+    };
+
+    const auto before = countPatterns();
+    const auto wasCurrent = component.getDocument().getState().isValid();
+    REQUIRE (wasCurrent);
+
+    // Choosing it makes a pattern rather than selecting a row called one.
+    box->setSelectedId (TransportBar::newPatternItemId, juce::sendNotificationSync);
+
+    CHECK (countPatterns() == before + 1);
+
+    // And leaves the box showing the new pattern, not the sentinel.
+    CHECK (box->getSelectedId() != TransportBar::newPatternItemId);
+    CHECK (box->getSelectedId() > 0);
+}
+
 TEST_CASE ("the transport bar still tracks the project after New and Open", "[document][identity][ui]")
 {
     // Guards the path behind "patterns - can't add more": open a file, add a
@@ -114,7 +170,18 @@ TEST_CASE ("the transport bar still tracks the project after New and Open", "[do
         if (! component.getChildren().isEmpty())
             findBox (*component.getChildren().getFirst());
 
-        return box != nullptr ? box->getNumItems() : -1;
+        if (box == nullptr)
+            return -1;
+
+        // The list ends in "New pattern", which is a way to make one rather
+        // than one of them.
+        int patterns = 0;
+
+        for (int i = 0; i < box->getNumItems(); ++i)
+            if (box->getItemId (i) != TransportBar::newPatternItemId)
+                ++patterns;
+
+        return patterns;
     };
 
     REQUIRE (patternCountInBox() == 1);

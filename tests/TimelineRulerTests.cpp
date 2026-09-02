@@ -220,8 +220,8 @@ TEST_CASE ("clicking the playlist ruler moves the transport, in bars", "[ruler]"
 
     // Its mouseDown used to bail on anything above rulerHeight, so the third
     // ruler in the app was as inert as the other two.
-    playlist.mouseDown (eventAt (playlist, { tokens::size::headerWidth + 200,
-                                             tokens::size::rulerHeight / 2 }));
+    const auto strip = playlist.getRulerArea();
+    playlist.mouseDown (eventAt (playlist, { strip.getX() + 200, strip.getCentreY() }));
 
     INFO ("playhead in steps: " << engine.getPlayheadSteps()
           << " (a bar is " << stepsPerBar << " steps)");

@@ -6,6 +6,7 @@
 #include "../model/ProjectDocument.h"
 #include "EditorState.h"
 #include "../model/AutomationTargets.h"
+#include "PlaylistToolbar.h"
 #include "TimelineRuler.h"
 #include "TimelineView.h"
 #include "primitives/DewControls.h"
@@ -42,6 +43,8 @@ public:
     void mouseMove (const juce::MouseEvent&) override;
     void mouseDoubleClick (const juce::MouseEvent&) override;
     void mouseWheelMove (const juce::MouseEvent&, const juce::MouseWheelDetails&) override;
+    void mouseMagnify (const juce::MouseEvent&, float scaleFactor) override;
+    bool keyPressed (const juce::KeyPress&) override;
 
     void refresh();
 
@@ -71,8 +74,19 @@ public:
     */
     juce::Rectangle<int> getRulerArea() const
     {
-        return { headerWidth, 0, (int) contentWidth(), rulerHeight };
+        return { headerWidth, rulerTop(), (int) contentWidth(), rulerHeight };
     }
+
+    /** The tool strip, so a test can drive the tools and the zoom buttons
+        through the same seam the user reaches them by.
+    */
+    PlaylistToolbar& getToolbar() noexcept { return toolbar; }
+
+    PlaylistTool getTool() const noexcept { return toolbar.getTool(); }
+    void setTool (PlaylistTool tool) { toolbar.setTool (tool); }
+
+    /** Frames the whole song: all of it visible, scrolled to the start. */
+    void zoomToFit();
 
     void addTrack();
     void removeTrack (juce::ValueTree track);
@@ -101,7 +115,7 @@ private:
 
     // Scrubbing and range-selecting are not here: the ruler's whole gesture
     // lives in ruler::Gesture, shared with the piano roll and the channel rack.
-    enum class Gesture { none, moving, resizing, draggingPoint };
+    enum class Gesture { none, moving, resizing, draggingPoint, painting };
 
     void timerCallback() override;
     void valueTreePropertyChanged (juce::ValueTree&, const juce::Identifier&) override;
@@ -120,8 +134,32 @@ private:
 
     int tracksBottom() const;
     float contentWidth() const;
+
+    /** The top of the ruler, and the top of the lanes below it. Every other
+        vertical measurement is taken from these rather than from the
+        component's own top, so the toolbar's height is stated once and cannot
+        leave one part of the layout behind when it changes.
+    */
+    static constexpr int rulerTop() { return toolbarHeight; }
+    static constexpr int lanesTop() { return toolbarHeight + rulerHeight; }
+
+    /** Lays a clip of the current pattern in the cell under this point, unless
+        one is already there. Returns true if it wrote one, so a stroke can tell
+        whether it has done anything worth repainting.
+    */
+    bool paintClipAt (juce::Point<int> position);
+
+    /** Copies a clip rather than moving it: a mod-drag leaves the original
+        where it was, and a mod-shift-drag gives the copy a pattern of its own.
+    */
+    void beginCopyDrag (int targetTrackIndex, int targetBar);
     float playheadX() const;
-    void updateZoom();
+    /** Re-clamps the scroll and re-ranges the scrollbar. This used to also
+        recompute the zoom from the song's length, on every resize - which is
+        why the playlist could not be zoomed at all: any change re-fitted it.
+    */
+    void updateScrollBar();
+    void zoomBy (double factor, float anchorX);
     void rebuildHeaders();
     void openPatternOf (const juce::ValueTree& clip);
     void showAutomationMenu();
@@ -156,16 +194,17 @@ private:
     void paintAutomationClip (juce::Graphics&, const juce::ValueTree& clip, int trackIndex,
                               juce::Rectangle<float> bounds, bool audible);
 
+    static constexpr int toolbarHeight = PlaylistToolbar::preferredHeight;
     static constexpr int rowHeight = 34;
     static constexpr int headerWidth = 156;
     static constexpr int rulerHeight = 22;
     static constexpr int scrollThickness = 10;
-    static constexpr float minBarWidth = 26.0f;
-    static constexpr float maxBarWidth = 160.0f;
 
     ProjectDocument& document;
     AudioEngine& engine;
     EditorState& editorState;
+
+    PlaylistToolbar toolbar;
 
     TimelineView timeline;
 
@@ -193,6 +232,29 @@ private:
     Gesture gesture = Gesture::none;
     int dragBarOffset = 0;
     int dropTrackIndex = -1;
+
+    /** A mod-drag copies rather than moves, and mod-shift gives the copy its
+        own pattern. Latched at the press and cleared by the copy itself, so a
+        drag makes ONE copy however far it then travels.
+    */
+    bool dragCopies = false;
+    bool dragCopyIsUnique = false;
+
+    /** The cell the paint stroke last wrote into, so dragging within one cell
+        does not try to lay the same clip over and over.
+    */
+    juce::Point<int> lastPaintedCell { -1, -1 };
+
+    /** Whether the view belongs to the user yet.
+
+        Until it does, a layout re-fits the song to the window - the playlist
+        should open showing the whole arrangement, and the FIRST layout is no
+        good for deciding that because it can happen before the window has its
+        real size. From the moment someone zooms or scrolls, the view is theirs
+        and a layout leaves it alone. Re-fitting on every layout, which is what
+        this did, is why the playlist could not be zoomed at all.
+    */
+    bool viewIsUsers = false;
 
     // The playhead is repainted on its own strip at 60Hz; repainting the whole
     // arrangement that often is what made the line jump a bar at a time.

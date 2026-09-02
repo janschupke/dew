@@ -75,6 +75,15 @@ TransportBar::TransportBar (ProjectDocument& d, AudioEngine& e, EditorState& s)
 
         const auto id = patternBox.getSelectedId();
 
+        // The list ends in "New pattern", so the dropdown someone opens looking
+        // for their patterns is also where a new one comes from - the + beside
+        // it is easy to miss when the box is what you were already looking at.
+        if (id == newPatternItemId)
+        {
+            addPattern();
+            return;
+        }
+
         if (id > 0)
         {
             editorState.setCurrentPatternId (id);
@@ -83,14 +92,7 @@ TransportBar::TransportBar (ProjectDocument& d, AudioEngine& e, EditorState& s)
     };
     addAndMakeVisible (patternBox);
 
-    addPatternButton.onClick = [this]
-    {
-        auto& undo = document.getUndoManager();
-        undo.beginNewTransaction ("Add pattern");
-        const auto pattern = ProjectEdits::addPattern (document.getState(), &undo);
-        editorState.setCurrentPatternId ((int) pattern[ids::id]);
-        engine.setCurrentPatternId ((int) pattern[ids::id]);
-    };
+    addPatternButton.onClick = [this] { addPattern(); };
     addAndMakeVisible (addPatternButton);
 
     clonePatternButton.onClick = [this]
@@ -192,6 +194,19 @@ void TransportBar::refreshPatternLength()
     deletePatternButton.setEnabled (patternBox.getNumItems() > 1);
 }
 
+void TransportBar::addPattern()
+{
+    // One code path for the + button and the menu item. Two would be two places
+    // to remember that a new pattern is also the pattern to switch to.
+    auto& undo = document.getUndoManager();
+    undo.beginNewTransaction ("Add pattern");
+
+    const auto pattern = ProjectEdits::addPattern (document.getState(), &undo);
+
+    editorState.setCurrentPatternId ((int) pattern[ids::id]);
+    engine.setCurrentPatternId ((int) pattern[ids::id]);
+}
+
 void TransportBar::rebuildPatternList()
 {
     const juce::ScopedValueSetter<bool> quiet (updatingPatternList, true);
@@ -201,6 +216,10 @@ void TransportBar::rebuildPatternList()
     for (const auto& pattern : document.getState())
         if (pattern.hasType (ids::PATTERN))
             patternBox.addItem (pattern[ids::name].toString(), (int) pattern[ids::id]);
+
+    // Well above any pattern id, so it can never collide with one.
+    patternBox.addSeparator();
+    patternBox.addItem ("New pattern", newPatternItemId);
 
     auto id = editorState.getCurrentPatternId();
 

@@ -38,7 +38,18 @@ public:
     /** Whether a take is running, for the button's lit state. */
     std::function<bool()> isRecording;
 
+    /** The pattern dropdown's "New pattern" row. Far above any pattern id, so
+        it can never be mistaken for one - and public because anything counting
+        the patterns in the box has to know to skip it.
+    */
+    static constexpr int newPatternItemId = 1'000'000;
+
 private:
+    /** Adds a pattern and makes it current. The + button and the dropdown's own
+        "New pattern" item both go through here.
+    */
+    void addPattern();
+
     void timerCallback() override;
     void changeListenerCallback (juce::ChangeBroadcaster*) override;
     void valueTreePropertyChanged (juce::ValueTree&, const juce::Identifier&) override;
