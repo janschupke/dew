@@ -21,6 +21,12 @@ Start with **Demos → Getting Started** in the menu bar; there are four.
   written past its end. A new note takes the length and velocity of the last
   one you drew. It edits *the same notes* as the step grid: a lit step is a note at the
   channel's base pitch, so there is one representation and two views.
+- **Piano roll tools** — a strip above the ruler: select, paint and slice, a snap grid
+  from 1/16 to a bar, quantize, transpose by a semitone or an octave, and a randomize
+  dialog for velocity and timing. Paint writes a note per grid cell a stroke crosses;
+  slice cuts every note a dragged line passes through. Everything except the tools acts
+  on **the selection if there is one, and the whole channel otherwise** — so a pattern can
+  be humanised or tightened without selecting anything first.
 - **Playlist** — pattern clips on tracks along a bar timeline; a clip longer than its
   pattern repeats it, as FL does. Drag clips between tracks, double-click one to open
   its pattern, and mute or solo a lane.
@@ -43,8 +49,10 @@ Start with **Demos → Getting Started** in the menu bar; there are four.
   instead of standing forever, and the DSP load and dropout count.
 - **Audio settings** — driver, output, input, sample rate and buffer size, with the
   resulting latency in milliseconds and a test tone. Under **Audio**, or ⌘,.
-- **It remembers** — window geometry, the active tab, selections, the piano roll's zoom
-  and scroll, the panel width and the chosen device all come back next launch.
+- **It remembers** — window geometry, the active tab, selections, the piano roll's zoom,
+  scroll and snap grid, the panel width and the chosen device all come back next launch.
+  The piano roll's *tool* deliberately does not: restoring into paint or slice would mean
+  the first click of a session writes or cuts something nobody asked for.
 - **File** — New, Open, Save, Save As, with dirty tracking and a save-before-closing
   prompt. Undo/redo covers every edit.
 
@@ -52,6 +60,9 @@ Start with **Demos → Getting Started** in the menu bar; there are four.
 
 In the piano roll: ⌘-scroll or pinch to zoom, shift-scroll to scroll in time, ⌘-drag to
 rubber-band, ⌘A to select every note on the channel, delete to remove the selection.
+1 2 3 pick select, paint and slice; ↑ ↓ transpose a semitone and ⇧↑ ⇧↓ an octave; Q
+quantizes and R opens randomize. Holding shift suspends the snap grid for the length of a
+drag, which is the only way to reach an off-grid position without changing the dropdown.
 
 Right-drag erases, and means the same thing in the piano roll and the step sequencer: one
 undo step for the whole sweep, and it fills the cells between drag samples, so a quick
@@ -96,12 +107,13 @@ Four layers, each testable without the one above it:
 ```
 app/      Settings (window, view and device state, validated on read)
 ui/       ChannelRack · PianoRoll · Playlist · Mixer · TransportBar · EffectChain
-          StatusBar · AudioSettingsPanel
+          StatusBar · AudioSettingsPanel · PianoRollToolbar · RandomizePanel
           design/ (tokens, icons) · primitives/ · TimelineView (shared step↔pixel map)
           TimelineRuler (one ruler, drawn and clicked the same way in three editors)
             │ edits via ProjectEdits (one undo transaction per gesture)
 model/    ProjectDocument (FileBasedDocument) ── ValueTree ── ProjectSchema ── JSON
           AutomationTargets (the curated automatable set) · DemoLibrary
+          NoteTools (snap, quantize, transpose, slice, randomize - no GUI)
             │ AsyncUpdater coalesces rebuilds ─→ EngineSnapshot
             │ PreviewQueue carries auditioned notes ─────────┐
 engine/   SnapshotBridge → Transport → Sequencer → SynthChannel[] → EffectUnit[] → MixerBus
@@ -246,7 +258,7 @@ project it was overwriting.
 
 ## Testing
 
-Catch2 via CTest. `ctest --preset release` runs all 190.
+Catch2 via CTest. `ctest --preset release` runs all 260.
 
 `dew_render` loads a project and renders it to WAV with no audio device, which is how
 playback correctness is checked without ears:
@@ -280,6 +292,7 @@ dew_shot editor out.png --project examples/melody.dew --tab piano-roll --size 16
 dew_shot tabs out --project examples/effects.dew     # one PNG per tab
 dew_shot gallery out.png                             # the design system
 dew_shot audio out.png                               # the audio settings panel
+dew_shot randomize out.png                           # the piano roll's randomize dialog
 ```
 
 It exists because screen-recording permission is not always available, and because a

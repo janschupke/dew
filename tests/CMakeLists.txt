@@ -13,6 +13,7 @@ add_executable(dew_tests
   SelectionTests.cpp
   StatusBarTests.cpp
   ProjectEditsTests.cpp
+  NoteToolsTests.cpp
   TransportTests.cpp
   SequencerTests.cpp
   StepGridTests.cpp
@@ -27,6 +28,7 @@ add_executable(dew_tests
   TimelineRulerTests.cpp
   TypographyTests.cpp
   PianoRollTests.cpp
+  PianoRollToolsTests.cpp
   PlaylistTests.cpp
   UiSmokeTests.cpp
 )

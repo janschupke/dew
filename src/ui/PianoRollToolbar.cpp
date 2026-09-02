@@ -1,0 +1,172 @@
+#include "PianoRollToolbar.h"
+
+#include "design/Tokens.h"
+
+namespace dew
+{
+
+PianoRollToolbar::PianoRollToolbar()
+{
+    setComponentID ("pianoRollToolbar");
+
+    const auto addTool = [this] (DewIconButton& button, RollTool which)
+    {
+        button.setClickingTogglesState (true);
+        button.setRadioGroupId (1);
+        button.onClick = [this, which] { setTool (which); };
+
+        // Without this a click on a tool moves focus off the roll, and the
+        // shortcuts it owns - the arrows, the digits - stop working until the
+        // grid is clicked again.
+        button.setWantsKeyboardFocus (false);
+        addAndMakeVisible (button);
+    };
+
+    addTool (selectButton, RollTool::select);
+    addTool (paintButton, RollTool::paint);
+    addTool (sliceButton, RollTool::slice);
+
+    for (int i = 0; i < NoteTools::numSnapDivisions; ++i)
+        snapBox.addItem (NoteTools::nameForSnap (NoteTools::allSnapDivisions[i]), i + 1);
+
+    snapBox.setSelectedId (NoteTools::indexOfSnap (snap) + 1, juce::dontSendNotification);
+    snapBox.setTooltip ("Grid the editing gestures snap to");
+    snapBox.setWantsKeyboardFocus (false);
+    snapBox.onChange = [this]
+    {
+        if (updatingSnapBox)
+            return;
+
+        setSnap (NoteTools::snapFromIndex (snapBox.getSelectedId() - 1));
+    };
+    addAndMakeVisible (snapBox);
+
+    const auto addAction = [this] (juce::Button& button, std::function<void()>& callback)
+    {
+        button.setWantsKeyboardFocus (false);
+        button.onClick = [&callback] { if (callback) callback(); };
+        addAndMakeVisible (button);
+    };
+
+    addAction (quantizeButton, onQuantize);
+    addAction (randomizeButton, onRandomize);
+
+    const auto addTranspose = [this] (juce::Button& button, int semitones)
+    {
+        button.setWantsKeyboardFocus (false);
+        button.onClick = [this, semitones] { if (onTranspose) onTranspose (semitones); };
+        addAndMakeVisible (button);
+    };
+
+    addTranspose (upButton, 1);
+    addTranspose (downButton, -1);
+    addTranspose (octaveUpButton, 12);
+    addTranspose (octaveDownButton, -12);
+
+    octaveUpButton.setTooltip ("Up an octave (Shift+Up)");
+    octaveDownButton.setTooltip ("Down an octave (Shift+Down)");
+
+    updateToolButtons();
+}
+
+void PianoRollToolbar::setTool (RollTool newTool, juce::NotificationType notification)
+{
+    if (tool == newTool)
+    {
+        // The radio group can clear the button of the tool that is already
+        // current when it is clicked again; put it back rather than leaving the
+        // strip showing no tool at all.
+        updateToolButtons();
+        return;
+    }
+
+    tool = newTool;
+    updateToolButtons();
+
+    if (notification != juce::dontSendNotification && onToolChanged)
+        onToolChanged();
+}
+
+void PianoRollToolbar::setSnap (SnapDivision newSnap, juce::NotificationType notification)
+{
+    if (snap == newSnap)
+        return;
+
+    snap = newSnap;
+
+    {
+        const juce::ScopedValueSetter<bool> quiet (updatingSnapBox, true);
+        snapBox.setSelectedId (NoteTools::indexOfSnap (snap) + 1, juce::dontSendNotification);
+    }
+
+    if (notification != juce::dontSendNotification && onSnapChanged)
+        onSnapChanged();
+}
+
+void PianoRollToolbar::updateToolButtons()
+{
+    selectButton.setToggleState (tool == RollTool::select, juce::dontSendNotification);
+    paintButton.setToggleState (tool == RollTool::paint, juce::dontSendNotification);
+    sliceButton.setToggleState (tool == RollTool::slice, juce::dontSendNotification);
+}
+
+void PianoRollToolbar::paint (juce::Graphics& g)
+{
+    using namespace tokens;
+
+    g.fillAll (colour::surface);
+
+    g.setColour (colour::dividerStrong);
+    g.drawHorizontalLine (getHeight() - 1, 0.0f, (float) getWidth());
+
+    for (const auto x : groupDividers)
+    {
+        g.setColour (colour::divider);
+        g.drawVerticalLine (x, 7.0f, (float) getHeight() - 7.0f);
+    }
+}
+
+void PianoRollToolbar::resized()
+{
+    using namespace tokens;
+
+    groupDividers.clear();
+
+    auto area = getLocalBounds().reduced (space::md, space::xs);
+    const auto controlHeight = juce::jmin (size::controlHeight, area.getHeight());
+
+    const auto place = [&area, controlHeight] (juce::Component& c, int width)
+    {
+        c.setBounds (area.removeFromLeft (width).withHeight (controlHeight));
+        area.removeFromLeft (space::xxs);
+    };
+
+    const auto divider = [this, &area]
+    {
+        area.removeFromLeft (space::sm);
+        groupDividers.add (area.getX());
+        area.removeFromLeft (space::sm + space::xs);
+    };
+
+    place (selectButton, size::iconButton);
+    place (paintButton, size::iconButton);
+    place (sliceButton, size::iconButton);
+
+    divider();
+
+    place (snapBox, 78);
+
+    divider();
+
+    place (quantizeButton, size::iconButton);
+    place (randomizeButton, size::iconButton);
+
+    divider();
+
+    place (downButton, size::iconButton);
+    place (upButton, size::iconButton);
+    place (octaveDownButton, 34);
+    place (octaveUpButton, 34);
+}
+
+} // namespace dew

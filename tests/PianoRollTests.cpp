@@ -2,98 +2,10 @@
 
 #include <juce_gui_basics/juce_gui_basics.h>
 
-#include "engine/AudioEngine.h"
-#include "model/Ids.h"
-#include "model/ProjectDocument.h"
-#include "model/ProjectEdits.h"
-#include "model/ProjectFactory.h"
-#include "ui/EditorState.h"
-#include "ui/PianoRollComponent.h"
+#include "RollHarness.h"
 
 using namespace dew;
-
-namespace
-{
-
-/** Everything a piano roll needs, laid out and visible, so gestures can be
-    driven at it directly. Headless: no window, no display.
-*/
-struct RollHarness
-{
-    RollHarness (int width = 1200, int height = 700)
-    {
-        document.setState (ProjectFactory::createDefault(), true);
-        roll.setSize (width, height);
-        roll.setVisible (true);
-        roll.refresh();
-        roll.resized();
-
-        // A fixed frame, so every test below aims at the same coordinates
-        // whatever the roll would have chosen to open on.
-        roll.centreOnPitch (66);
-    }
-
-    juce::ValueTree pattern() { return ProjectEdits::findPattern (document.getState(), 1); }
-
-    int countNotes()
-    {
-        int n = 0;
-
-        for (const auto& child : pattern())
-            if (child.hasType (ids::NOTE))
-                ++n;
-
-        return n;
-    }
-
-    ProjectDocument document;
-    AudioEngine engine;
-    EditorState editorState;
-    PianoRollComponent roll { document, engine, editorState };
-};
-
-juce::MouseEvent eventAt (juce::Component& target, juce::Point<int> local,
-                          juce::ModifierKeys mods = juce::ModifierKeys(), int clickCount = 1)
-{
-    const auto position = local.toFloat();
-
-    return { juce::Desktop::getInstance().getMainMouseSource(),
-             position, mods,
-             1.0f, 0.0f, 0.0f, 0.0f, 0.0f,
-             &target, &target,
-             juce::Time::getCurrentTime(),
-             position,
-             juce::Time::getCurrentTime(),
-             clickCount, false };
-}
-
-void clickAndRelease (juce::Component& c, juce::Point<int> at, juce::ModifierKeys mods = juce::ModifierKeys())
-{
-    c.mouseDown (eventAt (c, at, mods));
-    c.mouseUp (eventAt (c, at, mods));
-}
-
-/** Where in the component a given step and pitch land.
-
-    Asks the roll where it would paint a note there, rather than recomputing the
-    layout - otherwise a layout change leaves these tests clicking confidently
-    into the wrong place and still passing.
-*/
-juce::Point<int> pointFor (RollHarness& h, int step, int pitch)
-{
-    juce::UndoManager scratch;
-    auto probe = ProjectEdits::addNote (h.pattern(), 1, step, 1, pitch, 1.0f, &scratch);
-    const auto bounds = h.roll.getBoundsForNote (probe);
-    ProjectEdits::removeNote (h.pattern(), probe, &scratch);
-
-    // A test aiming outside the visible area is a broken test, not a finding.
-    const auto point = juce::Point<int> ((int) (bounds.getX() + bounds.getWidth() * 0.4f),
-                                         (int) bounds.getCentreY());
-    REQUIRE (h.roll.getNoteArea().contains (point));
-    return point;
-}
-
-} // namespace
+using namespace dew::testing;
 
 TEST_CASE ("clicking empty space writes a note where it was clicked", "[ui][pianoroll]")
 {
@@ -479,6 +391,16 @@ TEST_CASE ("the roll scrolls to the notes rather than opening on empty keys", "[
             continue;
 
         editorState.setSelectedChannelId ((int) channel[ids::id]);
+
+        // EditorState is a ChangeBroadcaster, and its message is asynchronous:
+        // in the app the roll re-frames from changeListenerCallback once the
+        // message loop runs, but nothing pumps it here. Driving the re-frame
+        // directly is what makes this a test of the framing rather than of
+        // whichever pitches the opening view happened to span - which is what
+        // it was, and it passed only while the note area stayed tall enough to
+        // show every demo channel at once.
+        roll.scrollToNotesIfOffscreen();
+
         INFO ("channel " << channel[ids::name].toString());
         REQUIRE (notesVisible() > 0);
     }

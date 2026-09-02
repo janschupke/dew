@@ -65,6 +65,15 @@ public:
     double getPianoRollPitchScroll() const;
     void setPianoRollPitchScroll (double);
 
+    /** The piano roll's snap division, as its ordinal.
+
+        The tool is deliberately not remembered: restoring someone into Paint or
+        Slice means the first click of a session writes or cuts something they
+        did not ask for. A grid is a preference; a loaded weapon is not.
+    */
+    int getPianoRollSnap() const;
+    void setPianoRollSnap (int);
+
     int getPanelWidth() const;
     void setPanelWidth (int);
 

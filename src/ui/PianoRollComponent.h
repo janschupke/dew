@@ -3,8 +3,10 @@
 #include <juce_gui_basics/juce_gui_basics.h>
 
 #include "../engine/AudioEngine.h"
+#include "../model/NoteTools.h"
 #include "../model/ProjectDocument.h"
 #include "EditorState.h"
+#include "PianoRollToolbar.h"
 #include "TimelineView.h"
 
 namespace dew
@@ -18,23 +20,46 @@ namespace dew
 
     Layout, all four parts driven by the same TimelineView so they cannot drift:
 
+        toolbar                                |
         corner   | ruler                       |
         keyboard | notes                       | v scrollbar
         VEL      | velocity lane               |
                  | h scrollbar                 |
 
-    Gestures:
-        click empty          add a note at the last length and velocity used
-        drag after adding    set its length in the same gesture
-        click a note         select it; drag moves the whole selection
-        shift-click a note   add to or remove from the selection
+    The tool decides only what an unmodified press on the grid means. Every
+    modifier gesture means the same thing whichever tool is current, so the
+    muscle memory for erasing or rubber-banding does not depend on a mode:
+
+        right/alt-drag       erase the notes swept over
         cmd/ctrl-drag empty  rubber-band select
-        right/alt-click      delete
+        shift-click a note   add to or remove from the selection
+        drag in the lane     set velocity
+        click the keyboard   audition
+        click/drag the ruler move the playhead
+
+    By tool:
+        select  click empty adds a note at the last length and velocity used,
+                and the same drag sets its length; click a note to select it,
+                drag to move the selection, drag its right edge to resize
+        paint   drag writes a note in every grid cell crossed, skipping cells
+                that already hold one; pressing an existing note still moves it
+        slice   drag a line across notes to cut each one where it crosses
+
+    Snapping applies to adding, moving and resizing. Holding shift suspends it
+    for the length of a drag. At the finest division every snapped expression is
+    the identity, so the roll behaves exactly as it did before the grid existed.
+
+    Keys:
         delete / backspace   delete the selection
         cmd/ctrl-A           select every note on this channel
-        drag in the lane     set velocity
+        1 / 2 / 3            select, paint, slice
+        up / down            transpose a semitone; shift for an octave
+        Q / R                quantize; open the randomize dialog
         cmd/ctrl-wheel       zoom around the pointer
         shift-wheel          scroll horizontally
+
+    Quantize, transpose and randomize act on the selection when there is one and
+    on the whole channel otherwise - see NoteTools::scopeFor.
 */
 class PianoRollComponent : public juce::Component,
                            private juce::Timer,
@@ -96,8 +121,28 @@ public:
     void captureView (double& zoom, double& scroll, double& pitchScroll) const;
     void applyView (double zoom, double scroll, double pitchScroll);
 
+    /** The snap grid, persisted between launches. The tool deliberately is not:
+        opening into Paint or Slice means the first click of a session writes or
+        cuts something, which is not a state to restore someone into.
+    */
+    SnapDivision getSnap() const noexcept { return toolbar.getSnap(); }
+    void setSnap (SnapDivision snap) { toolbar.setSnap (snap); }
+
+    RollTool getTool() const noexcept { return toolbar.getTool(); }
+    void setTool (RollTool tool) { toolbar.setTool (tool); }
+
+    /** The notes an edit acts on: the selection when there is one, otherwise
+        every note of the current channel.
+    */
+    juce::Array<juce::ValueTree> editScope() const;
+
+    void quantizeScope();
+    void transposeScope (int semitones);
+    void openRandomizeDialog();
+
 private:
-    enum class Gesture { none, moving, resizing, selecting, velocity, auditioning, erasing, scrubbing };
+    enum class Gesture { none, moving, resizing, selecting, velocity, auditioning, erasing,
+                         scrubbing, painting, slicing };
 
     void timerCallback() override;
     void valueTreePropertyChanged (juce::ValueTree&, const juce::Identifier&) override;
@@ -121,7 +166,33 @@ private:
     void seekToRulerX (int x);
     int numSteps() const;
 
+    /** Steps in one cell of the current snap grid. Always at least one, so
+        every snapped expression is the identity at the finest division and the
+        gestures behave exactly as they did before there was a grid.
+    */
+    int snapSteps() const;
+
+    /** Writes a note in the cell under this point, unless one is already there.
+
+        Returns true if it wrote one, so a stroke can tell whether it has done
+        anything worth repainting.
+    */
+    bool paintNoteAt (juce::Point<int> position);
+
+    /** Cuts every note on the channel that the segment from `from` to `to`
+        crosses, at the step where it crosses that note's own row.
+    */
+    void sliceAlong (juce::Point<int> from, juce::Point<int> to);
+
     // --- geometry ------------------------------------------------------------
+    /** The tool strip, and everything below it. Every other area is measured
+        from `contentArea()` rather than from the component's own top, so the
+        toolbar's height is stated once and cannot leave one part of the layout
+        behind when it changes.
+    */
+    juce::Rectangle<int> toolbarArea() const;
+    juce::Rectangle<int> contentArea() const;
+
     juce::Rectangle<int> rulerArea() const;
     juce::Rectangle<int> keyboardArea() const;
     juce::Rectangle<int> noteArea() const;
@@ -168,6 +239,7 @@ private:
     */
     static constexpr int eraseStridePx = 6;
 
+    static constexpr int toolbarHeight   = 34;
     static constexpr int rowHeight       = 14;
     static constexpr int lowestPitch     = 12;   ///< C0
     static constexpr int highestPitch    = 108;  ///< C8
@@ -220,6 +292,25 @@ private:
     int auditionPitch = -1;
 
     juce::ValueTree draggedVelocityNote;
+
+    PianoRollToolbar toolbar;
+
+    /** The cell the paint stroke last wrote into, so dragging within one cell
+        does not try to write the same note over and over.
+    */
+    juce::Point<int> lastPaintedCell { -1, -1 };
+
+    /** The slice line while it is being drawn. The cut happens on release: a
+        note cut mid-drag would be re-cut into fragments as the pointer moved.
+    */
+    juce::Point<int> sliceStart, sliceEnd;
+
+    /** Kept between openings of the randomize dialog, so a second pass does not
+        start from the defaults again.
+    */
+    NoteTools::RandomizeOptions randomizeOptions;
+
+    juce::Random random;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (PianoRollComponent)
 };

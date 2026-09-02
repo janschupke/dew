@@ -25,6 +25,10 @@ public:
     void capturePianoRollView (double& zoom, double& scroll, double& pitchScroll) const;
     void applyPianoRollView (double zoom, double scroll, double pitchScroll);
 
+    /** The piano roll's snap division, as its ordinal. */
+    int getPianoRollSnap() const;
+    void setPianoRollSnap (int index);
+
 private:
     ChannelRackComponent channelRack;
     PianoRollComponent pianoRoll;

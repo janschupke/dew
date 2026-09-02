@@ -32,6 +32,9 @@ juce::Path pencil();
 juce::Path magnet();          ///< snap to grid
 juce::Path pointer();
 juce::Path eraser();
+juce::Path scissors();        ///< the slice tool
+juce::Path dice();            ///< randomize
+juce::Path quantize();        ///< align notes to the grid
 
 // --- state -------------------------------------------------------------------
 juce::Path mute();            ///< speaker with a cross

@@ -3,6 +3,7 @@
 #include "../model/Ids.h"
 #include "../model/ProjectEdits.h"
 #include "DewLookAndFeel.h"
+#include "RandomizePanel.h"
 #include "TimelineRuler.h"
 #include "design/Tokens.h"
 #include "primitives/DewControls.h"
@@ -43,6 +44,19 @@ PianoRollComponent::PianoRollComponent (ProjectDocument& d, AudioEngine& e, Edit
     verticalScroll.addListener (this);
     addAndMakeVisible (horizontalScroll);
     addAndMakeVisible (verticalScroll);
+
+    toolbar.onToolChanged = [this]
+    {
+        // The tool does not change what is selected. Clearing here would throw
+        // away the selection the next quantize or transpose is aimed at.
+        setMouseCursor (juce::MouseCursor::NormalCursor);
+        repaint();
+    };
+    toolbar.onSnapChanged = [this] { repaint(); };
+    toolbar.onQuantize = [this] { quantizeScope(); };
+    toolbar.onRandomize = [this] { openRandomizeDialog(); };
+    toolbar.onTranspose = [this] (int semitones) { transposeScope (semitones); };
+    addAndMakeVisible (toolbar);
 
     // Middle C somewhere near the middle, rather than at the very top where the
     // default scroll position would leave it.
@@ -92,15 +106,27 @@ juce::Colour PianoRollComponent::channelColour() const
 
 // --- geometry ----------------------------------------------------------------
 
+juce::Rectangle<int> PianoRollComponent::toolbarArea() const
+{
+    return getLocalBounds().removeFromTop (toolbarHeight);
+}
+
+juce::Rectangle<int> PianoRollComponent::contentArea() const
+{
+    return getLocalBounds().withTrimmedTop (toolbarHeight);
+}
+
 juce::Rectangle<int> PianoRollComponent::rulerArea() const
 {
-    return { keyboardWidth, 0, juce::jmax (0, getWidth() - keyboardWidth - scrollThickness), rulerHeight };
+    return { keyboardWidth, contentArea().getY(),
+             juce::jmax (0, getWidth() - keyboardWidth - scrollThickness), rulerHeight };
 }
 
 juce::Rectangle<int> PianoRollComponent::noteArea() const
 {
-    const auto top = rulerHeight;
-    const auto bottom = juce::jmax (top, getHeight() - scrollThickness - velocityHeight);
+    const auto content = contentArea();
+    const auto top = content.getY() + rulerHeight;
+    const auto bottom = juce::jmax (top, content.getBottom() - scrollThickness - velocityHeight);
 
     return { keyboardWidth, top,
              juce::jmax (0, getWidth() - keyboardWidth - scrollThickness), bottom - top };
@@ -114,7 +140,8 @@ juce::Rectangle<int> PianoRollComponent::keyboardArea() const
 
 juce::Rectangle<int> PianoRollComponent::velocityArea() const
 {
-    const auto top = juce::jmax (0, getHeight() - scrollThickness - velocityHeight);
+    const auto content = contentArea();
+    const auto top = juce::jmax (content.getY(), content.getBottom() - scrollThickness - velocityHeight);
 
     return { keyboardWidth, top,
              juce::jmax (0, getWidth() - keyboardWidth - scrollThickness), velocityHeight };
@@ -183,6 +210,189 @@ juce::ValueTree PianoRollComponent::noteAt (juce::Point<int> position) const
     }
 
     return {};
+}
+
+// --- tools -------------------------------------------------------------------
+
+int PianoRollComponent::snapSteps() const
+{
+    const auto stepsPerBeat = juce::jmax (1, (int) document.getState()[ids::stepsPerBeat]);
+    return NoteTools::stepsForSnap (toolbar.getSnap(), stepsPerBeat);
+}
+
+juce::Array<juce::ValueTree> PianoRollComponent::editScope() const
+{
+    return NoteTools::scopeFor (currentPattern(), editorState.getSelectedChannelId(), selection);
+}
+
+void PianoRollComponent::quantizeScope()
+{
+    auto pattern = currentPattern();
+    const auto scope = editScope();
+
+    if (! pattern.isValid() || scope.isEmpty())
+        return;
+
+    auto& undo = document.getUndoManager();
+    undo.beginNewTransaction ("Quantize");
+    NoteTools::quantize (pattern, scope, snapSteps(), &undo);
+    repaint();
+}
+
+void PianoRollComponent::transposeScope (int semitones)
+{
+    const auto scope = editScope();
+
+    if (scope.isEmpty())
+        return;
+
+    auto& undo = document.getUndoManager();
+
+    // Opened only once the group is known to be able to move, so a chord held
+    // against the top of the keyboard does not fill the undo stack with edits
+    // that changed nothing.
+    undo.beginNewTransaction (std::abs (semitones) >= 12 ? "Transpose octave" : "Transpose");
+
+    if (NoteTools::transpose (scope, semitones, lowestPitch, highestPitch, &undo) != 0)
+        repaint();
+}
+
+void PianoRollComponent::openRandomizeDialog()
+{
+    const auto scope = editScope();
+
+    if (scope.isEmpty())
+        return;
+
+    const auto scopeText = selection.isEmpty()
+                               ? "Applies to all " + juce::String (scope.size()) + " notes on this channel"
+                               : "Applies to the " + juce::String (scope.size()) + " selected notes";
+
+    RandomizePanel::show (randomizeOptions, scopeText, this,
+                          [this] (const NoteTools::RandomizeOptions& options)
+                          {
+                              randomizeOptions = options;
+
+                              auto pattern = currentPattern();
+
+                              // Re-resolved rather than captured: the dialog is
+                              // asynchronous, and the notes it was opened over
+                              // may not all still be there.
+                              const auto notes = editScope();
+
+                              if (! pattern.isValid() || notes.isEmpty())
+                                  return;
+
+                              auto& undo = document.getUndoManager();
+                              undo.beginNewTransaction ("Randomize");
+                              NoteTools::randomize (pattern, notes, options, random, &undo);
+                              repaint();
+                          });
+}
+
+bool PianoRollComponent::paintNoteAt (juce::Point<int> position)
+{
+    auto pattern = currentPattern();
+
+    if (! pattern.isValid() || ! noteArea().contains (position))
+        return false;
+
+    const auto snap = snapSteps();
+    const auto step = NoteTools::snapFloor (stepAtX (position.x), snap);
+    const auto pitch = pitchAtY (position.y);
+
+    if (step == lastPaintedCell.x && pitch == lastPaintedCell.y)
+        return false;
+
+    lastPaintedCell = { step, pitch };
+
+    const auto channelId = editorState.getSelectedChannelId();
+
+    // Anything already sounding at this pitch here, whether it starts in this
+    // cell or runs through it - painting over a held note should not stack a
+    // second one inside it.
+    if (NoteTools::noteCovering (pattern, channelId, step, pitch).isValid())
+        return false;
+
+    auto& undo = document.getUndoManager();
+
+    const auto length = juce::jmax (snap, NoteTools::snapCeil (editorState.getLastNoteLengthSteps(), snap));
+
+    auto note = ProjectEdits::addNote (pattern, channelId, step, length, pitch,
+                                       (float) editorState.getLastNoteVelocity(), &undo);
+    selection.add (note);
+    ProjectEdits::growPatternToFitNotes (pattern, &undo);
+    return true;
+}
+
+void PianoRollComponent::sliceAlong (juce::Point<int> from, juce::Point<int> to)
+{
+    auto pattern = currentPattern();
+
+    if (! pattern.isValid() || from.y == to.y)
+        return;   // a horizontal sweep crosses no row's centre, so it cuts nothing
+
+    const auto channelId = editorState.getSelectedChannelId();
+    const auto topY = (float) juce::jmin (from.y, to.y);
+    const auto bottomY = (float) juce::jmax (from.y, to.y);
+
+    juce::Array<juce::ValueTree> victims;
+    juce::Array<int> cuts;
+
+    for (const auto& note : pattern)
+    {
+        if (! note.hasType (ids::NOTE) || (int) note[ids::ch] != channelId)
+            continue;
+
+        const auto bounds = boundsForNote (note);
+        const auto centreY = bounds.getCentreY();
+
+        // Strictly spanned, so a drag that merely touches a row's edge does not
+        // cut the note in it.
+        if (centreY <= topY || centreY >= bottomY)
+            continue;
+
+        // Where the line is when it crosses this row.
+        const auto t = ((double) centreY - from.y) / ((double) to.y - from.y);
+        const auto crossingX = (double) from.x + t * ((double) to.x - from.x);
+
+        if (crossingX < bounds.getX() || crossingX > bounds.getRight())
+            continue;
+
+        const auto cut = stepAtX ((int) crossingX);
+        const auto start = (int) note[ids::step];
+        const auto length = juce::jmax (1, (int) note[ids::lengthSteps]);
+
+        if (cut <= start || cut >= start + length)
+            continue;
+
+        victims.add (note);
+        cuts.add (cut);
+    }
+
+    if (victims.isEmpty())
+        return;
+
+    auto& undo = document.getUndoManager();
+    undo.beginNewTransaction (victims.size() == 1 ? "Slice note" : "Slice notes");
+
+    // The fragments become the selection: after cutting a run, the next thing
+    // you do is almost always to move or delete one side of it.
+    selection.clearQuick();
+
+    for (int i = 0; i < victims.size(); ++i)
+    {
+        auto head = victims.getUnchecked (i);
+        auto tail = NoteTools::sliceNote (pattern, head, cuts.getUnchecked (i), &undo);
+
+        if (tail.isValid())
+        {
+            selection.add (head);
+            selection.add (tail);
+        }
+    }
+
+    repaint();
 }
 
 // --- selection ---------------------------------------------------------------
@@ -426,6 +636,34 @@ bool PianoRollComponent::keyPressed (const juce::KeyPress& key)
         return true;
     }
 
+    // The arrows and the bare digits are unbound - keyPressed is only reached
+    // when the grid itself has focus, so they cannot collide with typing into a
+    // number field.
+    if (key.getKeyCode() == juce::KeyPress::upKey || key.getKeyCode() == juce::KeyPress::downKey)
+    {
+        const auto up = key.getKeyCode() == juce::KeyPress::upKey;
+        const auto interval = key.getModifiers().isShiftDown() ? 12 : 1;
+
+        transposeScope (up ? interval : -interval);
+        return true;
+    }
+
+    if (key.getTextCharacter() == '1') { setTool (RollTool::select); return true; }
+    if (key.getTextCharacter() == '2') { setTool (RollTool::paint);  return true; }
+    if (key.getTextCharacter() == '3') { setTool (RollTool::slice);  return true; }
+
+    if (key.getTextCharacter() == 'q' || key.getTextCharacter() == 'Q')
+    {
+        quantizeScope();
+        return true;
+    }
+
+    if (key.getTextCharacter() == 'r' || key.getTextCharacter() == 'R')
+    {
+        openRandomizeDialog();
+        return true;
+    }
+
     return false;
 }
 
@@ -570,6 +808,20 @@ void PianoRollComponent::mouseDown (const juce::MouseEvent& event)
         return;
     }
 
+    // The slice tool takes a plain drag anywhere in the grid, over notes
+    // included - it cannot cut a dense passage if landing on a note starts a
+    // move instead. Every modifier gesture above still wins, so erasing and
+    // rubber-banding mean the same thing here as in any other tool.
+    if (toolbar.getTool() == RollTool::slice && ! event.mods.isCommandDown()
+        && ! event.mods.isCtrlDown())
+    {
+        gesture = Gesture::slicing;
+        sliceStart = event.getPosition();
+        sliceEnd = sliceStart;
+        repaint();
+        return;
+    }
+
     if (note.isValid())
     {
         if (event.mods.isShiftDown())
@@ -620,11 +872,30 @@ void PianoRollComponent::mouseDown (const juce::MouseEvent& event)
         return;
     }
 
+    // The paint tool writes a note per grid cell the pointer crosses, rather
+    // than one note whose length the drag then sets. Drawing-and-sizing is the
+    // select tool's gesture and is not duplicated here.
+    if (toolbar.getTool() == RollTool::paint)
+    {
+        gesture = Gesture::painting;
+        lastPaintedCell = { -1, -1 };
+        undo.beginNewTransaction ("Paint notes");
+        selection.clearQuick();
+
+        if (paintNoteAt (event.getPosition()))
+            repaint();
+
+        return;
+    }
+
     undo.beginNewTransaction ("Add note");
 
+    const auto snap = snapSteps();
+
     draggedNote = ProjectEdits::addNote (pattern, editorState.getSelectedChannelId(),
-                                         stepAtX (event.x),
-                                         editorState.getLastNoteLengthSteps(),
+                                         NoteTools::snapFloor (stepAtX (event.x), snap),
+                                         juce::jmax (snap, NoteTools::snapCeil (
+                                             editorState.getLastNoteLengthSteps(), snap)),
                                          pitchAtY (event.y),
                                          (float) editorState.getLastNoteVelocity(),
                                          &undo);
@@ -664,6 +935,21 @@ void PianoRollComponent::mouseDrag (const juce::MouseEvent& event)
         return;
     }
 
+    if (gesture == Gesture::painting)
+    {
+        if (paintNoteAt (event.getPosition()))
+            repaint();
+
+        return;
+    }
+
+    if (gesture == Gesture::slicing)
+    {
+        sliceEnd = event.getPosition();
+        repaint();
+        return;
+    }
+
     if (gesture == Gesture::selecting)
     {
         rubberBand = juce::Rectangle<int>::leftTopRightBottom (
@@ -687,14 +973,28 @@ void PianoRollComponent::mouseDrag (const juce::MouseEvent& event)
     if (! draggedNote.isValid())
         return;
 
+    // Shift suspends the grid for the length of a drag, which is the only way
+    // to reach an off-grid position without going back to the dropdown.
+    const auto snap = event.mods.isShiftDown() ? 1 : snapSteps();
+
     if (gesture == Gesture::resizing)
     {
-        const auto length = stepAtX (event.x) - (int) draggedNote[ids::step] + 1;
-        ProjectEdits::resizeNote (draggedNote, juce::jmax (1, length), &undo);
+        // The note's END lands on a grid line, rather than its length becoming
+        // a multiple of the grid: a note that already starts off-grid should be
+        // draggable to a beat, not merely to a beat's width.
+        const auto start = (int) draggedNote[ids::step];
+        const auto end = NoteTools::snapCeil (stepAtX (event.x) + 1, snap);
+
+        ProjectEdits::resizeNote (draggedNote, juce::jmax (1, end - start), &undo);
     }
     else if (gesture == Gesture::moving)
     {
-        const auto targetStep  = juce::jmax (0, stepAtX (event.x) - dragStepOffset);
+        // The grabbed note's absolute target snaps, and the delta that produces
+        // is applied to the whole selection. Snapping the delta would leave the
+        // note you are holding permanently off the grid; snapping each note
+        // separately would collapse a chord's internal offsets onto one step.
+        const auto targetStep  = juce::jmax (0, NoteTools::snapNearest (
+                                                    stepAtX (event.x) - dragStepOffset, snap));
         const auto targetPitch = pitchAtY (event.y) - dragPitchOffset;
 
         const auto deltaStep  = targetStep - (int) draggedNote[ids::step];
@@ -725,10 +1025,19 @@ void PianoRollComponent::mouseDrag (const juce::MouseEvent& event)
     repaint();
 }
 
-void PianoRollComponent::mouseUp (const juce::MouseEvent&)
+void PianoRollComponent::mouseUp (const juce::MouseEvent& event)
 {
     stopAudition();
     draggedVelocityNote = {};
+
+    // The cut happens here rather than during the drag: a note already cut
+    // would be cut again into fragments every time the pointer wobbled, and a
+    // press that turns out to cross nothing should not open a transaction.
+    if (gesture == Gesture::slicing)
+    {
+        sliceEnd = event.getPosition();
+        sliceAlong (sliceStart, sliceEnd);
+    }
 
     // The next note drawn takes the shape of the last one, so writing a passage
     // of held or quiet notes does not mean re-editing every one.
@@ -739,6 +1048,8 @@ void PianoRollComponent::mouseUp (const juce::MouseEvent&)
     draggedNote = {};
     gesture = Gesture::none;
     rubberBand = {};
+    sliceStart = sliceEnd = {};
+    lastPaintedCell = { -1, -1 };
     selectionAtDragStart.clearQuick();
     repaint();
 }
@@ -914,6 +1225,8 @@ void PianoRollComponent::changeListenerCallback (juce::ChangeBroadcaster*)
 
 void PianoRollComponent::resized()
 {
+    toolbar.setBounds (toolbarArea());
+
     horizontalScroll.setBounds (keyboardWidth, getHeight() - scrollThickness,
                                 juce::jmax (0, getWidth() - keyboardWidth - scrollThickness),
                                 scrollThickness);
@@ -1239,11 +1552,27 @@ void PianoRollComponent::paint (juce::Graphics& g)
     paintRuler (g);
     paintVelocityLane (g);
 
-    // Corner above the keyboard, where the ruler and the gutter meet.
+    // Corner above the keyboard, where the ruler and the gutter meet. Anchored
+    // to the content, not to the component: at y = 0 it painted over the tool
+    // strip instead of beside the ruler.
+    const auto ruler = rulerArea();
+
     g.setColour (colour::surface);
-    g.fillRect (0, 0, keyboardWidth, rulerHeight);
+    g.fillRect (0, ruler.getY(), keyboardWidth, rulerHeight);
     g.setColour (colour::dividerStrong);
-    g.drawHorizontalLine (rulerHeight - 1, 0.0f, (float) keyboardWidth);
+    g.drawHorizontalLine (ruler.getBottom() - 1, 0.0f, (float) keyboardWidth);
+
+    // The slice line, while it is being drawn. Clipped to the grid so it cannot
+    // be mistaken for something that reaches the keyboard or the ruler.
+    if (gesture == Gesture::slicing && sliceStart != sliceEnd)
+    {
+        const juce::Graphics::ScopedSaveState clip (g);
+        g.reduceClipRegion (noteArea());
+
+        g.setColour (colour::danger);
+        g.drawLine ((float) sliceStart.x, (float) sliceStart.y,
+                    (float) sliceEnd.x, (float) sliceEnd.y, stroke::bold);
+    }
 
     if (! ProjectEdits::findChannel (document.getState(), editorState.getSelectedChannelId()).isValid())
     {

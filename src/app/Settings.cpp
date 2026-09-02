@@ -2,6 +2,8 @@
 
 #include <juce_gui_basics/juce_gui_basics.h>
 
+#include "../model/NoteTools.h"
+
 namespace dew
 {
 
@@ -116,6 +118,20 @@ void Settings::setPianoRollScroll (double s)  { file().setValue ("pianoRollScrol
 
 double Settings::getPianoRollPitchScroll() const  { return juce::jmax (0.0, file().getDoubleValue ("pianoRollPitch", 0.0)); }
 void Settings::setPianoRollPitchScroll (double s) { file().setValue ("pianoRollPitch", juce::jmax (0.0, s)); }
+
+int Settings::getPianoRollSnap() const
+{
+    // A division that does not exist falls back to the finest one, which is the
+    // behaviour the roll had before there was a grid at all.
+    const auto stored = file().getIntValue ("pianoRollSnap", 0);
+
+    return (stored >= 0 && stored < NoteTools::numSnapDivisions) ? stored : 0;
+}
+
+void Settings::setPianoRollSnap (int index)
+{
+    file().setValue ("pianoRollSnap", juce::jlimit (0, NoteTools::numSnapDivisions - 1, index));
+}
 
 int Settings::getPanelWidth() const
 {

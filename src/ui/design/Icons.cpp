@@ -174,6 +174,66 @@ juce::Path eraser()
     return p;
 }
 
+juce::Path scissors()
+{
+    // Blades in the top half, rings in the bottom. The rings have to be big
+    // enough to survive a 24px button - drawn smaller they close up into two
+    // dots and the whole thing reads as a cross.
+    juce::Path p;
+    p.addPath (strokedLine (0.26f, 0.10f, 0.62f, 0.56f, 0.09f));
+    p.addPath (strokedLine (0.74f, 0.10f, 0.38f, 0.56f, 0.09f));
+
+    juce::Path rings;
+    rings.addEllipse (0.12f, 0.58f, 0.30f, 0.30f);
+    rings.addEllipse (0.58f, 0.58f, 0.30f, 0.30f);
+    p.addPath (strokeOf (rings, 0.10f));
+
+    return p;
+}
+
+juce::Path dice()
+{
+    // A five face, not a diagonal three: the corner pips are what make this a
+    // die rather than a framed picture, and a diagonal row merges with the
+    // border once the icon is small.
+    juce::Path p;
+    p.addPath (strokeOf ([]
+    {
+        juce::Path body;
+        body.addRoundedRectangle (0.12f, 0.12f, 0.76f, 0.76f, 0.16f);
+        return body;
+    }(), 0.09f));
+
+    const auto pip = [&p] (float x, float y) { p.addEllipse (x - 0.075f, y - 0.075f, 0.15f, 0.15f); };
+
+    pip (0.32f, 0.32f);
+    pip (0.68f, 0.32f);
+    pip (0.50f, 0.50f);
+    pip (0.32f, 0.68f);
+    pip (0.68f, 0.68f);
+
+    return p;
+}
+
+juce::Path quantize()
+{
+    // A note sitting exactly inside a grid cell. Deliberately NOT magnet(),
+    // which is the obvious "snap" glyph and which collapses into the headphone
+    // silhouette that already means solo once it is button-sized.
+    juce::Path p;
+
+    for (const auto x : { 0.14f, 0.5f, 0.86f })
+        p.addPath (strokedLine (x, 0.10f, x, 0.90f, 0.06f));
+
+    // Centred ON the middle line, not butted against one of the outer two:
+    // touching a line merges the two shapes into a letter H at button size.
+    juce::Path block;
+    block.addRoundedRectangle (0.34f, 0.38f, 0.32f, 0.24f, 0.06f);
+    p.addPath (block);
+
+    return p;
+}
+
 // --- state -------------------------------------------------------------------
 
 juce::Path mute()
@@ -504,6 +564,7 @@ std::vector<NamedIcon> all()
 
         { "plus", plus }, { "minus", minus }, { "trash", trash }, { "duplicate", duplicate },
         { "pencil", pencil }, { "magnet", magnet }, { "pointer", pointer }, { "eraser", eraser },
+        { "scissors", scissors }, { "dice", dice }, { "quantize", quantize },
 
         { "mute", mute }, { "solo", solo }, { "power", power }, { "lock", lock },
         { "check", check }, { "chevronUp", chevronUp }, { "chevronDown", chevronDown }, { "chevronRight", chevronRight }, { "grip", grip },

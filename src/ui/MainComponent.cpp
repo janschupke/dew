@@ -138,6 +138,7 @@ void MainComponent::applySettings (const Settings& settings)
     tabs.setCurrentTabIndex (settings.getTabIndex(), false);
     tabs.applyPianoRollView (settings.getPianoRollZoom(), settings.getPianoRollScroll(),
                              settings.getPianoRollPitchScroll());
+    tabs.setPianoRollSnap (settings.getPianoRollSnap());
 
     resized();
 }
@@ -156,6 +157,7 @@ void MainComponent::captureSettings (Settings& settings) const
     settings.setPianoRollZoom (zoom);
     settings.setPianoRollScroll (scroll);
     settings.setPianoRollPitchScroll (pitch);
+    settings.setPianoRollSnap (tabs.getPianoRollSnap());
 }
 
 void MainComponent::showAudioSettings()

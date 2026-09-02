@@ -15,6 +15,7 @@ add_library(dew_core STATIC
   model/ProjectFactory.cpp
   model/ProjectDocument.cpp
   model/ProjectEdits.cpp
+  model/NoteTools.cpp
 
   engine/Effects.cpp
   engine/PreviewQueue.cpp
@@ -43,6 +44,8 @@ add_library(dew_core STATIC
   ui/TimelineRuler.cpp
   ui/StepGridComponent.cpp
   ui/ChannelRackComponent.cpp
+  ui/PianoRollToolbar.cpp
+  ui/RandomizePanel.cpp
   ui/PianoRollComponent.cpp
   ui/PlaylistComponent.cpp
   ui/MixerComponent.cpp

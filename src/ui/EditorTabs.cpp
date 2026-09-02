@@ -52,4 +52,14 @@ void EditorTabs::applyPianoRollView (double zoom, double scroll, double pitchScr
     pianoRoll.applyView (zoom, scroll, pitchScroll);
 }
 
+int EditorTabs::getPianoRollSnap() const
+{
+    return NoteTools::indexOfSnap (pianoRoll.getSnap());
+}
+
+void EditorTabs::setPianoRollSnap (int index)
+{
+    pianoRoll.setSnap (NoteTools::snapFromIndex (index));
+}
+
 } // namespace dew
