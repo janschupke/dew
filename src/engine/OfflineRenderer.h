@@ -9,6 +9,15 @@
 namespace dew
 {
 
+/** What to write.
+
+    `midi` is not audio at all - it is handled by MidiExporter and ignores every
+    option about sample rate, depth and dynamics. It lives in the same enum
+    anyway because "what do you want out of this project" is one question to the
+    user, and one switch in renderToFile.
+*/
+enum class RenderFormat { wav, flac, mp3, midi };
+
 /** A half-open range of bars, 0-based - the same convention ClipSnapshot::startBar
     uses, so a clip at startBar 4 is inside BarRange { 4, 5 }.
 
@@ -61,6 +70,43 @@ struct RenderOptions
         the note on OfflineRenderer. Overrides `seconds` when set.
     */
     BarRange barRange;
+
+    // --- post-processing -----------------------------------------------------
+    /** Scale the result so it peaks at `normalizePeakDb`. Applied AFTER the
+        fades, so the number is true of the file that gets written.
+    */
+    bool normalize = false;
+    float normalizePeakDb = -1.0f;
+
+    /** Ramps at the ends, so a range that starts mid-note does not click. */
+    double fadeInSeconds = 0.0;
+    double fadeOutSeconds = 0.0;
+
+    /** Triangular dither when truncating to 16 bits or fewer. A no-op above
+        that and for float destinations, so it is safe to leave on.
+    */
+    bool dither = true;
+    juce::int64 ditherSeed = 0x5eed;
+
+    // --- format --------------------------------------------------------------
+    RenderFormat format = RenderFormat::wav;
+
+    /** 32-bit IEEE float WAV. Requires bitDepth == 32; skips dither and the
+        writer's clip at full scale, so a render that went over stays recoverable.
+    */
+    bool floatingPoint = false;
+
+    /** Index into LAMEEncoderAudioFormat::getQualityOptions():
+        0-9 are VBR best..smallest, 10-23 are CBR 32..320 kb/s.
+
+        Clamped before use. Out of range is not a harmless mistake there - the
+        lookup returns an empty string, which does not contain "VBR", so it falls
+        through to the CBR branch and invokes lame with a bitrate of zero.
+    */
+    int mp3QualityIndex = 4;
+
+    /** Where lame is. Empty means "go and find it". */
+    juce::File lameExecutable;
 };
 
 /** Progress out, cancellation in.
@@ -116,6 +162,11 @@ struct RenderReport
     */
     bool cancelled = false;
 
+    /** What normalize actually did, in dB. 0 when it was off or had nothing to
+        scale - including when it hit its boost cap and gave up short.
+    */
+    float normalizationGainDb = 0.0f;
+
     /** What was actually written. One entry for renderToFile; one per stem
         otherwise, listing only the stems that made it.
     */
@@ -159,11 +210,33 @@ struct OfflineRenderer
                                         const RenderOptions& options = {},
                                         RenderProgress* progress = nullptr);
 
-    /** Renders and writes a WAV. */
+    /** Renders and writes one file, in whatever `options.format` asks for. */
     static RenderReport renderToFile (const juce::ValueTree& project,
                                       const juce::File& destination,
                                       const RenderOptions& options = {},
                                       RenderProgress* progress = nullptr);
+
+    /** The extension a format wants, including the dot. */
+    static juce::String extensionFor (RenderFormat) noexcept;
+
+    /** A human name for a format, for menus and messages. */
+    static juce::String nameFor (RenderFormat) noexcept;
+
+    /** False when a format needs something this machine does not have - which
+        today means mp3 and a missing lame binary. The UI asks before offering it.
+    */
+    static bool isAvailable (RenderFormat);
+
+    /** Where lame is, or a file that does not exist.
+
+        Looks along PATH and then in the two places Homebrew puts it. Cached: the
+        answer cannot change without the app being restarted, and a UI that greys
+        the MP3 option asks this every time it repaints.
+    */
+    static juce::File findLame();
+
+    /** The quality settings mp3 offers, in the order mp3QualityIndex means. */
+    static juce::StringArray mp3QualityOptions();
 };
 
 } // namespace dew

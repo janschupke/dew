@@ -34,6 +34,8 @@ add_executable(dew_tests
   PianoRollTests.cpp
   PianoRollToolsTests.cpp
   PlaylistTests.cpp
+  RenderFormatTests.cpp
+  RenderPostTests.cpp
   RenderRangeTests.cpp
   UiSmokeTests.cpp
 )

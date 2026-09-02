@@ -11,3 +11,9 @@
 brew "cmake"
 brew "ninja"
 brew "ccache"
+
+# MP3 export. dew ships no LAME code: juce::LAMEEncoderAudioFormat drives this
+# binary as a child process, which is why MP3 needs no build dependency and
+# raises no LGPL question. Without it the app simply greys the MP3 option out,
+# so this is the one entry here that is optional.
+brew "lame"

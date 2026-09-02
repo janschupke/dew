@@ -1,5 +1,7 @@
 #include "OfflineRenderer.h"
 
+#include "RenderPost.h"
+
 namespace dew
 {
 
@@ -170,6 +172,21 @@ RenderReport renderSnapshot (EngineSnapshot snapshot,
 
     const auto kept = (int) span.numKept();
 
+    // Fades first, then normalize: what was asked for is that the FILE peaks at
+    // the target, so the peak has to be measured on the buffer that will be
+    // written. The other order leaves a file quieter than asked for whenever the
+    // peak sits inside a fade.
+    RenderPost::applyFades (destination, options.sampleRate,
+                            options.fadeInSeconds, options.fadeOutSeconds);
+
+    if (options.normalize)
+        report.normalizationGainDb =
+            RenderPost::normalize (destination,
+                                   juce::Decibels::decibelsToGain (options.normalizePeakDb));
+
+    // Measured after post-processing, so the numbers the UI and dew_render print
+    // are the numbers in the file. Dither is not applied here - it belongs to the
+    // destination's bit depth, which a float buffer does not have.
     report.numSamples = kept;
     report.seconds = (double) kept / options.sampleRate;
     report.peak = destination.getMagnitude (0, kept);
@@ -179,7 +196,190 @@ RenderReport renderSnapshot (EngineSnapshot snapshot,
     return report;
 }
 
+/** The audio format to write with, or nullptr if this machine cannot.
+
+    Held by unique_ptr because LAMEEncoderAudioFormat has to be constructed with
+    the path to the binary, so these cannot all be static instances.
+*/
+std::unique_ptr<juce::AudioFormat> audioFormatFor (const RenderOptions& options)
+{
+    switch (options.format)
+    {
+        case RenderFormat::wav:
+            return std::make_unique<juce::WavAudioFormat>();
+
+        case RenderFormat::flac:
+            return std::make_unique<juce::FlacAudioFormat>();
+
+        case RenderFormat::mp3:
+        {
+           #if JUCE_USE_LAME_AUDIO_FORMAT
+            const auto lame = options.lameExecutable != juce::File()
+                                ? options.lameExecutable
+                                : OfflineRenderer::findLame();
+
+            if (! lame.existsAsFile())
+                return {};
+
+            return std::make_unique<juce::LAMEEncoderAudioFormat> (lame);
+           #else
+            return {};
+           #endif
+        }
+
+        case RenderFormat::midi:
+            break;
+    }
+
+    return {};
+}
+
+/** Checks the things the format cares about but its writer does not.
+
+    LAMEEncoderAudioFormat publishes getPossibleSampleRates() and
+    getPossibleBitDepths() and then enforces neither: ask it for 96kHz and it
+    builds a writer, hands lame a file it cannot use, and fails silently in a
+    destructor. So the checking happens here, where it can say something.
+*/
+juce::Result validateForFormat (const RenderOptions& options)
+{
+    if (options.format == RenderFormat::mp3)
+    {
+        if (! OfflineRenderer::isAvailable (RenderFormat::mp3))
+            return juce::Result::fail (
+                "MP3 export needs the lame encoder, which was not found. "
+                "Install it with `brew install lame`.");
+
+        const auto rate = (int) std::llround (options.sampleRate);
+
+        if (rate != 32000 && rate != 44100 && rate != 48000)
+            return juce::Result::fail (
+                "MP3 supports 32000, 44100 or 48000 Hz. This render is at "
+                + juce::String (rate) + " Hz.");
+    }
+
+    if (options.format == RenderFormat::wav || options.format == RenderFormat::flac)
+    {
+        if (options.floatingPoint && options.bitDepth != 32)
+            return juce::Result::fail ("A floating point file has to be 32-bit.");
+
+        if (options.format == RenderFormat::flac && options.floatingPoint)
+            return juce::Result::fail ("FLAC is an integer format; it cannot hold floats.");
+    }
+
+    return juce::Result::ok();
+}
+
+juce::AudioFormatWriterOptions writerOptionsFor (const RenderOptions& options)
+{
+    auto writerOptions = juce::AudioFormatWriterOptions()
+                             .withSampleRate (options.sampleRate)
+                             .withNumChannels (2);
+
+    if (options.format == RenderFormat::mp3)
+    {
+        // 16 is the only depth lame's wrapper accepts, whatever was asked for.
+        return writerOptions
+                   .withBitsPerSample (16)
+                   .withQualityOptionIndex (
+                       juce::jlimit (0,
+                                     juce::jmax (0, OfflineRenderer::mp3QualityOptions().size() - 1),
+                                     options.mp3QualityIndex));
+    }
+
+    writerOptions = writerOptions.withBitsPerSample (options.bitDepth);
+
+    if (options.floatingPoint)
+        writerOptions = writerOptions.withSampleFormat (
+            juce::AudioFormatWriterOptions::SampleFormat::floatingPoint);
+
+    return writerOptions;
+}
+
 } // namespace
+
+juce::String OfflineRenderer::extensionFor (RenderFormat format) noexcept
+{
+    switch (format)
+    {
+        case RenderFormat::wav:  return ".wav";
+        case RenderFormat::flac: return ".flac";
+        case RenderFormat::mp3:  return ".mp3";
+        case RenderFormat::midi: return ".mid";
+    }
+
+    return ".wav";
+}
+
+juce::String OfflineRenderer::nameFor (RenderFormat format) noexcept
+{
+    switch (format)
+    {
+        case RenderFormat::wav:  return "WAV";
+        case RenderFormat::flac: return "FLAC";
+        case RenderFormat::mp3:  return "MP3";
+        case RenderFormat::midi: return "MIDI";
+    }
+
+    return "WAV";
+}
+
+juce::StringArray OfflineRenderer::mp3QualityOptions()
+{
+   #if JUCE_USE_LAME_AUDIO_FORMAT
+    const auto lame = findLame();
+
+    if (lame.existsAsFile())
+        return juce::LAMEEncoderAudioFormat (lame).getQualityOptions();
+   #endif
+
+    return {};
+}
+
+juce::File OfflineRenderer::findLame()
+{
+    // Cached: the answer cannot change while the app runs, and the UI asks
+    // whenever it repaints a greyed-out menu entry.
+    static const juce::File found = []
+    {
+        const auto path = juce::SystemStats::getEnvironmentVariable ("PATH", {});
+
+        for (const auto& directory : juce::StringArray::fromTokens (path, ":", {}))
+        {
+            if (directory.isEmpty())
+                continue;
+
+            const auto candidate = juce::File (directory).getChildFile ("lame");
+
+            if (candidate.existsAsFile())
+                return candidate;
+        }
+
+        // A GUI app launched from Finder does not inherit a shell's PATH, so the
+        // usual Homebrew locations have to be named.
+        for (const auto* fallback : { "/opt/homebrew/bin/lame",
+                                      "/usr/local/bin/lame",
+                                      "/usr/bin/lame" })
+            if (juce::File file { fallback }; file.existsAsFile())
+                return file;
+
+        return juce::File();
+    }();
+
+    return found;
+}
+
+bool OfflineRenderer::isAvailable (RenderFormat format)
+{
+    if (format != RenderFormat::mp3)
+        return true;
+
+   #if JUCE_USE_LAME_AUDIO_FORMAT
+    return findLame().existsAsFile();
+   #else
+    return false;
+   #endif
+}
 
 RenderReport OfflineRenderer::renderToBuffer (const juce::ValueTree& project,
                                               juce::AudioBuffer<float>& destination,
@@ -202,11 +402,25 @@ RenderReport OfflineRenderer::renderToFile (const juce::ValueTree& project,
                                             const RenderOptions& options,
                                             RenderProgress* progress)
 {
+    RenderReport report;
+
+    report.result = validateForFormat (options);
+
+    if (report.result.failed())
+        return report;
+
     juce::AudioBuffer<float> rendered;
-    auto report = renderToBuffer (project, rendered, options, progress);
+    report = renderToBuffer (project, rendered, options, progress);
 
     if (! report.ok() || report.cancelled)
         return report;
+
+    // Dither belongs to the destination's LSB, so it happens here rather than in
+    // renderToBuffer, which hands back a float buffer that has no bit depth. It
+    // is applied after the report was filled in, so peak and rms stay the numbers
+    // the render produced rather than drifting by a fraction of an LSB.
+    if (options.dither && ! options.floatingPoint)
+        RenderPost::dither (rendered, options.bitDepth, options.ditherSeed);
 
     destination.getParentDirectory().createDirectory();
 
@@ -226,17 +440,22 @@ RenderReport OfflineRenderer::renderToFile (const juce::ValueTree& project,
 
         std::unique_ptr<juce::OutputStream> outputStream (std::move (fileStream));
 
-        juce::WavAudioFormat format;
+        auto format = audioFormatFor (options);
 
-        auto writer = format.createWriterFor (outputStream,
-                                              juce::AudioFormatWriterOptions()
-                                                  .withSampleRate (options.sampleRate)
-                                                  .withNumChannels (2)
-                                                  .withBitsPerSample (options.bitDepth));
+        if (format == nullptr)
+        {
+            report.result = juce::Result::fail ("Cannot write " + nameFor (options.format)
+                                                + " on this machine.");
+            return report;
+        }
+
+        auto writer = format->createWriterFor (outputStream, writerOptionsFor (options));
 
         if (writer == nullptr)
         {
-            report.result = juce::Result::fail ("Could not create a WAV writer.");
+            report.result = juce::Result::fail ("Could not create a " + nameFor (options.format)
+                                                + " writer at " + juce::String (options.bitDepth)
+                                                + "-bit / " + juce::String (options.sampleRate, 0) + " Hz.");
             return report;
         }
 
@@ -245,6 +464,18 @@ RenderReport OfflineRenderer::renderToFile (const juce::ValueTree& project,
             report.result = juce::Result::fail ("Could not write audio to " + destination.getFullPathName());
             return report;
         }
+    }
+    // The writer is destroyed HERE, and that brace is load-bearing. The MP3
+    // writer streams to a temporary WAV and only runs lame when it is destroyed,
+    // piping the result into the stream - so nothing exists until this point. It
+    // also returns void and gives up silently after one retry, which is why the
+    // size check below is required rather than defensive.
+
+    if (temp.getFile().getSize() <= 0)
+    {
+        report.result = juce::Result::fail (nameFor (options.format)
+                                            + " encoding produced no output.");
+        return report;
     }
 
     if (! temp.overwriteTargetFileWithTemporary())

@@ -28,6 +28,7 @@ add_library(dew_core STATIC
   engine/MixerBus.cpp
   engine/AudioEngine.cpp
   engine/OfflineRenderer.cpp
+  engine/RenderPost.cpp
   engine/LiveAudioHost.cpp
   engine/MidiRouter.cpp
   engine/MidiInputHost.cpp
@@ -91,6 +92,11 @@ target_compile_definitions(dew_core
   PUBLIC
     JUCE_WEB_BROWSER=0
     JUCE_USE_CURL=0
+    # MP3 ENCODING. JUCE can only decode MP3 on its own; encoding shells out to
+    # an installed lame binary, so this ships no LAME code and adds no build
+    # dependency. Without the binary the format simply reports itself
+    # unavailable - see OfflineRenderer::isAvailable.
+    JUCE_USE_LAME_AUDIO_FORMAT=1
     # Set by juce_add_gui_app / juce_add_console_app on THOSE targets only. A
     # static library shared between them never sees it, and JUCE's headers
     # behave differently without it, so it has to be declared here by hand.
