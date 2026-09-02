@@ -206,6 +206,16 @@ bool Settings::getPanelCollapsed() const
     return file().getBoolValue ("panelCollapsed", false);
 }
 
+bool Settings::getReduceMotion() const
+{
+    return file().getBoolValue ("reduceMotion", false);
+}
+
+void Settings::setReduceMotion (bool reduce)
+{
+    file().setValue ("reduceMotion", reduce);
+}
+
 void Settings::setPanelCollapsed (bool collapsed)
 {
     file().setValue ("panelCollapsed", collapsed);

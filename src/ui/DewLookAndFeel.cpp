@@ -4,6 +4,7 @@
 #include "ui/design/Tokens.h"
 
 #include "ui/primitives/DewControls.h"
+#include "ui/design/Animator.h"
 
 namespace dew
 {
@@ -457,6 +458,13 @@ int DewLookAndFeel::getPopupMenuBorderSize()
 
 void DewLookAndFeel::preparePopupMenuWindow (juce::Component& window)
 {
+    // Reduce motion has to reach the one animation that predates the animator.
+    // This uses the desktop animator rather than dew's, because JUCE owns a
+    // menu window's lifetime and the desktop's is the only one still alive when
+    // that window is deleted out from under us.
+    if (Animator::shared().getReduceMotion())
+        return;
+
     // A menu that simply appears reads as a redraw; a short fade and lift reads
     // as something opening. JUCE offers no hook for the close, so this is
     // deliberately one-directional rather than half an animation.

@@ -6,6 +6,7 @@
 #include "model/ProjectEdits.h"
 #include "model/ProjectFactory.h"
 #include "ui/Commands.h"
+#include "ui/design/Animator.h"
 
 namespace dew
 {
@@ -59,6 +60,12 @@ const juce::String DewApplication::getApplicationVersion() { return BuildInfo::v
 void DewApplication::initialise (const juce::String&)
 {
     settings = std::make_unique<Settings>();
+
+    // The one place motion is turned on. Everywhere else - every test, every
+    // dew_shot render - leaves it off, so a widget built outside a running
+    // application snaps exactly as it did before there was an animator.
+    Animator::shared().setEnabled (true);
+    Animator::shared().setReduceMotion (settings->getReduceMotion());
 
     mainWindow = std::make_unique<MainWindow> (getApplicationName(), commandManager, *settings);
     restoreSession();

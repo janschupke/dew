@@ -254,9 +254,21 @@ private:
         shape a plugin receives notes in, and which lets a module see a whole
         block's timing rather than being poked once per note.
 
-        Reserved in prepare(); cleared, never freed.
+        Reserved in the constructor and NEVER grown past it: push_back on a
+        vector at capacity allocates, and this is filled on the audio thread.
+        Past the bound an event is refused, which is the contract PreviewQueue
+        already has when its ring is full - a bounded queue that drops is
+        honest; one that allocates to avoid dropping is not realtime.
     */
     std::vector<std::vector<NoteEvent>> channelEvents;
+
+    /** The most events one channel can receive in one block. Both preview rings
+        can empty into a single channel, and the sequencer's trigger list is
+        reserved at 256. */
+    static constexpr int maxEventsPerChannel = 2 * PreviewQueue::capacity + 256;
+
+    /** Appends unless the channel is already at its bound. */
+    void pushNoteEvent (int channelIndex, const NoteEvent&) noexcept;
 
     InstrumentModule* instrumentFor (int channelIndex, InstrumentType) noexcept;
     void resetAllInstruments() noexcept;

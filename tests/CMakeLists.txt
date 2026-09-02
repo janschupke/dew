@@ -58,6 +58,7 @@ add_executable(dew_tests
   SourceGateTests.cpp
   RealtimeTests.cpp
   CatalogTests.cpp
+  MotionTests.cpp
 )
 
 target_link_libraries(dew_tests

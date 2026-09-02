@@ -33,10 +33,8 @@ AudioEngine::AudioEngine()
     instruments.resize (kMaxChannels);
     channelEvents.resize (kMaxChannels);
 
-    // A block cannot produce more note events than the sequencer produces
-    // triggers, plus the preview queues' capacity.
     for (auto& events : channelEvents)
-        events.reserve (64);
+        events.reserve ((size_t) maxEventsPerChannel);
     triggers.reserve (256);
 
     effectUnitTypes.assign (kMaxEffectUnits, -1);
@@ -186,8 +184,8 @@ void AudioEngine::applyPreviewEvent (const EngineSnapshot& snapshot, const Previ
 {
     if (event.kind == PreviewEvent::Kind::allOff)
     {
-        for (int i = 0; i < numChannels && i < (int) channelEvents.size(); ++i)
-            channelEvents[(size_t) i].push_back ({ NoteEvent::Kind::allOff });
+        for (int i = 0; i < numChannels; ++i)
+            pushNoteEvent (i, { NoteEvent::Kind::allOff });
 
         return;
     }
@@ -195,11 +193,9 @@ void AudioEngine::applyPreviewEvent (const EngineSnapshot& snapshot, const Previ
     if (event.channelIndex < 0 || event.channelIndex >= numChannels)
         return;
 
-    auto& events = channelEvents[(size_t) event.channelIndex];
-
     if (event.kind == PreviewEvent::Kind::noteOff)
     {
-        events.push_back ({ NoteEvent::Kind::off, 0, event.pitch });
+        pushNoteEvent (event.channelIndex, { NoteEvent::Kind::off, 0, event.pitch });
         return;
     }
 
@@ -215,8 +211,8 @@ void AudioEngine::applyPreviewEvent (const EngineSnapshot& snapshot, const Previ
     // that can be heard: unmuting mid-preview would no longer let the held note
     // through. Not worth an untestable behaviour change.
     juce::ignoreUnused (snapshot);
-    events.push_back ({ NoteEvent::Kind::on, 0, event.pitch, event.velocity,
-                        std::numeric_limits<int>::max() });
+    pushNoteEvent (event.channelIndex, { NoteEvent::Kind::on, 0, event.pitch, event.velocity,
+                                        std::numeric_limits<int>::max() });
 }
 
 void AudioEngine::drainPreviewQueue (const EngineSnapshot& snapshot) noexcept
@@ -575,6 +571,21 @@ int AudioEngine::getMaterialisedInstrumentCount (InstrumentType type) const noex
     return count;
 }
 
+void AudioEngine::pushNoteEvent (int channelIndex, const NoteEvent& event) noexcept
+{
+    if (channelIndex < 0 || channelIndex >= (int) channelEvents.size())
+        return;
+
+    auto& events = channelEvents[(size_t) channelIndex];
+
+    // At the bound rather than growing: push_back on a full vector allocates,
+    // and this runs on the audio thread.
+    if ((int) events.size() >= maxEventsPerChannel)
+        return;
+
+    events.push_back (event);
+}
+
 InstrumentModule* AudioEngine::instrumentFor (int channelIndex, InstrumentType type) noexcept
 {
     if (channelIndex < 0 || channelIndex >= (int) instruments.size())
@@ -801,12 +812,20 @@ void AudioEngine::processBlock (juce::AudioBuffer<float>& buffer) noexcept
         if (! snapshot.isChannelAudible (channelSnapshot))
             continue;
 
-        channelEvents[(size_t) trigger.channelIndex].push_back (
-            { NoteEvent::Kind::on, trigger.sampleOffset, trigger.pitch, trigger.velocity,
-              trigger.durationSamples });
+        pushNoteEvent (trigger.channelIndex,
+                       { NoteEvent::Kind::on, trigger.sampleOffset, trigger.pitch,
+                         trigger.velocity, trigger.durationSamples });
     }
 
     // --- render channels into their mixer tracks -----------------------------
+    // Everything an instrument needs that does not vary by channel.
+    InstrumentContext blockContext;
+    blockContext.transport = { transport.getPositionSamples() / juce::jmax (1.0, transport.samplesPerStep()),
+                               transport.samplesPerStep(), currentSampleRate,
+                               isPlayingNow, mode == Transport::Mode::song };
+    blockContext.clips = { snapshot.clips.data(), snapshot.clips.size() };
+    blockContext.stepsPerBar = snapshot.stepsPerBar();
+
     for (int i = 0; i < numChannels; ++i)
     {
         auto* mono = channelBuffers.getWritePointer (i);
@@ -833,25 +852,24 @@ void AudioEngine::processBlock (juce::AudioBuffer<float>& buffer) noexcept
         // place to edit rather than a new class.
         if (auto* instrument = instrumentFor (i, channel.source))
         {
-            InstrumentContext ctx;
-            ctx.transport = { transport.getPositionSamples() / juce::jmax (1.0, transport.samplesPerStep()),
-                              transport.samplesPerStep(), currentSampleRate,
-                              isPlayingNow, mode == Transport::Mode::song };
-            ctx.events = { channelEvents[(size_t) i].data(), channelEvents[(size_t) i].size() };
+            // Filled in place, not copied. The block-wide half was set once
+            // above the loop; only these change per channel. A copy here was
+            // measurably slower - a hundred bytes per channel per block adds up
+            // on a path that runs eighty-six times a second per channel.
+            blockContext.events = { channelEvents[(size_t) i].data(),
+                                    channelEvents[(size_t) i].size() };
 
             // One read of each controller per block, like the transport's atomics.
-            ctx.bendSemitones = channelBend[(size_t) i].load (std::memory_order_relaxed);
-            ctx.modulation = channelModulation[(size_t) i].load (std::memory_order_relaxed);
+            blockContext.bendSemitones = channelBend[(size_t) i].load (std::memory_order_relaxed);
+            blockContext.modulation = channelModulation[(size_t) i].load (std::memory_order_relaxed);
 
-            ctx.osc = &osc;
-            ctx.amp = &channel.amp;
-            ctx.sample = &channel.sample;
-            ctx.audio = channel.audio.get();
-            ctx.clips = { snapshot.clips.data(), snapshot.clips.size() };
-            ctx.channelIndex = i;
-            ctx.stepsPerBar = snapshot.stepsPerBar();
+            blockContext.osc = &osc;
+            blockContext.amp = &channel.amp;
+            blockContext.sample = &channel.sample;
+            blockContext.audio = channel.audio.get();
+            blockContext.channelIndex = i;
 
-            instrument->processAdd (ctx, mono, numSamples);
+            instrument->processAdd (blockContext, mono, numSamples);
         }
 
         if (! snapshot.isChannelAudible (channel))

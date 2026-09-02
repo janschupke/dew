@@ -84,6 +84,14 @@ public:
     bool getPanelCollapsed() const;
     void setPanelCollapsed (bool);
 
+    /** Whether transitions should be instant.
+
+        Not "slower": off. Some people find animation distracting and some find
+        it nauseating, and a DAW is a tool people sit in front of for hours.
+    */
+    bool getReduceMotion() const;
+    void setReduceMotion (bool);
+
     // --- rendering -----------------------------------------------------------
     /** Where the last render was written, so the next chooser opens there
         rather than wherever the system last felt like.

@@ -12,6 +12,7 @@
 #include "ui/design/Tokens.h"
 
 #include "model/Ids.h"
+#include "ui/design/Animator.h"
 
 namespace dew
 {
@@ -244,6 +245,8 @@ void MainComponent::applySettings (const Settings& settings)
     panelWidth = settings.getPanelWidth();
     panelCollapsed = settings.getPanelCollapsed();
     divider.updateToggle();
+
+    Animator::shared().setReduceMotion (settings.getReduceMotion());
 
     editorState.setSelectedChannelId (settings.getSelectedChannelId());
     editorState.setSelectedMixerTrackId (settings.getSelectedMixerTrackId());
