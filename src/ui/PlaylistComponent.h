@@ -8,6 +8,7 @@
 #include "model/AutomationTargets.h"
 #include "ui/PlaylistToolbar.h"
 #include "ui/TimelineRuler.h"
+#include "ui/TimelinePaint.h"
 #include "ui/TimelineView.h"
 #include "ui/primitives/DewControls.h"
 
@@ -213,6 +214,10 @@ private:
     PlaylistToolbar toolbar;
 
     TimelineView timeline;
+
+    /** Play and stop, eased. The most frequent state change in the
+        application, and a hard cut in all four views before this. */
+    timelinePaint::PlayheadState playhead { *this };
 
     /** Scrub, span-select and clear. This timeline counts BARS, so the gesture
         works in bars here and in steps everywhere else - it never converts, so

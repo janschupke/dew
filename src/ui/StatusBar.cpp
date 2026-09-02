@@ -50,6 +50,13 @@ void StatusBar::showMessage (const juce::String& text, Severity severity)
     messageText = text;
     messageSeverity = severity;
     messageAgeMs = 0;
+
+    // Fades IN as well as out. The fade-out was already here; a message that
+    // appeared as a hard cut and left as a fade read as two different things
+    // happening.
+    arrival.snapTo (0.0f);
+    arrival.animateTo (1.0f, tokens::motion::popupMs, Ease::decelerate);
+
     repaint (messageBounds);
 }
 
@@ -185,9 +192,10 @@ void StatusBar::paint (juce::Graphics& g)
         // Fades out over its last second rather than disappearing, so a message
         // that has gone does not look like one you missed.
         const auto remaining = messageLifetimeMs - messageAgeMs;
-        const auto alpha = juce::jlimit (0.0f, 1.0f, (float) remaining / 1000.0f);
+        const auto leaving = juce::jlimit (0.0f, 1.0f, (float) remaining / 1000.0f);
 
-        g.setColour (colourFor (messageSeverity).withAlpha (alpha));
+        g.setColour (colourFor (messageSeverity)
+                         .withAlpha (juce::jmin (arrival.get(), leaving)));
         g.drawText (messageText, messageBounds, juce::Justification::centredLeft, true);
     }
 

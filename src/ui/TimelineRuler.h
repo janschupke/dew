@@ -2,6 +2,7 @@
 
 #include <juce_gui_basics/juce_gui_basics.h>
 
+#include "ui/TimelinePaint.h"
 #include "ui/TimelineView.h"
 
 namespace dew
@@ -40,8 +41,18 @@ struct Style
     /** Position to mark, in steps, or a negative number for none. */
     double playheadSteps = -1.0;
 
-    /** A stopped transport still shows its position, at half strength. */
+    /** A stopped transport still shows its position, at half strength. Set by
+        whoever builds the style: it is what the transport is doing. */
     bool playing = false;
+
+    /** How far the head has got between those two states.
+
+        ruler::paint is a free function with no component to own an animation,
+        so the STRIP that calls it eases `playing` into this and the painter
+        draws a number. A caller that builds a Style by hand and paints it
+        directly gets the un-eased state, which is what a still frame wants.
+    */
+    float playheadBrightness = timelinePaint::playheadStopped;
 
     /** The selected span, in the same units as everything else here, or a
         negative start for none. Drawn as a solid strip rather than a wash: a
@@ -203,6 +214,10 @@ public:
     void mouseDoubleClick (const juce::MouseEvent&) override;
 
 private:
+    /** Play and stop, eased - the most frequent state change in the
+        application, and a hard cut in all four views before this. */
+    timelinePaint::PlayheadState playhead { *this };
+
     /** Follows the transport, so the head moves. Repaints only when the
         position actually changed - a ruler is mostly static and has no
         business redrawing sixty times a second while nothing is happening.

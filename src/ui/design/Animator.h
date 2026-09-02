@@ -150,6 +150,47 @@ private:
     bool anyMoving = false;
 };
 
+// -----------------------------------------------------------------------------
+
+/** An eased value that belongs to a component.
+
+    The three lines every animated widget would otherwise write: register with
+    the clock, repaint when the number moves, unregister on the way out. The
+    last of those is the one that matters - a Client that outlives its
+    registration is a dangling pointer in the Animator's list, and a widget
+    rebuilt on a document change is destroyed while the clock is running.
+
+    Reading it is free and const, so paint() pulls a number rather than asking
+    a clock what time it is.
+*/
+class ComponentMotion : private Animator::Client
+{
+public:
+    ComponentMotion (juce::Component& c, float initial = 0.0f);
+    ~ComponentMotion() override;
+
+    /** Aims at a value. A no-op if it is already aiming there, and instant when
+        motion is off or reduced - so no call site needs a branch, and a refresh
+        that re-states every control costs nothing. */
+    void animateTo (float target, int durationMs, Ease = Ease::standard);
+
+    /** Arrives now. What the FIRST value a widget is ever given does: a panel
+        built from a document must not sweep every knob up from zero. */
+    void snapTo (float);
+
+    float get() const noexcept       { return value.get(); }
+    float getTarget() const noexcept { return value.getTarget(); }
+    bool  isMoving() const noexcept  { return value.isMoving(); }
+
+private:
+    bool advanceAnimation (int deltaMs) override;
+
+    juce::Component& owner;
+    MotionValue value;
+
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (ComponentMotion)
+};
+
 /** Motion on and driven by hand, for the lifetime of the object. What an
     animation test builds; everything else stays instant. */
 struct ScopedAnimation

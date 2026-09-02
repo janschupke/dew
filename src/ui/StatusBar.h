@@ -2,6 +2,8 @@
 
 #include <juce_gui_basics/juce_gui_basics.h>
 
+#include "ui/design/Animator.h"
+
 #include "io/LiveAudioHost.h"
 #include "model/ProjectDocument.h"
 #include "ui/EditorState.h"
@@ -51,6 +53,11 @@ public:
     static constexpr int messageLifetimeMs = 6000;
 
 private:
+    /** How far a newly-arrived message has faded in. The fade OUT was already
+        here and is driven by the message's own age, which is why the two are
+        separate numbers rather than one. */
+    ComponentMotion arrival { *this, 1.0f };
+
     void timerCallback() override;
     void changeListenerCallback (juce::ChangeBroadcaster*) override;
     void valueTreePropertyChanged (juce::ValueTree&, const juce::Identifier&) override;

@@ -150,6 +150,42 @@ void Animator::timerCallback()
 
 // -----------------------------------------------------------------------------
 
+// --- ComponentMotion ---------------------------------------------------------
+
+ComponentMotion::ComponentMotion (juce::Component& c, float initial)
+    : owner (c), value (initial)
+{
+    Animator::shared().addClient (*this);
+}
+
+ComponentMotion::~ComponentMotion()
+{
+    Animator::shared().removeClient (*this);
+}
+
+void ComponentMotion::animateTo (float target, int durationMs, Ease ease)
+{
+    // Zero when motion is off, which makes animateTo identical to snapTo - the
+    // branch lives here rather than at sixteen call sites.
+    value.animateTo (target, Animator::shared().motionIsOn() ? durationMs : 0, ease);
+
+    if (value.isMoving())
+        owner.repaint();
+}
+
+void ComponentMotion::snapTo (float target)
+{
+    value.snapTo (target);
+}
+
+bool ComponentMotion::advanceAnimation (int deltaMs)
+{
+    if (value.advance (deltaMs))
+        owner.repaint();
+
+    return value.isMoving();
+}
+
 ScopedAnimation::ScopedAnimation()
     : wasEnabled (Animator::shared().isEnabled())
 {

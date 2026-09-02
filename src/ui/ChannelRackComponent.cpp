@@ -127,8 +127,13 @@ public:
     {
         const auto selected = editorState.getSelectedChannelId() == getChannelId();
 
+        // The rack's rest and hover colours are two steps apart on the surface
+        // ladder, so the lift interpolates BETWEEN them rather than brightening
+        // one - a brightened surface and surfaceRaised are not the same colour.
         g.setColour (selected ? colour::surfaceHover
-                              : hover.isHovered() ? colour::surfaceRaised : colour::surface);
+                              : colour::surface.interpolatedWith (
+                                    colour::surfaceRaised,
+                                    hover.lift() / tokens::emphasis::surfaceLift));
         g.fillAll();
 
         const auto colourValue = channelColour::of (channel);

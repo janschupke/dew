@@ -5,6 +5,7 @@
 #include "engine/AudioEngine.h"
 #include "model/ProjectDocument.h"
 #include "ui/EditorState.h"
+#include "ui/TimelinePaint.h"
 #include "ui/TimelineView.h"
 
 namespace dew
@@ -132,6 +133,10 @@ private:
     int lastPaintedRow = -1;
 
     TimelineView timeline;
+
+    /** Play and stop, eased. The most frequent state change in the
+        application, and a hard cut in all four views before this. */
+    timelinePaint::PlayheadState playhead { *this };
     juce::ScrollBar horizontalScroll { false };
     bool updatingScrollBar = false;
 

@@ -13,9 +13,14 @@ namespace
 /** Below this, one line per step is a wall rather than a grid. */
 constexpr double subBeatCutoffPx = 6.0;
 
-juce::Colour playheadColour (bool playing)
+juce::Colour playheadColour (float brightness)
 {
-    return playing ? colour::playhead : colour::playhead.withAlpha (emphasis::dimmed);
+    // Between dimmed and opaque rather than between two colours: a stopped
+    // playhead is the same yellow, stated less strongly.
+    const auto alpha = juce::jmap (juce::jlimit (0.0f, 1.0f, brightness),
+                                   emphasis::dimmed, 1.0f);
+
+    return colour::playhead.withAlpha (alpha);
 }
 
 } // namespace
@@ -53,18 +58,18 @@ void playheadColumn (juce::Graphics& g, juce::Rectangle<float> bounds)
     g.fillRect (bounds);
 }
 
-void playheadLine (juce::Graphics& g, float x, juce::Range<float> y, bool playing)
+void playheadLine (juce::Graphics& g, float x, juce::Range<float> y, float brightness)
 {
     // stroke::regular, not a pixel: the four playheads were 1, 1, 1.5 and 2
     // wide, and the 1.5 is the one that was looked at - thin enough not to hide
     // a note under it, thick enough to find across a full arrangement.
-    g.setColour (playheadColour (playing));
+    g.setColour (playheadColour (brightness));
     g.fillRect (x, y.getStart(), stroke::regular, y.getLength());
 }
 
-void playheadHead (juce::Graphics& g, float x, float baselineY, bool playing)
+void playheadHead (juce::Graphics& g, float x, float baselineY, float brightness)
 {
-    g.setColour (playheadColour (playing));
+    g.setColour (playheadColour (brightness));
 
     juce::Path head;
     head.addTriangle (x - playheadHeadHalfWidth, baselineY - playheadHeadHeight,

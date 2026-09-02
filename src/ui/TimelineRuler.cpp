@@ -91,7 +91,7 @@ void paint (juce::Graphics& g, juce::Rectangle<int> bounds,
         const auto margin = timelinePaint::playheadHeadHalfWidth;
 
         if (x >= (float) bounds.getX() - margin && x <= (float) bounds.getRight() + margin)
-            timelinePaint::playheadHead (g, x, (float) bounds.getBottom(), style.playing);
+            timelinePaint::playheadHead (g, x, (float) bounds.getBottom(), style.playheadBrightness);
     }
 
     g.setColour (colour::dividerStrong);
@@ -266,7 +266,10 @@ void RulerStrip::timerCallback()
 void RulerStrip::paint (juce::Graphics& g)
 {
     const auto& timeline = timelineSource != nullptr ? timelineSource() : fallback;
-    const auto style = styleSource != nullptr ? styleSource() : ruler::Style();
+    auto style = styleSource != nullptr ? styleSource() : ruler::Style();
+
+    playhead.set (style.playing);
+    style.playheadBrightness = playhead.brightness();
 
     ruler::paint (g, getLocalBounds(), timeline, style);
 }

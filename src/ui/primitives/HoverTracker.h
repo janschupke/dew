@@ -4,6 +4,8 @@
 
 #include <juce_gui_basics/juce_gui_basics.h>
 
+#include "ui/design/Animator.h"
+
 namespace dew
 {
 
@@ -43,11 +45,22 @@ public:
         this instead. */
     std::function<void()> onChange;
 
+    /** How far a hovered surface is lifted, eased.
+
+        A surface, not a control: a mixer strip flaring as hard as a button
+        would is why emphasis has two lift rungs. Reading it is free, so paint()
+        pulls a number rather than branching on a bool.
+    */
+    float lift() const noexcept { return motion.get(); }
+
 private:
     void set (bool shouldBeHovered)
     {
         if (std::exchange (hovered, shouldBeHovered) == shouldBeHovered)
             return;
+
+        motion.animateTo (hovered ? tokens::emphasis::surfaceLift : 0.0f,
+                          tokens::motion::quickMs);
 
         if (onChange != nullptr)
             onChange();
@@ -57,6 +70,7 @@ private:
 
     juce::Component& owner;
     bool hovered = false;
+    ComponentMotion motion { owner };
 };
 
 } // namespace dew

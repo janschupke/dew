@@ -3,12 +3,32 @@
 
 #include <cmath>
 
+#include "PaintProbe.h"
 #include "ui/DewLookAndFeel.h"
 #include "ui/design/Animator.h"
+#include "ui/design/Tokens.h"
+#include "ui/primitives/DewControls.h"
 
 using namespace dew;
 using namespace dew::tokens;
 using Catch::Approx;
+
+
+namespace
+{
+
+/** How far round a knob's arc has swept, measured from what it draws.
+
+    A needle position is not readable from the outside - the value is the
+    document's, not the widget's - so this asks the pixels, which is the only
+    thing a user can see either.
+*/
+float renderKnobArc (DewKnob& knob)
+{
+    return testing::coverageOf (testing::render (knob), tokens::colour::accent) * 20.0f;
+}
+
+} // namespace
 
 TEST_CASE ("easing is a pure function that spans nought to one", "[motion]")
 {
@@ -222,4 +242,123 @@ TEST_CASE ("a menu simply appears when motion is reduced", "[motion][dropdown]")
     CHECK (window.getBounds() == target);
     CHECK (window.getAlpha() > 0.99f);
     CHECK_FALSE (juce::Desktop::getInstance().getAnimator().isAnimating (&window));
+}
+
+TEST_CASE ("a knob sweeps to a new value and arrives exactly on it", "[motion][knob]")
+{
+    const juce::ScopedJuceInitialiser_GUI juceInit;
+    ScopedAnimation animating;
+
+    DewKnob knob ("CUTOFF", 0.0, 1.0, 0.001);
+    knob.setSize (72, 78);
+    knob.resized();
+
+    // The first value a knob is ever given SNAPS. A panel built from a document
+    // must not sweep every knob up from zero.
+    knob.setValue (0.25, juce::dontSendNotification);
+
+    const auto atStart = renderKnobArc (knob);
+
+    knob.setValue (1.0, juce::dontSendNotification);
+
+    // Still where it was, because nothing has advanced the clock.
+    REQUIRE (renderKnobArc (knob) == Approx (atStart).margin (0.005));
+
+    // Sampled across the WHOLE sweep, not at its ends: a naive "is it there
+    // yet" test passes on a widget that does nothing for 119ms and then jumps.
+    auto previous = atStart;
+    auto sawMiddle = false;
+
+    for (int step = 0; step < 12; ++step)
+    {
+        Animator::shared().advance (motion::valueMs / 12);
+
+        const auto now = renderKnobArc (knob);
+        REQUIRE (now >= previous - 0.01f);      // monotone
+
+        if (now > atStart + 0.05f && now < 1.0f - 0.05f)
+            sawMiddle = true;
+
+        previous = now;
+    }
+
+    INFO ("started at " << atStart << ", ended at " << previous);
+    CHECK (sawMiddle);
+    CHECK (previous > atStart);
+
+    // And it ARRIVES, rather than stopping near the target.
+    Animator::shared().advance (motion::valueMs);
+    CHECK_FALSE (Animator::shared().isAnimating());
+}
+
+TEST_CASE ("a knob is not eased against the pointer dragging it", "[motion][knob]")
+{
+    // Easing a control against the hand moving it feels broken: the needle
+    // trails the pointer the whole way and lands late.
+    const juce::ScopedJuceInitialiser_GUI juceInit;
+    ScopedAnimation animating;
+
+    DewKnob knob ("CUTOFF", 0.0, 1.0, 0.001);
+    knob.setSize (72, 78);
+    knob.resized();
+    knob.setValue (0.0, juce::dontSendNotification);
+
+    // What DewKnob wires to the slider's own drag callbacks.
+    knob.getSlider().onDragStart();
+    knob.getSlider().setValue (0.9, juce::sendNotificationSync);
+
+    // No advance, and it is already there.
+    CHECK (renderKnobArc (knob) > 0.5f);
+
+    knob.getSlider().onDragEnd();
+}
+
+TEST_CASE ("reduce motion leaves a knob exactly where it was told", "[motion][knob]")
+{
+    const juce::ScopedJuceInitialiser_GUI juceInit;
+    ScopedAnimation animating;
+    ScopedReduceMotion reduced;
+
+    DewKnob knob ("CUTOFF", 0.0, 1.0, 0.001);
+    knob.setSize (72, 78);
+    knob.resized();
+
+    knob.setValue (0.0, juce::dontSendNotification);
+    const auto atStart = renderKnobArc (knob);
+
+    knob.setValue (1.0, juce::dontSendNotification);
+
+    // Before any advance at all - reduce motion is not "faster", it is off.
+    CHECK (renderKnobArc (knob) > atStart + 0.2f);
+    CHECK_FALSE (Animator::shared().isAnimating());
+}
+
+TEST_CASE ("a button lifts into a hover rather than cutting to it", "[motion][button]")
+{
+    const juce::ScopedJuceInitialiser_GUI juceInit;
+    ScopedAnimation animating;
+
+    DewButton button ("Render", DewButton::Role::normal);
+    button.setSize (90, size::controlHeight);
+
+    const auto atRest = testing::meanBrightness (testing::render (button));
+
+    // What juce::Button calls when the pointer arrives.
+    button.setState (juce::Button::buttonOver);
+
+    // Not yet: the lift is a transition, and no time has passed.
+    CHECK (testing::meanBrightness (testing::render (button)) == Approx (atRest).margin (0.002));
+
+    Animator::shared().advance (motion::quickMs);
+
+    const auto hovered = testing::meanBrightness (testing::render (button));
+    INFO ("at rest " << atRest << ", hovered " << hovered);
+    CHECK (hovered > atRest);
+
+    // A press lifts further than a hover, which is the whole point of having
+    // two rungs rather than one.
+    button.setState (juce::Button::buttonDown);
+    Animator::shared().advance (motion::quickMs);
+
+    CHECK (testing::meanBrightness (testing::render (button)) > hovered);
 }

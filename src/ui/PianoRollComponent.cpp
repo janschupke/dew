@@ -1588,12 +1588,15 @@ void PianoRollComponent::paintNotes (juce::Graphics& g)
         const auto step = (double) ((int) engine.getPlayheadSteps() % steps);
         const auto x = (float) size::gutterKeyboard + timeline.xForStep (step);
 
+        playhead.set (playing);
+
         if (playing)
             timelinePaint::playheadColumn (g, { x, (float) area.getY(),
                                                 (float) timeline.pixelsPerStep,
                                                 (float) area.getHeight() });
 
-        timelinePaint::playheadLine (g, x, { (float) area.getY(), (float) area.getBottom() }, playing);
+        timelinePaint::playheadLine (g, x, { (float) area.getY(), (float) area.getBottom() },
+                                     playhead.brightness());
     }
 
     // --- rubber band ---------------------------------------------------------

@@ -12,15 +12,31 @@ using namespace tokens;
 namespace
 {
 
-juce::Colour fillFor (bool enabled, bool highlighted, bool down, juce::Colour base)
+} // namespace
+
+// --- ButtonLift --------------------------------------------------------------
+
+void ButtonLift::update()
 {
-    if (! enabled)  return emphasis::disabled (base);
-    if (down)       return base.brighter (emphasis::pressLift);
-    if (highlighted) return base.brighter (emphasis::controlLift);
-    return base;
+    const auto target = ! button.isEnabled() ? 0.0f
+                      : button.isDown()      ? emphasis::pressLift
+                      : button.isOver()      ? emphasis::controlLift
+                                             : 0.0f;
+
+    // A press is quicker to arrive than to leave, which is what makes a button
+    // feel like it answers rather than like it catches up: accelerate INTO the
+    // press, decelerate back out of it.
+    motion.animateTo (target, motion::quickMs,
+                      target > motion.get() ? Ease::accelerate : Ease::standard);
 }
 
-} // namespace
+juce::Colour ButtonLift::apply (juce::Colour base) const
+{
+    if (! button.isEnabled())
+        return emphasis::disabled (base);
+
+    return base.brighter (motion.get());
+}
 
 // --- DewButton ---------------------------------------------------------------
 
@@ -71,7 +87,7 @@ void DewButton::paintButton (juce::Graphics& g, bool highlighted, bool down)
             break;
     }
 
-    g.setColour (fillFor (isEnabled(), highlighted, down, background));
+    g.setColour (lift.apply (background));
     g.fillRoundedRectangle (bounds, radius::sm);
 
     if (! border.isTransparent())
@@ -113,7 +129,7 @@ void DewIconButton::paintButton (juce::Graphics& g, bool highlighted, bool down)
     const auto background = on ? onColour
                                : (highlighted || down ? colour::surfaceHover : colour::surfaceRaised);
 
-    g.setColour (fillFor (isEnabled(), highlighted, down, background));
+    g.setColour (lift.apply (background));
     g.fillRoundedRectangle (bounds, radius::sm);
 
     g.setColour (on ? onColour : colour::outline);
@@ -135,13 +151,12 @@ DewLetterToggle::DewLetterToggle (const juce::String& l, juce::Colour c,
     setTooltip (tooltipText);
 }
 
-void DewLetterToggle::paintButton (juce::Graphics& g, bool highlighted, bool down)
+void DewLetterToggle::paintButton (juce::Graphics& g, bool, bool)
 {
     const auto bounds = paint::bodyRect (*this);
     const auto on = getToggleState();
 
-    g.setColour (fillFor (isEnabled(), highlighted, down,
-                          on ? onColour : colour::surfaceRaised));
+    g.setColour (lift.apply (on ? onColour : colour::surfaceRaised));
     g.fillRoundedRectangle (bounds, radius::sm);
 
     g.setColour (on ? onColour : colour::outline);
@@ -185,9 +200,18 @@ DewKnob::DewKnob (const juce::String& c, double minimum, double maximum, double 
     // Never called anywhere before this, so every knob in dew sat on JUCE's
     // default of 250 - which is not the same as having chosen 250.
     slider.setMouseDragSensitivity (gesture::dragPixelsForFullRange);
-    slider.onValueChange = [this] { if (onValueChange != nullptr) onValueChange(); repaint(); };
-    slider.onDragStart = [this] { if (onEditStart != nullptr) onEditStart(); };
-    slider.onDragEnd = [this] { if (onEditEnd != nullptr) onEditEnd(); };
+    slider.onValueChange = [this]
+    {
+        updateNeedle();
+
+        if (onValueChange != nullptr)
+            onValueChange();
+
+        repaint();
+    };
+
+    slider.onDragStart = [this] { dragging = true; if (onEditStart != nullptr) onEditStart(); };
+    slider.onDragEnd = [this] { dragging = false; if (onEditEnd != nullptr) onEditEnd(); };
 
     // The slider is what the pointer is actually over, so the knob listens to
     // it rather than to itself.
@@ -208,6 +232,12 @@ void DewKnob::mouseDown (const juce::MouseEvent& event)
 void DewKnob::setValue (double v, juce::NotificationType notification)
 {
     slider.setValue (v, notification);
+
+    // Not only from onValueChange. The notification type says whether
+    // LISTENERS hear about the change; the knob's own needle is not a listener,
+    // and dontSendNotification - which every refresh() in dew uses - would
+    // otherwise leave it pointing at the last value it was told about.
+    updateNeedle();
     repaint();
 }
 
@@ -251,14 +281,42 @@ void DewKnob::resized()
     slider.setBounds (area);
 }
 
+float DewKnob::proportionOfValue() const
+{
+    const auto range = slider.getRange();
+    const auto span = range.getLength();
+
+    return span > 0.0 ? (float) ((slider.getValue() - range.getStart()) / span) : 0.0f;
+}
+
+void DewKnob::updateNeedle()
+{
+    const auto proportion = proportionOfValue();
+
+    if (dragging || ! needleSeeded)
+    {
+        needle.snapTo (proportion);
+        needleSeeded = true;
+        return;
+    }
+
+    needle.animateTo (proportion, motion::valueMs, Ease::decelerate);
+}
+
 void DewKnob::paint (juce::Graphics& g)
 {
     auto area = getLocalBounds();
 
-    const auto range = slider.getRange();
-    const auto span = range.getLength();
-    const auto proportion = span > 0.0 ? (float) ((slider.getValue() - range.getStart()) / span)
-                                       : 0.0f;
+    // Seeded here as well as on the first change, because a knob can be laid
+    // out and painted before anything ever writes to it - and the seed has to
+    // be the value it HAS, not zero.
+    if (! needleSeeded)
+    {
+        needle.snapTo (proportionOfValue());
+        needleSeeded = true;
+    }
+
+    const auto proportion = needle.get();
 
     // A compact knob has room for the rotary and nothing else. Its caption
     // lives in the tooltip and its meaning in the fill: unipolar volume fills

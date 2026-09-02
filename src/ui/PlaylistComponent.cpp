@@ -1578,12 +1578,13 @@ void PlaylistComponent::paint (juce::Graphics& g)
 
         if (x >= (float) size::gutterTrack)
         {
-            const auto playing = engine.isPlaying();
+            playhead.set (engine.isPlaying());
 
-            timelinePaint::playheadLine (g, x, { (float) lanesTop(), (float) bottom }, playing);
+            timelinePaint::playheadLine (g, x, { (float) lanesTop(), (float) bottom },
+                                         playhead.brightness());
 
             // A head on the ruler, so the position is findable at a glance.
-            timelinePaint::playheadHead (g, x, (float) lanesTop(), playing);
+            timelinePaint::playheadHead (g, x, (float) lanesTop(), playhead.brightness());
         }
     }
 

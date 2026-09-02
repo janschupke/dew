@@ -8,6 +8,7 @@
 #include "ui/EditorState.h"
 #include "ui/PianoRollToolbar.h"
 #include "ui/TimelineRuler.h"
+#include "ui/TimelinePaint.h"
 #include "ui/TimelineView.h"
 
 namespace dew
@@ -275,6 +276,10 @@ private:
     EditorState& editorState;
 
     TimelineView timeline;
+
+    /** Play and stop, eased. The most frequent state change in the
+        application, and a hard cut in all four views before this. */
+    timelinePaint::PlayheadState playhead { *this };
 
     /** Scrub, span-select and clear, shared with the playlist and the channel
         rack rather than written here a second time.

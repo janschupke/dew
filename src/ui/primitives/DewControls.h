@@ -5,12 +5,40 @@
 #include <juce_gui_basics/juce_gui_basics.h>
 
 #include "engine/WaveformPeaks.h"
+#include "ui/design/Animator.h"
 
 #include "ui/design/Icons.h"
 #include "ui/design/Tokens.h"
 
 namespace dew
 {
+
+/** How much lighter a button's fill gets under the pointer, eased.
+
+    Every button in dew brightened by a step function - at rest, hovered,
+    pressed - which is the one place a hard cut is most visible, because the
+    pointer is right there. The three states are the same three; only the way
+    they are reached changes.
+
+    Driven from Button::buttonStateChanged rather than from paintButton: a
+    paint that sets an animation target asks for a repaint from inside a
+    repaint, and settles only because animateTo happens to be idempotent.
+*/
+class ButtonLift
+{
+public:
+    explicit ButtonLift (juce::Button& b) : button (b), motion (b) {}
+
+    /** Call from buttonStateChanged(). */
+    void update();
+
+    /** The fill, lifted by however far the animation has got. */
+    juce::Colour apply (juce::Colour base) const;
+
+private:
+    juce::Button& button;
+    ComponentMotion motion;
+};
 
 /** A text button in one of the system's roles.
 
@@ -29,7 +57,12 @@ public:
 
     void paintButton (juce::Graphics&, bool shouldDrawHighlighted, bool shouldDrawDown) override;
 
+protected:
+    void buttonStateChanged() override { lift.update(); }
+
 private:
+    ButtonLift lift { *this };
+
     Role role = Role::normal;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (DewButton)
@@ -52,7 +85,12 @@ public:
 
     void paintButton (juce::Graphics&, bool shouldDrawHighlighted, bool shouldDrawDown) override;
 
+protected:
+    void buttonStateChanged() override { lift.update(); }
+
 private:
+    ButtonLift lift { *this };
+
     juce::Path icon;
     juce::Colour onColour = tokens::colour::accent;
 
@@ -70,7 +108,12 @@ public:
 
     void paintButton (juce::Graphics&, bool shouldDrawHighlighted, bool shouldDrawDown) override;
 
+protected:
+    void buttonStateChanged() override { lift.update(); }
+
 private:
+    ButtonLift lift { *this };
+
     juce::String letter;
     juce::Colour onColour;
 
@@ -128,8 +171,29 @@ public:
     void mouseDown (const juce::MouseEvent&) override;
 
 private:
+    /** Where the needle actually is, which is not always where the value is.
+
+        Three rules, in priority order, and each of them is load-bearing:
+
+          1. Animation is off unless the application turns it on. That is what
+             keeps a headless render of a knob a render of the value it was
+             given.
+          2. A DRAG is never eased. Easing a control against the pointer that is
+             dragging it feels broken, because the two disagree the whole way.
+          3. The FIRST value a knob is ever given snaps. A panel built from a
+             document must not sweep every knob up from zero.
+
+        The numeric readout is not eased. A number is read and a needle is seen;
+        a readout that arrived 120ms late would just look wrong.
+    */
+    void updateNeedle();
+    float proportionOfValue() const;
+
     juce::String caption;
     juce::Slider slider { juce::Slider::RotaryHorizontalVerticalDrag, juce::Slider::NoTextBox };
+    ComponentMotion needle { *this };
+    bool needleSeeded = false;
+    bool dragging = false;
     int decimalPlaces = 3;
     bool bipolar = false;
     bool compact = false;

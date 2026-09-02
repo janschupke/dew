@@ -445,10 +445,12 @@ void StepGridComponent::paint (juce::Graphics& g)
         const auto step = ((int) engine.getPlayheadSteps()) % steps;
         const auto x = timeline.xForStep ((double) step);
 
+        playhead.set (playing);
+
         if (playing)
             timelinePaint::playheadColumn (g, { x, 0.0f, width, (float) rowsHeight });
 
-        timelinePaint::playheadLine (g, x, { 0.0f, (float) rowsHeight }, playing);
+        timelinePaint::playheadLine (g, x, { 0.0f, (float) rowsHeight }, playhead.brightness());
     }
 
     if (rows == 0)

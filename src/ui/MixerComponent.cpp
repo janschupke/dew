@@ -201,8 +201,7 @@ public:
         const auto body = getLocalBounds().toFloat().reduced (2.0f);
 
         g.setColour (selected ? tokens::colour::surfaceRaised
-                              : hover.isHovered() ? tokens::colour::surface.brighter (tokens::emphasis::surfaceLift)
-                                        : tokens::colour::surface);
+                              : tokens::colour::surface.brighter (hover.lift()));
         g.fillRoundedRectangle (body, tokens::radius::md);
 
         // Master gets a neutral outline rather than an accent one: now that it
