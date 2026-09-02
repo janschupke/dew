@@ -228,6 +228,15 @@ juce::Path lock()
     return p;
 }
 
+juce::Path chevronUp()
+{
+    juce::Path line;
+    line.startNewSubPath (0.24f, 0.62f);
+    line.lineTo (0.5f, 0.36f);
+    line.lineTo (0.76f, 0.62f);
+    return strokeOf (line, 0.12f);
+}
+
 juce::Path chevronDown()
 {
     juce::Path line;
@@ -488,7 +497,7 @@ std::vector<NamedIcon> all()
         { "pencil", pencil }, { "magnet", magnet }, { "pointer", pointer }, { "eraser", eraser },
 
         { "mute", mute }, { "solo", solo }, { "power", power }, { "lock", lock },
-        { "chevronDown", chevronDown }, { "chevronRight", chevronRight }, { "grip", grip },
+        { "chevronUp", chevronUp }, { "chevronDown", chevronDown }, { "chevronRight", chevronRight }, { "grip", grip },
 
         { "waveSine", waveSine }, { "waveSaw", waveSaw }, { "waveSquare", waveSquare },
         { "waveTriangle", waveTriangle },

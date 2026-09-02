@@ -13,6 +13,7 @@
             INSTRUMENT                 -> "instrument": {}
               OSC                      -> "osc": {}
               AMP                      -> "amp": {}
+            EFFECT*                    -> "effects": []
           PATTERN*                     -> "patterns": []
             NOTE*                      -> "notes": []
           PLAYLIST                     -> "playlist": {}
@@ -21,6 +22,7 @@
           MIXER                        -> "mixer": {}
             MASTER                     -> "master": {}
             MIXER_TRACK*               -> "tracks": []
+              EFFECT*                  -> "effects": []
 */
 namespace dew::ids
 {
@@ -41,6 +43,7 @@ DEW_DECLARE_ID (CLIP)
 DEW_DECLARE_ID (MIXER)
 DEW_DECLARE_ID (MASTER)
 DEW_DECLARE_ID (MIXER_TRACK)
+DEW_DECLARE_ID (EFFECT)
 
 // --- properties --------------------------------------------------------------
 DEW_DECLARE_ID (formatVersion)
@@ -79,6 +82,27 @@ DEW_DECLARE_ID (lengthBars)
 
 DEW_DECLARE_ID (mute)
 DEW_DECLARE_ID (solo)
+
+// --- effects -----------------------------------------------------------------
+DEW_DECLARE_ID (type)
+DEW_DECLARE_ID (enabled)
+DEW_DECLARE_ID (mix)
+DEW_DECLARE_ID (filterMode)
+DEW_DECLARE_ID (cutoff)
+DEW_DECLARE_ID (resonance)
+DEW_DECLARE_ID (roomSize)
+DEW_DECLARE_ID (damping)
+DEW_DECLARE_ID (width)
+DEW_DECLARE_ID (delayMs)
+DEW_DECLARE_ID (feedback)
+DEW_DECLARE_ID (drive)
+DEW_DECLARE_ID (outputGain)
+DEW_DECLARE_ID (rate)
+DEW_DECLARE_ID (depth)
+DEW_DECLARE_ID (lowGainDb)
+DEW_DECLARE_ID (midGainDb)
+DEW_DECLARE_ID (midFreq)
+DEW_DECLARE_ID (highGainDb)
 
 #undef DEW_DECLARE_ID
 

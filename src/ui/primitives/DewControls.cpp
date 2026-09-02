@@ -299,7 +299,11 @@ void rotary (juce::Graphics& g, juce::Rectangle<float> bounds, float proportion,
     juce::Path track;
     track.addCentredArc (centre.x, centre.y, arcRadius, arcRadius, 0.0f,
                          startAngle, endAngle, true);
-    g.setColour (colour::well);
+    // The track has to read as a control even when the value arc is empty. It
+    // used to be `well`, which on a `surface` panel is nearly invisible, so a
+    // knob at the bottom of its range looked like a stray tick mark rather than
+    // a knob - which is exactly how the ADSR knobs at their minimums looked.
+    g.setColour (colour::outline.withAlpha (0.6f));
     g.strokePath (track, juce::PathStrokeType (thickness, juce::PathStrokeType::curved,
                                                juce::PathStrokeType::rounded));
 

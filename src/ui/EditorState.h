@@ -17,8 +17,9 @@ namespace dew
 class EditorState : public juce::ChangeBroadcaster
 {
 public:
-    int getSelectedChannelId() const noexcept  { return selectedChannelId; }
-    int getCurrentPatternId() const noexcept   { return currentPatternId; }
+    int getSelectedChannelId() const noexcept    { return selectedChannelId; }
+    int getCurrentPatternId() const noexcept     { return currentPatternId; }
+    int getSelectedMixerTrackId() const noexcept { return selectedMixerTrackId; }
 
     void setSelectedChannelId (int id)
     {
@@ -29,6 +30,13 @@ public:
     void setCurrentPatternId (int id)
     {
         if (std::exchange (currentPatternId, id) != id)
+            sendChangeMessage();
+    }
+
+    /** Which mixer strip the effect chain editor is pointed at. */
+    void setSelectedMixerTrackId (int id)
+    {
+        if (std::exchange (selectedMixerTrackId, id) != id)
             sendChangeMessage();
     }
 
@@ -46,6 +54,7 @@ public:
 private:
     int selectedChannelId = 1;
     int currentPatternId = 1;
+    int selectedMixerTrackId = 1;
 
     int lastNoteLengthSteps = 1;
     double lastNoteVelocity = 1.0;

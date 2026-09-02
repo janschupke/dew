@@ -49,6 +49,48 @@ const NodeSpec& instrumentSpec()
     return spec;
 }
 
+/** One effect slot.
+
+    Every parameter of every effect type lives on this one node, each with its
+    own default. The file is a little verbose, but the schema stays a single
+    declared table with real per-property validation, and adding an effect type
+    is a row here rather than a new node type and a new branch in the reader.
+*/
+const NodeSpec& effectSpec()
+{
+    static const NodeSpec spec {
+        ids::EFFECT,
+        { { ids::id,         1 },
+          { ids::type,       "filter" },
+          { ids::enabled,    true },
+          { ids::mix,        1.0 },
+
+          { ids::filterMode, "lowpass" },
+          { ids::cutoff,     1200.0 },
+          { ids::resonance,  0.4 },
+
+          { ids::roomSize,   0.5 },
+          { ids::damping,    0.5 },
+          { ids::width,      1.0 },
+
+          { ids::delayMs,    250.0 },
+          { ids::feedback,   0.35 },
+
+          { ids::drive,      2.0 },
+          { ids::outputGain, 1.0 },
+
+          { ids::rate,       1.2 },
+          { ids::depth,      0.3 },
+
+          { ids::lowGainDb,  0.0 },
+          { ids::midGainDb,  0.0 },
+          { ids::midFreq,    900.0 },
+          { ids::highGainDb, 0.0 } },
+        {}
+    };
+    return spec;
+}
+
 const NodeSpec& channelSpec()
 {
     static const NodeSpec spec {
@@ -62,7 +104,8 @@ const NodeSpec& channelSpec()
           { ids::pan,          0.0 },
           { ids::muted,        false },
           { ids::solo,         false } },
-        { { "instrument", &instrumentSpec(), false } }
+        { { "instrument", &instrumentSpec(), false },
+          { "effects",    &effectSpec(),     true } }
     };
     return spec;
 }
@@ -147,7 +190,7 @@ const NodeSpec& mixerTrackSpec()
           { ids::pan,  0.0 },
           { ids::mute, false },
           { ids::solo, false } },
-        {}
+        { { "effects", &effectSpec(), true } }
     };
     return spec;
 }

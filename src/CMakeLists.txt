@@ -12,6 +12,7 @@ add_library(dew_core STATIC
   model/ProjectDocument.cpp
   model/ProjectEdits.cpp
 
+  engine/Effects.cpp
   engine/EngineSnapshot.cpp
   engine/SnapshotBridge.cpp
   engine/Transport.cpp
@@ -30,6 +31,7 @@ add_library(dew_core STATIC
   ui/primitives/DewNumberField.cpp
 
   ui/DewLookAndFeel.cpp
+  ui/EffectChainComponent.cpp
   ui/TransportBar.cpp
   ui/StepGridComponent.cpp
   ui/ChannelRackComponent.cpp

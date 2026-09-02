@@ -4,6 +4,7 @@
 
 #include "../model/ProjectDocument.h"
 #include "EditorState.h"
+#include "EffectChainComponent.h"
 
 namespace dew
 {
@@ -62,6 +63,11 @@ private:
 
     juce::ComboBox mixerBox;
     juce::Label mixerLabel;
+
+    /** The selected channel's effect chain, edited by the same component the
+        mixer uses - a channel and a mixer track carry the same EFFECT children.
+    */
+    EffectChainComponent effectChain;
 
     bool updating = false;
 

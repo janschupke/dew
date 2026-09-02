@@ -22,9 +22,11 @@ void styleCaption (juce::Label& label, const juce::String& text)
 } // namespace
 
 InstrumentPanel::InstrumentPanel (ProjectDocument& d, EditorState& s)
-    : document (d), editorState (s)
+    : document (d), editorState (s), effectChain (d)
 {
     setComponentID ("instrumentPanel");
+
+    addAndMakeVisible (effectChain);
 
     titleLabel.setFont (juce::FontOptions (14.0f, juce::Font::bold));
     titleLabel.setColour (juce::Label::textColourId, Palette::text);
@@ -188,6 +190,7 @@ void InstrumentPanel::refresh()
     const auto valid = channel.isValid();
 
     setEnabled (valid);
+    effectChain.setOwner (channel);
 
     if (! valid)
     {
@@ -272,6 +275,8 @@ void InstrumentPanel::resized()
     auto levels = row (86);
     placeKnob (levels.removeFromLeft (levels.getWidth() / 2), volumeLabel, volumeSlider);
     placeKnob (levels, panLabel, panSlider);
+
+    effectChain.setBounds (area.withHeight (juce::jmax (0, area.getHeight())));
 }
 
 } // namespace dew

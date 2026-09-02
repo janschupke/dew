@@ -66,6 +66,24 @@ private:
     juce::AudioBuffer<float> channelBuffers;
     juce::AudioBuffer<float> mixerBuffers;
 
+    /** One stereo scratch, reused per channel: channels are processed one at a
+        time, so a chain never needs more than one buffer live at once.
+    */
+    juce::AudioBuffer<float> channelStereo;
+
+    /** The DSP-state pool. Every unit holds every effect type, prepared at its
+        maximum size, so switching a slot's type is a reset rather than an
+        allocation and the audio thread never builds anything.
+    */
+    std::vector<std::unique_ptr<EffectUnit>> effectUnits;
+
+    /** What each unit was last used as. A unit that changes type is reset, so a
+        reverb tail cannot leak into the delay that replaced it.
+    */
+    std::vector<int> effectUnitTypes;
+
+    void runChain (const EffectChainSnapshot&, float* left, float* right, int numSamples) noexcept;
+
     std::vector<NoteTrigger> triggers;
 
     juce::uint64 appliedGeneration = 0;

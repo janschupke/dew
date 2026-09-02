@@ -88,6 +88,28 @@ struct ProjectEdits
     */
     static int lengthNeededForNotes (const juce::ValueTree& pattern);
 
+    // --- effects -------------------------------------------------------------
+    /** Appends an effect of this type to a channel or mixer track's chain.
+
+        Returns an invalid tree if the chain is already full: a chain longer
+        than the engine renders would look like an effect that stopped working.
+    */
+    static juce::ValueTree addEffect (juce::ValueTree project, juce::ValueTree owner,
+                                      const juce::String& type, juce::UndoManager*);
+
+    static void removeEffect (juce::ValueTree owner, juce::ValueTree effect, juce::UndoManager*);
+
+    /** Reorders a chain. Position is counted among effects only, so the
+        instrument child a channel also carries cannot shift the result.
+    */
+    static void moveEffect (juce::ValueTree owner, juce::ValueTree effect, int newPosition,
+                            juce::UndoManager*);
+
+    static int countEffects (const juce::ValueTree& owner);
+
+    /** Every node in the project that can carry an effect chain. */
+    static juce::Array<juce::ValueTree> effectChainOwners (const juce::ValueTree& project);
+
     // --- playlist ------------------------------------------------------------
     static juce::ValueTree addClip (juce::ValueTree playlistTrack, int patternId, int startBar,
                                     int lengthBars, juce::UndoManager*);

@@ -1,5 +1,8 @@
 #include "MixerComponent.h"
 
+#include "../model/ProjectEdits.h"
+#include "design/Tokens.h"
+
 #include "../model/Ids.h"
 #include "DewLookAndFeel.h"
 
@@ -16,6 +19,8 @@ public:
     Strip (ProjectDocument& d, juce::ValueTree t, bool isMasterStrip)
         : document (d), track (std::move (t)), isMaster (isMasterStrip)
     {
+        setInterceptsMouseClicks (true, true);
+
         nameLabel.setText (isMaster ? "Master" : track[ids::name].toString(),
                            juce::dontSendNotification);
         nameLabel.setJustificationType (juce::Justification::centred);
@@ -88,15 +93,57 @@ public:
         track.removeListener (this);
     }
 
+    void setSelected (bool shouldBeSelected)
+    {
+        if (std::exchange (selected, shouldBeSelected) != shouldBeSelected)
+            repaint();
+    }
+
+    bool isMasterStrip() const noexcept { return isMaster; }
+    int getTrackId() const { return (int) track[ids::id]; }
+
+    std::function<void()> onSelected;
+
+    void mouseDown (const juce::MouseEvent&) override
+    {
+        if (onSelected != nullptr)
+            onSelected();
+    }
+
     void paint (juce::Graphics& g) override
     {
         g.setColour (isMaster ? Palette::panel.brighter (0.05f) : Palette::panel);
         g.fillRoundedRectangle (getLocalBounds().toFloat().reduced (2.0f), 4.0f);
 
-        if (isMaster)
+        if (selected)
         {
-            g.setColour (Palette::accent.withAlpha (0.5f));
-            g.drawRoundedRectangle (getLocalBounds().toFloat().reduced (2.0f), 4.0f, 1.0f);
+            g.setColour (tokens::colour::surfaceHover);
+            g.fillRoundedRectangle (getLocalBounds().toFloat().reduced (2.0f), 4.0f);
+        }
+
+        if (isMaster || selected)
+        {
+            g.setColour (tokens::colour::accent.withAlpha (selected ? 1.0f : 0.5f));
+            g.drawRoundedRectangle (getLocalBounds().toFloat().reduced (2.0f), 4.0f,
+                                    selected ? 1.6f : 1.0f);
+        }
+
+        // How many effects the strip carries, so it says what it holds without
+        // having to be selected first. Top corner rather than the bottom, which
+        // is where the fader's value box already is.
+        const auto effectCount = ProjectEdits::countEffects (track);
+
+        if (effectCount > 0)
+        {
+            const auto badge = juce::Rectangle<float> ((float) getWidth() - 22.0f, 5.0f, 16.0f, 12.0f);
+
+            g.setColour (tokens::colour::accent);
+            g.fillRoundedRectangle (badge, 3.0f);
+
+            g.setColour (tokens::colour::textOnAccent);
+            g.setFont (tokens::type::font (tokens::type::caption, true));
+            g.drawText (juce::String (effectCount), badge.toNearestInt(),
+                        juce::Justification::centred, false);
         }
     }
 
@@ -139,6 +186,7 @@ private:
     ProjectDocument& document;
     juce::ValueTree track;
     bool isMaster;
+    bool selected = false;
 
     juce::Label nameLabel;
     juce::Slider gainSlider;
@@ -149,11 +197,12 @@ private:
 // -----------------------------------------------------------------------------
 
 MixerComponent::MixerComponent (ProjectDocument& d, EditorState& s)
-    : document (d), editorState (s)
+    : document (d), editorState (s), effectChain (d)
 {
     setComponentID ("mixer");
 
-    juce::ignoreUnused (editorState);
+    addAndMakeVisible (effectChain);
+    editorState.addChangeListener (this);
 
     document.getState().addListener (this);
     rebuildStrips();
@@ -161,6 +210,7 @@ MixerComponent::MixerComponent (ProjectDocument& d, EditorState& s)
 
 MixerComponent::~MixerComponent()
 {
+    editorState.removeChangeListener (this);
     document.getState().removeListener (this);
 }
 
@@ -178,7 +228,11 @@ void MixerComponent::rebuildStrips()
 
     for (const auto& track : mixer)
         if (track.hasType (ids::MIXER_TRACK))
-            strips.add (new Strip (document, track, false));
+        {
+            auto* strip = strips.add (new Strip (document, track, false));
+            const auto id = (int) track[ids::id];
+            strip->onSelected = [this, id] { editorState.setSelectedMixerTrackId (id); };
+        }
 
     if (const auto master = mixer.getChildWithName (ids::MASTER); master.isValid())
         strips.add (new Strip (document, master, true));
@@ -186,6 +240,7 @@ void MixerComponent::rebuildStrips()
     for (auto* strip : strips)
         addAndMakeVisible (strip);
 
+    pointChainAtSelectedTrack();
     resized();
     repaint();
 }
@@ -207,9 +262,38 @@ void MixerComponent::paint (juce::Graphics& g)
     g.fillAll (Palette::background);
 }
 
+void MixerComponent::pointChainAtSelectedTrack()
+{
+    const auto selectedId = editorState.getSelectedMixerTrackId();
+    juce::ValueTree selectedTrack;
+
+    for (const auto& track : document.getState().getChildWithName (ids::MIXER))
+        if (track.hasType (ids::MIXER_TRACK) && (int) track[ids::id] == selectedId)
+            selectedTrack = track;
+
+    effectChain.setOwner (selectedTrack);
+
+    for (auto* strip : strips)
+        strip->setSelected (! strip->isMasterStrip() && strip->getTrackId() == selectedId);
+}
+
+void MixerComponent::changeListenerCallback (juce::ChangeBroadcaster*)
+{
+    pointChainAtSelectedTrack();
+}
+
 void MixerComponent::resized()
 {
     auto area = getLocalBounds().reduced (8);
+
+    // The chain editor gets the bottom of the panel, at a fixed height: strips
+    // need the rest and a fader is useless once it is shorter than a thumb.
+    auto chainArea = area.removeFromBottom (juce::jmin (chainHeight, area.getHeight() / 2));
+
+    // Capped rather than stretched: a number field wider than a hand is not
+    // easier to drag, only emptier.
+    effectChain.setBounds (chainArea.withTrimmedTop (tokens::space::md)
+                                    .withWidth (juce::jmin (chainWidth, chainArea.getWidth())));
 
     for (auto* strip : strips)
         strip->setBounds (area.removeFromLeft (stripWidth));

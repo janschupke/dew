@@ -322,6 +322,90 @@ int ProjectEdits::lengthNeededForNotes (const juce::ValueTree& pattern)
     return needed;
 }
 
+int ProjectEdits::countEffects (const juce::ValueTree& owner)
+{
+    int count = 0;
+
+    for (const auto& child : owner)
+        if (child.hasType (ids::EFFECT))
+            ++count;
+
+    return count;
+}
+
+juce::Array<juce::ValueTree> ProjectEdits::effectChainOwners (const juce::ValueTree& project)
+{
+    juce::Array<juce::ValueTree> owners;
+
+    for (const auto& child : project)
+        if (child.hasType (ids::CHANNEL))
+            owners.add (child);
+
+    for (const auto& track : project.getChildWithName (ids::MIXER))
+        if (track.hasType (ids::MIXER_TRACK))
+            owners.add (track);
+
+    return owners;
+}
+
+juce::ValueTree ProjectEdits::addEffect (juce::ValueTree project, juce::ValueTree owner,
+                                         const juce::String& type, juce::UndoManager* undo)
+{
+    if (! owner.isValid() || countEffects (owner) >= kMaxEffectsPerChain)
+        return {};
+
+    auto effect = defaultTreeFor (childSpecFor (childSpecFor (projectSpec(), "channels"), "effects"));
+    effect.setProperty (ids::type, type, nullptr);
+
+    // Effect ids are unique across the whole project, not per chain: the engine
+    // keys each effect's DSP state on its id, so two effects sharing one would
+    // fight over the same reverb tank.
+    int highest = 0;
+
+    for (const auto& chainOwner : effectChainOwners (project))
+        for (const auto& existing : chainOwner)
+            if (existing.hasType (ids::EFFECT))
+                highest = juce::jmax (highest, (int) existing[ids::id]);
+
+    effect.setProperty (ids::id, highest + 1, nullptr);
+
+    owner.appendChild (effect, undo);
+    return effect;
+}
+
+void ProjectEdits::removeEffect (juce::ValueTree owner, juce::ValueTree effect, juce::UndoManager* undo)
+{
+    const auto index = owner.indexOf (effect);
+
+    if (index >= 0)
+        owner.removeChild (index, undo);
+}
+
+void ProjectEdits::moveEffect (juce::ValueTree owner, juce::ValueTree effect, int newPosition,
+                               juce::UndoManager* undo)
+{
+    const auto count = countEffects (owner);
+
+    if (count <= 1)
+        return;
+
+    const auto target = juce::jlimit (0, count - 1, newPosition);
+
+    // Positions are counted among effects, but ValueTree indices count every
+    // child - a channel also holds its instrument - so translate.
+    int seen = 0;
+    int targetIndex = -1;
+
+    for (int i = 0; i < owner.getNumChildren(); ++i)
+        if (owner.getChild (i).hasType (ids::EFFECT) && seen++ == target)
+            targetIndex = i;
+
+    const auto from = owner.indexOf (effect);
+
+    if (from >= 0 && targetIndex >= 0 && from != targetIndex)
+        owner.moveChild (from, targetIndex, undo);
+}
+
 juce::ValueTree ProjectEdits::addClip (juce::ValueTree playlistTrack, int patternId, int startBar,
                                        int lengthBars, juce::UndoManager* undo)
 {

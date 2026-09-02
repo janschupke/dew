@@ -7,6 +7,13 @@ AudioEngine::AudioEngine()
 {
     channels.resize (kMaxChannels);
     triggers.reserve (256);
+
+    effectUnits.reserve (kMaxEffectUnits);
+
+    for (int i = 0; i < kMaxEffectUnits; ++i)
+        effectUnits.push_back (std::make_unique<EffectUnit>());
+
+    effectUnitTypes.assign (kMaxEffectUnits, -1);
 }
 
 void AudioEngine::prepare (double sampleRate, int maximumBlockSize)
@@ -22,8 +29,15 @@ void AudioEngine::prepare (double sampleRate, int maximumBlockSize)
     // Everything the audio thread might need, allocated once.
     channelBuffers.setSize (kMaxChannels, currentBlockSize);
     mixerBuffers.setSize (kMaxMixerTracks * 2, currentBlockSize);
+    channelStereo.setSize (2, currentBlockSize);
     channelBuffers.clear();
     mixerBuffers.clear();
+    channelStereo.clear();
+
+    for (auto& unit : effectUnits)
+        unit->prepare (currentSampleRate, currentBlockSize);
+
+    effectUnitTypes.assign (kMaxEffectUnits, -1);
 
     triggers.reserve (256);
 }
@@ -35,6 +49,7 @@ void AudioEngine::releaseResources()
 
     channelBuffers.setSize (0, 0);
     mixerBuffers.setSize (0, 0);
+    channelStereo.setSize (0, 0);
 }
 
 void AudioEngine::setProject (const juce::ValueTree& project, juce::StringArray* warnings)
@@ -83,6 +98,30 @@ void AudioEngine::applySnapshotIfChanged (const EngineSnapshot& snapshot) noexce
 
     appliedGeneration = snapshot.generation;
     transport.setTempo (snapshot.tempoBpm, snapshot.stepsPerBeat);
+}
+
+void AudioEngine::runChain (const EffectChainSnapshot& chain, float* left, float* right,
+                            int numSamples) noexcept
+{
+    for (int i = 0; i < chain.numSlots; ++i)
+    {
+        const auto& slot = chain.slots[(size_t) i];
+
+        if (! slot.enabled || slot.unitIndex < 0 || slot.unitIndex >= (int) effectUnits.size())
+            continue;
+
+        // A unit reused as a different effect must start clean: a reverb tail
+        // read out through a delay line is noise, not a crossfade.
+        const auto typeCode = (int) slot.type;
+
+        if (effectUnitTypes[(size_t) slot.unitIndex] != typeCode)
+        {
+            effectUnitTypes[(size_t) slot.unitIndex] = typeCode;
+            effectUnits[(size_t) slot.unitIndex]->reset();
+        }
+
+        effectUnits[(size_t) slot.unitIndex]->process (slot.type, slot.params, left, right, numSamples);
+    }
 }
 
 void AudioEngine::processBlock (juce::AudioBuffer<float>& buffer) noexcept
@@ -168,10 +207,31 @@ void AudioEngine::processBlock (juce::AudioBuffer<float>& buffer) noexcept
         if (mixerIndex < 0 || mixerIndex >= numMixerTracks)
             continue;
 
-        MixerBus::addPanned (mono, numSamples,
-                             channelSnapshot.volume, channelSnapshot.pan,
-                             mixerBuffers.getWritePointer (mixerIndex * 2),
-                             mixerBuffers.getWritePointer (mixerIndex * 2 + 1));
+        auto* trackLeft  = mixerBuffers.getWritePointer (mixerIndex * 2);
+        auto* trackRight = mixerBuffers.getWritePointer (mixerIndex * 2 + 1);
+
+        if (channelSnapshot.effects.numSlots == 0)
+        {
+            MixerBus::addPanned (mono, numSamples, channelSnapshot.volume, channelSnapshot.pan,
+                                 trackLeft, trackRight);
+            continue;
+        }
+
+        // Effects are stereo, so a channel with a chain gets panned into a
+        // scratch pair first and summed into its track afterwards.
+        auto* scratchLeft  = channelStereo.getWritePointer (0);
+        auto* scratchRight = channelStereo.getWritePointer (1);
+
+        juce::FloatVectorOperations::clear (scratchLeft, numSamples);
+        juce::FloatVectorOperations::clear (scratchRight, numSamples);
+
+        MixerBus::addPanned (mono, numSamples, channelSnapshot.volume, channelSnapshot.pan,
+                             scratchLeft, scratchRight);
+
+        runChain (channelSnapshot.effects, scratchLeft, scratchRight, numSamples);
+
+        juce::FloatVectorOperations::add (trackLeft, scratchLeft, numSamples);
+        juce::FloatVectorOperations::add (trackRight, scratchRight, numSamples);
     }
 
     // --- mixer tracks into the master ----------------------------------------
@@ -184,6 +244,11 @@ void AudioEngine::processBlock (juce::AudioBuffer<float>& buffer) noexcept
 
         if (! MixerBus::isAudible (snapshot, track))
             continue;
+
+        // Before gain and pan, so a track's fader rides the processed signal
+        // rather than the effects riding the fader.
+        runChain (track.effects, mixerBuffers.getWritePointer (i * 2),
+                  mixerBuffers.getWritePointer (i * 2 + 1), numSamples);
 
         float leftGain = 0.0f, rightGain = 0.0f;
         MixerBus::panGains (track.pan, leftGain, rightGain);

@@ -1,5 +1,5 @@
 {
-    "formatVersion": 2,
+    "formatVersion": 3,
     "name": "dew demo",
     "tempoBpm": 124.0,
     "stepsPerBeat": 4,
@@ -28,7 +28,8 @@
             "sustain": 0.0,
             "release": 0.06
           }
-        }
+        },
+        "effects": []
       },
       {
         "id": 2,
@@ -53,7 +54,8 @@
             "sustain": 0.0,
             "release": 0.06
           }
-        }
+        },
+        "effects": []
       },
       {
         "id": 3,
@@ -78,7 +80,8 @@
             "sustain": 0.35,
             "release": 0.09
           }
-        }
+        },
+        "effects": []
       },
       {
         "id": 4,
@@ -103,7 +106,8 @@
             "sustain": 0.55,
             "release": 0.22
           }
-        }
+        },
+        "effects": []
       }
     ],
     "patterns": [
@@ -286,7 +290,8 @@
           "gain": 0.8,
           "pan": 0.0,
           "mute": false,
-          "solo": false
+          "solo": false,
+          "effects": []
         },
         {
           "id": 2,
@@ -294,7 +299,8 @@
           "gain": 0.8,
           "pan": 0.0,
           "mute": false,
-          "solo": false
+          "solo": false,
+          "effects": []
         },
         {
           "id": 3,
@@ -302,7 +308,8 @@
           "gain": 0.8,
           "pan": 0.0,
           "mute": false,
-          "solo": false
+          "solo": false,
+          "effects": []
         },
         {
           "id": 4,
@@ -310,7 +317,8 @@
           "gain": 0.8,
           "pan": 0.0,
           "mute": false,
-          "solo": false
+          "solo": false,
+          "effects": []
         }
       ]
     },

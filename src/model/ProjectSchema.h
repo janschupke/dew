@@ -50,7 +50,13 @@ struct NodeSpec
     still load: every added property has a declared default, so an older file is
     simply one that predates them.
 */
-inline constexpr int kFormatVersion = 2;
+inline constexpr int kFormatVersion = 3;
+
+/** How many effects one channel or mixer track may carry. A document limit
+    rather than an engine one: a chain longer than this cannot be saved, so it
+    can never turn into an effect that silently stopped working.
+*/
+inline constexpr int kMaxEffectsPerChain = 4;
 
 /** Value of the "format" key, so a wrong-but-valid JSON file is rejected with a
     useful message instead of loading as an empty project.
