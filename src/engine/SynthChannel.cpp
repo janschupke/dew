@@ -21,7 +21,7 @@ void SynthChannel::reset() noexcept
 }
 
 void SynthChannel::noteOn (int pitch, float velocity, const OscBankSnapshot& osc,
-                           const AmpSettings& amp, int durationSamples)
+                           const AmpSettings& amp, int durationSamples, int startOffset)
 {
     SynthVoice* target = nullptr;
 
@@ -50,7 +50,7 @@ void SynthChannel::noteOn (int pitch, float velocity, const OscBankSnapshot& osc
     }
 
     if (target != nullptr)
-        target->start (pitch, velocity, osc, amp, durationSamples);
+        target->start (pitch, velocity, osc, amp, durationSamples, startOffset);
 }
 
 void SynthChannel::noteOff (int pitch) noexcept

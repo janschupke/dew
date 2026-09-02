@@ -27,8 +27,17 @@ class SynthVoice
 public:
     void prepare (double sampleRate);
 
+    /** Starts a note, optionally `startOffset` samples into the coming block.
+
+        The offset is why a synth note and an audio clip agree about where a bar
+        is. Sequencer::collect has always computed which sample of the block a
+        step falls on, and the engine has always thrown it away - so every synth
+        note started at sample 0 of its block while SamplePlayer was
+        sample-accurate, and a render at one block size did not match a render
+        at another.
+    */
     void start (int pitch, float velocity, const OscBankSnapshot&, const AmpSettings&,
-                int durationSamples);
+                int durationSamples, int startOffset = 0);
     void release() noexcept;
     void reset() noexcept;
 
@@ -193,6 +202,17 @@ private:
     int currentPitch = -1;
     juce::int64 samplesSinceStart = 0;
     juce::int64 samplesUntilRelease = 0;
+
+    /** Samples still to wait before this voice sounds.
+
+        While it counts down the voice is ACTIVE - it holds its slot and answers
+        to its pitch - but produces nothing, advances no envelope, and does not
+        age. Not ageing is the subtle part: getAge drives voice stealing, and a
+        voice delayed by half a block that counted those samples would look
+        older than one that started at the top of the block and get stolen
+        first.
+    */
+    juce::int64 samplesUntilStart = 0;
 };
 
 } // namespace dew

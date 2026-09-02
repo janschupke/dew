@@ -2,6 +2,7 @@
 
 #include <array>
 #include <atomic>
+#include <type_traits>
 #include <vector>
 
 #include "engine/MixerBus.h"
@@ -264,15 +265,62 @@ private:
     */
     void collectAutomation (const EngineSnapshot&, double positionSteps) noexcept;
 
-    /** Applies whatever automation is pointed at this channel or track.
+    /** The only things automation may move on a channel, and nothing else.
 
-        Takes a mutable copy of the snapshot's entry rather than editing the
-        snapshot: the snapshot is shared, read-only, and the same one may be
-        rendered again on the next block.
+        A distinct type rather than a copy of ChannelSnapshot, and that is the
+        entire point. ChannelSnapshot carries a shared_ptr to the channel's
+        audio, and EngineSnapshot.h spends fourteen lines explaining that every
+        copy and release of that pointer must happen on the message thread -
+        calling the alternative "a correctness bug, not a style question".
+
+        The render loop copied one per channel per block anyway: up to
+        sixty-four atomic refcount pairs on the audio thread, every block. The
+        pointer could not actually reach zero, because the snapshot slot held a
+        reference of its own, so nothing ever crashed and nothing ever said so.
+
+        This struct has no such member. The type system states the invariant
+        now, instead of a comment asking for it.
     */
-    void applyAutomation (ChannelSnapshot&, int channelIndex) const noexcept;
-    void applyAutomation (MixerTrackSnapshot&, int trackIndex) const noexcept;
+    struct ChannelOverrides
+    {
+        float volume = 0.0f;
+        float pan = 0.0f;
+        OscBankSnapshot osc;
+        EffectChainSnapshot effects;
+    };
+
+    struct MixerTrackOverrides
+    {
+        float gain = 0.0f;
+        float pan = 0.0f;
+        EffectChainSnapshot effects;
+    };
+
+    /** Whatever automation points at this channel, or null if none does.
+
+        Null rather than a filled-in copy, so a block that automates nothing
+        copies nothing - which is every block of most projects. Sized in
+        prepare(), so the render path allocates nothing either.
+    */
+    const ChannelOverrides* overridesFor (const ChannelSnapshot&, int channelIndex) noexcept;
+    const MixerTrackOverrides* overridesFor (const MixerTrackSnapshot&, int trackIndex) noexcept;
     float automatedMasterGain (float base) const noexcept;
+
+    /** The invariant, enforced rather than requested.
+
+        ChannelSnapshot is NOT trivially copyable - it carries the shared_ptr to
+        a channel's audio - and that is exactly why the render path may not copy
+        one. Overrides are, and always must be: the day someone adds a member
+        here that owns something, this fails to compile instead of putting a
+        refcount back on the audio thread.
+    */
+    static_assert (std::is_trivially_copyable_v<ChannelOverrides>,
+                   "a channel override must own nothing: the audio thread copies it every block");
+    static_assert (std::is_trivially_copyable_v<MixerTrackOverrides>,
+                   "a mixer track override must own nothing, for the same reason");
+
+    std::vector<ChannelOverrides> channelOverrides;
+    std::vector<MixerTrackOverrides> trackOverrides;
 
     std::vector<ActiveAutomation> activeAutomation;
 

@@ -56,6 +56,7 @@ add_executable(dew_tests
   AudioUiTests.cpp
   CliArgsTests.cpp
   SourceGateTests.cpp
+  RealtimeTests.cpp
 )
 
 target_link_libraries(dew_tests

@@ -456,7 +456,6 @@ EngineSnapshot buildSnapshot (const juce::ValueTree& project, juce::StringArray*
         return snapshot;
 
     snapshot.tempoBpm     = juce::jlimit (20.0, 999.0, (double) project[ids::tempoBpm]);
-    snapshot.barsInSong   = juce::jmax (1, (int) project[ids::barsInSong]);
 
     // Through Meter rather than read here, so the engine's idea of a bar and
     // the editors' cannot drift apart - both clamp the same way and both treat
@@ -520,7 +519,6 @@ EngineSnapshot buildSnapshot (const juce::ValueTree& project, juce::StringArray*
 
         ChannelSnapshot c;
         c.id        = (int) channel[ids::id];
-        c.basePitch = juce::jlimit (0, 127, (int) channel[ids::basePitch]);
         c.volume    = juce::jlimit (0.0f, 1.0f, (float) (double) channel[ids::volume]);
         c.pan       = juce::jlimit (-1.0f, 1.0f, (float) (double) channel[ids::pan]);
         c.muted     = (bool) channel[ids::muted];

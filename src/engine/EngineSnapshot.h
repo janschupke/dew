@@ -184,7 +184,6 @@ struct ChannelSnapshot
 {
     int id = 0;
     int mixerTrackIndex = 0;   ///< resolved to an index, so the audio thread never searches
-    int basePitch = 60;
     float volume = 0.8f;
     float pan = 0.0f;
     bool muted = false;
@@ -297,7 +296,6 @@ struct EngineSnapshot
 {
     double tempoBpm = 128.0;
     int stepsPerBeat = 4;
-    int barsInSong = 16;
 
     /** The project's meter. `beatsPerBar` groups beats into bars and is what
         every bar computation below divides by; `beatUnit` is notational and the

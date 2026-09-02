@@ -20,14 +20,14 @@ EngineSnapshot makeConsistentSnapshot (juce::uint64 generation, int size)
     EngineSnapshot snapshot;
     snapshot.generation = generation;
     snapshot.tempoBpm = 100.0 + (double) (generation % 100);
-    snapshot.barsInSong = (int) (generation % 64) + 1;
+    snapshot.masterGain = 0.5f + (float) (generation % 32) / 64.0f;
 
     snapshot.channels.resize ((size_t) size);
 
     for (int i = 0; i < size; ++i)
     {
         snapshot.channels[(size_t) i].id = (int) (generation % 1000) * 1000 + i;
-        snapshot.channels[(size_t) i].basePitch = (int) (generation % 128);
+        snapshot.channels[(size_t) i].volume = 0.25f + (float) (generation % 16) / 32.0f;
     }
 
     return snapshot;
@@ -40,10 +40,14 @@ bool isConsistent (const EngineSnapshot& s)
 
     // Exact comparison is the point: this is checking the bytes were not
     // rewritten mid-read, not that a computation came out close.
+    //
+    // The markers are deliberately of different widths at different offsets - a
+    // double and a float at the top, an int and a float per channel - so a tear
+    // that happened to leave one of them intact still shows up in another.
     if (! juce::exactlyEqual (s.tempoBpm, 100.0 + (double) (s.generation % 100)))
         return false;
 
-    if (s.barsInSong != (int) (s.generation % 64) + 1)
+    if (! juce::exactlyEqual (s.masterGain, 0.5f + (float) (s.generation % 32) / 64.0f))
         return false;
 
     for (size_t i = 0; i < s.channels.size(); ++i)
@@ -51,7 +55,8 @@ bool isConsistent (const EngineSnapshot& s)
         if (s.channels[i].id != (int) (s.generation % 1000) * 1000 + (int) i)
             return false;
 
-        if (s.channels[i].basePitch != (int) (s.generation % 128))
+        if (! juce::exactlyEqual (s.channels[i].volume,
+                                  0.25f + (float) (s.generation % 16) / 32.0f))
             return false;
     }
 

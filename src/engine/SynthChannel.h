@@ -21,7 +21,7 @@ public:
     void reset() noexcept;
 
     void noteOn (int pitch, float velocity, const OscBankSnapshot&, const AmpSettings&,
-                 int durationSamples);
+                 int durationSamples, int startOffset = 0);
 
     /** Releases every voice sounding this pitch. Used for held preview notes,
         which have no duration to run out - the user decides when they end.

@@ -223,3 +223,52 @@ TEST_CASE ("the committed example project is loadable and audible", "[engine][re
     REQUIRE (report.ok());
     REQUIRE (report.peak > 0.05f);
 }
+
+TEST_CASE ("a render is the same audio at any block size", "[engine][render][timing]")
+{
+    // Sequencer::collect has always worked out which sample of the block a step
+    // falls on, and the engine used to throw that offset away - every synth note
+    // started at sample 0 of whatever block it landed in. SamplePlayer, meanwhile,
+    // is sample-accurate. So a synth note and an audio clip written to the same
+    // beat did not start together, the error was up to a whole block, and the
+    // rendered file depended on a buffer size the listener never chose.
+    //
+    // This is the assertion that could not have held before: identical samples
+    // from two renders whose only difference is the block size.
+    const auto project = ProjectFactory::createDemo();
+
+    RenderOptions small;
+    small.blockSize = 64;
+
+    RenderOptions large;
+    large.blockSize = 1024;
+
+    juce::AudioBuffer<float> a, b;
+    const auto reportA = OfflineRenderer::renderToBuffer (project, a, small);
+    const auto reportB = OfflineRenderer::renderToBuffer (project, b, large);
+
+    REQUIRE (reportA.ok());
+    REQUIRE (reportB.ok());
+    REQUIRE (a.getNumSamples() == b.getNumSamples());
+    REQUIRE (a.getNumChannels() == b.getNumChannels());
+    REQUIRE (a.getNumSamples() > 0);
+
+    // Audible, so this is not two silences agreeing.
+    REQUIRE (reportA.peak > 0.05f);
+
+    for (int channel = 0; channel < a.getNumChannels(); ++channel)
+    {
+        const auto* left = a.getReadPointer (channel);
+        const auto* right = b.getReadPointer (channel);
+
+        for (int i = 0; i < a.getNumSamples(); ++i)
+        {
+            if (! juce::exactlyEqual (left[i], right[i]))
+            {
+                INFO ("channel " << channel << ", sample " << i
+                                 << ": " << left[i] << " vs " << right[i]);
+                REQUIRE (juce::exactlyEqual (left[i], right[i]));
+            }
+        }
+    }
+}

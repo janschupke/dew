@@ -39,6 +39,11 @@ AudioEngine::AudioEngine()
 
     effectUnitTypes.assign (kMaxEffectUnits, -1);
     activeAutomation.reserve (kMaxAutomations);
+
+    // Sized here rather than in prepare(), because the render path indexes them
+    // by channel and track and must never find them short.
+    channelOverrides.resize (kMaxChannels);
+    trackOverrides.resize (kMaxMixerTracks);
 }
 
 void AudioEngine::prepare (double sampleRate, int maximumBlockSize)
@@ -191,6 +196,14 @@ void AudioEngine::applyPreviewEvent (const EngineSnapshot& snapshot, const Previ
     // A preview note has no duration to run out - it lasts until the user
     // lets go - so it is triggered with one long enough that the release
     // always comes first.
+    //
+    // Deliberately NOT gated on isChannelAudible, though the sequencer's
+    // triggers are. It looks like an inconsistency and was reported as one, but
+    // the render loop already refuses to sum an inaudible channel into its
+    // mixer track, so a preview on a muted channel is silent either way. Adding
+    // the check here would save a voice nobody can hear and change one thing
+    // that can be heard: unmuting mid-preview would no longer let the held note
+    // through. Not worth an untestable behaviour change.
     const auto& channelSnapshot = snapshot.channels[(size_t) event.channelIndex];
     channel.noteOn (event.pitch, event.velocity, channelSnapshot.osc, channelSnapshot.amp,
                     std::numeric_limits<int>::max());
@@ -423,8 +436,31 @@ void AudioEngine::collectAutomation (const EngineSnapshot& snapshot, double posi
     }
 }
 
-void AudioEngine::applyAutomation (ChannelSnapshot& channel, int channelIndex) const noexcept
+const AudioEngine::ChannelOverrides*
+AudioEngine::overridesFor (const ChannelSnapshot& channel, int channelIndex) noexcept
 {
+    auto automated = false;
+
+    for (const auto& active : activeAutomation)
+        if (active.targetIndex == channelIndex
+            && (active.scope == AutomationScope::channel
+                || active.scope == AutomationScope::channelOsc
+                || active.scope == AutomationScope::channelEffect))
+        {
+            automated = true;
+            break;
+        }
+
+    if (! automated)
+        return nullptr;
+
+    auto& overrides = channelOverrides[(size_t) channelIndex];
+
+    overrides.volume = channel.volume;
+    overrides.pan = channel.pan;
+    overrides.osc = channel.osc;
+    overrides.effects = channel.effects;
+
     for (const auto& active : activeAutomation)
     {
         if (active.targetIndex != channelIndex)
@@ -433,27 +469,50 @@ void AudioEngine::applyAutomation (ChannelSnapshot& channel, int channelIndex) c
         if (active.scope == AutomationScope::channel)
         {
             if (active.param == AutomationParam::volume)
-                channel.volume = active.value;
+                overrides.volume = active.value;
             else if (active.param == AutomationParam::pan)
-                channel.pan = active.value;
+                overrides.pan = active.value;
         }
         else if (active.scope == AutomationScope::channelOsc
                  && active.param == AutomationParam::position
-                 && active.slotIndex >= 0 && active.slotIndex < channel.osc.numSlots)
+                 && active.slotIndex >= 0 && active.slotIndex < overrides.osc.numSlots)
         {
-            channel.osc.slots[(size_t) active.slotIndex].position = active.value;
+            overrides.osc.slots[(size_t) active.slotIndex].position = active.value;
         }
         else if (active.scope == AutomationScope::channelEffect
-                 && active.slotIndex >= 0 && active.slotIndex < channel.effects.numSlots)
+                 && active.slotIndex >= 0 && active.slotIndex < overrides.effects.numSlots)
         {
-            applyToEffect (channel.effects.slots[(size_t) active.slotIndex].params,
+            applyToEffect (overrides.effects.slots[(size_t) active.slotIndex].params,
                            active.param, active.value);
         }
     }
+
+    return &overrides;
 }
 
-void AudioEngine::applyAutomation (MixerTrackSnapshot& track, int trackIndex) const noexcept
+const AudioEngine::MixerTrackOverrides*
+AudioEngine::overridesFor (const MixerTrackSnapshot& track, int trackIndex) noexcept
 {
+    auto automated = false;
+
+    for (const auto& active : activeAutomation)
+        if (active.targetIndex == trackIndex
+            && (active.scope == AutomationScope::mixerTrack
+                || active.scope == AutomationScope::mixerEffect))
+        {
+            automated = true;
+            break;
+        }
+
+    if (! automated)
+        return nullptr;
+
+    auto& overrides = trackOverrides[(size_t) trackIndex];
+
+    overrides.gain = track.gain;
+    overrides.pan = track.pan;
+    overrides.effects = track.effects;
+
     for (const auto& active : activeAutomation)
     {
         if (active.targetIndex != trackIndex)
@@ -462,17 +521,19 @@ void AudioEngine::applyAutomation (MixerTrackSnapshot& track, int trackIndex) co
         if (active.scope == AutomationScope::mixerTrack)
         {
             if (active.param == AutomationParam::gain)
-                track.gain = active.value;
+                overrides.gain = active.value;
             else if (active.param == AutomationParam::pan)
-                track.pan = active.value;
+                overrides.pan = active.value;
         }
         else if (active.scope == AutomationScope::mixerEffect
-                 && active.slotIndex >= 0 && active.slotIndex < track.effects.numSlots)
+                 && active.slotIndex >= 0 && active.slotIndex < overrides.effects.numSlots)
         {
-            applyToEffect (track.effects.slots[(size_t) active.slotIndex].params,
+            applyToEffect (overrides.effects.slots[(size_t) active.slotIndex].params,
                            active.param, active.value);
         }
     }
+
+    return &overrides;
 }
 
 float AudioEngine::automatedMasterGain (float base) const noexcept
@@ -657,7 +718,8 @@ void AudioEngine::processBlock (juce::AudioBuffer<float>& buffer) noexcept
                                                         trigger.velocity,
                                                         channelSnapshot.osc,
                                                         channelSnapshot.amp,
-                                                        trigger.durationSamples);
+                                                        trigger.durationSamples,
+                                                        trigger.sampleOffset);
     }
 
     // --- render channels into their mixer tracks -----------------------------
@@ -665,15 +727,23 @@ void AudioEngine::processBlock (juce::AudioBuffer<float>& buffer) noexcept
     {
         auto* mono = channelBuffers.getWritePointer (i);
 
-        auto channelSnapshot = snapshot.channels[(size_t) i];
+        const auto& channel = snapshot.channels[(size_t) i];
 
         // Before the render, not after it. Volume, pan and the effect chain are
         // all consumed further down, so this used to sit below; a wavetable
         // position has to be in the bank the voices read THIS block, or an
         // automated sweep would lag a block behind everything else.
-        applyAutomation (channelSnapshot, i);
+        //
+        // Null unless something actually automates this channel, so the common
+        // case reads the snapshot straight through and copies nothing at all.
+        const auto* automated = overridesFor (channel, i);
 
-        if (channelSnapshot.source == ChannelSource::audio)
+        const auto volume  = automated != nullptr ? automated->volume  : channel.volume;
+        const auto pan     = automated != nullptr ? automated->pan     : channel.pan;
+        const auto& osc    = automated != nullptr ? automated->osc     : channel.osc;
+        const auto& chain  = automated != nullptr ? automated->effects : channel.effects;
+
+        if (channel.source == ChannelSource::audio)
         {
             // Audio clips live in the arrangement, so they sound in song mode
             // only - the same rule automation follows, and for the same reason:
@@ -689,13 +759,13 @@ void AudioEngine::processBlock (juce::AudioBuffer<float>& buffer) noexcept
             channels[(size_t) i].renderAdd (mono, numSamples,
                                             channelBend[(size_t) i].load (std::memory_order_relaxed),
                                             channelModulation[(size_t) i].load (std::memory_order_relaxed),
-                                            &channelSnapshot.osc);
+                                            &osc);
         }
 
-        if (! snapshot.isChannelAudible (channelSnapshot))
+        if (! snapshot.isChannelAudible (channel))
             continue;
 
-        const auto mixerIndex = channelSnapshot.mixerTrackIndex;
+        const auto mixerIndex = channel.mixerTrackIndex;
 
         if (mixerIndex < 0 || mixerIndex >= numMixerTracks)
             continue;
@@ -703,10 +773,14 @@ void AudioEngine::processBlock (juce::AudioBuffer<float>& buffer) noexcept
         auto* trackLeft  = mixerBuffers.getWritePointer (mixerIndex * 2);
         auto* trackRight = mixerBuffers.getWritePointer (mixerIndex * 2 + 1);
 
-        if (channelSnapshot.effects.numSlots == 0)
+        // anyEnabled rather than numSlots: a chain whose slots are all switched
+        // off used to take the whole stereo detour - clear a scratch pair, pan
+        // into it, run a chain that does nothing, add it back - because it still
+        // HAD slots. Bit-exact, since adding into a cleared buffer and then into
+        // the track is the same arithmetic as adding into the track.
+        if (! chain.anyEnabled())
         {
-            MixerBus::addPanned (mono, numSamples, channelSnapshot.volume, channelSnapshot.pan,
-                                 trackLeft, trackRight);
+            MixerBus::addPanned (mono, numSamples, volume, pan, trackLeft, trackRight);
             continue;
         }
 
@@ -718,10 +792,9 @@ void AudioEngine::processBlock (juce::AudioBuffer<float>& buffer) noexcept
         juce::FloatVectorOperations::clear (scratchLeft, numSamples);
         juce::FloatVectorOperations::clear (scratchRight, numSamples);
 
-        MixerBus::addPanned (mono, numSamples, channelSnapshot.volume, channelSnapshot.pan,
-                             scratchLeft, scratchRight);
+        MixerBus::addPanned (mono, numSamples, volume, pan, scratchLeft, scratchRight);
 
-        runChain (channelSnapshot.effects, scratchLeft, scratchRight, numSamples);
+        runChain (chain, scratchLeft, scratchRight, numSamples);
 
         juce::FloatVectorOperations::add (trackLeft, scratchLeft, numSamples);
         juce::FloatVectorOperations::add (trackRight, scratchRight, numSamples);
@@ -733,19 +806,23 @@ void AudioEngine::processBlock (juce::AudioBuffer<float>& buffer) noexcept
 
     for (int i = 0; i < numMixerTracks; ++i)
     {
-        auto track = snapshot.mixerTracks[(size_t) i];
+        const auto& track = snapshot.mixerTracks[(size_t) i];
 
         if (! MixerBus::isAudible (snapshot, track))
             continue;
 
-        applyAutomation (track, i);
+        const auto* automated = overridesFor (track, i);
+
+        const auto trackGain = automated != nullptr ? automated->gain    : track.gain;
+        const auto trackPan  = automated != nullptr ? automated->pan     : track.pan;
+        const auto& chain    = automated != nullptr ? automated->effects : track.effects;
 
         // Before gain and pan, so a track's fader rides the processed signal
         // rather than the effects riding the fader.
-        runChain (track.effects, mixerBuffers.getWritePointer (i * 2),
+        runChain (chain, mixerBuffers.getWritePointer (i * 2),
                   mixerBuffers.getWritePointer (i * 2 + 1), numSamples);
 
-        const auto gains = MixerBus::trackGains (track.pan, track.gain);
+        const auto gains = MixerBus::trackGains (trackPan, trackGain);
 
         juce::FloatVectorOperations::addWithMultiply (outLeft,
                                                       mixerBuffers.getReadPointer (i * 2),

@@ -63,11 +63,12 @@ void SynthVoice::reset() noexcept
     modulated = false;
     samplesSinceStart = 0;
     samplesUntilRelease = 0;
+    samplesUntilStart = 0;
     adsr.reset();
 }
 
 void SynthVoice::start (int pitch, float velocity, const OscBankSnapshot& bank,
-                        const AmpSettings& amp, int durationSamples)
+                        const AmpSettings& amp, int durationSamples, int startOffset)
 {
     currentPitch = pitch;
     level = juce::jlimit (0.0f, 1.0f, velocity);
@@ -168,6 +169,7 @@ void SynthVoice::start (int pitch, float velocity, const OscBankSnapshot& bank,
 
     samplesSinceStart = 0;
     samplesUntilRelease = juce::jmax ((juce::int64) 1, (juce::int64) durationSamples);
+    samplesUntilStart = juce::jmax ((juce::int64) 0, (juce::int64) startOffset);
     active = true;
 }
 
@@ -372,6 +374,14 @@ void SynthVoice::renderAdd (float* buffer, int numSamples) noexcept
 
     for (int i = 0; i < numSamples; ++i)
     {
+        // Not yet. Contributing nothing rather than silence through the
+        // envelope: the note has not begun, so neither has its attack.
+        if (samplesUntilStart > 0)
+        {
+            --samplesUntilStart;
+            continue;
+        }
+
         if (samplesUntilRelease > 0 && --samplesUntilRelease == 0)
             adsr.noteOff();
 

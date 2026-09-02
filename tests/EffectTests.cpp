@@ -1041,3 +1041,59 @@ TEST_CASE ("a frequency field drags by ratio, not by hertz", "[effects][ui]")
     REQUIRE (logarithmic.getValue() < 1400.0);
     REQUIRE (logarithmic.getValue() > 1000.0);
 }
+
+TEST_CASE ("a chain whose slots are all disabled renders as if it had none", "[effects][render]")
+{
+    // Switching an effect off must change nothing at all about the render -
+    // not "almost nothing", which is what a tone change sounds like when you
+    // are trying to A/B a chain.
+    //
+    // What this test is NOT: a detector for which code path ran. The engine
+    // used to take the stereo detour whenever a chain had slots, enabled or
+    // not - clear a scratch pair, pan into it, run a chain that does nothing,
+    // add it back - and now takes the cheap mono path unless a slot is actually
+    // on. This passes either way, deliberately, because the two paths ARE the
+    // same arithmetic: adding into a cleared buffer and then into the track
+    // equals adding into the track. That equivalence is what licenses the fast
+    // path, so the equivalence is what is pinned here. If it ever stops holding,
+    // the optimisation stops being one.
+    // The demo, not createDefault(): a project with no notes renders to nothing
+    // and the renderer refuses it outright, which would make this pass on two
+    // failures rather than on two identical renders.
+    auto withNone = ProjectFactory::createDemo();
+
+    auto withDisabled = withNone.createCopy();
+    auto channel = withDisabled.getChild (0);
+    REQUIRE (channel.hasType (ids::CHANNEL));
+
+    auto added = ProjectEdits::addEffect (withDisabled, channel, "reverb", nullptr);
+    REQUIRE (added.isValid());
+    added.setProperty (ids::enabled, false, nullptr);
+
+    auto second = ProjectEdits::addEffect (withDisabled, channel, "delay", nullptr);
+    REQUIRE (second.isValid());
+    second.setProperty (ids::enabled, false, nullptr);
+
+    juce::AudioBuffer<float> a, b;
+    REQUIRE (OfflineRenderer::renderToBuffer (withNone, a).ok());
+    REQUIRE (OfflineRenderer::renderToBuffer (withDisabled, b).ok());
+
+    REQUIRE (a.getNumSamples() == b.getNumSamples());
+    REQUIRE (a.getNumSamples() > 0);
+    REQUIRE (a.getMagnitude (0, a.getNumSamples()) > 0.05f);
+
+    for (int channelIndex = 0; channelIndex < a.getNumChannels(); ++channelIndex)
+    {
+        const auto* left = a.getReadPointer (channelIndex);
+        const auto* right = b.getReadPointer (channelIndex);
+
+        for (int i = 0; i < a.getNumSamples(); ++i)
+        {
+            if (! juce::exactlyEqual (left[i], right[i]))
+            {
+                INFO ("channel " << channelIndex << ", sample " << i);
+                REQUIRE (juce::exactlyEqual (left[i], right[i]));
+            }
+        }
+    }
+}
