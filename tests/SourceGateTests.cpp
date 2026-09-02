@@ -3,6 +3,8 @@
 #include <algorithm>
 
 #include "SourceScan.h"
+#include "model/AutomationTargets.h"
+#include "model/ModuleCatalog.h"
 
 using namespace dew::testing;
 
@@ -147,4 +149,68 @@ TEST_CASE ("the engine layer opens no files and no devices", "[build][layering]"
 
     INFO ("engine sources reaching for a device or a file:\n" << fromEngine.joinIntoString ("\n"));
     CHECK (fromEngine.isEmpty());
+}
+
+TEST_CASE ("no source spells an automatable parameter as a string literal", "[build][gate]")
+{
+    // The twenty names that were the actual defect: the snapshot builder held a
+    // table mapping "cutoff", "roomSize", "midFreq" and the rest to an enum, and
+    // it was the only place in production that wrote a property name by hand.
+    //
+    // The failure was silent in the worst way. Renaming an identifier in Ids.h
+    // compiled cleanly, the schema and the editor followed the new name, and
+    // every automation curve pointing at the old one simply stopped doing
+    // anything - because a name that matches nothing is indistinguishable from
+    // an automation of nothing.
+    //
+    // Scoped to automatable parameters rather than every identifier, and taken
+    // from the catalog rather than scraped, because dew's identifiers also
+    // include node types (CHANNEL, MIXER) that are legitimate UI captions, and
+    // property names that are also legitimate VALUES - "loop", "record",
+    // "wavetable", "drive". Widening this beyond the parameters would be a gate
+    // that cries wolf, which is a gate people turn off.
+    juce::StringArray names;
+
+    const auto collect = [&names] (const std::vector<dew::AutomationParamSpec>& specs)
+    {
+        for (const auto& spec : specs)
+            if (spec.property != nullptr)
+                names.addIfNotAlreadyThere (spec.property->toString());
+    };
+
+    collect (dew::channelParams());
+    collect (dew::mixerTrackParams());
+    collect (dew::masterParams());
+    collect (dew::oscParams());
+
+    for (const auto& descriptor : dew::effectDescriptors())
+        collect (dew::effectParams (descriptor.id));
+
+    // An effect's id and one of its parameters share a spelling in one case -
+    // "drive" is both - and the id is a value a file legitimately contains.
+    for (const auto& descriptor : dew::effectDescriptors())
+        names.removeString (descriptor.id);
+
+    // Control case: a gate over an empty list is not a gate.
+    REQUIRE (names.size() > 15);
+    REQUIRE (names.contains ("cutoff"));
+    REQUIRE (names.contains ("midFreq"));
+
+    const auto found = dew::testing::offenders ([&names] (const juce::String& line)
+    {
+        const auto trimmed = line.trim();
+
+        // Doc comments name properties all through this codebase, deliberately.
+        if (trimmed.startsWith ("//") || trimmed.startsWith ("*") || trimmed.startsWith ("/*"))
+            return false;
+
+        for (const auto& name : names)
+            if (line.contains ("\"" + name + "\""))
+                return true;
+
+        return false;
+    }, { "Ids.h" });
+
+    INFO ("automatable parameters written as string literals:\n" << found.joinIntoString ("\n"));
+    CHECK (found.isEmpty());
 }

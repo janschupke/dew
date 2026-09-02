@@ -250,7 +250,11 @@ const NodeSpec& automationSpec()
           { ids::scope,    "channel" },
           { ids::targetId, 1 },
           { ids::slot,     -1 },
-          { ids::param,    "volume" } },
+          // The identifier, not "volume". This default names a property, so
+          // spelling it out here is a second declaration that a rename cannot
+          // follow - which would leave every new automation clip pointing at a
+          // parameter that no longer exists, silently.
+          { ids::param,    ids::volume.toString() } },
         { { "points", &pointSpec(), true } }
     };
     return spec;

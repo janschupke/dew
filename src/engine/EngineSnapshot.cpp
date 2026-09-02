@@ -231,24 +231,37 @@ int claimEffectUnit (int effectId, std::array<int, kMaxEffectUnits>& owners)
     return -1;
 }
 
-AutomationParam automationParamFromString (const juce::String& name)
+/** Which parameter an automation clip drives, from the property it names.
+
+    Keyed on the ids:: identifiers rather than on twenty string literals. Those
+    literals were the only place in production that spelled a property name by
+    hand, and the failure mode was quiet in the worst way: renaming an
+    identifier in Ids.h compiled cleanly everywhere, the schema and the editor
+    followed the new name, and every automation curve pointed at the old one
+    simply stopped doing anything. Nothing warned, because a name that matches
+    nothing is indistinguishable from an automation of nothing.
+
+    Now there is nothing to keep in step - a rename moves the identifier this
+    table already points at.
+*/
+AutomationParam automationParamFromIdentifier (const juce::Identifier& property)
 {
-    static const std::pair<const char*, AutomationParam> table[] {
-        { "volume", AutomationParam::volume }, { "pan", AutomationParam::pan },
-        { "gain", AutomationParam::gain }, { "cutoff", AutomationParam::cutoff },
-        { "wavePosition", AutomationParam::position },
-        { "resonance", AutomationParam::resonance }, { "mix", AutomationParam::mix },
-        { "roomSize", AutomationParam::roomSize }, { "damping", AutomationParam::damping },
-        { "width", AutomationParam::width }, { "delayMs", AutomationParam::delayMs },
-        { "feedback", AutomationParam::feedback }, { "drive", AutomationParam::drive },
-        { "outputGain", AutomationParam::outputGain }, { "rate", AutomationParam::rate },
-        { "depth", AutomationParam::depth }, { "lowGainDb", AutomationParam::lowGainDb },
-        { "midGainDb", AutomationParam::midGainDb }, { "midFreq", AutomationParam::midFreq },
-        { "highGainDb", AutomationParam::highGainDb },
+    static const std::pair<const juce::Identifier*, AutomationParam> table[] {
+        { &ids::volume, AutomationParam::volume }, { &ids::pan, AutomationParam::pan },
+        { &ids::gain, AutomationParam::gain }, { &ids::cutoff, AutomationParam::cutoff },
+        { &ids::wavePosition, AutomationParam::position },
+        { &ids::resonance, AutomationParam::resonance }, { &ids::mix, AutomationParam::mix },
+        { &ids::roomSize, AutomationParam::roomSize }, { &ids::damping, AutomationParam::damping },
+        { &ids::width, AutomationParam::width }, { &ids::delayMs, AutomationParam::delayMs },
+        { &ids::feedback, AutomationParam::feedback }, { &ids::drive, AutomationParam::drive },
+        { &ids::outputGain, AutomationParam::outputGain }, { &ids::rate, AutomationParam::rate },
+        { &ids::depth, AutomationParam::depth }, { &ids::lowGainDb, AutomationParam::lowGainDb },
+        { &ids::midGainDb, AutomationParam::midGainDb }, { &ids::midFreq, AutomationParam::midFreq },
+        { &ids::highGainDb, AutomationParam::highGainDb },
     };
 
-    for (const auto& [text, value] : table)
-        if (name == text)
+    for (const auto& [id, value] : table)
+        if (property == *id)
             return value;
 
     return AutomationParam::none;
@@ -678,7 +691,7 @@ EngineSnapshot buildSnapshot (const juce::ValueTree& project, juce::StringArray*
         a.slotIndex = (int) automation[ids::slot];
 
         const juce::Identifier property (automation[ids::param].toString());
-        a.param = automationParamFromString (property.toString());
+        a.param = automationParamFromIdentifier (property);
 
         const auto targetId = (int) automation[ids::targetId];
         juce::String effectType;
