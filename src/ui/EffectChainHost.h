@@ -45,7 +45,6 @@ public:
     */
     int getPreferredHeight() const;
 
-    static constexpr int headingHeight = 26;
 
 private:
     void layOutChain();

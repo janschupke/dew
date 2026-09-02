@@ -48,7 +48,6 @@ public:
     */
     std::function<void (double)> onZoom;
 
-    static constexpr int preferredHeight = 34;
 
 private:
     void updateToolButtons();

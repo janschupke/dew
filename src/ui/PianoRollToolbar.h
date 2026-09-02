@@ -71,7 +71,6 @@ public:
     std::function<void()>    onQuantize;
     std::function<void()>    onRandomize;
 
-    static constexpr int preferredHeight = 34;
 
 private:
     void updateToolButtons();

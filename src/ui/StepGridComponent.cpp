@@ -78,7 +78,7 @@ bool StepGridComponent::isScrollable() const
 
 void StepGridComponent::resized()
 {
-    horizontalScroll.setBounds (0, getHeight() - scrollThickness, getWidth(), scrollThickness);
+    horizontalScroll.setBounds (0, getHeight() - size::scrollThickness, getWidth(), size::scrollThickness);
     updateZoom();
 }
 

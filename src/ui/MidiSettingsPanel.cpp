@@ -9,9 +9,6 @@ using namespace tokens;
 
 namespace
 {
-constexpr int rowHeight = 28;
-constexpr int labelGutter = 76;
-
 juce::String transposeLabel (int semitones)
 {
     if (semitones == 0)
@@ -237,10 +234,10 @@ void MidiSettingsPanel::resized()
 
     listViewport.setBounds (area.removeFromTop (listHeight));
     listHolder.setSize (juce::jmax (0, listViewport.getWidth() - size::iconButton),
-                        juce::jmax (1, rows.size() * rowHeight));
+                        juce::jmax (1, rows.size() * size::stripFormRow));
 
     for (int i = 0; i < rows.size(); ++i)
-        rows[i]->setBounds (0, i * rowHeight, listHolder.getWidth(), rowHeight);
+        rows[i]->setBounds (0, i * size::stripFormRow, listHolder.getWidth(), size::stripFormRow);
 
     area.removeFromTop (space::lg);
 
@@ -249,7 +246,7 @@ void MidiSettingsPanel::resized()
     for (auto* box : { &channelBox, &transposeBox })
     {
         auto row = area.removeFromTop (size::controlHeight);
-        labelBounds.add (row.removeFromLeft (labelGutter));
+        labelBounds.add (row.removeFromLeft (size::gutterLabel));
         row.removeFromLeft (space::md);
         box->setBounds (row);
         area.removeFromTop (space::md);

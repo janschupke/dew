@@ -51,7 +51,7 @@ int EffectChainHost::getPreferredHeight() const
 {
     // The card's bottom inset is part of the height it asks for: leaving it out
     // is what clips the last few pixels of every card in the row.
-    return headingHeight + chain.getRequiredHeight() + space::xs
+    return tokens::size::stripHeading + chain.getRequiredHeight() + space::xs
            + (chain.isHorizontal() ? viewport.getScrollBarThickness() : 0);
 }
 
@@ -64,20 +64,20 @@ void EffectChainHost::paint (juce::Graphics& g)
     paint::container (g, getLocalBounds());
 
     paint::sectionHeading (g, { space::md, 0, getWidth() - size::iconButton - space::md,
-                                headingHeight },
+                                tokens::size::stripHeading },
                            ownerName.isEmpty() ? "EFFECTS" : "EFFECTS - " + ownerName);
 
     // Between the heading and the cards, the way every other heading in the
     // app is separated from what it names.
     g.setColour (colour::divider);
-    g.drawHorizontalLine (headingHeight - 1, (float) space::md,
+    g.drawHorizontalLine (tokens::size::stripHeading - 1, (float) space::md,
                           (float) (getWidth() - space::md));
 }
 
 void EffectChainHost::resized()
 {
     auto area = getLocalBounds().reduced (space::xs, 0);
-    auto heading = area.removeFromTop (headingHeight);
+    auto heading = area.removeFromTop (tokens::size::stripHeading);
 
     addButton.setBounds (heading.removeFromRight (size::iconButton).reduced (space::xxs));
 

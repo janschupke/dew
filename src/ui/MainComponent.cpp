@@ -645,8 +645,8 @@ void MainComponent::resized()
 {
     auto area = getLocalBounds();
 
-    transportBar.setBounds (area.removeFromTop (46));
-    statusBar.setBounds (area.removeFromBottom (StatusBar::barHeight));
+    transportBar.setBounds (area.removeFromTop (tokens::size::stripTransport));
+    statusBar.setBounds (area.removeFromBottom (tokens::size::stripStatus));
 
     const auto width = panelCollapsed
                            ? 0

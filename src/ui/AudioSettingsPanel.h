@@ -64,7 +64,9 @@ private:
     void timerCallback() override;
 
     /** Where the input meter is drawn. */
-    juce::Rectangle<int> meterBounds() const;
+    /** Set by resized(), read by paint() and by the meter's own repaint - a
+        painter that computes its own layout is a second layout. */
+    juce::Rectangle<int> meterArea;
 
     void rebuildLists();
     void updateSummary();

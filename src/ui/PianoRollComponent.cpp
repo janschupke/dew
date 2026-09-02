@@ -12,6 +12,8 @@
 namespace dew
 {
 
+using namespace tokens;
+
 namespace
 {
 
@@ -197,43 +199,43 @@ juce::Colour PianoRollComponent::channelColour() const
 
 juce::Rectangle<int> PianoRollComponent::toolbarArea() const
 {
-    return getLocalBounds().removeFromTop (toolbarHeight);
+    return getLocalBounds().removeFromTop (size::stripToolbar);
 }
 
 juce::Rectangle<int> PianoRollComponent::contentArea() const
 {
-    return getLocalBounds().withTrimmedTop (toolbarHeight);
+    return getLocalBounds().withTrimmedTop (size::stripToolbar);
 }
 
 juce::Rectangle<int> PianoRollComponent::rulerArea() const
 {
-    return { keyboardWidth, contentArea().getY(),
-             juce::jmax (0, getWidth() - keyboardWidth - scrollThickness), rulerHeight };
+    return { size::gutterKeyboard, contentArea().getY(),
+             juce::jmax (0, getWidth() - size::gutterKeyboard - size::scrollThickness), size::rulerHeight };
 }
 
 juce::Rectangle<int> PianoRollComponent::noteArea() const
 {
     const auto content = contentArea();
-    const auto top = content.getY() + rulerHeight;
-    const auto bottom = juce::jmax (top, content.getBottom() - scrollThickness - velocityHeight);
+    const auto top = content.getY() + size::rulerHeight;
+    const auto bottom = juce::jmax (top, content.getBottom() - size::scrollThickness - velocityHeight);
 
-    return { keyboardWidth, top,
-             juce::jmax (0, getWidth() - keyboardWidth - scrollThickness), bottom - top };
+    return { size::gutterKeyboard, top,
+             juce::jmax (0, getWidth() - size::gutterKeyboard - size::scrollThickness), bottom - top };
 }
 
 juce::Rectangle<int> PianoRollComponent::keyboardArea() const
 {
     const auto notes = noteArea();
-    return { 0, notes.getY(), keyboardWidth, notes.getHeight() };
+    return { 0, notes.getY(), size::gutterKeyboard, notes.getHeight() };
 }
 
 juce::Rectangle<int> PianoRollComponent::velocityArea() const
 {
     const auto content = contentArea();
-    const auto top = juce::jmax (content.getY(), content.getBottom() - scrollThickness - velocityHeight);
+    const auto top = juce::jmax (content.getY(), content.getBottom() - size::scrollThickness - velocityHeight);
 
-    return { keyboardWidth, top,
-             juce::jmax (0, getWidth() - keyboardWidth - scrollThickness), velocityHeight };
+    return { size::gutterKeyboard, top,
+             juce::jmax (0, getWidth() - size::gutterKeyboard - size::scrollThickness), velocityHeight };
 }
 
 float PianoRollComponent::contentWidth() const
@@ -248,7 +250,7 @@ int PianoRollComponent::stepAtX (int x) const
     // is clearly outside the pattern, but it is still writable, and doing so
     // grows the pattern to fit. Clamping here made growPatternToFitNotes
     // unreachable from the mouse.
-    return juce::jmax (0, timeline.stepAtX ((float) (x - keyboardWidth)));
+    return juce::jmax (0, timeline.stepAtX ((float) (x - size::gutterKeyboard)));
 }
 
 int PianoRollComponent::firstVisiblePitch() const
@@ -269,7 +271,7 @@ juce::Rectangle<float> PianoRollComponent::boundsForNote (const juce::ValueTree&
     const auto pitch  = (int) note[ids::pitch];
 
     const auto notes = noteArea();
-    const auto x = (float) keyboardWidth + timeline.xForStep ((double) step);
+    const auto x = (float) size::gutterKeyboard + timeline.xForStep ((double) step);
     const auto y = (float) notes.getY() + (float) ((highestPitch - pitch) * rowHeight) - (float) pitchScrollPx;
 
     return { x, y, (float) (length * timeline.pixelsPerStep), (float) rowHeight };
@@ -659,7 +661,7 @@ void PianoRollComponent::mouseWheelMove (const juce::MouseEvent& event,
     {
         // Zoom around the pointer. deltaY is small; exaggerate it or a zoom
         // takes a dozen notches to be noticeable.
-        timeline.zoomAround (std::pow (2.0, deltaY * 3.0), (float) (event.x - keyboardWidth));
+        timeline.zoomAround (std::pow (2.0, deltaY * 3.0), (float) (event.x - size::gutterKeyboard));
     }
     else if (event.mods.isShiftDown())
     {
@@ -683,7 +685,7 @@ void PianoRollComponent::mouseMagnify (const juce::MouseEvent& event, float scal
     if (scaleFactor <= 0.0f)
         return;
 
-    timeline.zoomAround ((double) scaleFactor, (float) (event.x - keyboardWidth));
+    timeline.zoomAround ((double) scaleFactor, (float) (event.x - size::gutterKeyboard));
     updateScrollBars();
     repaint();
 }
@@ -1209,7 +1211,7 @@ juce::Rectangle<float> PianoRollComponent::velocityBarBounds (const juce::ValueT
     const auto area = velocityArea();
     const auto velocity = (float) juce::jlimit (0.0, 1.0, (double) note[ids::velocity]);
     const auto barWidth = (float) juce::jlimit (3.0, 14.0, timeline.pixelsPerStep * 0.7);
-    const auto x = (float) keyboardWidth + timeline.xForStep ((double) (int) note[ids::step]);
+    const auto x = (float) size::gutterKeyboard + timeline.xForStep ((double) (int) note[ids::step]);
 
     const auto floor = (float) area.getBottom() - (float) barPadding;
     const auto height = velocity * (float) juce::jmax (1, area.getHeight() - barPadding * 2);
@@ -1372,12 +1374,12 @@ void PianoRollComponent::resized()
 {
     toolbar.setBounds (toolbarArea());
 
-    horizontalScroll.setBounds (keyboardWidth, getHeight() - scrollThickness,
-                                juce::jmax (0, getWidth() - keyboardWidth - scrollThickness),
-                                scrollThickness);
+    horizontalScroll.setBounds (size::gutterKeyboard, getHeight() - size::scrollThickness,
+                                juce::jmax (0, getWidth() - size::gutterKeyboard - size::scrollThickness),
+                                size::scrollThickness);
 
     const auto notes = noteArea();
-    verticalScroll.setBounds (getWidth() - scrollThickness, notes.getY(), scrollThickness, notes.getHeight());
+    verticalScroll.setBounds (getWidth() - size::scrollThickness, notes.getY(), size::scrollThickness, notes.getHeight());
 
     // The first layout frames the pattern; after that the user's zoom is theirs.
     if (! didFitOnce && contentWidth() > 0.0f)
@@ -1468,9 +1470,9 @@ void PianoRollComponent::paintRuler (juce::Graphics& g)
 
     // The corner over the keyboard, which the shared ruler knows nothing about.
     g.setColour (colour::surface);
-    g.fillRect (0, 0, keyboardWidth, rulerHeight);
+    g.fillRect (0, 0, size::gutterKeyboard, size::rulerHeight);
     g.setColour (colour::dividerStrong);
-    g.drawHorizontalLine (rulerHeight - 1, 0.0f, (float) keyboardWidth);
+    g.drawHorizontalLine (size::rulerHeight - 1, 0.0f, (float) size::gutterKeyboard);
 }
 
 void PianoRollComponent::paintNotes (juce::Graphics& g)
@@ -1524,7 +1526,7 @@ void PianoRollComponent::paintNotes (juce::Graphics& g)
 
     for (int step = range.getStart(); step <= range.getEnd(); ++step)
     {
-        const auto x = (float) keyboardWidth + timeline.xForStep ((double) step);
+        const auto x = (float) size::gutterKeyboard + timeline.xForStep ((double) step);
 
         if (x > (float) area.getRight())
             break;
@@ -1544,7 +1546,7 @@ void PianoRollComponent::paintNotes (juce::Graphics& g)
     // Past the end of the pattern is still drawn - it is just dimmed, with the
     // end itself marked. It used to be hatched over, which turned every window
     // wider than the music into a dead rectangle.
-    const auto endX = (float) keyboardWidth + timeline.xForStep ((double) steps);
+    const auto endX = (float) size::gutterKeyboard + timeline.xForStep ((double) steps);
 
     if (endX < (float) area.getRight())
         paint::beyondEnd (g, juce::Rectangle<float> (endX, (float) area.getY(),
@@ -1603,7 +1605,7 @@ void PianoRollComponent::paintNotes (juce::Graphics& g)
     {
         const auto playing = engine.isPlaying();
         const auto step = (double) ((int) engine.getPlayheadSteps() % steps);
-        const auto x = (float) keyboardWidth + timeline.xForStep (step);
+        const auto x = (float) size::gutterKeyboard + timeline.xForStep (step);
 
         if (playing)
         {
@@ -1637,7 +1639,7 @@ void PianoRollComponent::paintVelocityLane (juce::Graphics& g)
     g.drawHorizontalLine (area.getY(), 0.0f, (float) getWidth());
 
     // Label gutter, so the lane is identifiable rather than a mystery strip.
-    paint::sectionHeading (g, { 0, area.getY(), keyboardWidth, area.getHeight() }, "VEL",
+    paint::sectionHeading (g, { 0, area.getY(), size::gutterKeyboard, area.getHeight() }, "VEL",
                            juce::Justification::centred);
 
     const auto channelId = editorState.getSelectedChannelId();
@@ -1661,7 +1663,7 @@ void PianoRollComponent::paintVelocityLane (juce::Graphics& g)
         if (step % stepsPerBar != 0)
             continue;
 
-        const auto lineX = (float) keyboardWidth + timeline.xForStep ((double) step);
+        const auto lineX = (float) size::gutterKeyboard + timeline.xForStep ((double) step);
 
         if (lineX > (float) area.getRight())
             break;
@@ -1670,7 +1672,7 @@ void PianoRollComponent::paintVelocityLane (juce::Graphics& g)
         g.drawVerticalLine ((int) lineX, (float) area.getY(), (float) area.getBottom());
     }
 
-    const auto laneEndX = (float) keyboardWidth + timeline.xForStep ((double) steps);
+    const auto laneEndX = (float) size::gutterKeyboard + timeline.xForStep ((double) steps);
 
     if (laneEndX < (float) area.getRight())
         paint::beyondEnd (g, juce::Rectangle<float> (laneEndX, (float) area.getY(),
@@ -1683,7 +1685,7 @@ void PianoRollComponent::paintVelocityLane (juce::Graphics& g)
             continue;
 
         const auto velocity = (float) juce::jlimit (0.0, 1.0, (double) note[ids::velocity]);
-        const auto x = (float) keyboardWidth + timeline.xForStep ((double) (int) note[ids::step]);
+        const auto x = (float) size::gutterKeyboard + timeline.xForStep ((double) (int) note[ids::step]);
 
         if (x < (float) area.getX() - barWidth || x > (float) area.getRight())
             continue;
@@ -1718,9 +1720,9 @@ void PianoRollComponent::paint (juce::Graphics& g)
     const auto ruler = rulerArea();
 
     g.setColour (colour::surface);
-    g.fillRect (0, ruler.getY(), keyboardWidth, rulerHeight);
+    g.fillRect (0, ruler.getY(), size::gutterKeyboard, size::rulerHeight);
     g.setColour (colour::dividerStrong);
-    g.drawHorizontalLine (ruler.getBottom() - 1, 0.0f, (float) keyboardWidth);
+    g.drawHorizontalLine (ruler.getBottom() - 1, 0.0f, (float) size::gutterKeyboard);
 
     // The slice line, while it is being drawn. Clipped to the grid so it cannot
     // be mistaken for something that reaches the keyboard or the ruler.

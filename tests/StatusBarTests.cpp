@@ -10,6 +10,7 @@
 #include "model/ProjectFactory.h"
 #include "ui/EditorState.h"
 #include "ui/StatusBar.h"
+#include "ui/design/Tokens.h"
 
 using namespace dew;
 
@@ -21,7 +22,7 @@ struct StatusHarness
     StatusHarness()
     {
         document.setState (ProjectFactory::createDemo(), true);
-        bar.setSize (1200, StatusBar::barHeight);
+        bar.setSize (1200, dew::tokens::size::stripStatus);
         bar.setVisible (true);
         bar.refresh();
         bar.resized();
@@ -153,7 +154,7 @@ TEST_CASE ("the status bar follows a replaced document", "[statusbar]")
     document.setState (ProjectFactory::createDefault(), true);
 
     StatusBar bar { document, editorState, audioHost };
-    bar.setSize (1200, StatusBar::barHeight);
+    bar.setSize (1200, dew::tokens::size::stripStatus);
     bar.setVisible (true);
     bar.refresh();
 

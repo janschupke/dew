@@ -123,7 +123,6 @@ private:
 
     static constexpr float minCellWidth = 18.0f;
     static constexpr float maxCellWidth = 64.0f;
-    static constexpr int scrollThickness = 10;
 
     juce::Point<int> hoverCell { -1, -1 };
     int lastPlayheadStep = -1;

@@ -247,16 +247,6 @@ void AudioSettingsPanel::changeListenerCallback (juce::ChangeBroadcaster*)
     rebuildLists();
 }
 
-juce::Rectangle<int> AudioSettingsPanel::meterBounds() const
-{
-    // Under the last combo and above the summary line, spanning the same column
-    // the boxes occupy so it reads as belonging to the input rows above it.
-    return getLocalBounds().reduced (space::xl)
-               .withTop (space::xl + (size::controlHeight + space::md) * 6 + space::md)
-               .withHeight (10)
-               .withTrimmedLeft (66 + space::md);
-}
-
 void AudioSettingsPanel::timerCallback()
 {
     const auto peak = audioHost.getRecorder().readAndClearInputPeak();
@@ -268,7 +258,7 @@ void AudioSettingsPanel::timerCallback()
     if (inputLevel < 0.001f)
         inputLevel = 0.0f;
 
-    repaint (meterBounds().expanded (2));
+    repaint (meterArea.expanded (space::xxs));
 }
 
 void AudioSettingsPanel::resized()
@@ -282,13 +272,23 @@ void AudioSettingsPanel::resized()
     for (auto* box : boxes)
     {
         auto row = area.removeFromTop (size::controlHeight);
-        labelBounds.add (row.removeFromLeft (66));
+        labelBounds.add (row.removeFromLeft (size::gutterLabel));
         row.removeFromLeft (space::md);
         box->setBounds (row);
         area.removeFromTop (space::md);
     }
 
     area.removeFromTop (space::md);
+
+    // Under the last combo, spanning the same column the boxes occupy so it
+    // reads as belonging to the input rows above it.
+    //
+    // Taken from the area the loop above left behind, rather than recomputed
+    // from the row height and the row count: the meter used to state that
+    // arithmetic a second time, in a const method called from paint(), and
+    // adding a seventh row would have moved the boxes and left the meter.
+    meterArea = area.withHeight (size::meterHeight)
+                    .withTrimmedLeft (size::gutterLabel + space::md);
     testButton.setBounds (area.removeFromBottom (size::controlHeight).removeFromRight (110));
 }
 
@@ -305,7 +305,7 @@ void AudioSettingsPanel::paint (juce::Graphics& g)
     // The input meter. Drawn whether or not an input is open, because an empty
     // meter beside a chosen input is information - it says the device is there
     // and silent, which is different from there being no meter at all.
-    const auto meter = meterBounds();
+    const auto meter = meterArea;
 
     g.setColour (colour::wellDeep);
     g.fillRoundedRectangle (meter.toFloat(), radius::sm);

@@ -5,8 +5,10 @@
 #include "SourceScan.h"
 #include "model/AutomationTargets.h"
 #include "model/ModuleCatalog.h"
+#include "ui/design/Tokens.h"
 
 using namespace dew::testing;
+using namespace dew;
 
 TEST_CASE ("the source gates can see every source directory", "[build][gate]")
 {
@@ -347,5 +349,73 @@ TEST_CASE ("no source states a radius or a stroke as a bare number", "[build][ga
     }, { "Tokens.h", "Icons.cpp" });
 
     INFO ("radii and strokes written as bare numbers:\n" << found.joinIntoString ("\n"));
+    CHECK (found.isEmpty());
+}
+
+TEST_CASE ("no component redeclares a size the ladder already names", "[build][gate][design]")
+{
+    // The defect this ends: six horizontal strips declared in six files with
+    // nothing relating them - the toolbars said 34, the tab bar 30, the
+    // transport bar 46, the status bar 24, the effect chain's heading 26 and a
+    // settings row 28 - and three gutters of which exactly one was a token.
+    // They read as one application only if they are declared as one ladder.
+    //
+    // Scoped by NAME as well as by value, because dew's constants include a
+    // 24-semitone transpose limit and a 24-band analyser, and a gate that
+    // called those strip heights would be a gate somebody turns off. A
+    // declaration has to be claiming to be a dimension - to end in Height,
+    // Width, Thickness, Depth or Gutter - before its value is compared.
+    struct Rung { int value; const char* name; };
+
+    const Rung ladder[] {
+        { tokens::size::controlHeight,   "controlHeight" },
+        { tokens::size::controlHeightSm, "controlHeightSm" },
+        { tokens::size::iconButton,      "iconButton" },
+        { tokens::size::knob,            "knob" },
+        { tokens::size::rowHeight,       "rowHeight or stripToolbar" },
+        { tokens::size::rulerHeight,     "rulerHeight or letterToggle" },
+        { tokens::size::stripStatus,     "stripStatus or iconButton" },
+        { tokens::size::stripHeading,    "stripHeading or controlHeight" },
+        { tokens::size::stripFormRow,    "stripFormRow" },
+        { tokens::size::stripTabs,       "stripTabs" },
+        { tokens::size::stripTransport,  "stripTransport" },
+        { tokens::size::gutterChannel,   "gutterChannel" },
+        { tokens::size::gutterTrack,     "gutterTrack" },
+        { tokens::size::gutterKeyboard,  "gutterKeyboard" },
+        { tokens::size::gutterLabel,     "gutterLabel" },
+        { tokens::size::scrollThickness, "scrollThickness or meterHeight" },
+        { tokens::size::knobRow,         "knobRow" },
+    };
+
+    const auto found = offenders ([&ladder] (const juce::String& line)
+    {
+        const auto trimmed = line.trim();
+
+        if (! trimmed.startsWith ("constexpr int") && ! trimmed.startsWith ("static constexpr int"))
+            return false;
+
+        const auto declaration = trimmed.fromFirstOccurrenceOf ("int ", false, false);
+        const auto name = declaration.upToFirstOccurrenceOf ("=", false, false).trim();
+        const auto value = declaration.fromFirstOccurrenceOf ("=", false, false)
+                                      .upToFirstOccurrenceOf (";", false, false).trim();
+
+        // A dimension, not a count or a limit.
+        auto claimsToBeADimension = false;
+
+        for (const auto* suffix : { "Height", "Width", "Thickness", "Depth", "Gutter" })
+            if (name.endsWith (suffix))
+                claimsToBeADimension = true;
+
+        if (! claimsToBeADimension || ! value.containsOnly ("0123456789"))
+            return false;
+
+        for (const auto& rung : ladder)
+            if (value.getIntValue() == rung.value)
+                return true;
+
+        return false;
+    }, { "Tokens.h" });
+
+    INFO ("dimensions the size ladder already declares:\n" << found.joinIntoString ("\n"));
     CHECK (found.isEmpty());
 }

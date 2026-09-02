@@ -83,7 +83,8 @@ public:
     */
     juce::Rectangle<int> getRulerArea() const
     {
-        return { headerWidth, rulerTop(), (int) contentWidth(), rulerHeight };
+        return { tokens::size::gutterTrack, rulerTop(),
+                 (int) contentWidth(), tokens::size::rulerHeight };
     }
 
     /** The tool strip, so a test can drive the tools and the zoom buttons
@@ -149,8 +150,8 @@ private:
         component's own top, so the toolbar's height is stated once and cannot
         leave one part of the layout behind when it changes.
     */
-    static constexpr int rulerTop() { return toolbarHeight; }
-    static constexpr int lanesTop() { return toolbarHeight + rulerHeight; }
+    static constexpr int rulerTop() { return tokens::size::stripToolbar; }
+    static constexpr int lanesTop() { return tokens::size::stripToolbar + tokens::size::rulerHeight; }
 
     /** Lays a clip of the current pattern in the cell under this point, unless
         one is already there. Returns true if it wrote one, so a stroke can tell
@@ -203,11 +204,6 @@ private:
     void paintAutomationClip (juce::Graphics&, const juce::ValueTree& clip, int trackIndex,
                               juce::Rectangle<float> bounds, bool audible);
 
-    static constexpr int toolbarHeight = PlaylistToolbar::preferredHeight;
-    static constexpr int rowHeight = 34;
-    static constexpr int headerWidth = 156;
-    static constexpr int rulerHeight = 22;
-    static constexpr int scrollThickness = 10;
 
     ProjectDocument& document;
     AudioEngine& engine;

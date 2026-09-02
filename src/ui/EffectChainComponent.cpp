@@ -42,7 +42,6 @@ class EffectChainComponent::Card : public juce::Component
 {
 public:
     static constexpr int columns = 3;            ///< down a column
-    static constexpr int paramRowHeight = 68;
     static constexpr int numberFieldHeight = 40;
     static constexpr int captionHeight = 12;
 
@@ -54,7 +53,7 @@ public:
     static constexpr int cardMinWidth = 276;     ///< what the header packs
 
     /** Every card in a row is this tall. The chain quotes it to size the band. */
-    static constexpr int cardHeight = size::rowHeight + paramRowHeight + space::sm;
+    static constexpr int cardHeight = size::rowHeight + tokens::size::knobRow + space::sm;
 
     Card (EffectChainComponent& o, ProjectDocument& d, EditorState& s, juce::ValueTree e, int i)
         : owner (o), document (d), editorState (s), effect (std::move (e)), index (i)
@@ -123,7 +122,7 @@ public:
             return size::rowHeight;
 
         const auto rows = (params.size() + columnCount() - 1) / columnCount();
-        return size::rowHeight + rows * paramRowHeight + space::sm
+        return size::rowHeight + rows * tokens::size::knobRow + space::sm
                + (modeBox != nullptr ? size::controlHeight + space::sm : 0);
     }
 
@@ -270,7 +269,7 @@ public:
                     // Beside the parameters as one more column, because there
                     // is no room above them in a card of fixed height.
                     auto cell = area.removeFromLeft (modeColumnWidth)
-                                    .removeFromTop (paramRowHeight)
+                                    .removeFromTop (tokens::size::knobRow)
                                     .reduced (space::xxs, 0);
 
                     modeCaptionBounds = cell.removeFromTop (captionHeight);
@@ -351,7 +350,7 @@ private:
 
         for (int i = 0; i < params.size(); i += columnsHere)
         {
-            auto row = visible ? area.removeFromTop (paramRowHeight) : juce::Rectangle<int>();
+            auto row = visible ? area.removeFromTop (tokens::size::knobRow) : juce::Rectangle<int>();
             const auto width = juce::jmax (1, row.getWidth() / columnsHere);
 
             for (int c = 0; c < columnsHere && i + c < params.size(); ++c)

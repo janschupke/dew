@@ -48,7 +48,6 @@ public:
     /** Advances the message clock without waiting, so expiry is testable. */
     void advanceMessageClock (int milliseconds);
 
-    static constexpr int barHeight = 24;
     static constexpr int messageLifetimeMs = 6000;
 
 private:

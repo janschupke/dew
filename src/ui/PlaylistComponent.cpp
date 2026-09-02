@@ -206,7 +206,7 @@ PlaylistComponent::PlaylistComponent (ProjectDocument& d, AudioEngine& e, Editor
     rulerGesture.unitForX = [this] (int x)
     {
         return juce::jlimit (0.0, (double) numBars(),
-                             timeline.stepForX ((float) (x - headerWidth)));
+                             timeline.stepForX ((float) (x - size::gutterTrack)));
     };
 
     rulerGesture.context = [this]
@@ -297,12 +297,12 @@ juce::ValueTree PlaylistComponent::trackAt (int index) const
 
 int PlaylistComponent::tracksBottom() const
 {
-    return lanesTop() + getNumTracks() * rowHeight;
+    return lanesTop() + getNumTracks() * size::rowHeight;
 }
 
 float PlaylistComponent::contentWidth() const
 {
-    return (float) juce::jmax (0, getWidth() - headerWidth);
+    return (float) juce::jmax (0, getWidth() - size::gutterTrack);
 }
 
 int PlaylistComponent::barAtX (int x) const
@@ -310,12 +310,12 @@ int PlaylistComponent::barAtX (int x) const
     // Not clamped to the song length: dropping a clip past the end is how an
     // arrangement gets longer. The bars beyond are painted inert but stay
     // writable, exactly as the piano roll treats the end of a pattern.
-    return juce::jmax (0, timeline.stepAtX ((float) (x - headerWidth)));
+    return juce::jmax (0, timeline.stepAtX ((float) (x - size::gutterTrack)));
 }
 
 int PlaylistComponent::trackAtY (int y) const
 {
-    return (y - lanesTop()) / rowHeight;
+    return (y - lanesTop()) / size::rowHeight;
 }
 
 juce::Rectangle<float> PlaylistComponent::boundsForClip (const juce::ValueTree& clip, int trackIndex) const
@@ -323,10 +323,10 @@ juce::Rectangle<float> PlaylistComponent::boundsForClip (const juce::ValueTree& 
     const auto start = (int) clip[ids::startBar];
     const auto length = juce::jmax (1, (int) clip[ids::lengthBars]);
 
-    return { (float) headerWidth + timeline.xForStep ((double) start),
-             (float) (lanesTop() + trackIndex * rowHeight),
+    return { (float) size::gutterTrack + timeline.xForStep ((double) start),
+             (float) (lanesTop() + trackIndex * size::rowHeight),
              (float) (length * timeline.pixelsPerStep),
-             (float) rowHeight };
+             (float) size::rowHeight };
 }
 
 bool PlaylistComponent::isOnRightEdge (const juce::ValueTree& clip, int trackIndex,
@@ -343,7 +343,7 @@ float PlaylistComponent::playheadX() const
     const auto stepsPerBar = Meter::of (document.getState()).stepsPerBar();
     const auto position = engine.getPlayheadSteps() / (double) stepsPerBar;
 
-    return (float) headerWidth + timeline.xForStep (position);
+    return (float) size::gutterTrack + timeline.xForStep (position);
 }
 
 // --- layout ------------------------------------------------------------------
@@ -412,26 +412,26 @@ void PlaylistComponent::rebuildHeaders()
 
 void PlaylistComponent::resized()
 {
-    toolbar.setBounds (0, 0, getWidth(), toolbarHeight);
+    toolbar.setBounds (0, 0, getWidth(), size::stripToolbar);
 
-    horizontalScroll.setBounds (headerWidth, getHeight() - scrollThickness,
-                                (int) contentWidth(), scrollThickness);
+    horizontalScroll.setBounds (size::gutterTrack, getHeight() - size::scrollThickness,
+                                (int) contentWidth(), size::scrollThickness);
 
     // In the corner above the track headers, where the ruler does not reach.
-    addAutomationButton.setBounds (juce::Rectangle<int> (0, rulerTop(), headerWidth, rulerHeight)
+    addAutomationButton.setBounds (juce::Rectangle<int> (0, rulerTop(), size::gutterTrack, size::rulerHeight)
                                        .reduced (space::xs, space::xxs));
 
     for (int i = 0; i < headers.size(); ++i)
-        headers[i]->setBounds (0, lanesTop() + i * rowHeight, headerWidth, rowHeight);
+        headers[i]->setBounds (0, lanesTop() + i * size::rowHeight, size::gutterTrack, size::rowHeight);
 
     // Directly below the last track, and never over the horizontal scrollbar -
     // an add button you cannot reach because a scrollbar is on top of it is the
     // same as no add button.
-    const auto buttonTop = lanesTop() + headers.size() * rowHeight;
-    const auto room = getHeight() - scrollThickness - buttonTop;
+    const auto buttonTop = lanesTop() + headers.size() * size::rowHeight;
+    const auto room = getHeight() - size::scrollThickness - buttonTop;
 
-    addTrackButton.setVisible (room >= rowHeight);
-    addTrackButton.setBounds (juce::Rectangle<int> (0, buttonTop, headerWidth, rowHeight)
+    addTrackButton.setVisible (room >= size::rowHeight);
+    addTrackButton.setBounds (juce::Rectangle<int> (0, buttonTop, size::gutterTrack, size::rowHeight)
                                   .reduced (space::sm, space::xs));
 
     // Until someone has zoomed or scrolled, a layout frames the whole song.
@@ -463,7 +463,7 @@ void PlaylistComponent::mouseWheelMove (const juce::MouseEvent& event,
     if (event.mods.isCommandDown() || event.mods.isCtrlDown())
     {
         zoomBy (std::pow (2.0, (double) wheel.deltaY * 3.0),
-                (float) (event.x - headerWidth));
+                (float) (event.x - size::gutterTrack));
         return;
     }
 
@@ -475,7 +475,7 @@ void PlaylistComponent::mouseWheelMove (const juce::MouseEvent& event,
 
 void PlaylistComponent::mouseMagnify (const juce::MouseEvent& event, float scaleFactor)
 {
-    zoomBy ((double) scaleFactor, (float) (event.x - headerWidth));
+    zoomBy ((double) scaleFactor, (float) (event.x - size::gutterTrack));
 }
 
 bool PlaylistComponent::keyPressed (const juce::KeyPress& key)
@@ -869,13 +869,13 @@ void PlaylistComponent::mouseDoubleClick (const juce::MouseEvent& event)
 {
     // On the ruler, a double-click clears the span - one rule, shared with the
     // piano roll and the channel rack rather than repeated in each of them.
-    if (event.x >= headerWidth && event.y >= rulerTop() && event.y < lanesTop())
+    if (event.x >= size::gutterTrack && event.y >= rulerTop() && event.y < lanesTop())
     {
         rulerGesture.mouseDoubleClick (event);
         return;
     }
 
-    if (event.x < headerWidth || event.y < lanesTop())
+    if (event.x < size::gutterTrack || event.y < lanesTop())
         return;
 
     const auto track = trackAt (trackAtY (event.y));
@@ -911,13 +911,13 @@ void PlaylistComponent::mouseDown (const juce::MouseEvent& event)
     // was as inert as the piano roll's. Everything it does now lives in
     // ruler::Gesture, which is why this is one line rather than three branches
     // the piano roll also had a copy of.
-    if (event.x >= headerWidth && event.y >= rulerTop() && event.y < lanesTop())
+    if (event.x >= size::gutterTrack && event.y >= rulerTop() && event.y < lanesTop())
     {
         rulerGesture.mouseDown (event);
         return;
     }
 
-    if (event.x < headerWidth || event.y < lanesTop() || event.y >= tracksBottom())
+    if (event.x < size::gutterTrack || event.y < lanesTop() || event.y >= tracksBottom())
         return;
 
     const auto trackIndex = trackAtY (event.y);
@@ -1038,7 +1038,7 @@ void PlaylistComponent::mouseDown (const juce::MouseEvent& event)
 
 bool PlaylistComponent::paintClipAt (juce::Point<int> position)
 {
-    if (position.x < headerWidth || position.y < lanesTop() || position.y >= tracksBottom())
+    if (position.x < size::gutterTrack || position.y < lanesTop() || position.y >= tracksBottom())
         return false;
 
     const auto trackIndex = trackAtY (position.y);
@@ -1430,7 +1430,7 @@ void PlaylistComponent::paint (juce::Graphics& g)
 
     // --- ruler ---------------------------------------------------------------
     g.setColour (colour::surface);
-    g.fillRect (0, rulerTop(), getWidth(), rulerHeight);
+    g.fillRect (0, rulerTop(), getWidth(), size::rulerHeight);
 
     // The selection's strip goes down before the bar numbers, so the numbers
     // inside it stay legible instead of being washed out by it.
@@ -1438,22 +1438,22 @@ void PlaylistComponent::paint (juce::Graphics& g)
     {
         const auto selection = editorState.getSelectedBarRange();
 
-        const auto fromX = (float) headerWidth + timeline.xForStep ((double) selection.getStart());
-        const auto toX = (float) headerWidth + timeline.xForStep ((double) selection.getEnd());
+        const auto fromX = (float) size::gutterTrack + timeline.xForStep ((double) selection.getStart());
+        const auto toX = (float) size::gutterTrack + timeline.xForStep ((double) selection.getEnd());
 
         g.setColour (colour::accent.withAlpha (emphasis::dimmed));
         g.fillRect (juce::Rectangle<float> (fromX, (float) rulerTop(),
-                                            juce::jmax (1.0f, toX - fromX), (float) rulerHeight)
-                        .getIntersection ({ (float) headerWidth, (float) rulerTop(),
-                                            (float) getWidth() - (float) headerWidth,
-                                            (float) rulerHeight }));
+                                            juce::jmax (1.0f, toX - fromX), (float) size::rulerHeight)
+                        .getIntersection ({ (float) size::gutterTrack, (float) rulerTop(),
+                                            (float) getWidth() - (float) size::gutterTrack,
+                                            (float) size::rulerHeight }));
     }
 
     g.setFont (type::font (type::caption));
 
     for (int bar = painted.getStart(); bar < painted.getEnd(); ++bar)
     {
-        const auto x = (float) headerWidth + timeline.xForStep ((double) bar);
+        const auto x = (float) size::gutterTrack + timeline.xForStep ((double) bar);
 
         if (x > (float) getWidth())
             break;
@@ -1461,7 +1461,7 @@ void PlaylistComponent::paint (juce::Graphics& g)
         const auto beyond = bar >= bars;
 
         g.setColour (beyond ? colour::textDisabled : colour::textSecondary);
-        g.drawText (juce::String (bar + 1), (int) x + 3, rulerTop(), (int) width - 4, rulerHeight,
+        g.drawText (juce::String (bar + 1), (int) x + 3, rulerTop(), (int) width - 4, size::rulerHeight,
                     juce::Justification::centredLeft, false);
 
         g.setColour (beyond ? colour::dividerStrong.withAlpha (emphasis::subdued) : colour::dividerStrong);
@@ -1476,11 +1476,11 @@ void PlaylistComponent::paint (juce::Graphics& g)
     {
         const auto selection = editorState.getSelectedBarRange();
 
-        const auto fromX = (float) headerWidth + timeline.xForStep ((double) selection.getStart());
-        const auto toX = (float) headerWidth + timeline.xForStep ((double) selection.getEnd());
+        const auto fromX = (float) size::gutterTrack + timeline.xForStep ((double) selection.getStart());
+        const auto toX = (float) size::gutterTrack + timeline.xForStep ((double) selection.getEnd());
 
-        const juce::Rectangle<float> content ((float) headerWidth, (float) rulerTop(),
-                                              (float) getWidth() - (float) headerWidth,
+        const juce::Rectangle<float> content ((float) size::gutterTrack, (float) rulerTop(),
+                                              (float) getWidth() - (float) size::gutterTrack,
                                               (float) (bottom - rulerTop()));
 
         const juce::Rectangle<float> band (fromX, (float) rulerTop(),
@@ -1496,12 +1496,12 @@ void PlaylistComponent::paint (juce::Graphics& g)
         // contain. The ruler is where the span can be stated outright without
         // covering anything up.
         g.setColour (colour::accent.withAlpha (emphasis::tint));
-        g.fillRect (visible.withTrimmedTop ((float) rulerHeight));   // below the ruler strip
+        g.fillRect (visible.withTrimmedTop ((float) size::rulerHeight));   // below the ruler strip
 
         g.setColour (colour::accent);
 
         for (const auto edge : { fromX, toX })
-            if (edge >= (float) headerWidth && edge <= (float) getWidth())
+            if (edge >= (float) size::gutterTrack && edge <= (float) getWidth())
                 g.fillRect (edge - stroke::regular * 0.5f, (float) rulerTop(), stroke::regular,
                             (float) (bottom - rulerTop()));
     }
@@ -1514,13 +1514,13 @@ void PlaylistComponent::paint (juce::Graphics& g)
         if (! track.hasType (ids::PLAYLIST_TRACK))
             continue;
 
-        const auto y = lanesTop() + trackIndex * rowHeight;
+        const auto y = lanesTop() + trackIndex * size::rowHeight;
         const auto audible = ! (bool) track[ids::mute] && (! anySolo || (bool) track[ids::solo]);
 
         if (trackIndex % 2 == 1)
         {
             g.setColour (colour::wellDeep.withAlpha (emphasis::dimmed));
-            g.fillRect (headerWidth, y, getWidth() - headerWidth, rowHeight);
+            g.fillRect (size::gutterTrack, y, getWidth() - size::gutterTrack, size::rowHeight);
         }
 
         // The lane a clip is being dragged onto, so a cross-track drop lands
@@ -1528,11 +1528,11 @@ void PlaylistComponent::paint (juce::Graphics& g)
         if (gesture == Gesture::moving && trackIndex == dropTrackIndex)
         {
             g.setColour (colour::accent.withAlpha (emphasis::tint));
-            g.fillRect (headerWidth, y, getWidth() - headerWidth, rowHeight);
+            g.fillRect (size::gutterTrack, y, getWidth() - size::gutterTrack, size::rowHeight);
         }
 
         g.setColour (colour::divider);
-        g.drawHorizontalLine (y, (float) headerWidth, (float) getWidth());
+        g.drawHorizontalLine (y, (float) size::gutterTrack, (float) getWidth());
 
         for (const auto& clip : track)
         {
@@ -1541,7 +1541,7 @@ void PlaylistComponent::paint (juce::Graphics& g)
 
             const auto bounds = boundsForClip (clip, trackIndex).reduced (2.0f, 3.0f);
 
-            if (! bounds.intersects (juce::Rectangle<float> ((float) headerWidth, (float) lanesTop(),
+            if (! bounds.intersects (juce::Rectangle<float> ((float) size::gutterTrack, (float) lanesTop(),
                                                              contentWidth(),
                                                              (float) (bottom - lanesTop()))))
                 continue;
@@ -1585,14 +1585,14 @@ void PlaylistComponent::paint (juce::Graphics& g)
     }
 
     // Past the end of the song.
-    const auto endX = (float) headerWidth + timeline.xForStep ((double) bars);
+    const auto endX = (float) size::gutterTrack + timeline.xForStep ((double) bars);
 
     if (endX < (float) getWidth())
         paint::beyondEnd (g, { (int) endX, lanesTop(), getWidth() - (int) endX,
                                juce::jmax (0, bottom - lanesTop()) }, endX);
 
     g.setColour (colour::dividerStrong);
-    g.drawVerticalLine (headerWidth, (float) rulerTop(), (float) bottom);
+    g.drawVerticalLine (size::gutterTrack, (float) rulerTop(), (float) bottom);
     g.drawHorizontalLine (lanesTop() - 1, 0.0f, (float) getWidth());
 
     // --- playhead ------------------------------------------------------------
@@ -1600,7 +1600,7 @@ void PlaylistComponent::paint (juce::Graphics& g)
     {
         const auto x = playheadX();
 
-        if (x >= (float) headerWidth)
+        if (x >= (float) size::gutterTrack)
         {
             g.setColour (engine.isPlaying() ? colour::playhead
                                             : colour::playhead.withAlpha (emphasis::dimmed));

@@ -259,15 +259,11 @@ private:
     */
     static constexpr int eraseStridePx = 6;
 
-    static constexpr int toolbarHeight   = 34;
     static constexpr int rowHeight       = 14;
     static constexpr int lowestPitch     = 12;   ///< C0
     static constexpr int highestPitch    = 108;  ///< C8
     static constexpr int numRows         = highestPitch - lowestPitch + 1;
-    static constexpr int keyboardWidth   = 54;
-    static constexpr int rulerHeight     = 22;
     static constexpr int velocityHeight  = 62;
-    static constexpr int scrollThickness = 10;
 
     /** Space above and below a velocity bar. Shared by painting and hit-testing
         so the two cannot drift apart again.
