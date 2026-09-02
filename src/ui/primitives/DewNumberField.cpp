@@ -1,6 +1,7 @@
 #include "ui/primitives/DewNumberField.h"
 
 #include "ui/design/Tokens.h"
+#include "ui/primitives/DewControls.h"
 
 namespace dew
 {
@@ -216,7 +217,7 @@ void DewNumberField::paint (juce::Graphics& g)
     if (editor != nullptr)
         return;
 
-    auto bounds = getLocalBounds().toFloat().reduced (stroke::whisper);
+    auto bounds = paint::bodyRect (*this);
 
     g.setColour (hovered || dragging ? colour::surfaceHover : colour::surfaceRaised);
     g.fillRoundedRectangle (bounds, radius::sm);

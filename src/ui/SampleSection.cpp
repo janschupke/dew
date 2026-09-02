@@ -283,32 +283,18 @@ void SampleSection::paint (juce::Graphics& g)
     const auto startX = getTrimHandleX (true);
     const auto endX = getTrimHandleX (false);
 
-    const auto centre = bounds.getCentreY();
-    const auto halfHeight = bounds.getHeight() * 0.5f - 2.0f;
+    const juce::Range<float> span { bounds.getX(), bounds.getRight() };
 
-    // One column of pixels per column of pixels, each showing the extremes over
-    // the span it covers rather than one sampled bin - picking a single bin per
-    // column makes a waveform shimmer as the panel resizes.
-    for (int x = 0; x < (int) bounds.getWidth(); ++x)
-    {
-        const auto from = (float) x / bounds.getWidth();
-        const auto to = (float) (x + 1) / bounds.getWidth();
-
-        const auto bin = found->peaks.range (from, to);
-        const auto pixelX = bounds.getX() + (float) x;
-
-        // Outside the trim, the waveform is still drawn but dimmed: what was
-        // trimmed away is context, and hiding it makes a mis-drag look like
-        // audio that has been destroyed.
-        const auto inside = pixelX >= startX && pixelX <= endX;
-        g.setColour (inside ? colour::accent : colour::textDisabled.withAlpha (emphasis::subdued));
-
-        const auto top = centre - bin.maximum * halfHeight;
-        const auto bottom = centre - bin.minimum * halfHeight;
-
-        g.fillRect (pixelX, juce::jmin (top, bottom), 1.0f,
-                    juce::jmax (1.0f, std::abs (bottom - top)));
-    }
+    // Outside the trim, the waveform is still drawn but dimmed: what was
+    // trimmed away is context, and hiding it makes a mis-drag look like audio
+    // that has been destroyed.
+    paint::waveform (g, { bounds.getY(), bounds.getBottom() }, span, span, found->peaks,
+                     [startX, endX] (float x)
+                     {
+                         return x >= startX && x <= endX
+                                    ? colour::accent
+                                    : colour::textDisabled.withAlpha (emphasis::subdued);
+                     });
 
     // The handles last, so they are never buried under a loud waveform.
     for (const auto start : { true, false })

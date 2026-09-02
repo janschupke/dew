@@ -1,5 +1,7 @@
 #include "ui/primitives/DewControls.h"
 
+#include <cmath>
+
 namespace dew
 {
 
@@ -34,7 +36,7 @@ void DewButton::setRole (Role r)
 
 void DewButton::paintButton (juce::Graphics& g, bool highlighted, bool down)
 {
-    const auto bounds = getLocalBounds().toFloat().reduced (stroke::whisper);
+    const auto bounds = paint::bodyRect (*this);
     const auto on = getToggleState();
 
     juce::Colour background, text, border;
@@ -103,7 +105,7 @@ void DewIconButton::setOnColour (juce::Colour c)
 
 void DewIconButton::paintButton (juce::Graphics& g, bool highlighted, bool down)
 {
-    const auto bounds = getLocalBounds().toFloat().reduced (stroke::whisper);
+    const auto bounds = paint::bodyRect (*this);
     const auto on = getToggleState();
 
     const auto background = on ? onColour
@@ -133,7 +135,7 @@ DewLetterToggle::DewLetterToggle (const juce::String& l, juce::Colour c,
 
 void DewLetterToggle::paintButton (juce::Graphics& g, bool highlighted, bool down)
 {
-    const auto bounds = getLocalBounds().toFloat().reduced (stroke::whisper);
+    const auto bounds = paint::bodyRect (*this);
     const auto on = getToggleState();
 
     g.setColour (fillFor (isEnabled(), highlighted, down,
@@ -222,8 +224,8 @@ void DewKnob::resized()
 
     if (! compact)
     {
-        area.removeFromTop (13);        // caption
-        area.removeFromBottom (14);     // value
+        area.removeFromTop (size::knobCaption);   // caption
+        area.removeFromBottom (size::knobValue);  // value
     }
 
     slider.setBounds (area);
@@ -249,9 +251,9 @@ void DewKnob::paint (juce::Graphics& g)
 
     g.setColour (colour::textSecondary);
     g.setFont (type::font (type::caption));
-    g.drawText (caption, area.removeFromTop (13), juce::Justification::centred, false);
+    g.drawText (caption, area.removeFromTop (size::knobCaption), juce::Justification::centred, false);
 
-    auto valueArea = area.removeFromBottom (14);
+    auto valueArea = area.removeFromBottom (size::knobValue);
 
     paint::rotary (g, area.toFloat(), proportion, isEnabled(), bipolar);
 
@@ -421,6 +423,36 @@ void emptyState (juce::Graphics& g, juce::Rectangle<int> bounds, const juce::Str
     g.setColour (colour::textSecondary);
     g.setFont (type::font (type::body));
     g.drawText (text, bounds, justification, false);
+}
+
+juce::Rectangle<float> bodyRect (const juce::Component& c)
+{
+    return c.getLocalBounds().toFloat().reduced (stroke::whisper);
+}
+
+void waveform (juce::Graphics& g, juce::Range<float> y, juce::Range<float> span,
+               juce::Range<float> painted, const WaveformPeaks& peaks,
+               const std::function<juce::Colour (float x)>& colourAt)
+{
+    if (peaks.isEmpty() || span.getLength() <= 0.0f)
+        return;
+
+    const auto centre = y.getStart() + y.getLength() * 0.5f;
+    const auto halfHeight = juce::jmax (1.0f, y.getLength() * 0.5f - (float) size::waveformInset);
+
+    for (int x = (int) painted.getStart(); x < (int) painted.getEnd(); ++x)
+    {
+        const auto from = ((float) x - span.getStart()) / span.getLength();
+        const auto to = ((float) (x + 1) - span.getStart()) / span.getLength();
+
+        const auto bin = peaks.range (from, to);
+        const auto top = centre - bin.maximum * halfHeight;
+        const auto bottom = centre - bin.minimum * halfHeight;
+
+        g.setColour (colourAt ((float) x));
+        g.fillRect ((float) x, juce::jmin (top, bottom), 1.0f,
+                    juce::jmax (1.0f, std::abs (bottom - top)));
+    }
 }
 
 } // namespace paint

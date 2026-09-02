@@ -1,5 +1,6 @@
 #include "ui/PianoRollToolbar.h"
 
+#include "ui/StripLayout.h"
 #include "ui/design/Tokens.h"
 
 namespace dew
@@ -209,21 +210,10 @@ void PianoRollToolbar::resized()
 
     groupDividers.clear();
 
-    auto area = getLocalBounds().reduced (space::md, space::xs);
-    const auto controlHeight = juce::jmin (size::controlHeight, area.getHeight());
+    StripLayout strip { getLocalBounds(), space::md, space::xs };
 
-    const auto place = [&area, controlHeight] (juce::Component& c, int width)
-    {
-        c.setBounds (area.removeFromLeft (width).withHeight (controlHeight));
-        area.removeFromLeft (space::xxs);
-    };
-
-    const auto divider = [this, &area]
-    {
-        area.removeFromLeft (space::sm);
-        groupDividers.add (area.getX());
-        area.removeFromLeft (space::sm + space::xs);
-    };
+    const auto place = [&strip] (juce::Component& c, int width) { strip.place (c, width); };
+    const auto divider = [this, &strip] { groupDividers.add (strip.divider()); };
 
     place (selectButton, size::iconButton);
     place (paintButton, size::iconButton);

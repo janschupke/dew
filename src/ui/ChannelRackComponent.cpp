@@ -6,6 +6,8 @@
 #include "model/ProjectEdits.h"
 #include "ui/design/Icons.h"
 #include "ui/design/Tokens.h"
+#include "ui/HeaderRow.h"
+#include "ui/MenuSeam.h"
 #include "ui/primitives/DewControls.h"
 #include "ui/primitives/HoverTracker.h"
 
@@ -15,7 +17,7 @@ namespace dew
 using namespace tokens;
 
 /** One channel's header: colour tab, name, volume, pan, mute and solo. */
-class ChannelRackComponent::ChannelHeader : public juce::Component
+class ChannelRackComponent::ChannelHeader : public HeaderRow
 {
 public:
     ChannelHeader (ProjectDocument& d, EditorState& s, juce::ValueTree c)
@@ -160,16 +162,9 @@ public:
 
     void select() { editorState.setSelectedChannelId (getChannelId()); }
 
-    /** What the row's context menu offers, and what each item does.
-
-        Built and applied as named methods rather than as a lambda inside
-        showMenuAsync, because showMenuAsync cannot be driven headlessly and
-        every other gesture in this app is tested that way. The menu is then
-        only the way a person reaches these; a test reaches them directly.
-    */
     enum class MenuItem { rename = 1, addChannel, removeChannel };
 
-    juce::PopupMenu buildMenu() const
+    juce::PopupMenu buildMenu() const override
     {
         juce::PopupMenu menu;
         menu.addItem ((int) MenuItem::rename, "Rename");
@@ -179,7 +174,7 @@ public:
         return menu;
     }
 
-    void applyMenuChoice (int choice)
+    void applyMenuChoice (int choice) override
     {
         switch ((MenuItem) choice)
         {
@@ -194,40 +189,11 @@ public:
     std::function<void()> onAddChannel;
     std::function<void (int channelId)> onRemoveChannel;
 
-    void mouseDown (const juce::MouseEvent& event) override
-    {
-        // Selected first, so the menu always acts on the row that was clicked
-        // rather than on whatever happened to be selected before it.
-        select();
+    /** Selected on every press, so the menu always acts on the row that was
+        clicked rather than on whatever was selected before it. */
+    void headerPressed() override { select(); }
 
-        if (! event.mods.isPopupMenu())
-            return;
-
-        auto menu = buildMenu();
-
-        // The look and feel has to be set explicitly or the popup overrides in
-        // DewLookAndFeel do not apply - and anchored at the POINTER rather than
-        // at a component, which is the first menu in the app to do so: a row is
-        // not a button, and a menu covering the row you just aimed at is worse
-        // than one beside the cursor.
-        menu.setLookAndFeel (&getLookAndFeel());
-        menu.showMenuAsync (juce::PopupMenu::Options()
-                                .withTargetScreenArea ({ event.getScreenX(), event.getScreenY(), 1, 1 }),
-                            [safe = juce::Component::SafePointer<ChannelHeader> (this)] (int choice)
-                            {
-                                if (safe != nullptr && choice > 0)
-                                    safe->applyMenuChoice (choice);
-                            });
-    }
-
-    void mouseDoubleClick (const juce::MouseEvent& event) override
-    {
-        if (nameLabel.getBounds().contains (event.getPosition()))
-            nameLabel.showEditor();
-    }
-
-    void mouseEnter (const juce::MouseEvent&) override { hover.enter(); }
-    void mouseExit (const juce::MouseEvent&) override  { hover.exit(); }
+    juce::Label* editableLabel() override { return &nameLabel; }
 
     void resized() override
     {
@@ -305,7 +271,6 @@ private:
 
     juce::Label nameLabel;
     juce::Rectangle<int> pitchBounds;
-    HoverTracker hover { *this };
     bool updating = false;
     bool dragging = false;
     DewLetterToggle muteButton { "M", colour::warning, "Mute this channel" };
@@ -458,17 +423,9 @@ juce::StringArray ChannelRackComponent::channelMenuItems (int channelId) const
     for (const auto* header : headers)
         if (header->getChannelId() == channelId)
         {
-            juce::StringArray items;
-
-            // Held in a named local: MenuItemIterator keeps a REFERENCE, so
-            // iterating a temporary menu walks a destroyed object and silently
-            // yields nothing.
             const auto menu = header->buildMenu();
 
-            for (juce::PopupMenu::MenuItemIterator it (menu); it.next();)
-                items.add (it.getItem().isSeparator ? "-" : it.getItem().text);
-
-            return items;
+            return menuItems (menu);
         }
 
     return {};

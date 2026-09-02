@@ -4,6 +4,7 @@
 #include "model/Meter.h"
 #include "model/ProjectEdits.h"
 #include "ui/DewLookAndFeel.h"
+#include "ui/StripLayout.h"
 #include "ui/design/Tokens.h"
 
 namespace dew
@@ -412,55 +413,43 @@ void TransportBar::resized()
 
     groupDividers.clear();
 
-    auto area = getLocalBounds().reduced (space::md, space::sm);
-    const auto controlHeight = juce::jmin (size::controlHeight, area.getHeight());
+    StripLayout strip { getLocalBounds(), space::md, space::sm };
 
-    const auto place = [&area, controlHeight] (juce::Component& c, int width)
-    {
-        c.setBounds (area.removeFromLeft (width).withHeight (controlHeight));
-        area.removeFromLeft (space::xs);
-    };
+    const auto place = [&strip] (juce::Component& c, int width) { strip.place (c, width); };
 
     place (playButton, 30);
     place (stopButton, 30);
     place (recordButton, 30);
-    area.removeFromLeft (space::sm);
+    strip.gap();
     place (tempoField, 96);
     place (meterBox, 72);
-    area.removeFromLeft (space::sm);
+    strip.gap();
     place (modeButton, 78);
 
-    area.removeFromLeft (space::sm);
-    groupDividers.add (area.getX());
-    area.removeFromLeft (space::md);
+    groupDividers.add (strip.divider());
 
     place (patternBox, 148);
-    place (addPatternButton, 26);
-    place (clonePatternButton, 26);
-    place (deletePatternButton, 26);
+    place (addPatternButton, size::knobSm);
+    place (clonePatternButton, size::knobSm);
+    place (deletePatternButton, size::knobSm);
     place (patternLengthField, 84);
-    area.removeFromLeft (space::sm);
 
-    groupDividers.add (area.getX());
-    area.removeFromLeft (space::md);
+    groupDividers.add (strip.divider());
 
-    positionLabel.setBounds (area.removeFromLeft (84).withHeight (controlHeight));
+    place (positionLabel, 84);
 
     // Taken from the right rather than as the next link in the chain above:
     // everything before it is a control with a width it needs, and this is the
     // only thing in the bar that should give way when the window does. Hidden
     // rather than squeezed, because a sixty-pixel oscilloscope is not a smaller
     // oscilloscope, it is noise.
-    const auto roomForScope = area.getWidth() >= SignalScope::preferredWidth + space::lg;
+    const auto roomForScope = strip.getRemainingWidth() >= SignalScope::preferredWidth + space::lg;
     signalScope.setVisible (roomForScope);
 
     if (roomForScope)
     {
-        signalScope.setBounds (area.removeFromRight (SignalScope::preferredWidth)
-                                   .withHeight (controlHeight));
-
-        area.removeFromRight (space::md);
-        groupDividers.add (area.getRight());
+        signalScope.setBounds (strip.placeFromRight (SignalScope::preferredWidth));
+        groupDividers.add (strip.dividerFromRight());
     }
 }
 

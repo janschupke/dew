@@ -91,7 +91,7 @@ public:
 
     void paintButton (juce::Graphics& g, bool highlighted, bool /*down*/) override
     {
-        auto body = getLocalBounds().toFloat().reduced (stroke::whisper);
+        auto body = paint::bodyRect (*this);
 
         g.setColour (selected      ? colour::surfaceHover
                      : highlighted ? colour::surfaceRaised.brighter (emphasis::surfaceLift)

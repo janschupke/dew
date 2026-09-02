@@ -1,6 +1,10 @@
 #pragma once
 
+#include <functional>
+
 #include <juce_gui_basics/juce_gui_basics.h>
+
+#include "engine/WaveformPeaks.h"
 
 #include "ui/design/Icons.h"
 #include "ui/design/Tokens.h"
@@ -207,6 +211,35 @@ namespace paint
     */
     void emptyState (juce::Graphics&, juce::Rectangle<int>, const juce::String&,
                      juce::Justification = juce::Justification::centred);
+
+    /** A component's own rectangle, inset half a pixel.
+
+        Written out ten times, because a one-pixel edge drawn on a whole
+        coordinate straddles two pixels and comes out two pixels wide and grey.
+        The half is stroke::whisper - half of the hairline it is making room
+        for - which is why that token exists.
+    */
+    juce::Rectangle<float> bodyRect (const juce::Component&);
+
+    /** A sample's waveform: one column of pixels per column of pixels, each
+        showing the extremes over the span it covers.
+
+        Picking a single bin per column instead makes a waveform shimmer as the
+        view resizes, which is why all three painters did it this way - and
+        having written it three times they had drifted to insets of 2, 2 and 3,
+        so the same audio was a pixel taller in the sequencer than in the
+        playlist.
+
+        @param y        the full vertical extent; the trace is inset within it
+        @param span     where the whole file maps to horizontally, which may
+                        reach outside the visible area
+        @param painted  the columns actually to draw
+        @param colourAt the colour for a column, so a trim handle can dim what
+                        is outside it without a second loop
+    */
+    void waveform (juce::Graphics&, juce::Range<float> y, juce::Range<float> span,
+                   juce::Range<float> painted, const WaveformPeaks&,
+                   const std::function<juce::Colour (float x)>& colourAt);
 }
 
 } // namespace dew

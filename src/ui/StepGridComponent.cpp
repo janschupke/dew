@@ -214,27 +214,12 @@ void StepGridComponent::paintWaveformRow (juce::Graphics& g, const juce::ValueTr
     if (endX <= startX)
         return;
 
-    const auto centre = (float) rowBounds.getCentreY();
-    const auto halfHeight = (float) rowBounds.getHeight() * 0.5f - 3.0f;
+    const auto trace = channelColour.withMultipliedAlpha (muted ? emphasis::subdued : 1.0f);
 
-    g.setColour (channelColour.withMultipliedAlpha (muted ? 0.35f : 1.0f));
-
-    const auto from = juce::jmax (0, (int) startX);
-    const auto to = juce::jmin (rowBounds.getRight(), (int) endX);
-
-    for (int x = from; x < to; ++x)
-    {
-        const auto a = ((float) x - startX) / (endX - startX);
-        const auto b = ((float) (x + 1) - startX) / (endX - startX);
-
-        const auto bin = entry.peaks.range (a, b);
-
-        const auto top = centre - bin.maximum * halfHeight;
-        const auto bottom = centre - bin.minimum * halfHeight;
-
-        g.fillRect ((float) x, juce::jmin (top, bottom), 1.0f,
-                    juce::jmax (1.0f, std::abs (bottom - top)));
-    }
+    paint::waveform (g, { (float) rowBounds.getY(), (float) rowBounds.getBottom() },
+                     { startX, endX },
+                     { juce::jmax (0.0f, startX), juce::jmin ((float) rowBounds.getRight(), endX) },
+                     entry.peaks, [trace] (float) { return trace; });
 }
 
 void StepGridComponent::paint (juce::Graphics& g)

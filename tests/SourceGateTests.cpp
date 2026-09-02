@@ -525,3 +525,88 @@ TEST_CASE ("no source picks its own refresh rate", "[build][gate][design]")
     INFO ("timers started at a rate of their own choosing:\n" << found.joinIntoString ("\n"));
     CHECK (found.isEmpty());
 }
+
+TEST_CASE ("every token the design system declares is one the app uses", "[build][gate][design]")
+{
+    // A token nobody references is a claim the code does not back. radius::pill
+    // was one: the design system said dew had pill shapes, dew had none, and a
+    // reader looking for one would have gone looking for a component that does
+    // not exist. The eight-entry channel ramp was another - it was the DESIGNED
+    // colour scheme and the application quietly used a four-entry copy instead,
+    // which is the more expensive shape of the same mistake.
+    //
+    // This reads Tokens.h for what it declares and the whole tree - src, tests
+    // and tools - for what quotes it.
+    const juce::File tokensFile { juce::String (DEW_SOURCE_DIR) + "/ui/design/Tokens.h" };
+    REQUIRE (tokensFile.existsAsFile());
+
+    juce::StringArray declared;
+    juce::StringArray lines;
+    lines.addLines (tokensFile.loadFileAsString());
+
+    for (const auto& line : lines)
+    {
+        const auto trimmed = line.trim();
+
+        for (const auto* form : { "inline const juce::Colour ", "inline constexpr int ",
+                                  "inline constexpr float " })
+            if (trimmed.startsWith (form))
+                declared.addIfNotAlreadyThere (
+                    trimmed.fromFirstOccurrenceOf (form, false, false)
+                           .initialSectionContainingOnly ("abcdefghijklmnopqrstuvwxyz"
+                                                          "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_"));
+    }
+
+    // Control case: a gate over an empty list is not a gate.
+    REQUIRE (declared.size() > 60);
+    REQUIRE (declared.contains ("controlHeight"));
+    REQUIRE (declared.contains ("channelRamp"));
+
+    // Declared but not yet quoted. This list may only ever get SHORTER: both of
+    // these are animation durations, and the animator that consumes them lands
+    // with the motion stage. Anything else appearing here is a token that was
+    // added on speculation.
+    const juce::StringArray awaitingTheMotionStage { "quickMs", "selectMs" };
+
+    juce::String everythingElse;
+
+    for (const auto* directory : { DEW_SOURCE_DIR, DEW_SOURCE_DIR "/../tests", DEW_SOURCE_DIR "/../tools" })
+        for (const auto& entry : juce::RangedDirectoryIterator (juce::File (directory), true, "*.cpp;*.h"))
+            if (entry.getFile().getFileName() != "Tokens.h")
+                everythingElse += entry.getFile().loadFileAsString();
+
+    juce::StringArray unused;
+
+    for (const auto& name : declared)
+    {
+        // Whole word: `knob` must not be satisfied by `knobRow`.
+        auto found = false;
+
+        for (int i = everythingElse.indexOf (name); i >= 0;
+             i = everythingElse.indexOf (i + 1, name))
+        {
+            const auto isWordCharacter = [] (juce::juce_wchar c)
+            {
+                return juce::CharacterFunctions::isLetterOrDigit (c) || c == '_';
+            };
+
+            const juce::juce_wchar before = i > 0 ? everythingElse[i - 1] : ' ';
+            const juce::juce_wchar after = everythingElse[i + name.length()];
+
+            if (! isWordCharacter (before) && ! isWordCharacter (after))
+            {
+                found = true;
+                break;
+            }
+        }
+
+        if (! found && ! awaitingTheMotionStage.contains (name))
+            unused.add (name);
+    }
+
+    INFO ("tokens nothing refers to:\n" << unused.joinIntoString ("\n"));
+    CHECK (unused.isEmpty());
+
+    // And the waiting list can only shrink.
+    CHECK (awaitingTheMotionStage.size() <= 2);
+}

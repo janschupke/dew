@@ -7,6 +7,8 @@
 #include "model/Meter.h"
 #include "model/ProjectEdits.h"
 #include "ui/TimelineRuler.h"
+#include "ui/HeaderRow.h"
+#include "ui/MenuSeam.h"
 #include "ui/TimelinePaint.h"
 #include "ui/design/Tokens.h"
 #include "ui/primitives/DewControls.h"
@@ -21,7 +23,7 @@ using namespace tokens;
     Mute and solo are real controls rather than painted text, because the engine
     already honours the properties and there was no way to reach them.
 */
-class PlaylistComponent::TrackHeader : public juce::Component
+class PlaylistComponent::TrackHeader : public HeaderRow
 {
 public:
     TrackHeader (ProjectDocument& d, juce::ValueTree t)
@@ -64,15 +66,9 @@ public:
         addAndMakeVisible (soloButton);
     }
 
-    /** What the header's context menu offers, and what each item does.
-
-        Named methods rather than a lambda inside showMenuAsync, because
-        showMenuAsync cannot be driven headlessly and every other gesture here is
-        tested that way. The menu is only how a person reaches these.
-    */
     enum class MenuItem { rename = 1, addTrack, removeTrack };
 
-    juce::PopupMenu buildMenu() const
+    juce::PopupMenu buildMenu() const override
     {
         juce::PopupMenu menu;
         menu.addItem ((int) MenuItem::rename, "Rename");
@@ -82,7 +78,7 @@ public:
         return menu;
     }
 
-    void applyMenuChoice (int choice)
+    void applyMenuChoice (int choice) override
     {
         switch ((MenuItem) choice)
         {
@@ -97,28 +93,7 @@ public:
     std::function<void()> onAddTrack;
     std::function<void (juce::ValueTree)> onRemoveTrack;
 
-    void mouseDown (const juce::MouseEvent& event) override
-    {
-        if (! event.mods.isPopupMenu())
-            return;
-
-        auto menu = buildMenu();
-
-        menu.setLookAndFeel (&getLookAndFeel());
-        menu.showMenuAsync (juce::PopupMenu::Options()
-                                .withTargetScreenArea ({ event.getScreenX(), event.getScreenY(), 1, 1 }),
-                            [safe = juce::Component::SafePointer<TrackHeader> (this)] (int choice)
-                            {
-                                if (safe != nullptr && choice > 0)
-                                    safe->applyMenuChoice (choice);
-                            });
-    }
-
-    void mouseDoubleClick (const juce::MouseEvent& event) override
-    {
-        if (nameLabel.getBounds().contains (event.getPosition()))
-            nameLabel.showEditor();
-    }
+    juce::Label* editableLabel() override { return &nameLabel; }
 
     juce::ValueTree getTrack() const { return track; }
 
@@ -795,27 +770,16 @@ juce::StringArray PlaylistComponent::trackMenuItems (int trackIndex) const
     if (! juce::isPositiveAndBelow (trackIndex, headers.size()))
         return {};
 
-    juce::StringArray items;
-
-    // Named local: MenuItemIterator keeps a REFERENCE to the menu, so iterating
-    // a temporary walks a destroyed object and silently yields nothing.
     const auto menu = headers[trackIndex]->buildMenu();
 
-    for (juce::PopupMenu::MenuItemIterator it (menu); it.next();)
-        items.add (it.getItem().isSeparator ? "-" : it.getItem().text);
-
-    return items;
+    return menuItems (menu);
 }
 
 juce::StringArray PlaylistComponent::clipMenuItems (int trackIndex, int bar) const
 {
-    juce::StringArray items;
     const auto menu = buildClipMenu (trackAt (trackIndex), bar);
 
-    for (juce::PopupMenu::MenuItemIterator it (menu); it.next();)
-        items.add (it.getItem().isSeparator ? "-" : it.getItem().text);
-
-    return items;
+    return menuItems (menu);
 }
 
 bool PlaylistComponent::applyClipMenuChoice (int trackIndex, int bar, int choice)
@@ -1308,23 +1272,12 @@ void PlaylistComponent::paintAudioClip (juce::Graphics& g, const juce::ValueTree
             const juce::Graphics::ScopedSaveState clipped (g);
             g.reduceClipRegion (bounds.toNearestInt());
 
-            const auto centre = bounds.getCentreY();
-            const auto halfHeight = bounds.getHeight() * 0.5f - 2.0f;
+            const auto trace = clipColour.brighter (emphasis::edgeLift)
+                                  .withAlpha (audible ? emphasis::strong : emphasis::subdued);
+            const juce::Range<float> span { bounds.getX(), bounds.getRight() };
 
-            g.setColour (clipColour.brighter (emphasis::edgeLift).withAlpha (audible ? emphasis::strong : emphasis::subdued));
-
-            for (int x = (int) bounds.getX(); x < (int) bounds.getRight(); ++x)
-            {
-                const auto a = ((float) x - bounds.getX()) / bounds.getWidth();
-                const auto b = ((float) (x + 1) - bounds.getX()) / bounds.getWidth();
-
-                const auto bin = entry.peaks.range (a, b);
-                const auto top = centre - bin.maximum * halfHeight;
-                const auto bottom = centre - bin.minimum * halfHeight;
-
-                g.fillRect ((float) x, juce::jmin (top, bottom), 1.0f,
-                            juce::jmax (1.0f, std::abs (bottom - top)));
-            }
+            paint::waveform (g, { bounds.getY(), bounds.getBottom() }, span, span,
+                             entry.peaks, [trace] (float) { return trace; });
         }
     }
 
