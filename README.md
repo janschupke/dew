@@ -14,7 +14,8 @@ Start with **Demos → Getting Started** in the menu bar; there are four.
 
 - **Channel rack** — a step grid, one row per channel, click or drag to write steps.
   Mute and solo per channel. A pattern longer than the width scrolls rather than
-  shrinking its steps into hairlines.
+  shrinking its steps into hairlines. Right-click a row to rename, add or remove that
+  channel; **+ Channel** sits under the last one, where the next will appear.
 - **Piano roll** — scroll and zoom in time (wheel, ⌘-wheel or a trackpad pinch),
   rubber-band select, move a chord without losing its shape, grab and drag velocity bars
   in the lane below, click the keys to hear them, and let the pattern grow when a note is
@@ -29,7 +30,9 @@ Start with **Demos → Getting Started** in the menu bar; there are four.
   be humanised or tightened without selecting anything first.
 - **Playlist** — pattern clips on tracks along a bar timeline; a clip longer than its
   pattern repeats it, as FL does. Drag clips between tracks, double-click one to open
-  its pattern, and mute or solo a lane.
+  its pattern, and mute or solo a lane. Right-click a clip for its pattern or to delete
+  it, empty space to place one, and a track header to rename, add or remove that track;
+  **+ Track** sits under the last one. Alt-click still deletes a clip outright.
 - **Effects** — reverb, filter, delay, drive, chorus and a 3-band EQ, chained up to four
   deep on any channel, mixer track or the master. One editor, pointed either way round:
   down the instrument panel it is an accordion, each effect a card that expands in place
@@ -46,6 +49,10 @@ Start with **Demos → Getting Started** in the menu bar; there are four.
   with its own octave, detune and gain and its own on/off switch, edited a tab at a
   time. Only the first is on by default, so a new channel is a single oscillator until
   you stack one on it. Behind them, one ADSR envelope, and channel volume and pan.
+- **Loop** — a span selected on any ruler is the span that plays: the transport wraps
+  inside it rather than around the whole pattern or the whole song, so eight bars can be
+  worked on without hearing the other fifty-six. A loop drawn ahead of the playhead is
+  played into rather than jumped to; one drawn behind it snaps to its start.
 - **Transport** — play/stop, tempo, a pattern-or-song switch, and pattern
   add/duplicate/delete with an editable pattern length. Click or drag any ruler — piano
   roll, sequencer or playlist — to move the position. The indicator stays on screen while
@@ -75,18 +82,24 @@ Start with **Demos → Getting Started** in the menu bar; there are four.
 ⌘N ⌘O ⌘S ⇧⌘S, ⌘E to render, ⌘Z ⇧⌘Z, Space to play, ⌘L to switch pattern/song, ⌘K to add
 a channel.
 
-On the playlist ruler: drag to scrub, shift-drag to select a span of bars, shift-click to
-drop the selection.
+On any ruler: drag to scrub, shift-drag to select a span, ⌘-click to span from the
+playhead to where you clicked, and shift-click or double-click to drop the selection.
+The playlist selects bars of the song and the piano roll steps of a pattern; either way
+**the span is what plays** — the transport loops inside it until you clear it.
 
 In the piano roll: ⌘-scroll or pinch to zoom, shift-scroll to scroll in time, ⌘-drag to
-rubber-band, ⌘A to select every note on the channel, delete to remove the selection.
+rubber-band, ⌘A to select every note on the channel, delete to remove the selection,
+right-click empty space to deselect.
 1 2 3 pick select, paint and slice; ↑ ↓ transpose a semitone and ⇧↑ ⇧↓ an octave; Q
 quantizes and R opens randomize. Holding shift suspends the snap grid for the length of a
 drag, which is the only way to reach an off-grid position without changing the dropdown.
 
 Right-drag erases, and means the same thing in the piano roll and the step sequencer: one
 undo step for the whole sweep, and it fills the cells between drag samples, so a quick
-flick does not leave survivors behind it. Alt-drag is the same gesture.
+flick does not leave survivors behind it. Alt-drag is the same gesture. A right-press that
+lets go having erased nothing was never an erase, so in the piano roll it clears the
+selection instead — the sweep still starts on empty space, which is how you sweep *into*
+notes.
 
 ### One bug behind three complaints
 
