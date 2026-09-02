@@ -24,9 +24,52 @@ public:
     /** Samples per sequencer step. A step is a 1/stepsPerBeat note. */
     double samplesPerStep() const noexcept;
 
-    /** Length of one loop in steps, or 0 for free-running. */
-    void setLoopLengthSteps (int steps) noexcept  { loopLengthSteps = juce::jmax (0, steps); }
-    int getLoopLengthSteps() const noexcept       { return loopLengthSteps; }
+    // --- the loop window -----------------------------------------------------
+    /** The half-open window [start, end) the playhead wraps inside, in steps.
+
+        A RANGE rather than a length, because a loop anchored at zero cannot say
+        "bars five to nine" - and, worse, made the wrap point and the length of
+        the material the same number, so there was nowhere to put a user's
+        choice that did not also change what "the material" meant.
+
+        `end <= start` is free-running, which is exactly what a length of zero
+        meant before, so that case has not moved.
+
+        Reversed arguments are NOT swapped. One rule here: backwards is no loop,
+        like zero-width. Ordering the ends of a drag is a fact about a mouse and
+        belongs where the mouse is.
+
+        Transport does not know how long the material is and so does not clamp to
+        it - that is AudioEngine's job, because only it holds a snapshot. Keeping
+        it out of here is what lets a loop be tested without one.
+    */
+    void setLoopRange (double startSteps, double endSteps) noexcept;
+
+    double getLoopStartSteps() const noexcept  { return loopStartSteps; }
+    double getLoopEndSteps() const noexcept    { return loopEndSteps; }
+    bool hasLoop() const noexcept              { return loopEndSteps > loopStartSteps; }
+
+    /** The window in samples at the current tempo, rounded ONCE, here.
+
+        Both ends are rounded from the same tempo in the same place, so advance(),
+        a seek and the engine cannot disagree by a sample about where the loop
+        ends - which at 6000 samples per step is inaudible once and a drifting
+        flam after a thousand wraps.
+    */
+    juce::int64 loopStartSamples() const noexcept;
+    juce::int64 loopEndSamples() const noexcept;
+
+    /** Folds the position back into the window if it has run past the end.
+
+        Public because it is the ONE wrap rule: advance() calls it, and so does
+        anything that sets a position while a loop is set.
+    */
+    void wrapIntoLoop() noexcept;
+
+    /** The old length-at-zero form, kept and not deprecated: most callers still
+        mean precisely it - wrap at the end of the material, starting at the top.
+    */
+    void setLoopLengthSteps (int steps) noexcept  { setLoopRange (0.0, (double) juce::jmax (0, steps)); }
 
     void setMode (Mode m) noexcept   { mode = m; }
     Mode getMode() const noexcept    { return mode; }
@@ -40,7 +83,7 @@ public:
 
     void rewind() noexcept  { positionSamples = 0; }
 
-    /** Advances by a block. Wraps at the loop point when one is set. */
+    /** Advances by a block. Wraps into the loop window when one is set. */
     void advance (int numSamples) noexcept;
 
     /** Playhead in steps, as a fraction - for drawing a cursor. */
@@ -52,7 +95,8 @@ private:
     double sampleRate = 44100.0;
     double tempoBpm = 128.0;
     int stepsPerBeat = 4;
-    int loopLengthSteps = 0;
+    double loopStartSteps = 0.0;
+    double loopEndSteps = 0.0;
     juce::int64 positionSamples = 0;
     bool playing = false;
     Mode mode = Mode::pattern;

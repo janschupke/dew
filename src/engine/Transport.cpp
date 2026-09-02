@@ -28,18 +28,58 @@ double Transport::samplesPerStep() const noexcept
     return samplesPerStepFor (tempoBpm, stepsPerBeat, sampleRate);
 }
 
+void Transport::setLoopRange (double startSteps, double endSteps) noexcept
+{
+    loopStartSteps = juce::jmax (0.0, startSteps);
+    loopEndSteps   = juce::jmax (0.0, endSteps);
+}
+
+juce::int64 Transport::loopStartSamples() const noexcept
+{
+    return (juce::int64) std::llround (samplesPerStep() * loopStartSteps);
+}
+
+juce::int64 Transport::loopEndSamples() const noexcept
+{
+    return (juce::int64) std::llround (samplesPerStep() * loopEndSteps);
+}
+
+void Transport::wrapIntoLoop() noexcept
+{
+    if (! hasLoop())
+        return;
+
+    const auto startSamples = loopStartSamples();
+
+    // Each end rounded from the tempo separately, then subtracted - NOT
+    // llround (samplesPerStep() * (end - start)). At a tempo whose step is not a
+    // whole number of samples the two differ by one, and only this one puts the
+    // loop's ENDS where the ruler draws them.
+    const auto loopSamples = loopEndSamples() - startSamples;
+
+    // A window narrower than a sample once rounded is not a loop. Bailing out
+    // leaves the transport free-running rather than dividing by zero or pinning
+    // the playhead to one sample forever.
+    if (loopSamples <= 0)
+        return;
+
+    // Before the loop: play INTO it rather than snapping to its start. Setting a
+    // loop four bars ahead should not teleport the music there mid-phrase; when
+    // the playhead reaches the end the fold below takes over.
+    if (positionSamples < startSamples)
+        return;
+
+    // Modulo rather than the old subtract-in-a-while. Both operands are
+    // non-negative here so it is the same arithmetic, but it is constant time -
+    // which starts to matter the moment a loop can be set a thousand bars behind
+    // a playhead.
+    positionSamples = startSamples + (positionSamples - startSamples) % loopSamples;
+}
+
 void Transport::advance (int numSamples) noexcept
 {
     positionSamples += numSamples;
-
-    if (loopLengthSteps > 0)
-    {
-        const auto loopSamples = (juce::int64) std::llround (samplesPerStep() * (double) loopLengthSteps);
-
-        if (loopSamples > 0)
-            while (positionSamples >= loopSamples)
-                positionSamples -= loopSamples;
-    }
+    wrapIntoLoop();
 }
 
 double Transport::getPositionInSteps() const noexcept

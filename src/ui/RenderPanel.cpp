@@ -338,13 +338,13 @@ void RenderPanel::updateSummary()
     const auto snapshot = buildSnapshot (document.getState(), nullptr);
     const auto patternIndex = snapshot.patternIndexForId (request.options.patternId);
 
-    const auto loopSteps = Sequencer::loopLengthSteps (snapshot, request.options.mode, patternIndex);
+    const auto materialSteps = Sequencer::materialLengthSteps (snapshot, request.options.mode, patternIndex);
 
     const auto samplesPerStep = Transport::samplesPerStepFor (snapshot.tempoBpm,
                                                               snapshot.stepsPerBeat,
                                                               request.options.sampleRate);
 
-    auto seconds = samplesPerStep * (double) loopSteps / request.options.sampleRate;
+    auto seconds = samplesPerStep * (double) materialSteps / request.options.sampleRate;
 
     if (! request.options.barRange.isEmpty())
         seconds = samplesPerStep * (double) snapshot.stepsPerBar()

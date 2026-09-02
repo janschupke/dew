@@ -5,6 +5,24 @@
 namespace dew
 {
 
+static_assert (std::atomic<AudioEngine::LoopRegion>::is_always_lock_free,
+               "The loop region is read from the audio thread; a lock here would be a "
+               "priority inversion, and the whole point of the packed pair is that it "
+               "is published in one word.");
+
+namespace
+{
+
+/** Which slot a mode's loop lives in. A function rather than a cast, so adding a
+    third mode fails to compile here instead of silently aliasing an existing one.
+*/
+constexpr size_t loopSlotFor (Transport::Mode mode) noexcept
+{
+    return mode == Transport::Mode::song ? 1u : 0u;
+}
+
+} // namespace
+
 AudioEngine::AudioEngine()
 {
     channels.resize (kMaxChannels);
@@ -269,6 +287,33 @@ void AudioEngine::setPlayheadSteps (double steps)
         playheadSamples.store ((juce::int64) (clamped * sps));
 }
 
+void AudioEngine::setLoopRangeSteps (Transport::Mode mode, double startSteps, double endSteps) noexcept
+{
+    // Ordered here rather than in Transport: which end of a drag came first is a
+    // fact about a mouse, not about time.
+    const auto lo = juce::jmax (0.0, juce::jmin (startSteps, endSteps));
+    const auto hi = juce::jmax (0.0, juce::jmax (startSteps, endSteps));
+
+    // Relaxed: the range carries no other data, so there is nothing for it to
+    // publish a happens-before edge to - the same argument the controllers make.
+    loopRegions[loopSlotFor (mode)].store ({ (float) lo, (float) hi }, std::memory_order_relaxed);
+}
+
+void AudioEngine::clearLoopRange (Transport::Mode mode) noexcept
+{
+    loopRegions[loopSlotFor (mode)].store ({}, std::memory_order_relaxed);
+}
+
+AudioEngine::LoopRegion AudioEngine::getLoopRegion (Transport::Mode mode) const noexcept
+{
+    return loopRegions[loopSlotFor (mode)].load (std::memory_order_relaxed);
+}
+
+bool AudioEngine::hasLoopRegion (Transport::Mode mode) const noexcept
+{
+    return ! getLoopRegion (mode).isEmpty();
+}
+
 void AudioEngine::setMode (Transport::Mode mode)
 {
     requestedMode.store (mode);
@@ -461,8 +506,33 @@ void AudioEngine::processBlock (juce::AudioBuffer<float>& buffer) noexcept
 
     const auto patternIndex = snapshot.patternIndexForId (requestedPatternId.load());
 
-    const auto loopSteps = Sequencer::loopLengthSteps (snapshot, mode, patternIndex);
-    transport.setLoopLengthSteps (loopSteps);
+    const auto materialSteps = Sequencer::materialLengthSteps (snapshot, mode, patternIndex);
+
+    // The material's own extent is the default window, exactly as before. A
+    // user's loop replaces it, clamped to the material - a loop past the end of
+    // a pattern is not a shorter pattern, it is nothing to play.
+    const auto userLoop = loopRegions[loopSlotFor (mode)].load (std::memory_order_relaxed);
+    const auto loopChanged = ! (userLoop == lastAppliedLoop);
+    lastAppliedLoop = userLoop;
+
+    auto wrapStart = 0.0;
+    auto wrapEnd   = (double) materialSteps;
+
+    if (materialSteps > 0 && ! userLoop.isEmpty())
+    {
+        const auto clampedStart = juce::jlimit (0.0, (double) materialSteps, (double) userLoop.startSteps);
+        const auto clampedEnd   = juce::jlimit (0.0, (double) materialSteps, (double) userLoop.endSteps);
+
+        if (clampedEnd > clampedStart)
+        {
+            wrapStart = clampedStart;
+            wrapEnd   = clampedEnd;
+        }
+    }
+
+    // Re-applied every block, like the length it replaces: the material can be
+    // shortened underneath a loop, and the clamp has to move with it.
+    transport.setLoopRange (wrapStart, wrapEnd);
 
     if (seekRequested.exchange (false))
     {
@@ -471,6 +541,11 @@ void AudioEngine::processBlock (juce::AudioBuffer<float>& buffer) noexcept
                                                        currentSampleRate);
 
         transport.setPositionSamples ((juce::int64) (seekToSteps.load() * sps));
+
+        // One wrap rule: a click that lands past the loop end folds the same way
+        // a block that ran past it does, rather than being corrected a block
+        // later at whatever phase that block happened to end on.
+        transport.wrapIntoLoop();
 
         // Same reason as rewind below: jumping leaves anything that was
         // sounding with no note-off ahead of it.
@@ -486,11 +561,37 @@ void AudioEngine::processBlock (juce::AudioBuffer<float>& buffer) noexcept
             channel.reset();
     }
 
+    // A loop drawn BEHIND the playhead is the one case where folding is wrong:
+    // the modulo would drop the playhead at an arbitrary point inside a region
+    // the user has only just drawn. Snapping to its start is what they meant.
+    //
+    // Only on the CHANGE, so a loop that has not moved does not re-snap every
+    // block; and only when the playhead is actually past the end, so shrinking a
+    // loop from the right does it at most once. After the seek and rewind
+    // branches, because a ruler click and a rewind are newer, more explicit
+    // intent - and neither can trip this test anyway: rewind lands at zero, at
+    // or before any loop start, and a seek has already been folded inside.
+    //
+    // Runs whether or not the transport is playing. If it only fired while
+    // playing, setting a loop behind a stopped playhead would leave the position
+    // outside it, and the first playing block would fold it in at an arbitrary
+    // phase - the very stumble this exists to remove.
+    if (loopChanged && transport.hasLoop()
+        && transport.getPositionSamples() >= transport.loopEndSamples())
+    {
+        transport.setPositionSamples (transport.loopStartSamples());
+
+        // Same reason a seek resets them: what was sounding has no note-off
+        // ahead of it any more.
+        for (auto& channel : channels)
+            channel.reset();
+    }
+
     const auto isPlayingNow = playing.load();
 
     // Even when stopped, voices keep rendering so a note released at the moment
     // of stopping finishes its tail instead of clicking off.
-    if (isPlayingNow && loopSteps > 0)
+    if (isPlayingNow && materialSteps > 0)
     {
         Sequencer::collect (snapshot, mode, transport.getPositionSamples(), numSamples,
                             transport.samplesPerStep(), patternIndex, triggers);
@@ -634,7 +735,7 @@ void AudioEngine::processBlock (juce::AudioBuffer<float>& buffer) noexcept
     // the only point in the engine that is the finished output.
     signalTap.write (outLeft, outRight, numSamples);
 
-    if (isPlayingNow && loopSteps > 0)
+    if (isPlayingNow && materialSteps > 0)
         transport.advance (numSamples);
 
     playheadSamples.store (transport.getPositionSamples());

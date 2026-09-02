@@ -174,14 +174,14 @@ TEST_CASE ("a clip longer than its pattern repeats the pattern to fill", "[seque
     REQUIRE (offsets == std::vector<juce::int64> { 0, 96000, 192000 });
 }
 
-TEST_CASE ("the loop length matches the mode", "[sequencer]")
+TEST_CASE ("the material length matches the mode", "[sequencer]")
 {
     auto snapshot = snapshotWithSteps ({ 0 }, 32);
 
-    REQUIRE (Sequencer::loopLengthSteps (snapshot, Transport::Mode::pattern, 0) == 32);
+    REQUIRE (Sequencer::materialLengthSteps (snapshot, Transport::Mode::pattern, 0) == 32);
 
     // An empty playlist has nothing to play.
-    REQUIRE (Sequencer::loopLengthSteps (snapshot, Transport::Mode::song, 0) == 0);
+    REQUIRE (Sequencer::materialLengthSteps (snapshot, Transport::Mode::song, 0) == 0);
 
     ClipSnapshot clip;
     clip.patternIndex = 0;
@@ -190,7 +190,7 @@ TEST_CASE ("the loop length matches the mode", "[sequencer]")
     snapshot.clips = { clip };
 
     // Ends at bar 3 -> 3 bars * 16 steps.
-    REQUIRE (Sequencer::loopLengthSteps (snapshot, Transport::Mode::song, 0) == 3 * 16);
+    REQUIRE (Sequencer::materialLengthSteps (snapshot, Transport::Mode::song, 0) == 3 * 16);
 }
 
 TEST_CASE ("the demo project schedules notes on every channel", "[sequencer][demo]")

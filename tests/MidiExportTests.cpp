@@ -51,7 +51,7 @@ std::set<std::tuple<int, int, int>> sequencerNotes (const juce::ValueTree& proje
     const auto samplesPerStep = Transport::samplesPerStepFor (snapshot.tempoBpm,
                                                               snapshot.stepsPerBeat, 44100.0);
 
-    const auto totalSteps = Sequencer::loopLengthSteps (snapshot, Transport::Mode::song, -1);
+    const auto totalSteps = Sequencer::materialLengthSteps (snapshot, Transport::Mode::song, -1);
 
     std::set<std::tuple<int, int, int>> notes;
     std::vector<NoteTrigger> triggers;

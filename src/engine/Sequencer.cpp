@@ -5,7 +5,7 @@
 namespace dew
 {
 
-int Sequencer::loopLengthSteps (const EngineSnapshot& snapshot,
+int Sequencer::materialLengthSteps (const EngineSnapshot& snapshot,
                                 Transport::Mode mode,
                                 int patternIndex)
 {

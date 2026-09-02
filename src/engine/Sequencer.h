@@ -44,10 +44,15 @@ public:
                          int patternIndexForPatternMode,
                          std::vector<NoteTrigger>& out);
 
-    /** Number of steps in one loop for the given mode: the pattern's length, or
-        the arrangement's. Zero means nothing to play.
+    /** How long the MATERIAL is, in steps, for the given mode: the pattern's
+        length, or the arrangement's. Zero means nothing to play.
+
+        Deliberately not called a loop length any more. It used to be one, because
+        playback always wrapped the whole of whatever was playing - but a loop is
+        now a window the user can choose, and the two facts had to stop sharing a
+        name one line apart in AudioEngine::processBlock.
     */
-    static int loopLengthSteps (const EngineSnapshot&, Transport::Mode, int patternIndex);
+    static int materialLengthSteps (const EngineSnapshot&, Transport::Mode, int patternIndex);
 };
 
 } // namespace dew

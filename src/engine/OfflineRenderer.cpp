@@ -30,9 +30,9 @@ juce::Result planSpan (const EngineSnapshot& snapshot,
                        int patternIndex,
                        RenderSpan& span)
 {
-    const auto loopSteps = Sequencer::loopLengthSteps (snapshot, options.mode, patternIndex);
+    const auto materialSteps = Sequencer::materialLengthSteps (snapshot, options.mode, patternIndex);
 
-    if (loopSteps <= 0)
+    if (materialSteps <= 0)
         return juce::Result::fail (
             options.mode == Transport::Mode::song
                 ? "This project has nothing in its playlist to render."
@@ -42,7 +42,7 @@ juce::Result planSpan (const EngineSnapshot& snapshot,
                                                               snapshot.stepsPerBeat,
                                                               options.sampleRate);
 
-    const auto materialSamples = (juce::int64) std::llround (samplesPerStep * (double) loopSteps);
+    const auto materialSamples = (juce::int64) std::llround (samplesPerStep * (double) materialSteps);
     const auto tailSamples = (juce::int64) std::llround (options.tailSeconds * options.sampleRate);
 
     if (! options.barRange.isEmpty())

@@ -51,6 +51,66 @@ public:
     */
     void setPlayheadSteps (double steps);
 
+    // --- the loop window -----------------------------------------------------
+    /** A user's loop, in steps, half-open [start, end). One indivisible pair.
+
+        Latest-wins atomics rather than a request flag, for the reason the
+        controllers below give: only the newest range is audible, and a drag
+        rewrites it hundreds of times a second - exactly the traffic that would
+        fill a ring and start refusing notes.
+
+        ONE atomic per region rather than two, and that is the load-bearing part.
+        Two would let the audio thread read a new start beside an old end - a
+        range of negative width, so a block with NO loop at all, heard as the
+        playhead escaping the region for one buffer and returning at the wrong
+        phase. Eight bytes is lock-free everywhere this runs, so making the tear
+        unrepresentable costs nothing.
+
+        One region PER MODE, because the piano roll selects steps of a pattern
+        and the playlist selects bars of the song, and which of them is audible
+        is whichever mode the transport is in. Keyed by mode rather than
+        re-pushed on a mode change: the mode is set from two places that do not
+        go through the editor state, and a single region would be wrong for a
+        block whenever one of them forgot.
+
+        The range is CLAMPED to the material on the audio thread, not here: how
+        long the material is comes from the snapshot, and only the audio thread
+        holds a stable one. A range that is empty after clamping - a loop wholly
+        past the end of a short pattern - is not a loop, and the material's own
+        extent wraps as it always did.
+
+        The ends are ordered for you, so a right-to-left drag means what it looks
+        like.
+
+        Live playback only. An offline render builds its own AudioEngine and
+        takes its scope from RenderOptions::barRange - see OfflineRenderer.
+    */
+    struct LoopRegion
+    {
+        float startSteps = 0.0f;
+        float endSteps   = 0.0f;
+
+        bool isEmpty() const noexcept  { return endSteps <= startSteps; }
+
+        bool operator== (const LoopRegion& other) const noexcept
+        {
+            return startSteps == other.startSteps && endSteps == other.endSteps;
+        }
+    };
+
+    void setLoopRangeSteps (Transport::Mode, double startSteps, double endSteps) noexcept;
+    void clearLoopRange (Transport::Mode) noexcept;
+
+    /** What the UI draws: what was ASKED for, unclamped.
+
+        Unclamped on purpose - a loop bracket must not crawl when a pattern is
+        shortened underneath it, and every ruler already dims what is past the
+        material, so a loop hanging off the end reads as inert without a second
+        copy of the same numbers written from the audio thread.
+    */
+    LoopRegion getLoopRegion (Transport::Mode) const noexcept;
+    bool hasLoopRegion (Transport::Mode) const noexcept;
+
     void setMode (Transport::Mode);
     Transport::Mode getMode() const noexcept  { return requestedMode.load(); }
     bool isPlaying() const noexcept           { return playing.load(); }
@@ -231,6 +291,15 @@ private:
     std::atomic<bool> seekRequested { false };
     std::atomic<double> seekToSteps { 0.0 };
     std::atomic<Transport::Mode> requestedMode { Transport::Mode::pattern };
+
+    /** One per Transport::Mode, indexed by loopSlotFor(). */
+    std::array<std::atomic<LoopRegion>, 2> loopRegions {};
+
+    /** The range the audio thread last acted on, so a CHANGE can be told from
+        the same range arriving again every block. Audio-thread only, and so not
+        an atomic.
+    */
+    LoopRegion lastAppliedLoop;
     std::atomic<int> requestedPatternId { 1 };
     std::atomic<juce::int64> playheadSamples { 0 };
 
