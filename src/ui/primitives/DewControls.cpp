@@ -34,7 +34,7 @@ void DewButton::setRole (Role r)
 
 void DewButton::paintButton (juce::Graphics& g, bool highlighted, bool down)
 {
-    const auto bounds = getLocalBounds().toFloat().reduced (0.5f);
+    const auto bounds = getLocalBounds().toFloat().reduced (stroke::whisper);
     const auto on = getToggleState();
 
     juce::Colour background, text, border;
@@ -103,7 +103,7 @@ void DewIconButton::setOnColour (juce::Colour c)
 
 void DewIconButton::paintButton (juce::Graphics& g, bool highlighted, bool down)
 {
-    const auto bounds = getLocalBounds().toFloat().reduced (0.5f);
+    const auto bounds = getLocalBounds().toFloat().reduced (stroke::whisper);
     const auto on = getToggleState();
 
     const auto background = on ? onColour
@@ -133,7 +133,7 @@ DewLetterToggle::DewLetterToggle (const juce::String& l, juce::Colour c,
 
 void DewLetterToggle::paintButton (juce::Graphics& g, bool highlighted, bool down)
 {
-    const auto bounds = getLocalBounds().toFloat().reduced (0.5f);
+    const auto bounds = getLocalBounds().toFloat().reduced (stroke::whisper);
     const auto on = getToggleState();
 
     g.setColour (fillFor (isEnabled(), highlighted, down,
@@ -339,7 +339,7 @@ void container (juce::Graphics& g, juce::Rectangle<int> bounds)
     if (bounds.isEmpty())
         return;
 
-    const auto body = bounds.toFloat().reduced (0.5f);
+    const auto body = bounds.toFloat().reduced (stroke::whisper);
 
     g.setColour (colour::surface);
     g.fillRoundedRectangle (body, radius::md);

@@ -91,7 +91,7 @@ public:
 
     void paintButton (juce::Graphics& g, bool highlighted, bool /*down*/) override
     {
-        auto body = getLocalBounds().toFloat().reduced (0.5f);
+        auto body = getLocalBounds().toFloat().reduced (stroke::whisper);
 
         g.setColour (selected      ? colour::surfaceHover
                      : highlighted ? colour::surfaceRaised.brighter (emphasis::surfaceLift)
@@ -555,7 +555,7 @@ void OscillatorSection::resized()
 {
     auto area = getLocalBounds();
 
-    auto selector = area.removeFromTop (24);
+    auto selector = area.removeFromTop (selectorHeight);
     const auto slotWidth = juce::jmax (1, selector.getWidth() / juce::jmax (1, slotButtons.size()));
 
     for (int i = 0; i < slotButtons.size(); ++i)
@@ -567,7 +567,7 @@ void OscillatorSection::resized()
 
     area.removeFromTop (space::sm);
 
-    auto modeRow = area.removeFromTop (size::controlHeight);
+    auto modeRow = area.removeFromTop (formRowHeight);
     enableButton.setBounds (modeRow.removeFromLeft (size::controlHeight));
     modeRow.removeFromLeft (space::xs);
     modeBox.setBounds (modeRow);
@@ -576,7 +576,7 @@ void OscillatorSection::resized()
 
     // The two faces share this row: a classic slot's waveform, or a wavetable
     // slot's table and what modulates its position.
-    auto generatorRow = area.removeFromTop (size::controlHeight);
+    auto generatorRow = area.removeFromTop (formRowHeight);
 
     if (showingWavetable)
     {
@@ -592,7 +592,7 @@ void OscillatorSection::resized()
 
     area.removeFromTop (space::sm);
 
-    auto octaveRow = area.removeFromTop (22);
+    auto octaveRow = area.removeFromTop (octaveHeight);
     octaveLabel.setBounds (octaveRow.removeFromLeft (30));
 
     // Sized rather than stretched: a pair of inc/dec buttons as wide as the
@@ -607,7 +607,7 @@ void OscillatorSection::resized()
 
     const auto knobRow = [&area] (int count, std::initializer_list<DewKnob*> knobs)
     {
-        auto row = area.removeFromTop (68);
+        auto row = area.removeFromTop (knobRowHeight);
         const auto width = juce::jmax (1, row.getWidth() / juce::jmax (1, count));
         int placed = 0;
 
@@ -633,7 +633,7 @@ void OscillatorSection::resized()
     knobRow (2, { &unisonKnob, &spreadKnob });
 
     area.removeFromTop (space::sm);
-    shapeBounds = area.removeFromTop (44);
+    shapeBounds = area.removeFromTop (shapeHeight);
 }
 
 } // namespace dew

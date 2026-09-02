@@ -9,6 +9,8 @@
 namespace dew
 {
 
+using namespace tokens;
+
 /** One mixer strip. Master has no pan, mute or solo, so it is the same class
     with those controls hidden rather than a second nearly-identical one.
 */
@@ -259,8 +261,8 @@ public:
             area.removeFromTop (space::xs);
 
             auto buttons = area.removeFromTop (size::minTouchTarget);
-            muteButton.setBounds (buttons.removeFromLeft (buttons.getWidth() / 2).reduced (1));
-            soloButton.setBounds (buttons.reduced (1));
+            muteButton.setBounds (buttons.removeFromLeft (buttons.getWidth() / 2).reduced (space::xxs));
+            soloButton.setBounds (buttons.reduced (space::xxs));
             area.removeFromTop (space::xs);
         }
 
@@ -556,7 +558,7 @@ void MixerComponent::updateRouting()
 
 void MixerComponent::resized()
 {
-    auto area = getLocalBounds().reduced (8);
+    auto area = getLocalBounds().reduced (space::md);
 
     // The chain row gets the bottom of the panel, at exactly the height one row
     // of cards needs: strips need the rest and a fader is useless once it is

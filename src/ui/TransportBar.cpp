@@ -178,7 +178,7 @@ TransportBar::TransportBar (ProjectDocument& d, AudioEngine& e, EditorState& s)
     editorState.addChangeListener (this);
 
     refresh();
-    startTimerHz (30);
+    startTimerHz (tokens::motion::uiRefreshHz);
 }
 
 TransportBar::~TransportBar()

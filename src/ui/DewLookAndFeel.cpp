@@ -148,7 +148,7 @@ void DewLookAndFeel::drawTooltip (juce::Graphics& g, const juce::String& text, i
     g.fillRoundedRectangle (bounds, tokens::radius::sm);
 
     g.setColour (colour::outline);
-    g.drawRoundedRectangle (bounds.reduced (0.5f), tokens::radius::sm, tokens::stroke::hairline);
+    g.drawRoundedRectangle (bounds.reduced (stroke::whisper), tokens::radius::sm, tokens::stroke::hairline);
 
     layOutTooltip (text, colour::textPrimary).draw (g, bounds);
 }
@@ -191,7 +191,7 @@ void DewLookAndFeel::drawButtonBackground (juce::Graphics& g, juce::Button& butt
                                            bool shouldDrawButtonAsHighlighted,
                                            bool shouldDrawButtonAsDown)
 {
-    const auto bounds = button.getLocalBounds().toFloat().reduced (0.5f);
+    const auto bounds = button.getLocalBounds().toFloat().reduced (tokens::stroke::whisper);
     const auto corner = tokens::radius::sm;
 
     auto fill = backgroundColour;
@@ -273,7 +273,7 @@ void DewLookAndFeel::drawComboBox (juce::Graphics& g, int width, int height, boo
 {
     using namespace tokens;
 
-    const auto bounds = juce::Rectangle<int> (0, 0, width, height).toFloat().reduced (0.5f);
+    const auto bounds = juce::Rectangle<int> (0, 0, width, height).toFloat().reduced (stroke::whisper);
     const auto over = box.isMouseOver (true);
 
     // Painted like DewButton, because that is what it is standing next to.
@@ -365,7 +365,7 @@ void DewLookAndFeel::drawPopupMenuBackground (juce::Graphics& g, int width, int 
 {
     using namespace tokens;
 
-    const auto bounds = juce::Rectangle<int> (0, 0, width, height).toFloat().reduced (0.5f);
+    const auto bounds = juce::Rectangle<int> (0, 0, width, height).toFloat().reduced (stroke::whisper);
 
     g.setColour (colour::surface);
     g.fillRoundedRectangle (bounds, radius::md);
@@ -390,7 +390,7 @@ void DewLookAndFeel::drawPopupMenuItem (juce::Graphics& g, const juce::Rectangle
         return;
     }
 
-    auto row = area.reduced (space::xs, 1);
+    auto row = area.reduced (space::xs, space::xxs);
 
     if (isHighlighted && isActive)
     {

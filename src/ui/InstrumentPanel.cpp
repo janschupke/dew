@@ -8,6 +8,8 @@
 namespace dew
 {
 
+using namespace tokens;
+
 namespace
 {
 
@@ -245,12 +247,12 @@ void InstrumentPanel::paint (juce::Graphics& g)
 
 void InstrumentPanel::resized()
 {
-    auto area = getLocalBounds().reduced (10);
+    auto area = getLocalBounds().reduced (space::md);
 
-    titleLabel.setBounds (area.removeFromTop (24));
-    area.removeFromTop (6);
+    titleLabel.setBounds (area.removeFromTop (size::iconButton));
+    area.removeFromTop (space::sm);
 
-    const auto row = [&area] (int height) { auto r = area.removeFromTop (height); area.removeFromTop (6); return r; };
+    const auto row = [&area] (int height) { auto r = area.removeFromTop (height); area.removeFromTop (space::sm); return r; };
 
     if (showingAudio)
         sampleSection.setBounds (row (SampleSection::requiredHeight));
@@ -260,11 +262,11 @@ void InstrumentPanel::resized()
     // Routing and base pitch share a row. The oscillator section costs the panel
     // about 120px more than the single wave combo it replaces, and at the
     // smallest window the app opens at that was the whole effect chain.
-    auto routingRow = row (44);
+    auto routingRow = row (size::knob);
 
     const auto placeKnob = [] (juce::Rectangle<int> bounds, juce::Label& label, juce::Slider& slider)
     {
-        label.setBounds (bounds.removeFromTop (14));
+        label.setBounds (bounds.removeFromTop (size::knobValue));
         slider.setBounds (bounds);
     };
 
@@ -273,13 +275,13 @@ void InstrumentPanel::resized()
         // The pitch stepper is measured from the right and the combo takes what
         // is left: an inc/dec pair given "half of whatever remains" is the one
         // control here that clips rather than shrinking.
-        basePitchSlider.setBounds (routingRow.removeFromRight (96).reduced (0, 10));
+        basePitchSlider.setBounds (routingRow.removeFromRight (96).reduced (0, space::md));
         basePitchLabel.setBounds (routingRow.removeFromRight (38));
-        routingRow.removeFromRight (8);
+        routingRow.removeFromRight (space::md);
     }
 
     mixerLabel.setBounds (routingRow.removeFromLeft (46));
-    mixerBox.setBounds (routingRow.reduced (0, 10));
+    mixerBox.setBounds (routingRow.reduced (0, space::md));
 
     if (! showingAudio)
     {

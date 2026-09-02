@@ -14,6 +14,10 @@ using namespace tokens;
 namespace
 {
 
+/** The page title's strip. Stated once: layOut() skips it and paint() draws
+    into it, and they used to say 44 and 34 independently. */
+constexpr int titleHeight = size::rowHeight;
+
 struct Swatch { const char* name; juce::Colour value; };
 
 std::vector<Swatch> palette()
@@ -235,8 +239,9 @@ int DewGallery::layOut (juce::Rectangle<int> area, bool apply)
         sections.clear();
 
 
-    // The page title is painted in this strip; sections start below it.
-    area.removeFromTop (44);
+    // The page title is painted in this strip; sections start below it. Its
+    // height is stated once, here, and paint() takes it from the same place.
+    area.removeFromTop (titleHeight + space::md);
 
     int index = 0;
 
@@ -374,7 +379,7 @@ void DewGallery::paint (juce::Graphics& g)
     g.setColour (colour::textPrimary);
     g.setFont (type::font (type::display, true));
     g.drawText ("dew design system",
-                getLocalBounds().reduced (space::xxl).removeFromTop (34),
+                getLocalBounds().reduced (space::xxl).removeFromTop (titleHeight),
                 juce::Justification::centredLeft, false);
 
     for (const auto& section : sections)

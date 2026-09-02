@@ -323,10 +323,10 @@ void StepGridComponent::paint (juce::Graphics& g)
                                                           width, (float) size::rowHeight);
 
                 g.setColour (colour::surfaceRaised.withAlpha (emphasis::strong));
-                g.fillRect (full.reduced (0.5f));
+                g.fillRect (full.reduced (stroke::whisper));
 
                 g.setColour (colour::accent.withAlpha (emphasis::subdued));
-                g.drawRect (full.reduced (0.5f), stroke::hairline);
+                g.drawRect (full.reduced (stroke::whisper), stroke::hairline);
             }
 
             const auto note = ProjectEdits::findNoteAtStep (pattern, channelId, step);
@@ -433,7 +433,7 @@ void StepGridComponent::repaintCell (juce::Point<int> cell)
                                    cell.y * size::rowHeight,
                                    (int) std::ceil (timeline.pixelsPerStep) + 2,
                                    size::rowHeight)
-                 .expanded (1));
+                 .expanded (space::xxs));
 }
 
 void StepGridComponent::mouseExit (const juce::MouseEvent&)

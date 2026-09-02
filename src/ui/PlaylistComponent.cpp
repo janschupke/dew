@@ -1353,7 +1353,7 @@ void PlaylistComponent::paintAutomationClip (juce::Graphics& g, const juce::Valu
     {
         g.setColour (colour::danger);
         g.setFont (type::font (type::caption));
-        g.drawText ("missing automation", bounds.toNearestInt().reduced (4, 0),
+        g.drawText ("missing automation", bounds.toNearestInt().reduced (space::xs, 0),
                     juce::Justification::centredLeft, true);
         return;
     }
@@ -1362,7 +1362,7 @@ void PlaylistComponent::paintAutomationClip (juce::Graphics& g, const juce::Valu
     // an automation lane is only a row tall.
     g.setColour (clipColour.withAlpha (emphasis::subdued));
     g.setFont (type::font (type::caption));
-    g.drawText (automation[ids::name].toString(), bounds.toNearestInt().reduced (5, 1),
+    g.drawText (automation[ids::name].toString(), bounds.toNearestInt().reduced (space::xs, space::xxs),
                 juce::Justification::topLeft, true);
 
     juce::Array<juce::ValueTree> points;
@@ -1578,7 +1578,7 @@ void PlaylistComponent::paint (juce::Graphics& g)
             g.setFont (type::font (type::small, true));
             g.drawText (pattern.isValid() ? pattern[ids::name].toString()
                                           : "pattern " + clip[ids::patternId].toString(),
-                        bounds.toNearestInt().reduced (5, 0), juce::Justification::centredLeft, true);
+                        bounds.toNearestInt().reduced (space::xs, 0), juce::Justification::centredLeft, true);
         }
 
         ++trackIndex;

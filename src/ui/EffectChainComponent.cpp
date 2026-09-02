@@ -204,7 +204,7 @@ public:
 
     void paint (juce::Graphics& g) override
     {
-        const auto body = getLocalBounds().toFloat().reduced (0.5f);
+        const auto body = getLocalBounds().toFloat().reduced (stroke::whisper);
 
         // A card, so a chain reads as a stack of things rather than as rows of
         // text floating on the panel behind it.

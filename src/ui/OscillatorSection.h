@@ -108,15 +108,29 @@ public:
 private:
     class SlotButton;
 
-    static constexpr int classicHeight = 24                          // slot selector
-                                       + tokens::space::sm + 26      // power + mode
-                                       + tokens::space::sm + 26      // wave, or table
-                                       + tokens::space::sm + 22      // octave
-                                       + tokens::space::sm + 68;     // detune + gain
+    /** The rows this section stacks. resized() lays them out from these and
+        the height sums below add them up, so the two cannot disagree - which
+        they could when the sum spelled the ladder numerically: 26 IS
+        controlHeight, 22 IS rulerHeight, 24 IS iconButton, and reading the sum
+        told you none of that.
+    */
+    static constexpr int selectorHeight = tokens::size::iconButton;
+    static constexpr int octaveHeight   = tokens::size::rulerHeight;
+    static constexpr int shapeHeight    = tokens::size::knob;
 
-    static constexpr int wavetableExtra = tokens::space::sm + 68     // position, mod, rate
-                                        + tokens::space::sm + 68     // unison + spread
-                                        + tokens::space::sm + 44;    // the shape display
+    static constexpr int rowGap = tokens::space::sm;
+    static constexpr int formRowHeight = tokens::size::controlHeight;
+    static constexpr int knobRowHeight = tokens::size::knobRow;
+
+    static constexpr int classicHeight = selectorHeight            // slot selector
+                                       + rowGap + formRowHeight   // power + mode
+                                       + rowGap + formRowHeight   // wave, or table
+                                       + rowGap + octaveHeight    // octave
+                                       + rowGap + knobRowHeight;  // detune + gain
+
+    static constexpr int wavetableExtra = rowGap + knobRowHeight   // position, mod, rate
+                                        + rowGap + knobRowHeight   // unison + spread
+                                        + rowGap + shapeHeight;    // the shape display
 
     void valueTreePropertyChanged (juce::ValueTree&, const juce::Identifier&) override;
     void valueTreeChildAdded (juce::ValueTree&, juce::ValueTree&) override;

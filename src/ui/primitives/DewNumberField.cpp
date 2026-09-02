@@ -216,7 +216,7 @@ void DewNumberField::paint (juce::Graphics& g)
     if (editor != nullptr)
         return;
 
-    auto bounds = getLocalBounds().toFloat().reduced (0.5f);
+    auto bounds = getLocalBounds().toFloat().reduced (stroke::whisper);
 
     g.setColour (hovered || dragging ? colour::surfaceHover : colour::surfaceRaised);
     g.fillRoundedRectangle (bounds, radius::sm);

@@ -419,3 +419,109 @@ TEST_CASE ("no component redeclares a size the ladder already names", "[build][g
     INFO ("dimensions the size ladder already declares:\n" << found.joinIntoString ("\n"));
     CHECK (found.isEmpty());
 }
+
+TEST_CASE ("no source states a gap or an inset as a bare number", "[build][gate][design]")
+{
+    // Two shapes, and only two, because they are the ones where a bare number
+    // is unambiguously a gap:
+    //
+    //   area.removeFromTop (6);          - a slice taken and thrown away
+    //   bounds.reduced (10)              - an inset, always
+    //
+    // A removeFrom whose RESULT is used is a component saying how tall its own
+    // title row is, which is its business and not the spacing scale's. That
+    // distinction is why this gate needs no allowlist: every line it can see is
+    // one the scale should own.
+    //
+    // Float arguments are out of scope. JUCE's Rectangle<float> overloads take
+    // a float, dew's spacing scale is integral, and `reduced (2.0f)` on a float
+    // rectangle is a sub-pixel optical inset - a different thing from a gap,
+    // and one stroke::whisper already names where it recurs.
+    const auto found = offenders ([] (const juce::String& line)
+    {
+        const auto trimmed = line.trim();
+
+        if (trimmed.startsWith ("//") || trimmed.startsWith ("*") || trimmed.startsWith ("/*"))
+            return false;
+
+        const auto bareInteger = [] (const juce::String& text)
+        {
+            const auto argument = text.trimStart();
+
+            if (! juce::CharacterFunctions::isDigit (argument[0]))
+                return false;
+
+            const auto number = argument.initialSectionContainingOnly ("0123456789");
+
+            // A zero inset is not a gap on any scale; it says "not in this
+            // direction", which is what `reduced (space::xs, 0)` means.
+            return number != "0" && ! argument.substring (number.length()).startsWith (".");
+        };
+
+        for (const auto* call : { "reduced (", "expanded (" })
+        {
+            auto rest = line;
+
+            while (rest.contains (call))
+            {
+                rest = rest.fromFirstOccurrenceOf (call, false, false);
+
+                if (bareInteger (rest))
+                    return true;
+
+                // The second argument too: reduced (x, y) insets both axes.
+                const auto arguments = rest.upToFirstOccurrenceOf (")", false, false);
+
+                if (arguments.contains (",") && bareInteger (arguments.fromFirstOccurrenceOf (",", false, false)))
+                    return true;
+            }
+        }
+
+        // A slice taken and discarded is a gap, whatever it is called. The
+        // whole statement has to BE the call - `area.removeFromTop (6);` - so
+        // that `button.setBounds (row.removeFromRight (110))`, where the slice
+        // is the button's own width, is not read as one.
+        for (const auto* call : { ".removeFromTop (", ".removeFromBottom (",
+                                  ".removeFromLeft (", ".removeFromRight (" })
+        {
+            if (! trimmed.endsWith (");") || ! trimmed.contains (call))
+                continue;
+
+            const auto receiver = trimmed.upToFirstOccurrenceOf (call, false, false);
+
+            if (! receiver.containsOnly ("abcdefghijklmnopqrstuvwxyz"
+                                         "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_."))
+                continue;
+
+            if (bareInteger (trimmed.fromFirstOccurrenceOf (call, false, false)))
+                return true;
+        }
+
+        return false;
+    }, { "Tokens.h" });
+
+    INFO ("gaps and insets written as bare numbers:\n" << found.joinIntoString ("\n"));
+    CHECK (found.isEmpty());
+}
+
+TEST_CASE ("no source picks its own refresh rate", "[build][gate][design]")
+{
+    // A widget that starts a 30Hz timer by literal is a widget that will not
+    // follow when the application decides what "a list refresh" costs, and dew
+    // had one - the transport bar - beside four others already quoting
+    // motion::uiRefreshHz and motion::playheadHz.
+    const auto found = offenders ([] (const juce::String& line)
+    {
+        const auto trimmed = line.trim();
+
+        if (trimmed.startsWith ("//") || trimmed.startsWith ("*") || trimmed.startsWith ("/*"))
+            return false;
+
+        return trimmed.contains ("startTimerHz (")
+               && juce::CharacterFunctions::isDigit (
+                      trimmed.fromFirstOccurrenceOf ("startTimerHz (", false, false)[0]);
+    }, { "Tokens.h" });
+
+    INFO ("timers started at a rate of their own choosing:\n" << found.joinIntoString ("\n"));
+    CHECK (found.isEmpty());
+}
