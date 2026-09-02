@@ -18,6 +18,7 @@ add_executable(dew_tests
   SequencerTests.cpp
   StepGridTests.cpp
   PreviewQueueTests.cpp
+  SignalTapTests.cpp
   SnapshotBridgeTests.cpp
   AudioSettingsTests.cpp
   MidiRouterTests.cpp
@@ -42,6 +43,7 @@ add_executable(dew_tests
   RenderStemTests.cpp
   RenderRangeTests.cpp
   UiSmokeTests.cpp
+  SignalScopeTests.cpp
 )
 
 target_link_libraries(dew_tests

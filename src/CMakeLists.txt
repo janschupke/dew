@@ -19,6 +19,7 @@ add_library(dew_core STATIC
 
   engine/Effects.cpp
   engine/PreviewQueue.cpp
+  engine/SignalTap.cpp
   engine/EngineSnapshot.cpp
   engine/SnapshotBridge.cpp
   engine/Transport.cpp
@@ -49,6 +50,7 @@ add_library(dew_core STATIC
   ui/RenderPanel.cpp
   ui/MidiSettingsPanel.cpp
   ui/StatusBar.cpp
+  ui/SignalScope.cpp
   ui/TransportBar.cpp
   ui/TimelineRuler.cpp
   ui/StepGridComponent.cpp

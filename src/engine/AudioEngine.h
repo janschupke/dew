@@ -5,6 +5,7 @@
 #include <vector>
 
 #include "MixerBus.h"
+#include "SignalTap.h"
 #include "PreviewQueue.h"
 #include "Sequencer.h"
 #include "SnapshotBridge.h"
@@ -114,6 +115,15 @@ public:
     float readAndClearTrackPeak (int trackIndex) noexcept;
     float readAndClearMasterPeak() noexcept;
 
+    /** The finished master output, for drawing.
+
+        Const on purpose: writing is the audio thread's job, and a const-only
+        accessor says so at compile time rather than in a comment. Unlike the
+        peaks above this is NOT read-and-clear, so any number of displays can
+        watch it without stealing from each other.
+    */
+    const SignalTap& getSignalTap() const noexcept  { return signalTap; }
+
     /** Which pattern plays in pattern mode, by pattern id. */
     void setCurrentPatternId (int patternId) noexcept  { requestedPatternId.store (patternId); }
     int getCurrentPatternId() const noexcept           { return requestedPatternId.load(); }
@@ -202,6 +212,8 @@ private:
 
     std::array<std::atomic<float>, kMaxMixerTracks> trackPeaks {};
     std::atomic<float> masterPeak { 0.0f };
+
+    SignalTap signalTap;
 
     static void recordPeak (std::atomic<float>&, const float* left, const float* right,
                             int numSamples, float scale) noexcept;

@@ -25,6 +25,7 @@ void AudioEngine::prepare (double sampleRate, int maximumBlockSize)
     currentBlockSize = juce::jmax (1, maximumBlockSize);
 
     transport.prepare (currentSampleRate);
+    signalTap.setSampleRate (currentSampleRate);
 
     for (auto& channel : channels)
         channel.prepare (currentSampleRate);
@@ -53,6 +54,8 @@ void AudioEngine::releaseResources()
     channelBuffers.setSize (0, 0);
     mixerBuffers.setSize (0, 0);
     channelStereo.setSize (0, 0);
+
+    signalTap.reset();
 }
 
 void AudioEngine::setProject (const juce::ValueTree& project, juce::StringArray* warnings)
@@ -626,6 +629,10 @@ void AudioEngine::processBlock (juce::AudioBuffer<float>& buffer) noexcept
     buffer.applyGain (automatedMasterGain (snapshot.masterGain));
 
     recordPeak (masterPeak, outLeft, outRight, numSamples, 1.0f);
+
+    // The same samples the master meter sees, and for the same reason: this is
+    // the only point in the engine that is the finished output.
+    signalTap.write (outLeft, outRight, numSamples);
 
     if (isPlayingNow && loopSteps > 0)
         transport.advance (numSamples);

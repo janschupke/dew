@@ -9,7 +9,7 @@ namespace dew
 {
 
 TransportBar::TransportBar (ProjectDocument& d, AudioEngine& e, EditorState& s)
-    : document (d), engine (e), editorState (s)
+    : document (d), engine (e), editorState (s), signalScope (&e)
 {
     setComponentID ("transportBar");
     patternBox.setComponentID ("patternSelector");
@@ -131,6 +131,8 @@ TransportBar::TransportBar (ProjectDocument& d, AudioEngine& e, EditorState& s)
     positionLabel.setColour (juce::Label::textColourId, Palette::playhead);
     positionLabel.setJustificationType (juce::Justification::centredLeft);
     addAndMakeVisible (positionLabel);
+
+    addAndMakeVisible (signalScope);
 
 
     document.getState().addListener (this);
@@ -310,6 +312,23 @@ void TransportBar::resized()
     area.removeFromLeft (space::md);
 
     positionLabel.setBounds (area.removeFromLeft (84).withHeight (controlHeight));
+
+    // Taken from the right rather than as the next link in the chain above:
+    // everything before it is a control with a width it needs, and this is the
+    // only thing in the bar that should give way when the window does. Hidden
+    // rather than squeezed, because a sixty-pixel oscilloscope is not a smaller
+    // oscilloscope, it is noise.
+    const auto roomForScope = area.getWidth() >= SignalScope::preferredWidth + space::lg;
+    signalScope.setVisible (roomForScope);
+
+    if (roomForScope)
+    {
+        signalScope.setBounds (area.removeFromRight (SignalScope::preferredWidth)
+                                   .withHeight (controlHeight));
+
+        area.removeFromRight (space::md);
+        groupDividers.add (area.getRight());
+    }
 }
 
 } // namespace dew

@@ -50,6 +50,13 @@ Start with **Demos → Getting Started** in the menu bar; there are four.
   add/duplicate/delete with an editable pattern length. Click or drag any ruler — piano
   roll, sequencer or playlist — to move the position. The indicator stays on screen while
   stopped, dimmed, so Stop visibly returns it to the start rather than hiding it.
+- **Visualisation** — an oscilloscope and a spectrum of the master output at the right
+  end of the transport bar. Empty when nothing is sounding — the wells and their
+  baselines stay put, so nothing moves when sound starts — and filled the moment signal
+  flows, including a piano key clicked with the transport stopped. The trace is
+  triggered on a rising zero crossing, so it stands still instead of shimmering. Hidden
+  below about a thousand pixels of window, because a sixty-pixel oscilloscope is not a
+  smaller oscilloscope.
 - **Status bar** — what the editors are pointed at, transient messages that expire
   instead of standing forever, and the DSP load and dropout count.
 - **Audio settings** — driver, output, input, sample rate and buffer size, with the
@@ -171,6 +178,26 @@ reads a published snapshot: it never allocates, locks, or touches the tree.
 swapped by compare-exchange, so `front != back` is an invariant of the encoding rather
 than an argument about interleavings — an earlier version reasoned its way to a design
 that tore roughly twice per ten thousand publishes.
+
+### The one path that runs the other way
+
+`SignalTap` carries the finished master output back to the display, and it is the only
+thing in dew that goes audio → message. It wants the opposite contract from the two
+above: `PreviewQueue` delivers every event because both halves of a click matter, and
+`SnapshotBridge` hands over whole states because half a state is nonsense, but a
+visualiser wants only the newest two thousand samples and every sample older than that is
+worthless. Delivering all of them in order would mean a display stalled behind an open
+menu comes back and redraws a third of a second of the past.
+
+So it is a ring that overwrites its oldest samples without asking, plus one monotonic
+count of everything ever written. The writer never waits and never consults the reader.
+The reader works out from the count which *absolute* sample indices it is about to copy,
+copies them, and asks the count again — if the writer has moved on by more than the ring
+holds, it says so and the display keeps the frame it had. The slots are
+`std::atomic<float>` rather than a plain array, which is the whole safety argument and
+not a decoration: copy-then-check over a plain array is a data race, undefined behaviour
+rather than a merely stale value, and a relaxed atomic load of a float is one instruction
+anyway.
 
 ### Effects without a command queue
 
@@ -297,7 +324,7 @@ project it was overwriting.
 
 ## Testing
 
-Catch2 via CTest. `ctest --preset release` runs all 326.
+Catch2 via CTest. `ctest --preset release` runs all 433.
 
 MP3 is the one thing here that needs a tool dew does not ship. JUCE can only decode MP3
 on its own, so encoding drives an installed `lame` binary as a child process - which is

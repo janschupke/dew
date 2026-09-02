@@ -1,5 +1,8 @@
 #include "DewGallery.h"
 
+#include <array>
+#include <cmath>
+
 #include "Icons.h"
 #include "Tokens.h"
 
@@ -133,6 +136,37 @@ DewGallery::DewGallery()
     unavailable->setSelectedId (1, juce::dontSendNotification);
     unavailable->setEnabled (false);
     add (unavailable);
+
+    // --- signal scope, both states -------------------------------------------
+    // Engine-less on purpose: neither starts a timer, so this page renders the
+    // same way every time it is asked to.
+    add (new SignalScope());   // never pushed - the empty state the bar shows
+                               // when nothing is sounding
+
+    auto* driven = new SignalScope();
+    {
+        // A tone, a harmonic well above it and a little noise, so both wells
+        // have something to say: an unambiguous rising edge for the trace, and
+        // energy at two separate places on the log axis for the bars.
+        std::array<float, SignalScope::windowSamples> signal {};
+        juce::Random random { 1234 };   // fixed seed: this page is a screenshot
+
+        for (size_t i = 0; i < signal.size(); ++i)
+        {
+            const auto seconds = (double) i / 44100.0;
+            const auto radians = 2.0 * juce::MathConstants<double>::pi * seconds;
+
+            signal[i] = (float) (0.45 * std::sin (radians * 220.0)
+                                 + 0.16 * std::sin (radians * 3000.0))
+                        + 0.02f * (random.nextFloat() * 2.0f - 1.0f);
+        }
+
+        // One push is enough: the ballistics rise instantly, so the bars are at
+        // full height here rather than caught part-way up.
+        driven->pushFrame (signal.data(), (int) signal.size(), 44100.0);
+    }
+
+    add (driven);
 }
 
 DewGallery::~DewGallery() = default;
@@ -233,6 +267,25 @@ int DewGallery::layOut (juce::Rectangle<int> area, bool apply)
             row.removeFromLeft (space::md);
         }
     }
+
+    // Signal scope.
+    {
+        auto row = sectionHeading ("Signal scope - empty, and with a signal",
+                                   size::controlHeight);
+
+        for (int i = 0; i < 2; ++i)
+        {
+            place (controls[index++], row.removeFromLeft (SignalScope::preferredWidth)
+                                          .withHeight (size::controlHeight));
+            row.removeFromLeft (space::xl);
+        }
+    }
+
+    // Every control the constructor added has to have been given bounds above.
+    // The array is walked positionally with a count per section, so a control
+    // added without a matching entry here used to shift every control after it
+    // into someone else's slot - silently, on a page whose only reader is a PNG.
+    jassert (index == controls.size());
 
     // Icons and palette get painted rather than laid out as components.
     {

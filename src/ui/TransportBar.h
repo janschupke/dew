@@ -5,6 +5,7 @@
 #include "../engine/AudioEngine.h"
 #include "../model/ProjectDocument.h"
 #include "EditorState.h"
+#include "SignalScope.h"
 #include "primitives/DewControls.h"
 #include "primitives/DewNumberField.h"
 
@@ -58,6 +59,11 @@ private:
     DewNumberField patternLengthField;
 
     juce::Label positionLabel;
+
+    /** The right-hand end of the bar, and the only thing in it that gives way
+        when the window narrows.
+    */
+    SignalScope signalScope;
 
     bool updatingPatternList = false;
     juce::Array<int> groupDividers;
