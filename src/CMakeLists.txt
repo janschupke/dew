@@ -29,6 +29,7 @@ add_library(dew_core STATIC
   engine/AudioEngine.cpp
   engine/OfflineRenderer.cpp
   engine/RenderPost.cpp
+  engine/MidiExporter.cpp
   engine/LiveAudioHost.cpp
   engine/MidiRouter.cpp
   engine/MidiInputHost.cpp

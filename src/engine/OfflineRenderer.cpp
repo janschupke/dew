@@ -1,5 +1,6 @@
 #include "OfflineRenderer.h"
 
+#include "MidiExporter.h"
 #include "RenderPost.h"
 
 namespace dew
@@ -403,6 +404,24 @@ RenderReport OfflineRenderer::renderToFile (const juce::ValueTree& project,
                                             RenderProgress* progress)
 {
     RenderReport report;
+
+    // MIDI is not audio, so it does not go anywhere near the engine. It shares
+    // this entry point because "what do you want out of this project" is one
+    // question to the user.
+    if (options.format == RenderFormat::midi)
+    {
+        MidiExportOptions midiOptions;
+        midiOptions.mode = options.mode;
+        midiOptions.patternId = options.patternId;
+        midiOptions.barRange = options.barRange;
+
+        auto midiReport = MidiExporter::writeToFile (project, destination, midiOptions);
+
+        if (progress != nullptr)
+            progress->fraction.store (1.0, std::memory_order_relaxed);
+
+        return midiReport;
+    }
 
     report.result = validateForFormat (options);
 
