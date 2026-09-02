@@ -22,7 +22,7 @@ public:
         nameLabel.setText (isMaster ? "Master" : track[ids::name].toString(),
                            juce::dontSendNotification);
         nameLabel.setJustificationType (juce::Justification::centred);
-        nameLabel.setFont (juce::FontOptions (11.0f, juce::Font::bold));
+        nameLabel.setFont (tokens::type::font (tokens::type::small, true));
         nameLabel.setEditable (false, ! isMaster, false);
 
         // The fader took the strip's whole remaining height and the label its
@@ -38,7 +38,7 @@ public:
         addAndMakeVisible (nameLabel);
 
         gainSlider.setSliderStyle (juce::Slider::LinearVertical);
-        gainSlider.setTextBoxStyle (juce::Slider::TextBoxBelow, false, 60, 16);
+        gainSlider.setTextBoxStyle (juce::Slider::TextBoxBelow, false, 60, tokens::size::controlHeightSm);
         gainSlider.setRange (0.0, 1.5, 0.001);
         gainSlider.setValue ((double) track[ids::gain], juce::dontSendNotification);
         gainSlider.onDragStart = [this]

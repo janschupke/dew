@@ -127,7 +127,7 @@ TransportBar::TransportBar (ProjectDocument& d, AudioEngine& e, EditorState& s)
     };
     addAndMakeVisible (patternLengthField);
 
-    positionLabel.setFont (juce::FontOptions (juce::Font::getDefaultMonospacedFontName(), 13.0f, juce::Font::plain));
+    positionLabel.setFont (tokens::type::monospaced (tokens::type::body));
     positionLabel.setColour (juce::Label::textColourId, Palette::playhead);
     positionLabel.setJustificationType (juce::Justification::centredLeft);
     addAndMakeVisible (positionLabel);

@@ -900,10 +900,7 @@ void PlaylistComponent::paint (juce::Graphics& g)
 
     if (trackIndex == 0)
     {
-        g.setColour (colour::textSecondary);
-        g.setFont (type::font (type::body));
-        g.drawText ("This project has no playlist tracks", getLocalBounds(),
-                    juce::Justification::centred, false);
+        paint::emptyState (g, getLocalBounds(), "This project has no playlist tracks");
     }
 }
 

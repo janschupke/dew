@@ -283,10 +283,7 @@ void StepGridComponent::paint (juce::Graphics& g)
 
     if (rows == 0)
     {
-        g.setColour (colour::textSecondary);
-        g.setFont (type::font (type::body));
-        g.drawText ("No channels. Use + Channel to add one.", getLocalBounds(),
-                    juce::Justification::centred, false);
+        paint::emptyState (g, getLocalBounds(), "No channels. Use + Channel to add one.");
     }
 }
 

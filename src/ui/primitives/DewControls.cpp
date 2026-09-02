@@ -384,6 +384,25 @@ void caption (juce::Graphics& g, juce::Rectangle<int> bounds, const juce::String
     g.drawText (text, bounds, justification, false);
 }
 
+void sectionHeading (juce::Graphics& g, juce::Rectangle<int> bounds, const juce::String& text,
+                     juce::Justification justification)
+{
+    g.setColour (colour::textSecondary);
+    g.setFont (type::font (type::small, true));
+    g.drawText (text, bounds, justification, false);
+}
+
+void emptyState (juce::Graphics& g, juce::Rectangle<int> bounds, const juce::String& text,
+                 juce::Justification justification)
+{
+    // textSecondary, not textDisabled. An empty state is the one thing on an
+    // empty panel, so it is the opposite of de-emphasised - it is the only
+    // instruction the user has.
+    g.setColour (colour::textSecondary);
+    g.setFont (type::font (type::body));
+    g.drawText (text, bounds, justification, false);
+}
+
 } // namespace paint
 
 } // namespace dew

@@ -60,7 +60,110 @@ DewLookAndFeel::DewLookAndFeel()
 
 juce::Font DewLookAndFeel::getLabelFont (juce::Label& label)
 {
+    // Deliberately the label's own font: setFont is how a caller opts a label
+    // onto a specific token, and overriding that would break every one of them.
+    // The labels that had NO font were the ones JUCE creates itself, which
+    // createSliderTextBox below now covers.
     return label.getFont();
+}
+
+juce::Font DewLookAndFeel::getTextButtonFont (juce::TextButton&, int)
+{
+    // V4 returns jmin (16, height * 0.6), which on the mixer's 18px M/S buttons
+    // is 10.8 - a size that appears nowhere in the system, next to a
+    // DewLetterToggle drawing the same glyph at 11.
+    return tokens::type::font (tokens::type::body);
+}
+
+juce::Font DewLookAndFeel::getPopupMenuFont()
+{
+    return tokens::type::font (tokens::type::body);
+}
+
+juce::Font DewLookAndFeel::getSliderPopupFont (juce::Slider&)
+{
+    return tokens::type::font (tokens::type::small);
+}
+
+juce::Font DewLookAndFeel::getAlertWindowTitleFont()
+{
+    return tokens::type::font (tokens::type::title, true);
+}
+
+juce::Font DewLookAndFeel::getAlertWindowMessageFont()
+{
+    return tokens::type::font (tokens::type::body);
+}
+
+juce::Font DewLookAndFeel::getAlertWindowFont()
+{
+    return tokens::type::font (tokens::type::body);
+}
+
+namespace
+{
+
+constexpr float tooltipMaxWidth = 320.0f;
+
+/** Tooltip text, laid out at a dew size. JUCE's own helper hard-codes 13pt bold
+    and is in a detail namespace, so this is the only way onto the scale.
+*/
+juce::TextLayout layOutTooltip (const juce::String& text, juce::Colour textColour)
+{
+    juce::AttributedString attributed;
+    attributed.setJustification (juce::Justification::centred);
+    attributed.append (text, tokens::type::font (tokens::type::small), textColour);
+
+    juce::TextLayout layout;
+    layout.createLayout (attributed, tooltipMaxWidth);
+
+    return layout;
+}
+
+} // namespace
+
+juce::Rectangle<int> DewLookAndFeel::getTooltipBounds (const juce::String& tipText,
+                                                       juce::Point<int> screenPos,
+                                                       juce::Rectangle<int> parentArea)
+{
+    const auto layout = layOutTooltip (tipText, juce::Colours::black);
+
+    const auto w = (int) (layout.getWidth() + 2.0f * tokens::space::md);
+    const auto h = (int) (layout.getHeight() + 2.0f * tokens::space::xs);
+
+    return juce::Rectangle<int> (screenPos.x > parentArea.getCentreX() ? screenPos.x - (w + 12) : screenPos.x + 24,
+                                 screenPos.y > parentArea.getCentreY() ? screenPos.y - (h + 6)  : screenPos.y + 6,
+                                 w, h)
+             .constrainedWithin (parentArea);
+}
+
+void DewLookAndFeel::drawTooltip (juce::Graphics& g, const juce::String& text, int width, int height)
+{
+    using namespace tokens;
+
+    const juce::Rectangle<float> bounds (0.0f, 0.0f, (float) width, (float) height);
+
+    g.setColour (colour::surfaceRaised);
+    g.fillRoundedRectangle (bounds, tokens::radius::sm);
+
+    g.setColour (colour::outline);
+    g.drawRoundedRectangle (bounds.reduced (0.5f), tokens::radius::sm, tokens::stroke::hairline);
+
+    layOutTooltip (text, colour::textPrimary).draw (g, bounds);
+}
+
+juce::Label* DewLookAndFeel::createSliderTextBox (juce::Slider& slider)
+{
+    // V2 returns its own private SliderLabelComp, which cannot be constructed
+    // here - so take that one and put a font on it. Without this the label keeps
+    // juce::Label's untouched 15pt default, which is taller than the 15px and
+    // 16px text boxes the instrument panel and mixer give it.
+    auto* label = LookAndFeel_V4::createSliderTextBox (slider);
+
+    if (label != nullptr)
+        label->setFont (tokens::type::font (tokens::type::small));
+
+    return label;
 }
 
 void DewLookAndFeel::drawRotarySlider (juce::Graphics& g, int x, int y, int width, int height,

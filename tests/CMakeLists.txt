@@ -23,6 +23,7 @@ add_executable(dew_tests
   EngineTests.cpp
   MixerTests.cpp
   TimelineViewTests.cpp
+  TypographyTests.cpp
   PianoRollTests.cpp
   PlaylistTests.cpp
   UiSmokeTests.cpp
@@ -38,7 +39,10 @@ target_link_libraries(dew_tests
 
 # The example project is committed, so a test can check it stays loadable and
 # in step with the factory that generates it.
+# The typography gate scans the sources for raw font construction, so it needs
+# to know where they are. Same idiom as the examples directory above.
 target_compile_definitions(dew_tests PRIVATE
-  DEW_EXAMPLES_DIR="${CMAKE_SOURCE_DIR}/examples")
+  DEW_EXAMPLES_DIR="${CMAKE_SOURCE_DIR}/examples"
+  DEW_SOURCE_DIR="${CMAKE_SOURCE_DIR}/src")
 
 catch_discover_tests(dew_tests)

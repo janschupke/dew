@@ -655,15 +655,14 @@ void EffectChainComponent::resized()
 
 void EffectChainComponent::paint (juce::Graphics& g)
 {
-    paint::caption (g, { space::xxs, 0, getWidth() - size::iconButton, headingHeight },
-                    ownerName.isEmpty() ? "EFFECTS" : "EFFECTS - " + ownerName);
+    paint::sectionHeading (g, { space::xxs, 0, getWidth() - size::iconButton, headingHeight },
+                           ownerName.isEmpty() ? "EFFECTS" : "EFFECTS - " + ownerName);
 
     if (! chainOwner.isValid())
     {
-        g.setColour (colour::textDisabled);
-        g.setFont (type::font (type::small));
-        g.drawText ("Nothing selected", getLocalBounds().withTrimmedTop (headingHeight),
-                    juce::Justification::centredTop, false);
+        paint::emptyState (g, getLocalBounds().withTrimmedTop (headingHeight)
+                                                .removeFromTop (size::rowHeight * 2),
+                           "Nothing selected");
         return;
     }
 
@@ -673,10 +672,8 @@ void EffectChainComponent::paint (juce::Graphics& g)
 
         paint::inertArea (g, empty);
 
-        g.setColour (colour::textDisabled);
-        g.setFont (type::font (type::small));
-        g.drawText ("No effects yet - use + to add one", empty.reduced (space::md, 0),
-                    juce::Justification::centredLeft, false);
+        paint::emptyState (g, empty.reduced (space::md, 0), "No effects yet - use + to add one",
+                           juce::Justification::centredLeft);
     }
 }
 

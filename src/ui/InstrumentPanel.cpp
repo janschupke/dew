@@ -14,7 +14,7 @@ namespace
 void styleCaption (juce::Label& label, const juce::String& text)
 {
     label.setText (text, juce::dontSendNotification);
-    label.setFont (juce::FontOptions (11.0f));
+    label.setFont (tokens::type::font (tokens::type::caption));
     label.setColour (juce::Label::textColourId, Palette::textDim);
     label.setJustificationType (juce::Justification::centred);
 }
@@ -32,7 +32,7 @@ InstrumentPanel::InstrumentPanel (ProjectDocument& d, EditorState& s)
 
     effectChain.onRequiredHeightChanged = [this] { layOutChain(); };
 
-    titleLabel.setFont (juce::FontOptions (14.0f, juce::Font::bold));
+    titleLabel.setFont (tokens::type::font (tokens::type::title, true));
     titleLabel.setColour (juce::Label::textColourId, Palette::text);
     addAndMakeVisible (titleLabel);
 
@@ -123,11 +123,11 @@ void InstrumentPanel::attachRotary (juce::Slider& slider, juce::Label& label, co
     if (slider.getSliderStyle() != juce::Slider::IncDecButtons)
     {
         slider.setSliderStyle (juce::Slider::RotaryHorizontalVerticalDrag);
-        slider.setTextBoxStyle (juce::Slider::TextBoxBelow, false, 58, 15);
+        slider.setTextBoxStyle (juce::Slider::TextBoxBelow, false, 58, tokens::size::controlHeightSm);
     }
     else
     {
-        slider.setTextBoxStyle (juce::Slider::TextBoxLeft, false, 44, 20);
+        slider.setTextBoxStyle (juce::Slider::TextBoxLeft, false, 44, tokens::size::controlHeightSm);
     }
 
     slider.setRange (minimum, maximum, interval);

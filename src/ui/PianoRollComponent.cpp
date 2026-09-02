@@ -894,7 +894,7 @@ void PianoRollComponent::paintKeyboard (juce::Graphics& g)
         if (pitch % 12 == 0)
         {
             g.setColour (pitch == auditionPitch ? colour::textOnAccent : colour::textOnAccent);
-            g.setFont (juce::FontOptions ((float) type::caption));
+            g.setFont (type::font (type::caption));
             g.drawText (noteName (pitch), keys.getX() + 3, (int) y, keys.getWidth() - 6, rowHeight,
                         juce::Justification::centredLeft, false);
         }
@@ -916,7 +916,7 @@ void PianoRollComponent::paintRuler (juce::Graphics& g)
     const auto stepsPerBar = stepsPerBeat * 4;
     const auto range = timeline.visibleStepRange (contentWidth(), numSteps() + 1);
 
-    g.setFont (juce::FontOptions ((float) type::caption));
+    g.setFont (type::font (type::caption));
 
     for (int step = range.getStart(); step <= range.getEnd(); ++step)
     {
@@ -1087,8 +1087,8 @@ void PianoRollComponent::paintVelocityLane (juce::Graphics& g)
     g.drawHorizontalLine (area.getY(), 0.0f, (float) getWidth());
 
     // Label gutter, so the lane is identifiable rather than a mystery strip.
-    paint::caption (g, { 0, area.getY(), keyboardWidth, area.getHeight() }, "VEL",
-                    juce::Justification::centred);
+    paint::sectionHeading (g, { 0, area.getY(), keyboardWidth, area.getHeight() }, "VEL",
+                           juce::Justification::centred);
 
     const auto channelId = editorState.getSelectedChannelId();
     const auto colourForChannel = channelColour();
@@ -1140,9 +1140,7 @@ void PianoRollComponent::paint (juce::Graphics& g)
 
     if (! ProjectEdits::findChannel (document.getState(), editorState.getSelectedChannelId()).isValid())
     {
-        g.setColour (colour::textSecondary);
-        g.setFont (juce::FontOptions ((float) type::body));
-        g.drawText ("Select a channel in the Channel Rack", noteArea(), juce::Justification::centred);
+        paint::emptyState (g, noteArea(), "Select a channel in the Channel Rack");
     }
 }
 

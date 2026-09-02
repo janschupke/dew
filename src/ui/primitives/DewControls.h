@@ -164,8 +164,28 @@ namespace paint
     */
     void inertArea (juce::Graphics&, juce::Rectangle<int>);
 
+    /** A control's caption - the word under a knob or beside a number field.
+        The smallest thing in the system, and deliberately so.
+    */
     void caption (juce::Graphics&, juce::Rectangle<int>, const juce::String&,
                   juce::Justification = juce::Justification::centredLeft);
+
+    /** A panel's heading. Distinct from caption(): "EFFECTS" is a heading and
+        "CUTOFF" is a caption, and drawing both at the same size was why the
+        effect chain's own title read as smaller than the things inside it.
+    */
+    void sectionHeading (juce::Graphics&, juce::Rectangle<int>, const juce::String&,
+                         juce::Justification = juce::Justification::centredLeft);
+
+    /** Every "there is nothing here yet" message.
+
+        One function rather than five, because when each panel picked its own
+        size and colour the app ended up with the same kind of message drawn at
+        10, 11 and 13 point, in two different greys - and the 11pt textDisabled
+        one was unreadable against the hatch behind it.
+    */
+    void emptyState (juce::Graphics&, juce::Rectangle<int>, const juce::String&,
+                     juce::Justification = juce::Justification::centred);
 }
 
 } // namespace dew

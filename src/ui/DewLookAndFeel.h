@@ -46,7 +46,30 @@ public:
                                bool shouldDrawButtonAsHighlighted,
                                bool shouldDrawButtonAsDown) override;
 
+    // --- type ---------------------------------------------------------------
+    // Six font paths used to fall through to LookAndFeel_V2/V4 and land on
+    // sizes that exist nowhere in tokens::type - 10.8 on an 18px mixer button,
+    // 17 in a menu, 13 BOLD on every tooltip. Each of these closes one.
     juce::Font getLabelFont (juce::Label&) override;
+    juce::Font getTextButtonFont (juce::TextButton&, int buttonHeight) override;
+    juce::Font getPopupMenuFont() override;
+    juce::Font getSliderPopupFont (juce::Slider&) override;
+    juce::Font getAlertWindowTitleFont() override;
+    juce::Font getAlertWindowMessageFont() override;
+    juce::Font getAlertWindowFont() override;
+
+    /** JUCE hard-codes 13pt bold inside drawTooltip, so the only way onto the
+        scale is to draw the tooltip ourselves.
+    */
+    void drawTooltip (juce::Graphics&, const juce::String& text, int width, int height) override;
+    juce::Rectangle<int> getTooltipBounds (const juce::String& tipText,
+                                           juce::Point<int> screenPos,
+                                           juce::Rectangle<int> parentArea) override;
+
+    /** The Label a Slider makes for its own text box never gets a setFont, so
+        it kept JUCE's 15pt default inside a 15px box.
+    */
+    juce::Label* createSliderTextBox (juce::Slider&) override;
 
     /** Tabs fell through to LookAndFeel_V4, which meant no dew hover treatment
         and a tab bar that did not look like the rest of the application.

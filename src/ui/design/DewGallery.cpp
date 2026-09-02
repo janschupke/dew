@@ -299,7 +299,7 @@ void DewGallery::paint (juce::Graphics& g)
             icons::draw (g, all[(size_t) i].make(), glyph.toFloat(), colour::textPrimary);
 
             g.setColour (colour::textDisabled);
-            g.setFont (type::font (8.0f));
+            g.setFont (type::font (type::caption));
             g.drawText (all[(size_t) i].name, cellBounds.withTop (glyph.getBottom() + 2),
                         juce::Justification::centredTop, false);
         }
@@ -328,7 +328,7 @@ void DewGallery::paint (juce::Graphics& g)
             g.drawRoundedRectangle (chip.toFloat(), radius::sm, stroke::hairline);
 
             g.setColour (colour::textSecondary);
-            g.setFont (type::font (8.5f));
+            g.setFont (type::font (type::caption));
             g.drawText (swatches[(size_t) i].name, cellBounds, juce::Justification::centredTop, false);
         }
     }
