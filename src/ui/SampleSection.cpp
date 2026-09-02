@@ -53,10 +53,27 @@ SampleSection::~SampleSection()
 void SampleSection::attachKnob (DewKnob& knob, const juce::Identifier& property,
                                 const juce::String& transactionName)
 {
+    // A drag is ONE undo step. Without these, dragging a fade or a transpose
+    // across its range made an undo step per frame, and getting back to where
+    // you started meant pressing undo a hundred times - which is the fix the
+    // README claims is done and which this panel never got.
+    //
+    // Driven by the knob's own drag callbacks rather than by the mouse: the
+    // pointer state reads as "not down" in every headless harness, so a guard
+    // built on it would be one no test could ever see working.
+    knob.onEditStart = [this] { inDrag = true; gestureActive = false; };
+    knob.onEditEnd = [this] { inDrag = false; gestureActive = false; };
+
     knob.onValueChange = [this, &knob, property, transactionName]
     {
-        if (! updating)
-            write (property, knob.getValue(), transactionName);
+        if (updating)
+            return;
+
+        write (property, knob.getValue(), transactionName);
+
+        // The first value of a drag opened the transaction; the rest join it.
+        // A change that is not part of a drag always opens its own.
+        gestureActive = inDrag;
     };
 
     addAndMakeVisible (knob);
@@ -65,12 +82,8 @@ void SampleSection::attachKnob (DewKnob& knob, const juce::Identifier& property,
 void SampleSection::write (const juce::Identifier& property, const juce::var& value,
                            const juce::String& transactionName)
 {
-    if (! sample.isValid())
-        return;
-
-    auto& undo = document.getUndoManager();
-    undo.beginNewTransaction (transactionName);
-    sample.setProperty (property, value, &undo);
+    ProjectEdits::setProperty (sample, property, value, &document.getUndoManager(),
+                               transactionName, gestureActive);
 }
 
 void SampleSection::setOwner (juce::ValueTree sampleNode)
@@ -244,7 +257,10 @@ void SampleSection::mouseDrag (const juce::MouseEvent& event)
     {
         const auto stored = (int) sample[ids::endSample];
         const auto end = stored <= 0 ? length : stored;
-        sample.setProperty (ids::startSample, juce::jlimit (0, juce::jmax (0, end - 1), frame), &undo);
+
+        ProjectEdits::setProperty (sample, ids::startSample,
+                                   juce::jlimit (0, juce::jmax (0, end - 1), frame),
+                                   &undo, "Trim sample", gestureActive);
     }
     else
     {
@@ -253,12 +269,17 @@ void SampleSection::mouseDrag (const juce::MouseEvent& event)
 
         // Storing the full length as 0 keeps "untrimmed" one value rather than
         // two, so a sample replaced by a longer one still plays to its end.
-        sample.setProperty (ids::endSample, clamped >= length ? 0 : clamped, &undo);
+        ProjectEdits::setProperty (sample, ids::endSample, clamped >= length ? 0 : clamped,
+                                   &undo, "Trim sample", gestureActive);
     }
+
+    // The whole sweep of a handle is one undo step, the same as a knob's.
+    gestureActive = true;
 }
 
 void SampleSection::mouseUp (const juce::MouseEvent&)
 {
+    gestureActive = false;
     dragging = Handle::none;
 }
 

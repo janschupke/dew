@@ -387,3 +387,49 @@ TEST_CASE ("the pool resolves a relative path against the project", "[audio][poo
     SamplePool homeless;
     REQUIRE (! homeless.loadReference ("Song Assets/Take 001.wav").isValid());
 }
+
+TEST_CASE ("dragging a sample knob is one undo step, not twenty", "[ui][audio][undo]")
+{
+    // The regression this closes. SampleSection had no gesture guard at all -
+    // no `dragging` flag, no onEditStart - so every value a drag produced
+    // opened its own undo transaction, and getting back to where you started
+    // meant pressing undo once per frame. That is a regression of the fix
+    // README.md claims is done for every other panel.
+    const juce::ScopedJuceInitialiser_GUI juceInit;
+
+    TempDir temp { "dew-sample-undo-" };
+    ProjectDocument document;
+    SamplePool pool;
+
+    document.setState (ProjectFactory::createDefault(), true);
+
+    const auto audio = writeTone (temp.dir.getChildFile ("take.wav"));
+    auto channel = ProjectEdits::addAudioChannel (document.getState(), "Take", nullptr);
+    ProjectEdits::setSampleSource (channel, audio.getFullPathName(), 44100, 44100, nullptr);
+
+    SampleSection section { document, &pool };
+    section.setSize (280, SampleSection::requiredHeight);
+    section.setVisible (true);
+    section.setOwner (channel.getChildWithName (ids::SAMPLE));
+    section.resized();
+
+    auto sample = channel.getChildWithName (ids::SAMPLE);
+    auto& undo = document.getUndoManager();
+    auto& knob = section.getFadeInKnob();
+
+    const auto before = (double) sample[ids::fadeInMs];
+
+    // What a drag looks like from the knob's side: one onEditStart, a run of
+    // values, one onEditEnd.
+    knob.onEditStart();
+
+    for (int i = 1; i <= 20; ++i)
+        knob.setValue ((double) i * 10.0, juce::sendNotificationSync);
+
+    knob.onEditEnd();
+
+    REQUIRE (! juce::exactlyEqual ((double) sample[ids::fadeInMs], before));
+
+    REQUIRE (undo.undo());
+    CHECK (juce::exactlyEqual ((double) sample[ids::fadeInMs], before));
+}

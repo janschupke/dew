@@ -42,27 +42,24 @@ public:
         nameLabel.setColour (juce::Label::textColourId, colour::textPrimary);
         nameLabel.onTextChange = [this]
         {
-            auto& undo = document.getUndoManager();
-            undo.beginNewTransaction ("Rename track");
-            track.setProperty (ids::name, nameLabel.getText(), &undo);
+            ProjectEdits::setProperty (track, ids::name, nameLabel.getText(),
+                                       &document.getUndoManager(), "Rename track");
         };
         addAndMakeVisible (nameLabel);
 
         muteButton.setToggleState ((bool) track[ids::mute], juce::dontSendNotification);
         muteButton.onClick = [this]
         {
-            auto& undo = document.getUndoManager();
-            undo.beginNewTransaction ("Mute track");
-            track.setProperty (ids::mute, muteButton.getToggleState(), &undo);
+            ProjectEdits::setProperty (track, ids::mute, muteButton.getToggleState(),
+                                       &document.getUndoManager(), "Mute track");
         };
         addAndMakeVisible (muteButton);
 
         soloButton.setToggleState ((bool) track[ids::solo], juce::dontSendNotification);
         soloButton.onClick = [this]
         {
-            auto& undo = document.getUndoManager();
-            undo.beginNewTransaction ("Solo track");
-            track.setProperty (ids::solo, soloButton.getToggleState(), &undo);
+            ProjectEdits::setProperty (track, ids::solo, soloButton.getToggleState(),
+                                       &document.getUndoManager(), "Solo track");
         };
         addAndMakeVisible (soloButton);
     }
@@ -724,7 +721,8 @@ void PlaylistComponent::applyClipChoice (juce::ValueTree track, int bar, int cho
                     if (auto fresh = ProjectEdits::duplicatePattern (document.getState(),
                                                                      pattern, &undo);
                         fresh.isValid())
-                        clip.setProperty (ids::patternId, (int) fresh[ids::id], &undo);
+                        ProjectEdits::setProperty (clip, ids::patternId, (int) fresh[ids::id],
+                                                   &undo, "Duplicate pattern", true);
                 }
             }
             break;

@@ -62,14 +62,15 @@ TransportBar::TransportBar (ProjectDocument& d, AudioEngine& e, EditorState& s)
     tempoField.setNumDecimalPlaces (1);
     tempoField.setSuffix (" bpm");
     tempoField.setTooltip ("Tempo - drag up and down, or double-click to type");
-    tempoField.onEditStart = [this]
-    {
-        document.getUndoManager().beginNewTransaction ("Change tempo");
-    };
+    tempoField.onEditStart = [this] { tempoGestureActive = false; };
     tempoField.onValueChange = [this]
     {
-        auto& undo = document.getUndoManager();
-        document.getState().setProperty (ids::tempoBpm, tempoField.getValue(), &undo);
+        ProjectEdits::setProperty (document.getState(), ids::tempoBpm, tempoField.getValue(),
+                                   &document.getUndoManager(), "Change tempo",
+                                   tempoGestureActive);
+
+        // A number field drag emits a value per frame, exactly as a knob does.
+        tempoGestureActive = true;
     };
     addAndMakeVisible (tempoField);
 
@@ -152,17 +153,15 @@ TransportBar::TransportBar (ProjectDocument& d, AudioEngine& e, EditorState& s)
     // in the bar that could not share the common height.
     patternLengthField.setSuffix (" steps");
     patternLengthField.setTooltip ("Pattern length - drag up and down, or double-click to type");
-    patternLengthField.onEditStart = [this]
-    {
-        document.getUndoManager().beginNewTransaction ("Change pattern length");
-    };
+    patternLengthField.onEditStart = [this] { lengthGestureActive = false; };
     patternLengthField.onValueChange = [this]
     {
-        auto pattern = currentPattern();
+        ProjectEdits::setProperty (currentPattern(), ids::lengthSteps,
+                                   (int) patternLengthField.getValue(),
+                                   &document.getUndoManager(), "Change pattern length",
+                                   lengthGestureActive);
 
-        if (pattern.isValid())
-            pattern.setProperty (ids::lengthSteps, (int) patternLengthField.getValue(),
-                                 &document.getUndoManager());
+        lengthGestureActive = true;
     };
     addAndMakeVisible (patternLengthField);
 

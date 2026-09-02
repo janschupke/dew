@@ -194,7 +194,8 @@ private:
     bool showingWavetable = false;
 
     /** True between a knob's onEditStart and onEditEnd - see write(). */
-    bool dragging = false;
+    bool inDrag = false;
+    bool gestureActive = false;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (OscillatorSection)
 };

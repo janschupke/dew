@@ -635,3 +635,32 @@ TEST_CASE ("no view reads the wheel or the drag scale for itself", "[build][gate
     INFO ("views reading the wheel or the drag scale directly:\n" << found.joinIntoString ("\n"));
     CHECK (found.isEmpty());
 }
+
+TEST_CASE ("no editor writes an undoable property by hand", "[build][gate][undo]")
+{
+    // ProjectEdits had no scalar setter at all, so all twenty-seven property
+    // writes in src/ui went straight to ValueTree and each re-implemented the
+    // transaction rule around it - copy-pasted five times, and MISSING from a
+    // sixth. The consequence was invisible in the file that had the bug and
+    // obvious only across all six: dragging an audio channel's fade made one
+    // undo step per frame.
+    //
+    // A write with no UndoManager is not caught, and deliberately: writing to a
+    // detached copy nobody can undo is a different thing, and it says so where
+    // it happens.
+    const auto found = offenders ([] (const juce::String& line)
+    {
+        const auto trimmed = line.trim();
+
+        if (trimmed.startsWith ("//") || trimmed.startsWith ("*") || trimmed.startsWith ("/*"))
+            return false;
+
+        if (! line.contains (".setProperty (") || line.contains ("ProjectEdits::setProperty"))
+            return false;
+
+        return line.contains ("&undo") || line.contains ("getUndoManager()");
+    }, { "ProjectEdits.cpp", "ProjectFactory.cpp", "ProjectSchema.cpp" });
+
+    INFO ("undoable property writes outside ProjectEdits:\n" << found.joinIntoString ("\n"));
+    CHECK (found.isEmpty());
+}

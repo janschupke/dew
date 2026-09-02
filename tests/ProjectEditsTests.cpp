@@ -1,6 +1,7 @@
 #include <catch2/catch_test_macros.hpp>
 
 #include "model/Ids.h"
+#include "model/ProjectDocument.h"
 #include "model/ProjectEdits.h"
 #include "model/ProjectFactory.h"
 #include "model/ProjectSchema.h"
@@ -454,4 +455,74 @@ TEST_CASE ("removing a playlist track removes its clips in one undo step",
     // track and both clips back together, not the track and then the clips.
     REQUIRE (undo.undo());
     REQUIRE (countClips() == 2);
+}
+
+TEST_CASE ("a whole gesture is one undo step", "[model][undo]")
+{
+    // The rule that was copy-pasted into five components and missing from a
+    // sixth: a drag emits a value per frame, so without it, dragging a knob
+    // across its range makes a hundred undo steps and getting back to where you
+    // started means pressing undo a hundred times.
+    ProjectDocument document;
+    document.setState (ProjectFactory::createDefault(), true);
+
+    auto& undo = document.getUndoManager();
+    auto channel = document.getState().getChildWithName (ids::CHANNEL);
+    REQUIRE (channel.isValid());
+
+    const auto before = (double) channel[ids::volume];
+
+    // Twenty values, the way a drag arrives: the first opens the transaction
+    // and the rest join it.
+    for (int i = 1; i <= 20; ++i)
+        ProjectEdits::setProperty (channel, ids::volume, before * 0.5 + (double) i * 0.01,
+                                   &undo, "Change volume", i > 1);
+
+    REQUIRE (! juce::exactlyEqual ((double) channel[ids::volume], before));
+
+    REQUIRE (undo.undo());
+    CHECK (juce::exactlyEqual ((double) channel[ids::volume], before));
+
+    // And nothing else is left behind it, which is what "one step" means.
+    CHECK_FALSE (undo.canUndo());
+}
+
+TEST_CASE ("separate gestures are separate undo steps", "[model][undo]")
+{
+    // The other half. Coalescing everything into one transaction would make a
+    // whole session's worth of edits undo in a single press.
+    ProjectDocument document;
+    document.setState (ProjectFactory::createDefault(), true);
+
+    auto& undo = document.getUndoManager();
+    auto channel = document.getState().getChildWithName (ids::CHANNEL);
+
+    const auto before = (double) channel[ids::volume];
+
+    ProjectEdits::setProperty (channel, ids::volume, 0.25, &undo, "Change volume", false);
+    ProjectEdits::setProperty (channel, ids::volume, 0.75, &undo, "Change volume", false);
+
+    REQUIRE (undo.undo());
+    CHECK (juce::exactlyEqual ((double) channel[ids::volume], 0.25));
+
+    REQUIRE (undo.undo());
+    CHECK (juce::exactlyEqual ((double) channel[ids::volume], before));
+}
+
+TEST_CASE ("writing the value that is already there records nothing", "[model][undo]")
+{
+    // Four components re-state every control on every document change. A
+    // ValueTree write of the value already present still opens a transaction
+    // and still pushes an undo step, which is how a refresh() ends up in the
+    // undo history as an edit nobody made.
+    ProjectDocument document;
+    document.setState (ProjectFactory::createDefault(), true);
+
+    auto& undo = document.getUndoManager();
+    auto channel = document.getState().getChildWithName (ids::CHANNEL);
+
+    ProjectEdits::setProperty (channel, ids::volume, channel[ids::volume],
+                               &undo, "Change volume", false);
+
+    CHECK_FALSE (undo.canUndo());
 }

@@ -39,9 +39,8 @@ public:
         nameLabel.setColour (juce::Label::textColourId, colour::textPrimary);
         nameLabel.onTextChange = [this]
         {
-            auto& undo = document.getUndoManager();
-            undo.beginNewTransaction ("Rename channel");
-            channel.setProperty (ids::name, nameLabel.getText(), &undo);
+            ProjectEdits::setProperty (channel, ids::name, nameLabel.getText(),
+                                       &document.getUndoManager(), "Rename channel");
         };
         addAndMakeVisible (nameLabel);
 
@@ -55,9 +54,8 @@ public:
             // across M selected that channel with no click at all.
             select();
 
-            auto& undo = document.getUndoManager();
-            undo.beginNewTransaction ("Mute channel");
-            channel.setProperty (ids::muted, muteButton.getToggleState(), &undo);
+            ProjectEdits::setProperty (channel, ids::muted, muteButton.getToggleState(),
+                                       &document.getUndoManager(), "Mute channel");
         };
         addAndMakeVisible (muteButton);
 
@@ -66,9 +64,8 @@ public:
         {
             select();
 
-            auto& undo = document.getUndoManager();
-            undo.beginNewTransaction ("Solo channel");
-            channel.setProperty (ids::solo, soloButton.getToggleState(), &undo);
+            ProjectEdits::setProperty (channel, ids::solo, soloButton.getToggleState(),
+                                       &document.getUndoManager(), "Solo channel");
         };
         addAndMakeVisible (soloButton);
 
@@ -244,31 +241,23 @@ private:
         knob.setTooltip (tooltip);
         knob.setValue ((double) channel[property], juce::dontSendNotification);
 
-        knob.onEditStart = [this, transactionName]
-        {
-            select();
-            dragging = true;
-            document.getUndoManager().beginNewTransaction (transactionName);
-        };
-
-        knob.onEditEnd = [this] { dragging = false; };
+        knob.onEditStart = [this] { select(); inDrag = true; gestureActive = false; };
+        knob.onEditEnd = [this] { inDrag = false; gestureActive = false; };
 
         knob.onValueChange = [this, &knob, property, transactionName]
         {
             if (updating)
                 return;
 
-            auto& undo = document.getUndoManager();
+            // The first value of a drag opens the transaction and the rest join
+            // it; a wheel or keyboard change is not part of a drag and opens its
+            // own. beginNewTransaction ARMS a new one rather than being a no-op
+            // when one is open, which is why the distinction has to be made.
+            ProjectEdits::setProperty (channel, property, knob.getValue(),
+                                       &document.getUndoManager(), transactionName,
+                                       gestureActive);
 
-            // beginNewTransaction ARMS a new transaction rather than being a
-            // no-op when one is open, so calling it per value change would make
-            // every pixel of a drag its own undo step. During a drag the
-            // transaction opened at onEditStart is left to coalesce; a wheel or
-            // keyboard change produces no drag, so it opens its own.
-            if (! dragging)
-                undo.beginNewTransaction (transactionName);
-
-            channel.setProperty (property, knob.getValue(), &undo);
+            gestureActive = inDrag;
         };
 
         addAndMakeVisible (knob);
@@ -277,7 +266,8 @@ private:
     juce::Label nameLabel;
     juce::Rectangle<int> pitchBounds;
     bool updating = false;
-    bool dragging = false;
+    bool inDrag = false;
+    bool gestureActive = false;
     DewLetterToggle muteButton { "M", colour::warning, "Mute this channel" };
     DewLetterToggle soloButton { "S", colour::success, "Solo this channel" };
     DewKnob volumeKnob { "VOL", 0.0, 1.0, 0.001 };

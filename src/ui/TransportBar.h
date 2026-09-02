@@ -66,6 +66,11 @@ public:
     static constexpr int newPatternItemId = 1'000'000;
 
 private:
+    /** True for every value after the first in one number-field drag, so a
+        whole drag is one undo step rather than one per frame. */
+    bool tempoGestureActive = false;
+    bool lengthGestureActive = false;
+
     /** Adds a pattern and makes it current. The + button and the dropdown's own
         "New pattern" item both go through here.
     */

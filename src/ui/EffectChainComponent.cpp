@@ -71,9 +71,8 @@ public:
         bypassButton.onClick = [this]
         {
             owner.selectSlot (index);
-            auto& undo = document.getUndoManager();
-            undo.beginNewTransaction ("Bypass effect");
-            effect.setProperty (ids::enabled, ! bypassButton.getToggleState(), &undo);
+            ProjectEdits::setProperty (effect, ids::enabled, ! bypassButton.getToggleState(),
+                                       &document.getUndoManager(), "Bypass effect");
         };
         addAndMakeVisible (bypassButton);
 
@@ -395,8 +394,10 @@ private:
         if (updating)
             return;
 
-        auto mutableEffect = effect;
-        mutableEffect.setProperty (property, value, &document.getUndoManager());
+        ProjectEdits::setProperty (effect, property, value, &document.getUndoManager(),
+                                   "Change effect parameter", gestureActive);
+
+        gestureActive = inDrag;
     }
 
     void buildParameters()
@@ -418,13 +419,10 @@ private:
                 if (updating)
                     return;
 
-                auto& undo = document.getUndoManager();
-                undo.beginNewTransaction ("Change filter mode");
-                auto mutableEffect = effect;
-                mutableEffect.setProperty (ids::filterMode,
+                ProjectEdits::setProperty (effect, ids::filterMode,
                                            modeBox->getSelectedId() == 2 ? "highpass"
                                            : modeBox->getSelectedId() == 3 ? "bandpass" : "lowpass",
-                                           &undo);
+                                           &document.getUndoManager(), "Change filter mode");
             };
 
             addAndMakeVisible (*modeBox);
@@ -455,7 +453,8 @@ private:
                 control->knob->setValue (value, juce::dontSendNotification);
 
                 auto* knob = control->knob.get();
-                knob->onEditStart = [this] { document.getUndoManager().beginNewTransaction ("Change effect"); };
+                knob->onEditStart = [this] { inDrag = true; gestureActive = false; };
+                knob->onEditEnd = [this] { inDrag = false; gestureActive = false; };
                 knob->onValueChange = [this, knob, property] { write (property, knob->getValue()); };
                 addAndMakeVisible (*knob);
             }
@@ -470,7 +469,10 @@ private:
                 control->field->setValue (value, juce::dontSendNotification);
 
                 auto* field = control->field.get();
-                field->onEditStart = [this] { document.getUndoManager().beginNewTransaction ("Change effect"); };
+                // A number field has no edit-end, so its drag is bounded by the
+                // start of the next one - which is enough: a new gesture opens
+                // its own transaction either way.
+                field->onEditStart = [this] { inDrag = true; gestureActive = false; };
                 field->onValueChange = [this, field, property] { write (property, field->getValue()); };
                 addAndMakeVisible (*field);
             }
@@ -491,6 +493,8 @@ private:
     juce::Point<int> pressedAt;
     bool updating = false;
     bool draggingFromGrip = false;
+    bool inDrag = false;
+    bool gestureActive = false;
 
     juce::Rectangle<int> gripBounds, iconBounds, nameBounds, modeCaptionBounds;
 

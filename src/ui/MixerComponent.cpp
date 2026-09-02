@@ -36,9 +36,8 @@ public:
         nameLabel.setInterceptsMouseClicks (false, false);
         nameLabel.onTextChange = [this]
         {
-            auto& undo = document.getUndoManager();
-            undo.beginNewTransaction ("Rename mixer track");
-            track.setProperty (ids::name, nameLabel.getText(), &undo);
+            ProjectEdits::setProperty (track, ids::name, nameLabel.getText(),
+                                       &document.getUndoManager(), "Rename mixer track");
         };
         addAndMakeVisible (nameLabel);
 
@@ -46,25 +45,14 @@ public:
         gainSlider.setTextBoxStyle (juce::Slider::TextBoxBelow, false, 60, tokens::size::controlHeightSm);
         gainSlider.setRange (0.0, 1.5, 0.001);
         gainSlider.setValue ((double) track[ids::gain], juce::dontSendNotification);
-        gainSlider.onDragStart = [this]
-        {
-            select();
-            dragging = true;
-            document.getUndoManager().beginNewTransaction ("Change level");
-        };
-        gainSlider.onDragEnd = [this] { dragging = false; };
+        gainSlider.onDragStart = [this] { select(); inDrag = true; gestureActive = false; };
+        gainSlider.onDragEnd = [this] { inDrag = false; gestureActive = false; };
         gainSlider.onValueChange = [this]
         {
-            auto& undo = document.getUndoManager();
+            ProjectEdits::setProperty (track, ids::gain, gainSlider.getValue(),
+                                       &document.getUndoManager(), "Change level", gestureActive);
 
-            // beginNewTransaction ARMS a new transaction rather than being a
-            // no-op when one is open, so calling it per value change made every
-            // pixel of a drag its own undo step. During a drag the transaction
-            // opened at onDragStart is left to coalesce.
-            if (! dragging)
-                undo.beginNewTransaction ("Change level");
-
-            track.setProperty (ids::gain, gainSlider.getValue(), &undo);
+            gestureActive = inDrag;
         };
         addAndMakeVisible (gainSlider);
 
@@ -74,21 +62,14 @@ public:
             panSlider.setTextBoxStyle (juce::Slider::NoTextBox, false, 0, 0);
             panSlider.setRange (-1.0, 1.0, 0.001);
             panSlider.setValue ((double) track[ids::pan], juce::dontSendNotification);
-            panSlider.onDragStart = [this]
-            {
-                select();
-                dragging = true;
-                document.getUndoManager().beginNewTransaction ("Change pan");
-            };
-            panSlider.onDragEnd = [this] { dragging = false; };
+            panSlider.onDragStart = [this] { select(); inDrag = true; gestureActive = false; };
+            panSlider.onDragEnd = [this] { inDrag = false; gestureActive = false; };
             panSlider.onValueChange = [this]
             {
-                auto& undo = document.getUndoManager();
+                ProjectEdits::setProperty (track, ids::pan, panSlider.getValue(),
+                                           &document.getUndoManager(), "Change pan", gestureActive);
 
-                if (! dragging)
-                    undo.beginNewTransaction ("Change pan");
-
-                track.setProperty (ids::pan, panSlider.getValue(), &undo);
+                gestureActive = inDrag;
             };
             addAndMakeVisible (panSlider);
 
@@ -98,9 +79,8 @@ public:
             muteButton.onClick = [this]
             {
                 select();
-                auto& undo = document.getUndoManager();
-                undo.beginNewTransaction ("Mute");
-                track.setProperty (ids::mute, muteButton.getToggleState(), &undo);
+                ProjectEdits::setProperty (track, ids::mute, muteButton.getToggleState(),
+                                           &document.getUndoManager(), "Mute");
             };
             addAndMakeVisible (muteButton);
 
@@ -110,9 +90,8 @@ public:
             soloButton.onClick = [this]
             {
                 select();
-                auto& undo = document.getUndoManager();
-                undo.beginNewTransaction ("Solo");
-                track.setProperty (ids::solo, soloButton.getToggleState(), &undo);
+                ProjectEdits::setProperty (track, ids::solo, soloButton.getToggleState(),
+                                           &document.getUndoManager(), "Solo");
             };
             addAndMakeVisible (soloButton);
         }
@@ -372,7 +351,8 @@ private:
     /** True between a fader's onDragStart and onDragEnd. One flag for the strip:
         only one control can be under the pointer at a time.
     */
-    bool dragging = false;
+    bool inDrag = false;
+    bool gestureActive = false;
 
     juce::Label nameLabel;
     juce::Slider gainSlider;

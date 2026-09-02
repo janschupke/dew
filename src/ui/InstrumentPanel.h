@@ -57,7 +57,8 @@ private:
     EditorState& editorState;
 
     /** True between a knob's onDragStart and onDragEnd - see attachRotary. */
-    bool dragging = false;
+    bool inDrag = false;
+    bool gestureActive = false;
 
     juce::Label titleLabel;
 

@@ -192,12 +192,8 @@ OscillatorSection::OscillatorSection (ProjectDocument& d, EditorState& s)
 
     octaveSlider.setRange (-3, 3, 1);
     octaveSlider.setTextBoxStyle (juce::Slider::TextBoxLeft, false, 44, size::controlHeightSm);
-    octaveSlider.onDragStart = [this]
-    {
-        dragging = true;
-        document.getUndoManager().beginNewTransaction ("Change octave");
-    };
-    octaveSlider.onDragEnd = [this] { dragging = false; };
+    octaveSlider.onDragStart = [this] { inDrag = true; gestureActive = false; };
+    octaveSlider.onDragEnd = [this] { inDrag = false; gestureActive = false; };
     octaveSlider.onValueChange = [this]
     {
         // Integer-valued in the file: writing a double would change the JSON
@@ -253,12 +249,8 @@ OscillatorSection::~OscillatorSection()
 void OscillatorSection::attachKnob (DewKnob& knob, const juce::Identifier& property,
                                     const juce::String& transactionName, bool integral)
 {
-    knob.onEditStart = [this, transactionName]
-    {
-        dragging = true;
-        document.getUndoManager().beginNewTransaction (transactionName);
-    };
-    knob.onEditEnd = [this] { dragging = false; };
+    knob.onEditStart = [this] { inDrag = true; gestureActive = false; };
+    knob.onEditEnd = [this] { inDrag = false; gestureActive = false; };
     knob.onValueChange = [this, &knob, property, transactionName, integral]
     {
         if (integral)
@@ -331,9 +323,8 @@ void OscillatorSection::setSlotEnabled (int index, bool shouldBeEnabled)
     if (! slot.isValid() || isSlotEnabled (index) == shouldBeEnabled)
         return;
 
-    auto& undo = document.getUndoManager();
-    undo.beginNewTransaction (shouldBeEnabled ? "Enable oscillator" : "Disable oscillator");
-    slot.setProperty (ids::enabled, shouldBeEnabled, &undo);
+    ProjectEdits::setProperty (slot, ids::enabled, shouldBeEnabled,
+                               &document.getUndoManager(), shouldBeEnabled ? "Enable oscillator" : "Disable oscillator");
 }
 
 juce::Button& OscillatorSection::getSlotButton (int index) const
@@ -352,16 +343,10 @@ void OscillatorSection::write (const juce::Identifier& property, const juce::var
     if (! slot.isValid())
         return;
 
-    auto& undo = document.getUndoManager();
+    ProjectEdits::setProperty (slot, property, value, &document.getUndoManager(),
+                               transactionName, gestureActive);
 
-    // beginNewTransaction ARMS a new transaction rather than being a no-op when
-    // one is open, so calling it per value change made every pixel of a drag its
-    // own undo step. During a drag the transaction opened at onEditStart is left
-    // to coalesce; a button or a typed value produces no drag, so it opens its own.
-    if (! dragging)
-        undo.beginNewTransaction (transactionName);
-
-    slot.setProperty (property, value, &undo);
+    gestureActive = inDrag;
 }
 
 void OscillatorSection::changeListenerCallback (juce::ChangeBroadcaster*)

@@ -66,6 +66,10 @@ public:
     /** Where a trim handle sits, in this component's coordinates. */
     float getTrimHandleX (bool start) const;
 
+    /** One of the knobs, so a test can drive a whole gesture through it. This
+        panel is where the one-undo-step-per-gesture rule was missing. */
+    DewKnob& getFadeInKnob() noexcept { return fadeInKnob; }
+
 private:
     void valueTreePropertyChanged (juce::ValueTree&, const juce::Identifier&) override;
 
@@ -103,6 +107,13 @@ private:
     DewIconButton loopButton { icons::loop(), "Loop the sample to fill the clip" };
 
     Handle dragging = Handle::none;
+
+    /** Between a drag's start and its end. */
+    bool inDrag = false;
+
+    /** True for every value after the first in one gesture, so the whole drag
+        is one undo step rather than one per frame. */
+    bool gestureActive = false;
     Handle hovering = Handle::none;
 
     bool updating = false;

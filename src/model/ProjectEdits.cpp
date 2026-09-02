@@ -145,6 +145,25 @@ void ProjectEdits::resizeNote (juce::ValueTree note, int newLengthSteps, juce::U
     note.setProperty (ids::lengthSteps, juce::jmax (1, newLengthSteps), undo);
 }
 
+void ProjectEdits::setProperty (juce::ValueTree node, const juce::Identifier& property,
+                                const juce::var& value, juce::UndoManager* undo,
+                                const juce::String& transactionName, bool continuingTransaction)
+{
+    if (! node.isValid())
+        return;
+
+    // Nothing to record. A ValueTree write of the value already there still
+    // opens a transaction and still pushes an undo step, which is how a
+    // refresh() that re-states every control ends up in the undo history.
+    if (node[property] == value)
+        return;
+
+    if (undo != nullptr && ! continuingTransaction)
+        undo->beginNewTransaction (transactionName);
+
+    node.setProperty (property, value, undo);
+}
+
 void ProjectEdits::setNoteVelocity (juce::ValueTree note, double velocity, juce::UndoManager* undo)
 {
     // Zero velocity is a note that exists but cannot be heard, which reads as a

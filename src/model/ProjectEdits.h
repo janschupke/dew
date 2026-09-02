@@ -62,6 +62,36 @@ struct ProjectEdits
 
     static void setNoteVelocity (juce::ValueTree note, double velocity, juce::UndoManager*);
 
+    // --- properties ----------------------------------------------------------
+    /** Writes one property, opening the undo transaction the write belongs to.
+
+        ProjectEdits had no scalar setter at all, so all twenty-seven property
+        writes in src/ui went straight to ValueTree and each re-implemented the
+        transaction rule around it:
+
+            if (! dragging)
+                undo.beginNewTransaction (name);
+
+        copy-pasted five times. The rule matters because a drag emits a value
+        per frame: without it, dragging a knob across its range makes a hundred
+        undo steps and getting back to where you started means pressing undo a
+        hundred times. SampleSection had no such guard AT ALL - dragging an
+        audio channel's fade or transpose did exactly that, a regression of a
+        fix the README claims is done.
+
+        @param continuingTransaction  do not open a transaction; join the one
+                                      already open. True for every value after
+                                      the first in one drag, and for a write
+                                      that is part of a larger action - a clip
+                                      repointed at the pattern that was just
+                                      duplicated for it belongs to that action,
+                                      not to one of its own.
+    */
+    static void setProperty (juce::ValueTree node, const juce::Identifier& property,
+                             const juce::var& value, juce::UndoManager*,
+                             const juce::String& transactionName,
+                             bool continuingTransaction = false);
+
     /** Grows a pattern so every note fits, and returns true if it had to.
 
         Never shrinks: a pattern deliberately left longer than its notes is a

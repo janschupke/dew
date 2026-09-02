@@ -54,9 +54,8 @@ InstrumentPanel::InstrumentPanel (ProjectDocument& d, EditorState& s, SamplePool
         if (! channel.isValid() || mixerBox.getSelectedId() <= 0)
             return;
 
-        auto& undo = document.getUndoManager();
-        undo.beginNewTransaction ("Route channel");
-        channel.setProperty (ids::mixerTrackId, mixerBox.getSelectedId(), &undo);
+        ProjectEdits::setProperty (channel, ids::mixerTrackId, mixerBox.getSelectedId(),
+                                   &document.getUndoManager(), "Route channel");
     };
     addAndMakeVisible (mixerBox);
     styleCaption (mixerLabel, "MIXER");
@@ -110,13 +109,8 @@ void InstrumentPanel::attachRotary (juce::Slider& slider, juce::Label& label, co
 
     // One transaction per gesture, so dragging a knob is a single undo step
     // rather than several hundred.
-    slider.onDragStart = [this, transactionName]
-    {
-        dragging = true;
-        document.getUndoManager().beginNewTransaction (transactionName);
-    };
-
-    slider.onDragEnd = [this] { dragging = false; };
+    slider.onDragStart = [this] { inDrag = true; gestureActive = false; };
+    slider.onDragEnd = [this] { inDrag = false; gestureActive = false; };
 
     slider.onValueChange = [this, &slider, owner, property, transactionName]
     {
@@ -128,24 +122,17 @@ void InstrumentPanel::attachRotary (juce::Slider& slider, juce::Label& label, co
         if (! tree.isValid())
             return;
 
-        auto& undo = document.getUndoManager();
-
-        // beginNewTransaction ARMS a new transaction rather than being a no-op
-        // when one is open, so calling it per value change made every pixel of a
-        // drag its own undo step - the thing the comment above claims it
-        // prevents. During a drag the transaction opened at onDragStart is left
-        // to coalesce; buttons and typed values produce no drag, so they open
-        // their own.
-        if (! dragging)
-            undo.beginNewTransaction (transactionName);
-
         // Integer-valued properties must stay integers in the file: writing a
         // double would change the JSON from `0` to `0.0` and, worse, make the
         // schema's type coercion do the rounding instead of this code.
-        if (slider.getInterval() >= 1.0)
-            tree.setProperty (property, (int) slider.getValue(), &undo);
-        else
-            tree.setProperty (property, slider.getValue(), &undo);
+        const juce::var value = slider.getInterval() >= 1.0
+                                    ? juce::var ((int) slider.getValue())
+                                    : juce::var (slider.getValue());
+
+        ProjectEdits::setProperty (tree, property, value, &document.getUndoManager(),
+                                   transactionName, gestureActive);
+
+        gestureActive = inDrag;
     };
 
     styleCaption (label, text);
