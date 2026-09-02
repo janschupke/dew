@@ -134,6 +134,18 @@ private:
 // -----------------------------------------------------------------------------
 
 /** Shared drawing the editors use, so a bar line looks the same everywhere. */
+/** Makes mouse events that land on a child widget also reach `parent`.
+
+    Used for hover: a row should light up while the pointer is over one of its
+    buttons, and without this the row only ever sees the pointer leave.
+
+    Deliberately NOT the mechanism for selection. JUCE delivers these through
+    ComponentPeer, which cannot be driven in a headless test, so anything that
+    matters is wired explicitly instead - a fader that selects its strip does it
+    through its own onDragStart, which a test can verify exists and works.
+*/
+void forwardChildMouseEventsTo (juce::Component& parent);
+
 namespace paint
 {
     /** The rotary every knob in dew uses.

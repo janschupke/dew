@@ -58,6 +58,11 @@ private:
 
     DewLookAndFeel lookAndFeel;
 
+    /** Every setTooltip call in the app was dead text until this existed:
+        tooltips are drawn by a window, and there was not one anywhere.
+    */
+    juce::TooltipWindow tooltips { nullptr, 600 };
+
     ProjectDocument document;
     AudioEngine engine;
     LiveAudioHost audioHost;

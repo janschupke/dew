@@ -1,5 +1,7 @@
 #include "DewLookAndFeel.h"
 
+#include "design/Tokens.h"
+
 #include "primitives/DewControls.h"
 
 namespace dew
@@ -89,6 +91,64 @@ void DewLookAndFeel::drawButtonBackground (juce::Graphics& g, juce::Button& butt
 
     g.setColour (button.getToggleState() ? Palette::accent : Palette::line);
     g.drawRoundedRectangle (bounds, corner, 1.0f);
+}
+
+void DewLookAndFeel::drawTabButton (juce::TabBarButton& button, juce::Graphics& g,
+                                    bool isMouseOver, bool isMouseDown)
+{
+    using namespace tokens;
+
+    auto area = button.getLocalBounds();
+    const auto active = button.getToggleState();
+
+    // A tab reads as a surface that is either lifted (active), warmed (hover)
+    // or flush (at rest) - the same three states every other row in dew uses.
+    g.setColour (active ? colour::surface
+                        : isMouseDown ? colour::surfaceHover
+                                      : isMouseOver ? colour::surfaceRaised
+                                                    : colour::background);
+    g.fillRect (area);
+
+    if (active)
+    {
+        g.setColour (colour::accent);
+        g.fillRect (area.removeFromBottom (2));
+    }
+    else
+    {
+        g.setColour (colour::divider);
+        g.drawVerticalLine (area.getRight() - 1, (float) area.getY() + 6.0f,
+                            (float) area.getBottom() - 6.0f);
+    }
+
+    g.setColour (active ? colour::textPrimary
+                        : isMouseOver ? colour::textPrimary.withAlpha (0.85f)
+                                      : colour::textSecondary);
+    g.setFont (type::font (type::body, active));
+    g.drawText (button.getButtonText(), button.getLocalBounds(),
+                juce::Justification::centred, false);
+}
+
+int DewLookAndFeel::getTabButtonBestWidth (juce::TabBarButton& button, int)
+{
+    // Room for the label plus a consistent pair of gutters, rather than V4's
+    // depth-derived guess.
+    const auto text = juce::GlyphArrangement::getStringWidthInt (
+        tokens::type::font (tokens::type::body, true), button.getButtonText());
+
+    return juce::jmax (72, text + tokens::space::xl * 2);
+}
+
+
+void DewLookAndFeel::drawTabAreaBehindFrontButton (juce::TabbedButtonBar&, juce::Graphics& g,
+                                                   int width, int height)
+{
+    // Nothing opaque. JUCE hosts this in a component that spans the whole bar
+    // and sits ABOVE every tab except the front one, so filling it - which the
+    // first version of this did - hid the other three tabs completely. V4 draws
+    // a shadow here; dew wants only the hairline under the strip.
+    g.setColour (tokens::colour::dividerStrong);
+    g.drawHorizontalLine (height - 1, 0.0f, (float) width);
 }
 
 } // namespace dew

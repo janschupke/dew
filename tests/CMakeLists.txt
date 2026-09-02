@@ -9,6 +9,7 @@ add_executable(dew_tests
   DemoLibraryTests.cpp
   DesignSystemTests.cpp
   SchemaTests.cpp
+  SelectionTests.cpp
   ProjectEditsTests.cpp
   TransportTests.cpp
   SequencerTests.cpp

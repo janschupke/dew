@@ -100,25 +100,30 @@ public:
         bypassButton.setOnColour (colour::warning);
         bypassButton.onClick = [this]
         {
+            owner.selectSlot (index);
             auto& undo = document.getUndoManager();
             undo.beginNewTransaction ("Bypass effect");
             effect.setProperty (ids::enabled, ! bypassButton.getToggleState(), &undo);
         };
         addAndMakeVisible (bypassButton);
 
-        upButton.onClick = [this] { move (-1); };
+        upButton.onClick = [this] { owner.selectSlot (index); move (-1); };
         addAndMakeVisible (upButton);
 
-        downButton.onClick = [this] { move (1); };
+        downButton.onClick = [this] { owner.selectSlot (index); move (1); };
         addAndMakeVisible (downButton);
 
         removeButton.onClick = [this]
         {
+            owner.selectSlot (index);
             auto& undo = document.getUndoManager();
             undo.beginNewTransaction ("Remove effect");
             ProjectEdits::removeEffect (owner.getOwner(), effect, &undo);
         };
         addAndMakeVisible (removeButton);
+
+        forwardChildMouseEventsTo (*this);
+        setMouseCursor (juce::MouseCursor::PointingHandCursor);
     }
 
     void setSelected (bool shouldBeSelected)
@@ -129,9 +134,14 @@ public:
 
     void mouseDown (const juce::MouseEvent&) override { owner.selectSlot (index); }
 
+    void mouseEnter (const juce::MouseEvent&) override { setHovered (true); }
+    void mouseExit (const juce::MouseEvent&) override  { setHovered (isMouseOver (true)); }
+
     void paint (juce::Graphics& g) override
     {
-        g.fillAll (selected ? colour::surfaceHover : colour::surfaceRaised);
+        g.fillAll (selected ? colour::surfaceHover
+                            : hovered ? colour::surfaceRaised.brighter (0.06f)
+                                      : colour::surfaceRaised);
 
         if (selected)
         {
@@ -175,12 +185,19 @@ private:
         ProjectEdits::moveEffect (owner.getOwner(), effect, index + delta, &undo);
     }
 
+    void setHovered (bool shouldBeHovered)
+    {
+        if (std::exchange (hovered, shouldBeHovered) != shouldBeHovered)
+            repaint();
+    }
+
     EffectChainComponent& owner;
     ProjectDocument& document;
     juce::ValueTree effect;
     int index = 0;
     EffectType type = EffectType::filter;
     bool selected = false;
+    bool hovered = false;
 
     juce::Rectangle<float> iconBounds;
     juce::Rectangle<int> nameBounds;

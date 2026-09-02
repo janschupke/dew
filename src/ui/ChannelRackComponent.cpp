@@ -20,6 +20,11 @@ public:
     {
         nameLabel.setText (channel[ids::name].toString(), juce::dontSendNotification);
         nameLabel.setEditable (false, true, false);
+
+        // The label covered the row's whole left half and consumed every press,
+        // so clicking a channel by its name selected nothing. Renaming moves to
+        // a double-click on the row, which is where it already was.
+        nameLabel.setInterceptsMouseClicks (false, false);
         nameLabel.setFont (type::font (type::body));
         nameLabel.setColour (juce::Label::textColourId, colour::textPrimary);
         nameLabel.onTextChange = [this]
@@ -47,6 +52,14 @@ public:
             channel.setProperty (ids::solo, soloButton.getToggleState(), &undo);
         };
         addAndMakeVisible (soloButton);
+
+        // M and S must keep their clicks, so they select the row explicitly.
+        muteButton.onStateChange = [this] { select(); };
+        soloButton.onStateChange = [this] { select(); };
+
+        // Hover only - see forwardChildMouseEventsTo.
+        forwardChildMouseEventsTo (*this);
+        setMouseCursor (juce::MouseCursor::PointingHandCursor);
     }
 
     int getChannelId() const  { return (int) channel[ids::id]; }
@@ -63,7 +76,8 @@ public:
     {
         const auto selected = editorState.getSelectedChannelId() == getChannelId();
 
-        g.setColour (selected ? colour::surfaceHover : colour::surface);
+        g.setColour (selected ? colour::surfaceHover
+                              : hovered ? colour::surfaceRaised : colour::surface);
         g.fillAll();
 
         const auto colourValue = juce::Colour::fromString (
@@ -91,10 +105,18 @@ public:
                     juce::Justification::centredRight, false);
     }
 
-    void mouseDown (const juce::MouseEvent&) override
+    void select() { editorState.setSelectedChannelId (getChannelId()); }
+
+    void mouseDown (const juce::MouseEvent&) override { select(); }
+
+    void mouseDoubleClick (const juce::MouseEvent& event) override
     {
-        editorState.setSelectedChannelId (getChannelId());
+        if (nameLabel.getBounds().contains (event.getPosition()))
+            nameLabel.showEditor();
     }
+
+    void mouseEnter (const juce::MouseEvent&) override { setHovered (true); }
+    void mouseExit (const juce::MouseEvent&) override  { setHovered (! isMouseOver (true)); }
 
     void resized() override
     {
@@ -117,8 +139,15 @@ private:
     EditorState& editorState;
     juce::ValueTree channel;
 
+    void setHovered (bool shouldBeHovered)
+    {
+        if (std::exchange (hovered, shouldBeHovered) != shouldBeHovered)
+            repaint();
+    }
+
     juce::Label nameLabel;
     juce::Rectangle<int> pitchBounds;
+    bool hovered = false;
     DewLetterToggle muteButton { "M", colour::warning, "Mute this channel" };
     DewLetterToggle soloButton { "S", colour::success, "Solo this channel" };
 };

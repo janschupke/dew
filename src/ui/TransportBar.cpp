@@ -108,8 +108,11 @@ TransportBar::TransportBar (ProjectDocument& d, AudioEngine& e, EditorState& s)
 
     patternLengthField.setRange (1.0, 256.0, 1.0);
     patternLengthField.setNumDecimalPlaces (0);
-    patternLengthField.setCaption ("STEPS");
-    patternLengthField.setTooltip ("Pattern length in steps - drag up and down");
+    // A suffix rather than a caption, matching the tempo field beside it: a
+    // caption reserves 12px above the value, which made this the only control
+    // in the bar that could not share the common height.
+    patternLengthField.setSuffix (" steps");
+    patternLengthField.setTooltip ("Pattern length - drag up and down, or double-click to type");
     patternLengthField.onEditStart = [this]
     {
         document.getUndoManager().beginNewTransaction ("Change pattern length");
@@ -309,9 +312,8 @@ void TransportBar::resized()
     place (addPatternButton, 26);
     place (clonePatternButton, 26);
     place (deletePatternButton, 26);
-    area.removeFromLeft (space::xs);
-    patternLengthField.setBounds (area.removeFromLeft (68).withHeight (juce::jmax (34, controlHeight)));
-    area.removeFromLeft (space::md);
+    place (patternLengthField, 84);
+    area.removeFromLeft (space::sm);
 
     groupDividers.add (area.getX());
     area.removeFromLeft (space::md);

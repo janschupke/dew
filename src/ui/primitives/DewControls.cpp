@@ -275,6 +275,12 @@ void DewPanel::paint (juce::Graphics& g)
 
 // --- shared painting ---------------------------------------------------------
 
+void forwardChildMouseEventsTo (juce::Component& parent)
+{
+    for (auto* child : parent.getChildren())
+        child->addMouseListener (&parent, /* wantsEventsForAllNestedChildComponents */ true);
+}
+
 namespace paint
 {
 

@@ -206,11 +206,20 @@ void StepGridComponent::paint (juce::Graphics& g)
                                   .reduced (2.0f, 4.0f);
 
             // Hover: show where a click would land, so an empty grid still
-            // signals that it is interactive.
+            // signals that it is interactive. The WHOLE cell lights, not the
+            // inset the note fill uses - a 26px highlight inside a 34px row read
+            // as a small block appearing rather than as this square being live.
             if (hoverCell.x == step && hoverCell.y == row)
             {
+                const auto full = juce::Rectangle<float> (timeline.xForStep ((double) step),
+                                                          (float) (row * size::rowHeight),
+                                                          width, (float) size::rowHeight);
+
                 g.setColour (colour::surfaceRaised.withAlpha (0.75f));
-                g.fillRoundedRectangle (cell, radius::sm);
+                g.fillRect (full.reduced (0.5f));
+
+                g.setColour (colour::accent.withAlpha (0.35f));
+                g.drawRect (full.reduced (0.5f), stroke::hairline);
             }
 
             const auto note = ProjectEdits::findNoteAtStep (pattern, channelId, step);
@@ -289,17 +298,34 @@ void StepGridComponent::mouseMove (const juce::MouseEvent& event)
 
     if (wanted != hoverCell)
     {
+        const auto previous = hoverCell;
         hoverCell = wanted;
-        repaint (0, 0, getWidth(), getRowsHeight());
+
+        // Two cells, not the whole grid: this fires on every pointer crossing.
+        repaintCell (previous);
+        repaintCell (hoverCell);
     }
+}
+
+void StepGridComponent::repaintCell (juce::Point<int> cell)
+{
+    if (cell.x < 0 || cell.y < 0)
+        return;
+
+    repaint (juce::Rectangle<int> ((int) timeline.xForStep ((double) cell.x),
+                                   cell.y * size::rowHeight,
+                                   (int) std::ceil (timeline.pixelsPerStep) + 2,
+                                   size::rowHeight)
+                 .expanded (1));
 }
 
 void StepGridComponent::mouseExit (const juce::MouseEvent&)
 {
     if (hoverCell.x >= 0)
     {
+        const auto previous = hoverCell;
         hoverCell = { -1, -1 };
-        repaint (0, 0, getWidth(), getRowsHeight());
+        repaintCell (previous);
     }
 }
 

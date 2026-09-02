@@ -29,6 +29,11 @@ public:
 
     void refresh();
 
+    /** The id the master strip answers to. Real inserts start at 1, so 0 can
+        stand for "the master" without colliding with any of them.
+    */
+    static constexpr int masterTrackId = 0;
+
 private:
     class Strip;
 

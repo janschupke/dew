@@ -228,3 +228,64 @@ TEST_CASE ("opening the audio device either works or reports why", "[ui][audio][
 
     host.stop();
 }
+
+TEST_CASE ("every tab is painted, not only the active one", "[ui][smoke]")
+{
+    // The first version of dew's drawTabAreaBehindFrontButton filled its area
+    // opaquely. JUCE hosts that in a component spanning the whole bar which sits
+    // above every tab except the front one, so three of the four tabs vanished.
+    const juce::ScopedJuceInitialiser_GUI juceInit;
+
+    dew::MainComponent component (false);
+    component.setSize (1400, 700);
+
+    juce::Component* bar = nullptr;
+
+    std::function<void (juce::Component&)> findBar = [&] (juce::Component& parent)
+    {
+        for (auto* child : parent.getChildren())
+        {
+            if (auto* tabbed = dynamic_cast<juce::TabbedComponent*> (child); tabbed != nullptr && bar == nullptr)
+                bar = &tabbed->getTabbedButtonBar();
+            else
+                findBar (*child);
+        }
+    };
+
+    findBar (component);
+    REQUIRE (bar != nullptr);
+    REQUIRE (bar->getWidth() > 0);
+
+    // Paint the whole editor, then look only at the tab strip.
+    const auto image = renderToImage (component);
+    const auto strip = bar->getLocalArea (&component, bar->getLocalBounds())
+                          .withPosition (bar->getScreenPosition() - component.getScreenPosition());
+
+    // Ink in each quarter of the occupied tab run: four tabs, four labels.
+    auto* tabBar = dynamic_cast<juce::TabbedButtonBar*> (bar);
+    REQUIRE (tabBar != nullptr);
+    REQUIRE (tabBar->getNumTabs() == 4);
+
+    for (int i = 0; i < tabBar->getNumTabs(); ++i)
+    {
+        auto* button = tabBar->getTabButton (i);
+        REQUIRE (button != nullptr);
+        REQUIRE (button->getWidth() > 20);
+
+        const auto area = juce::Rectangle<int> (button->getX(), strip.getY(),
+                                                button->getWidth(), button->getHeight())
+                              .getIntersection (image.getBounds());
+        REQUIRE (! area.isEmpty());
+
+        // The label has to be legible: some pixels clearly lighter than the bar.
+        int lightPixels = 0;
+
+        for (int y = area.getY(); y < area.getBottom(); ++y)
+            for (int x = area.getX(); x < area.getRight(); ++x)
+                if (image.getPixelAt (x, y).getBrightness() > 0.35f)
+                    ++lightPixels;
+
+        INFO ("tab " << i << " (" << tabBar->getTabNames()[i] << ") light pixels: " << lightPixels);
+        REQUIRE (lightPixels > 40);
+    }
+}

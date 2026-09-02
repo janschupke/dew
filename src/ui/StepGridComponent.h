@@ -65,6 +65,7 @@ private:
     juce::ValueTree channelForRow (int row) const;
 
     void applyPaint (const juce::MouseEvent&);
+    void repaintCell (juce::Point<int> cell);
 
     ProjectDocument& document;
     AudioEngine& engine;

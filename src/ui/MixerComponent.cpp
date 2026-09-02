@@ -19,13 +19,16 @@ public:
     Strip (ProjectDocument& d, juce::ValueTree t, bool isMasterStrip)
         : document (d), track (std::move (t)), isMaster (isMasterStrip)
     {
-        setInterceptsMouseClicks (true, true);
-
         nameLabel.setText (isMaster ? "Master" : track[ids::name].toString(),
                            juce::dontSendNotification);
         nameLabel.setJustificationType (juce::Justification::centred);
         nameLabel.setFont (juce::FontOptions (11.0f, juce::Font::bold));
         nameLabel.setEditable (false, ! isMaster, false);
+
+        // The fader took the strip's whole remaining height and the label its
+        // top, so selection was reachable only through a 6px border. The label
+        // becomes inert and renaming moves to a double-click on the strip.
+        nameLabel.setInterceptsMouseClicks (false, false);
         nameLabel.onTextChange = [this]
         {
             auto& undo = document.getUndoManager();
@@ -38,7 +41,11 @@ public:
         gainSlider.setTextBoxStyle (juce::Slider::TextBoxBelow, false, 60, 16);
         gainSlider.setRange (0.0, 1.5, 0.001);
         gainSlider.setValue ((double) track[ids::gain], juce::dontSendNotification);
-        gainSlider.onDragStart = [this] { document.getUndoManager().beginNewTransaction ("Change level"); };
+        gainSlider.onDragStart = [this]
+        {
+            select();
+            document.getUndoManager().beginNewTransaction ("Change level");
+        };
         gainSlider.onValueChange = [this]
         {
             auto& undo = document.getUndoManager();
@@ -53,7 +60,11 @@ public:
             panSlider.setTextBoxStyle (juce::Slider::NoTextBox, false, 0, 0);
             panSlider.setRange (-1.0, 1.0, 0.001);
             panSlider.setValue ((double) track[ids::pan], juce::dontSendNotification);
-            panSlider.onDragStart = [this] { document.getUndoManager().beginNewTransaction ("Change pan"); };
+            panSlider.onDragStart = [this]
+            {
+                select();
+                document.getUndoManager().beginNewTransaction ("Change pan");
+            };
             panSlider.onValueChange = [this]
             {
                 auto& undo = document.getUndoManager();
@@ -67,6 +78,7 @@ public:
             muteButton.setToggleState ((bool) track[ids::mute], juce::dontSendNotification);
             muteButton.onClick = [this]
             {
+                select();
                 auto& undo = document.getUndoManager();
                 undo.beginNewTransaction ("Mute");
                 track.setProperty (ids::mute, muteButton.getToggleState(), &undo);
@@ -78,12 +90,16 @@ public:
             soloButton.setToggleState ((bool) track[ids::solo], juce::dontSendNotification);
             soloButton.onClick = [this]
             {
+                select();
                 auto& undo = document.getUndoManager();
                 undo.beginNewTransaction ("Solo");
                 track.setProperty (ids::solo, soloButton.getToggleState(), &undo);
             };
             addAndMakeVisible (soloButton);
         }
+
+        forwardChildMouseEventsTo (*this);
+        setMouseCursor (juce::MouseCursor::PointingHandCursor);
 
         track.addListener (this);
     }
@@ -104,28 +120,50 @@ public:
 
     std::function<void()> onSelected;
 
-    void mouseDown (const juce::MouseEvent&) override
+    void select()
     {
         if (onSelected != nullptr)
             onSelected();
     }
 
+    void mouseDoubleClick (const juce::MouseEvent& event) override
+    {
+        if (! isMaster && nameLabel.getBounds().contains (event.getPosition()))
+            nameLabel.showEditor();
+    }
+
+    void mouseEnter (const juce::MouseEvent&) override { setHovered (true); }
+    void mouseExit (const juce::MouseEvent&) override  { setHovered (isMouseOver (true)); }
+
+    void mouseDown (const juce::MouseEvent&) override
+    {
+        select();
+    }
+
     void paint (juce::Graphics& g) override
     {
-        g.setColour (isMaster ? Palette::panel.brighter (0.05f) : Palette::panel);
-        g.fillRoundedRectangle (getLocalBounds().toFloat().reduced (2.0f), 4.0f);
+        const auto body = getLocalBounds().toFloat().reduced (2.0f);
 
-        if (selected)
-        {
-            g.setColour (tokens::colour::surfaceHover);
-            g.fillRoundedRectangle (getLocalBounds().toFloat().reduced (2.0f), 4.0f);
-        }
+        g.setColour (selected ? tokens::colour::surfaceRaised
+                              : hovered ? tokens::colour::surface.brighter (0.06f)
+                                        : tokens::colour::surface);
+        g.fillRoundedRectangle (body, tokens::radius::md);
 
+        // Master gets a neutral outline rather than an accent one: now that it
+        // is selectable, an accent border on it always would read as selected.
         if (isMaster || selected)
         {
-            g.setColour (tokens::colour::accent.withAlpha (selected ? 1.0f : 0.5f));
-            g.drawRoundedRectangle (getLocalBounds().toFloat().reduced (2.0f), 4.0f,
-                                    selected ? 1.6f : 1.0f);
+            g.setColour (selected ? tokens::colour::accent : tokens::colour::outline);
+            g.drawRoundedRectangle (body, tokens::radius::md,
+                                    selected ? tokens::stroke::regular : tokens::stroke::hairline);
+        }
+
+        // A cap along the top edge, so which strip is selected is readable from
+        // across the mixer rather than from a few percent of brightness.
+        if (selected)
+        {
+            g.setColour (tokens::colour::accent);
+            g.fillRoundedRectangle (body.withHeight (3.0f), 1.5f);
         }
 
         // How many effects the strip carries, so it says what it holds without
@@ -185,8 +223,15 @@ private:
 
     ProjectDocument& document;
     juce::ValueTree track;
+    void setHovered (bool shouldBeHovered)
+    {
+        if (std::exchange (hovered, shouldBeHovered) != shouldBeHovered)
+            repaint();
+    }
+
     bool isMaster;
     bool selected = false;
+    bool hovered = false;
 
     juce::Label nameLabel;
     juce::Slider gainSlider;
@@ -234,8 +279,13 @@ void MixerComponent::rebuildStrips()
             strip->onSelected = [this, id] { editorState.setSelectedMixerTrackId (id); };
         }
 
+    // Master had no onSelected at all, so clicking it did nothing and its chain
+    // could never be edited. It selects like any other strip now.
     if (const auto master = mixer.getChildWithName (ids::MASTER); master.isValid())
-        strips.add (new Strip (document, master, true));
+    {
+        auto* strip = strips.add (new Strip (document, master, true));
+        strip->onSelected = [this] { editorState.setSelectedMixerTrackId (masterTrackId); };
+    }
 
     for (auto* strip : strips)
         addAndMakeVisible (strip);
@@ -274,7 +324,8 @@ void MixerComponent::pointChainAtSelectedTrack()
     effectChain.setOwner (selectedTrack);
 
     for (auto* strip : strips)
-        strip->setSelected (! strip->isMasterStrip() && strip->getTrackId() == selectedId);
+        strip->setSelected (strip->isMasterStrip() ? selectedId == masterTrackId
+                                                   : strip->getTrackId() == selectedId);
 }
 
 void MixerComponent::changeListenerCallback (juce::ChangeBroadcaster*)

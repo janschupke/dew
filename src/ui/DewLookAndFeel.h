@@ -47,6 +47,17 @@ public:
                                bool shouldDrawButtonAsDown) override;
 
     juce::Font getLabelFont (juce::Label&) override;
+
+    /** Tabs fell through to LookAndFeel_V4, which meant no dew hover treatment
+        and a tab bar that did not look like the rest of the application.
+    */
+    void drawTabButton (juce::TabBarButton&, juce::Graphics&,
+                        bool isMouseOver, bool isMouseDown) override;
+
+    int getTabButtonBestWidth (juce::TabBarButton&, int tabDepth) override;
+
+    void drawTabAreaBehindFrontButton (juce::TabbedButtonBar&, juce::Graphics&,
+                                       int width, int height) override;
 };
 
 } // namespace dew
