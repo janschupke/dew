@@ -453,6 +453,48 @@ void PianoRollComponent::mouseDoubleClick (const juce::MouseEvent& event)
         zoomToFit();
 }
 
+void PianoRollComponent::eraseAlong (juce::Point<int> from, juce::Point<int> to)
+{
+    lastErasePosition = to;
+
+    auto pattern = currentPattern();
+
+    if (! pattern.isValid())
+        return;
+
+    auto& undo = document.getUndoManager();
+    const auto area = noteArea();
+
+    // Step along the segment at a stride finer than the smallest thing that can
+    // be hit, so nothing between two drag samples survives.
+    const auto distance = from.getDistanceFrom (to);
+    const auto steps = juce::jmax (1, (int) std::ceil ((double) distance / eraseStridePx));
+
+    bool erasedAny = false;
+
+    for (int i = 0; i <= steps; ++i)
+    {
+        const auto t = (float) i / (float) steps;
+        const juce::Point<int> point { juce::roundToInt ((float) from.x + t * (float) (to.x - from.x)),
+                                       juce::roundToInt ((float) from.y + t * (float) (to.y - from.y)) };
+
+        if (! area.contains (point))
+            continue;
+
+        auto note = noteAt (point);
+
+        if (! note.isValid())
+            continue;
+
+        selection.removeAllInstancesOf (note);
+        ProjectEdits::removeNote (pattern, note, &undo);
+        erasedAny = true;
+    }
+
+    if (erasedAny)
+        repaint();
+}
+
 void PianoRollComponent::mouseDown (const juce::MouseEvent& event)
 {
     grabKeyboardFocus();
@@ -498,16 +540,17 @@ void PianoRollComponent::mouseDown (const juce::MouseEvent& event)
     auto& undo = document.getUndoManager();
     auto note = noteAt (event.getPosition());
 
-    // Right-click or alt-click deletes, which is the FL convention.
+    // Right-drag or alt-drag erases, which is the FL convention. It starts a
+    // gesture rather than acting once and returning: this used to delete a
+    // single note per press and open a transaction for each, so a right-DRAG
+    // did nothing at all and clearing a bar was a bar's worth of undo steps.
+    // Starting on empty space is deliberate - it is how you sweep INTO notes.
     if (event.mods.isPopupMenu() || event.mods.isAltDown())
     {
-        if (note.isValid())
-        {
-            undo.beginNewTransaction ("Delete note");
-            ProjectEdits::removeNote (pattern, note, &undo);
-            selection.removeAllInstancesOf (note);
-            repaint();
-        }
+        gesture = Gesture::erasing;
+        undo.beginNewTransaction ("Erase notes");
+        lastErasePosition = event.getPosition();
+        eraseAlong (event.getPosition(), event.getPosition());
         return;
     }
 
@@ -590,6 +633,12 @@ void PianoRollComponent::mouseDrag (const juce::MouseEvent& event)
     if (gesture == Gesture::velocity)
     {
         applyVelocityAt (event.getPosition());
+        return;
+    }
+
+    if (gesture == Gesture::erasing)
+    {
+        eraseAlong (lastErasePosition, event.getPosition());
         return;
     }
 

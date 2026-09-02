@@ -350,25 +350,37 @@ void StepGridComponent::applyPaint (const juce::MouseEvent& event)
     if (! channel.isValid())
         return;
 
+    // A drag reports a handful of positions per second, so at speed it jumps
+    // several cells between samples. Fill the whole run along the row rather
+    // than only where the pointer was reported, or a fast sweep leaves
+    // survivors behind it. A change of row starts a new run.
+    const auto continuing = row == lastPaintedRow && lastPaintedStep >= 0;
+    const auto firstStep = continuing ? juce::jmin (lastPaintedStep, step) : step;
+    const auto lastStep  = continuing ? juce::jmax (lastPaintedStep, step) : step;
+
     lastPaintedStep = step;
     lastPaintedRow = row;
 
     const auto channelId = (int) channel[ids::id];
-    const auto existing = ProjectEdits::findNoteAtStep (pattern, channelId, step);
+    auto& undo = document.getUndoManager();
 
-    if (dragPaintsOn && ! existing.isValid())
+    for (int s = firstStep; s <= lastStep; ++s)
     {
-        ProjectEdits::addNote (pattern, channelId, step, 1,
-                               (int) channel[ids::basePitch],
-                               (float) editorState.getLastNoteVelocity(),
-                               &document.getUndoManager());
-    }
-    else if (! dragPaintsOn && existing.isValid())
-    {
-        ProjectEdits::removeNote (pattern, existing, &document.getUndoManager());
+        const auto existing = ProjectEdits::findNoteAtStep (pattern, channelId, s);
+
+        if (dragPaintsOn && ! existing.isValid())
+        {
+            ProjectEdits::addNote (pattern, channelId, s, 1,
+                                   (int) channel[ids::basePitch],
+                                   (float) editorState.getLastNoteVelocity(),
+                                   &undo);
+        }
+        else if (! dragPaintsOn && existing.isValid())
+        {
+            ProjectEdits::removeNote (pattern, existing, &undo);
+        }
     }
 
-    editorState.setSelectedChannelId (channelId);
     repaint (0, 0, getWidth(), getRowsHeight());
 }
 
@@ -384,12 +396,25 @@ void StepGridComponent::mouseDown (const juce::MouseEvent& event)
     if (! channel.isValid())
         return;
 
-    // The first cell decides whether the whole drag adds or removes.
-    dragPaintsOn = ! ProjectEdits::findNoteAtStep (pattern, (int) channel[ids::id],
+    // Right-drag and alt-drag always erase, whatever the first cell holds. This
+    // had no modifier check at all, so a right-click behaved exactly like a
+    // left one - which meant right-dragging from an empty cell ADDED steps,
+    // the opposite of the piano roll and of what the gesture means anywhere.
+    dragErasing = event.mods.isPopupMenu() || event.mods.isAltDown();
+
+    // Otherwise the first cell decides whether the whole drag adds or removes.
+    dragPaintsOn = ! dragErasing
+                && ! ProjectEdits::findNoteAtStep (pattern, (int) channel[ids::id],
                                                    stepAtX (event.x)).isValid();
     dragging = true;
 
-    document.getUndoManager().beginNewTransaction (dragPaintsOn ? "Add steps" : "Clear steps");
+    document.getUndoManager().beginNewTransaction (dragErasing ? "Erase steps"
+                                                              : dragPaintsOn ? "Add steps"
+                                                                             : "Clear steps");
+
+    // Once per gesture, not once per painted cell - a sweep across a row used
+    // to re-select the same channel on every step it touched.
+    editorState.setSelectedChannelId ((int) channel[ids::id]);
 
     lastPaintedStep = -1;
     lastPaintedRow = -1;
@@ -405,6 +430,7 @@ void StepGridComponent::mouseDrag (const juce::MouseEvent& event)
 void StepGridComponent::mouseUp (const juce::MouseEvent&)
 {
     dragging = false;
+    dragErasing = false;
 }
 
 } // namespace dew

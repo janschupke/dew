@@ -75,6 +75,10 @@ private:
     // than toggling each one under the cursor - dragging over a lit step would
     // otherwise switch it off again.
     bool dragPaintsOn = true;
+
+    // Set from the press modifiers and held for the whole gesture. Nothing
+    // recorded them before, which is why right-click behaved exactly like left.
+    bool dragErasing = false;
     bool dragging = false;
     int lastPaintedStep = -1;
     int lastPaintedRow = -1;

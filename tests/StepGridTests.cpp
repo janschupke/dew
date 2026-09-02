@@ -8,6 +8,7 @@
 #include "model/ProjectEdits.h"
 #include "model/ProjectFactory.h"
 #include "ui/EditorState.h"
+#include "ui/design/Tokens.h"
 #include "ui/StepGridComponent.h"
 
 using namespace dew;
@@ -26,6 +27,11 @@ struct GridHarness
     }
 
     juce::ValueTree pattern() { return ProjectEdits::findPattern (document.getState(), 1); }
+
+    /** The channel drawn on row 0. Channels are direct children of PROJECT and
+        the grid draws them in tree order, so the first one is the top row.
+    */
+    juce::ValueTree firstChannel() { return document.getState().getChildWithName (ids::CHANNEL); }
 
     void setPatternLength (int steps)
     {
@@ -46,6 +52,21 @@ struct GridHarness
     EditorState editorState;
     StepGridComponent grid { document, engine, editorState };
 };
+
+juce::MouseEvent eventAt (juce::Component& target, juce::Point<int> local,
+                          juce::ModifierKeys mods = juce::ModifierKeys())
+{
+    const auto position = local.toFloat();
+
+    return { juce::Desktop::getInstance().getMainMouseSource(),
+             position, mods,
+             1.0f, 0.0f, 0.0f, 0.0f, 0.0f,
+             &target, &target,
+             juce::Time::getCurrentTime(),
+             position,
+             juce::Time::getCurrentTime(),
+             1, false };
+}
 
 } // namespace
 
@@ -145,4 +166,156 @@ TEST_CASE ("the region below the last channel stays inert", "[stepgrid][grid]")
     INFO ("mean brightness below the last row: " << belowMean);
     REQUIRE (belowMean > 0.0);
     REQUIRE (belowMean < 0.12);
+}
+
+namespace
+{
+
+/** The centre of a cell, asked of the grid's own timeline rather than
+    recomputed, so a layout change breaks the test instead of silently moving
+    it somewhere harmless.
+*/
+juce::Point<int> cellCentre (GridHarness& h, int step, int row)
+{
+    const auto x = (int) (h.grid.getTimeline().xForStep ((double) step + 0.5));
+    const auto y = row * tokens::size::rowHeight + tokens::size::rowHeight / 2;
+
+    REQUIRE (x > 0);
+    REQUIRE (y < h.grid.getRowsHeight());
+
+    return { x, y };
+}
+
+int stepsLitOnRow (GridHarness& h, int channelId)
+{
+    int lit = 0;
+
+    for (const auto& child : h.pattern())
+        if (child.hasType (ids::NOTE) && (int) child[ids::ch] == channelId)
+            ++lit;
+
+    return lit;
+}
+
+} // namespace
+
+TEST_CASE ("a right-drag on the step grid erases rather than adding", "[stepgrid][erase]")
+{
+    const juce::ScopedJuceInitialiser_GUI juceInit;
+
+    GridHarness h;
+
+    const auto channel = h.firstChannel();
+
+    REQUIRE (channel.isValid());
+    REQUIRE (h.grid.getNumRows() > 0);
+
+    const auto channelId = (int) channel[ids::id];
+
+    juce::UndoManager setup;
+
+    for (int step = 0; step < 8; ++step)
+        if (! ProjectEdits::findNoteAtStep (h.pattern(), channelId, step).isValid())
+            ProjectEdits::addNote (h.pattern(), channelId, step, 1,
+                                   (int) channel[ids::basePitch], 1.0f, &setup);
+
+    const auto before = stepsLitOnRow (h, channelId);
+    REQUIRE (before >= 8);
+
+    const juce::ModifierKeys rightButton { juce::ModifierKeys::rightButtonModifier };
+
+    h.grid.mouseDown (eventAt (h.grid, cellCentre (h, 0, 0), rightButton));
+    h.grid.mouseDrag (eventAt (h.grid, cellCentre (h, 7, 0), rightButton));
+    h.grid.mouseUp   (eventAt (h.grid, cellCentre (h, 7, 0), rightButton));
+
+    INFO ("steps left on the row: " << stepsLitOnRow (h, channelId));
+    REQUIRE (stepsLitOnRow (h, channelId) == before - 8);
+}
+
+TEST_CASE ("a right-drag starting on an empty cell still erases", "[stepgrid][erase]")
+{
+    const juce::ScopedJuceInitialiser_GUI juceInit;
+
+    GridHarness h;
+
+    const auto channel = h.firstChannel();
+    const auto channelId = (int) channel[ids::id];
+
+    juce::UndoManager setup;
+
+    // Clear the row, then light only the far half.
+    for (int step = 0; step < 16; ++step)
+        if (auto existing = ProjectEdits::findNoteAtStep (h.pattern(), channelId, step);
+            existing.isValid())
+            ProjectEdits::removeNote (h.pattern(), existing, &setup);
+
+    for (int step = 8; step < 12; ++step)
+        ProjectEdits::addNote (h.pattern(), channelId, step, 1,
+                               (int) channel[ids::basePitch], 1.0f, &setup);
+
+    REQUIRE (stepsLitOnRow (h, channelId) == 4);
+
+    const juce::ModifierKeys rightButton { juce::ModifierKeys::rightButtonModifier };
+
+    // Step 0 is empty. Without a modifier check this press decided "the first
+    // cell is empty, so this drag ADDS" and filled the row instead.
+    h.grid.mouseDown (eventAt (h.grid, cellCentre (h, 0, 0), rightButton));
+    h.grid.mouseDrag (eventAt (h.grid, cellCentre (h, 11, 0), rightButton));
+    h.grid.mouseUp   (eventAt (h.grid, cellCentre (h, 11, 0), rightButton));
+
+    INFO ("steps left on the row: " << stepsLitOnRow (h, channelId));
+    REQUIRE (stepsLitOnRow (h, channelId) == 0);
+}
+
+TEST_CASE ("a fast sweep fills the cells between two drag samples", "[stepgrid][erase]")
+{
+    const juce::ScopedJuceInitialiser_GUI juceInit;
+
+    GridHarness h;
+
+    const auto channel = h.firstChannel();
+    const auto channelId = (int) channel[ids::id];
+
+    juce::UndoManager setup;
+
+    for (int step = 0; step < 16; ++step)
+        if (auto existing = ProjectEdits::findNoteAtStep (h.pattern(), channelId, step);
+            existing.isValid())
+            ProjectEdits::removeNote (h.pattern(), existing, &setup);
+
+    REQUIRE (stepsLitOnRow (h, channelId) == 0);
+
+    // One press and one drag report, twelve cells apart. Painting only where
+    // the pointer was reported would light two cells and leave ten dark.
+    h.grid.mouseDown (eventAt (h.grid, cellCentre (h, 0, 0)));
+    h.grid.mouseDrag (eventAt (h.grid, cellCentre (h, 11, 0)));
+    h.grid.mouseUp   (eventAt (h.grid, cellCentre (h, 11, 0)));
+
+    INFO ("steps lit by a two-sample sweep: " << stepsLitOnRow (h, channelId));
+    REQUIRE (stepsLitOnRow (h, channelId) == 12);
+}
+
+TEST_CASE ("a left-drag on the step grid still paints", "[stepgrid][erase]")
+{
+    const juce::ScopedJuceInitialiser_GUI juceInit;
+
+    GridHarness h;
+
+    const auto channel = h.firstChannel();
+    const auto channelId = (int) channel[ids::id];
+
+    juce::UndoManager setup;
+
+    for (int step = 0; step < 16; ++step)
+        if (auto existing = ProjectEdits::findNoteAtStep (h.pattern(), channelId, step);
+            existing.isValid())
+            ProjectEdits::removeNote (h.pattern(), existing, &setup);
+
+    const juce::ModifierKeys left { juce::ModifierKeys::leftButtonModifier };
+
+    h.grid.mouseDown (eventAt (h.grid, cellCentre (h, 0, 0), left));
+    h.grid.mouseDrag (eventAt (h.grid, cellCentre (h, 3, 0), left));
+    h.grid.mouseUp   (eventAt (h.grid, cellCentre (h, 3, 0), left));
+
+    REQUIRE (stepsLitOnRow (h, channelId) == 4);
 }

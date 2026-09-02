@@ -96,7 +96,7 @@ public:
     void applyView (double zoom, double scroll, double pitchScroll);
 
 private:
-    enum class Gesture { none, moving, resizing, selecting, velocity, auditioning };
+    enum class Gesture { none, moving, resizing, selecting, velocity, auditioning, erasing };
 
     void timerCallback() override;
     void valueTreePropertyChanged (juce::ValueTree&, const juce::Identifier&) override;
@@ -107,6 +107,14 @@ private:
 
     juce::ValueTree currentPattern() const;
     juce::ValueTree noteAt (juce::Point<int>) const;
+
+    /** Deletes every note the pointer passed over between two drag samples.
+
+        Sampled along the segment rather than at its ends: a drag reports a
+        handful of positions per second, so a quick sweep skips whole notes if
+        you only look where the pointer happened to be reported.
+    */
+    void eraseAlong (juce::Point<int> from, juce::Point<int> to);
     int numSteps() const;
 
     // --- geometry ------------------------------------------------------------
@@ -151,6 +159,11 @@ private:
     void paintVelocityLane (juce::Graphics&);
     juce::Colour channelColour() const;
 
+    /** How finely an erase sweep is sampled between two drag positions. Half a
+        row, so nothing that can be drawn can be skipped over.
+    */
+    static constexpr int eraseStridePx = 6;
+
     static constexpr int rowHeight       = 14;
     static constexpr int lowestPitch     = 12;   ///< C0
     static constexpr int highestPitch    = 108;  ///< C8
@@ -182,6 +195,10 @@ private:
     int dragStepOffset = 0;
     int dragPitchOffset = 0;
     juce::Point<int> dragOrigin;
+
+    // Where the erase sweep last looked. mouseDrag reports discrete positions,
+    // so the segment between two of them is what actually has to be swept.
+    juce::Point<int> lastErasePosition;
     juce::Rectangle<int> rubberBand;
     juce::Array<juce::ValueTree> selectionAtDragStart;
 

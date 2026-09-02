@@ -651,3 +651,143 @@ TEST_CASE ("the end of the pattern is marked, and past it is dimmer", "[pianorol
     REQUIRE (beyondMean < insideMean);
     REQUIRE (beyondMean > 0.0);
 }
+
+TEST_CASE ("a right-drag sweeps notes away, as one undo step", "[pianoroll][erase]")
+{
+    const juce::ScopedJuceInitialiser_GUI juceInit;
+
+    RollHarness h;
+
+    juce::UndoManager setup;
+
+    // A run of notes along one pitch, so a single horizontal sweep crosses all
+    // of them.
+    for (int step = 0; step < 8; ++step)
+        ProjectEdits::addNote (h.pattern(), 1, step, 1, 66, 1.0f, &setup);
+
+    h.roll.zoomToFit();
+    h.roll.refresh();
+
+    const auto notesBefore = h.countNotes();
+    REQUIRE (notesBefore >= 8);
+
+    const auto from = pointFor (h, 0, 66);
+    const auto to   = pointFor (h, 7, 66);
+
+    const juce::ModifierKeys rightButton { juce::ModifierKeys::rightButtonModifier };
+
+    h.roll.mouseDown (eventAt (h.roll, from, rightButton));
+    h.roll.mouseDrag (eventAt (h.roll, to, rightButton));
+    h.roll.mouseUp   (eventAt (h.roll, to, rightButton));
+
+    INFO ("notes left after the sweep: " << h.countNotes());
+    REQUIRE (h.countNotes() == notesBefore - 8);
+
+    // One transaction for the whole gesture. It used to open one per note, so
+    // clearing a bar cost a bar's worth of undo presses.
+    REQUIRE (h.document.getUndoManager().undo());
+    REQUIRE (h.countNotes() == notesBefore);
+}
+
+TEST_CASE ("a fast sweep does not step over notes between drag samples", "[pianoroll][erase]")
+{
+    const juce::ScopedJuceInitialiser_GUI juceInit;
+
+    RollHarness h;
+
+    juce::UndoManager setup;
+
+    for (int step = 0; step < 8; ++step)
+        ProjectEdits::addNote (h.pattern(), 1, step, 1, 66, 1.0f, &setup);
+
+    h.roll.zoomToFit();
+    h.roll.refresh();
+
+    const auto notesBefore = h.countNotes();
+
+    // Two samples for the whole sweep, which is what a quick flick actually
+    // produces. Only sampling where the pointer was reported would leave the
+    // six notes in between untouched.
+    const auto from = pointFor (h, 0, 66);
+    const auto to   = pointFor (h, 7, 66);
+
+    const juce::ModifierKeys rightButton { juce::ModifierKeys::rightButtonModifier };
+
+    h.roll.mouseDown (eventAt (h.roll, from, rightButton));
+    h.roll.mouseDrag (eventAt (h.roll, to, rightButton));
+    h.roll.mouseUp   (eventAt (h.roll, to, rightButton));
+
+    INFO ("notes left after a two-sample sweep: " << h.countNotes());
+    REQUIRE (h.countNotes() == notesBefore - 8);
+}
+
+TEST_CASE ("a sweep can start on empty space and run into notes", "[pianoroll][erase]")
+{
+    const juce::ScopedJuceInitialiser_GUI juceInit;
+
+    RollHarness h;
+
+    juce::UndoManager setup;
+
+    for (int step = 4; step < 8; ++step)
+        ProjectEdits::addNote (h.pattern(), 1, step, 1, 66, 1.0f, &setup);
+
+    h.roll.zoomToFit();
+    h.roll.refresh();
+
+    const auto notesBefore = h.countNotes();
+
+    // Step 0 is empty. Pressing there used to do nothing at all, so there was
+    // no way to begin a sweep anywhere but exactly on a note.
+    const auto from = pointFor (h, 0, 66);
+    const auto to   = pointFor (h, 7, 66);
+
+    const juce::ModifierKeys rightButton { juce::ModifierKeys::rightButtonModifier };
+
+    h.roll.mouseDown (eventAt (h.roll, from, rightButton));
+    h.roll.mouseDrag (eventAt (h.roll, to, rightButton));
+    h.roll.mouseUp   (eventAt (h.roll, to, rightButton));
+
+    REQUIRE (h.countNotes() == notesBefore - 4);
+}
+
+TEST_CASE ("alt-drag erases too, and a plain drag still does not", "[pianoroll][erase]")
+{
+    const juce::ScopedJuceInitialiser_GUI juceInit;
+
+    RollHarness h;
+
+    juce::UndoManager setup;
+
+    for (int step = 0; step < 6; ++step)
+        ProjectEdits::addNote (h.pattern(), 1, step, 1, 66, 1.0f, &setup);
+
+    h.roll.zoomToFit();
+    h.roll.refresh();
+
+    const auto notesBefore = h.countNotes();
+    const auto from = pointFor (h, 0, 66);
+    const auto to   = pointFor (h, 5, 66);
+
+    SECTION ("alt")
+    {
+        const juce::ModifierKeys alt { juce::ModifierKeys::altModifier };
+
+        h.roll.mouseDown (eventAt (h.roll, from, alt));
+        h.roll.mouseDrag (eventAt (h.roll, to, alt));
+        h.roll.mouseUp   (eventAt (h.roll, to, alt));
+
+        REQUIRE (h.countNotes() == notesBefore - 6);
+    }
+
+    SECTION ("plain left drag moves rather than erasing")
+    {
+        const juce::ModifierKeys left { juce::ModifierKeys::leftButtonModifier };
+
+        h.roll.mouseDown (eventAt (h.roll, from, left));
+        h.roll.mouseDrag (eventAt (h.roll, to, left));
+        h.roll.mouseUp   (eventAt (h.roll, to, left));
+
+        REQUIRE (h.countNotes() == notesBefore);
+    }
+}
