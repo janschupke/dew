@@ -48,6 +48,20 @@ void SynthChannel::noteOn (int pitch, float velocity, const OscSettings& osc,
         target->start (pitch, velocity, osc, amp, durationSamples);
 }
 
+void SynthChannel::noteOff (int pitch) noexcept
+{
+    for (auto& voice : voices)
+        if (voice.getPitch() == pitch)
+            voice.release();
+}
+
+void SynthChannel::allNotesOff() noexcept
+{
+    for (auto& voice : voices)
+        if (voice.isActive())
+            voice.release();
+}
+
 void SynthChannel::renderAdd (float* buffer, int numSamples) noexcept
 {
     for (auto& voice : voices)

@@ -327,23 +327,42 @@ void PianoRollComponent::zoomToFit()
 void PianoRollComponent::mouseWheelMove (const juce::MouseEvent& event,
                                          const juce::MouseWheelDetails& wheel)
 {
+    // Natural scrolling flips the sign of the deltas, and JUCE reports that
+    // rather than applying it. Ignoring it - which this did - means the roll
+    // scrolls the wrong way for anyone with the system default on.
+    const auto direction = wheel.isReversed ? -1.0 : 1.0;
+    const auto deltaX = (double) wheel.deltaX * direction;
+    const auto deltaY = (double) wheel.deltaY * direction;
+
     if (event.mods.isCommandDown() || event.mods.isCtrlDown())
     {
         // Zoom around the pointer. deltaY is small; exaggerate it or a zoom
         // takes a dozen notches to be noticeable.
-        const auto factor = std::pow (2.0, (double) wheel.deltaY * 3.0);
-        timeline.zoomAround (factor, (float) (event.x - keyboardWidth));
+        timeline.zoomAround (std::pow (2.0, deltaY * 3.0), (float) (event.x - keyboardWidth));
     }
     else if (event.mods.isShiftDown())
     {
-        timeline.scrollOffsetSteps -= (double) wheel.deltaX * 8.0 + (double) wheel.deltaY * 8.0;
+        timeline.scrollOffsetSteps -= (deltaX + deltaY) * 8.0;
     }
     else
     {
-        pitchScrollPx -= (double) wheel.deltaY * 3.0 * rowHeight;
-        timeline.scrollOffsetSteps -= (double) wheel.deltaX * 8.0;
+        pitchScrollPx -= deltaY * 3.0 * rowHeight;
+        timeline.scrollOffsetSteps -= deltaX * 8.0;
     }
 
+    updateScrollBars();
+    repaint();
+}
+
+void PianoRollComponent::mouseMagnify (const juce::MouseEvent& event, float scaleFactor)
+{
+    // Trackpad pinch. The factor is already multiplicative, so it goes straight
+    // through - and anchoring on the pointer is what stops the music walking
+    // out from under the fingers doing the pinching.
+    if (scaleFactor <= 0.0f)
+        return;
+
+    timeline.zoomAround ((double) scaleFactor, (float) (event.x - keyboardWidth));
     updateScrollBars();
     repaint();
 }
@@ -424,9 +443,29 @@ void PianoRollComponent::mouseDown (const juce::MouseEvent& event)
 
     dragOrigin = event.getPosition();
 
+    // The keyboard used to be inert: mouseDown returned here without ever
+    // testing it, so clicking a piano key did nothing at all.
+    if (keyboardArea().contains (event.getPosition()))
+    {
+        gesture = Gesture::auditioning;
+        startAudition (pitchAtY (event.y));
+        return;
+    }
+
     if (velocityArea().contains (event.getPosition()))
     {
         gesture = Gesture::velocity;
+
+        // Grab a bar rather than snapping wherever the click landed, and do not
+        // open an undo transaction for a click on empty lane space.
+        draggedVelocityNote = velocityBarAt (event.getPosition());
+
+        if (! draggedVelocityNote.isValid())
+        {
+            gesture = Gesture::none;
+            return;
+        }
+
         document.getUndoManager().beginNewTransaction ("Change velocity");
         applyVelocityAt (event.getPosition());
         return;
@@ -520,6 +559,13 @@ void PianoRollComponent::mouseDrag (const juce::MouseEvent& event)
 {
     auto& undo = document.getUndoManager();
 
+    if (gesture == Gesture::auditioning)
+    {
+        // Sliding down the keyboard plays what it passes over.
+        startAudition (pitchAtY (event.y));
+        return;
+    }
+
     if (gesture == Gesture::velocity)
     {
         applyVelocityAt (event.getPosition());
@@ -589,6 +635,9 @@ void PianoRollComponent::mouseDrag (const juce::MouseEvent& event)
 
 void PianoRollComponent::mouseUp (const juce::MouseEvent&)
 {
+    stopAudition();
+    draggedVelocityNote = {};
+
     // The next note drawn takes the shape of the last one, so writing a passage
     // of held or quiet notes does not mean re-editing every one.
     if (draggedNote.isValid() && (gesture == Gesture::resizing || gesture == Gesture::moving))
@@ -602,13 +651,106 @@ void PianoRollComponent::mouseUp (const juce::MouseEvent&)
     repaint();
 }
 
+void PianoRollComponent::startAudition (int pitch)
+{
+    const auto wanted = juce::jlimit (lowestPitch, highestPitch, pitch);
+
+    if (wanted == auditionPitch)
+        return;
+
+    stopAudition();
+
+    // The engine indexes channels by position, and so does the snapshot; the
+    // editor knows the channel by id, so resolve it the same way the snapshot
+    // builder does rather than assuming they agree.
+    int index = 0;
+    int channelIndex = -1;
+
+    for (const auto& channel : document.getState())
+    {
+        if (! channel.hasType (ids::CHANNEL))
+            continue;
+
+        if ((int) channel[ids::id] == editorState.getSelectedChannelId())
+            channelIndex = index;
+
+        ++index;
+    }
+
+    if (channelIndex < 0)
+        return;
+
+    auditionPitch = wanted;
+    engine.previewNoteOn (channelIndex, wanted, (float) editorState.getLastNoteVelocity());
+    repaint (keyboardArea());
+}
+
+void PianoRollComponent::stopAudition()
+{
+    if (auditionPitch < 0)
+        return;
+
+    // Released everywhere rather than on one channel: the selected channel can
+    // change mid-drag, and a note left ringing is worse than an extra message.
+    engine.previewAllOff();
+    auditionPitch = -1;
+    repaint (keyboardArea());
+}
+
+juce::Rectangle<float> PianoRollComponent::velocityBarBounds (const juce::ValueTree& note) const
+{
+    const auto area = velocityArea();
+    const auto velocity = (float) juce::jlimit (0.0, 1.0, (double) note[ids::velocity]);
+    const auto barWidth = (float) juce::jlimit (3.0, 14.0, timeline.pixelsPerStep * 0.7);
+    const auto x = (float) keyboardWidth + timeline.xForStep ((double) (int) note[ids::step]);
+
+    const auto floor = (float) area.getBottom() - (float) barPadding;
+    const auto height = velocity * (float) juce::jmax (1, area.getHeight() - barPadding * 2);
+
+    return { x + 1.0f, floor - height, barWidth, height };
+}
+
+juce::ValueTree PianoRollComponent::velocityBarAt (juce::Point<int> position) const
+{
+    const auto channelId = editorState.getSelectedChannelId();
+
+    for (const auto& note : currentPattern())
+    {
+        if (! note.hasType (ids::NOTE) || (int) note[ids::ch] != channelId)
+            continue;
+
+        // Generous vertically: the bar is a few pixels wide and its top is what
+        // you aim at, so the whole column counts as a grab.
+        const auto bar = velocityBarBounds (note);
+        const auto column = juce::Rectangle<float> (bar.getX() - 2.0f, (float) velocityArea().getY(),
+                                                    bar.getWidth() + 4.0f, (float) velocityArea().getHeight());
+
+        if (column.contains (position.toFloat()))
+            return note;
+    }
+
+    return {};
+}
+
 void PianoRollComponent::applyVelocityAt (juce::Point<int> position)
 {
     const auto lane = velocityArea();
-    const auto value = 1.0 - juce::jlimit (0.0, 1.0,
-                                           (double) (position.y - lane.getY()) / juce::jmax (1, lane.getHeight()));
+
+    // Mapped against the same geometry velocityBarBounds draws with. These
+    // disagreed by 8px, so the bar top never sat under the cursor dragging it.
+    const auto floor = lane.getBottom() - barPadding;
+    const auto span = juce::jmax (1, lane.getHeight() - barPadding * 2);
+    const auto value = juce::jlimit (0.0, 1.0, (double) (floor - position.y) / (double) span);
 
     auto& undo = document.getUndoManager();
+
+    if (draggedVelocityNote.isValid())
+    {
+        ProjectEdits::setNoteVelocity (draggedVelocityNote, value, &undo);
+        repaint (lane);
+        return;
+    }
+
     const auto channelId = editorState.getSelectedChannelId();
     const auto step = stepAtX (position.x);
 
@@ -620,7 +762,7 @@ void PianoRollComponent::applyVelocityAt (juce::Point<int> position)
             && (selection.isEmpty() || isSelected (note)))
             ProjectEdits::setNoteVelocity (note, value, &undo);
 
-    repaint();
+    repaint (lane);
 }
 
 // --- notifications -----------------------------------------------------------
@@ -697,6 +839,50 @@ void PianoRollComponent::resized()
 
 // --- painting ----------------------------------------------------------------
 
+void PianoRollComponent::paintKeyboard (juce::Graphics& g)
+{
+    using namespace tokens;
+
+    const auto keys = keyboardArea();
+
+    const juce::Graphics::ScopedSaveState clip (g);
+    g.reduceClipRegion (keys);
+
+    g.setColour (colour::wellDeep);
+    g.fillRect (keys);
+
+    const auto firstRow = juce::jmax (0, (int) (pitchScrollPx / rowHeight));
+    const auto lastRow  = juce::jmin (numRows - 1, (int) ((pitchScrollPx + keys.getHeight()) / rowHeight));
+
+    for (int row = firstRow; row <= lastRow; ++row)
+    {
+        const auto pitch = highestPitch - row;
+        const auto y = (float) keys.getY() + (float) (row * rowHeight) - (float) pitchScrollPx;
+        const auto black = isBlackKey (pitch);
+
+        auto colourValue = black ? juce::Colour (0xff1c1f24) : juce::Colour (0xffd8dce3);
+
+        // The key under the pointer lights while it sounds, so a click on the
+        // keyboard is visibly doing something and not only audibly.
+        if (pitch == auditionPitch)
+            colourValue = colour::accent;
+
+        g.setColour (colourValue);
+        g.fillRect ((float) keys.getX(), y, (float) (keys.getWidth() - 1), (float) (rowHeight - 1));
+
+        if (pitch % 12 == 0)
+        {
+            g.setColour (pitch == auditionPitch ? colour::textOnAccent : colour::textOnAccent);
+            g.setFont (juce::FontOptions ((float) type::caption));
+            g.drawText (noteName (pitch), keys.getX() + 3, (int) y, keys.getWidth() - 6, rowHeight,
+                        juce::Justification::centredLeft, false);
+        }
+    }
+
+    g.setColour (colour::dividerStrong);
+    g.drawVerticalLine (keys.getRight() - 1, (float) keys.getY(), (float) keys.getBottom());
+}
+
 void PianoRollComponent::paintRuler (juce::Graphics& g)
 {
     using namespace tokens;
@@ -748,13 +934,15 @@ void PianoRollComponent::paintNotes (juce::Graphics& g)
     using namespace tokens;
 
     const auto area = noteArea();
-    const auto keys = keyboardArea();
 
     g.setColour (colour::wellDeep);
     g.fillRect (area);
 
+    // Clipped to the note area, not to the full width. This used to start at
+    // x = 0, which included the keyboard gutter, so any note scrolled past the
+    // left edge was painted straight over the keys.
     const juce::Graphics::ScopedSaveState clip (g);
-    g.reduceClipRegion (juce::Rectangle<int> (0, area.getY(), getWidth(), area.getHeight()));
+    g.reduceClipRegion (area);
 
     const auto stepsPerBeat = juce::jmax (1, (int) document.getState()[ids::stepsPerBeat]);
     const auto stepsPerBar = stepsPerBeat * 4;
@@ -774,25 +962,8 @@ void PianoRollComponent::paintNotes (juce::Graphics& g)
             g.fillRect ((float) area.getX(), y, (float) area.getWidth(), (float) rowHeight);
         }
 
-        // Keyboard gutter: a real keyboard, so a pitch can be read off it.
-        g.setColour (isBlackKey (pitch) ? juce::Colour (0xff1c1f24) : juce::Colour (0xffd8dce3));
-        g.fillRect ((float) keys.getX(), y, (float) (keys.getWidth() - 1), (float) (rowHeight - 1));
-
-        if (pitch % 12 == 0)
-        {
-            g.setColour (colour::textOnAccent);
-            g.setFont (juce::FontOptions ((float) type::caption));
-            g.drawText (noteName (pitch), keys.getX() + 3, (int) y, keys.getWidth() - 6, rowHeight,
-                        juce::Justification::centredLeft, false);
-
-            g.setColour (colour::dividerStrong);
-            g.drawHorizontalLine ((int) y, (float) area.getX(), (float) area.getRight());
-        }
-        else
-        {
-            g.setColour (colour::divider.withAlpha (0.4f));
-            g.drawHorizontalLine ((int) y, (float) area.getX(), (float) area.getRight());
-        }
+        g.setColour (pitch % 12 == 0 ? colour::dividerStrong : colour::divider.withAlpha (0.4f));
+        g.drawHorizontalLine ((int) y, (float) area.getX(), (float) area.getRight());
     }
 
     // --- columns -------------------------------------------------------------
@@ -936,6 +1107,7 @@ void PianoRollComponent::paint (juce::Graphics& g)
     g.fillAll (colour::background);
 
     paintNotes (g);
+    paintKeyboard (g);
     paintRuler (g);
     paintVelocityLane (g);
 

@@ -4,6 +4,7 @@
 #include <vector>
 
 #include "MixerBus.h"
+#include "PreviewQueue.h"
 #include "Sequencer.h"
 #include "SnapshotBridge.h"
 #include "SynthChannel.h"
@@ -40,6 +41,16 @@ public:
     void setMode (Transport::Mode);
     Transport::Mode getMode() const noexcept  { return requestedMode.load(); }
     bool isPlaying() const noexcept           { return playing.load(); }
+
+    // --- preview, for auditioning a note outside the sequencer ---------------
+    /** Message thread. Sounds a note on a channel until previewNoteOff, so
+        clicking a piano key makes the sound the key is for.
+
+        Returns false if the queue was full and the note was dropped.
+    */
+    bool previewNoteOn (int channelIndex, int pitch, float velocity) noexcept;
+    bool previewNoteOff (int channelIndex, int pitch) noexcept;
+    bool previewAllOff() noexcept;
 
     /** Which pattern plays in pattern mode, by pattern id. */
     void setCurrentPatternId (int patternId) noexcept  { requestedPatternId.store (patternId); }
@@ -117,6 +128,9 @@ private:
     std::vector<ActiveAutomation> activeAutomation;
 
     std::vector<NoteTrigger> triggers;
+    PreviewQueue previewQueue;
+
+    void drainPreviewQueue (const EngineSnapshot&) noexcept;
 
     juce::uint64 appliedGeneration = 0;
 

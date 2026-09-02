@@ -61,6 +61,7 @@ void SynthVoice::reset() noexcept
 void SynthVoice::start (int pitch, float velocity, const OscSettings& osc,
                         const AmpSettings& amp, int durationSamples)
 {
+    currentPitch = pitch;
     wave = osc.wave;
     oscGain = osc.gain;
     level = juce::jlimit (0.0f, 1.0f, velocity);

@@ -55,6 +55,7 @@ public:
     void mouseMove (const juce::MouseEvent&) override;
     void mouseDoubleClick (const juce::MouseEvent&) override;
     void mouseWheelMove (const juce::MouseEvent&, const juce::MouseWheelDetails&) override;
+    void mouseMagnify (const juce::MouseEvent&, float scaleFactor) override;
     bool keyPressed (const juce::KeyPress&) override;
 
     void refresh();
@@ -80,10 +81,18 @@ public:
     juce::Rectangle<float> getBoundsForNote (const juce::ValueTree& note) const { return boundsForNote (note); }
 
     juce::Rectangle<int> getNoteArea() const     { return noteArea(); }
+    juce::Rectangle<int> getKeyboardArea() const { return keyboardArea(); }
     juce::Rectangle<int> getVelocityArea() const { return velocityArea(); }
+    juce::Rectangle<float> getVelocityBarBounds (const juce::ValueTree& note) const
+    {
+        return velocityBarBounds (note);
+    }
+
+    /** The pitch currently being auditioned, or -1. */
+    int getAuditionPitch() const noexcept { return auditionPitch; }
 
 private:
-    enum class Gesture { none, moving, resizing, selecting, velocity };
+    enum class Gesture { none, moving, resizing, selecting, velocity, auditioning };
 
     void timerCallback() override;
     void valueTreePropertyChanged (juce::ValueTree&, const juce::Identifier&) override;
@@ -107,6 +116,23 @@ private:
     int pitchAtY (int y) const;
     int firstVisiblePitch() const;
     juce::Rectangle<float> boundsForNote (const juce::ValueTree& note) const;
+
+    /** Where a note's velocity bar is drawn in the lane.
+
+        One function for painting and for hit-testing: they disagreed by 8px,
+        which is why the bar top was never under the cursor that was supposedly
+        dragging it.
+    */
+    juce::Rectangle<float> velocityBarBounds (const juce::ValueTree& note) const;
+
+    /** The velocity bar under this point, or an invalid tree. */
+    juce::ValueTree velocityBarAt (juce::Point<int>) const;
+
+    /** Sounds `pitch` on the selected channel, releasing whatever was sounding.
+        A no-op when that pitch is already the one being auditioned.
+    */
+    void startAudition (int pitch);
+    void stopAudition();
     bool isOnRightEdge (const juce::ValueTree& note, juce::Point<int>) const;
 
     void updateScrollBars();
@@ -115,6 +141,7 @@ private:
     void deleteSelection();
     void selectAllOnChannel();
     void applyVelocityAt (juce::Point<int>);
+    void paintKeyboard (juce::Graphics&);
     void paintRuler (juce::Graphics&);
     void paintNotes (juce::Graphics&);
     void paintVelocityLane (juce::Graphics&);
@@ -128,6 +155,11 @@ private:
     static constexpr int rulerHeight     = 22;
     static constexpr int velocityHeight  = 62;
     static constexpr int scrollThickness = 10;
+
+    /** Space above and below a velocity bar. Shared by painting and hit-testing
+        so the two cannot drift apart again.
+    */
+    static constexpr int barPadding = 4;
 
     ProjectDocument& document;
     AudioEngine& engine;
@@ -155,6 +187,13 @@ private:
 
     int lastPlayheadStep = -1;
     bool didFitOnce = false;
+
+    /** The key currently sounding under the pointer, so it can be lit and
+        released. -1 when nothing is being auditioned.
+    */
+    int auditionPitch = -1;
+
+    juce::ValueTree draggedVelocityNote;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (PianoRollComponent)
 };

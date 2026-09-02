@@ -15,6 +15,7 @@ add_library(dew_core STATIC
   model/ProjectEdits.cpp
 
   engine/Effects.cpp
+  engine/PreviewQueue.cpp
   engine/EngineSnapshot.cpp
   engine/SnapshotBridge.cpp
   engine/Transport.cpp

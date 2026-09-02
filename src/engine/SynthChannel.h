@@ -22,6 +22,14 @@ public:
 
     void noteOn (int pitch, float velocity, const OscSettings&, const AmpSettings&, int durationSamples);
 
+    /** Releases every voice sounding this pitch. Used for held preview notes,
+        which have no duration to run out - the user decides when they end.
+    */
+    void noteOff (int pitch) noexcept;
+
+    /** Releases everything, without cutting the tails. */
+    void allNotesOff() noexcept;
+
     /** Adds the channel's mono output into `buffer`. */
     void renderAdd (float* buffer, int numSamples) noexcept;
 

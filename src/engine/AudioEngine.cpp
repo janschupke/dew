@@ -1,5 +1,7 @@
 #include "AudioEngine.h"
 
+#include <limits>
+
 namespace dew
 {
 
@@ -61,6 +63,59 @@ void AudioEngine::setProject (const juce::ValueTree& project, juce::StringArray*
 void AudioEngine::publish (EngineSnapshot snapshot)
 {
     bridge.publish (std::move (snapshot));
+}
+
+bool AudioEngine::previewNoteOn (int channelIndex, int pitch, float velocity) noexcept
+{
+    return previewQueue.push ({ PreviewEvent::Kind::noteOn, channelIndex,
+                                juce::jlimit (0, 127, pitch), juce::jlimit (0.0f, 1.0f, velocity) });
+}
+
+bool AudioEngine::previewNoteOff (int channelIndex, int pitch) noexcept
+{
+    return previewQueue.push ({ PreviewEvent::Kind::noteOff, channelIndex,
+                                juce::jlimit (0, 127, pitch), 0.0f });
+}
+
+bool AudioEngine::previewAllOff() noexcept
+{
+    return previewQueue.push ({ PreviewEvent::Kind::allOff, 0, 0, 0.0f });
+}
+
+void AudioEngine::drainPreviewQueue (const EngineSnapshot& snapshot) noexcept
+{
+    const auto numChannels = juce::jmin ((int) snapshot.channels.size(), kMaxChannels);
+
+    PreviewEvent event;
+
+    while (previewQueue.pop (event))
+    {
+        if (event.kind == PreviewEvent::Kind::allOff)
+        {
+            for (auto& channel : channels)
+                channel.allNotesOff();
+
+            continue;
+        }
+
+        if (event.channelIndex < 0 || event.channelIndex >= numChannels)
+            continue;
+
+        auto& channel = channels[(size_t) event.channelIndex];
+
+        if (event.kind == PreviewEvent::Kind::noteOff)
+        {
+            channel.noteOff (event.pitch);
+            continue;
+        }
+
+        // A preview note has no duration to run out - it lasts until the user
+        // lets go - so it is triggered with one long enough that the release
+        // always comes first.
+        const auto& channelSnapshot = snapshot.channels[(size_t) event.channelIndex];
+        channel.noteOn (event.pitch, event.velocity, channelSnapshot.osc, channelSnapshot.amp,
+                        std::numeric_limits<int>::max());
+    }
 }
 
 void AudioEngine::play()
@@ -307,6 +362,10 @@ void AudioEngine::processBlock (juce::AudioBuffer<float>& buffer) noexcept
 
     channelBuffers.clear (0, numSamples);
     mixerBuffers.clear (0, numSamples);
+
+    // Preview notes are drained whether or not the transport is running: the
+    // whole point is to hear a pitch without playing the project.
+    drainPreviewQueue (snapshot);
 
     // --- trigger notes -------------------------------------------------------
     for (const auto& trigger : triggers)
