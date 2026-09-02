@@ -1,5 +1,7 @@
 #include "ui/SignalScope.h"
 
+#include "ui/primitives/DewMeter.h"
+
 #include <algorithm>
 #include <cmath>
 
@@ -12,19 +14,11 @@ using namespace tokens;
 
 namespace
 {
-/** How fast a level falls between ticks. Lifted from the mixer's meters rather
-    than chosen again, so the two read as one instrument - which also means this
-    widget has to run at the rate they do, because the coefficient is per tick.
-*/
-constexpr float fallCoefficient = 0.82f;
-
 float applyBallistics (float current, float incoming, float floorGain) noexcept
 {
-    // Rise instantly, fall over about a third of a second. A display that fell
-    // as fast as it rose would be unreadable on percussive material - and the
-    // instant rise is also what lets a test assert a level after ONE frame.
-    auto level = incoming > current ? incoming
-                                    : current * fallCoefficient + incoming * (1.0f - fallCoefficient);
+    // The mixer's ballistics, taken from where they are declared rather than
+    // copied again - which is what tied this widget to the rate they run at.
+    const auto level = meter::fall (current, incoming, 1000 / motion::uiRefreshHz);
 
     return level < floorGain ? 0.0f : level;
 }

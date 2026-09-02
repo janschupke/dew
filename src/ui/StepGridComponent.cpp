@@ -6,6 +6,7 @@
 #include "model/Ids.h"
 #include "model/Meter.h"
 #include "model/ProjectEdits.h"
+#include "ui/TimelinePaint.h"
 #include "ui/design/Tokens.h"
 #include "ui/primitives/DewControls.h"
 
@@ -354,14 +355,9 @@ void StepGridComponent::paint (juce::Graphics& g)
     }
 
     // --- grid lines ----------------------------------------------------------
-    for (int step = painted.getStart(); step <= painted.getEnd(); ++step)
-    {
-        const auto x = timeline.xForStep ((double) step);
-        const auto isBarLine = (step % meter.stepsPerBar()) == 0;
-
-        g.setColour (isBarLine ? colour::dividerStrong : colour::divider);
-        g.drawVerticalLine ((int) x, 0.0f, (float) rowsHeight);
-    }
+    timelinePaint::verticalGrid (g, timeline, painted,
+                                 meter.stepsPerBar(), meter.stepsPerBeat,
+                                 0.0f, { 0.0f, (float) rowsHeight }, (float) getWidth());
 
     for (int row = 0; row <= rows; ++row)
     {
@@ -387,13 +383,9 @@ void StepGridComponent::paint (juce::Graphics& g)
         const auto x = timeline.xForStep ((double) step);
 
         if (playing)
-        {
-            g.setColour (colour::playhead.withAlpha (emphasis::wash));
-            g.fillRect (juce::Rectangle<float> (x, 0.0f, width, (float) rowsHeight));
-        }
+            timelinePaint::playheadColumn (g, { x, 0.0f, width, (float) rowsHeight });
 
-        g.setColour (playing ? colour::playhead : colour::playhead.withAlpha (emphasis::dimmed));
-        g.drawVerticalLine ((int) x, 0.0f, (float) rowsHeight);
+        timelinePaint::playheadLine (g, x, { 0.0f, (float) rowsHeight }, playing);
     }
 
     if (rows == 0)

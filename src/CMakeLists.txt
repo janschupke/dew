@@ -166,6 +166,7 @@ add_library(dew_design STATIC
   ui/design/Icons.cpp
   ui/design/DewGallery.cpp
   ui/primitives/DewControls.cpp
+  ui/primitives/DewMeter.cpp
   ui/primitives/DewNumberField.cpp
   ui/DewLookAndFeel.cpp
   ui/SignalScope.cpp
@@ -212,6 +213,7 @@ add_library(dew_ui STATIC
   ui/MidiSettingsPanel.cpp
   ui/StatusBar.cpp
   ui/TransportBar.cpp
+  ui/TimelinePaint.cpp
   ui/TimelineRuler.cpp
   ui/StepGridComponent.cpp
   ui/ChannelRackComponent.cpp

@@ -1,5 +1,6 @@
 #include "ui/AudioSettingsPanel.h"
 
+#include "ui/primitives/DewMeter.h"
 #include "ui/design/Tokens.h"
 
 namespace dew
@@ -251,12 +252,7 @@ void AudioSettingsPanel::timerCallback()
 {
     const auto peak = audioHost.getRecorder().readAndClearInputPeak();
 
-    // Rise instantly, fall gradually: a meter that tracked the read-and-clear
-    // value exactly would spend most frames at zero and read as broken.
-    inputLevel = peak > inputLevel ? peak : inputLevel * 0.8f;
-
-    if (inputLevel < 0.001f)
-        inputLevel = 0.0f;
+    inputLevel = meter::fall (inputLevel, peak, 1000 / motion::uiRefreshHz);
 
     repaint (meterArea.expanded (space::xxs));
 }
@@ -312,13 +308,15 @@ void AudioSettingsPanel::paint (juce::Graphics& g)
 
     if (isInputSelected())
     {
-        const auto filled = meter.toFloat().withWidth (meter.toFloat().getWidth()
-                                                       * juce::jlimit (0.0f, 1.0f, inputLevel));
+        // Scaled in dB like the mixer's meters. Linear - which this was - puts
+        // a healthy input in the bottom fifth of the bar and reads as broken.
+        const auto proportion = meter::proportionForGain (inputLevel);
+        const auto filled = meter.toFloat().withWidth (meter.toFloat().getWidth() * proportion);
 
         // Red at the top of the scale rather than a gradient across it: what a
         // recording meter has to say is "this is about to clip", and that is a
         // threshold, not a slope.
-        g.setColour (inputLevel > 0.89f ? colour::danger : colour::success);
+        g.setColour (proportion > meter::hotProportion ? colour::danger : colour::success);
         g.fillRoundedRectangle (filled, radius::sm);
     }
 

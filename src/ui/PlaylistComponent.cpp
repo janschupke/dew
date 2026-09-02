@@ -7,6 +7,7 @@
 #include "model/Meter.h"
 #include "model/ProjectEdits.h"
 #include "ui/TimelineRuler.h"
+#include "ui/TimelinePaint.h"
 #include "ui/design/Tokens.h"
 #include "ui/primitives/DewControls.h"
 
@@ -1603,17 +1604,12 @@ void PlaylistComponent::paint (juce::Graphics& g)
 
         if (x >= (float) size::gutterTrack)
         {
-            g.setColour (engine.isPlaying() ? colour::playhead
-                                            : colour::playhead.withAlpha (emphasis::dimmed));
-            g.fillRect (juce::Rectangle<float> (x - 1.0f, (float) lanesTop(),
-                                                2.0f, (float) (bottom - lanesTop())));
+            const auto playing = engine.isPlaying();
+
+            timelinePaint::playheadLine (g, x, { (float) lanesTop(), (float) bottom }, playing);
 
             // A head on the ruler, so the position is findable at a glance.
-            juce::Path head;
-            head.addTriangle (x - 5.0f, (float) lanesTop() - 8.0f,
-                              x + 5.0f, (float) lanesTop() - 8.0f,
-                              x, (float) lanesTop());
-            g.fillPath (head);
+            timelinePaint::playheadHead (g, x, (float) lanesTop(), playing);
         }
     }
 

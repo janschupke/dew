@@ -2,6 +2,7 @@
 
 #include <cmath>
 
+#include "ui/TimelinePaint.h"
 #include "ui/design/Tokens.h"
 
 namespace dew
@@ -87,16 +88,10 @@ void paint (juce::Graphics& g, juce::Rectangle<int> bounds,
     {
         const auto x = (float) bounds.getX() + timeline.xForStep (style.playheadSteps);
 
-        if (x >= (float) bounds.getX() - 6.0f && x <= (float) bounds.getRight() + 6.0f)
-        {
-            g.setColour (style.playing ? colour::playhead : colour::playhead.withAlpha (emphasis::dimmed));
+        const auto margin = timelinePaint::playheadHeadHalfWidth;
 
-            juce::Path head;
-            head.addTriangle (x - 5.0f, (float) bounds.getBottom() - 8.0f,
-                              x + 5.0f, (float) bounds.getBottom() - 8.0f,
-                              x, (float) bounds.getBottom());
-            g.fillPath (head);
-        }
+        if (x >= (float) bounds.getX() - margin && x <= (float) bounds.getRight() + margin)
+            timelinePaint::playheadHead (g, x, (float) bounds.getBottom(), style.playing);
     }
 
     g.setColour (colour::dividerStrong);

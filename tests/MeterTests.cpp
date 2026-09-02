@@ -1,4 +1,6 @@
 #include <catch2/catch_approx.hpp>
+
+#include <cmath>
 #include <catch2/catch_test_macros.hpp>
 
 #include "model/Ids.h"
@@ -10,6 +12,8 @@
 #include "engine/EngineSnapshot.h"
 #include "engine/Sequencer.h"
 #include "engine/Transport.h"
+#include "ui/design/Tokens.h"
+#include "ui/primitives/DewMeter.h"
 #include "io/OfflineRenderer.h"
 #include "engine/AudioEngine.h"
 #include "ui/EditorState.h"
@@ -337,4 +341,73 @@ TEST_CASE ("rescaling holds a song render's length across a meter change", "[met
 
     CHECK (Meter::of (project).stepsPerBar() == stepsPerBarBefore / 2);
     CHECK (stepsAfter == stepsBefore);
+}
+
+TEST_CASE ("a meter falls at the same speed whatever the frame rate", "[ui][meter]")
+{
+    // The defect the time constant replaces. Three widgets multiplied by 0.82
+    // or 0.8 per tick, which means a meter falls at half speed if its timer is
+    // halved and at double speed on a dropped frame - and the scope's own
+    // comment said so rather than fixing it.
+    //
+    // Sampled across the WHOLE fall rather than at its ends: a decay that
+    // matched only at 300ms would still be the wrong shape in between.
+    constexpr int totalMs = 300;
+
+    auto coarse = 1.0f;
+    coarse = dew::meter::fall (coarse, 0.0f, totalMs);
+
+    auto fine = 1.0f;
+
+    for (int i = 0; i < 10; ++i)
+        fine = dew::meter::fall (fine, 0.0f, totalMs / 10);
+
+    INFO ("one " << totalMs << "ms step gave " << coarse << ", ten gave " << fine);
+    CHECK (std::abs (coarse - fine) < 1.0e-4f);
+
+    // And it is a fall, not a jump or a hold.
+    CHECK (coarse < 1.0f);
+    CHECK (coarse > 0.0f);
+
+    // Half the time constant is more than half the fall: an exponential, not a
+    // straight line down.
+    const auto halfway = dew::meter::fall (1.0f, 0.0f, dew::tokens::motion::meterReleaseMs / 2);
+    CHECK (halfway > 0.5f);
+}
+
+TEST_CASE ("a meter rises the instant a peak arrives", "[ui][meter]")
+{
+    // Load-bearing twice: a meter that rose as slowly as it falls would miss
+    // every transient, and every test of a level here asserts after ONE frame
+    // rather than waiting for a ramp.
+    CHECK (juce::exactlyEqual (dew::meter::fall (0.0f, 0.9f, 33), 0.9f));
+    CHECK (juce::exactlyEqual (dew::meter::fall (0.5f, 0.5f, 33), 0.5f));
+
+    // And it reaches silence rather than approaching it forever, so an idle
+    // meter is a state a test can wait for.
+    auto level = 1.0f;
+
+    for (int i = 0; i < 200; ++i)
+        level = dew::meter::fall (level, 0.0f, 33);
+
+    CHECK (juce::exactlyEqual (level, 0.0f));
+}
+
+TEST_CASE ("a meter is scaled the way a level is heard", "[ui][meter]")
+{
+    // Linear - which the settings panel's input meter was - puts a healthy mix
+    // in the bottom fifth of the bar and reads as broken.
+    CHECK (juce::exactlyEqual (dew::meter::proportionForGain (0.0f), 0.0f));
+    CHECK (dew::meter::proportionForGain (1.0f) > 0.99f);
+
+    // Half amplitude is about six dB down, which on a 48dB scale is seven
+    // eighths of the way up - not half.
+    const auto half = dew::meter::proportionForGain (0.5f);
+    INFO ("half amplitude reads " << half);
+    CHECK (half > 0.8f);
+    CHECK (half < 0.95f);
+
+    // Below the floor is empty, and the scale rises all the way.
+    CHECK (juce::exactlyEqual (dew::meter::proportionForGain (0.001f), 0.0f));
+    CHECK (dew::meter::proportionForGain (0.5f) > dew::meter::proportionForGain (0.25f));
 }

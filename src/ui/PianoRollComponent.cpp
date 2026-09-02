@@ -7,6 +7,7 @@
 #include "ui/DewLookAndFeel.h"
 #include "ui/RandomizePanel.h"
 #include "ui/TimelineRuler.h"
+#include "ui/TimelinePaint.h"
 #include "ui/design/Tokens.h"
 #include "ui/primitives/DewControls.h"
 
@@ -1525,24 +1526,10 @@ void PianoRollComponent::paintNotes (juce::Graphics& g)
     const auto steps = numSteps();
     const auto range = timeline.visibleStepRange (contentWidth());
 
-    for (int step = range.getStart(); step <= range.getEnd(); ++step)
-    {
-        const auto x = (float) size::gutterKeyboard + timeline.xForStep ((double) step);
-
-        if (x > (float) area.getRight())
-            break;
-
-        if (step % stepsPerBar == 0)
-            g.setColour (colour::dividerStrong);
-        else if (step % stepsPerBeat == 0)
-            g.setColour (colour::divider);
-        else if (timeline.pixelsPerStep >= 6.0)
-            g.setColour (colour::divider.withAlpha (emphasis::subdued));
-        else
-            continue;
-
-        g.drawVerticalLine ((int) x, (float) area.getY(), (float) area.getBottom());
-    }
+    timelinePaint::verticalGrid (g, timeline, range, stepsPerBar, stepsPerBeat,
+                                 (float) size::gutterKeyboard,
+                                 { (float) area.getY(), (float) area.getBottom() },
+                                 (float) area.getRight());
 
     // Past the end of the pattern is still drawn - it is just dimmed, with the
     // end itself marked. It used to be hatched over, which turned every window
@@ -1609,13 +1596,11 @@ void PianoRollComponent::paintNotes (juce::Graphics& g)
         const auto x = (float) size::gutterKeyboard + timeline.xForStep (step);
 
         if (playing)
-        {
-            g.setColour (colour::playhead.withAlpha (emphasis::wash));
-            g.fillRect (x, (float) area.getY(), (float) timeline.pixelsPerStep, (float) area.getHeight());
-        }
+            timelinePaint::playheadColumn (g, { x, (float) area.getY(),
+                                                (float) timeline.pixelsPerStep,
+                                                (float) area.getHeight() });
 
-        g.setColour (playing ? colour::playhead : colour::playhead.withAlpha (emphasis::dimmed));
-        g.fillRect (x, (float) area.getY(), 1.5f, (float) area.getHeight());
+        timelinePaint::playheadLine (g, x, { (float) area.getY(), (float) area.getBottom() }, playing);
     }
 
     // --- rubber band ---------------------------------------------------------

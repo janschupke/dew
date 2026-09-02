@@ -1,6 +1,7 @@
 #include "ui/MixerComponent.h"
 
 #include "model/ProjectEdits.h"
+#include "ui/primitives/DewMeter.h"
 #include "ui/design/Tokens.h"
 #include "ui/primitives/HoverTracker.h"
 
@@ -138,12 +139,7 @@ public:
     */
     void setLevel (float peak)
     {
-        // Rise instantly, fall over about a third of a second: a meter that
-        // fell as fast as it rose would be unreadable on percussive material.
-        level = peak > level ? peak : level * 0.82f + peak * 0.18f;
-
-        if (level < 0.001f)
-            level = 0.0f;
+        level = meter::fall (level, peak, tickIntervalMs);
 
         if (! juce::approximatelyEqual (level, lastPaintedLevel))
         {
@@ -312,14 +308,13 @@ private:
 
         // Scaled the way a level is heard rather than by amplitude: linear, a
         // healthy mix sits in the bottom fifth of the meter and looks broken.
-        const auto db = juce::Decibels::gainToDecibels (level, (float) meterFloorDb);
-        const auto proportion = juce::jlimit (0.0f, 1.0f,
-                                              (float) ((db - meterFloorDb) / -meterFloorDb));
+        const auto proportion = meter::proportionForGain (level);
 
         auto bar = well.withTop (well.getBottom() - proportion * well.getHeight());
 
         g.setColour (level >= 1.0f ? colour::danger
-                                   : level > 0.7f ? colour::warning : colour::success);
+                                   : proportion > meter::hotProportion ? colour::warning
+                                                                       : colour::success);
         g.fillRoundedRectangle (bar, radius::xs);
     }
 
@@ -361,7 +356,7 @@ private:
 
     static constexpr int meterWidth = 8;
     static constexpr int routingHeight = 58;
-    static constexpr double meterFloorDb = -48.0;
+    static constexpr int tickIntervalMs = 1000 / tokens::motion::uiRefreshHz;
 
     bool isMaster;
     bool selected = false;
