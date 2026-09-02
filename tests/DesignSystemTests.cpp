@@ -282,6 +282,48 @@ TEST_CASE ("a combo box is painted in the dew idiom, not JUCE's", "[design][drop
     box.setLookAndFeel (nullptr);
 }
 
+TEST_CASE ("a dropdown's menu opens below the box, not over it", "[design][dropdown]")
+{
+    const juce::ScopedJuceInitialiser_GUI juceInit;
+
+    DewLookAndFeel lookAndFeel;
+
+    juce::ComboBox box;
+    box.setLookAndFeel (&lookAndFeel);
+    box.addItemList ({ "Sine", "Saw", "Square", "Triangle" }, 1);
+    box.setSize (160, tokens::size::controlHeight);
+
+    juce::Label label;
+    label.setSize (160, tokens::size::controlHeight);
+
+    // The menu's placement is decided entirely by these options - ComboBox::
+    // showPopup passes them straight to PopupMenu - so pinning the contract
+    // pins the behaviour. Asserting the rendered position would need a real
+    // desktop window, which a headless test does not have.
+    for (int selected : { 1, 3, 4 })
+    {
+        box.setSelectedId (selected, juce::dontSendNotification);
+
+        const auto options = lookAndFeel.getOptionsForComboBoxPopupMenu (box, label);
+
+        // THE bug: V2 sets this, and PopupMenu then drags the window up until
+        // the ticked row sits on the box.
+        INFO ("selected id " << selected);
+        CHECK (options.getItemThatMustBeVisible() == 0);
+
+        // Keyboard navigation still starts from the current value.
+        CHECK (options.getInitiallySelectedItemId() == selected);
+
+        // The target area reaches below the box, so PopupMenu's
+        // y = target.getBottom() leaves a gap rather than butting against it.
+        CHECK (options.getTargetScreenArea().getBottom() > box.getScreenBounds().getBottom());
+        CHECK (options.getTargetScreenArea().getX() == box.getScreenBounds().getX());
+        CHECK (options.getMinimumWidth() == box.getWidth());
+    }
+
+    box.setLookAndFeel (nullptr);
+}
+
 TEST_CASE ("a disabled dropdown reads as disabled", "[design][dropdown]")
 {
     const juce::ScopedJuceInitialiser_GUI juceInit;

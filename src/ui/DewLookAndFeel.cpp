@@ -303,6 +303,33 @@ juce::Font DewLookAndFeel::getComboBoxFont (juce::ComboBox&)
 
 // --- menus -------------------------------------------------------------------
 
+juce::PopupMenu::Options DewLookAndFeel::getOptionsForComboBoxPopupMenu (juce::ComboBox& box,
+                                                                        juce::Label& label)
+{
+    using namespace tokens;
+
+    // This is LookAndFeel_V2's set minus ONE option. PopupMenu first places the
+    // window correctly, flush under the box; then, if withItemThatMustBeVisible
+    // is set, ensureItemComponentIsVisible drags the whole window back up until
+    // the ticked row lands on the box. That single option was the entire reason
+    // a dropdown opened over its own select.
+    //
+    // withInitiallySelectedItem stays, so arrowing through the menu still starts
+    // from the current value - what was wrong was the placement, not the focus.
+    //
+    // Order matters: withTargetComponent overwrites targetArea, so the explicit
+    // area has to come after it. The area is EXPANDED downwards rather than
+    // moved, because calculateWindowPos takes y = target.getBottom() - that is
+    // what leaves a small gap under the box instead of butting against it.
+    return juce::PopupMenu::Options()
+        .withTargetComponent (&box)
+        .withTargetScreenArea (box.getScreenBounds().withHeight (box.getHeight() + space::xxs))
+        .withInitiallySelectedItem (box.getSelectedId())
+        .withMinimumWidth (box.getWidth())
+        .withMaximumNumColumns (1)
+        .withStandardItemHeight (label.getHeight());
+}
+
 void DewLookAndFeel::drawPopupMenuBackground (juce::Graphics& g, int width, int height)
 {
     using namespace tokens;

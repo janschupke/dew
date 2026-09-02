@@ -92,6 +92,11 @@ public:
     void positionComboBoxText (juce::ComboBox&, juce::Label&) override;
     juce::Font getComboBoxFont (juce::ComboBox&) override;
 
+    /** Where a dropdown's menu opens. LookAndFeel_V2's version is why a menu
+        covered the select it belongs to.
+    */
+    juce::PopupMenu::Options getOptionsForComboBoxPopupMenu (juce::ComboBox&, juce::Label&) override;
+
     void drawPopupMenuBackground (juce::Graphics&, int width, int height) override;
 
     void drawPopupMenuItem (juce::Graphics&, const juce::Rectangle<int>& area,
