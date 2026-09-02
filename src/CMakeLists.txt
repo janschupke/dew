@@ -10,6 +10,7 @@ add_library(dew_core STATIC
   model/ProjectSerializer.cpp
   model/ProjectFactory.cpp
   model/ProjectDocument.cpp
+  model/ProjectEdits.cpp
 
   engine/EngineSnapshot.cpp
   engine/SnapshotBridge.cpp
@@ -20,7 +21,17 @@ add_library(dew_core STATIC
   engine/MixerBus.cpp
   engine/AudioEngine.cpp
   engine/OfflineRenderer.cpp
+  engine/LiveAudioHost.cpp
 
+  ui/DewLookAndFeel.cpp
+  ui/TransportBar.cpp
+  ui/StepGridComponent.cpp
+  ui/ChannelRackComponent.cpp
+  ui/PianoRollComponent.cpp
+  ui/PlaylistComponent.cpp
+  ui/MixerComponent.cpp
+  ui/InstrumentPanel.cpp
+  ui/EditorTabs.cpp
   ui/MainComponent.cpp
 )
 
@@ -64,6 +75,7 @@ juce_add_gui_app(dew
 
 target_sources(dew PRIVATE
   main.cpp
+  DewApplication.cpp
 )
 
 target_link_libraries(dew

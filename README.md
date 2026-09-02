@@ -4,8 +4,51 @@ A desktop digital synth DAW — pattern composition in the FL Studio shape: a ch
 rack with a step grid, a piano roll, a playlist of pattern clips, and a mixer, driven
 by a single-oscillator synth per channel.
 
-Status: **scaffold**. Phase 1 of 6 is complete — the build, the dependency system and
-the verification harness are in place and proven. The DAW itself lands in phases 2–6.
+Status: **working prototype**. New, open, edit, save and playback all function end to
+end. It is a skeleton, not a product — but every layer is real and wired to the next.
+
+## What it does
+
+- **Channel rack** — a step grid, one row per channel, click or drag to write steps.
+- **Piano roll** — click to add, drag to move, drag the right edge to resize,
+  right-click to delete. It edits *the same notes* as the step grid: a lit step is a
+  note at the channel's base pitch, so there is one representation and two views.
+- **Playlist** — pattern clips on tracks along a bar timeline; a clip longer than its
+  pattern repeats it, as FL does.
+- **Mixer** — a fader, pan, mute and solo per insert, plus master. Solo is resolved
+  across the whole mixer, so soloing one track silences the rest.
+- **Instrument** — one band-limited oscillator (sine/saw/square/triangle) with an
+  octave, an ADSR envelope, and channel volume and pan.
+- **Transport** — play/stop, tempo, and a pattern-or-song switch with a live playhead.
+- **File** — New, Open, Save, Save As, with dirty tracking and a save-before-closing
+  prompt. Undo/redo covers every edit.
+
+⌘N ⌘O ⌘S ⇧⌘S, ⌘Z ⇧⌘Z, Space to play, ⌘L to switch pattern/song, ⌘K to add a channel.
+
+## Architecture
+
+Four layers, each testable without the one above it:
+
+```
+ui/       ChannelRack · PianoRoll · Playlist · Mixer · TransportBar · InstrumentPanel
+            │ edits via ProjectEdits (one undo transaction per gesture)
+model/    ProjectDocument (FileBasedDocument) ── ValueTree ── ProjectSchema ── JSON
+            │ AsyncUpdater coalesces rebuilds ─→ EngineSnapshot
+engine/   SnapshotBridge → Transport → Sequencer → SynthChannel[] → MixerBus
+            │
+io/       LiveAudioHost (a device)   ·   OfflineRenderer (dew_render, tests)
+```
+
+The message thread owns the ValueTree and builds snapshots. The audio thread only
+reads a published snapshot: it never allocates, locks, or touches the tree.
+`SnapshotBridge` is a three-slot rotation whose indices live in **one** atomic word
+swapped by compare-exchange, so `front != back` is an invariant of the encoding rather
+than an argument about interleavings — an earlier version reasoned its way to a design
+that tore roughly twice per ten thousand publishes.
+
+The engine knows nothing about audio devices. It is prepared with a sample rate and a
+block size and fills a buffer, so live playback and offline rendering run the same code
+and a passing render says something about the real engine.
 
 ## Build
 
@@ -79,15 +122,42 @@ binary caching and transitive resolution that a two-dependency project does not 
 If the graph ever grows past a handful of libraries, vcpkg manifest mode with a
 `builtin-baseline` is the migration target, and the lock makes the current pins portable.
 
+## The project file
+
+One JSON file, `formatVersion`-stamped. The schema is declared once in
+`src/model/ProjectSchema.cpp` as a table of node specs with per-property defaults, and
+that table drives reading, writing and validation — so there is no hand-written writer
+to drift out of step with a hand-written parser.
+
+- A property absent from the file takes its default, so older files load.
+- A property of the wrong type takes its default and warns, rather than failing.
+- A key the schema does not know is dropped and reported.
+- A newer `formatVersion` is refused outright instead of half-read.
+
+Saving writes to a temporary and swaps, so an interrupted save cannot destroy the
+project it was overwriting.
+
 ## Testing
 
-Catch2 via CTest. `ctest --preset release` is the single command.
+Catch2 via CTest. `ctest --preset release` runs all 54.
 
-The GUI is tested **headlessly**: `tests/UiSmokeTests.cpp` paints components into an
-offscreen `juce::Image` and asserts they produced content, so the UI layer is verified
-in CI and on machines without screen-recording permission. From phase 3, `dew_render`
-loads a project and renders it to WAV without touching an audio device, which is how
-playback correctness gets checked without ears.
+`dew_render` loads a project and renders it to WAV with no audio device, which is how
+playback correctness is checked without ears:
+
+```sh
+dew_render examples/demo.dew out.wav              # the arrangement, once, plus its tail
+dew_render examples/demo.dew out.wav --pattern 1 --seconds 8
+dew_render --write-demo examples/demo.dew         # regenerate the example
+```
+
+It exits non-zero on a silent render, because "loaded but made no sound" is the failure
+it exists to catch.
+
+The GUI is tested **headlessly**: components are painted into an offscreen
+`juce::Image` and asserted to have produced content, every tab is rendered, and the
+editor's own engine is driven through `processBlock` to prove that writing a step makes
+sound and that undoing it stops the sound. That runs in CI and on machines without
+screen-recording permission.
 
 ## Licence
 

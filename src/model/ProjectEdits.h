@@ -1,0 +1,75 @@
+#pragma once
+
+#include <juce_data_structures/juce_data_structures.h>
+
+namespace dew
+{
+
+/** Every mutation the editor can make to a project.
+
+    UI components call these rather than touching the tree, for three reasons:
+    the undo transaction is opened in one place, the semantics (what "toggle a
+    step" means when a note is already there) live somewhere testable, and the
+    step grid and the piano roll cannot drift apart - they edit the same notes
+    through the same functions.
+
+    Every function takes the UndoManager so that nothing bypasses undo.
+*/
+struct ProjectEdits
+{
+    // --- lookup --------------------------------------------------------------
+    static juce::ValueTree findChannel (const juce::ValueTree& project, int channelId);
+    static juce::ValueTree findPattern (const juce::ValueTree& project, int patternId);
+    static juce::ValueTree findMixerTrack (const juce::ValueTree& project, int mixerTrackId);
+
+    /** The note at exactly this channel/step/pitch, or an invalid tree. */
+    static juce::ValueTree findNote (const juce::ValueTree& pattern, int channelId, int step, int pitch);
+
+    /** Any note on this channel covering this step, whatever its pitch - what
+        the step grid shows as a lit cell.
+    */
+    static juce::ValueTree findNoteAtStep (const juce::ValueTree& pattern, int channelId, int step);
+
+    static int nextFreeId (const juce::ValueTree& project, const juce::Identifier& childType);
+
+    // --- notes ---------------------------------------------------------------
+    /** Step grid: lights a step, or clears it if already lit. Returns true if a
+        note was added.
+    */
+    static bool toggleStep (juce::ValueTree pattern, int channelId, int step, int pitch,
+                            juce::UndoManager*);
+
+    static juce::ValueTree addNote (juce::ValueTree pattern, int channelId, int step,
+                                    int lengthSteps, int pitch, float velocity,
+                                    juce::UndoManager*);
+
+    static void removeNote (juce::ValueTree pattern, juce::ValueTree note, juce::UndoManager*);
+
+    static void moveNote (juce::ValueTree note, int newStep, int newPitch, juce::UndoManager*);
+
+    static void resizeNote (juce::ValueTree note, int newLengthSteps, juce::UndoManager*);
+
+    // --- channels ------------------------------------------------------------
+    static juce::ValueTree addChannel (juce::ValueTree project, const juce::String& name,
+                                       juce::UndoManager*);
+
+    static void removeChannel (juce::ValueTree project, juce::ValueTree channel, juce::UndoManager*);
+
+    // --- patterns ------------------------------------------------------------
+    static juce::ValueTree addPattern (juce::ValueTree project, juce::UndoManager*);
+
+    // --- playlist ------------------------------------------------------------
+    static juce::ValueTree addClip (juce::ValueTree playlistTrack, int patternId, int startBar,
+                                    int lengthBars, juce::UndoManager*);
+
+    static void removeClip (juce::ValueTree playlistTrack, juce::ValueTree clip, juce::UndoManager*);
+
+    static void moveClip (juce::ValueTree clip, int newStartBar, juce::UndoManager*);
+
+    static void resizeClip (juce::ValueTree clip, int newLengthBars, juce::UndoManager*);
+
+    /** The clip covering this bar on this track, or an invalid tree. */
+    static juce::ValueTree findClipAtBar (const juce::ValueTree& playlistTrack, int bar);
+};
+
+} // namespace dew

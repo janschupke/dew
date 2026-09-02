@@ -1,36 +1,106 @@
 #include "MainComponent.h"
 
-#include "../BuildInfo.h"
+#include "../model/Ids.h"
 
 namespace dew
 {
 
 MainComponent::MainComponent()
+    : audioHost (engine),
+      transportBar (document, engine, editorState),
+      tabs (document, engine, editorState),
+      instrumentPanel (document, editorState)
 {
-    titleLabel.setText ("dew", juce::dontSendNotification);
-    titleLabel.setJustificationType (juce::Justification::centred);
-    titleLabel.setFont (juce::FontOptions (48.0f, juce::Font::bold));
-    addAndMakeVisible (titleLabel);
+    juce::Desktop::getInstance().setDefaultLookAndFeel (&lookAndFeel);
 
-    buildLabel.setText (BuildInfo::summary(), juce::dontSendNotification);
-    buildLabel.setJustificationType (juce::Justification::centred);
-    buildLabel.setFont (juce::FontOptions (13.0f));
-    buildLabel.setColour (juce::Label::textColourId, juce::Colours::grey);
-    addAndMakeVisible (buildLabel);
+    addAndMakeVisible (transportBar);
+    addAndMakeVisible (tabs);
+    addAndMakeVisible (instrumentPanel);
 
-    setSize (1100, 700);
+    // Any document change schedules a snapshot rebuild. Coalescing through the
+    // AsyncUpdater means a knob drag costs one rebuild per message-loop turn
+    // rather than one per mouse move.
+    document.onProjectChanged = [this] { triggerAsyncUpdate(); };
+
+    // Push the initial project before opening the device, so the first block
+    // the engine renders already has something in it.
+    projectChanged();
+
+    if (const auto error = audioHost.start(); error.isNotEmpty())
+        deviceStatus = "Audio unavailable: " + error;
+    else
+        deviceStatus = audioHost.describeDevice();
+
+    transportBar.setStatusText (deviceStatus);
+
+    setSize (1180, 760);
+}
+
+MainComponent::~MainComponent()
+{
+    cancelPendingUpdate();
+    audioHost.stop();
+    juce::Desktop::getInstance().setDefaultLookAndFeel (nullptr);
+}
+
+void MainComponent::handleAsyncUpdate()
+{
+    projectChanged();
+}
+
+void MainComponent::projectChanged()
+{
+    juce::StringArray warnings;
+    engine.setProject (document.getState(), &warnings);
+
+    // A project that cannot be rendered as the user expects is worth saying so
+    // once, in the status line, rather than silently playing something else.
+    if (! warnings.isEmpty())
+        transportBar.setStatusText (warnings[0]);
+    else
+        transportBar.setStatusText (deviceStatus);
+}
+
+void MainComponent::documentWasReplaced()
+{
+    document.onProjectChanged = [this] { triggerAsyncUpdate(); };
+
+    transportBar.refresh();
+    tabs.refresh();
+    instrumentPanel.refresh();
+
+    engine.stop();
+    engine.rewind();
+    projectChanged();
+}
+
+void MainComponent::flushPendingEngineUpdate()
+{
+    handleUpdateNowIfNeeded();
+}
+
+void MainComponent::showLoadWarnings (const juce::StringArray& warnings)
+{
+    if (warnings.isEmpty())
+        return;
+
+    transportBar.setStatusText (juce::String (warnings.size()) + " item"
+                                + (warnings.size() == 1 ? "" : "s")
+                                + " in this file were not understood: " + warnings[0]);
 }
 
 void MainComponent::paint (juce::Graphics& g)
 {
-    g.fillAll (juce::Colour (0xff1b1d21));
+    g.fillAll (Palette::background);
 }
 
 void MainComponent::resized()
 {
-    auto area = getLocalBounds().reduced (16);
-    titleLabel.setBounds (area.removeFromTop (area.getHeight() / 2).removeFromBottom (60));
-    buildLabel.setBounds (area.removeFromTop (24));
+    auto area = getLocalBounds();
+
+    transportBar.setBounds (area.removeFromTop (46));
+    instrumentPanel.setBounds (area.removeFromRight (300));
+    tabs.setBounds (area);
 }
 
 } // namespace dew
