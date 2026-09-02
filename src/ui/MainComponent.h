@@ -12,6 +12,8 @@
 #include "EditorTabs.h"
 #include "InstrumentPanel.h"
 #include "../app/Settings.h"
+#include "../engine/RenderJob.h"
+#include "RenderPanel.h"
 #include "StatusBar.h"
 #include "TransportBar.h"
 
@@ -55,6 +57,13 @@ public:
     /** Opens the MIDI settings over this window. */
     void showMidiSettings();
 
+    /** Opens the render dialog over this window.
+
+        Takes the Settings the app owns, so the dialog can remember the format
+        and the folder; null is allowed, and simply remembers nothing.
+    */
+    void showRenderDialog (Settings* settingsToUpdate = nullptr);
+
     /** Restores what was saved last time, and captures it again on exit. The
         app owns the store; this only knows how to read and write itself.
     */
@@ -72,6 +81,12 @@ public:
     void flushPendingEngineUpdate();
 
 private:
+    /** Picks the destination and starts the background render. Split from the
+        dialog so that the panel never touches a file, which is what keeps it
+        constructible in a test and in dew_shot.
+    */
+    void startRender (const RenderPanel::Request&, Settings* settingsToUpdate);
+
     void handleAsyncUpdate() override;
     void changeListenerCallback (juce::ChangeBroadcaster*) override;
     void projectChanged();
@@ -88,6 +103,12 @@ private:
         tooltips are drawn by a window, and there was not one anywhere.
     */
     juce::TooltipWindow tooltips { nullptr, 600 };
+
+    /** The one render running, if any. Owned here rather than by the dialog so
+        that closing the dialog does not kill the render, and so its destructor
+        joins the thread before anything it renders from goes away.
+    */
+    std::unique_ptr<RenderJob> renderJob;
 
     ProjectDocument document;
     AudioEngine engine;

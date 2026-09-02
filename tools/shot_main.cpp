@@ -5,8 +5,10 @@
 #include "model/ProjectSerializer.h"
 #include "ui/AudioSettingsPanel.h"
 #include "ui/MidiSettingsPanel.h"
+#include "ui/RenderPanel.h"
 #include "ui/MainComponent.h"
 #include "ui/RandomizePanel.h"
+#include "ui/DewLookAndFeel.h"
 #include "ui/design/DewGallery.h"
 
 namespace
@@ -24,6 +26,7 @@ Usage:
   dew_shot gallery <out.png> [options]      the design system
   dew_shot audio <out.png>                  the audio settings panel
   dew_shot midi <out.png>                   the MIDI settings panel
+  dew_shot render <out.png> [--project f] [--format wav|flac|mp3|midi]
   dew_shot randomize <out.png>              the piano roll's randomize dialog
 
 Options:
@@ -156,6 +159,19 @@ int main (int argc, char* argv[])
 
     const juce::ScopedJuceInitialiser_GUI juceInit;
 
+    // The look and feel is installed by MainComponent's constructor, so the
+    // panel modes - which build a panel on its own - were painting JUCE's stock
+    // combo boxes and ticks rather than dew's. A shot that does not look like
+    // the app is worse than no shot, since the whole point is seeing what the
+    // user will see. Declared before any component so it outlives all of them.
+    dew::DewLookAndFeel lookAndFeel;
+    juce::Desktop::getInstance().setDefaultLookAndFeel (&lookAndFeel);
+
+    const struct ClearLookAndFeel
+    {
+        ~ClearLookAndFeel() { juce::Desktop::getInstance().setDefaultLookAndFeel (nullptr); }
+    } clearLookAndFeel;
+
     const auto size = parseSize (args.value ("--size", "1440x900"));
 
     if (mode == "gallery")
@@ -186,6 +202,65 @@ int main (int argc, char* argv[])
         panel.setVisible (true);
         panel.setSize (dew::AudioSettingsPanel::preferredWidth,
                        dew::AudioSettingsPanel::preferredHeight);
+
+        const auto destination = juce::File::getCurrentWorkingDirectory()
+                                     .getChildFile (args.positional[1]);
+
+        if (const auto result = writePng (panel, destination); result.failed())
+            return fail (result.getErrorMessage());
+
+        std::cout << "wrote " << destination.getFullPathName()
+                  << "  (" << panel.getWidth() << "x" << panel.getHeight() << ")" << std::endl;
+        return 0;
+    }
+
+    if (mode == "render")
+    {
+        // A project with something in it, and a selection, so the Selection scope
+        // is one of the choices rather than a case you have to go and set up.
+        dew::ProjectDocument document;
+
+        const auto projectPath = args.value ("--project");
+
+        if (projectPath.isNotEmpty())
+        {
+            const auto loaded = dew::ProjectSerializer::readFromFile (
+                juce::File::getCurrentWorkingDirectory().getChildFile (projectPath));
+
+            if (! loaded.ok())
+                return fail (loaded.result.getErrorMessage());
+
+            document.setState (loaded.tree, true);
+        }
+        else
+        {
+            document.setState (dew::ProjectFactory::createDemo(), true);
+        }
+
+        dew::EditorState editorState;
+        editorState.setSelectedBarRange ({ 1, 5 });
+
+        dew::RenderPanel panel { document, editorState, nullptr };
+        panel.setVisible (true);
+        panel.setSize (dew::RenderPanel::preferredWidth, panel.getRequiredHeight());
+        panel.resized();
+
+        // Which rows show depends entirely on the format, so the shot has to be
+        // able to ask for one - the same reason the editor mode takes --tab.
+        const auto wanted = args.value ("--format").toLowerCase();
+
+        if (wanted.isNotEmpty())
+        {
+            if (wanted == "wav")       panel.setFormatForTesting (dew::RenderFormat::wav);
+            else if (wanted == "flac") panel.setFormatForTesting (dew::RenderFormat::flac);
+            else if (wanted == "mp3")  panel.setFormatForTesting (dew::RenderFormat::mp3);
+            else if (wanted == "midi") panel.setFormatForTesting (dew::RenderFormat::midi);
+            else return fail ("unknown --format '" + wanted + "'");
+
+            // Which rows show has just changed, and with them the height.
+            panel.setSize (dew::RenderPanel::preferredWidth, panel.getRequiredHeight());
+            panel.resized();
+        }
 
         const auto destination = juce::File::getCurrentWorkingDirectory()
                                      .getChildFile (args.positional[1]);

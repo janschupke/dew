@@ -226,6 +226,140 @@ void MainComponent::showMidiSettings()
     options.launchAsync();
 }
 
+void MainComponent::startRender (const RenderPanel::Request& request, Settings* settingsToUpdate)
+{
+    const auto startIn = settingsToUpdate != nullptr
+                           ? settingsToUpdate->getLastRenderDirectory()
+                           : juce::File::getSpecialLocation (juce::File::userMusicDirectory);
+
+    const auto extension = OfflineRenderer::extensionFor (request.options.format);
+
+    // A directory when it is going to be several files, a file when it is one.
+    // JUCE_MODAL_LOOPS_PERMITTED is 0, so this is the async form; the blocking
+    // one asserts.
+    auto chooser = std::make_shared<juce::FileChooser> (
+        request.stems ? "Choose a folder for the stems" : "Render to",
+        startIn.getChildFile (request.suggestedName + (request.stems ? "" : extension)),
+        request.stems ? juce::String() : "*" + extension);
+
+    const auto flags = request.stems
+                         ? (juce::FileBrowserComponent::saveMode
+                            | juce::FileBrowserComponent::canSelectDirectories)
+                         : (juce::FileBrowserComponent::saveMode
+                            | juce::FileBrowserComponent::warnAboutOverwriting);
+
+    chooser->launchAsync (flags, [this, chooser, request, settingsToUpdate]
+                                 (const juce::FileChooser& result)
+    {
+        auto destination = result.getResult();
+
+        if (destination == juce::File())
+            return;
+
+        if (! request.stems && destination.getFileExtension().isEmpty())
+            destination = destination.withFileExtension (
+                OfflineRenderer::extensionFor (request.options.format));
+
+        if (settingsToUpdate != nullptr)
+        {
+            settingsToUpdate->setLastRenderDirectory (request.stems ? destination
+                                                                    : destination.getParentDirectory());
+            settingsToUpdate->setRenderFormat ((int) request.options.format);
+            settingsToUpdate->setRenderSampleRate ((int) request.options.sampleRate);
+            settingsToUpdate->setRenderBitDepth (request.options.bitDepth);
+            settingsToUpdate->setRenderTailSeconds (request.options.tailSeconds);
+            settingsToUpdate->setRenderNormalize (request.options.normalize);
+        }
+
+        if (renderJob == nullptr)
+            renderJob = std::make_unique<RenderJob>();
+
+        RenderJob::Request job;
+        job.project = document.getState();
+        job.destination = destination;
+        job.options = request.options;
+        job.stems = request.stems;
+
+        statusBar.showMessage ("Rendering " + destination.getFileName() + "...",
+                               StatusBar::Severity::info);
+
+        const auto started = renderJob->start (std::move (job), [this] (const RenderReport& report)
+        {
+            for (const auto& warning : report.warnings)
+                statusBar.showMessage (warning, StatusBar::Severity::warning);
+
+            if (report.cancelled)
+            {
+                // The user asked for this. Reporting it as an error would tell
+                // them their own click was a bug.
+                statusBar.showMessage ("Render cancelled.", StatusBar::Severity::info);
+                return;
+            }
+
+            if (! report.ok())
+            {
+                statusBar.showMessage (report.result.getErrorMessage(), StatusBar::Severity::error);
+                return;
+            }
+
+            const auto what = report.files.size() == 1
+                                ? report.files[0].getFileName()
+                                : juce::String (report.files.size()) + " files";
+
+            statusBar.showMessage ("Rendered " + what + "  ·  peak "
+                                       + juce::String (juce::Decibels::gainToDecibels (report.peak), 1)
+                                       + " dB",
+                                   StatusBar::Severity::success);
+        });
+
+        if (! started)
+            statusBar.showMessage ("A render is already going.", StatusBar::Severity::warning);
+    });
+}
+
+void MainComponent::showRenderDialog (Settings* settingsToUpdate)
+{
+    if (renderJob != nullptr && renderJob->isRunning())
+    {
+        statusBar.showMessage ("A render is already going.", StatusBar::Severity::warning);
+        return;
+    }
+
+    // Edits are coalesced through an AsyncUpdater, so a render started straight
+    // after an edit would otherwise use the snapshot from before it.
+    flushPendingEngineUpdate();
+
+    auto* panel = new RenderPanel (document, editorState, settingsToUpdate);
+
+    // The window owns the panel and deletes itself when its modal state ends, so
+    // the panel closes itself by finding it rather than by holding a pointer to
+    // something that will be gone. The deletion is deferred, which is what makes
+    // this safe to call from inside one of the panel's own button callbacks.
+    const auto close = [panel]
+    {
+        if (auto* window = panel->findParentComponentOfClass<juce::DialogWindow>())
+            window->exitModalState (0);
+    };
+
+    panel->onClose = close;
+
+    panel->onRender = [this, settingsToUpdate, close] (const RenderPanel::Request& request)
+    {
+        startRender (request, settingsToUpdate);
+        close();
+    };
+
+    juce::DialogWindow::LaunchOptions options;
+    options.content.setOwned (panel);
+    options.dialogTitle = "Render";
+    options.dialogBackgroundColour = tokens::colour::background;
+    options.componentToCentreAround = this;
+    options.escapeKeyTriggersCloseButton = true;
+    options.useNativeTitleBar = true;
+    options.resizable = false;
+    options.launchAsync();
+}
+
 void MainComponent::showAudioSettings()
 {
     auto* panel = new AudioSettingsPanel (audioHost, engine);

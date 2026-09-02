@@ -244,3 +244,93 @@ TEST_CASE ("the instrument panel can be resized, and the width is what is saved"
     INFO ("panel width " << panel->getWidth());
     REQUIRE (panel->getWidth() == 420);
 }
+
+// --- rendering ---------------------------------------------------------------
+
+TEST_CASE ("render settings round-trip to disk", "[settings][render]")
+{
+    TempSettings temp;
+
+    {
+        auto settings = temp.open();
+
+        settings->setRenderFormat (2);
+        settings->setRenderSampleRate (48000);
+        settings->setRenderBitDepth (16);
+        settings->setRenderTailSeconds (2.5);
+        settings->setRenderNormalize (true);
+        settings->flush();
+    }
+
+    auto reopened = temp.open();
+
+    REQUIRE (reopened->getRenderFormat() == 2);
+    REQUIRE (reopened->getRenderSampleRate() == 48000);
+    REQUIRE (reopened->getRenderBitDepth() == 16);
+    REQUIRE (std::abs (reopened->getRenderTailSeconds() - 2.5) < 1.0e-9);
+    REQUIRE (reopened->getRenderNormalize());
+}
+
+TEST_CASE ("nonsense render settings fall back rather than being restored",
+           "[settings][render]")
+{
+    TempSettings temp;
+
+    {
+        auto settings = temp.open();
+
+        settings->setRenderFormat (99);          // clamped on the way in
+        settings->setRenderSampleRate (12345);   // not a rate anything offers
+        settings->setRenderBitDepth (7);         // not a depth anything writes
+        settings->setRenderTailSeconds (1.0e9);
+        settings->flush();
+    }
+
+    auto reopened = temp.open();
+
+    REQUIRE (reopened->getRenderFormat() <= 3);
+    REQUIRE (reopened->getRenderSampleRate() == 44100);
+    REQUIRE (reopened->getRenderBitDepth() == 24);
+    REQUIRE (reopened->getRenderTailSeconds() <= 30.0);
+}
+
+TEST_CASE ("a render directory that has gone away is not restored", "[settings][render]")
+{
+    TempSettings temp;
+
+    const auto vanished = temp.directory.getChildFile ("gone");
+    vanished.createDirectory();
+
+    {
+        auto settings = temp.open();
+        settings->setLastRenderDirectory (vanished);
+        settings->flush();
+    }
+
+    vanished.deleteRecursively();
+
+    auto reopened = temp.open();
+
+    // Opening a chooser at a path that no longer exists - an unplugged drive,
+    // a deleted folder - is worse than opening it somewhere ordinary.
+    REQUIRE (reopened->getLastRenderDirectory() != vanished);
+    REQUIRE (reopened->getLastRenderDirectory().isDirectory());
+}
+
+TEST_CASE ("a render directory that still exists comes back", "[settings][render]")
+{
+    TempSettings temp;
+
+    const auto kept = temp.directory.getChildFile ("renders");
+    kept.createDirectory();
+
+    {
+        auto settings = temp.open();
+        settings->setLastRenderDirectory (kept);
+        settings->flush();
+    }
+
+    auto reopened = temp.open();
+
+    REQUIRE (reopened->getLastRenderDirectory() == kept);
+}

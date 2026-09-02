@@ -36,6 +36,8 @@ add_executable(dew_tests
   PlaylistTests.cpp
   MidiExportTests.cpp
   RenderFormatTests.cpp
+  RenderJobTests.cpp
+  RenderPanelTests.cpp
   RenderPostTests.cpp
   RenderStemTests.cpp
   RenderRangeTests.cpp

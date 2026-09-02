@@ -30,6 +30,7 @@ add_library(dew_core STATIC
   engine/OfflineRenderer.cpp
   engine/RenderPost.cpp
   engine/MidiExporter.cpp
+  engine/RenderJob.cpp
   engine/LiveAudioHost.cpp
   engine/MidiRouter.cpp
   engine/MidiInputHost.cpp
@@ -45,6 +46,7 @@ add_library(dew_core STATIC
   ui/OscillatorSection.cpp
   ui/EffectChainHost.cpp
   ui/AudioSettingsPanel.cpp
+  ui/RenderPanel.cpp
   ui/MidiSettingsPanel.cpp
   ui/StatusBar.cpp
   ui/TransportBar.cpp

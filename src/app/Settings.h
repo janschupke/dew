@@ -77,6 +77,33 @@ public:
     int getPanelWidth() const;
     void setPanelWidth (int);
 
+    // --- rendering -----------------------------------------------------------
+    /** Where the last render was written, so the next chooser opens there
+        rather than wherever the system last felt like.
+
+        Falls back to the user's Music folder, and rejects a directory that no
+        longer exists - an external drive that has since been unplugged is
+        exactly the "something unrecoverable" this class refuses to restore.
+    */
+    juce::File getLastRenderDirectory() const;
+    void setLastRenderDirectory (const juce::File&);
+
+    /** RenderFormat as an int, so this header need not include the engine. */
+    int getRenderFormat() const;
+    void setRenderFormat (int);
+
+    int getRenderSampleRate() const;
+    void setRenderSampleRate (int);
+
+    int getRenderBitDepth() const;
+    void setRenderBitDepth (int);
+
+    double getRenderTailSeconds() const;
+    void setRenderTailSeconds (double);
+
+    bool getRenderNormalize() const;
+    void setRenderNormalize (bool);
+
     // --- audio ---------------------------------------------------------------
     std::unique_ptr<juce::XmlElement> getAudioState() const;
     void setAudioState (const juce::XmlElement*);

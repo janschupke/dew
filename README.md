@@ -58,10 +58,18 @@ Start with **Demos → Getting Started** in the menu bar; there are four.
   scroll and snap grid, the panel width and the chosen device all come back next launch.
   The piano roll's *tool* deliberately does not: restoring into paint or slice would mean
   the first click of a session writes or cuts something nobody asked for.
+- **Render** — the song, one pattern, or a span of bars selected on the playlist ruler,
+  written as WAV (16/24-bit or 32-bit float), FLAC, MP3 or MIDI. Sample rate, a release
+  tail, normalize, fades, dither on 16-bit, and stems - one file per mixer track. It runs
+  off the message thread, so the window stays alive. Under **File**, or ⌘E.
 - **File** — New, Open, Save, Save As, with dirty tracking and a save-before-closing
   prompt. Undo/redo covers every edit.
 
-⌘N ⌘O ⌘S ⇧⌘S, ⌘Z ⇧⌘Z, Space to play, ⌘L to switch pattern/song, ⌘K to add a channel.
+⌘N ⌘O ⌘S ⇧⌘S, ⌘E to render, ⌘Z ⇧⌘Z, Space to play, ⌘L to switch pattern/song, ⌘K to add
+a channel.
+
+On the playlist ruler: drag to scrub, shift-drag to select a span of bars, shift-click to
+drop the selection.
 
 In the piano roll: ⌘-scroll or pinch to zoom, shift-scroll to scroll in time, ⌘-drag to
 rubber-band, ⌘A to select every note on the channel, delete to remove the selection.
@@ -202,7 +210,7 @@ and a passing render says something about the real engine.
 ## Build
 
 ```sh
-brew bundle                          # cmake >= 3.25, ninja, ccache
+brew bundle                          # cmake >= 3.25, ninja, ccache, lame
 cmake --preset release
 cmake --build --preset release
 ctest --preset release
@@ -291,12 +299,22 @@ project it was overwriting.
 
 Catch2 via CTest. `ctest --preset release` runs all 326.
 
-`dew_render` loads a project and renders it to WAV with no audio device, which is how
+MP3 is the one thing here that needs a tool dew does not ship. JUCE can only decode MP3
+on its own, so encoding drives an installed `lame` binary as a child process - which is
+why it adds no build dependency and no licence question. Without it the format simply
+reports itself unavailable and the dialog says so; everything else works regardless.
+
+`dew_render` loads a project and renders it with no audio device, which is how
 playback correctness is checked without ears:
 
 ```sh
 dew_render examples/demo.dew out.wav              # the arrangement, once, plus its tail
 dew_render examples/demo.dew out.wav --pattern 1 --seconds 8
+dew_render examples/demo.dew out.flac --format flac
+dew_render examples/demo.dew out.mp3 --format mp3 --mp3-quality 18
+dew_render examples/demo.dew out.mid --format midi
+dew_render examples/demo.dew out.wav --bars 5:9 --normalize --peak -1
+dew_render examples/demo.dew --stems stems/       # one file per mixer track
 dew_render --write-demos examples                 # regenerate the demo library
 ```
 
@@ -324,6 +342,7 @@ dew_shot tabs out --project examples/effects.dew     # one PNG per tab
 dew_shot gallery out.png                             # the design system
 dew_shot audio out.png                               # the audio settings panel
 dew_shot midi out.png                                # the MIDI settings panel
+dew_shot render out.png --format midi                # the render dialog
 dew_shot randomize out.png                           # the piano roll's randomize dialog
 ```
 

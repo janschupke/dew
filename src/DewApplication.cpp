@@ -181,7 +181,8 @@ void DewApplication::systemRequestedQuit()
 void DewApplication::getAllCommands (juce::Array<juce::CommandID>& commands)
 {
     commands.addArray ({ CommandIDs::fileNew, CommandIDs::fileOpen, CommandIDs::fileSave,
-                         CommandIDs::fileSaveAs, CommandIDs::editUndo, CommandIDs::editRedo,
+                         CommandIDs::fileSaveAs, CommandIDs::fileRender,
+                         CommandIDs::editUndo, CommandIDs::editRedo,
                          CommandIDs::transportPlayStop, CommandIDs::transportRewind,
                          CommandIDs::transportToggleMode,
                          CommandIDs::addChannel, CommandIDs::addPattern,
@@ -269,6 +270,12 @@ void DewApplication::getCommandInfo (juce::CommandID id, juce::ApplicationComman
             info.addDefaultKeypress (',', juce::ModifierKeys::commandModifier
                                             | juce::ModifierKeys::shiftModifier);
             info.setActive (main != nullptr);
+            break;
+
+        case CommandIDs::fileRender:
+            info.setInfo ("Render...", "Write this project out as audio or MIDI", "File", 0);
+            info.addDefaultKeypress ('e', juce::ModifierKeys::commandModifier);
+            info.setActive (document != nullptr && main != nullptr);
             break;
 
         case CommandIDs::audioSettings:
@@ -393,6 +400,10 @@ bool DewApplication::perform (const InvocationInfo& info)
             return true;
         }
 
+        case CommandIDs::fileRender:
+            main->showRenderDialog (settings.get());
+            return true;
+
         case CommandIDs::audioSettings:
             main->showAudioSettings();
             return true;
@@ -438,6 +449,8 @@ juce::PopupMenu DewApplication::getMenuForIndex (int index, const juce::String&)
             menu.addSeparator();
             menu.addCommandItem (&commandManager, CommandIDs::fileSave);
             menu.addCommandItem (&commandManager, CommandIDs::fileSaveAs);
+            menu.addSeparator();
+            menu.addCommandItem (&commandManager, CommandIDs::fileRender);
             break;
 
         case 1:

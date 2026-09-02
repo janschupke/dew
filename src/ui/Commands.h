@@ -9,6 +9,7 @@ enum
     fileOpen,
     fileSave,
     fileSaveAs,
+    fileRender,
     editUndo,
     editRedo,
     transportPlayStop,

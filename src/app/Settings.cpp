@@ -104,6 +104,63 @@ void Settings::setSelectedMixerTrackId (int id) { file().setValue ("selectedMixe
 int Settings::getCurrentPatternId() const   { return juce::jmax (1, file().getIntValue ("currentPattern", 1)); }
 void Settings::setCurrentPatternId (int id) { file().setValue ("currentPattern", juce::jmax (1, id)); }
 
+// --- rendering ---------------------------------------------------------------
+
+juce::File Settings::getLastRenderDirectory() const
+{
+    const juce::File stored (file().getValue ("lastRenderDir", {}));
+
+    // A path that has gone away - a deleted folder, an unplugged drive - is not
+    // restored. Opening a chooser somewhere that does not exist is worse than
+    // opening it somewhere ordinary.
+    if (stored.isDirectory())
+        return stored;
+
+    return juce::File::getSpecialLocation (juce::File::userMusicDirectory);
+}
+
+void Settings::setLastRenderDirectory (const juce::File& directory)
+{
+    if (directory.isDirectory())
+        file().setValue ("lastRenderDir", directory.getFullPathName());
+}
+
+int Settings::getRenderFormat() const   { return juce::jlimit (0, 3, file().getIntValue ("renderFormat", 0)); }
+void Settings::setRenderFormat (int f)  { file().setValue ("renderFormat", juce::jlimit (0, 3, f)); }
+
+int Settings::getRenderSampleRate() const
+{
+    const auto stored = file().getIntValue ("renderRate", 44100);
+
+    return (stored == 44100 || stored == 48000 || stored == 88200 || stored == 96000
+            || stored == 32000)
+             ? stored : 44100;
+}
+
+void Settings::setRenderSampleRate (int rate) { file().setValue ("renderRate", rate); }
+
+int Settings::getRenderBitDepth() const
+{
+    const auto stored = file().getIntValue ("renderDepth", 24);
+
+    return (stored == 16 || stored == 24 || stored == 32) ? stored : 24;
+}
+
+void Settings::setRenderBitDepth (int depth) { file().setValue ("renderDepth", depth); }
+
+double Settings::getRenderTailSeconds() const
+{
+    return juce::jlimit (0.0, 30.0, file().getDoubleValue ("renderTail", 1.0));
+}
+
+void Settings::setRenderTailSeconds (double seconds)
+{
+    file().setValue ("renderTail", juce::jlimit (0.0, 30.0, seconds));
+}
+
+bool Settings::getRenderNormalize() const    { return file().getBoolValue ("renderNormalize", false); }
+void Settings::setRenderNormalize (bool on)  { file().setValue ("renderNormalize", on); }
+
 double Settings::getPianoRollZoom() const
 {
     // Clamped to the same limits TimelineView enforces, so a corrupt value
