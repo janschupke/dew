@@ -24,6 +24,12 @@ public:
     {
         nameLabel.setText (track[ids::name].toString(), juce::dontSendNotification);
         nameLabel.setEditable (false, true, false);
+
+        // setEditable does not stop a Label eating clicks - it only touches
+        // keyboard focus - so without this the label swallows every press across
+        // the header's whole left side and the row's own mouseDown never runs.
+        // The channel rack learned this the hard way; see the README.
+        nameLabel.setInterceptsMouseClicks (false, false);
         nameLabel.setFont (type::font (type::body));
         nameLabel.setColour (juce::Label::textColourId, colour::textPrimary);
         nameLabel.onTextChange = [this]
@@ -52,6 +58,64 @@ public:
         };
         addAndMakeVisible (soloButton);
     }
+
+    /** What the header's context menu offers, and what each item does.
+
+        Named methods rather than a lambda inside showMenuAsync, because
+        showMenuAsync cannot be driven headlessly and every other gesture here is
+        tested that way. The menu is only how a person reaches these.
+    */
+    enum class MenuItem { rename = 1, addTrack, removeTrack };
+
+    juce::PopupMenu buildMenu() const
+    {
+        juce::PopupMenu menu;
+        menu.addItem ((int) MenuItem::rename, "Rename");
+        menu.addItem ((int) MenuItem::addTrack, "Add track");
+        menu.addSeparator();
+        menu.addItem ((int) MenuItem::removeTrack, "Remove track");
+        return menu;
+    }
+
+    void applyMenuChoice (int choice)
+    {
+        switch ((MenuItem) choice)
+        {
+            case MenuItem::rename:      nameLabel.showEditor(); break;
+            case MenuItem::addTrack:    if (onAddTrack) onAddTrack(); break;
+            case MenuItem::removeTrack: if (onRemoveTrack) onRemoveTrack (track); break;
+            default: break;
+        }
+    }
+
+    /** Add and remove belong to the playlist, which owns the list of tracks. */
+    std::function<void()> onAddTrack;
+    std::function<void (juce::ValueTree)> onRemoveTrack;
+
+    void mouseDown (const juce::MouseEvent& event) override
+    {
+        if (! event.mods.isPopupMenu())
+            return;
+
+        auto menu = buildMenu();
+
+        menu.setLookAndFeel (&getLookAndFeel());
+        menu.showMenuAsync (juce::PopupMenu::Options()
+                                .withTargetScreenArea ({ event.getScreenX(), event.getScreenY(), 1, 1 }),
+                            [safe = juce::Component::SafePointer<TrackHeader> (this)] (int choice)
+                            {
+                                if (safe != nullptr && choice > 0)
+                                    safe->applyMenuChoice (choice);
+                            });
+    }
+
+    void mouseDoubleClick (const juce::MouseEvent& event) override
+    {
+        if (nameLabel.getBounds().contains (event.getPosition()))
+            nameLabel.showEditor();
+    }
+
+    juce::ValueTree getTrack() const { return track; }
 
     void refresh()
     {
@@ -114,6 +178,10 @@ PlaylistComponent::PlaylistComponent (ProjectDocument& d, AudioEngine& e, Editor
 
     addAutomationButton.onClick = [this] { showAutomationMenu(); };
     addAndMakeVisible (addAutomationButton);
+
+    addTrackButton.onClick = [this] { addTrack(); };
+    addTrackButton.setComponentID ("addTrackButton");
+    addAndMakeVisible (addTrackButton);
 
     rebuildHeaders();
     startTimerHz (motion::playheadHz);
@@ -250,7 +318,12 @@ void PlaylistComponent::rebuildHeaders()
 
     for (const auto& track : playlist())
         if (track.hasType (ids::PLAYLIST_TRACK))
-            addAndMakeVisible (headers.add (new TrackHeader (document, track)));
+        {
+            auto* header = headers.add (new TrackHeader (document, track));
+            header->onAddTrack = [this] { addTrack(); };
+            header->onRemoveTrack = [this] (juce::ValueTree t) { removeTrack (t); };
+            addAndMakeVisible (header);
+        }
 
     resized();
 }
@@ -266,6 +339,16 @@ void PlaylistComponent::resized()
 
     for (int i = 0; i < headers.size(); ++i)
         headers[i]->setBounds (0, rulerHeight + i * rowHeight, headerWidth, rowHeight);
+
+    // Directly below the last track, and never over the horizontal scrollbar -
+    // an add button you cannot reach because a scrollbar is on top of it is the
+    // same as no add button.
+    const auto buttonTop = rulerHeight + headers.size() * rowHeight;
+    const auto room = getHeight() - scrollThickness - buttonTop;
+
+    addTrackButton.setVisible (room >= rowHeight);
+    addTrackButton.setBounds (juce::Rectangle<int> (0, buttonTop, headerWidth, rowHeight)
+                                  .reduced (space::sm, space::xs));
 
     updateZoom();
 }
@@ -421,6 +504,147 @@ juce::ValueTree PlaylistComponent::createAutomationClip (const AutomationTarget&
     return {};
 }
 
+namespace
+{
+    enum class ClipMenuItem { openPattern = 1, deleteClip, deletePoint, addClip };
+}
+
+juce::PopupMenu PlaylistComponent::buildClipMenu (const juce::ValueTree& track, int bar) const
+{
+    juce::PopupMenu menu;
+    const auto clip = ProjectEdits::findClipAtBar (track, bar);
+
+    if (menuPoint.isValid())
+    {
+        menu.addItem ((int) ClipMenuItem::deletePoint, "Delete point");
+        return menu;
+    }
+
+    if (! clip.isValid())
+    {
+        menu.addItem ((int) ClipMenuItem::addClip, "Add clip here");
+        return menu;
+    }
+
+    // An automation clip has no pattern to open, so offering it would be an item
+    // that does nothing on half the clips in the arrangement.
+    if (! ProjectEdits::isAutomationClip (clip))
+        menu.addItem ((int) ClipMenuItem::openPattern, "Open pattern");
+
+    if (menu.getNumItems() > 0)
+        menu.addSeparator();
+
+    menu.addItem ((int) ClipMenuItem::deleteClip, "Delete clip");
+    return menu;
+}
+
+void PlaylistComponent::applyClipChoice (juce::ValueTree track, int bar, int choice)
+{
+    auto clip = ProjectEdits::findClipAtBar (track, bar);
+    auto& undo = document.getUndoManager();
+
+    switch ((ClipMenuItem) choice)
+    {
+        case ClipMenuItem::openPattern:
+            openPatternOf (clip);
+            break;
+
+        case ClipMenuItem::deleteClip:
+            if (clip.isValid())
+            {
+                undo.beginNewTransaction ("Delete clip");
+                ProjectEdits::removeClip (track, clip, &undo);
+            }
+            break;
+
+        case ClipMenuItem::deletePoint:
+            if (menuPoint.isValid())
+            {
+                undo.beginNewTransaction ("Remove automation point");
+                ProjectEdits::removeAutomationPoint (automationOf (clip), menuPoint, &undo);
+            }
+            break;
+
+        case ClipMenuItem::addClip:
+            undo.beginNewTransaction ("Add clip");
+            ProjectEdits::addClip (track, editorState.getCurrentPatternId(), bar, 1, &undo);
+            ProjectEdits::growSongToFitClips (document.getState(), &undo);
+            updateZoom();
+            break;
+
+        default:
+            break;
+    }
+
+    menuPoint = {};
+    repaint();
+}
+
+void PlaylistComponent::addTrack()
+{
+    auto& undo = document.getUndoManager();
+    undo.beginNewTransaction ("Add track");
+    ProjectEdits::addPlaylistTrack (document.getState(), {}, &undo);
+}
+
+void PlaylistComponent::removeTrack (juce::ValueTree track)
+{
+    if (! track.isValid())
+        return;
+
+    auto& undo = document.getUndoManager();
+    undo.beginNewTransaction ("Remove track");
+    ProjectEdits::removePlaylistTrack (document.getState(), track, &undo);
+}
+
+bool PlaylistComponent::applyTrackMenuChoice (int trackIndex, int choice)
+{
+    if (! juce::isPositiveAndBelow (trackIndex, headers.size()))
+        return false;
+
+    headers[trackIndex]->applyMenuChoice (choice);
+    return true;
+}
+
+juce::StringArray PlaylistComponent::trackMenuItems (int trackIndex) const
+{
+    if (! juce::isPositiveAndBelow (trackIndex, headers.size()))
+        return {};
+
+    juce::StringArray items;
+
+    // Named local: MenuItemIterator keeps a REFERENCE to the menu, so iterating
+    // a temporary walks a destroyed object and silently yields nothing.
+    const auto menu = headers[trackIndex]->buildMenu();
+
+    for (juce::PopupMenu::MenuItemIterator it (menu); it.next();)
+        items.add (it.getItem().isSeparator ? "-" : it.getItem().text);
+
+    return items;
+}
+
+juce::StringArray PlaylistComponent::clipMenuItems (int trackIndex, int bar) const
+{
+    juce::StringArray items;
+    const auto menu = buildClipMenu (trackAt (trackIndex), bar);
+
+    for (juce::PopupMenu::MenuItemIterator it (menu); it.next();)
+        items.add (it.getItem().isSeparator ? "-" : it.getItem().text);
+
+    return items;
+}
+
+bool PlaylistComponent::applyClipMenuChoice (int trackIndex, int bar, int choice)
+{
+    auto track = trackAt (trackIndex);
+
+    if (! track.isValid())
+        return false;
+
+    applyClipChoice (track, bar, choice);
+    return true;
+}
+
 void PlaylistComponent::showAutomationMenu()
 {
     const auto targets = availableAutomationTargets (document.getState());
@@ -565,7 +789,10 @@ void PlaylistComponent::mouseDown (const juce::MouseEvent& event)
     auto clip = ProjectEdits::findClipAtBar (track, bar);
     auto& undo = document.getUndoManager();
 
-    if (event.mods.isPopupMenu() || event.mods.isAltDown())
+    // Alt-click still removes outright: it is the sweep-to-clear gesture the
+    // piano roll and step grid share, and losing it would cost a habit to gain a
+    // menu that is already on the other button.
+    if (event.mods.isAltDown())
     {
         // On a point, remove the point; anywhere else, remove the clip. Without
         // this a curve could gain points but never lose one.
@@ -583,6 +810,24 @@ void PlaylistComponent::mouseDown (const juce::MouseEvent& event)
             ProjectEdits::removeClip (track, clip, &undo);
             repaint();
         }
+        return;
+    }
+
+    // Right-click opens a menu instead, so deleting a clip is a thing you choose
+    // rather than a thing that happens on the way past.
+    if (event.mods.isPopupMenu())
+    {
+        menuPoint = pointAt (clip, trackIndex, event.getPosition());
+
+        auto menu = buildClipMenu (track, bar);
+        menu.setLookAndFeel (&getLookAndFeel());
+        menu.showMenuAsync (juce::PopupMenu::Options()
+                                .withTargetScreenArea ({ event.getScreenX(), event.getScreenY(), 1, 1 }),
+                            [safe = juce::Component::SafePointer<PlaylistComponent> (this), track, bar] (int choice)
+                            {
+                                if (safe != nullptr && choice > 0)
+                                    safe->applyClipChoice (track, bar, choice);
+                            });
         return;
     }
 

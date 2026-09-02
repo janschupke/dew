@@ -165,6 +165,24 @@ struct ProjectEdits
     static double automationValueAt (const juce::ValueTree& automation, double step);
 
     // --- playlist ------------------------------------------------------------
+    /** Appends a track to the arrangement.
+
+        Playlist tracks carry no id - they are positional, unlike channels and
+        mixer inserts - so there is nothing to allocate and nothing to renumber.
+    */
+    static juce::ValueTree addPlaylistTrack (juce::ValueTree project, const juce::String& name,
+                                             juce::UndoManager*);
+
+    /** Removes a track and the clips on it, as one undo step.
+
+        The clips are its children, so they go with it. Automations are
+        deliberately left behind: an AUTOMATION node is a reusable definition the
+        "+ Automation" menu can place again, unlike the orphaned notes
+        removeChannel cleans up, which are unreachable once their channel is gone.
+    */
+    static void removePlaylistTrack (juce::ValueTree project, juce::ValueTree track,
+                                     juce::UndoManager*);
+
     static juce::ValueTree addClip (juce::ValueTree playlistTrack, int patternId, int startBar,
                                     int lengthBars, juce::UndoManager*);
 

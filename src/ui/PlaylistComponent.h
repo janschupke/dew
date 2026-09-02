@@ -64,6 +64,24 @@ public:
     const TimelineView& getTimeline() const noexcept { return timeline; }
     int getNumTracks() const;
 
+    void addTrack();
+    void removeTrack (juce::ValueTree track);
+
+    /** Drives a track header's context-menu item without opening the menu.
+
+        juce::PopupMenu::showMenuAsync cannot run headlessly, so the menu is the
+        only part of this a test cannot reach; everything it does is behind here.
+        Returns false if there is no such track.
+    */
+    bool applyTrackMenuChoice (int trackIndex, int choice);
+
+    /** The items a track header's menu offers, for a test to assert against. */
+    juce::StringArray trackMenuItems (int trackIndex) const;
+
+    /** The same, for the menu a clip's right-click opens. */
+    juce::StringArray clipMenuItems (int trackIndex, int bar) const;
+    bool applyClipMenuChoice (int trackIndex, int bar, int choice);
+
     /** Where an automation point sits, for tests and for hit-testing. */
     juce::Point<float> pointPosition (const juce::ValueTree& clip, int trackIndex,
                                       const juce::ValueTree& point) const;
@@ -99,6 +117,20 @@ private:
     void openPatternOf (const juce::ValueTree& clip);
     void showAutomationMenu();
 
+    /** The menu a right-click on a lane opens, and what its items do.
+
+        What is offered depends on what is under the pointer: a curve point, a
+        clip, or empty space. Built and applied separately so a test can drive
+        the actions without a menu that cannot open headlessly.
+    */
+    juce::PopupMenu buildClipMenu (const juce::ValueTree& track, int bar) const;
+    void applyClipChoice (juce::ValueTree track, int bar, int choice);
+
+    /** Set while a clip menu is open, so its items act on the point that was
+        actually under the pointer rather than re-hit-testing from a bar.
+    */
+    juce::ValueTree menuPoint;
+
     juce::ValueTree automationOf (const juce::ValueTree& clip) const;
 
     /** The automation point under this position, within grabbing distance. */
@@ -128,6 +160,10 @@ private:
 
     juce::OwnedArray<TrackHeader> headers;
     DewButton addAutomationButton { "+ Automation", DewButton::Role::ghost };
+
+    // In the header column below the last track: the next empty row of the list,
+    // where the track it adds will appear.
+    DewButton addTrackButton { "+ Track", DewButton::Role::ghost };
 
     static constexpr float pointGrabRadius = 7.0f;
 

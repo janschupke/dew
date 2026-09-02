@@ -601,3 +601,147 @@ TEST_CASE ("a mod-click on the playlist ruler does not move the transport",
     // click landed and "from the playhead" would mean nothing.
     REQUIRE (h.engine.getPlayheadSteps() == 0.0);
 }
+
+// --- track rows and the clip menu --------------------------------------------
+
+TEST_CASE ("the add-track button is the row after the last track", "[ui][playlist]")
+{
+    const juce::ScopedJuceInitialiser_GUI juceInit;
+    PlaylistHarness h;
+
+    auto* button = h.playlist.findChildWithID ("addTrackButton");
+    REQUIRE (button != nullptr);
+    REQUIRE (button->isVisible());
+
+    // In the header column, below every track row.
+    REQUIRE (button->getX() >= 0);
+    REQUIRE (button->getRight() <= 156);
+
+    const auto lastTrackBottom = 22 + h.playlist.getNumTracks() * 34;
+    REQUIRE (button->getY() >= lastTrackBottom);
+    REQUIRE (button->getY() < lastTrackBottom + 34);
+}
+
+TEST_CASE ("a track row's context menu offers rename, add and remove", "[ui][playlist]")
+{
+    const juce::ScopedJuceInitialiser_GUI juceInit;
+    PlaylistHarness h;
+
+    const auto items = h.playlist.trackMenuItems (0);
+
+    INFO ("items: " << items.joinIntoString (", "));
+    REQUIRE (items.contains ("Rename"));
+    REQUIRE (items.contains ("Add track"));
+    REQUIRE (items.contains ("Remove track"));
+    REQUIRE (items.indexOf ("-") == items.indexOf ("Remove track") - 1);
+
+    REQUIRE_FALSE (h.playlist.applyTrackMenuChoice (99, 1));
+}
+
+TEST_CASE ("a track can be added and removed from the playlist", "[ui][playlist]")
+{
+    const juce::ScopedJuceInitialiser_GUI juceInit;
+    PlaylistHarness h;
+
+    const auto before = h.playlist.getNumTracks();
+    REQUIRE (before == 4);
+
+    h.playlist.addTrack();
+    REQUIRE (h.playlist.getNumTracks() == before + 1);
+
+    // The row acts on ITSELF - "Remove track" on the third row removes the third
+    // track, whatever else is going on.
+    REQUIRE (h.playlist.applyTrackMenuChoice (2, 3));
+    REQUIRE (h.playlist.getNumTracks() == before);
+
+    REQUIRE (h.document.getUndoManager().undo());
+    REQUIRE (h.playlist.getNumTracks() == before + 1);
+}
+
+TEST_CASE ("right-clicking a clip offers a menu rather than deleting it", "[ui][playlist]")
+{
+    const juce::ScopedJuceInitialiser_GUI juceInit;
+    PlaylistHarness h;
+
+    auto track = h.track (0);
+    ProjectEdits::addClip (track, 1, 0, 2, nullptr);
+    h.playlist.refresh();
+
+    REQUIRE (h.countClips (0) == 1);
+
+    const auto clip = ProjectEdits::findClipAtBar (track, 0);
+    const auto bounds = h.playlist.getBoundsForClip (clip, 0);
+    const auto at = bounds.getCentre().toInt();
+
+    const juce::ModifierKeys rightButton { juce::ModifierKeys::rightButtonModifier };
+
+    h.playlist.mouseDown (eventAt (h.playlist, at, 1, rightButton));
+    h.playlist.mouseUp   (eventAt (h.playlist, at, 1, rightButton));
+
+    // The clip is still there: deleting is now something you choose from the
+    // menu rather than something that happens on the way past.
+    REQUIRE (h.countClips (0) == 1);
+
+    const auto items = h.playlist.clipMenuItems (0, 0);
+    INFO ("items: " << items.joinIntoString (", "));
+    REQUIRE (items.contains ("Open pattern"));
+    REQUIRE (items.contains ("Delete clip"));
+}
+
+TEST_CASE ("alt-clicking a clip still deletes it outright", "[ui][playlist]")
+{
+    const juce::ScopedJuceInitialiser_GUI juceInit;
+    PlaylistHarness h;
+
+    auto track = h.track (0);
+    ProjectEdits::addClip (track, 1, 0, 2, nullptr);
+    h.playlist.refresh();
+
+    REQUIRE (h.countClips (0) == 1);
+
+    const auto clip = ProjectEdits::findClipAtBar (track, 0);
+    const auto at = h.playlist.getBoundsForClip (clip, 0).getCentre().toInt();
+    const juce::ModifierKeys alt { juce::ModifierKeys::altModifier };
+
+    h.playlist.mouseDown (eventAt (h.playlist, at, 1, alt));
+    h.playlist.mouseUp   (eventAt (h.playlist, at, 1, alt));
+
+    // The sweep-to-clear gesture the piano roll and step grid share survives.
+    REQUIRE (h.countClips (0) == 0);
+}
+
+TEST_CASE ("the clip menu deletes the clip it was opened on", "[ui][playlist]")
+{
+    const juce::ScopedJuceInitialiser_GUI juceInit;
+    PlaylistHarness h;
+
+    auto track = h.track (0);
+    ProjectEdits::addClip (track, 1, 0, 2, nullptr);
+    ProjectEdits::addClip (track, 1, 4, 2, nullptr);
+    h.playlist.refresh();
+
+    REQUIRE (h.countClips (0) == 2);
+
+    REQUIRE (h.playlist.applyClipMenuChoice (0, 4, 2));
+
+    REQUIRE (h.countClips (0) == 1);
+    REQUIRE (ProjectEdits::findClipAtBar (h.track (0), 0).isValid());
+    REQUIRE_FALSE (ProjectEdits::findClipAtBar (h.track (0), 4).isValid());
+}
+
+TEST_CASE ("right-clicking empty lane space offers to add a clip there", "[ui][playlist]")
+{
+    const juce::ScopedJuceInitialiser_GUI juceInit;
+    PlaylistHarness h;
+
+    REQUIRE (h.countClips (0) == 0);
+
+    const auto items = h.playlist.clipMenuItems (0, 2);
+    INFO ("items: " << items.joinIntoString (", "));
+    REQUIRE (items.contains ("Add clip here"));
+    REQUIRE_FALSE (items.contains ("Delete clip"));
+
+    REQUIRE (h.playlist.applyClipMenuChoice (0, 2, 4));
+    REQUIRE (h.countClips (0) == 1);
+    REQUIRE (ProjectEdits::findClipAtBar (h.track (0), 2).isValid());
+}

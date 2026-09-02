@@ -107,7 +107,65 @@ public:
 
     void select() { editorState.setSelectedChannelId (getChannelId()); }
 
-    void mouseDown (const juce::MouseEvent&) override { select(); }
+    /** What the row's context menu offers, and what each item does.
+
+        Built and applied as named methods rather than as a lambda inside
+        showMenuAsync, because showMenuAsync cannot be driven headlessly and
+        every other gesture in this app is tested that way. The menu is then
+        only the way a person reaches these; a test reaches them directly.
+    */
+    enum class MenuItem { rename = 1, addChannel, removeChannel };
+
+    juce::PopupMenu buildMenu() const
+    {
+        juce::PopupMenu menu;
+        menu.addItem ((int) MenuItem::rename, "Rename");
+        menu.addItem ((int) MenuItem::addChannel, "Add channel");
+        menu.addSeparator();
+        menu.addItem ((int) MenuItem::removeChannel, "Remove channel");
+        return menu;
+    }
+
+    void applyMenuChoice (int choice)
+    {
+        switch ((MenuItem) choice)
+        {
+            case MenuItem::rename:         nameLabel.showEditor(); break;
+            case MenuItem::addChannel:     if (onAddChannel) onAddChannel(); break;
+            case MenuItem::removeChannel:  if (onRemoveChannel) onRemoveChannel (getChannelId()); break;
+            default: break;
+        }
+    }
+
+    /** Add and remove belong to the rack, which owns the list and rebuilds it. */
+    std::function<void()> onAddChannel;
+    std::function<void (int channelId)> onRemoveChannel;
+
+    void mouseDown (const juce::MouseEvent& event) override
+    {
+        // Selected first, so the menu always acts on the row that was clicked
+        // rather than on whatever happened to be selected before it.
+        select();
+
+        if (! event.mods.isPopupMenu())
+            return;
+
+        auto menu = buildMenu();
+
+        // The look and feel has to be set explicitly or the popup overrides in
+        // DewLookAndFeel do not apply - and anchored at the POINTER rather than
+        // at a component, which is the first menu in the app to do so: a row is
+        // not a button, and a menu covering the row you just aimed at is worse
+        // than one beside the cursor.
+        menu.setLookAndFeel (&getLookAndFeel());
+        menu.showMenuAsync (juce::PopupMenu::Options()
+                                .withTargetScreenArea ({ event.getScreenX(), event.getScreenY(), 1, 1 }),
+                            [safe = juce::Component::SafePointer<ChannelHeader> (this)] (int choice)
+                            {
+                                if (safe != nullptr && choice > 0)
+                                    safe->applyMenuChoice (choice);
+                            });
+    }
 
     void mouseDoubleClick (const juce::MouseEvent& event) override
     {
@@ -200,28 +258,12 @@ ChannelRackComponent::ChannelRackComponent (ProjectDocument& d, AudioEngine& e, 
     viewport.setScrollBarsShown (true, false);
     addAndMakeVisible (viewport);
 
-    addChannelButton.onClick = [this]
-    {
-        auto& undo = document.getUndoManager();
-        undo.beginNewTransaction ("Add channel");
-        const auto channel = ProjectEdits::addChannel (document.getState(), {}, &undo);
-        editorState.setSelectedChannelId ((int) channel[ids::id]);
-    };
-    addAndMakeVisible (addChannelButton);
+    addChannelButton.onClick = [this] { addChannel(); };
 
-    removeChannelButton.onClick = [this]
-    {
-        auto channel = ProjectEdits::findChannel (document.getState(),
-                                                  editorState.getSelectedChannelId());
-
-        if (! channel.isValid())
-            return;
-
-        auto& undo = document.getUndoManager();
-        undo.beginNewTransaction ("Remove channel");
-        ProjectEdits::removeChannel (document.getState(), channel, &undo);
-    };
-    addAndMakeVisible (removeChannelButton);
+    // Into the scrolling holder, not onto the panel: it is the next row of the
+    // list, so it belongs to the list and scrolls with it.
+    addChannelButton.setComponentID ("addChannelButton");
+    contentHolder.addAndMakeVisible (addChannelButton);
 
     document.getState().addListener (this);
     editorState.addChangeListener (this);
@@ -240,6 +282,59 @@ void ChannelRackComponent::refresh()
     rebuildHeaders();
 }
 
+void ChannelRackComponent::addChannel()
+{
+    auto& undo = document.getUndoManager();
+    undo.beginNewTransaction ("Add channel");
+    const auto channel = ProjectEdits::addChannel (document.getState(), {}, &undo);
+    editorState.setSelectedChannelId ((int) channel[ids::id]);
+}
+
+void ChannelRackComponent::removeChannel (int channelId)
+{
+    auto channel = ProjectEdits::findChannel (document.getState(), channelId);
+
+    if (! channel.isValid())
+        return;
+
+    auto& undo = document.getUndoManager();
+    undo.beginNewTransaction ("Remove channel");
+    ProjectEdits::removeChannel (document.getState(), channel, &undo);
+}
+
+bool ChannelRackComponent::applyChannelMenuChoice (int channelId, int choice)
+{
+    for (auto* header : headers)
+        if (header->getChannelId() == channelId)
+        {
+            header->applyMenuChoice (choice);
+            return true;
+        }
+
+    return false;
+}
+
+juce::StringArray ChannelRackComponent::channelMenuItems (int channelId) const
+{
+    for (const auto* header : headers)
+        if (header->getChannelId() == channelId)
+        {
+            juce::StringArray items;
+
+            // Held in a named local: MenuItemIterator keeps a REFERENCE, so
+            // iterating a temporary menu walks a destroyed object and silently
+            // yields nothing.
+            const auto menu = header->buildMenu();
+
+            for (juce::PopupMenu::MenuItemIterator it (menu); it.next();)
+                items.add (it.getItem().isSeparator ? "-" : it.getItem().text);
+
+            return items;
+        }
+
+    return {};
+}
+
 void ChannelRackComponent::rebuildHeaders()
 {
     headers.clear();
@@ -249,7 +344,11 @@ void ChannelRackComponent::rebuildHeaders()
             headers.add (new ChannelHeader (document, editorState, channel));
 
     for (auto* header : headers)
+    {
+        header->onAddChannel = [this] { addChannel(); };
+        header->onRemoveChannel = [this] (int id) { removeChannel (id); };
         contentHolder.addAndMakeVisible (header);
+    }
 
     resized();
     repaint();
@@ -304,22 +403,18 @@ void ChannelRackComponent::paint (juce::Graphics& g)
     g.fillAll (colour::background);
 
     // The header column continues below the last channel so the split between
-    // names and steps stays readable down the whole panel.
+    // names and steps stays readable down the whole panel. It runs the full
+    // height now that the add button is a row of the list rather than a footer.
     g.setColour (colour::surface.withAlpha (0.4f));
-    g.fillRect (0, 0, size::headerWidth, getHeight() - footerHeight);
+    g.fillRect (0, 0, size::headerWidth, getHeight());
 
     g.setColour (colour::dividerStrong);
-    g.drawVerticalLine (size::headerWidth, 0.0f, (float) (getHeight() - footerHeight));
+    g.drawVerticalLine (size::headerWidth, 0.0f, (float) getHeight());
 }
 
 void ChannelRackComponent::resized()
 {
     auto area = getLocalBounds();
-
-    auto footer = area.removeFromBottom (footerHeight).reduced (space::md, space::sm);
-    addChannelButton.setBounds (footer.removeFromLeft (104).withHeight (size::controlHeight));
-    footer.removeFromLeft (space::sm);
-    removeChannelButton.setBounds (footer.removeFromLeft (104).withHeight (size::controlHeight));
 
     // The ruler spans the step columns only; the header column keeps its own
     // corner, which the shared ruler knows nothing about.
@@ -328,8 +423,10 @@ void ChannelRackComponent::resized()
     viewport.setBounds (area);
 
     // Content is at least as tall as the viewport, so the grid always fills the
-    // panel and can paint the region below the rows as inert.
-    const auto rowsHeight = headers.size() * size::rowHeight;
+    // panel and can paint the region below the rows as inert. The add button is
+    // counted as a row of its own, or it would be unreachable the moment the
+    // channels overflow the viewport.
+    const auto rowsHeight = (headers.size() + 1) * size::rowHeight;
     const auto visibleHeight = viewport.getMaximumVisibleHeight();
     const auto contentHeight = juce::jmax (visibleHeight, rowsHeight);
 
@@ -337,6 +434,12 @@ void ChannelRackComponent::resized()
 
     for (int i = 0; i < headers.size(); ++i)
         headers[i]->setBounds (0, i * size::rowHeight, size::headerWidth, size::rowHeight);
+
+    // Directly below the last channel, spanning the header column: the next
+    // empty row of the list, where the channel it adds will appear.
+    addChannelButton.setBounds (juce::Rectangle<int> (0, headers.size() * size::rowHeight,
+                                                      size::headerWidth, size::rowHeight)
+                                    .reduced (space::sm, space::xs));
 
     grid.setBounds (size::headerWidth, 0,
                     juce::jmax (120, contentHolder.getWidth() - size::headerWidth),

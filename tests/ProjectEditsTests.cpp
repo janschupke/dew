@@ -382,3 +382,76 @@ TEST_CASE ("moving a clip onto its own track is an ordinary move", "[edits][play
     REQUIRE ((int) clip[ids::startBar] == 3);
     REQUIRE (countChildren (track, ids::CLIP) == 1);
 }
+
+TEST_CASE ("a playlist track can be added and removed", "[edits][playlist]")
+{
+    auto project = ProjectFactory::createDefault();
+    juce::UndoManager undo;
+
+    const auto countTracks = [&project]
+    {
+        int n = 0;
+
+        for (const auto& track : project.getChildWithName (ids::PLAYLIST))
+            if (track.hasType (ids::PLAYLIST_TRACK))
+                ++n;
+
+        return n;
+    };
+
+    const auto before = countTracks();
+    REQUIRE (before == 4);
+
+    undo.beginNewTransaction();
+    auto added = ProjectEdits::addPlaylistTrack (project, {}, &undo);
+
+    REQUIRE (added.isValid());
+    REQUIRE (countTracks() == before + 1);
+    REQUIRE (added[ids::name].toString() == "Track 5");
+
+    // Built from the spec, so it is shaped exactly like the four the factory
+    // made - a hand-built node stops round-tripping the moment the schema grows.
+    REQUIRE (canonicalTree (project, projectSpec()).isEquivalentTo (project));
+
+    undo.beginNewTransaction();
+    ProjectEdits::removePlaylistTrack (project, added, &undo);
+    REQUIRE (countTracks() == before);
+
+    REQUIRE (undo.undo());
+    REQUIRE (countTracks() == before + 1);
+}
+
+TEST_CASE ("removing a playlist track removes its clips in one undo step",
+           "[edits][playlist][undo]")
+{
+    auto project = ProjectFactory::createDefault();
+    juce::UndoManager undo;
+
+    auto playlist = project.getChildWithName (ids::PLAYLIST);
+    auto track = playlist.getChild (0);
+    REQUIRE (track.hasType (ids::PLAYLIST_TRACK));
+
+    ProjectEdits::addClip (track, 1, 0, 2, nullptr);
+    ProjectEdits::addClip (track, 1, 4, 2, nullptr);
+
+    const auto countClips = [&track]
+    {
+        int n = 0;
+
+        for (const auto& clip : track)
+            if (clip.hasType (ids::CLIP))
+                ++n;
+
+        return n;
+    };
+
+    REQUIRE (countClips() == 2);
+
+    undo.beginNewTransaction ("Remove track");
+    ProjectEdits::removePlaylistTrack (project, track, &undo);
+
+    // The clips are children, so they left with it - and one undo brings the
+    // track and both clips back together, not the track and then the clips.
+    REQUIRE (undo.undo());
+    REQUIRE (countClips() == 2);
+}

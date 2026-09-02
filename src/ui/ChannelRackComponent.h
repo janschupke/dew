@@ -31,6 +31,20 @@ public:
 
     void refresh();
 
+    void addChannel();
+    void removeChannel (int channelId);
+
+    /** Drives a row's context-menu item without opening the menu.
+
+        juce::PopupMenu::showMenuAsync cannot run headlessly, so the menu is the
+        only part of this that a test cannot reach. Everything it does is behind
+        here instead, and returns false if there is no such row.
+    */
+    bool applyChannelMenuChoice (int channelId, int choice);
+
+    /** The items a row's menu offers, for a test to assert against. */
+    juce::StringArray channelMenuItems (int channelId) const;
+
 private:
     class ChannelHeader;
 
@@ -40,8 +54,6 @@ private:
     void changeListenerCallback (juce::ChangeBroadcaster*) override;
 
     void rebuildHeaders();
-
-    static constexpr int footerHeight = 40;
 
     ProjectDocument& document;
     AudioEngine& engine;
@@ -55,8 +67,10 @@ private:
     RulerStrip ruler;
     juce::Viewport viewport;
     juce::Component contentHolder;
-    DewButton addChannelButton { "+ Channel", DewButton::Role::primary };
-    DewButton removeChannelButton { "Remove", DewButton::Role::ghost };
+    // In the header column, below the last channel, and inside the scrolling
+    // holder - so it is the next empty ROW of the list rather than an action
+    // parked in a footer strip at the far end of the panel.
+    DewButton addChannelButton { "+ Channel", DewButton::Role::ghost };
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (ChannelRackComponent)
 };

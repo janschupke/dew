@@ -9,6 +9,7 @@
 #include "model/ProjectFactory.h"
 #include "ui/ChannelRackComponent.h"
 #include "ui/EditorState.h"
+#include "ui/design/Tokens.h"
 #include "ui/EffectChainComponent.h"
 #include "ui/MixerComponent.h"
 
@@ -16,6 +17,23 @@ using namespace dew;
 
 namespace
 {
+
+/** findChildWithID only looks at DIRECT children, and the channel rack's list
+    lives inside a Viewport - so anything in it is two levels down.
+*/
+juce::Component* findDescendantWithID (juce::Component& root, const juce::String& id)
+{
+    for (auto* child : root.getChildren())
+    {
+        if (child->getComponentID() == id)
+            return child;
+
+        if (auto* found = findDescendantWithID (*child, id))
+            return found;
+    }
+
+    return nullptr;
+}
 
 void collect (juce::Component& root, juce::Array<juce::Component*>& out)
 {
@@ -291,4 +309,144 @@ TEST_CASE ("an effect row's buttons select it before acting", "[ui][selection]")
     lastRowButtons.getFirst()->onClick();
 
     REQUIRE (chain.getSelectedSlot() == 2);
+}
+
+// --- the channel rack's row actions ------------------------------------------
+
+TEST_CASE ("the add-channel button is the row after the last channel", "[ui][rack]")
+{
+    const juce::ScopedJuceInitialiser_GUI juceInit;
+
+    ProjectDocument document;
+    document.setState (ProjectFactory::createDefault(), true);
+
+    AudioEngine engine;
+    EditorState editorState;
+    ChannelRackComponent rack { document, engine, editorState };
+
+    rack.setSize (1200, 600);
+    rack.setVisible (true);
+    rack.resized();
+
+    auto* button = findDescendantWithID (rack, "addChannelButton");
+    REQUIRE (button != nullptr);
+
+    // Inside the scrolling holder, not on the panel: it is a row of the list, so
+    // it scrolls with the list rather than floating over it in a footer.
+    REQUIRE (button->getParentComponent() != &rack);
+    REQUIRE (button->getParentComponent()->getComponentID() == "channelRackContent");
+
+    // In the header column, and below every channel row.
+    REQUIRE (button->getX() >= 0);
+    REQUIRE (button->getRight() <= tokens::size::headerWidth);
+    REQUIRE (button->getY() >= 4 * tokens::size::rowHeight);
+    REQUIRE (button->getY() < 5 * tokens::size::rowHeight);
+}
+
+TEST_CASE ("a channel row's context menu offers rename, add and remove", "[ui][rack]")
+{
+    const juce::ScopedJuceInitialiser_GUI juceInit;
+
+    ProjectDocument document;
+    document.setState (ProjectFactory::createDefault(), true);
+
+    AudioEngine engine;
+    EditorState editorState;
+    ChannelRackComponent rack { document, engine, editorState };
+
+    rack.setSize (1200, 600);
+    rack.setVisible (true);
+    rack.resized();
+
+    const auto items = rack.channelMenuItems (1);
+
+    INFO ("items: " << items.joinIntoString (", "));
+    REQUIRE (items.contains ("Rename"));
+    REQUIRE (items.contains ("Add channel"));
+    REQUIRE (items.contains ("Remove channel"));
+
+    // Removing is separated from the two that build, so the destructive item is
+    // not adjacent to the one directly above it in muscle memory.
+    REQUIRE (items.indexOf ("-") == items.indexOf ("Remove channel") - 1);
+
+    REQUIRE_FALSE (rack.applyChannelMenuChoice (999, 1));
+}
+
+TEST_CASE ("removing a channel from its own row removes that channel", "[ui][rack]")
+{
+    const juce::ScopedJuceInitialiser_GUI juceInit;
+
+    ProjectDocument document;
+    document.setState (ProjectFactory::createDefault(), true);
+
+    AudioEngine engine;
+    EditorState editorState;
+    ChannelRackComponent rack { document, engine, editorState };
+
+    rack.setSize (1200, 600);
+    rack.setVisible (true);
+    rack.resized();
+
+    const auto countChannels = [&document]
+    {
+        int n = 0;
+
+        for (const auto& channel : document.getState())
+            if (channel.hasType (ids::CHANNEL))
+                ++n;
+
+        return n;
+    };
+
+    REQUIRE (countChannels() == 4);
+
+    // The row acts on ITSELF, not on whatever happens to be selected - which is
+    // what the footer button did, from the far end of the panel.
+    editorState.setSelectedChannelId (1);
+    REQUIRE (rack.applyChannelMenuChoice (3, (int) 3));
+
+    REQUIRE (countChannels() == 3);
+    REQUIRE_FALSE (ProjectEdits::findChannel (document.getState(), 3).isValid());
+    REQUIRE (ProjectEdits::findChannel (document.getState(), 1).isValid());
+}
+
+TEST_CASE ("right-clicking a channel row selects it", "[ui][rack]")
+{
+    const juce::ScopedJuceInitialiser_GUI juceInit;
+
+    ProjectDocument document;
+    document.setState (ProjectFactory::createDefault(), true);
+
+    AudioEngine engine;
+    EditorState editorState;
+    ChannelRackComponent rack { document, engine, editorState };
+
+    rack.setSize (1200, 600);
+    rack.setVisible (true);
+    rack.resized();
+
+    editorState.setSelectedChannelId (1);
+
+    // Second row. Selecting on the way into the menu is what makes the menu act
+    // on the row that was aimed at rather than on the previous selection.
+    auto* holder = findDescendantWithID (rack, "channelRackContent");
+    REQUIRE (holder != nullptr);
+
+    juce::Component* secondRow = nullptr;
+
+    for (auto* child : holder->getChildren())
+        if (child->getY() == tokens::size::rowHeight && child->getWidth() == tokens::size::headerWidth)
+            secondRow = child;
+
+    REQUIRE (secondRow != nullptr);
+
+    const juce::ModifierKeys rightButton { juce::ModifierKeys::rightButtonModifier };
+    const juce::Point<float> at { 20.0f, (float) (tokens::size::rowHeight / 2) };
+
+    secondRow->mouseDown ({ juce::Desktop::getInstance().getMainMouseSource(),
+                            at, rightButton, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f,
+                            secondRow, secondRow, juce::Time::getCurrentTime(),
+                            at, juce::Time::getCurrentTime(), 1, false });
+
+    REQUIRE (editorState.getSelectedChannelId() == 2);
 }

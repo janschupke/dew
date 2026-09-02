@@ -681,6 +681,46 @@ const NodeSpec& clipSpecFor()
 
 } // namespace
 
+juce::ValueTree ProjectEdits::addPlaylistTrack (juce::ValueTree project, const juce::String& name,
+                                                juce::UndoManager* undo)
+{
+    auto playlist = project.getChildWithName (ids::PLAYLIST);
+
+    if (! playlist.isValid())
+        return {};
+
+    // From the spec rather than by hand, for the reason addClip gives: a
+    // hand-built node stops round-tripping the moment the schema gains a
+    // property, and the canonical-shape test is what catches it.
+    auto track = defaultTreeFor (childSpecFor (childSpecFor (projectSpec(), "playlist"), "tracks"));
+
+    int existing = 0;
+
+    for (const auto& child : playlist)
+        if (child.hasType (ids::PLAYLIST_TRACK))
+            ++existing;
+
+    track.setProperty (ids::name,
+                       name.isNotEmpty() ? name : "Track " + juce::String (existing + 1),
+                       nullptr);
+
+    playlist.appendChild (track, undo);
+    return track;
+}
+
+void ProjectEdits::removePlaylistTrack (juce::ValueTree project, juce::ValueTree track,
+                                        juce::UndoManager* undo)
+{
+    if (! track.isValid())
+        return;
+
+    auto playlist = project.getChildWithName (ids::PLAYLIST);
+    const auto index = playlist.indexOf (track);
+
+    if (index >= 0)
+        playlist.removeChild (index, undo);
+}
+
 juce::ValueTree ProjectEdits::addClip (juce::ValueTree playlistTrack, int patternId, int startBar,
                                        int lengthBars, juce::UndoManager* undo)
 {
