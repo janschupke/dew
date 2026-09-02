@@ -84,6 +84,38 @@ private:
 
     void runChain (const EffectChainSnapshot&, float* left, float* right, int numSamples) noexcept;
 
+    /** One automation's value at the current position, already in the
+        parameter's own units, with its target resolved.
+    */
+    struct ActiveAutomation
+    {
+        AutomationScope scope = AutomationScope::channel;
+        int targetIndex = -1;
+        int slotIndex = -1;
+        AutomationParam param = AutomationParam::none;
+        float value = 0.0f;
+    };
+
+    /** Evaluates every automation clip covering this position, once per block.
+
+        Per block rather than per sample: a curve moving over bars does not need
+        sample accuracy, and evaluating it once keeps the render path free of
+        searching.
+    */
+    void collectAutomation (const EngineSnapshot&, double positionSteps) noexcept;
+
+    /** Applies whatever automation is pointed at this channel or track.
+
+        Takes a mutable copy of the snapshot's entry rather than editing the
+        snapshot: the snapshot is shared, read-only, and the same one may be
+        rendered again on the next block.
+    */
+    void applyAutomation (ChannelSnapshot&, int channelIndex) const noexcept;
+    void applyAutomation (MixerTrackSnapshot&, int trackIndex) const noexcept;
+    float automatedMasterGain (float base) const noexcept;
+
+    std::vector<ActiveAutomation> activeAutomation;
+
     std::vector<NoteTrigger> triggers;
 
     juce::uint64 appliedGeneration = 0;

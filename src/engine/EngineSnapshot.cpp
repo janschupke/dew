@@ -49,8 +49,11 @@ int EngineSnapshot::songLengthSteps() const
 {
     int end = 0;
 
+    // Automation clips count as much as pattern clips: a sweep placed after the
+    // last note is still part of the arrangement, and leaving it out made the
+    // song loop out from underneath it.
     for (const auto& clip : clips)
-        if (clip.patternIndex >= 0)
+        if (clip.patternIndex >= 0 || clip.automationIndex >= 0)
             end = juce::jmax (end, (clip.startBar + clip.lengthBars) * stepsPerBar());
 
     return end;
@@ -132,6 +135,28 @@ int claimEffectUnit (int effectId, std::array<int, kMaxEffectUnits>& owners)
     return -1;
 }
 
+AutomationParam automationParamFromString (const juce::String& name)
+{
+    static const std::pair<const char*, AutomationParam> table[] {
+        { "volume", AutomationParam::volume }, { "pan", AutomationParam::pan },
+        { "gain", AutomationParam::gain }, { "cutoff", AutomationParam::cutoff },
+        { "resonance", AutomationParam::resonance }, { "mix", AutomationParam::mix },
+        { "roomSize", AutomationParam::roomSize }, { "damping", AutomationParam::damping },
+        { "width", AutomationParam::width }, { "delayMs", AutomationParam::delayMs },
+        { "feedback", AutomationParam::feedback }, { "drive", AutomationParam::drive },
+        { "outputGain", AutomationParam::outputGain }, { "rate", AutomationParam::rate },
+        { "depth", AutomationParam::depth }, { "lowGainDb", AutomationParam::lowGainDb },
+        { "midGainDb", AutomationParam::midGainDb }, { "midFreq", AutomationParam::midFreq },
+        { "highGainDb", AutomationParam::highGainDb },
+    };
+
+    for (const auto& [text, value] : table)
+        if (name == text)
+            return value;
+
+    return AutomationParam::none;
+}
+
 EffectParams readEffectParams (const juce::ValueTree& effect)
 {
     EffectParams p;
@@ -199,6 +224,49 @@ EffectChainSnapshot readEffectChain (const juce::ValueTree& owner, const juce::S
 }
 
 } // namespace
+
+float AutomationSnapshot::valueAt (double step) const noexcept
+{
+    const auto normalised = [this, step]() -> float
+    {
+        if (points.empty())
+            return 0.0f;
+
+        if (step <= points.front().step)
+            return points.front().value;
+
+        if (step >= points.back().step)
+            return points.back().value;
+
+        for (size_t i = 1; i < points.size(); ++i)
+        {
+            if (step > points[i].step)
+                continue;
+
+            const auto span = points[i].step - points[i - 1].step;
+
+            if (span <= 0.0)
+                return points[i].value;
+
+            auto t = (float) ((step - points[i - 1].step) / span);
+            const auto curve = points[i - 1].curve;
+
+            if (! juce::approximatelyEqual (curve, 0.0f))
+                t = std::pow (t, std::pow (2.0f, -curve * 2.0f));
+
+            return points[i - 1].value + (points[i].value - points[i - 1].value) * t;
+        }
+
+        return points.back().value;
+    }();
+
+    // Same mapping the picker and the point editor use, so what is drawn is
+    // what is heard.
+    const AutomationParamSpec spec { nullptr, "", (double) minimum, (double) maximum,
+                                     false, logarithmic };
+
+    return (float) mapAutomationValue (spec, (double) normalised);
+}
 
 EngineSnapshot buildSnapshot (const juce::ValueTree& project, juce::StringArray* warnings)
 {
@@ -360,6 +428,129 @@ EngineSnapshot buildSnapshot (const juce::ValueTree& project, juce::StringArray*
         snapshot.patterns.push_back (p);
     }
 
+    // --- automations ---------------------------------------------------------
+    // Resolved before clips, since a clip refers to one by index.
+    juce::Array<int> automationIds;
+
+    for (const auto& automation : project)
+    {
+        if (! automation.hasType (ids::AUTOMATION))
+            continue;
+
+        if ((int) snapshot.automations.size() >= kMaxAutomations)
+        {
+            warn ("More than " + juce::String (kMaxAutomations) + " automations; the rest are ignored.");
+            break;
+        }
+
+        AutomationSnapshot a;
+        a.scope = automationScopeFromString (automation[ids::scope].toString());
+        a.slotIndex = (int) automation[ids::slot];
+
+        const juce::Identifier property (automation[ids::param].toString());
+        a.param = automationParamFromString (property.toString());
+
+        const auto targetId = (int) automation[ids::targetId];
+        juce::String effectType;
+
+        // Resolve the owner to an index, and an effect target to its type, so
+        // the audio thread never searches and never compares a string.
+        const auto resolveChain = [&] (const juce::ValueTree& owner) -> bool
+        {
+            int slot = 0;
+
+            for (const auto& effect : owner)
+            {
+                if (! effect.hasType (ids::EFFECT))
+                    continue;
+
+                if (slot++ == a.slotIndex)
+                {
+                    effectType = effect[ids::type].toString();
+                    return true;
+                }
+            }
+
+            return false;
+        };
+
+        bool resolved = false;
+
+        switch (a.scope)
+        {
+            case AutomationScope::master:
+                a.targetIndex = -1;
+                resolved = true;
+                break;
+
+            case AutomationScope::channel:
+            case AutomationScope::channelEffect:
+                for (size_t i = 0; i < snapshot.channels.size(); ++i)
+                    if (snapshot.channels[i].id == targetId)
+                        a.targetIndex = (int) i;
+
+                resolved = a.targetIndex >= 0;
+
+                if (resolved && a.scope == AutomationScope::channelEffect)
+                {
+                    resolved = false;
+
+                    for (const auto& channel : project)
+                        if (channel.hasType (ids::CHANNEL) && (int) channel[ids::id] == targetId)
+                            resolved = resolveChain (channel);
+                }
+                break;
+
+            case AutomationScope::mixerTrack:
+            case AutomationScope::mixerEffect:
+                for (size_t i = 0; i < snapshot.mixerTracks.size(); ++i)
+                    if (snapshot.mixerTracks[i].id == targetId)
+                        a.targetIndex = (int) i;
+
+                resolved = a.targetIndex >= 0;
+
+                if (resolved && a.scope == AutomationScope::mixerEffect)
+                {
+                    resolved = false;
+
+                    for (const auto& track : mixer)
+                        if (track.hasType (ids::MIXER_TRACK) && (int) track[ids::id] == targetId)
+                            resolved = resolveChain (track);
+                }
+                break;
+        }
+
+        // A target that no longer exists - a deleted channel, or an effect slot
+        // that changed type so the parameter no longer applies - is dropped
+        // with a warning, exactly like a clip pointing at a missing pattern.
+        const auto* spec = resolved ? findParamSpec (a.scope, effectType, property) : nullptr;
+
+        if (spec == nullptr || a.param == AutomationParam::none)
+        {
+            warn ("Automation \"" + automation[ids::name].toString()
+                  + "\" targets something that no longer exists; it is ignored.");
+            automationIds.add (-1);
+            snapshot.automations.push_back ({});
+            continue;
+        }
+
+        a.minimum = (float) spec->minimum;
+        a.maximum = (float) spec->maximum;
+        a.logarithmic = spec->logarithmic;
+
+        for (const auto& point : automation)
+            if (point.hasType (ids::POINT))
+                a.points.push_back ({ (double) point[ids::step],
+                                      juce::jlimit (0.0f, 1.0f, (float) (double) point[ids::value]),
+                                      juce::jlimit (-1.0f, 1.0f, (float) (double) point[ids::curve]) });
+
+        std::stable_sort (a.points.begin(), a.points.end(),
+                          [] (const auto& x, const auto& y) { return x.step < y.step; });
+
+        automationIds.add ((int) automation[ids::id]);
+        snapshot.automations.push_back (std::move (a));
+    }
+
     // --- playlist ------------------------------------------------------------
     // Solo has to be known before any clip is resolved, so scan for it first.
     for (const auto& track : project.getChildWithName (ids::PLAYLIST))
@@ -380,10 +571,31 @@ EngineSnapshot buildSnapshot (const juce::ValueTree& project, juce::StringArray*
                 continue;
 
             ClipSnapshot c;
-            c.patternIndex = snapshot.patternIndexForId ((int) clip[ids::patternId]);
             c.startBar     = juce::jmax (0, (int) clip[ids::startBar]);
             c.lengthBars   = juce::jmax (1, (int) clip[ids::lengthBars]);
             c.trackAudible = trackAudible;
+
+            if (clip[ids::kind].toString() == "automation")
+            {
+                c.automationIndex = automationIds.indexOf ((int) clip[ids::automationId]);
+
+                if (c.automationIndex < 0)
+                {
+                    warn ("A clip refers to automation " + clip[ids::automationId].toString()
+                          + ", which does not exist; it will do nothing.");
+                    continue;
+                }
+
+                // A muted track silences its notes; it should silence what its
+                // automation does too, or a muted lane still moves the mix.
+                if (trackAudible)
+                    snapshot.anyAutomation = true;
+
+                snapshot.clips.push_back (c);
+                continue;
+            }
+
+            c.patternIndex = snapshot.patternIndexForId ((int) clip[ids::patternId]);
 
             if (c.patternIndex < 0)
             {

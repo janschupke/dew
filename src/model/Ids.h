@@ -16,6 +16,8 @@
             EFFECT*                    -> "effects": []
           PATTERN*                     -> "patterns": []
             NOTE*                      -> "notes": []
+          AUTOMATION*                  -> "automations": []
+            POINT*                     -> "points": []
           PLAYLIST                     -> "playlist": {}
             PLAYLIST_TRACK*            -> "tracks": []
               CLIP*                    -> "clips": []
@@ -44,6 +46,8 @@ DEW_DECLARE_ID (MIXER)
 DEW_DECLARE_ID (MASTER)
 DEW_DECLARE_ID (MIXER_TRACK)
 DEW_DECLARE_ID (EFFECT)
+DEW_DECLARE_ID (AUTOMATION)
+DEW_DECLARE_ID (POINT)
 
 // --- properties --------------------------------------------------------------
 DEW_DECLARE_ID (formatVersion)
@@ -79,6 +83,16 @@ DEW_DECLARE_ID (velocity)
 DEW_DECLARE_ID (patternId)
 DEW_DECLARE_ID (startBar)
 DEW_DECLARE_ID (lengthBars)
+DEW_DECLARE_ID (kind)
+DEW_DECLARE_ID (automationId)
+
+// --- automation --------------------------------------------------------------
+DEW_DECLARE_ID (scope)
+DEW_DECLARE_ID (targetId)
+DEW_DECLARE_ID (slot)
+DEW_DECLARE_ID (param)
+DEW_DECLARE_ID (value)
+DEW_DECLARE_ID (curve)
 
 DEW_DECLARE_ID (mute)
 DEW_DECLARE_ID (solo)

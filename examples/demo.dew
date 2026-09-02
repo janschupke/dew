@@ -1,5 +1,5 @@
 {
-    "formatVersion": 3,
+    "formatVersion": 4,
     "name": "dew demo",
     "tempoBpm": 124.0,
     "stepsPerBeat": 4,
@@ -245,6 +245,7 @@
         ]
       }
     ],
+    "automations": [],
     "playlist": {
       "tracks": [
         {
@@ -253,7 +254,9 @@
           "solo": false,
           "clips": [
             {
+              "kind": "pattern",
               "patternId": 1,
+              "automationId": 1,
               "startBar": 0,
               "lengthBars": 4
             }

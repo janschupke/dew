@@ -136,13 +136,49 @@ const NodeSpec& patternSpec()
     return spec;
 }
 
+const NodeSpec& pointSpec()
+{
+    static const NodeSpec spec {
+        ids::POINT,
+        { { ids::step,  0 },
+          // 0..1 within the target's own range, so a point editor is uniform
+          // whatever it is driving.
+          { ids::value, 0.5 },
+          // Bend between this point and the next: 0 is a straight line,
+          // positive holds high longer, negative holds low longer.
+          { ids::curve, 0.0 } },
+        {}
+    };
+    return spec;
+}
+
+const NodeSpec& automationSpec()
+{
+    static const NodeSpec spec {
+        ids::AUTOMATION,
+        { { ids::id,       1 },
+          { ids::name,     "Automation" },
+          { ids::scope,    "channel" },
+          { ids::targetId, 1 },
+          { ids::slot,     -1 },
+          { ids::param,    "volume" } },
+        { { "points", &pointSpec(), true } }
+    };
+    return spec;
+}
+
 const NodeSpec& clipSpec()
 {
     static const NodeSpec spec {
         ids::CLIP,
-        { { ids::patternId,  1 },
-          { ids::startBar,   0 },
-          { ids::lengthBars, 1 } },
+        // `kind` rather than replacing patternId with a generic refId: a
+        // version 3 file has clips with no kind at all, and defaulting it to
+        // "pattern" is what makes those load unchanged.
+        { { ids::kind,         "pattern" },
+          { ids::patternId,    1 },
+          { ids::automationId, 1 },
+          { ids::startBar,     0 },
+          { ids::lengthBars,   1 } },
         {}
     };
     return spec;
@@ -270,10 +306,11 @@ const NodeSpec& projectSpec()
           { ids::tempoBpm,      128.0 },
           { ids::stepsPerBeat,  4 },
           { ids::barsInSong,    16 } },
-        { { "channels", &channelSpec(),  true },
-          { "patterns", &patternSpec(),  true },
-          { "playlist", &playlistSpec(), false },
-          { "mixer",    &mixerSpec(),    false } }
+        { { "channels",    &channelSpec(),    true },
+          { "patterns",    &patternSpec(),    true },
+          { "automations", &automationSpec(), true },
+          { "playlist",    &playlistSpec(),   false },
+          { "mixer",       &mixerSpec(),      false } }
     };
     return spec;
 }

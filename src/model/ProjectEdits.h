@@ -2,6 +2,8 @@
 
 #include <juce_data_structures/juce_data_structures.h>
 
+#include "AutomationTargets.h"
+
 namespace dew
 {
 
@@ -110,9 +112,46 @@ struct ProjectEdits
     /** Every node in the project that can carry an effect chain. */
     static juce::Array<juce::ValueTree> effectChainOwners (const juce::ValueTree& project);
 
+    // --- automation ----------------------------------------------------------
+    /** Creates an automation definition pointed at a curated target, with two
+        points so a fresh clip is a line rather than an empty box.
+    */
+    static juce::ValueTree addAutomation (juce::ValueTree project, const AutomationTarget&,
+                                          juce::UndoManager*);
+
+    static juce::ValueTree findAutomation (const juce::ValueTree& project, int automationId);
+
+    /** Removes an automation and every clip that referred to it. */
+    static bool removeAutomation (juce::ValueTree project, juce::ValueTree automation,
+                                  juce::UndoManager*);
+
+    /** Adds a point, keeping the list sorted by step. An existing point at the
+        same step is moved rather than duplicated - two points on one step is a
+        curve with no defined value there.
+    */
+    static juce::ValueTree addAutomationPoint (juce::ValueTree automation, double step,
+                                               double value, juce::UndoManager*);
+
+    static void moveAutomationPoint (juce::ValueTree automation, juce::ValueTree point,
+                                     double step, double value, juce::UndoManager*);
+
+    static void removeAutomationPoint (juce::ValueTree automation, juce::ValueTree point,
+                                       juce::UndoManager*);
+
+    /** Value of the curve at a step, 0..1. Linear between points, held flat
+        before the first and after the last.
+    */
+    static double automationValueAt (const juce::ValueTree& automation, double step);
+
     // --- playlist ------------------------------------------------------------
     static juce::ValueTree addClip (juce::ValueTree playlistTrack, int patternId, int startBar,
                                     int lengthBars, juce::UndoManager*);
+
+    /** A clip that drives an automation curve rather than playing a pattern. */
+    static juce::ValueTree addAutomationClip (juce::ValueTree playlistTrack, int automationId,
+                                              int startBar, int lengthBars, juce::UndoManager*);
+
+    static bool isAutomationClip (const juce::ValueTree& clip);
 
     static void removeClip (juce::ValueTree playlistTrack, juce::ValueTree clip, juce::UndoManager*);
 

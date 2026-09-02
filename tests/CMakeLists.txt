@@ -12,6 +12,7 @@ add_executable(dew_tests
   TransportTests.cpp
   SequencerTests.cpp
   SnapshotBridgeTests.cpp
+  AutomationTests.cpp
   EffectTests.cpp
   EngineTests.cpp
   MixerTests.cpp

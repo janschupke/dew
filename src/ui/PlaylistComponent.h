@@ -5,7 +5,9 @@
 #include "../engine/AudioEngine.h"
 #include "../model/ProjectDocument.h"
 #include "EditorState.h"
+#include "../model/AutomationTargets.h"
 #include "TimelineView.h"
+#include "primitives/DewControls.h"
 
 namespace dew
 {
@@ -42,6 +44,12 @@ public:
 
     void refresh();
 
+    /** Creates an automation for a curated target and places a clip for it, so
+        choosing a target produces something visible rather than an entry in a
+        list nobody can see.
+    */
+    juce::ValueTree createAutomationClip (const AutomationTarget&, int startBar, int lengthBars);
+
     /** Called when a clip is double-clicked, after its pattern has been made
         current. The playlist does not know about tabs; whoever owns them does.
     */
@@ -56,10 +64,14 @@ public:
     const TimelineView& getTimeline() const noexcept { return timeline; }
     int getNumTracks() const;
 
+    /** Where an automation point sits, for tests and for hit-testing. */
+    juce::Point<float> pointPosition (const juce::ValueTree& clip, int trackIndex,
+                                      const juce::ValueTree& point) const;
+
 private:
     class TrackHeader;
 
-    enum class Gesture { none, moving, resizing };
+    enum class Gesture { none, moving, resizing, draggingPoint };
 
     void timerCallback() override;
     void valueTreePropertyChanged (juce::ValueTree&, const juce::Identifier&) override;
@@ -82,6 +94,19 @@ private:
     void updateZoom();
     void rebuildHeaders();
     void openPatternOf (const juce::ValueTree& clip);
+    void showAutomationMenu();
+
+    juce::ValueTree automationOf (const juce::ValueTree& clip) const;
+
+    /** The automation point under this position, within grabbing distance. */
+    juce::ValueTree pointAt (const juce::ValueTree& clip, int trackIndex, juce::Point<int>) const;
+
+    /** Turns a position inside an automation clip into a step and a 0..1 value. */
+    void positionToCurve (const juce::ValueTree& clip, int trackIndex, juce::Point<int>,
+                          double& step, double& value) const;
+
+    void paintAutomationClip (juce::Graphics&, const juce::ValueTree& clip, int trackIndex,
+                              juce::Rectangle<float> bounds, bool audible);
 
     static constexpr int rowHeight = 34;
     static constexpr int headerWidth = 156;
@@ -99,9 +124,13 @@ private:
     bool updatingScrollBar = false;
 
     juce::OwnedArray<TrackHeader> headers;
+    DewButton addAutomationButton { "+ Automation", DewButton::Role::ghost };
+
+    static constexpr float pointGrabRadius = 7.0f;
 
     juce::ValueTree draggedClip;
     juce::ValueTree draggedClipTrack;
+    juce::ValueTree draggedPoint;
     Gesture gesture = Gesture::none;
     int dragBarOffset = 0;
     int dropTrackIndex = -1;

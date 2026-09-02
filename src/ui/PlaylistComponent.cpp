@@ -111,6 +111,9 @@ PlaylistComponent::PlaylistComponent (ProjectDocument& d, AudioEngine& e, Editor
     horizontalScroll.addListener (this);
     addChildComponent (horizontalScroll);
 
+    addAutomationButton.onClick = [this] { showAutomationMenu(); };
+    addAndMakeVisible (addAutomationButton);
+
     rebuildHeaders();
     startTimerHz (motion::playheadHz);
 }
@@ -256,6 +259,10 @@ void PlaylistComponent::resized()
     horizontalScroll.setBounds (headerWidth, getHeight() - scrollThickness,
                                 (int) contentWidth(), scrollThickness);
 
+    // In the corner above the track headers, where the ruler does not reach.
+    addAutomationButton.setBounds (juce::Rectangle<int> (0, 0, headerWidth, rulerHeight)
+                                       .reduced (space::xs, space::xxs));
+
     for (int i = 0; i < headers.size(); ++i)
         headers[i]->setBounds (0, rulerHeight + i * rowHeight, headerWidth, rowHeight);
 
@@ -312,6 +319,145 @@ void PlaylistComponent::openPatternOf (const juce::ValueTree& clip)
         onOpenPatternInPianoRoll();
 }
 
+juce::ValueTree PlaylistComponent::automationOf (const juce::ValueTree& clip) const
+{
+    if (! ProjectEdits::isAutomationClip (clip))
+        return {};
+
+    return ProjectEdits::findAutomation (document.getState(), (int) clip[ids::automationId]);
+}
+
+juce::Point<float> PlaylistComponent::pointPosition (const juce::ValueTree& clip, int trackIndex,
+                                                     const juce::ValueTree& point) const
+{
+    const auto bounds = boundsForClip (clip, trackIndex).reduced (2.0f, 3.0f);
+    const auto stepsPerBar = juce::jmax (1, (int) document.getState()[ids::stepsPerBeat]) * 4;
+    const auto clipSteps = juce::jmax (1, (int) clip[ids::lengthBars] * stepsPerBar);
+
+    const auto t = juce::jlimit (0.0, 1.0, (double) point[ids::step] / (double) clipSteps);
+    const auto value = juce::jlimit (0.0, 1.0, (double) point[ids::value]);
+
+    return { bounds.getX() + (float) t * bounds.getWidth(),
+             bounds.getBottom() - (float) value * bounds.getHeight() };
+}
+
+void PlaylistComponent::positionToCurve (const juce::ValueTree& clip, int trackIndex,
+                                         juce::Point<int> position, double& step, double& value) const
+{
+    const auto bounds = boundsForClip (clip, trackIndex).reduced (2.0f, 3.0f);
+    const auto stepsPerBar = juce::jmax (1, (int) document.getState()[ids::stepsPerBeat]) * 4;
+    const auto clipSteps = juce::jmax (1, (int) clip[ids::lengthBars] * stepsPerBar);
+
+    const auto t = bounds.getWidth() > 0.0f
+                     ? juce::jlimit (0.0, 1.0, (double) (position.x - bounds.getX()) / bounds.getWidth())
+                     : 0.0;
+
+    step = t * clipSteps;
+    value = bounds.getHeight() > 0.0f
+              ? juce::jlimit (0.0, 1.0, (double) (bounds.getBottom() - position.y) / bounds.getHeight())
+              : 0.0;
+}
+
+juce::ValueTree PlaylistComponent::pointAt (const juce::ValueTree& clip, int trackIndex,
+                                            juce::Point<int> position) const
+{
+    const auto automation = automationOf (clip);
+
+    if (! automation.isValid())
+        return {};
+
+    juce::ValueTree closest;
+    auto closestDistance = pointGrabRadius;
+
+    for (const auto& point : automation)
+    {
+        if (! point.hasType (ids::POINT))
+            continue;
+
+        const auto distance = pointPosition (clip, trackIndex, point).getDistanceFrom (position.toFloat());
+
+        if (distance <= closestDistance)
+        {
+            closestDistance = distance;
+            closest = point;
+        }
+    }
+
+    return closest;
+}
+
+juce::ValueTree PlaylistComponent::createAutomationClip (const AutomationTarget& target,
+                                                         int startBar, int lengthBars)
+{
+    auto& undo = document.getUndoManager();
+    undo.beginNewTransaction ("Add automation");
+
+    auto automation = ProjectEdits::addAutomation (document.getState(), target, &undo);
+
+    if (! automation.isValid())
+        return {};
+
+    // Onto the first lane with room at that bar, so a new automation is visible
+    // rather than stacked invisibly under a pattern clip.
+    for (int i = 0; i < getNumTracks(); ++i)
+    {
+        auto track = trackAt (i);
+
+        if (ProjectEdits::findClipAtBar (track, startBar).isValid())
+            continue;
+
+        auto clip = ProjectEdits::addAutomationClip (track, (int) automation[ids::id],
+                                                     startBar, lengthBars, &undo);
+        ProjectEdits::growSongToFitClips (document.getState(), &undo);
+        updateZoom();
+        repaint();
+        return clip;
+    }
+
+    // Every lane is occupied there: undo the definition rather than leaving one
+    // behind that nothing refers to.
+    ProjectEdits::removeAutomation (document.getState(), automation, &undo);
+    return {};
+}
+
+void PlaylistComponent::showAutomationMenu()
+{
+    const auto targets = availableAutomationTargets (document.getState());
+
+    juce::PopupMenu menu;
+    juce::PopupMenu submenu;
+    juce::String currentGroup;
+    int itemId = 1;
+
+    // Grouped by what they belong to: a flat list of every parameter of every
+    // effect on every channel is unreadable by the third channel.
+    for (const auto& target : targets)
+    {
+        const auto group = target.displayName.upToFirstOccurrenceOf (" > ", false, false);
+
+        if (group != currentGroup)
+        {
+            if (currentGroup.isNotEmpty())
+                menu.addSubMenu (currentGroup, submenu);
+
+            submenu.clear();
+            currentGroup = group;
+        }
+
+        submenu.addItem (itemId++, target.displayName.fromFirstOccurrenceOf (" > ", false, false));
+    }
+
+    if (currentGroup.isNotEmpty())
+        menu.addSubMenu (currentGroup, submenu);
+
+    menu.showMenuAsync (juce::PopupMenu::Options().withTargetComponent (addAutomationButton),
+                        [this, targets] (int choice)
+                        {
+                            if (choice > 0 && choice <= (int) targets.size())
+                                createAutomationClip (targets[(size_t) choice - 1], 0, 4);
+                        });
+}
+
 void PlaylistComponent::mouseDoubleClick (const juce::MouseEvent& event)
 {
     if (event.x < headerWidth || event.y < rulerHeight)
@@ -322,10 +468,26 @@ void PlaylistComponent::mouseDoubleClick (const juce::MouseEvent& event)
     if (! track.isValid())
         return;
 
-    // A clip is a reference to a pattern, so the obvious thing to do with one is
-    // to go and edit that pattern. Previously the only route was the pattern
-    // selector in the transport bar.
-    openPatternOf (ProjectEdits::findClipAtBar (track, barAtX (event.x)));
+    const auto clip = ProjectEdits::findClipAtBar (track, barAtX (event.x));
+
+    if (auto automation = automationOf (clip); automation.isValid())
+    {
+        // Double-click inside a curve adds a point there. A single click has to
+        // stay "move the clip", or an automation clip could not be moved.
+        double step = 0.0, value = 0.0;
+        positionToCurve (clip, trackAtY (event.y), event.getPosition(), step, value);
+
+        auto& undo = document.getUndoManager();
+        undo.beginNewTransaction ("Add automation point");
+        ProjectEdits::addAutomationPoint (automation, step, value, &undo);
+        repaint();
+        return;
+    }
+
+    // A pattern clip is a reference to a pattern, so the obvious thing to do
+    // with one is to go and edit that pattern. Previously the only route was
+    // the pattern selector in the transport bar.
+    openPatternOf (clip);
 }
 
 void PlaylistComponent::mouseDown (const juce::MouseEvent& event)
@@ -345,12 +507,33 @@ void PlaylistComponent::mouseDown (const juce::MouseEvent& event)
 
     if (event.mods.isPopupMenu() || event.mods.isAltDown())
     {
+        // On a point, remove the point; anywhere else, remove the clip. Without
+        // this a curve could gain points but never lose one.
+        if (auto point = pointAt (clip, trackIndex, event.getPosition()); point.isValid())
+        {
+            undo.beginNewTransaction ("Remove automation point");
+            ProjectEdits::removeAutomationPoint (automationOf (clip), point, &undo);
+            repaint();
+            return;
+        }
+
         if (clip.isValid())
         {
             undo.beginNewTransaction ("Delete clip");
             ProjectEdits::removeClip (track, clip, &undo);
             repaint();
         }
+        return;
+    }
+
+    if (auto point = pointAt (clip, trackIndex, event.getPosition()); point.isValid())
+    {
+        draggedClip = clip;
+        draggedClipTrack = track;
+        draggedPoint = point;
+        dropTrackIndex = trackIndex;
+        gesture = Gesture::draggingPoint;
+        undo.beginNewTransaction ("Move automation point");
         return;
     }
 
@@ -392,6 +575,15 @@ void PlaylistComponent::mouseDrag (const juce::MouseEvent& event)
 
     auto& undo = document.getUndoManager();
 
+    if (gesture == Gesture::draggingPoint)
+    {
+        double step = 0.0, value = 0.0;
+        positionToCurve (draggedClip, dropTrackIndex, event.getPosition(), step, value);
+        ProjectEdits::moveAutomationPoint (automationOf (draggedClip), draggedPoint, step, value, &undo);
+        repaint();
+        return;
+    }
+
     if (gesture == Gesture::resizing)
     {
         const auto length = barAtX (event.x) - (int) draggedClip[ids::startBar] + 1;
@@ -429,6 +621,7 @@ void PlaylistComponent::mouseUp (const juce::MouseEvent&)
 {
     draggedClip = {};
     draggedClipTrack = {};
+    draggedPoint = {};
     dropTrackIndex = -1;
     gesture = Gesture::none;
     repaint();
@@ -495,6 +688,76 @@ void PlaylistComponent::valueTreeChildRemoved (juce::ValueTree& parent, juce::Va
 void PlaylistComponent::changeListenerCallback (juce::ChangeBroadcaster*) { repaint(); }
 
 // --- painting ----------------------------------------------------------------
+
+void PlaylistComponent::paintAutomationClip (juce::Graphics& g, const juce::ValueTree& clip,
+                                             int trackIndex, juce::Rectangle<float> bounds,
+                                             bool audible)
+{
+    const auto automation = automationOf (clip);
+
+    // An automation clip reads as a different kind of thing from a pattern
+    // clip: no fill, a visible curve, and its own colour.
+    const auto clipColour = audible ? colour::warning
+                                    : colour::warning.withSaturation (0.1f).withMultipliedBrightness (0.6f);
+
+    g.setColour (colour::wellDeep.withAlpha (0.85f));
+    g.fillRoundedRectangle (bounds, radius::sm);
+    g.setColour (clipColour.withAlpha (audible ? 0.7f : 0.35f));
+    g.drawRoundedRectangle (bounds, radius::sm, stroke::regular);
+
+    if (! automation.isValid())
+    {
+        g.setColour (colour::danger);
+        g.setFont (type::font (type::caption));
+        g.drawText ("missing automation", bounds.toNearestInt().reduced (4, 0),
+                    juce::Justification::centredLeft, true);
+        return;
+    }
+
+    // Underneath the curve rather than over it: the curve is the content, and
+    // an automation lane is only a row tall.
+    g.setColour (clipColour.withAlpha (0.45f));
+    g.setFont (type::font (type::caption));
+    g.drawText (automation[ids::name].toString(), bounds.toNearestInt().reduced (5, 1),
+                juce::Justification::topLeft, true);
+
+    juce::Array<juce::ValueTree> points;
+
+    for (const auto& point : automation)
+        if (point.hasType (ids::POINT))
+            points.add (point);
+
+    const juce::Graphics::ScopedSaveState clipped (g);
+    g.reduceClipRegion (bounds.toNearestInt());
+
+    juce::Path curve;
+
+    for (int i = 0; i < points.size(); ++i)
+    {
+        const auto position = pointPosition (clip, trackIndex, points[i]);
+
+        if (i == 0)
+            curve.startNewSubPath (position);
+        else
+            curve.lineTo (position);
+    }
+
+    if (points.size() > 1)
+    {
+        g.setColour (clipColour);
+        g.strokePath (curve, juce::PathStrokeType (1.6f));
+    }
+
+    for (const auto& point : points)
+    {
+        const auto position = pointPosition (clip, trackIndex, point);
+        g.setColour (colour::wellDeep);
+        g.fillEllipse (juce::Rectangle<float> (7.0f, 7.0f).withCentre (position));
+        g.setColour (clipColour);
+        g.fillEllipse (juce::Rectangle<float> (5.0f, 5.0f).withCentre (position));
+    }
+
+}
 
 void PlaylistComponent::paint (juce::Graphics& g)
 {
@@ -571,6 +834,12 @@ void PlaylistComponent::paint (juce::Graphics& g)
             if (! bounds.intersects (juce::Rectangle<float> ((float) headerWidth, 0.0f,
                                                              contentWidth(), (float) bottom)))
                 continue;
+
+            if (ProjectEdits::isAutomationClip (clip))
+            {
+                paintAutomationClip (g, clip, trackIndex, bounds, audible);
+                continue;
+            }
 
             const auto pattern = ProjectEdits::findPattern (document.getState(),
                                                             (int) clip[ids::patternId]);

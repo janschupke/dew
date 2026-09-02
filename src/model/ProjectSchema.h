@@ -50,7 +50,7 @@ struct NodeSpec
     still load: every added property has a declared default, so an older file is
     simply one that predates them.
 */
-inline constexpr int kFormatVersion = 3;
+inline constexpr int kFormatVersion = 4;
 
 /** How many effects one channel or mixer track may carry. A document limit
     rather than an engine one: a chain longer than this cannot be saved, so it

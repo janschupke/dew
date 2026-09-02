@@ -95,7 +95,7 @@ juce::ValueTree ProjectEdits::addNote (juce::ValueTree pattern, int channelId, i
                                        int lengthSteps, int pitch, float velocity,
                                        juce::UndoManager* undo)
 {
-    juce::ValueTree note (ids::NOTE);
+    auto note = defaultTreeFor (childSpecFor (childSpecFor (projectSpec(), "patterns"), "notes"));
     note.setProperty (ids::ch, channelId, nullptr);
     note.setProperty (ids::step, juce::jmax (0, step), nullptr);
     note.setProperty (ids::lengthSteps, juce::jmax (1, lengthSteps), nullptr);
@@ -406,16 +406,271 @@ void ProjectEdits::moveEffect (juce::ValueTree owner, juce::ValueTree effect, in
         owner.moveChild (from, targetIndex, undo);
 }
 
+namespace
+{
+
+const NodeSpec& automationSpecFor()
+{
+    return childSpecFor (projectSpec(), "automations");
+}
+
+const NodeSpec& pointSpecFor()
+{
+    return childSpecFor (automationSpecFor(), "points");
+}
+
+/** Points in step order. The tree keeps them sorted, but a file could not, and
+    evaluating an unsorted curve produces a shape nobody drew.
+*/
+juce::Array<juce::ValueTree> sortedPoints (const juce::ValueTree& automation)
+{
+    juce::Array<juce::ValueTree> points;
+
+    for (const auto& child : automation)
+        if (child.hasType (ids::POINT))
+            points.add (child);
+
+    std::stable_sort (points.begin(), points.end(),
+                      [] (const juce::ValueTree& a, const juce::ValueTree& b)
+                      {
+                          return (double) a[ids::step] < (double) b[ids::step];
+                      });
+
+    return points;
+}
+
+} // namespace
+
+juce::ValueTree ProjectEdits::addAutomation (juce::ValueTree project, const AutomationTarget& target,
+                                             juce::UndoManager* undo)
+{
+    auto automation = defaultTreeFor (automationSpecFor());
+
+    automation.setProperty (ids::id, nextFreeId (project, ids::AUTOMATION), nullptr);
+    automation.setProperty (ids::name, target.displayName, nullptr);
+    automation.setProperty (ids::scope, automationScopeToString (target.scope), nullptr);
+    automation.setProperty (ids::targetId, target.targetId, nullptr);
+    automation.setProperty (ids::slot, target.slot, nullptr);
+    automation.setProperty (ids::param, target.property.toString(), nullptr);
+
+    // Two points, so a new clip is a line you can grab rather than an empty
+    // rectangle that does nothing until you guess how to start it.
+    for (const auto step : { 0.0, 16.0 })
+    {
+        auto point = defaultTreeFor (pointSpecFor());
+        point.setProperty (ids::step, step, nullptr);
+        point.setProperty (ids::value, 0.5, nullptr);
+        automation.appendChild (point, nullptr);
+    }
+
+    int insertAt = project.getNumChildren();
+
+    for (int i = 0; i < project.getNumChildren(); ++i)
+        if (project.getChild (i).hasType (ids::PATTERN) || project.getChild (i).hasType (ids::AUTOMATION))
+            insertAt = i + 1;
+
+    project.addChild (automation, insertAt, undo);
+    return automation;
+}
+
+juce::ValueTree ProjectEdits::findAutomation (const juce::ValueTree& project, int automationId)
+{
+    for (const auto& child : project)
+        if (child.hasType (ids::AUTOMATION) && (int) child[ids::id] == automationId)
+            return child;
+
+    return {};
+}
+
+bool ProjectEdits::removeAutomation (juce::ValueTree project, juce::ValueTree automation,
+                                     juce::UndoManager* undo)
+{
+    const auto index = project.indexOf (automation);
+
+    if (index < 0)
+        return false;
+
+    const auto automationId = (int) automation[ids::id];
+
+    // Same rule as removePattern: a clip referring to something that no longer
+    // exists is dropped here, so the whole removal is one undo step.
+    for (auto track : project.getChildWithName (ids::PLAYLIST))
+    {
+        if (! track.hasType (ids::PLAYLIST_TRACK))
+            continue;
+
+        for (int i = track.getNumChildren(); --i >= 0;)
+        {
+            const auto clip = track.getChild (i);
+
+            if (clip.hasType (ids::CLIP) && isAutomationClip (clip)
+                && (int) clip[ids::automationId] == automationId)
+                track.removeChild (i, undo);
+        }
+    }
+
+    project.removeChild (index, undo);
+    return true;
+}
+
+juce::ValueTree ProjectEdits::addAutomationPoint (juce::ValueTree automation, double step,
+                                                  double value, juce::UndoManager* undo)
+{
+    if (! automation.isValid())
+        return {};
+
+    const auto clampedStep = juce::jmax (0.0, step);
+    const auto clampedValue = juce::jlimit (0.0, 1.0, value);
+
+    // Two points on one step is a curve with no defined value there, so an
+    // existing one moves instead of being joined.
+    for (auto existing : sortedPoints (automation))
+        if (juce::approximatelyEqual ((double) existing[ids::step], clampedStep))
+        {
+            existing.setProperty (ids::value, clampedValue, undo);
+            return existing;
+        }
+
+    auto point = defaultTreeFor (pointSpecFor());
+    point.setProperty (ids::step, clampedStep, nullptr);
+    point.setProperty (ids::value, clampedValue, nullptr);
+
+    int insertAt = automation.getNumChildren();
+
+    for (int i = 0; i < automation.getNumChildren(); ++i)
+        if (automation.getChild (i).hasType (ids::POINT)
+            && (double) automation.getChild (i)[ids::step] > clampedStep)
+        {
+            insertAt = i;
+            break;
+        }
+
+    automation.addChild (point, insertAt, undo);
+    return point;
+}
+
+void ProjectEdits::moveAutomationPoint (juce::ValueTree automation, juce::ValueTree point,
+                                        double step, double value, juce::UndoManager* undo)
+{
+    if (! point.isValid())
+        return;
+
+    point.setProperty (ids::step, juce::jmax (0.0, step), undo);
+    point.setProperty (ids::value, juce::jlimit (0.0, 1.0, value), undo);
+
+    // Dragging one point past another would otherwise leave the list out of
+    // order, and an unsorted curve evaluates to a shape nobody drew.
+    const auto sorted = sortedPoints (automation);
+
+    for (int i = 0; i < sorted.size(); ++i)
+    {
+        const auto from = automation.indexOf (sorted[i]);
+
+        if (from >= 0 && from != i)
+            automation.moveChild (from, i, undo);
+    }
+}
+
+void ProjectEdits::removeAutomationPoint (juce::ValueTree automation, juce::ValueTree point,
+                                          juce::UndoManager* undo)
+{
+    // A curve with fewer than two points has no shape to draw or evaluate.
+    if (sortedPoints (automation).size() <= 2)
+        return;
+
+    const auto index = automation.indexOf (point);
+
+    if (index >= 0)
+        automation.removeChild (index, undo);
+}
+
+double ProjectEdits::automationValueAt (const juce::ValueTree& automation, double step)
+{
+    const auto points = sortedPoints (automation);
+
+    if (points.isEmpty())
+        return 0.0;
+
+    if (step <= (double) points.getFirst()[ids::step])
+        return (double) points.getFirst()[ids::value];
+
+    if (step >= (double) points.getLast()[ids::step])
+        return (double) points.getLast()[ids::value];
+
+    for (int i = 1; i < points.size(); ++i)
+    {
+        const auto rightStep = (double) points[i][ids::step];
+
+        if (step > rightStep)
+            continue;
+
+        const auto leftStep = (double) points[i - 1][ids::step];
+        const auto span = rightStep - leftStep;
+
+        if (span <= 0.0)
+            return (double) points[i][ids::value];
+
+        auto t = (step - leftStep) / span;
+
+        // Curve bends the interpolation without moving either endpoint, so a
+        // shape can be eased without adding points to fake it.
+        const auto curve = juce::jlimit (-1.0, 1.0, (double) points[i - 1][ids::curve]);
+
+        if (! juce::approximatelyEqual (curve, 0.0))
+            t = std::pow (t, std::pow (2.0, -curve * 2.0));
+
+        const auto leftValue = (double) points[i - 1][ids::value];
+        const auto rightValue = (double) points[i][ids::value];
+
+        return leftValue + (rightValue - leftValue) * t;
+    }
+
+    return (double) points.getLast()[ids::value];
+}
+
+namespace
+{
+
+const NodeSpec& clipSpecFor()
+{
+    return childSpecFor (childSpecFor (childSpecFor (projectSpec(), "playlist"), "tracks"), "clips");
+}
+
+} // namespace
+
 juce::ValueTree ProjectEdits::addClip (juce::ValueTree playlistTrack, int patternId, int startBar,
                                        int lengthBars, juce::UndoManager* undo)
 {
-    juce::ValueTree clip (ids::CLIP);
+    // Built from the spec rather than by hand, so a property added to the
+    // schema later is present here too. A hand-built node round-tripped into
+    // something different from what the editor made, which the canonical-shape
+    // test caught the moment clips gained a `kind`.
+    auto clip = defaultTreeFor (clipSpecFor());
+    clip.setProperty (ids::kind, "pattern", nullptr);
     clip.setProperty (ids::patternId, patternId, nullptr);
     clip.setProperty (ids::startBar, juce::jmax (0, startBar), nullptr);
     clip.setProperty (ids::lengthBars, juce::jmax (1, lengthBars), nullptr);
 
     playlistTrack.appendChild (clip, undo);
     return clip;
+}
+
+juce::ValueTree ProjectEdits::addAutomationClip (juce::ValueTree playlistTrack, int automationId,
+                                                 int startBar, int lengthBars, juce::UndoManager* undo)
+{
+    auto clip = defaultTreeFor (clipSpecFor());
+    clip.setProperty (ids::kind, "automation", nullptr);
+    clip.setProperty (ids::automationId, automationId, nullptr);
+    clip.setProperty (ids::startBar, juce::jmax (0, startBar), nullptr);
+    clip.setProperty (ids::lengthBars, juce::jmax (1, lengthBars), nullptr);
+
+    playlistTrack.appendChild (clip, undo);
+    return clip;
+}
+
+bool ProjectEdits::isAutomationClip (const juce::ValueTree& clip)
+{
+    return clip[ids::kind].toString() == "automation";
 }
 
 void ProjectEdits::removeClip (juce::ValueTree playlistTrack, juce::ValueTree clip,

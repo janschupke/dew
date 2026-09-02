@@ -14,6 +14,7 @@ AudioEngine::AudioEngine()
         effectUnits.push_back (std::make_unique<EffectUnit>());
 
     effectUnitTypes.assign (kMaxEffectUnits, -1);
+    activeAutomation.reserve (kMaxAutomations);
 }
 
 void AudioEngine::prepare (double sampleRate, int maximumBlockSize)
@@ -100,6 +101,133 @@ void AudioEngine::applySnapshotIfChanged (const EngineSnapshot& snapshot) noexce
     transport.setTempo (snapshot.tempoBpm, snapshot.stepsPerBeat);
 }
 
+namespace
+{
+
+/** Writes one automated value into an effect's parameters. Only the fields a
+    type actually reads are automatable, so an unmatched code is a no-op rather
+    than a silent write to the wrong parameter.
+*/
+void applyToEffect (EffectParams& params, AutomationParam param, float value) noexcept
+{
+    switch (param)
+    {
+        case AutomationParam::cutoff:     params.cutoff = value; break;
+        case AutomationParam::resonance:  params.resonance = value; break;
+        case AutomationParam::mix:        params.mix = value; break;
+        case AutomationParam::roomSize:   params.roomSize = value; break;
+        case AutomationParam::damping:    params.damping = value; break;
+        case AutomationParam::width:      params.width = value; break;
+        case AutomationParam::delayMs:    params.delayMs = value; break;
+        case AutomationParam::feedback:   params.feedback = value; break;
+        case AutomationParam::drive:      params.drive = value; break;
+        case AutomationParam::outputGain: params.outputGain = value; break;
+        case AutomationParam::rate:       params.rate = value; break;
+        case AutomationParam::depth:      params.depth = value; break;
+        case AutomationParam::lowGainDb:  params.lowGainDb = value; break;
+        case AutomationParam::midGainDb:  params.midGainDb = value; break;
+        case AutomationParam::midFreq:    params.midFreq = value; break;
+        case AutomationParam::highGainDb: params.highGainDb = value; break;
+
+        case AutomationParam::none:
+        case AutomationParam::volume:
+        case AutomationParam::pan:
+        case AutomationParam::gain:
+            break;
+    }
+}
+
+} // namespace
+
+void AudioEngine::collectAutomation (const EngineSnapshot& snapshot, double positionSteps) noexcept
+{
+    activeAutomation.clear();
+
+    if (! snapshot.anyAutomation)
+        return;
+
+    const auto stepsPerBar = (double) snapshot.stepsPerBar();
+
+    for (const auto& clip : snapshot.clips)
+    {
+        if (clip.automationIndex < 0 || ! clip.trackAudible
+            || clip.automationIndex >= (int) snapshot.automations.size())
+            continue;
+
+        const auto start = (double) clip.startBar * stepsPerBar;
+        const auto end = start + (double) clip.lengthBars * stepsPerBar;
+
+        if (positionSteps < start || positionSteps >= end)
+            continue;
+
+        const auto& automation = snapshot.automations[(size_t) clip.automationIndex];
+
+        if (automation.param == AutomationParam::none)
+            continue;
+
+        // The curve is drawn relative to the clip, so it plays wherever the
+        // clip is placed rather than only at bar one.
+        activeAutomation.push_back ({ automation.scope, automation.targetIndex,
+                                      automation.slotIndex, automation.param,
+                                      automation.valueAt (positionSteps - start) });
+    }
+}
+
+void AudioEngine::applyAutomation (ChannelSnapshot& channel, int channelIndex) const noexcept
+{
+    for (const auto& active : activeAutomation)
+    {
+        if (active.targetIndex != channelIndex)
+            continue;
+
+        if (active.scope == AutomationScope::channel)
+        {
+            if (active.param == AutomationParam::volume)
+                channel.volume = active.value;
+            else if (active.param == AutomationParam::pan)
+                channel.pan = active.value;
+        }
+        else if (active.scope == AutomationScope::channelEffect
+                 && active.slotIndex >= 0 && active.slotIndex < channel.effects.numSlots)
+        {
+            applyToEffect (channel.effects.slots[(size_t) active.slotIndex].params,
+                           active.param, active.value);
+        }
+    }
+}
+
+void AudioEngine::applyAutomation (MixerTrackSnapshot& track, int trackIndex) const noexcept
+{
+    for (const auto& active : activeAutomation)
+    {
+        if (active.targetIndex != trackIndex)
+            continue;
+
+        if (active.scope == AutomationScope::mixerTrack)
+        {
+            if (active.param == AutomationParam::gain)
+                track.gain = active.value;
+            else if (active.param == AutomationParam::pan)
+                track.pan = active.value;
+        }
+        else if (active.scope == AutomationScope::mixerEffect
+                 && active.slotIndex >= 0 && active.slotIndex < track.effects.numSlots)
+        {
+            applyToEffect (track.effects.slots[(size_t) active.slotIndex].params,
+                           active.param, active.value);
+        }
+    }
+}
+
+float AudioEngine::automatedMasterGain (float base) const noexcept
+{
+    for (const auto& active : activeAutomation)
+        if (active.scope == AutomationScope::master && active.param == AutomationParam::gain)
+            return active.value;
+
+    return base;
+}
+
 void AudioEngine::runChain (const EffectChainSnapshot& chain, float* left, float* right,
                             int numSamples) noexcept
 {
@@ -167,6 +295,13 @@ void AudioEngine::processBlock (juce::AudioBuffer<float>& buffer) noexcept
         triggers.clear();
     }
 
+    // Automation is a property of the arrangement, so it only applies in song
+    // mode - pattern mode has no playlist position for a clip to cover.
+    if (mode == Transport::Mode::song && isPlayingNow)
+        collectAutomation (snapshot, transport.getPositionSamples() / juce::jmax (1.0, transport.samplesPerStep()));
+    else
+        activeAutomation.clear();
+
     const auto numChannels = juce::jmin ((int) snapshot.channels.size(), kMaxChannels);
     const auto numMixerTracks = juce::jmin ((int) snapshot.mixerTracks.size(), kMaxMixerTracks);
 
@@ -197,10 +332,12 @@ void AudioEngine::processBlock (juce::AudioBuffer<float>& buffer) noexcept
         auto* mono = channelBuffers.getWritePointer (i);
         channels[(size_t) i].renderAdd (mono, numSamples);
 
-        const auto& channelSnapshot = snapshot.channels[(size_t) i];
+        auto channelSnapshot = snapshot.channels[(size_t) i];
 
         if (! snapshot.isChannelAudible (channelSnapshot))
             continue;
+
+        applyAutomation (channelSnapshot, i);
 
         const auto mixerIndex = channelSnapshot.mixerTrackIndex;
 
@@ -240,10 +377,12 @@ void AudioEngine::processBlock (juce::AudioBuffer<float>& buffer) noexcept
 
     for (int i = 0; i < numMixerTracks; ++i)
     {
-        const auto& track = snapshot.mixerTracks[(size_t) i];
+        auto track = snapshot.mixerTracks[(size_t) i];
 
         if (! MixerBus::isAudible (snapshot, track))
             continue;
+
+        applyAutomation (track, i);
 
         // Before gain and pan, so a track's fader rides the processed signal
         // rather than the effects riding the fader.
@@ -263,7 +402,7 @@ void AudioEngine::processBlock (juce::AudioBuffer<float>& buffer) noexcept
                                                       numSamples);
     }
 
-    buffer.applyGain (snapshot.masterGain);
+    buffer.applyGain (automatedMasterGain (snapshot.masterGain));
 
     if (isPlayingNow && loopSteps > 0)
         transport.advance (numSamples);

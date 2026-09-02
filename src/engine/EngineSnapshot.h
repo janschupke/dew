@@ -5,6 +5,7 @@
 #include <array>
 #include <vector>
 
+#include "../model/AutomationTargets.h"
 #include "../model/ProjectSchema.h"
 #include "Effects.h"
 
@@ -31,6 +32,7 @@ inline constexpr int kMaxVoicesPerChannel  = 16;
     pointer swap on the audio thread.
 */
 inline constexpr int kMaxEffectUnits       = 32;
+inline constexpr int kMaxAutomations       = 32;
 
 enum class Waveform { sine, saw, square, triangle };
 
@@ -105,9 +107,46 @@ struct PatternSnapshot
     std::vector<NoteSnapshot> notes;
 };
 
+/** Which parameter an automation drives, as a code the audio thread can switch
+    on. Resolving the property name to this on the message thread is what keeps
+    string comparison out of the render path.
+*/
+enum class AutomationParam
+{
+    none,
+    volume, pan, gain,
+    cutoff, resonance, mix, roomSize, damping, width,
+    delayMs, feedback, drive, outputGain, rate, depth,
+    lowGainDb, midGainDb, midFreq, highGainDb
+};
+
+struct AutomationPointSnapshot
+{
+    double step = 0.0;
+    float value = 0.0f;    ///< 0..1
+    float curve = 0.0f;
+};
+
+/** One automation definition, with its target resolved to indices. */
+struct AutomationSnapshot
+{
+    AutomationScope scope = AutomationScope::channel;
+    int targetIndex = -1;      ///< channel index or mixer track index; -1 for master
+    int slotIndex = -1;        ///< effect slot in the chain, -1 when not an effect
+    AutomationParam param = AutomationParam::none;
+    float minimum = 0.0f;
+    float maximum = 1.0f;
+    bool logarithmic = false;
+    std::vector<AutomationPointSnapshot> points;
+
+    /** Value at a step, in the parameter's own units. */
+    float valueAt (double step) const noexcept;
+};
+
 struct ClipSnapshot
 {
     int patternIndex = -1;     ///< resolved
+    int automationIndex = -1;  ///< resolved; >= 0 makes this an automation clip
     int startBar = 0;
     int lengthBars = 1;
 
@@ -141,6 +180,7 @@ struct EngineSnapshot
     std::vector<PatternSnapshot> patterns;
     std::vector<ClipSnapshot> clips;          ///< flattened across all playlist tracks
     std::vector<MixerTrackSnapshot> mixerTracks;
+    std::vector<AutomationSnapshot> automations;
 
     float masterGain = 0.9f;
 
@@ -177,6 +217,11 @@ struct EngineSnapshot
         whole stereo effect stage on a project that uses none.
     */
     bool anyEffects = false;
+
+    /** True if any clip drives an automation, so the engine can skip the whole
+        evaluation pass on a project that uses none.
+    */
+    bool anyAutomation = false;
 };
 
 /** Builds a snapshot from a project tree. Runs on the message thread.

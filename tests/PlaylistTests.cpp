@@ -55,12 +55,13 @@ struct PlaylistHarness
     PlaylistComponent playlist { document, engine, editorState };
 };
 
-juce::MouseEvent eventAt (juce::Component& target, juce::Point<int> local, int clickCount = 1)
+juce::MouseEvent eventAt (juce::Component& target, juce::Point<int> local, int clickCount = 1,
+                          juce::ModifierKeys mods = juce::ModifierKeys())
 {
     const auto position = local.toFloat();
 
     return { juce::Desktop::getInstance().getMainMouseSource(),
-             position, juce::ModifierKeys(),
+             position, mods,
              1.0f, 0.0f, 0.0f, 0.0f, 0.0f,
              &target, &target,
              juce::Time::getCurrentTime(),
@@ -238,4 +239,160 @@ TEST_CASE ("a muted playlist track silences its clips in the engine", "[ui][play
 
     h.track (1).setProperty (ids::mute, true, &undo);
     REQUIRE (audibleClips() == 0);
+}
+
+// --- automation clips --------------------------------------------------------
+
+#include "model/AutomationTargets.h"
+
+namespace
+{
+
+/** The volume target of the project's first channel, by whatever it is called. */
+juce::String firstChannelVolumeTarget (const juce::ValueTree& project)
+{
+    return project.getChildWithName (ids::CHANNEL)[ids::name].toString() + " > Volume";
+}
+
+AutomationTarget targetNamed (const juce::ValueTree& project, const juce::String& name)
+{
+    for (const auto& target : availableAutomationTargets (project))
+        if (target.displayName == name)
+            return target;
+
+    FAIL ("no automation target named " << name);
+    return {};
+}
+
+/** The screen position of an automation point, asked of the component. */
+juce::Point<int> pointPositionOf (PlaylistHarness& h, const juce::ValueTree& clip, int trackIndex,
+                                  const juce::ValueTree& point)
+{
+    return h.playlist.pointPosition (clip, trackIndex, point).toInt();
+}
+
+juce::ValueTree firstPointOf (const juce::ValueTree& automation)
+{
+    for (const auto& point : automation)
+        if (point.hasType (ids::POINT))
+            return point;
+
+    return {};
+}
+
+} // namespace
+
+TEST_CASE ("choosing a target creates an automation and a clip for it", "[ui][playlist][automation]")
+{
+    const juce::ScopedJuceInitialiser_GUI juceInit;
+    PlaylistHarness h;
+
+    const auto target = targetNamed (h.document.getState(), firstChannelVolumeTarget (h.document.getState()));
+    const auto clip = h.playlist.createAutomationClip (target, 0, 4);
+
+    REQUIRE (clip.isValid());
+    REQUIRE (ProjectEdits::isAutomationClip (clip));
+
+    const auto automation = ProjectEdits::findAutomation (h.document.getState(),
+                                                          (int) clip[ids::automationId]);
+    REQUIRE (automation.isValid());
+    REQUIRE (automation[ids::name].toString() == firstChannelVolumeTarget (h.document.getState()));
+
+    // On a free lane, not stacked invisibly under the clip that is already there.
+    REQUIRE (h.countClips (0) == 1);
+}
+
+TEST_CASE ("an automation point can be dragged, added and removed", "[ui][playlist][automation]")
+{
+    const juce::ScopedJuceInitialiser_GUI juceInit;
+    PlaylistHarness h;
+
+    const auto target = targetNamed (h.document.getState(), firstChannelVolumeTarget (h.document.getState()));
+    const auto clip = h.playlist.createAutomationClip (target, 0, 4);
+    REQUIRE (clip.isValid());
+
+    const auto automation = ProjectEdits::findAutomation (h.document.getState(),
+                                                          (int) clip[ids::automationId]);
+
+    const auto countPoints = [&automation]
+    {
+        int n = 0;
+
+        for (const auto& point : automation)
+            if (point.hasType (ids::POINT))
+                ++n;
+
+        return n;
+    };
+
+    REQUIRE (countPoints() == 2);
+
+    // Which lane it landed on; createAutomationClip picks the first free one.
+    int trackIndex = -1;
+
+    for (int i = 0; i < h.playlist.getNumTracks(); ++i)
+        for (const auto& candidate : h.track (i))
+            if (candidate == clip)
+                trackIndex = i;
+
+    REQUIRE (trackIndex >= 0);
+
+    // Drag the first point downwards: its value must fall.
+    auto point = firstPointOf (automation);
+    const auto before = (double) point[ids::value];
+    const auto from = pointPositionOf (h, clip, trackIndex, point);
+
+    h.playlist.mouseDown (eventAt (h.playlist, from));
+    h.playlist.mouseDrag (eventAt (h.playlist, { from.x, from.y + 12 }));
+    h.playlist.mouseUp (eventAt (h.playlist, { from.x, from.y + 12 }));
+
+    INFO ("value " << before << " -> " << (double) point[ids::value]);
+    REQUIRE ((double) point[ids::value] < before);
+
+    // The clip itself must not have moved: grabbing a point is not grabbing the
+    // clip, or a curve could never be edited without dragging the whole thing.
+    REQUIRE ((int) clip[ids::startBar] == 0);
+
+    // Double-clicking inside adds a point.
+    const auto middle = h.playlist.getBoundsForClip (clip, trackIndex).getCentre().toInt();
+    h.playlist.mouseDoubleClick (eventAt (h.playlist, middle, 2));
+    REQUIRE (countPoints() == 3);
+
+    // Alt-clicking a point removes it, and does not remove the clip.
+    const auto added = h.playlist.getBoundsForClip (clip, trackIndex).getCentre().toInt();
+    const auto alt = juce::ModifierKeys (juce::ModifierKeys::altModifier);
+
+    h.playlist.mouseDown (eventAt (h.playlist, added, 1, alt));
+    h.playlist.mouseUp (eventAt (h.playlist, added, 1, alt));
+
+    REQUIRE (countPoints() == 2);
+    REQUIRE (ProjectEdits::findAutomation (h.document.getState(), (int) clip[ids::automationId]).isValid());
+}
+
+TEST_CASE ("an automation clip can still be moved and deleted like any other", "[ui][playlist][automation]")
+{
+    const juce::ScopedJuceInitialiser_GUI juceInit;
+    PlaylistHarness h;
+
+    const auto target = targetNamed (h.document.getState(), firstChannelVolumeTarget (h.document.getState()));
+    const auto clip = h.playlist.createAutomationClip (target, 0, 2);
+    REQUIRE (clip.isValid());
+
+    int trackIndex = -1;
+
+    for (int i = 0; i < h.playlist.getNumTracks(); ++i)
+        for (const auto& candidate : h.track (i))
+            if (candidate == clip)
+                trackIndex = i;
+
+    // Somewhere inside the clip that is not on a point.
+    const auto bounds = h.playlist.getBoundsForClip (clip, trackIndex);
+    const auto grab = juce::Point<int> ((int) (bounds.getX() + bounds.getWidth() * 0.5f),
+                                        (int) bounds.getBottom() - 3);
+
+    h.playlist.mouseDown (eventAt (h.playlist, grab));
+    h.playlist.mouseDrag (eventAt (h.playlist, { grab.x + 200, grab.y }));
+    h.playlist.mouseUp (eventAt (h.playlist, { grab.x + 200, grab.y }));
+
+    REQUIRE ((int) clip[ids::startBar] > 0);
 }
