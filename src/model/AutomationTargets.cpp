@@ -43,29 +43,58 @@ double mapAutomationValue (const AutomationParamSpec& spec, double normalised)
     return spec.minimum + (spec.maximum - spec.minimum) * t;
 }
 
+namespace
+{
+
+/** An automation row is a PROJECTION of a declared parameter, not a second
+    statement of it.
+
+    These four tables used to restate the range themselves, and the mixer's had
+    drifted the worst of anything in the codebase: a fader offered 0..1.5, the
+    engine clamped at 2.0, and automation mapped a curve onto 0..1 - so
+    automating a fader reached two thirds of its travel and stopped, with
+    nothing anywhere saying why.
+*/
+AutomationParamSpec projectionOf (const ParamSpec& spec)
+{
+    return { spec.property, spec.displayName, spec.minimum, spec.maximum,
+             spec.bipolar, spec.curve == ParamCurve::logarithmic };
+}
+
+std::vector<AutomationParamSpec> project (const std::vector<ParamSpec>& specs,
+                                          std::initializer_list<const juce::Identifier*> wanted)
+{
+    std::vector<AutomationParamSpec> out;
+
+    // Named rather than "everything automatable", because which parameters are
+    // worth drawing a curve for is an editorial decision and not a property of
+    // the parameter: an oscillator's octave is a step, and its detune is set
+    // once for a sound rather than moved through it.
+    for (const auto* property : wanted)
+        for (const auto& spec : specs)
+            if (*spec.property == *property)
+                out.push_back (projectionOf (spec));
+
+    return out;
+}
+
+} // namespace
+
 const std::vector<AutomationParamSpec>& channelParams()
 {
-    static const std::vector<AutomationParamSpec> specs {
-        { &ids::volume, "Volume", 0.0, 1.0, false },
-        { &ids::pan,    "Pan",   -1.0, 1.0, true },
-    };
+    static const auto specs = project (channelParamSpecs(), { &ids::volume, &ids::pan });
     return specs;
 }
 
 const std::vector<AutomationParamSpec>& mixerTrackParams()
 {
-    static const std::vector<AutomationParamSpec> specs {
-        { &ids::gain, "Gain",  0.0, 1.0, false },
-        { &ids::pan,  "Pan",  -1.0, 1.0, true },
-    };
+    static const auto specs = project (mixerTrackParamSpecs(), { &ids::gain, &ids::pan });
     return specs;
 }
 
 const std::vector<AutomationParamSpec>& masterParams()
 {
-    static const std::vector<AutomationParamSpec> specs {
-        { &ids::gain, "Gain", 0.0, 1.0, false },
-    };
+    static const auto specs = project (mixerTrackParamSpecs(), { &ids::gain });
     return specs;
 }
 
@@ -74,9 +103,7 @@ const std::vector<AutomationParamSpec>& oscParams()
     // One row. Position is the only thing on an oscillator worth drawing a
     // curve for: octave and the mode are steps, and detune and gain are set
     // once for a sound rather than moved through it.
-    static const std::vector<AutomationParamSpec> specs {
-        { &ids::wavePosition, "Position", 0.0, 1.0, false },
-    };
+    static const auto specs = project (oscParamSpecs(), { &ids::wavePosition });
     return specs;
 }
 

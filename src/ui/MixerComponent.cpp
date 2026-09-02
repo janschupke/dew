@@ -7,6 +7,7 @@
 
 #include "model/ChannelColour.h"
 #include "model/Ids.h"
+#include "model/ModuleCatalog.h"
 #include "ui/DewLookAndFeel.h"
 
 namespace dew
@@ -43,7 +44,8 @@ public:
 
         gainSlider.setSliderStyle (juce::Slider::LinearVertical);
         gainSlider.setTextBoxStyle (juce::Slider::TextBoxBelow, false, 60, tokens::size::controlHeightSm);
-        gainSlider.setRange (0.0, 1.5, 0.001);
+        const auto& gainSpec = requireMixerTrackParamSpec (ids::gain);
+        gainSlider.setRange (gainSpec.minimum, gainSpec.maximum, gainSpec.interval);
         gainSlider.setValue ((double) track[ids::gain], juce::dontSendNotification);
         gainSlider.onDragStart = [this] { select(); inDrag = true; gestureActive = false; };
         gainSlider.onDragEnd = [this] { inDrag = false; gestureActive = false; };
@@ -60,7 +62,8 @@ public:
         {
             panSlider.setSliderStyle (juce::Slider::RotaryHorizontalVerticalDrag);
             panSlider.setTextBoxStyle (juce::Slider::NoTextBox, false, 0, 0);
-            panSlider.setRange (-1.0, 1.0, 0.001);
+            const auto& panSpec = requireMixerTrackParamSpec (ids::pan);
+            panSlider.setRange (panSpec.minimum, panSpec.maximum, panSpec.interval);
             panSlider.setValue ((double) track[ids::pan], juce::dontSendNotification);
             panSlider.onDragStart = [this] { select(); inDrag = true; gestureActive = false; };
             panSlider.onDragEnd = [this] { inDrag = false; gestureActive = false; };

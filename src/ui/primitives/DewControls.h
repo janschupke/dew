@@ -5,6 +5,7 @@
 #include <juce_gui_basics/juce_gui_basics.h>
 
 #include "engine/WaveformPeaks.h"
+#include "model/ParamSpec.h"
 #include "ui/design/Animator.h"
 
 #include "ui/design/Icons.h"
@@ -145,6 +146,15 @@ class DewKnob : public juce::Component
 {
 public:
     DewKnob (const juce::String& caption, double minimum, double maximum, double interval);
+
+    /** A knob built from what the catalog declares the parameter to be: its
+        caption, its range, its step, its decimals, whether it is bipolar and
+        whether it sweeps logarithmically.
+
+        Six knobs and a stepper stated those a second time by hand, and every
+        one of them had drifted from the engine's own clamp.
+    */
+    explicit DewKnob (const ParamSpec&);
 
     void setValue (double, juce::NotificationType = juce::sendNotification);
     double getValue() const noexcept { return slider.getValue(); }

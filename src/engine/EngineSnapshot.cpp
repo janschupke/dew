@@ -9,6 +9,7 @@
 #include <functional>
 
 #include "model/Ids.h"
+#include "model/ModuleCatalog.h"
 #include "model/Meter.h"
 
 namespace dew
@@ -132,6 +133,21 @@ namespace
 
 std::atomic<juce::uint64> nextGeneration { 1 };
 
+/** A property read from a node and clamped by what the catalog declares it to
+    be, with the declared default standing in for a missing one.
+
+    The default matters as much as the clamp: a node with no AMP child used to
+    read sustain as zero, which is a silent note, and a slot with no `mix` read
+    as zero, which is a bypassed effect. Both were silent failures of a missing
+    property rather than of a wrong value.
+*/
+float clampBySpec (const juce::Identifier& property, const juce::ValueTree& node)
+{
+    const auto& spec = requireInstrumentParamSpec (property);
+
+    return spec.clamp ((float) (double) node.getProperty (property, spec.defaultVar()));
+}
+
 OscBankSnapshot readOscBank (const juce::ValueTree& instrument,
                              const juce::String& ownerName,
                              const std::function<void (const juce::String&)>& warn)
@@ -154,9 +170,13 @@ OscBankSnapshot readOscBank (const juce::ValueTree& instrument,
         s.enabled     = (bool) osc.getProperty (ids::enabled, true);
         s.mode        = oscModeFromString (osc[ids::mode].toString());
         s.wave        = waveformFromString (osc[ids::wave].toString());
-        s.octave      = juce::jlimit (-4, 4, (int) osc[ids::octave]);
-        s.detuneCents = juce::jlimit (-1200.0f, 1200.0f, (float) (double) osc[ids::detuneCents]);
-        s.gain        = juce::jlimit (0.0f, 1.0f, (float) (double) osc[ids::gain]);
+        // Clamped by the declared spec rather than by a number written here.
+        // These used to be a second opinion about the range, and the knobs were
+        // a third: the octave stepper offered three when the engine renders
+        // four.
+        s.octave      = (int) clampBySpec (ids::octave, osc);
+        s.detuneCents = clampBySpec (ids::detuneCents, osc);
+        s.gain        = clampBySpec (ids::gain, osc);
 
         const auto tableName = osc[ids::wavetable].toString();
         const auto tableIndex = wavetableIndexFor (tableName);
@@ -168,12 +188,12 @@ OscBankSnapshot readOscBank (const juce::ValueTree& instrument,
                   + "\", which this build does not have; using the first one.");
 
         s.table          = juce::jmax (0, tableIndex);
-        s.position       = juce::jlimit (0.0f, 1.0f, (float) (double) osc[ids::wavePosition]);
-        s.positionMod    = juce::jlimit (-1.0f, 1.0f, (float) (double) osc[ids::wavePositionMod]);
+        s.position       = clampBySpec (ids::wavePosition, osc);
+        s.positionMod    = clampBySpec (ids::wavePositionMod, osc);
         s.positionSource = positionSourceFromString (osc[ids::wavePositionSource].toString());
-        s.positionRate   = juce::jlimit (0.01f, 20.0f, (float) (double) osc[ids::wavePositionRate]);
-        s.unisonVoices   = juce::jlimit (1, kMaxUnisonVoices, (int) osc[ids::unisonVoices]);
-        s.unisonDetune   = juce::jlimit (0.0f, 50.0f, (float) (double) osc[ids::unisonDetune]);
+        s.positionRate   = clampBySpec (ids::wavePositionRate, osc);
+        s.unisonVoices   = (int) clampBySpec (ids::unisonVoices, osc);
+        s.unisonDetune   = clampBySpec (ids::unisonDetune, osc);
 
         bank.anyEnabled = bank.anyEnabled || s.enabled;
     }
@@ -195,12 +215,14 @@ OscBankSnapshot readOscBank (const juce::ValueTree& instrument,
 AmpSettings readAmp (const juce::ValueTree& amp)
 {
     AmpSettings s;
-    // A zero attack clicks and a zero release cuts abruptly; clamp to something
-    // short rather than to zero.
-    s.attack  = juce::jlimit (0.0005f, 10.0f, (float) (double) amp[ids::attack]);
-    s.decay   = juce::jlimit (0.0005f, 10.0f, (float) (double) amp[ids::decay]);
-    s.sustain = juce::jlimit (0.0f,    1.0f,  (float) (double) amp[ids::sustain]);
-    s.release = juce::jlimit (0.0020f, 10.0f, (float) (double) amp[ids::release]);
+
+    // A zero attack clicks and a zero release cuts abruptly, so the declared
+    // minimums are short rather than zero - and they are declared, in the same
+    // table the envelope's knobs are built from.
+    s.attack  = clampBySpec (ids::attack, amp);
+    s.decay   = clampBySpec (ids::decay, amp);
+    s.sustain = clampBySpec (ids::sustain, amp);
+    s.release = clampBySpec (ids::release, amp);
     return s;
 }
 
@@ -516,7 +538,8 @@ EngineSnapshot buildSnapshot (const juce::ValueTree& project, juce::StringArray*
     // --- mixer ---------------------------------------------------------------
     const auto mixer = project.getChildWithName (ids::MIXER);
     const auto master = mixer.getChildWithName (ids::MASTER);
-    snapshot.masterGain = juce::jlimit (0.0f, 2.0f, (float) (double) master[ids::gain]);
+    snapshot.masterGain = requireMixerTrackParamSpec (ids::gain)
+                              .clamp ((float) (double) master[ids::gain]);
 
     // Before the tracks, so the master's effects claim their pool units first
     // and adding an insert cannot move them.
@@ -535,8 +558,10 @@ EngineSnapshot buildSnapshot (const juce::ValueTree& project, juce::StringArray*
 
         MixerTrackSnapshot m;
         m.id   = (int) track[ids::id];
-        m.gain = juce::jlimit (0.0f, 2.0f, (float) (double) track[ids::gain]);
-        m.pan  = juce::jlimit (-1.0f, 1.0f, (float) (double) track[ids::pan]);
+        m.gain = requireMixerTrackParamSpec (ids::gain)
+                     .clamp ((float) (double) track[ids::gain]);
+        m.pan  = requireMixerTrackParamSpec (ids::pan)
+                     .clamp ((float) (double) track[ids::pan]);
         m.mute = (bool) track[ids::mute];
         m.solo = (bool) track[ids::solo];
 

@@ -2,6 +2,7 @@
 #include <catch2/catch_test_macros.hpp>
 
 #include "model/Ids.h"
+#include "model/AutomationTargets.h"
 #include "model/ModuleCatalog.h"
 #include "model/ProjectEdits.h"
 #include "model/ProjectFactory.h"
@@ -210,4 +211,142 @@ TEST_CASE ("every parameter has a place in its block, and mix is first", "[catal
     // A property this type does not have is refused rather than aliased onto
     // something it does have.
     REQUIRE (effectParamIndex (EffectType::reverb, ids::cutoff) == -1);
+}
+
+TEST_CASE ("every instrument parameter says the same thing to the file and to the engine",
+           "[catalog][params]")
+{
+    // The drift this closes. Every one of these had its range written out
+    // twice - once as an engine clamp and once as a knob - and in every case
+    // the knob was the narrower, so the top of what the engine renders was
+    // unreachable:
+    //
+    //     attack   engine 0.0005..10s   knob 0.0005..2s
+    //     decay    engine 0.0005..10s   knob 0.0005..4s
+    //     release  engine 0.002..10s    knob 0.002..4s
+    //     octave   engine -4..+4        stepper -3..+3
+    // Built from the SCHEMA, not from the demo: the comparison is against what
+    // a fresh document declares, and the demo deliberately sets a kick to
+    // pitch 36.
+    const auto& channelNode = childSpecFor (projectSpec(), "channels");
+
+    const auto& instrumentNode = childSpecFor (channelNode, "instrument");
+
+    const auto channel = defaultTreeFor (channelNode);
+    const auto amp = defaultTreeFor (childSpecFor (instrumentNode, "amp"));
+    const auto osc = defaultTreeFor (childSpecFor (instrumentNode, "oscillators"));
+
+    struct Case { const juce::ValueTree& node; const std::vector<ParamSpec>& specs; const char* what; };
+
+    const Case cases[] {
+        { channel, channelParamSpecs(), "channel" },
+        { amp,     ampParamSpecs(),     "amp" },
+        { osc,     oscParamSpecs(),     "oscillator" },
+    };
+
+    for (const auto& c : cases)
+    {
+        INFO ("the " << c.what << " table");
+        REQUIRE (! c.specs.empty());
+        REQUIRE (c.node.isValid());
+
+        for (const auto& spec : c.specs)
+        {
+            INFO ("parameter " << spec.property->toString());
+
+            // The catalog's default IS the schema's, so a node that has never
+            // been written and one that was written with the default read the
+            // same. They were separate tables before this.
+            REQUIRE (c.node.hasProperty (*spec.property));
+            CHECK ((double) c.node[*spec.property] == Catch::Approx ((double) spec.defaultVar()));
+
+            // A range that does not contain its own default is a table entry
+            // that clamps every fresh document on the first read.
+            CHECK ((double) spec.defaultVar() >= spec.minimum);
+            CHECK ((double) spec.defaultVar() <= spec.maximum);
+
+            CHECK (spec.maximum > spec.minimum);
+            CHECK (spec.interval > 0.0);
+
+            // Clamping the default must be the default, or a document that
+            // stores what the schema wrote comes back changed.
+            CHECK (spec.clamp ((double) spec.defaultVar())
+                   == Catch::Approx ((double) spec.defaultVar()));
+
+            // A logarithmic parameter cannot start at zero: the mapping is a
+            // ratio, and a ratio to nothing has no middle.
+            if (spec.curve == ParamCurve::logarithmic)
+                CHECK (spec.minimum > 0.0);
+        }
+    }
+
+    // And every one is reachable by property, which is how both the engine and
+    // the panel ask for it.
+    CHECK (instrumentParamSpec (ids::attack) != nullptr);
+    CHECK (instrumentParamSpec (ids::octave) != nullptr);
+    CHECK (instrumentParamSpec (ids::volume) != nullptr);
+    CHECK (instrumentParamSpec (ids::cutoff) == nullptr);   // an effect's, not an instrument's
+}
+
+TEST_CASE ("the envelope reaches as far as the engine renders", "[catalog][params]")
+{
+    // Stated as values rather than only as an invariant, because the point of
+    // the change is that these particular numbers moved.
+    CHECK (requireInstrumentParamSpec (ids::attack).maximum == Catch::Approx (10.0));
+    CHECK (requireInstrumentParamSpec (ids::decay).maximum == Catch::Approx (10.0));
+    CHECK (requireInstrumentParamSpec (ids::release).maximum == Catch::Approx (10.0));
+    CHECK (requireInstrumentParamSpec (ids::octave).maximum == Catch::Approx (4.0));
+    CHECK (requireInstrumentParamSpec (ids::octave).minimum == Catch::Approx (-4.0));
+
+    // Detune is the one where the narrower control wins, and deliberately: the
+    // engine clamps at twelve semitones, but that is what `octave` is for, and
+    // a knob covering two octaves cannot be nudged by a cent.
+    CHECK (requireInstrumentParamSpec (ids::detuneCents).maximum == Catch::Approx (100.0));
+}
+
+TEST_CASE ("automation reaches everything a control does", "[catalog][params]")
+{
+    // The three-way disagreement, stated as a test. A mixer fader offered
+    // 0..1.5, the engine clamped at 2.0, and an automation curve mapped onto
+    // 0..1 - so automating a fader swept two thirds of it and stopped, and
+    // nothing anywhere said why.
+    struct Case { AutomationScope scope; const juce::Identifier& property;
+                  const std::vector<ParamSpec>& specs; };
+
+    const Case cases[] {
+        { AutomationScope::channel,    ids::volume,       channelParamSpecs() },
+        { AutomationScope::channel,    ids::pan,          channelParamSpecs() },
+        { AutomationScope::mixerTrack, ids::gain,         mixerTrackParamSpecs() },
+        { AutomationScope::mixerTrack, ids::pan,          mixerTrackParamSpecs() },
+        { AutomationScope::master,     ids::gain,         mixerTrackParamSpecs() },
+        { AutomationScope::channelOsc, ids::wavePosition, oscParamSpecs() },
+    };
+
+    for (const auto& c : cases)
+    {
+        INFO ("automating " << c.property.toString());
+
+        const auto* automation = findParamSpec (c.scope, {}, c.property);
+        REQUIRE (automation != nullptr);
+
+        const ParamSpec* declared = nullptr;
+
+        for (const auto& spec : c.specs)
+            if (*spec.property == c.property)
+                declared = &spec;
+
+        REQUIRE (declared != nullptr);
+
+        CHECK (automation->minimum == Catch::Approx (declared->minimum));
+        CHECK (automation->maximum == Catch::Approx (declared->maximum));
+        CHECK (automation->bipolar == declared->bipolar);
+        CHECK (automation->logarithmic == (declared->curve == ParamCurve::logarithmic));
+
+        // The value a curve at full height asks for must survive the clamp the
+        // engine puts it through - the assertion the mixer's gain failed.
+        const auto atFullHeight = mapAutomationValue (*automation, 1.0);
+
+        CHECK (declared->clamp (atFullHeight) == Catch::Approx (atFullHeight));
+        CHECK (atFullHeight == Catch::Approx (declared->maximum));
+    }
 }

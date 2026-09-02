@@ -1,7 +1,10 @@
 #include "ui/InstrumentPanel.h"
 
+#include <cmath>
+
 #include "engine/EngineSnapshot.h"
 #include "model/Ids.h"
+#include "model/ModuleCatalog.h"
 #include "model/ProjectEdits.h"
 #include "ui/DewLookAndFeel.h"
 
@@ -66,16 +69,15 @@ InstrumentPanel::InstrumentPanel (ProjectDocument& d, EditorState& s, SamplePool
     const auto channelOf = [this] { return selectedChannel(); };
 
     basePitchSlider.setSliderStyle (juce::Slider::IncDecButtons);
-    attachRotary (basePitchSlider, basePitchLabel, "PITCH", channelOf, ids::basePitch, 0, 127, 1,
-                  "Change base pitch");
+    attachRotary (basePitchSlider, basePitchLabel, "PITCH", channelOf, ids::basePitch, "Change base pitch");
 
-    attachRotary (attackSlider,  attackLabel,  "ATTACK",  ampOf, ids::attack,  0.0005, 2.0, 0.0005, "Change attack");
-    attachRotary (decaySlider,   decayLabel,   "DECAY",   ampOf, ids::decay,   0.0005, 4.0, 0.0005, "Change decay");
-    attachRotary (sustainSlider, sustainLabel, "SUSTAIN", ampOf, ids::sustain, 0.0,    1.0, 0.001,  "Change sustain");
-    attachRotary (releaseSlider, releaseLabel, "RELEASE", ampOf, ids::release, 0.002,  4.0, 0.001,  "Change release");
+    attachRotary (attackSlider,  attackLabel,  "ATTACK",  ampOf, ids::attack, "Change attack");
+    attachRotary (decaySlider,   decayLabel,   "DECAY",   ampOf, ids::decay, "Change decay");
+    attachRotary (sustainSlider, sustainLabel, "SUSTAIN", ampOf, ids::sustain, "Change sustain");
+    attachRotary (releaseSlider, releaseLabel, "RELEASE", ampOf, ids::release, "Change release");
 
-    attachRotary (volumeSlider, volumeLabel, "VOLUME", channelOf, ids::volume, 0.0,  1.0, 0.001, "Change volume");
-    attachRotary (panSlider,    panLabel,    "PAN",    channelOf, ids::pan,   -1.0,  1.0, 0.001, "Change pan");
+    attachRotary (volumeSlider, volumeLabel, "VOLUME", channelOf, ids::volume, "Change volume");
+    attachRotary (panSlider,    panLabel,    "PAN",    channelOf, ids::pan, "Change pan");
 
     editorState.addChangeListener (this);
     document.getState().addListener (this);
@@ -89,12 +91,28 @@ InstrumentPanel::~InstrumentPanel()
     document.getState().removeListener (this);
 }
 
+namespace
+{
+
+/** The skew that makes the geometric midpoint of a range sit at the middle of a
+    control's travel. juce::NormalisableRange takes a skew rather than a curve
+    kind, and this is what "logarithmic" means in its terms.
+*/
+double skewForRange (double minimum, double maximum)
+{
+    return std::log (0.5) / std::log ((std::sqrt (minimum * maximum) - minimum)
+                                      / (maximum - minimum));
+}
+
+} // namespace
+
 void InstrumentPanel::attachRotary (juce::Slider& slider, juce::Label& label, const juce::String& text,
                                     std::function<juce::ValueTree()> owner,
                                     const juce::Identifier& property,
-                                    double minimum, double maximum, double interval,
                                     const juce::String& transactionName)
 {
+    const auto& spec = requireInstrumentParamSpec (property);
+
     if (slider.getSliderStyle() != juce::Slider::IncDecButtons)
     {
         slider.setSliderStyle (juce::Slider::RotaryHorizontalVerticalDrag);
@@ -105,14 +123,21 @@ void InstrumentPanel::attachRotary (juce::Slider& slider, juce::Label& label, co
         slider.setTextBoxStyle (juce::Slider::TextBoxLeft, false, 44, tokens::size::controlHeightSm);
     }
 
-    slider.setRange (minimum, maximum, interval);
+    // A logarithmic parameter gets a NormalisableRange, not a plain one. Half a
+    // millisecond to ten seconds is four and a half decades; linearly, every
+    // usable attack lives in the first one per cent of the travel.
+    if (spec.curve == ParamCurve::logarithmic && spec.minimum > 0.0)
+        slider.setNormalisableRange ({ spec.minimum, spec.maximum, spec.interval,
+                                       skewForRange (spec.minimum, spec.maximum) });
+    else
+        slider.setRange (spec.minimum, spec.maximum, spec.interval);
 
     // One transaction per gesture, so dragging a knob is a single undo step
     // rather than several hundred.
     slider.onDragStart = [this] { inDrag = true; gestureActive = false; };
     slider.onDragEnd = [this] { inDrag = false; gestureActive = false; };
 
-    slider.onValueChange = [this, &slider, owner, property, transactionName]
+    slider.onValueChange = [this, &slider, &spec, owner, property, transactionName]
     {
         if (updating)
             return;
@@ -125,9 +150,8 @@ void InstrumentPanel::attachRotary (juce::Slider& slider, juce::Label& label, co
         // Integer-valued properties must stay integers in the file: writing a
         // double would change the JSON from `0` to `0.0` and, worse, make the
         // schema's type coercion do the rounding instead of this code.
-        const juce::var value = slider.getInterval() >= 1.0
-                                    ? juce::var ((int) slider.getValue())
-                                    : juce::var (slider.getValue());
+        const juce::var value = spec.integral ? juce::var ((int) slider.getValue())
+                                             : juce::var (slider.getValue());
 
         ProjectEdits::setProperty (tree, property, value, &document.getUndoManager(),
                                    transactionName, gestureActive);

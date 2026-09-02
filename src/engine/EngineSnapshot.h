@@ -47,13 +47,6 @@ inline constexpr int kMaxEffectUnits       = kMaxChannels * kMaxEffectsPerChain
                                              + kMaxEffectsPerChain;
 inline constexpr int kMaxAutomations       = 32;
 
-/** How many detuned copies of itself one wavetable slot may stack.
-
-    Capped because a voice preallocates every copy's phase, and 64 channels of
-    16 voices exist at all times. Seven is odd on purpose: the spread is
-    symmetric about a centre voice that sits at the note's own pitch.
-*/
-inline constexpr int kMaxUnisonVoices = 7;
 
 enum class Waveform { sine, saw, square, triangle };
 

@@ -82,4 +82,57 @@ const std::vector<ParamSpec>& commonEffectParams();
 */
 std::vector<ParamSpec> effectParamsFor (EffectType);
 
+// --- the instrument's own parameters -----------------------------------------
+
+/** A channel's own continuous parameters: volume, pan, base pitch.
+
+    Declared here for the same reason an effect's are. Before this the amp
+    envelope, the oscillators and the channel each had their range written out
+    twice - once as an engine clamp and once as a knob - and all three had
+    drifted:
+
+        attack   engine 0.0005..10s   knob 0.0005..2s
+        decay    engine 0.0005..10s   knob 0.0005..4s
+        release  engine 0.002..10s    knob 0.002..4s
+        octave   engine -4..+4        knob -3..+3
+
+    In every case the knob was the narrower, so the top of the range the engine
+    renders was simply unreachable - a four-second release on an instrument that
+    can hold ten.
+*/
+const std::vector<ParamSpec>& channelParamSpecs();
+
+/** The amplitude envelope. */
+const std::vector<ParamSpec>& ampParamSpecs();
+
+/** One oscillator slot's continuous parameters. */
+const std::vector<ParamSpec>& oscParamSpecs();
+
+/** A mixer track's fader and pan.
+
+    Separate from the channel's, because `gain` and `pan` mean different things
+    on the two and had different ranges - and because the fader was the worst
+    of the three-way disagreements: 1.5 on the control, 2.0 in the engine and
+    1.0 through automation, so automating a fader reached two thirds of its
+    travel and nothing could reach the top of the engine's.
+*/
+const std::vector<ParamSpec>& mixerTrackParamSpecs();
+
+/** One of the above by property, or nothing.
+
+    A lookup rather than an index, because these are read one at a time by the
+    thing that owns the property - the envelope reader wants `attack`, not the
+    third row of a table.
+*/
+const ParamSpec* instrumentParamSpec (const juce::Identifier&) noexcept;
+
+/** The spec for a property, or a hard failure. For a call site that has no
+    sensible behaviour without one - a knob cannot be built from nothing. */
+const ParamSpec& requireInstrumentParamSpec (const juce::Identifier&);
+
+/** The same, for a mixer track. A separate lookup rather than one table,
+    because `gain` and `pan` appear in both and mean different things. */
+const ParamSpec* mixerTrackParamSpec (const juce::Identifier&) noexcept;
+const ParamSpec& requireMixerTrackParamSpec (const juce::Identifier&);
+
 } // namespace dew

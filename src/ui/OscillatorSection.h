@@ -3,6 +3,8 @@
 #include <juce_gui_basics/juce_gui_basics.h>
 
 #include "engine/EngineSnapshot.h"
+#include "model/Ids.h"
+#include "model/ModuleCatalog.h"
 #include "model/ProjectDocument.h"
 #include "ui/EditorState.h"
 #include "ui/primitives/DewControls.h"
@@ -171,17 +173,16 @@ private:
     juce::Slider octaveSlider { juce::Slider::IncDecButtons, juce::Slider::TextBoxLeft };
     juce::Label octaveLabel;
 
-    // Detune spans one semitone either way. The engine clamps at twelve, but a
-    // knob covering two octaves cannot be nudged by a cent, which is the only
-    // thing anyone detunes an oscillator by.
-    DewKnob detuneKnob { "DETUNE", -100.0, 100.0, 1.0 };
-    DewKnob gainKnob   { "GAIN", 0.0, 1.0, 0.01 };
+    // Every one of these used to state its range here, a second time. The
+    // catalog states it once, and the engine clamps by the same row.
+    DewKnob detuneKnob { requireInstrumentParamSpec (ids::detuneCents) };
+    DewKnob gainKnob   { requireInstrumentParamSpec (ids::gain) };
 
-    DewKnob positionKnob { "POSITION", 0.0, 1.0, 0.01 };
-    DewKnob modKnob      { "MOD", -1.0, 1.0, 0.01 };
-    DewKnob rateKnob     { "RATE", 0.01, 20.0, 0.01 };
-    DewKnob unisonKnob   { "UNISON", 1.0, (double) kMaxUnisonVoices, 1.0 };
-    DewKnob spreadKnob   { "SPREAD", 0.0, 50.0, 0.5 };
+    DewKnob positionKnob { requireInstrumentParamSpec (ids::wavePosition) };
+    DewKnob modKnob      { requireInstrumentParamSpec (ids::wavePositionMod) };
+    DewKnob rateKnob     { requireInstrumentParamSpec (ids::wavePositionRate) };
+    DewKnob unisonKnob   { requireInstrumentParamSpec (ids::unisonVoices) };
+    DewKnob spreadKnob   { requireInstrumentParamSpec (ids::unisonDetune) };
 
     juce::Rectangle<int> offCaptionBounds, shapeBounds;
 

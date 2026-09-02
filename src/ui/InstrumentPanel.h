@@ -46,11 +46,16 @@ private:
 
     juce::ValueTree selectedChannel() const;
 
-    /** Wires a rotary to a property, opening one undo transaction per gesture. */
+    /** Wires a rotary to a property, opening one undo transaction per gesture.
+
+        The range, the step and the curve come from the catalog rather than
+        from this call: the panel used to state them here, the engine stated
+        them again as a clamp, and they had drifted - an attack knob that
+        stopped at two seconds on an engine that renders ten.
+    */
     void attachRotary (juce::Slider&, juce::Label&, const juce::String& text,
                        std::function<juce::ValueTree()> owner,
                        const juce::Identifier& property,
-                       double minimum, double maximum, double interval,
                        const juce::String& transactionName);
 
     ProjectDocument& document;

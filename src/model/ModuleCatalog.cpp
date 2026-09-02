@@ -1,6 +1,7 @@
 #include "model/ModuleCatalog.h"
 
 #include "model/Ids.h"
+#include "model/ProjectSchema.h"
 
 namespace dew
 {
@@ -147,6 +148,139 @@ std::vector<ParamSpec> effectParamsFor (EffectType type)
     params.insert (params.end(), common.begin(), common.end());
 
     return params;
+}
+
+// --- the instrument's own parameters -----------------------------------------
+
+namespace
+{
+
+const ParamSpec channelSpecs[] {
+    { &ids::volume, "Volume", "VOLUME", "", 0.0, 1.0, 0.8, 0.001, 3 },
+    { &ids::pan,    "Pan",    "PAN",    "", -1.0, 1.0, 0.0, 0.001, 3,
+      ParamCurve::linear, ParamControl::knob, /*bipolar*/ true },
+
+    // A MIDI note number, so the range is the whole of MIDI and the value is
+    // an integer in the file.
+    { &ids::basePitch, "Base pitch", "PITCH", "", 0.0, 127.0, 60.0, 1.0, 0,
+      ParamCurve::linear, ParamControl::stepper, false, /*automatable*/ false,
+      /*integral*/ true },
+};
+
+const ParamSpec ampSpecs[] {
+    // Ten seconds, which is what the engine renders. The knobs stopped at two
+    // and four, so the top of the envelope was simply unreachable.
+    //
+    // Logarithmic, because linear puts every usable attack in the first one per
+    // cent of the travel: half a millisecond to ten seconds is four and a half
+    // decades, and a knob that spends nine tenths of its sweep between five and
+    // ten seconds is a knob with one useful position.
+    { &ids::attack,  "Attack",  "ATTACK",  " s", 0.0005, 10.0, 0.005, 0.0005, 4,
+      ParamCurve::logarithmic },
+    { &ids::decay,   "Decay",   "DECAY",   " s", 0.0005, 10.0, 0.120, 0.0005, 4,
+      ParamCurve::logarithmic },
+    { &ids::sustain, "Sustain", "SUSTAIN", "",   0.0,    1.0,  0.700, 0.001,  3 },
+    { &ids::release, "Release", "RELEASE", " s", 0.002,  10.0, 0.150, 0.001,  3,
+      ParamCurve::logarithmic },
+};
+
+const ParamSpec oscSpecs[] {
+    // Four octaves either way, which is what the engine renders; the stepper
+    // offered three.
+    { &ids::octave, "Octave", "OCT", "", -4.0, 4.0, 0.0, 1.0, 0,
+      ParamCurve::linear, ParamControl::stepper, true, /*automatable*/ false,
+      /*integral*/ true },
+
+    // One semitone either way, and here the KNOB is the one that wins. The
+    // engine clamps at twelve semitones, but that is what `octave` is for, and
+    // a control covering two octaves cannot be nudged by a cent - which is the
+    // only thing anyone detunes an oscillator by.
+    { &ids::detuneCents, "Detune", "DETUNE", " c", -100.0, 100.0, 0.0, 1.0, 0,
+      ParamCurve::linear, ParamControl::knob, /*bipolar*/ true, /*automatable*/ false,
+      /*integral*/ true },
+
+    { &ids::gain, "Gain", "GAIN", "", 0.0, 1.0, 0.8, 0.01, 2 },
+
+    { &ids::wavePosition,     "Position", "POSITION", "",    0.0,  1.0,  0.0, 0.01, 2 },
+    { &ids::wavePositionMod,  "Mod",      "MOD",      "",   -1.0,  1.0,  0.0, 0.01, 2,
+      ParamCurve::linear, ParamControl::knob, /*bipolar*/ true },
+    { &ids::wavePositionRate, "Rate",     "RATE",     " Hz", 0.01, 20.0, 1.0, 0.01, 2,
+      ParamCurve::logarithmic },
+
+    { &ids::unisonVoices,     "Unison",   "UNISON",   "",    1.0,  (double) kMaxUnisonVoices,
+      1.0, 1.0, 0, ParamCurve::linear, ParamControl::knob, false, /*automatable*/ false,
+      /*integral*/ true },
+    { &ids::unisonDetune,     "Spread",   "SPREAD",   " c",  0.0, 50.0, 0.0, 0.5, 1 },
+};
+
+const ParamSpec mixerTrackSpecs[] {
+    // The three-way disagreement the plan named: the fader offered 0..1.5, the
+    // engine clamped at 2.0 and automation mapped onto 0..1, so automating a
+    // fader reached two thirds of its travel and the top third of the engine's
+    // range was unreachable from anywhere. The FADER wins: 2.0 is six decibels
+    // no control ever offered.
+    { &ids::gain, "Gain", "GAIN", "", 0.0, 1.5, 0.8, 0.001, 3 },
+    { &ids::pan,  "Pan",  "PAN",  "", -1.0, 1.0, 0.0, 0.001, 3,
+      ParamCurve::linear, ParamControl::knob, /*bipolar*/ true },
+};
+
+template <size_t N>
+const std::vector<ParamSpec>& asVector (const ParamSpec (&table)[N])
+{
+    static const std::vector<ParamSpec> specs { std::begin (table), std::end (table) };
+    return specs;
+}
+
+} // namespace
+
+const std::vector<ParamSpec>& channelParamSpecs() { return asVector (channelSpecs); }
+const std::vector<ParamSpec>& ampParamSpecs()     { return asVector (ampSpecs); }
+const std::vector<ParamSpec>& oscParamSpecs()     { return asVector (oscSpecs); }
+const std::vector<ParamSpec>& mixerTrackParamSpecs() { return asVector (mixerTrackSpecs); }
+
+const ParamSpec* instrumentParamSpec (const juce::Identifier& property) noexcept
+{
+    // Order matters where two tables name the same property. `gain` is both an
+    // oscillator's level and a mixer track's fader, and `pan` is both a
+    // channel's and a track's; the instrument tables are searched first
+    // because this is the INSTRUMENT lookup, and the mixer asks for its own.
+    for (const auto* table : { &channelParamSpecs(), &ampParamSpecs(), &oscParamSpecs() })
+        for (const auto& spec : *table)
+            if (*spec.property == property)
+                return &spec;
+
+    return nullptr;
+}
+
+const ParamSpec* mixerTrackParamSpec (const juce::Identifier& property) noexcept
+{
+    for (const auto& spec : mixerTrackParamSpecs())
+        if (*spec.property == property)
+            return &spec;
+
+    return nullptr;
+}
+
+const ParamSpec& requireMixerTrackParamSpec (const juce::Identifier& property)
+{
+    const auto* spec = mixerTrackParamSpec (property);
+    jassert (spec != nullptr);
+
+    static const ParamSpec fallback {};
+    return spec != nullptr ? *spec : fallback;
+}
+
+const ParamSpec& requireInstrumentParamSpec (const juce::Identifier& property)
+{
+    const auto* spec = instrumentParamSpec (property);
+
+    // A caller asking for a spec that does not exist has a bug in the table,
+    // not in the document, and a default-shaped fallback would hide it behind a
+    // knob that silently spans nought to one.
+    jassert (spec != nullptr);
+
+    static const ParamSpec fallback {};
+    return spec != nullptr ? *spec : fallback;
 }
 
 } // namespace dew

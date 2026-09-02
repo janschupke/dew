@@ -190,7 +190,13 @@ OscillatorSection::OscillatorSection (ProjectDocument& d, EditorState& s)
     octaveLabel.setColour (juce::Label::textColourId, colour::textSecondary);
     addAndMakeVisible (octaveLabel);
 
-    octaveSlider.setRange (-3, 3, 1);
+    {
+        // Four octaves either way, which is what the engine renders; this
+        // stepper offered three, so the top of the range was unreachable.
+        const auto& spec = requireInstrumentParamSpec (ids::octave);
+        octaveSlider.setRange (spec.minimum, spec.maximum, spec.interval);
+    }
+
     octaveSlider.setTextBoxStyle (juce::Slider::TextBoxLeft, false, 44, size::controlHeightSm);
     octaveSlider.onDragStart = [this] { inDrag = true; gestureActive = false; };
     octaveSlider.onDragEnd = [this] { inDrag = false; gestureActive = false; };

@@ -238,6 +238,25 @@ void DewKnob::mouseDown (const juce::MouseEvent& event)
     slider.setMouseDragSensitivity (pixels);
 }
 
+DewKnob::DewKnob (const ParamSpec& spec)
+    : DewKnob (spec.caption, spec.minimum, spec.maximum, spec.interval)
+{
+    setNumDecimalPlaces (spec.decimals);
+    setBipolar (spec.bipolar);
+
+    // A logarithmic parameter gets a NormalisableRange, not a plain one: half a
+    // millisecond to ten seconds is four and a half decades, and linearly every
+    // usable value lives in the first one per cent of the travel.
+    if (spec.curve == ParamCurve::logarithmic && spec.minimum > 0.0)
+    {
+        const auto skew = std::log (0.5) / std::log ((std::sqrt (spec.minimum * spec.maximum)
+                                                      - spec.minimum)
+                                                     / (spec.maximum - spec.minimum));
+
+        slider.setNormalisableRange ({ spec.minimum, spec.maximum, spec.interval, skew });
+    }
+}
+
 void DewKnob::setValue (double v, juce::NotificationType notification)
 {
     slider.setValue (v, notification);

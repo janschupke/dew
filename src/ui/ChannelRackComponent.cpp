@@ -2,6 +2,7 @@
 
 #include "model/ChannelColour.h"
 #include "model/Ids.h"
+#include "model/ModuleCatalog.h"
 #include "model/Meter.h"
 #include "model/ProjectEdits.h"
 #include "ui/design/Icons.h"
@@ -270,8 +271,8 @@ private:
     bool gestureActive = false;
     DewLetterToggle muteButton { "M", colour::warning, "Mute this channel" };
     DewLetterToggle soloButton { "S", colour::success, "Solo this channel" };
-    DewKnob volumeKnob { "VOL", 0.0, 1.0, 0.001 };
-    DewKnob panKnob { "PAN", -1.0, 1.0, 0.001 };
+    DewKnob volumeKnob { requireInstrumentParamSpec (ids::volume) };
+    DewKnob panKnob { requireInstrumentParamSpec (ids::pan) };
     DewLetterToggle armButton { "R", colour::recording, "Arm this channel for recording" };
 };
 
