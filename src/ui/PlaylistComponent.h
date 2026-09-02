@@ -52,7 +52,7 @@ private:
     bool isOnRightEdge (const juce::ValueTree& clip, int trackIndex, juce::Point<int>) const;
 
     static constexpr int rowHeight = 34;
-    static constexpr int headerWidth = 110;
+    static constexpr int headerWidth = 140;
     static constexpr int rulerHeight = 22;
 
     ProjectDocument& document;

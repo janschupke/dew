@@ -123,12 +123,64 @@ TEST_CASE ("a key the schema does not know is dropped and reported", "[schema][c
 TEST_CASE ("a file from a newer format version is refused, not half-read", "[schema][compat]")
 {
     auto json = ProjectSerializer::toJsonString (ProjectFactory::createDefault());
-    json = json.replace ("\"formatVersion\": 1", "\"formatVersion\": 99");
+    json = json.replace ("\"formatVersion\": " + juce::String (kFormatVersion),
+                         "\"formatVersion\": 99");
 
     const auto loaded = ProjectSerializer::fromJsonString (json);
 
     REQUIRE (! loaded.ok());
     REQUIRE (loaded.result.getErrorMessage().contains ("newer version"));
+}
+
+TEST_CASE ("a file written by an older version still loads", "[schema][compat]")
+{
+    // The compatibility promise, tested against a real v1 payload rather than
+    // against a file this build produced: every property added since is filled
+    // in from its declared default, and the document comes back current.
+    const juce::String v1 = R"({
+      "format": "dew-project",
+      "formatVersion": 1,
+      "name": "Old project",
+      "tempoBpm": 96.0,
+      "stepsPerBeat": 4,
+      "barsInSong": 8,
+      "channels": [
+        { "id": 1, "name": "Bass", "colour": "ff4fa3ff", "mixerTrackId": 1,
+          "basePitch": 40, "volume": 0.7, "pan": 0.0, "muted": false,
+          "instrument": { "osc": { "wave": "saw", "octave": 0, "detuneCents": 0.0, "gain": 0.8 },
+                          "amp": { "attack": 0.005, "decay": 0.12, "sustain": 0.7, "release": 0.15 } } }
+      ],
+      "patterns": [
+        { "id": 1, "name": "Pattern 1", "lengthSteps": 16,
+          "notes": [ { "ch": 1, "step": 0, "lengthSteps": 2, "pitch": 40, "velocity": 1.0 } ] }
+      ],
+      "playlist": { "tracks": [ { "name": "Track 1",
+                                  "clips": [ { "patternId": 1, "startBar": 0, "lengthBars": 1 } ] } ] },
+      "mixer": { "master": { "gain": 0.9 },
+                 "tracks": [ { "id": 1, "name": "Insert 1", "gain": 0.8, "pan": 0.0,
+                               "mute": false, "solo": false } ] }
+    })";
+
+    const auto loaded = ProjectSerializer::fromJsonString (v1);
+
+    REQUIRE (loaded.ok());
+    INFO ("warnings: " << loaded.warnings.joinIntoString ("; "));
+    REQUIRE (loaded.warnings.isEmpty());
+
+    REQUIRE (loaded.tree[ids::name].toString() == "Old project");
+    REQUIRE (juce::exactlyEqual ((double) loaded.tree[ids::tempoBpm], 96.0));
+
+    // Properties added after v1 take their defaults.
+    const auto channel = loaded.tree.getChildWithName (ids::CHANNEL);
+    REQUIRE (channel.isValid());
+    REQUIRE (channel.hasProperty (ids::solo));
+    REQUIRE ((bool) channel[ids::solo] == false);
+
+    const auto track = loaded.tree.getChildWithName (ids::PLAYLIST).getChild (0);
+    REQUIRE (track.hasProperty (ids::mute));
+
+    // And the document is now a current-version one.
+    REQUIRE ((int) loaded.tree[ids::formatVersion] == kFormatVersion);
 }
 
 TEST_CASE ("a file that is not a dew project is refused", "[schema][compat]")

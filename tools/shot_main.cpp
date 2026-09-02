@@ -4,6 +4,7 @@
 #include "model/ProjectFactory.h"
 #include "model/ProjectSerializer.h"
 #include "ui/MainComponent.h"
+#include "ui/design/DewGallery.h"
 
 namespace
 {
@@ -17,6 +18,7 @@ recording permission is not granted.
 Usage:
   dew_shot editor <out.png> [options]
   dew_shot tabs <out-prefix> [options]      one PNG per tab
+  dew_shot gallery <out.png> [options]      the design system
 
 Options:
   --project <file.dew>   Project to load (default: the built-in demo)
@@ -148,6 +150,25 @@ int main (int argc, char* argv[])
 
     const juce::ScopedJuceInitialiser_GUI juceInit;
 
+    const auto size = parseSize (args.value ("--size", "1440x900"));
+
+    if (mode == "gallery")
+    {
+        dew::DewGallery gallery;
+        gallery.setVisible (true);
+        gallery.setSize (size.getWidth(), juce::jmax (size.getHeight(), gallery.getRequiredHeight()));
+
+        const auto destination = juce::File::getCurrentWorkingDirectory()
+                                     .getChildFile (args.positional[1]);
+
+        if (const auto result = writePng (gallery, destination); result.failed())
+            return fail (result.getErrorMessage());
+
+        std::cout << "wrote " << destination.getFullPathName()
+                  << "  (" << gallery.getWidth() << "x" << gallery.getHeight() << ")" << std::endl;
+        return 0;
+    }
+
     // No audio device: this only draws.
     dew::MainComponent component (false);
 
@@ -169,7 +190,6 @@ int main (int argc, char* argv[])
     component.documentWasReplaced();
     component.setVisible (true);
 
-    const auto size = parseSize (args.value ("--size", "1440x900"));
     component.setSize (size.getWidth(), size.getHeight());
 
     auto* tabs = dynamic_cast<juce::TabbedComponent*> (findDescendantWithID (component, "editorTabs"));

@@ -13,8 +13,13 @@ namespace dew
 
     A lit cell is a note in the pattern at the channel's base pitch. It is the
     same note data the piano roll edits - the grid is a view, not a second
-    representation - so a melodic note written in the piano roll shows up here
-    as a lit step, and clearing it here removes that note.
+    representation - so a melodic note written in the piano roll shows up here as
+    a lit step, and clearing it here removes that note.
+
+    The grid deliberately occupies the WHOLE panel and paints the region below
+    the last channel as inert. Previously it was sized to its rows, leaving most
+    of the tab as undifferentiated background where clicks silently did nothing,
+    which is what "channel rack clicks don't go through" turned out to mean.
 */
 class StepGridComponent : public juce::Component,
                           private juce::Timer
@@ -26,20 +31,25 @@ public:
     void paint (juce::Graphics&) override;
     void mouseDown (const juce::MouseEvent&) override;
     void mouseDrag (const juce::MouseEvent&) override;
+    void mouseUp (const juce::MouseEvent&) override;
+    void mouseMove (const juce::MouseEvent&) override;
+    void mouseExit (const juce::MouseEvent&) override;
 
-    /** Height of one channel row, so the rack can line its headers up. */
-    static constexpr int rowHeight = 26;
+    /** Number of channel rows currently drawn. */
+    int getNumRows() const;
 
-    int getRequiredHeight() const;
+    /** Height the rows occupy; anything below this is inert. */
+    int getRowsHeight() const;
 
 private:
     void timerCallback() override;
 
     juce::ValueTree currentPattern() const;
-    int stepAtX (int x) const;
-    int rowAtY (int y) const;
     int numSteps() const;
     float stepWidth() const;
+    int stepAtX (int x) const;
+    int rowAtY (int y) const;
+    juce::ValueTree channelForRow (int row) const;
 
     void applyPaint (const juce::MouseEvent&);
 
@@ -51,10 +61,12 @@ private:
     // than toggling each one under the cursor - dragging over a lit step would
     // otherwise switch it off again.
     bool dragPaintsOn = true;
+    bool dragging = false;
     int lastPaintedStep = -1;
     int lastPaintedRow = -1;
 
-    double lastPlayheadStep = -1.0;
+    juce::Point<int> hoverCell { -1, -1 };
+    int lastPlayheadStep = -1;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (StepGridComponent)
 };

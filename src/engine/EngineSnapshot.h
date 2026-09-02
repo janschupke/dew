@@ -44,6 +44,7 @@ struct ChannelSnapshot
     float volume = 0.8f;
     float pan = 0.0f;
     bool muted = false;
+    bool solo = false;
     OscSettings osc;
     AmpSettings amp;
 };
@@ -69,6 +70,11 @@ struct ClipSnapshot
     int patternIndex = -1;     ///< resolved
     int startBar = 0;
     int lengthBars = 1;
+
+    /** Resolved audibility of the playlist track this clip sits on. Folded in
+        here so the sequencer never has to look a track up.
+    */
+    bool trackAudible = true;
 };
 
 struct MixerTrackSnapshot
@@ -96,7 +102,13 @@ struct EngineSnapshot
     std::vector<MixerTrackSnapshot> mixerTracks;
 
     float masterGain = 0.9f;
-    bool anySolo = false;                     ///< precomputed: solo changes every track's audibility
+
+    // Solo is a property of the whole mixer, not of one track: one track soloed
+    // silences every track that is not. Precomputed per scope so neither the
+    // sequencer nor the mixer has to scan.
+    bool anySolo = false;            ///< any mixer track soloed
+    bool anyChannelSolo = false;     ///< any channel soloed
+    bool anyPlaylistTrackSolo = false;
 
     /** Incremented on every build. The stress test uses it to tell snapshots
         apart; the engine uses it to notice that the document changed.
@@ -116,6 +128,9 @@ struct EngineSnapshot
 
     /** True when the snapshot has nothing that could make a sound. */
     bool isSilent() const;
+
+    /** Whether a channel should sound, given mute and the mixer-wide solo state. */
+    bool isChannelAudible (const ChannelSnapshot&) const noexcept;
 };
 
 /** Builds a snapshot from a project tree. Runs on the message thread.

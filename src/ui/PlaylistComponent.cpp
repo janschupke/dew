@@ -3,6 +3,8 @@
 #include "../model/Ids.h"
 #include "../model/ProjectEdits.h"
 #include "DewLookAndFeel.h"
+#include "design/Tokens.h"
+#include "primitives/DewControls.h"
 
 namespace dew
 {
@@ -197,10 +199,22 @@ void PlaylistComponent::changeListenerCallback (juce::ChangeBroadcaster*)       
 
 void PlaylistComponent::paint (juce::Graphics& g)
 {
-    g.fillAll (Palette::panelDark);
-
     const auto bars = numBars();
     const auto width = barWidth();
+
+    int trackCount = 0;
+
+    for (const auto& track : playlist())
+        if (track.hasType (ids::PLAYLIST_TRACK))
+            ++trackCount;
+
+    const auto tracksBottom = rulerHeight + trackCount * rowHeight;
+
+    g.fillAll (tokens::colour::well);
+
+    // Below the last track is not a lane that stopped working.
+    paint::inertArea (g, { 0, tracksBottom, getWidth(),
+                           juce::jmax (0, getHeight() - tracksBottom) });
 
     // --- ruler ---------------------------------------------------------------
     g.setColour (Palette::panel);
@@ -216,8 +230,8 @@ void PlaylistComponent::paint (juce::Graphics& g)
         g.drawText (juce::String (bar + 1), (int) x + 3, 0, (int) width - 4, rulerHeight,
                     juce::Justification::centredLeft);
 
-        g.setColour (Palette::lineStrong);
-        g.drawVerticalLine ((int) x, 0.0f, (float) getHeight());
+        g.setColour (tokens::colour::dividerStrong);
+        g.drawVerticalLine ((int) x, 0.0f, (float) tracksBottom);
     }
 
     // --- tracks --------------------------------------------------------------
@@ -268,8 +282,8 @@ void PlaylistComponent::paint (juce::Graphics& g)
         ++trackIndex;
     }
 
-    g.setColour (Palette::line);
-    g.drawVerticalLine (headerWidth, 0.0f, (float) getHeight());
+    g.setColour (tokens::colour::dividerStrong);
+    g.drawVerticalLine (headerWidth, 0.0f, (float) tracksBottom);
 
     // --- playhead ------------------------------------------------------------
     if (engine.isPlaying() && engine.getMode() == Transport::Mode::song)
@@ -278,8 +292,9 @@ void PlaylistComponent::paint (juce::Graphics& g)
         const auto position = engine.getPlayheadSteps() / (double) stepsPerBar;
         const auto x = (float) headerWidth + (float) position * width;
 
-        g.setColour (Palette::playhead);
-        g.drawVerticalLine ((int) x, (float) rulerHeight, (float) getHeight());
+        g.setColour (tokens::colour::playhead);
+        g.fillRect (juce::Rectangle<float> (x - 1.0f, (float) rulerHeight,
+                                            2.0f, (float) (tracksBottom - rulerHeight)));
     }
 
     if (trackIndex == 0)

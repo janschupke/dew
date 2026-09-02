@@ -142,7 +142,7 @@ void AudioEngine::processBlock (juce::AudioBuffer<float>& buffer) noexcept
 
         const auto& channelSnapshot = snapshot.channels[(size_t) trigger.channelIndex];
 
-        if (channelSnapshot.muted)
+        if (! snapshot.isChannelAudible (channelSnapshot))
             continue;
 
         channels[(size_t) trigger.channelIndex].noteOn (trigger.pitch,
@@ -160,7 +160,7 @@ void AudioEngine::processBlock (juce::AudioBuffer<float>& buffer) noexcept
 
         const auto& channelSnapshot = snapshot.channels[(size_t) i];
 
-        if (channelSnapshot.muted)
+        if (! snapshot.isChannelAudible (channelSnapshot))
             continue;
 
         const auto mixerIndex = channelSnapshot.mixerTrackIndex;

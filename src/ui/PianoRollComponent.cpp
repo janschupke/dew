@@ -3,6 +3,8 @@
 #include "../model/Ids.h"
 #include "../model/ProjectEdits.h"
 #include "DewLookAndFeel.h"
+#include "design/Tokens.h"
+#include "primitives/DewControls.h"
 
 namespace dew
 {
@@ -33,8 +35,11 @@ PianoRollComponent::PianoRollComponent (ProjectDocument& d, AudioEngine& e, Edit
     setComponentID ("pianoRoll");
     document.getState().addListener (this);
     editorState.addChangeListener (this);
+
+    // Width is set by the viewport in resized(); only the height is intrinsic,
+    // because it is fixed by the pitch range.
     setSize (900, numRows * rowHeight);
-    startTimerHz (30);
+    startTimerHz (tokens::motion::playheadHz);
 }
 
 PianoRollComponent::~PianoRollComponent()
@@ -216,8 +221,22 @@ void PianoRollComponent::changeListenerCallback (juce::ChangeBroadcaster*)      
 
 void PianoRollComponent::resized()
 {
-    // Height is fixed by the pitch range; the viewport scrolls it.
-    setSize (getWidth(), numRows * rowHeight);
+    // Height is fixed by the pitch range; the viewport scrolls it. The width
+    // must follow the viewport, or the roll paints a 900px strip in a wider
+    // panel and the rest of the tab looks broken.
+    if (auto* viewport = findParentComponentOfClass<juce::Viewport>())
+    {
+        const auto wanted = juce::jmax (320, viewport->getMaximumVisibleWidth());
+
+        if (getWidth() != wanted)
+        {
+            setSize (wanted, numRows * rowHeight);
+            return;
+        }
+    }
+
+    if (getHeight() != numRows * rowHeight)
+        setSize (getWidth(), numRows * rowHeight);
 }
 
 void PianoRollComponent::paint (juce::Graphics& g)

@@ -1,5 +1,5 @@
 {
-    "formatVersion": 1,
+    "formatVersion": 2,
     "name": "dew demo",
     "tempoBpm": 124.0,
     "stepsPerBeat": 4,
@@ -14,6 +14,7 @@
         "volume": 0.95,
         "pan": 0.0,
         "muted": false,
+        "solo": false,
         "instrument": {
           "osc": {
             "wave": "sine",
@@ -38,6 +39,7 @@
         "volume": 0.55,
         "pan": 0.0,
         "muted": false,
+        "solo": false,
         "instrument": {
           "osc": {
             "wave": "square",
@@ -62,6 +64,7 @@
         "volume": 0.75,
         "pan": 0.0,
         "muted": false,
+        "solo": false,
         "instrument": {
           "osc": {
             "wave": "saw",
@@ -86,6 +89,7 @@
         "volume": 0.6,
         "pan": 0.0,
         "muted": false,
+        "solo": false,
         "instrument": {
           "osc": {
             "wave": "triangle",
@@ -241,6 +245,8 @@
       "tracks": [
         {
           "name": "Track 1",
+          "mute": false,
+          "solo": false,
           "clips": [
             {
               "patternId": 1,
@@ -251,14 +257,20 @@
         },
         {
           "name": "Track 2",
+          "mute": false,
+          "solo": false,
           "clips": []
         },
         {
           "name": "Track 3",
+          "mute": false,
+          "solo": false,
           "clips": []
         },
         {
           "name": "Track 4",
+          "mute": false,
+          "solo": false,
           "clips": []
         }
       ]

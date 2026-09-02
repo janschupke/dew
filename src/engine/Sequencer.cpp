@@ -90,6 +90,10 @@ void Sequencer::collect (const EngineSnapshot& snapshot,
                 if (clip.patternIndex < 0 || clip.patternIndex >= (int) snapshot.patterns.size())
                     continue;
 
+                // A muted, or un-soloed, playlist track schedules nothing.
+                if (! clip.trackAudible)
+                    continue;
+
                 const auto clipStart = (juce::int64) clip.startBar * stepsPerBar;
                 const auto clipEnd = clipStart + (juce::int64) clip.lengthBars * stepsPerBar;
 

@@ -6,6 +6,7 @@
 #include "../model/ProjectDocument.h"
 #include "EditorState.h"
 #include "StepGridComponent.h"
+#include "primitives/DewControls.h"
 
 namespace dew
 {
@@ -39,7 +40,7 @@ private:
 
     void rebuildHeaders();
 
-    static constexpr int headerWidth = 190;
+    static constexpr int footerHeight = 40;
 
     ProjectDocument& document;
     AudioEngine& engine;
@@ -49,7 +50,8 @@ private:
     StepGridComponent grid;
     juce::Viewport viewport;
     juce::Component contentHolder;
-    juce::TextButton addChannelButton { "+ Channel" };
+    DewButton addChannelButton { "+ Channel", DewButton::Role::primary };
+    DewButton removeChannelButton { "Remove", DewButton::Role::ghost };
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (ChannelRackComponent)
 };

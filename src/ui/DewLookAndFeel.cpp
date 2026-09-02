@@ -1,18 +1,9 @@
 #include "DewLookAndFeel.h"
 
+#include "primitives/DewControls.h"
+
 namespace dew
 {
-
-const juce::Colour Palette::background { 0xff17191d };
-const juce::Colour Palette::panel      { 0xff22252b };
-const juce::Colour Palette::panelDark  { 0xff121417 };
-const juce::Colour Palette::line       { 0xff2c3037 };
-const juce::Colour Palette::lineStrong { 0xff3d434d };
-const juce::Colour Palette::text       { 0xffe6e8ec };
-const juce::Colour Palette::textDim    { 0xff8b929e };
-const juce::Colour Palette::accent     { 0xff4fa3ff };
-const juce::Colour Palette::playhead   { 0xffffc857 };
-const juce::Colour Palette::beat       { 0xff1c1f24 };
 
 DewLookAndFeel::DewLookAndFeel()
 {
@@ -70,37 +61,12 @@ juce::Font DewLookAndFeel::getLabelFont (juce::Label& label)
 }
 
 void DewLookAndFeel::drawRotarySlider (juce::Graphics& g, int x, int y, int width, int height,
-                                       float sliderPos, float rotaryStartAngle, float rotaryEndAngle,
-                                       juce::Slider& slider)
+                                       float sliderPos, float, float, juce::Slider& slider)
 {
-    const auto bounds = juce::Rectangle<int> (x, y, width, height).toFloat().reduced (3.0f);
-    const auto radius = juce::jmin (bounds.getWidth(), bounds.getHeight()) * 0.5f;
-    const auto centre = bounds.getCentre();
-    const auto angle = rotaryStartAngle + sliderPos * (rotaryEndAngle - rotaryStartAngle);
-    const auto thickness = juce::jmax (2.0f, radius * 0.22f);
-
-    juce::Path track;
-    track.addCentredArc (centre.x, centre.y, radius - thickness * 0.5f, radius - thickness * 0.5f,
-                         0.0f, rotaryStartAngle, rotaryEndAngle, true);
-    g.setColour (Palette::panelDark);
-    g.strokePath (track, juce::PathStrokeType (thickness, juce::PathStrokeType::curved,
-                                               juce::PathStrokeType::rounded));
-
-    juce::Path value;
-    value.addCentredArc (centre.x, centre.y, radius - thickness * 0.5f, radius - thickness * 0.5f,
-                         0.0f, rotaryStartAngle, angle, true);
-    g.setColour (slider.isEnabled() ? Palette::accent : Palette::lineStrong);
-    g.strokePath (value, juce::PathStrokeType (thickness, juce::PathStrokeType::curved,
-                                               juce::PathStrokeType::rounded));
-
-    juce::Path pointer;
-    pointer.startNewSubPath (centre.x, centre.y);
-    pointer.lineTo (centre.x + (radius - thickness) * std::sin (angle),
-                    centre.y - (radius - thickness) * std::cos (angle));
-    g.setColour (Palette::text);
-    g.strokePath (pointer, juce::PathStrokeType (juce::jmax (1.5f, thickness * 0.4f),
-                                                 juce::PathStrokeType::curved,
-                                                 juce::PathStrokeType::rounded));
+    // Delegates to the same routine DewKnob uses, so a stock juce::Slider and a
+    // dew primitive cannot end up looking like two different products.
+    paint::rotary (g, juce::Rectangle<int> (x, y, width, height).toFloat(),
+                   sliderPos, slider.isEnabled(), false);
 }
 
 void DewLookAndFeel::drawButtonBackground (juce::Graphics& g, juce::Button& button,

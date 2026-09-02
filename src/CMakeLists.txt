@@ -23,6 +23,12 @@ add_library(dew_core STATIC
   engine/OfflineRenderer.cpp
   engine/LiveAudioHost.cpp
 
+  ui/design/Tokens.cpp
+  ui/design/Icons.cpp
+  ui/design/DewGallery.cpp
+  ui/primitives/DewControls.cpp
+  ui/primitives/DewNumberField.cpp
+
   ui/DewLookAndFeel.cpp
   ui/TransportBar.cpp
   ui/StepGridComponent.cpp

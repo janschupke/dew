@@ -60,7 +60,8 @@ const NodeSpec& channelSpec()
           { ids::basePitch,    60 },
           { ids::volume,       0.8 },
           { ids::pan,          0.0 },
-          { ids::muted,        false } },
+          { ids::muted,        false },
+          { ids::solo,         false } },
         { { "instrument", &instrumentSpec(), false } }
     };
     return spec;
@@ -108,7 +109,9 @@ const NodeSpec& playlistTrackSpec()
 {
     static const NodeSpec spec {
         ids::PLAYLIST_TRACK,
-        { { ids::name, "Track" } },
+        { { ids::name, "Track" },
+          { ids::mute, false },
+          { ids::solo, false } },
         { { "clips", &clipSpec(), true } }
     };
     return spec;

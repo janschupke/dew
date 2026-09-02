@@ -56,6 +56,15 @@ int EngineSnapshot::songLengthSteps() const
     return end;
 }
 
+bool EngineSnapshot::isChannelAudible (const ChannelSnapshot& channel) const noexcept
+{
+    // Mute wins over solo on the same channel: mute is the explicit "off".
+    if (channel.muted)
+        return false;
+
+    return anyChannelSolo ? channel.solo : true;
+}
+
 bool EngineSnapshot::isSilent() const
 {
     if (channels.empty())
@@ -161,6 +170,9 @@ EngineSnapshot buildSnapshot (const juce::ValueTree& project, juce::StringArray*
         c.volume    = juce::jlimit (0.0f, 1.0f, (float) (double) channel[ids::volume]);
         c.pan       = juce::jlimit (-1.0f, 1.0f, (float) (double) channel[ids::pan]);
         c.muted     = (bool) channel[ids::muted];
+        c.solo      = (bool) channel[ids::solo];
+
+        snapshot.anyChannelSolo = snapshot.anyChannelSolo || c.solo;
 
         const auto instrument = channel.getChildWithName (ids::INSTRUMENT);
         c.osc = readOsc (instrument.getChildWithName (ids::OSC));
@@ -228,10 +240,18 @@ EngineSnapshot buildSnapshot (const juce::ValueTree& project, juce::StringArray*
     }
 
     // --- playlist ------------------------------------------------------------
+    // Solo has to be known before any clip is resolved, so scan for it first.
+    for (const auto& track : project.getChildWithName (ids::PLAYLIST))
+        if (track.hasType (ids::PLAYLIST_TRACK) && (bool) track[ids::solo])
+            snapshot.anyPlaylistTrackSolo = true;
+
     for (const auto& track : project.getChildWithName (ids::PLAYLIST))
     {
         if (! track.hasType (ids::PLAYLIST_TRACK))
             continue;
+
+        const auto trackAudible = ! (bool) track[ids::mute]
+                                  && (! snapshot.anyPlaylistTrackSolo || (bool) track[ids::solo]);
 
         for (const auto& clip : track)
         {
@@ -242,6 +262,7 @@ EngineSnapshot buildSnapshot (const juce::ValueTree& project, juce::StringArray*
             c.patternIndex = snapshot.patternIndexForId ((int) clip[ids::patternId]);
             c.startBar     = juce::jmax (0, (int) clip[ids::startBar]);
             c.lengthBars   = juce::jmax (1, (int) clip[ids::lengthBars]);
+            c.trackAudible = trackAudible;
 
             if (c.patternIndex < 0)
             {

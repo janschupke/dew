@@ -45,8 +45,12 @@ struct NodeSpec
 
 /** The schema version this build writes. Bumped when the format changes in a
     way that older builds cannot read.
+
+    v2 added channel solo, and mute and solo on playlist tracks. Version 1 files
+    still load: every added property has a declared default, so an older file is
+    simply one that predates them.
 */
-inline constexpr int kFormatVersion = 1;
+inline constexpr int kFormatVersion = 2;
 
 /** Value of the "format" key, so a wrong-but-valid JSON file is rejected with a
     useful message instead of loading as an empty project.

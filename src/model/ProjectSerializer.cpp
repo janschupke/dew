@@ -76,6 +76,12 @@ ProjectSerializer::LoadResult ProjectSerializer::fromJsonString (const juce::Str
     // schema's per-property defaults already cover added properties.
 
     loaded.tree = treeFromVar (parsed, projectSpec(), loaded.warnings);
+
+    // Anything the older file lacked has just been filled in from the schema's
+    // defaults, so what is now in memory IS a current-version document. Stamp it
+    // as one, or the tree and the file it would be saved to disagree.
+    loaded.tree.setProperty (ids::formatVersion, kFormatVersion, nullptr);
+
     return loaded;
 }
 
