@@ -61,6 +61,9 @@ add_executable(dew_tests
   CatalogTests.cpp
   MotionTests.cpp
   ScoreLexerTests.cpp
+  ScoreGridTests.cpp
+  ScoreDiagnosticTests.cpp
+  ScoreMusicTests.cpp
 )
 
 target_link_libraries(dew_tests

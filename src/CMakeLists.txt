@@ -79,7 +79,10 @@ juce_add_binary_data(dew_demo_data
 # ------------------------------------------------------------------------------
 add_library(dew_lang STATIC
   lang/SourceRange.cpp
+  lang/Diagnostics.cpp
   lang/Lexer.cpp
+  lang/Grid.cpp
+  lang/Music.cpp
 )
 
 target_include_directories(dew_lang PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}")
