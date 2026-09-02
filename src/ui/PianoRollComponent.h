@@ -142,7 +142,7 @@ public:
 
 private:
     enum class Gesture { none, moving, resizing, selecting, velocity, auditioning, erasing,
-                         scrubbing, painting, slicing };
+                         scrubbing, painting, slicing, selectingRange };
 
     void timerCallback() override;
     void valueTreePropertyChanged (juce::ValueTree&, const juce::Identifier&) override;
@@ -164,6 +164,17 @@ private:
 
     /** Moves the transport to the position a ruler x means. */
     void seekToRulerX (int x);
+
+    /** The step a ruler x means, snapped to a bar.
+
+        Bars rather than the snap grid: a loop is a musical span, the ruler is
+        numbered in bars, and shift already means "select" up here so it cannot
+        also mean "suspend the grid" the way it does over the notes.
+    */
+    int rulerStepAtX (int x, bool roundUp) const;
+
+    /** Sets the pattern's selected span from the anchor to this x. */
+    void dragRangeTo (int x);
     int numSteps() const;
 
     /** Steps in one cell of the current snap grid. Always at least one, so
@@ -272,6 +283,15 @@ private:
     int dragPitchOffset = 0;
     juce::Point<int> dragOrigin;
 
+    // Where a shift-drag along the ruler started. The span runs from here to
+    // wherever the pointer is, in either direction - the same shape, and the
+    // same name, as the playlist's.
+    int rangeAnchorStep = 0;
+
+    // Whether the erase sweep actually removed anything, so a right-click that
+    // hit nothing can be told from one that did.
+    bool erasedDuringGesture = false;
+
     // Where the erase sweep last looked. mouseDrag reports discrete positions,
     // so the segment between two of them is what actually has to be swept.
     juce::Point<int> lastErasePosition;
@@ -281,6 +301,11 @@ private:
     // Where each selected note started, so a multi-note move stays rigid rather
     // than every note snapping to the same offset.
     juce::Array<juce::Point<int>> selectionOrigins;
+
+    // What the roll was last pointed at, so a change of channel or pattern can be
+    // told from every other thing EditorState broadcasts about.
+    int lastSeenChannelId = -1;
+    int lastSeenPatternId = -1;
 
     int lastPlayheadStep = -1;
     bool lastPlaying = false;

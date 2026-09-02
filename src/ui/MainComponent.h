@@ -97,6 +97,14 @@ private:
     */
     void updateMidiTargetChannel();
 
+    /** Hands the editor's time selections to the engine as loop windows.
+
+        Both are pushed on every change, one per transport mode, so neither
+        depends on which mode is current - the mode is set from the transport bar
+        and from a menu command, and neither of those comes through here.
+    */
+    void updateLoopRange();
+
     DewLookAndFeel lookAndFeel;
 
     /** Every setTooltip call in the app was dead text until this existed:

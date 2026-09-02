@@ -35,6 +35,20 @@ struct Style
 
     /** A stopped transport still shows its position, at half strength. */
     bool playing = false;
+
+    /** The selected span, in the same units as everything else here, or a
+        negative start for none. Drawn as a solid strip rather than a wash: a
+        marker whose whole job is saying what will play cannot be subtle, and the
+        first attempt at this in the playlist - a faint tint across the full
+        height - was too hard to find to be worth anything.
+    */
+    double selectionStartSteps = -1.0;
+    double selectionEndSteps = -1.0;
+
+    bool hasSelection() const noexcept
+    {
+        return selectionStartSteps >= 0.0 && selectionEndSteps > selectionStartSteps;
+    }
 };
 
 /** Draws the ruler into `bounds`. Step 0 is at bounds.getX(). */

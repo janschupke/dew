@@ -113,6 +113,31 @@ public:
 
     void clearBarSelection()  { setSelectedBarRange ({}); }
 
+    // --- the selected span of a pattern --------------------------------------
+    /** Which steps are selected in the piano roll, half-open and 0-based.
+
+        A second range rather than a unit conversion on the one above. The
+        playlist selects BARS of the arrangement and the piano roll selects STEPS
+        of a pattern: different units, different scopes, and the two are audible
+        in different transport modes. Folding them into one would mean a span
+        picked out in the roll silently moving when the mode changed.
+    */
+    juce::Range<int> getSelectedStepRange() const noexcept  { return selectedSteps; }
+    bool hasStepSelection() const noexcept                  { return ! selectedSteps.isEmpty(); }
+
+    void setSelectedStepRange (juce::Range<int> range)
+    {
+        const auto clamped = range.getLength() > 0
+                               ? juce::Range<int> (juce::jmax (0, range.getStart()),
+                                                   juce::jmax (1, range.getEnd()))
+                               : juce::Range<int>();
+
+        if (std::exchange (selectedSteps, clamped) != clamped)
+            sendChangeMessage();
+    }
+
+    void clearStepSelection()  { setSelectedStepRange ({}); }
+
     // --- last placed note ----------------------------------------------------
     int getLastNoteLengthSteps() const noexcept { return lastNoteLengthSteps; }
     double getLastNoteVelocity() const noexcept { return lastNoteVelocity; }
@@ -134,6 +159,7 @@ private:
     double lastNoteVelocity = 1.0;
 
     juce::Range<int> selectedBars;
+    juce::Range<int> selectedSteps;
 
     juce::Array<int> expandedEffects;
 };

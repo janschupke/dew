@@ -25,6 +25,24 @@ void paint (juce::Graphics& g, juce::Rectangle<int> bounds,
     const auto stepsPerBar = juce::jmax (1, style.stepsPerBar);
     const auto stepsPerBeat = juce::jmax (1, stepsPerBar / 4);
 
+    // Before the bar lines and numbers, so they stay legible on top of it -
+    // the order the playlist's own strip already uses.
+    if (style.hasSelection())
+    {
+        const auto fromX = (float) bounds.getX() + timeline.xForStep (style.selectionStartSteps);
+        const auto toX   = (float) bounds.getX() + timeline.xForStep (style.selectionEndSteps);
+
+        g.setColour (colour::accentMuted);
+        g.fillRect (juce::Rectangle<float> (fromX, (float) bounds.getY(),
+                                            juce::jmax (1.0f, toX - fromX), (float) bounds.getHeight()));
+
+        // An edge at each end, so where a span STOPS is readable even when it
+        // runs off the side of the view.
+        g.setColour (colour::accent);
+        g.fillRect (juce::Rectangle<float> (fromX, (float) bounds.getY(), 2.0f, (float) bounds.getHeight()));
+        g.fillRect (juce::Rectangle<float> (toX - 2.0f, (float) bounds.getY(), 2.0f, (float) bounds.getHeight()));
+    }
+
     // Unclamped, so the ruler does not stop numbering halfway across the
     // window when the material is shorter than the view.
     const auto range = timeline.visibleStepRange ((float) bounds.getWidth());

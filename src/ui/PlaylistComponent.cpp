@@ -461,6 +461,16 @@ void PlaylistComponent::showAutomationMenu()
 
 void PlaylistComponent::mouseDoubleClick (const juce::MouseEvent& event)
 {
+    // On the ruler, a double-click clears the span - the second way to take one
+    // back, alongside a shift-click that never moved, and the one the piano roll
+    // ruler also answers to.
+    if (event.x >= headerWidth && event.y < rulerHeight)
+    {
+        editorState.clearBarSelection();
+        repaint();
+        return;
+    }
+
     if (event.x < headerWidth || event.y < rulerHeight)
         return;
 
@@ -518,6 +528,21 @@ void PlaylistComponent::mouseDown (const juce::MouseEvent& event)
             gesture = Gesture::selectingRange;
             rangeAnchorBar = barAtX (event.x);
             editorState.setSelectedBarRange ({ rangeAnchorBar, rangeAnchorBar + 1 });
+            repaint();
+            return;
+        }
+
+        // Mod-click takes the span from wherever the transport is to where you
+        // clicked, so "loop from here to there" does not need a drag across it.
+        // The piano roll ruler says this the same way.
+        if (event.mods.isCommandDown() || event.mods.isCtrlDown())
+        {
+            const auto stepsPerBar = juce::jmax (1, (int) document.getState()[ids::stepsPerBeat]) * 4;
+            const auto playheadBar = juce::jmax (0, (int) (engine.getPlayheadSteps() / (double) stepsPerBar));
+            const auto clicked = barAtX (event.x);
+
+            editorState.setSelectedBarRange ({ juce::jmin (playheadBar, clicked),
+                                               juce::jmax (playheadBar, clicked) + 1 });
             repaint();
             return;
         }

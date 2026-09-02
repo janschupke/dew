@@ -3,6 +3,7 @@
 #include <juce_gui_basics/juce_gui_basics.h>
 
 #include "RollHarness.h"
+#include "ui/ChannelRackComponent.h"
 
 using namespace dew;
 using namespace dew::testing;
@@ -712,4 +713,382 @@ TEST_CASE ("alt-drag erases too, and a plain drag still does not", "[pianoroll][
 
         REQUIRE (h.countNotes() == notesBefore);
     }
+}
+
+TEST_CASE ("an unrelated editor-state change leaves the selection alone", "[ui][pianoroll]")
+{
+    const juce::ScopedJuceInitialiser_GUI juceInit;
+
+    RollHarness h;
+
+    juce::UndoManager setup;
+
+    for (int step = 0; step < 4; ++step)
+        ProjectEdits::addNote (h.pattern(), 1, step, 1, 66, 1.0f, &setup);
+
+    h.roll.zoomToFit();
+    h.roll.refresh();
+
+    // EditorState is a ChangeBroadcaster, so its notifications are ASYNC. Without
+    // pumping, every assertion below passes for the wrong reason - the callback
+    // simply never runs - which is exactly how the first draft of this test went
+    // green while proving nothing.
+    const auto pump = [&h] { h.editorState.dispatchPendingMessages(); };
+
+    const auto selectAll = [&h, &pump]
+    {
+        h.roll.grabKeyboardFocus();
+        h.roll.keyPressed (juce::KeyPress ('a', juce::ModifierKeys (juce::ModifierKeys::commandModifier), 'a'));
+        pump();
+    };
+
+    selectAll();
+    REQUIRE (h.roll.getNumSelectedNotes() == 4);
+
+    // The control: pointing the roll at another channel DOES clear it, because
+    // those notes are not on screen any more and the next gesture would edit
+    // them invisibly. If this stops working the cases below mean nothing.
+    h.editorState.setSelectedChannelId (2);
+    pump();
+    REQUIRE (h.roll.getNumSelectedNotes() == 0);
+
+    h.editorState.setSelectedChannelId (1);
+    pump();
+    selectAll();
+    REQUIRE (h.roll.getNumSelectedNotes() == 4);
+
+    // EditorState broadcasts for everything it holds, and the roll used to clear
+    // its selection on all of them - so expanding an effect card, clicking a
+    // mixer strip or dragging a span on the playlist ruler each threw away a
+    // selection built up in here.
+    h.editorState.setSelectedMixerTrackId (3);
+    pump();
+    REQUIRE (h.roll.getNumSelectedNotes() == 4);
+
+    h.editorState.setEffectExpanded (7, true);
+    pump();
+    REQUIRE (h.roll.getNumSelectedNotes() == 4);
+
+    h.editorState.setSelectedBarRange ({ 1, 3 });
+    pump();
+    REQUIRE (h.roll.getNumSelectedNotes() == 4);
+}
+
+// --- the loop span on the ruler ----------------------------------------------
+
+namespace
+{
+
+/** A point on the piano roll's ruler at a given step. Asks the roll where that
+    step is rather than recomputing the layout, so a layout change cannot leave
+    these clicking confidently into the wrong place and still passing.
+*/
+juce::Point<int> rulerPointForStep (dew::testing::RollHarness& h, int step)
+{
+    const auto ruler = h.roll.getRulerArea();
+    const auto x = (float) ruler.getX() + h.roll.getTimeline().xForStep ((double) step);
+    const juce::Point<int> point { (int) x, ruler.getCentreY() };
+
+    // A test aiming off the end of the ruler is a broken test, not a finding:
+    // the press would fall through the ruler branch entirely and land on the
+    // grid, which is a different gesture with a different outcome.
+    REQUIRE (ruler.contains (point));
+    return point;
+}
+
+constexpr int stepsPerBar = 16;   // the default project: 4 steps per beat, 4 beats
+
+/** Gives the harness a four-bar pattern, so snapping to a BAR is a visible
+    thing rather than always rounding to the whole of a one-bar pattern.
+*/
+void makeFourBars (dew::testing::RollHarness& h)
+{
+    h.pattern().setProperty (dew::ids::lengthSteps, 4 * stepsPerBar, nullptr);
+    h.roll.refresh();
+    h.roll.zoomToFit();
+    h.roll.resized();
+}
+
+} // namespace
+
+TEST_CASE ("shift-dragging the piano roll ruler selects a span of bars", "[ui][pianoroll][loop]")
+{
+    const juce::ScopedJuceInitialiser_GUI juceInit;
+    RollHarness h;
+    makeFourBars (h);
+
+    const juce::ModifierKeys shift { juce::ModifierKeys::shiftModifier };
+
+    h.roll.mouseDown (eventAt (h.roll, rulerPointForStep (h, 0), shift));
+    h.roll.mouseDrag (eventAt (h.roll, rulerPointForStep (h, 2 * stepsPerBar), shift, 1, true));
+    h.roll.mouseUp   (eventAt (h.roll, rulerPointForStep (h, 2 * stepsPerBar), shift, 1, true));
+
+    REQUIRE (h.editorState.hasStepSelection());
+
+    // Snapped to bars: a loop is a musical span, and the ruler is numbered in
+    // bars, so landing between two of them is not a thing anyone asked for.
+    const auto selection = h.editorState.getSelectedStepRange();
+    INFO ("selection " << selection.getStart() << " -> " << selection.getEnd());
+    REQUIRE (selection.getStart() % stepsPerBar == 0);
+    REQUIRE (selection.getEnd() % stepsPerBar == 0);
+    REQUIRE (selection.getStart() == 0);
+    REQUIRE (selection.getEnd() == 2 * stepsPerBar);
+}
+
+TEST_CASE ("a plain drag on the piano roll ruler still scrubs", "[ui][pianoroll][loop]")
+{
+    const juce::ScopedJuceInitialiser_GUI juceInit;
+    RollHarness h;
+
+    h.roll.zoomToFit();
+    h.roll.resized();
+
+    h.roll.mouseDown (eventAt (h.roll, rulerPointForStep (h, 0)));
+    h.roll.mouseDrag (eventAt (h.roll, rulerPointForStep (h, 8), {}, 1, true));
+    h.roll.mouseUp   (eventAt (h.roll, rulerPointForStep (h, 8), {}, 1, true));
+
+    // Scrubbing was on the ruler first; selecting had to fit around it.
+    REQUIRE_FALSE (h.editorState.hasStepSelection());
+    REQUIRE (h.engine.getPlayheadSteps() > 0.0);
+}
+
+TEST_CASE ("shift-clicking the piano roll ruler without dragging clears the span",
+           "[ui][pianoroll][loop]")
+{
+    const juce::ScopedJuceInitialiser_GUI juceInit;
+    RollHarness h;
+
+    h.roll.zoomToFit();
+    h.roll.resized();
+
+    h.editorState.setSelectedStepRange ({ 0, stepsPerBar });
+    REQUIRE (h.editorState.hasStepSelection());
+
+    const juce::ModifierKeys shift { juce::ModifierKeys::shiftModifier };
+    const auto at = rulerPointForStep (h, 0);
+
+    h.roll.mouseDown (eventAt (h.roll, at, shift));
+    h.roll.mouseUp   (eventAt (h.roll, at, shift));
+
+    REQUIRE_FALSE (h.editorState.hasStepSelection());
+}
+
+TEST_CASE ("double-clicking the piano roll ruler clears the span", "[ui][pianoroll][loop]")
+{
+    const juce::ScopedJuceInitialiser_GUI juceInit;
+    RollHarness h;
+
+    h.roll.zoomToFit();
+    h.roll.resized();
+
+    h.editorState.setSelectedStepRange ({ 0, stepsPerBar });
+    REQUIRE (h.editorState.hasStepSelection());
+
+    h.roll.mouseDoubleClick (eventAt (h.roll, rulerPointForStep (h, 0), {}, 2));
+
+    REQUIRE_FALSE (h.editorState.hasStepSelection());
+}
+
+TEST_CASE ("double-clicking the keyboard gutter still frames the pattern", "[ui][pianoroll][loop]")
+{
+    const juce::ScopedJuceInitialiser_GUI juceInit;
+    RollHarness h;
+
+    // Zoom right in, so framing the pattern is a visible change.
+    h.roll.applyView (100.0, 4.0, 0.0);
+    const auto zoomed = h.roll.getTimeline().pixelsPerStep;
+
+    const auto keys = h.roll.getKeyboardArea();
+    h.roll.mouseDoubleClick (eventAt (h.roll, keys.getCentre(), {}, 2));
+
+    // The ruler gave zoom-to-fit up to the span; the gutter kept it.
+    INFO ("pixelsPerStep " << zoomed << " -> " << h.roll.getTimeline().pixelsPerStep);
+    REQUIRE (h.roll.getTimeline().pixelsPerStep < zoomed);
+}
+
+TEST_CASE ("mod-clicking the piano roll ruler spans from the playhead", "[ui][pianoroll][loop]")
+{
+    const juce::ScopedJuceInitialiser_GUI juceInit;
+    RollHarness h;
+    makeFourBars (h);
+
+    const juce::ModifierKeys mod { juce::ModifierKeys::commandModifier };
+
+    h.roll.mouseDown (eventAt (h.roll, rulerPointForStep (h, 2 * stepsPerBar), mod));
+    h.roll.mouseUp   (eventAt (h.roll, rulerPointForStep (h, 2 * stepsPerBar), mod));
+
+    REQUIRE (h.editorState.hasStepSelection());
+
+    // From where the transport is - step zero here - to where it was clicked.
+    const auto selection = h.editorState.getSelectedStepRange();
+    INFO ("selection " << selection.getStart() << " -> " << selection.getEnd());
+    REQUIRE (selection.getStart() == 0);
+    REQUIRE (selection.getEnd() > 0);
+}
+
+TEST_CASE ("selecting a span never touches the document or the undo stack",
+           "[ui][pianoroll][loop]")
+{
+    const juce::ScopedJuceInitialiser_GUI juceInit;
+    RollHarness h;
+    makeFourBars (h);
+
+    const auto before = h.document.getState().createCopy();
+
+    const juce::ModifierKeys shift { juce::ModifierKeys::shiftModifier };
+    h.roll.mouseDown (eventAt (h.roll, rulerPointForStep (h, 0), shift));
+    h.roll.mouseDrag (eventAt (h.roll, rulerPointForStep (h, 2 * stepsPerBar), shift, 1, true));
+    h.roll.mouseUp   (eventAt (h.roll, rulerPointForStep (h, 2 * stepsPerBar), shift, 1, true));
+
+    REQUIRE (h.editorState.hasStepSelection());
+
+    // A selection is a view of the project and not part of it: it must not save
+    // into the document, make it dirty, or land on the undo stack.
+    REQUIRE (before.isEquivalentTo (h.document.getState()));
+    REQUIRE_FALSE (h.document.getUndoManager().canUndo());
+}
+
+TEST_CASE ("right-clicking empty space clears the note selection", "[ui][pianoroll][erase]")
+{
+    const juce::ScopedJuceInitialiser_GUI juceInit;
+    RollHarness h;
+
+    juce::UndoManager setup;
+
+    for (int step = 0; step < 4; ++step)
+        ProjectEdits::addNote (h.pattern(), 1, step, 1, 66, 1.0f, &setup);
+
+    h.roll.zoomToFit();
+    h.roll.refresh();
+
+    h.roll.grabKeyboardFocus();
+    h.roll.keyPressed (juce::KeyPress ('a', juce::ModifierKeys (juce::ModifierKeys::commandModifier), 'a'));
+    REQUIRE (h.roll.getNumSelectedNotes() == 4);
+
+    const auto notesBefore = h.countNotes();
+
+    // Empty space: a pitch nothing was written at. A right-press here starts an
+    // erase sweep - that is how you sweep INTO notes - but a press that lets go
+    // having removed nothing was never an erase.
+    const juce::ModifierKeys rightButton { juce::ModifierKeys::rightButtonModifier };
+    const auto empty = pointFor (h, 0, 72);
+
+    h.roll.mouseDown (eventAt (h.roll, empty, rightButton));
+    h.roll.mouseUp   (eventAt (h.roll, empty, rightButton));
+
+    REQUIRE (h.roll.getNumSelectedNotes() == 0);
+    REQUIRE (h.countNotes() == notesBefore);
+}
+
+TEST_CASE ("a right-drag that erases does not also clear the selection",
+           "[ui][pianoroll][erase]")
+{
+    const juce::ScopedJuceInitialiser_GUI juceInit;
+    RollHarness h;
+
+    juce::UndoManager setup;
+
+    // Two rows: one to erase, one to keep selected.
+    for (int step = 0; step < 4; ++step)
+    {
+        ProjectEdits::addNote (h.pattern(), 1, step, 1, 66, 1.0f, &setup);
+        ProjectEdits::addNote (h.pattern(), 1, step, 1, 72, 1.0f, &setup);
+    }
+
+    h.roll.zoomToFit();
+    h.roll.refresh();
+
+    h.roll.grabKeyboardFocus();
+    h.roll.keyPressed (juce::KeyPress ('a', juce::ModifierKeys (juce::ModifierKeys::commandModifier), 'a'));
+    REQUIRE (h.roll.getNumSelectedNotes() == 8);
+
+    const juce::ModifierKeys rightButton { juce::ModifierKeys::rightButtonModifier };
+
+    dragBetween (h.roll, pointFor (h, 0, 66), pointFor (h, 3, 66), 8, rightButton);
+
+    // The four it swept are gone, and gone from the selection with them - but
+    // the sweep must not clear the four on the other row as well.
+    REQUIRE (h.countNotes() == 4);
+    REQUIRE (h.roll.getNumSelectedNotes() == 4);
+}
+
+TEST_CASE ("the selected span is painted on the piano roll ruler", "[ui][pianoroll][loop]")
+{
+    const juce::ScopedJuceInitialiser_GUI juceInit;
+    RollHarness h;
+    makeFourBars (h);
+
+    const auto render = [&h]
+    {
+        juce::Image image (juce::Image::ARGB, h.roll.getWidth(), h.roll.getHeight(), true);
+        juce::Graphics g (image);
+        h.roll.paintEntireComponent (g, true);
+        return image;
+    };
+
+    const auto before = render();
+
+    h.editorState.setSelectedStepRange ({ stepsPerBar, 3 * stepsPerBar });
+
+    const auto after = render();
+
+    // Count pixels that actually changed, and only within the ruler: a "is there
+    // any accent on screen" test cannot tell a strip from the notes, which are
+    // already coloured.
+    const auto ruler = h.roll.getRulerArea();
+    int changed = 0;
+
+    for (int y = ruler.getY(); y < ruler.getBottom(); ++y)
+        for (int x = ruler.getX(); x < ruler.getRight(); ++x)
+            if (before.getPixelAt (x, y) != after.getPixelAt (x, y))
+                ++changed;
+
+    INFO ("changed ruler pixels: " << changed);
+    REQUIRE (changed > 1000);
+}
+
+TEST_CASE ("the channel rack ruler shows the same span as the piano roll",
+           "[ui][pianoroll][loop]")
+{
+    const juce::ScopedJuceInitialiser_GUI juceInit;
+
+    ProjectDocument document;
+    document.setState (ProjectFactory::createDefault(), true);
+
+    AudioEngine engine;
+    EditorState editorState;
+    ChannelRackComponent rack { document, engine, editorState };
+
+    rack.setSize (1200, 600);
+    rack.setVisible (true);
+    rack.resized();
+
+    auto* strip = rack.findChildWithID ("channelRackRuler");
+    REQUIRE (strip != nullptr);
+
+    const auto render = [strip]
+    {
+        juce::Image image (juce::Image::ARGB, strip->getWidth(), strip->getHeight(), true);
+        juce::Graphics g (image);
+        strip->paintEntireComponent (g, true);
+        return image;
+    };
+
+    const auto before = render();
+
+    // Both are views of one pattern, so a span taken out in the roll has to be
+    // visible over the steps it covers in the rack.
+    editorState.setSelectedStepRange ({ 0, 8 });
+
+    const auto after = render();
+
+    int changed = 0;
+
+    for (int y = 0; y < before.getHeight(); ++y)
+        for (int x = 0; x < before.getWidth(); ++x)
+            if (before.getPixelAt (x, y) != after.getPixelAt (x, y))
+                ++changed;
+
+    INFO ("changed ruler pixels: " << changed);
+    REQUIRE (changed > 200);
 }

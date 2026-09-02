@@ -289,3 +289,65 @@ TEST_CASE ("every tab is painted, not only the active one", "[ui][smoke]")
         REQUIRE (lightPixels > 40);
     }
 }
+
+TEST_CASE ("a span selected in the editor loops the editor's own engine", "[ui][smoke][loop]")
+{
+    // The whole chain a person exercises by shift-dragging the ruler: the
+    // editor state holds the span, MainComponent converts it and hands it to the
+    // engine, and the engine confines the playhead. Each half is tested on its
+    // own; this is the wiring between them.
+    const juce::ScopedJuceInitialiser_GUI juceInit;
+
+    dew::MainComponent component;
+    component.getDocument().setState (dew::ProjectFactory::createDemo(), true);
+    component.documentWasReplaced();
+
+    auto& engine = component.getEngine();
+    engine.prepare (44100.0, 512);
+    engine.setMode (dew::Transport::Mode::song);
+    engine.rewind();
+    engine.play();
+
+    // Bars two to four of a four-bar demo, sixteen steps to the bar.
+    component.getEditorState().setSelectedBarRange ({ 1, 3 });
+    component.getEditorState().dispatchPendingMessages();
+
+    REQUIRE (engine.hasLoopRegion (dew::Transport::Mode::song));
+    REQUIRE (engine.getLoopRegion (dew::Transport::Mode::song).startSteps == 16.0f);
+    REQUIRE (engine.getLoopRegion (dew::Transport::Mode::song).endSteps == 48.0f);
+
+    juce::AudioBuffer<float> block (2, 512);
+
+    const auto render = [&] { block.clear(); engine.processBlock (block); };
+
+    // Into the region - a playhead before a loop plays into it rather than being
+    // snapped, so this is not instant.
+    for (int i = 0; i < 3000 && engine.getPlayheadSteps() < 16.0; ++i)
+        render();
+
+    REQUIRE (engine.getPlayheadSteps() >= 16.0);
+
+    for (int i = 0; i < 600; ++i)
+    {
+        render();
+        INFO ("playhead " << engine.getPlayheadSteps());
+        REQUIRE (engine.getPlayheadSteps() >= 16.0);
+        REQUIRE (engine.getPlayheadSteps() < 48.0);
+    }
+
+    // And clearing it hands the arrangement back.
+    component.getEditorState().clearBarSelection();
+    component.getEditorState().dispatchPendingMessages();
+
+    REQUIRE_FALSE (engine.hasLoopRegion (dew::Transport::Mode::song));
+
+    bool escaped = false;
+
+    for (int i = 0; i < 900 && ! escaped; ++i)
+    {
+        render();
+        escaped = engine.getPlayheadSteps() >= 48.0;
+    }
+
+    REQUIRE (escaped);
+}

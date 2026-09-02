@@ -176,6 +176,15 @@ ChannelRackComponent::ChannelRackComponent (ProjectDocument& d, AudioEngine& e, 
         if (engine.getMode() == Transport::Mode::pattern)
             style.playheadSteps = (double) ((int) engine.getPlayheadSteps() % style.totalSteps);
 
+        // The same span the piano roll selects: both are views of one pattern,
+        // so a loop taken out in one has to be visible in the other.
+        if (editorState.hasStepSelection())
+        {
+            const auto selection = editorState.getSelectedStepRange();
+            style.selectionStartSteps = (double) selection.getStart();
+            style.selectionEndSteps = (double) selection.getEnd();
+        }
+
         return style;
     };
 

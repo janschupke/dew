@@ -41,6 +41,7 @@ MainComponent::MainComponent (bool openAudioDevice)
     // the router as an index because the MIDI thread cannot read EditorState.
     editorState.addChangeListener (this);
     updateMidiTargetChannel();
+    updateLoopRange();
 
     if (! openAudioDevice)
     {
@@ -87,6 +88,7 @@ void MainComponent::projectChanged()
     // Channels may have been added or removed, which moves every index after
     // them - including the one MIDI is pointed at.
     updateMidiTargetChannel();
+    updateLoopRange();
 
     // A project that cannot be rendered as the user expects is worth saying so
     // once rather than silently playing something else. It expires on its own
@@ -193,6 +195,35 @@ void MainComponent::captureSettings (Settings& settings) const
 void MainComponent::changeListenerCallback (juce::ChangeBroadcaster*)
 {
     updateMidiTargetChannel();
+    updateLoopRange();
+}
+
+void MainComponent::updateLoopRange()
+{
+    // The piano roll selects steps of a pattern; the playlist selects bars of
+    // the song. Both are already in the units their editor works in, so the only
+    // conversion is the playlist's bars into steps.
+    const auto steps = editorState.getSelectedStepRange();
+
+    if (steps.isEmpty())
+        engine.clearLoopRange (Transport::Mode::pattern);
+    else
+        engine.setLoopRangeSteps (Transport::Mode::pattern,
+                                  (double) steps.getStart(), (double) steps.getEnd());
+
+    const auto bars = editorState.getSelectedBarRange();
+
+    if (bars.isEmpty())
+    {
+        engine.clearLoopRange (Transport::Mode::song);
+        return;
+    }
+
+    const auto stepsPerBar = juce::jmax (1, (int) document.getState()[ids::stepsPerBeat]) * 4;
+
+    engine.setLoopRangeSteps (Transport::Mode::song,
+                              (double) (bars.getStart() * stepsPerBar),
+                              (double) (bars.getEnd() * stepsPerBar));
 }
 
 void MainComponent::updateMidiTargetChannel()

@@ -40,6 +40,11 @@ PianoRollComponent::PianoRollComponent (ProjectDocument& d, AudioEngine& e, Edit
     document.getState().addListener (this);
     editorState.addChangeListener (this);
 
+    // Seeded from what the state already says, so the first broadcast after
+    // construction is not mistaken for the channel having changed.
+    lastSeenChannelId = editorState.getSelectedChannelId();
+    lastSeenPatternId = editorState.getCurrentPatternId();
+
     horizontalScroll.addListener (this);
     verticalScroll.addListener (this);
     addAndMakeVisible (horizontalScroll);
@@ -607,7 +612,11 @@ bool PianoRollComponent::keyPressed (const juce::KeyPress& key)
         return true;
     }
 
-    if (key.getTextCharacter() == 'a' && (key.getModifiers().isCommandDown()))
+    // Command OR ctrl, the way every mouse path in this file spells a modifier.
+    // This was command-only, so select-all did nothing on a machine driven with
+    // ctrl even though rubber-band select on the same keys worked.
+    if (key.getTextCharacter() == 'a'
+        && (key.getModifiers().isCommandDown() || key.getModifiers().isCtrlDown()))
     {
         selectAllOnChannel();
         return true;
@@ -686,15 +695,57 @@ void PianoRollComponent::mouseMove (const juce::MouseEvent& event)
 
 void PianoRollComponent::mouseDoubleClick (const juce::MouseEvent& event)
 {
-    // Double-clicking the keyboard gutter or the ruler frames the pattern, which
-    // is the quickest way back after zooming into a detail.
-    if (keyboardArea().contains (event.getPosition()) || rulerArea().contains (event.getPosition()))
+    // On the ruler, a double-click clears the span. That used to zoom to fit as
+    // well, but the ruler is where the span lives and taking one back has to be
+    // reachable there; zoom-to-fit keeps its other home, on the keyboard gutter.
+    if (rulerArea().contains (event.getPosition()))
+    {
+        editorState.clearStepSelection();
+        repaint();
+        return;
+    }
+
+    // Double-clicking the keyboard gutter frames the pattern, which is the
+    // quickest way back after zooming into a detail.
+    if (keyboardArea().contains (event.getPosition()))
         zoomToFit();
 }
 
 void PianoRollComponent::seekToRulerX (int x)
 {
     engine.setPlayheadSteps (ruler::stepForClick (x, rulerArea(), timeline, numSteps()));
+    repaint();
+}
+
+int PianoRollComponent::rulerStepAtX (int x, bool roundUp) const
+{
+    const auto raw = ruler::stepForClick (x, rulerArea(), timeline, numSteps());
+    const auto stepsPerBar = juce::jmax (1, (int) document.getState()[ids::stepsPerBeat]) * 4;
+
+    const auto bars = raw / (double) stepsPerBar;
+    const auto snapped = roundUp ? std::ceil (bars) : std::floor (bars);
+
+    return juce::jlimit (0, numSteps(), (int) snapped * stepsPerBar);
+}
+
+void PianoRollComponent::dragRangeTo (int x)
+{
+    const auto here = rulerStepAtX (x, x >= dragOrigin.x);
+
+    // Either direction: the anchor is where the drag began, not the lower step.
+    auto from = juce::jmin (rangeAnchorStep, here);
+    auto to   = juce::jmax (rangeAnchorStep, here);
+
+    // A drag that has not yet crossed a bar line still means one bar, not none -
+    // otherwise the strip flickers in and out at the start of every gesture.
+    if (to <= from)
+    {
+        const auto stepsPerBar = juce::jmax (1, (int) document.getState()[ids::stepsPerBeat]) * 4;
+        from = juce::jmax (0, juce::jmin (from, numSteps() - stepsPerBar));
+        to = from + stepsPerBar;
+    }
+
+    editorState.setSelectedStepRange ({ from, to });
     repaint();
 }
 
@@ -737,7 +788,10 @@ void PianoRollComponent::eraseAlong (juce::Point<int> from, juce::Point<int> to)
     }
 
     if (erasedAny)
+    {
+        erasedDuringGesture = true;
         repaint();
+    }
 }
 
 void PianoRollComponent::mouseDown (const juce::MouseEvent& event)
@@ -764,6 +818,32 @@ void PianoRollComponent::mouseDown (const juce::MouseEvent& event)
     // was dropped by the noteArea guard below.
     if (rulerArea().contains (event.getPosition()))
     {
+        // Shift selects a span, a plain drag scrubs - the same division the
+        // playlist ruler already makes, so one rule covers every ruler in the
+        // app rather than each editor having its own.
+        if (event.mods.isShiftDown())
+        {
+            gesture = Gesture::selectingRange;
+            rangeAnchorStep = rulerStepAtX (event.x, false);
+            dragRangeTo (event.x);
+            return;
+        }
+
+        // Mod-click takes the span from wherever the transport is to where you
+        // clicked, which is the gesture for "loop from here to there" without
+        // having to drag across it.
+        if (event.mods.isCommandDown() || event.mods.isCtrlDown())
+        {
+            const auto playhead = juce::jlimit (0, numSteps(), (int) engine.getPlayheadSteps());
+            const auto clicked = rulerStepAtX (event.x, event.x >= (int) (rulerArea().getX()
+                                                + timeline.xForStep ((double) playhead)));
+
+            editorState.setSelectedStepRange ({ juce::jmin (playhead, clicked),
+                                                juce::jmax (playhead, clicked) });
+            repaint();
+            return;
+        }
+
         gesture = Gesture::scrubbing;
         seekToRulerX (event.x);
         return;
@@ -803,6 +883,7 @@ void PianoRollComponent::mouseDown (const juce::MouseEvent& event)
     {
         gesture = Gesture::erasing;
         undo.beginNewTransaction ("Erase notes");
+        erasedDuringGesture = false;
         lastErasePosition = event.getPosition();
         eraseAlong (event.getPosition(), event.getPosition());
         return;
@@ -929,6 +1010,12 @@ void PianoRollComponent::mouseDrag (const juce::MouseEvent& event)
         return;
     }
 
+    if (gesture == Gesture::selectingRange)
+    {
+        dragRangeTo (event.x);
+        return;
+    }
+
     if (gesture == Gesture::scrubbing)
     {
         seekToRulerX (event.x);
@@ -1029,6 +1116,21 @@ void PianoRollComponent::mouseUp (const juce::MouseEvent& event)
 {
     stopAudition();
     draggedVelocityNote = {};
+
+    // A shift-CLICK on the ruler is how a span is taken back: it selects a bar on
+    // the way down, and letting go without having moved means the user asked for
+    // nothing rather than for that bar. The playlist says this the same way.
+    if (gesture == Gesture::selectingRange && ! event.mouseWasDraggedSinceMouseDown())
+        editorState.clearStepSelection();
+
+    // A right-press that erased nothing is not an erase - it is a click on empty
+    // space, and that means "deselect". A right-DRAG still erases, and a press
+    // that swept even one note away is an erase however short it was.
+    if (gesture == Gesture::erasing && ! erasedDuringGesture
+        && ! event.mouseWasDraggedSinceMouseDown())
+    {
+        selection.clearQuick();
+    }
 
     // The cut happens here rather than during the drag: a note already cut
     // would be cut again into fragments every time the pointer wobbled, and a
@@ -1204,8 +1306,26 @@ void PianoRollComponent::valueTreeChildRemoved (juce::ValueTree&, juce::ValueTre
 
 void PianoRollComponent::changeListenerCallback (juce::ChangeBroadcaster*)
 {
-    selection.clearQuick();
-    scrollToNotesIfOffscreen();
+    // Only when the roll is pointed somewhere ELSE. This used to clear the
+    // selection on ANY editor-state change, and EditorState broadcasts for all
+    // of them: expanding an effect card, clicking a mixer strip or dragging a
+    // span on the playlist ruler each silently threw away a selection the user
+    // had built in here. With a time selection now settable from this component
+    // too, the roll would also have been fighting its own drag, frame by frame.
+    const auto channelId = editorState.getSelectedChannelId();
+    const auto patternId = editorState.getCurrentPatternId();
+
+    if (channelId != lastSeenChannelId || patternId != lastSeenPatternId)
+    {
+        lastSeenChannelId = channelId;
+        lastSeenPatternId = patternId;
+
+        // A selection of notes that are no longer on screen is a selection the
+        // next gesture would edit invisibly.
+        selection.clearQuick();
+        scrollToNotesIfOffscreen();
+    }
+
     repaint();
 }
 
@@ -1292,6 +1412,13 @@ void PianoRollComponent::paintRuler (juce::Graphics& g)
 
     if (engine.getMode() == Transport::Mode::pattern)
         style.playheadSteps = (double) ((int) engine.getPlayheadSteps() % juce::jmax (1, numSteps()));
+
+    if (editorState.hasStepSelection())
+    {
+        const auto selection = editorState.getSelectedStepRange();
+        style.selectionStartSteps = (double) selection.getStart();
+        style.selectionEndSteps = (double) selection.getEnd();
+    }
 
     // The same ruler the playlist and the channel rack draw. Three views used
     // to hand-roll three of these, and no two of them behaved alike.

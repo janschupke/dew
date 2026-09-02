@@ -550,3 +550,54 @@ TEST_CASE ("the selected span is painted", "[ui][playlist][selection]")
     INFO ("changed pixels: " << changed);
     REQUIRE (changed > 1000);
 }
+
+TEST_CASE ("double-clicking the playlist ruler clears the selection",
+           "[ui][playlist][selection]")
+{
+    const juce::ScopedJuceInitialiser_GUI juceInit;
+    PlaylistHarness h;
+
+    h.editorState.setSelectedBarRange ({ 1, 4 });
+    REQUIRE (h.editorState.hasBarSelection());
+
+    h.playlist.mouseDoubleClick (eventAt (h.playlist, rulerPointFor (h, 2), 2));
+
+    REQUIRE_FALSE (h.editorState.hasBarSelection());
+}
+
+TEST_CASE ("mod-clicking the playlist ruler spans from the playhead",
+           "[ui][playlist][selection]")
+{
+    const juce::ScopedJuceInitialiser_GUI juceInit;
+    PlaylistHarness h;
+
+    const juce::ModifierKeys mod { juce::ModifierKeys::commandModifier };
+
+    h.playlist.mouseDown (eventAt (h.playlist, rulerPointFor (h, 3), 1, mod));
+    h.playlist.mouseUp   (eventAt (h.playlist, rulerPointFor (h, 3), 1, mod));
+
+    REQUIRE (h.editorState.hasBarSelection());
+
+    // From where the transport is - bar zero here - to the bar clicked, and the
+    // range is half-open, so clicking bar 3 includes it.
+    const auto selection = h.editorState.getSelectedBarRange();
+    INFO ("selection " << selection.getStart() << " -> " << selection.getEnd());
+    REQUIRE (selection.getStart() == 0);
+    REQUIRE (selection.getEnd() == 4);
+}
+
+TEST_CASE ("a mod-click on the playlist ruler does not move the transport",
+           "[ui][playlist][selection]")
+{
+    const juce::ScopedJuceInitialiser_GUI juceInit;
+    PlaylistHarness h;
+
+    const juce::ModifierKeys mod { juce::ModifierKeys::commandModifier };
+
+    h.playlist.mouseDown (eventAt (h.playlist, rulerPointFor (h, 3), 1, mod));
+    h.playlist.mouseUp   (eventAt (h.playlist, rulerPointFor (h, 3), 1, mod));
+
+    // It selects instead of scrubbing, or the span would always start where the
+    // click landed and "from the playhead" would mean nothing.
+    REQUIRE (h.engine.getPlayheadSteps() == 0.0);
+}

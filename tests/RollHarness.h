@@ -55,8 +55,14 @@ struct RollHarness
     PianoRollComponent roll { document, engine, editorState };
 };
 
+/** `wasDragged` is the last MouseEvent argument, and it is what
+    mouseWasDraggedSinceMouseDown() reports - the real one asks the mouse SOURCE,
+    which no synthetic event here ever pressed, so a gesture that distinguishes a
+    click from a drag can only be driven by setting it explicitly.
+*/
 inline juce::MouseEvent eventAt (juce::Component& target, juce::Point<int> local,
-                                 juce::ModifierKeys mods = juce::ModifierKeys(), int clickCount = 1)
+                                 juce::ModifierKeys mods = juce::ModifierKeys(), int clickCount = 1,
+                                 bool wasDragged = false)
 {
     const auto position = local.toFloat();
 
@@ -67,7 +73,7 @@ inline juce::MouseEvent eventAt (juce::Component& target, juce::Point<int> local
              juce::Time::getCurrentTime(),
              position,
              juce::Time::getCurrentTime(),
-             clickCount, false };
+             clickCount, wasDragged };
 }
 
 inline void clickAndRelease (juce::Component& c, juce::Point<int> at,
@@ -91,10 +97,12 @@ inline void dragBetween (juce::Component& c, juce::Point<int> from, juce::Point<
         const auto t = (float) i / (float) samples;
         c.mouseDrag (eventAt (c, { juce::roundToInt ((float) from.x + t * (float) (to.x - from.x)),
                                    juce::roundToInt ((float) from.y + t * (float) (to.y - from.y)) },
-                              mods));
+                              mods, 1, true));
     }
 
-    c.mouseUp (eventAt (c, to, mods));
+    // Dragged, so a gesture that asks whether the pointer moved gets the right
+    // answer on the release as well as during the drag.
+    c.mouseUp (eventAt (c, to, mods, 1, true));
 }
 
 /** Where in the component a given step and pitch land.
