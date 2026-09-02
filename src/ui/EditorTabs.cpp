@@ -42,4 +42,14 @@ void EditorTabs::refresh()
     mixer.refresh();
 }
 
+void EditorTabs::capturePianoRollView (double& zoom, double& scroll, double& pitchScroll) const
+{
+    pianoRoll.captureView (zoom, scroll, pitchScroll);
+}
+
+void EditorTabs::applyPianoRollView (double zoom, double scroll, double pitchScroll)
+{
+    pianoRoll.applyView (zoom, scroll, pitchScroll);
+}
+
 } // namespace dew

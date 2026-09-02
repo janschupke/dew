@@ -10,6 +10,7 @@
 #include "EditorState.h"
 #include "EditorTabs.h"
 #include "InstrumentPanel.h"
+#include "../app/Settings.h"
 #include "StatusBar.h"
 #include "TransportBar.h"
 
@@ -49,6 +50,14 @@ public:
     /** Opens the audio settings over this window. */
     void showAudioSettings();
 
+    /** Restores what was saved last time, and captures it again on exit. The
+        app owns the store; this only knows how to read and write itself.
+    */
+    void applySettings (const Settings&);
+    void captureSettings (Settings&) const;
+
+    LiveAudioHost& getAudioHost() noexcept { return audioHost; }
+
     /** Applies any pending snapshot rebuild immediately instead of waiting for
         the message loop. Edits are coalesced through an AsyncUpdater, so
         anything that needs the engine to reflect the document right now - a
@@ -76,6 +85,40 @@ private:
     EditorTabs tabs;
     InstrumentPanel instrumentPanel;
     StatusBar statusBar;
+
+    /** Drags the boundary between the editor and the instrument panel.
+
+        The panel was a hard-coded 300px, so there was no position to remember;
+        this is what makes "panel positions" something that can be persisted.
+    */
+    class PanelDivider : public juce::Component
+    {
+    public:
+        explicit PanelDivider (MainComponent& o) : owner (o)
+        {
+            setMouseCursor (juce::MouseCursor::LeftRightResizeCursor);
+        }
+
+        void mouseDown (const juce::MouseEvent&) override { widthAtDragStart = owner.panelWidth; }
+
+        void mouseDrag (const juce::MouseEvent& event) override
+        {
+            owner.setPanelWidth (widthAtDragStart - event.getDistanceFromDragStartX());
+        }
+
+        void paint (juce::Graphics&) override;
+
+    private:
+        MainComponent& owner;
+        int widthAtDragStart = 0;
+    };
+
+    void setPanelWidth (int);
+
+    PanelDivider divider { *this };
+    int panelWidth = Settings::defaultPanelWidth;
+
+    static constexpr int dividerWidth = 5;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (MainComponent)
 };

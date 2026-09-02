@@ -317,6 +317,27 @@ void PianoRollComponent::scrollToNotesIfOffscreen()
     centreOnPitch (channel.isValid() ? (int) channel[ids::basePitch] : 72);
 }
 
+void PianoRollComponent::captureView (double& zoom, double& scroll, double& pitchScroll) const
+{
+    zoom = timeline.pixelsPerStep;
+    scroll = timeline.scrollOffsetSteps;
+    pitchScroll = pitchScrollPx;
+}
+
+void PianoRollComponent::applyView (double zoom, double scroll, double pitchScroll)
+{
+    timeline.pixelsPerStep = juce::jlimit (TimelineView::minPixelsPerStep,
+                                           TimelineView::maxPixelsPerStep, zoom);
+    timeline.scrollOffsetSteps = juce::jmax (0.0, scroll);
+    pitchScrollPx = juce::jmax (0.0, pitchScroll);
+
+    // A restored view is the user's, not something to reframe over.
+    didFitOnce = true;
+
+    updateScrollBars();
+    repaint();
+}
+
 void PianoRollComponent::zoomToFit()
 {
     timeline.fit (numSteps(), contentWidth());

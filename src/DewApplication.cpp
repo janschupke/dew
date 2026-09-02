@@ -13,14 +13,22 @@ namespace dew
 class DewApplication::MainWindow : public juce::DocumentWindow
 {
 public:
-    MainWindow (const juce::String& name, juce::ApplicationCommandManager& manager)
+    MainWindow (const juce::String& name, juce::ApplicationCommandManager& manager,
+                const Settings& savedSession)
         : DocumentWindow (name, Palette::background, DocumentWindow::allButtons)
     {
         setUsingNativeTitleBar (true);
         setContentOwned (new MainComponent(), true);
         setResizable (true, false);
         setResizeLimits (900, 560, 20000, 20000);
-        centreWithSize (getWidth(), getHeight());
+
+        // Restored before the window is shown, so it does not appear centred
+        // and then jump. A state that is no longer usable - a monitor that has
+        // gone away - falls back to centring rather than opening offscreen.
+        if (const auto state = savedSession.getWindowState(); state.isNotEmpty())
+            restoreWindowStateFromString (state);
+        else
+            centreWithSize (getWidth(), getHeight());
 
         addKeyListener (manager.getKeyMappings());
         setVisible (true);
@@ -50,7 +58,11 @@ const juce::String DewApplication::getApplicationVersion() { return BuildInfo::v
 
 void DewApplication::initialise (const juce::String&)
 {
-    mainWindow = std::make_unique<MainWindow> (getApplicationName(), commandManager);
+    settings = std::make_unique<Settings>();
+
+    mainWindow = std::make_unique<MainWindow> (getApplicationName(), commandManager, *settings);
+    restoreSession();
+    startTimer (autosaveIntervalMs);
 
     commandManager.registerAllCommandsForTarget (this);
     commandManager.setFirstCommandTarget (this);
@@ -59,10 +71,52 @@ void DewApplication::initialise (const juce::String&)
     updateWindowTitle();
 }
 
+void DewApplication::timerCallback()
+{
+    saveSession();
+}
+
 void DewApplication::shutdown()
 {
+    stopTimer();
+    saveSession();
+
     juce::MenuBarModel::setMacMainMenu (nullptr);
     mainWindow.reset();
+    settings.reset();
+}
+
+void DewApplication::restoreSession()
+{
+    auto* main = getMainComponent();
+
+    if (main == nullptr || settings == nullptr)
+        return;
+
+    main->applySettings (*settings);
+
+    // The device before anything is heard, so the first sound already comes out
+    // of whatever was chosen last time.
+    if (auto state = settings->getAudioState())
+        main->getAudioHost().restoreState (*state);
+}
+
+void DewApplication::saveSession()
+{
+    auto* main = getMainComponent();
+
+    if (main == nullptr || settings == nullptr)
+        return;
+
+    main->captureSettings (*settings);
+
+    if (mainWindow != nullptr)
+        settings->setWindowState (mainWindow->getWindowStateAsString());
+
+    if (const auto state = main->getAudioHost().getDeviceManager().createStateXml())
+        settings->setAudioState (state.get());
+
+    settings->flush();
 }
 
 void DewApplication::anotherInstanceStarted (const juce::String&) {}
@@ -99,6 +153,11 @@ void DewApplication::updateWindowTitle()
 
 void DewApplication::systemRequestedQuit()
 {
+    // Saved here as well as in shutdown, because this is the point at which the
+    // window still exists and its geometry can still be read. It is also the
+    // only path a user quit actually takes.
+    saveSession();
+
     auto* document = getDocument();
 
     if (document == nullptr)

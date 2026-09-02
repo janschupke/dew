@@ -2,6 +2,7 @@
 
 #include <juce_gui_extra/juce_gui_extra.h>
 
+#include "app/Settings.h"
 #include "ui/MainComponent.h"
 
 namespace dew
@@ -18,7 +19,8 @@ namespace dew
 // juce::JUCEApplication already IS an ApplicationCommandTarget - inheriting it
 // again makes the base ambiguous.
 class DewApplication : public juce::JUCEApplication,
-                       public juce::MenuBarModel
+                       public juce::MenuBarModel,
+                       private juce::Timer
 {
 public:
     // MainWindow is only declared here and defined in the .cpp, so BOTH of
@@ -52,6 +54,24 @@ public:
 
 private:
     class MainWindow;
+
+    /** Reads the saved session and writes it back on exit. Restoring happens
+        before the window is shown, so nothing visibly jumps into place.
+    */
+    void restoreSession();
+    void saveSession();
+
+    /** Captures the session periodically as well as on quit.
+
+        A quit that never reaches shutdown - a crash, or a kill - would
+        otherwise lose everything since launch. PropertiesFile only touches the
+        disk when a value actually changes, so this costs a few comparisons.
+    */
+    void timerCallback() override;
+
+    static constexpr int autosaveIntervalMs = 4000;
+
+    std::unique_ptr<Settings> settings;
 
     MainComponent* getMainComponent() const;
     ProjectDocument* getDocument() const;

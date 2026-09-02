@@ -91,6 +91,10 @@ public:
     /** The pitch currently being auditioned, or -1. */
     int getAuditionPitch() const noexcept { return auditionPitch; }
 
+    /** Where the view is, so a session can be restored to it. */
+    void captureView (double& zoom, double& scroll, double& pitchScroll) const;
+    void applyView (double zoom, double scroll, double pitchScroll);
+
 private:
     enum class Gesture { none, moving, resizing, selecting, velocity, auditioning };
 

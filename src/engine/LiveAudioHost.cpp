@@ -47,6 +47,27 @@ juce::String LiveAudioHost::start()
     return {};
 }
 
+juce::String LiveAudioHost::restoreState (const juce::XmlElement& state)
+{
+    stop();
+
+    // Output only, as start() does, and with the saved state as the preference.
+    // initialise falls back to the default device if the saved one has gone,
+    // which is the behaviour worth having: a missing interface should not stop
+    // the application making sound.
+    const auto error = deviceManager.initialise (0, 2, &state, true);
+
+    if (error.isNotEmpty())
+        return error;
+
+    if (deviceManager.getCurrentAudioDevice() == nullptr)
+        return "No audio output device is available.";
+
+    deviceManager.addAudioCallback (this);
+    started = true;
+    return {};
+}
+
 void LiveAudioHost::stop()
 {
     if (! started)

@@ -21,6 +21,10 @@ public:
 
     void refresh();
 
+    /** The piano roll's zoom and scroll, for session persistence. */
+    void capturePianoRollView (double& zoom, double& scroll, double& pitchScroll) const;
+    void applyPianoRollView (double zoom, double scroll, double pitchScroll);
+
 private:
     ChannelRackComponent channelRack;
     PianoRollComponent pianoRoll;

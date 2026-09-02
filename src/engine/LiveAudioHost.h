@@ -24,6 +24,11 @@ public:
     */
     juce::String start();
 
+    /** Opens the device described by a previously saved state instead of the
+        default one. Falls back to the default if that device has gone.
+    */
+    juce::String restoreState (const juce::XmlElement&);
+
     void stop();
 
     juce::AudioDeviceManager& getDeviceManager() noexcept  { return deviceManager; }

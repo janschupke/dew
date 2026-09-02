@@ -31,6 +31,7 @@ MainComponent::MainComponent (bool openAudioDevice)
     projectChanged();
 
     addAndMakeVisible (statusBar);
+    addAndMakeVisible (divider);
 
     if (! openAudioDevice)
     {
@@ -107,6 +108,56 @@ void MainComponent::paint (juce::Graphics& g)
     g.fillAll (Palette::background);
 }
 
+void MainComponent::PanelDivider::paint (juce::Graphics& g)
+{
+    g.fillAll (tokens::colour::background);
+
+    g.setColour (isMouseOverOrDragging() ? tokens::colour::accent : tokens::colour::dividerStrong);
+    g.drawVerticalLine (getWidth() / 2, 0.0f, (float) getHeight());
+}
+
+void MainComponent::setPanelWidth (int width)
+{
+    const auto clamped = juce::jlimit (Settings::minPanelWidth, Settings::maxPanelWidth, width);
+
+    if (clamped == panelWidth)
+        return;
+
+    panelWidth = clamped;
+    resized();
+}
+
+void MainComponent::applySettings (const Settings& settings)
+{
+    panelWidth = settings.getPanelWidth();
+
+    editorState.setSelectedChannelId (settings.getSelectedChannelId());
+    editorState.setSelectedMixerTrackId (settings.getSelectedMixerTrackId());
+    editorState.setCurrentPatternId (settings.getCurrentPatternId());
+
+    tabs.setCurrentTabIndex (settings.getTabIndex(), false);
+    tabs.applyPianoRollView (settings.getPianoRollZoom(), settings.getPianoRollScroll(),
+                             settings.getPianoRollPitchScroll());
+
+    resized();
+}
+
+void MainComponent::captureSettings (Settings& settings) const
+{
+    settings.setPanelWidth (panelWidth);
+    settings.setTabIndex (tabs.getCurrentTabIndex());
+    settings.setSelectedChannelId (editorState.getSelectedChannelId());
+    settings.setSelectedMixerTrackId (editorState.getSelectedMixerTrackId());
+    settings.setCurrentPatternId (editorState.getCurrentPatternId());
+
+    double zoom = 0.0, scroll = 0.0, pitch = 0.0;
+    tabs.capturePianoRollView (zoom, scroll, pitch);
+
+    settings.setPianoRollZoom (zoom);
+    settings.setPianoRollScroll (scroll);
+    settings.setPianoRollPitchScroll (pitch);
+}
+
 void MainComponent::showAudioSettings()
 {
     auto* panel = new AudioSettingsPanel (audioHost, engine);
@@ -133,7 +184,13 @@ void MainComponent::resized()
 
     transportBar.setBounds (area.removeFromTop (46));
     statusBar.setBounds (area.removeFromBottom (StatusBar::barHeight));
-    instrumentPanel.setBounds (area.removeFromRight (300));
+
+    const auto width = juce::jlimit (Settings::minPanelWidth,
+                                     juce::jmax (Settings::minPanelWidth, area.getWidth() - 360),
+                                     panelWidth);
+
+    instrumentPanel.setBounds (area.removeFromRight (width));
+    divider.setBounds (area.removeFromRight (dividerWidth));
     tabs.setBounds (area);
 }
 

@@ -6,6 +6,8 @@
 add_library(dew_core STATIC
   BuildInfo.cpp
 
+  app/Settings.cpp
+
   model/AutomationTargets.cpp
   model/ProjectSchema.cpp
   model/ProjectSerializer.cpp
