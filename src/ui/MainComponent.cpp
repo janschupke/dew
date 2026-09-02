@@ -2,16 +2,16 @@
 
 #include <cmath>
 
-#include "../model/AssetPaths.h"
-#include "../model/Meter.h"
+#include "model/AssetPaths.h"
+#include "model/Meter.h"
 
 #include "AudioSettingsPanel.h"
 #include "MidiSettingsPanel.h"
 
-#include "../model/ProjectEdits.h"
+#include "model/ProjectEdits.h"
 #include "design/Tokens.h"
 
-#include "../model/Ids.h"
+#include "model/Ids.h"
 
 namespace dew
 {

@@ -6,7 +6,7 @@
 
 #include "EngineSnapshot.h"
 #include "Wavetable.h"
-#include "../model/Constants.h"
+#include "model/Constants.h"
 
 namespace dew
 {

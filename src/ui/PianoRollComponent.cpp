@@ -1,8 +1,8 @@
 #include "PianoRollComponent.h"
 
-#include "../model/Ids.h"
-#include "../model/Meter.h"
-#include "../model/ProjectEdits.h"
+#include "model/Ids.h"
+#include "model/Meter.h"
+#include "model/ProjectEdits.h"
 #include "DewLookAndFeel.h"
 #include "RandomizePanel.h"
 #include "TimelineRuler.h"

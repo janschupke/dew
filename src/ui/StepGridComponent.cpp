@@ -1,10 +1,10 @@
 #include "StepGridComponent.h"
 
-#include "../engine/SamplePool.h"
+#include "engine/SamplePool.h"
 
-#include "../model/Ids.h"
-#include "../model/Meter.h"
-#include "../model/ProjectEdits.h"
+#include "model/Ids.h"
+#include "model/Meter.h"
+#include "model/ProjectEdits.h"
 #include "design/Tokens.h"
 #include "primitives/DewControls.h"
 

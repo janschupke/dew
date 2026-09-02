@@ -1,6 +1,6 @@
 #include "SamplePool.h"
 
-#include "../model/AssetPaths.h"
+#include "model/AssetPaths.h"
 
 namespace dew
 {

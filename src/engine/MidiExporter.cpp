@@ -1,6 +1,6 @@
 #include "MidiExporter.h"
 
-#include "../model/Ids.h"
+#include "model/Ids.h"
 
 namespace dew
 {

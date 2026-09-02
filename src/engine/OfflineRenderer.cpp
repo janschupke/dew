@@ -3,7 +3,7 @@
 #include "SamplePool.h"
 
 #include "MidiExporter.h"
-#include "../model/Ids.h"
+#include "model/Ids.h"
 #include "RenderPost.h"
 
 namespace dew

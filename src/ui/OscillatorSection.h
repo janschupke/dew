@@ -2,8 +2,8 @@
 
 #include <juce_gui_basics/juce_gui_basics.h>
 
-#include "../engine/EngineSnapshot.h"
-#include "../model/ProjectDocument.h"
+#include "engine/EngineSnapshot.h"
+#include "model/ProjectDocument.h"
 #include "EditorState.h"
 #include "primitives/DewControls.h"
 

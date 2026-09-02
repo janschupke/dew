@@ -6,10 +6,10 @@
 #include <memory>
 #include <vector>
 
-#include "../model/AutomationTargets.h"
-#include "../model/ProjectSchema.h"
+#include "model/AutomationTargets.h"
+#include "model/ProjectSchema.h"
 #include "Effects.h"
-#include "../model/Constants.h"
+#include "model/Constants.h"
 
 namespace dew
 {

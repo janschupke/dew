@@ -2,8 +2,8 @@
 
 #include <juce_gui_basics/juce_gui_basics.h>
 
-#include "../engine/LiveAudioHost.h"
-#include "../model/ProjectDocument.h"
+#include "engine/LiveAudioHost.h"
+#include "model/ProjectDocument.h"
 #include "EditorState.h"
 
 namespace dew

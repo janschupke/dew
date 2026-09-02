@@ -1,8 +1,8 @@
 #include "ChannelRackComponent.h"
 
-#include "../model/Ids.h"
-#include "../model/Meter.h"
-#include "../model/ProjectEdits.h"
+#include "model/Ids.h"
+#include "model/Meter.h"
+#include "model/ProjectEdits.h"
 #include "design/Icons.h"
 #include "design/Tokens.h"
 #include "primitives/DewControls.h"

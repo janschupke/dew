@@ -11,7 +11,7 @@
 #include "SnapshotBridge.h"
 #include "SynthChannel.h"
 #include "Transport.h"
-#include "../model/Constants.h"
+#include "model/Constants.h"
 
 namespace dew
 {

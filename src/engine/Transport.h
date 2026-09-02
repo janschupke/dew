@@ -1,7 +1,7 @@
 #pragma once
 
 #include <juce_core/juce_core.h>
-#include "../model/Constants.h"
+#include "model/Constants.h"
 
 namespace dew
 {

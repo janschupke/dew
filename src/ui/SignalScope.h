@@ -7,7 +7,7 @@
 #include <juce_gui_basics/juce_gui_basics.h>
 
 #include "design/Tokens.h"
-#include "../model/Constants.h"
+#include "model/Constants.h"
 
 namespace dew
 {

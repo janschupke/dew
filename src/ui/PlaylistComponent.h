@@ -2,10 +2,10 @@
 
 #include <juce_gui_basics/juce_gui_basics.h>
 
-#include "../engine/AudioEngine.h"
-#include "../model/ProjectDocument.h"
+#include "engine/AudioEngine.h"
+#include "model/ProjectDocument.h"
 #include "EditorState.h"
-#include "../model/AutomationTargets.h"
+#include "model/AutomationTargets.h"
 #include "PlaylistToolbar.h"
 #include "TimelineRuler.h"
 #include "TimelineView.h"

@@ -1,9 +1,9 @@
 #include "MixerComponent.h"
 
-#include "../model/ProjectEdits.h"
+#include "model/ProjectEdits.h"
 #include "design/Tokens.h"
 
-#include "../model/Ids.h"
+#include "model/Ids.h"
 #include "DewLookAndFeel.h"
 
 namespace dew

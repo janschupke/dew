@@ -47,3 +47,19 @@ TEST_CASE ("every layer is represented in the scanned sources", "[build][gate]")
         REQUIRE (seen);
     }
 }
+
+TEST_CASE ("no source file includes another layer by relative path", "[build][gate]")
+{
+    // Rooted includes only: "model/Ids.h", never "../model/Ids.h".
+    //
+    // A relative-parent include hard-codes a file's position in the tree, which
+    // is exactly what moving a layer changes - so a hundred of them are a
+    // hundred edits standing between the source tree and any restructure.
+    // src/ is already on the include path, so the rooted form has always
+    // worked; tools/ and tests/ have always used it.
+    const auto found = offenders ([] (const juce::String& line)
+                                  { return line.trim().startsWith ("#include \"../"); });
+
+    INFO ("relative-parent includes:\n" << found.joinIntoString ("\n"));
+    CHECK (found.isEmpty());
+}

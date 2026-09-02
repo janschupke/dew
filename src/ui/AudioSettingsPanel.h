@@ -3,8 +3,8 @@
 #include <juce_audio_devices/juce_audio_devices.h>
 #include <juce_gui_basics/juce_gui_basics.h>
 
-#include "../engine/AudioEngine.h"
-#include "../engine/LiveAudioHost.h"
+#include "engine/AudioEngine.h"
+#include "engine/LiveAudioHost.h"
 #include "primitives/DewControls.h"
 
 namespace dew

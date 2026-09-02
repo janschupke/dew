@@ -1,8 +1,8 @@
 #include "InstrumentPanel.h"
 
-#include "../engine/EngineSnapshot.h"
-#include "../model/Ids.h"
-#include "../model/ProjectEdits.h"
+#include "engine/EngineSnapshot.h"
+#include "model/Ids.h"
+#include "model/ProjectEdits.h"
 #include "DewLookAndFeel.h"
 
 namespace dew

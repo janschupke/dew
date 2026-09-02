@@ -1,7 +1,7 @@
 #include "RenderPanel.h"
 
-#include "../engine/Sequencer.h"
-#include "../model/Ids.h"
+#include "engine/Sequencer.h"
+#include "model/Ids.h"
 #include "design/Tokens.h"
 
 namespace dew

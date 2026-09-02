@@ -2,9 +2,9 @@
 
 #include <juce_gui_basics/juce_gui_basics.h>
 
-#include "../app/Settings.h"
-#include "../engine/OfflineRenderer.h"
-#include "../model/ProjectDocument.h"
+#include "app/Settings.h"
+#include "engine/OfflineRenderer.h"
+#include "model/ProjectDocument.h"
 #include "EditorState.h"
 #include "primitives/DewControls.h"
 #include "primitives/DewNumberField.h"

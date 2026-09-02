@@ -2,8 +2,8 @@
 
 #include <juce_gui_basics/juce_gui_basics.h>
 
-#include "../engine/AudioEngine.h"
-#include "../model/ProjectDocument.h"
+#include "engine/AudioEngine.h"
+#include "model/ProjectDocument.h"
 #include "ChannelRackComponent.h"
 #include "EditorState.h"
 #include "MixerComponent.h"

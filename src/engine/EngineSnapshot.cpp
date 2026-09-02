@@ -1,6 +1,6 @@
 #include "EngineSnapshot.h"
 
-#include "../model/AssetPaths.h"
+#include "model/AssetPaths.h"
 #include "SamplePool.h"
 #include "Wavetable.h"
 
@@ -8,8 +8,8 @@
 #include <cmath>
 #include <functional>
 
-#include "../model/Ids.h"
-#include "../model/Meter.h"
+#include "model/Ids.h"
+#include "model/Meter.h"
 
 namespace dew
 {

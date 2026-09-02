@@ -1,9 +1,9 @@
 #include "EffectChainComponent.h"
 
-#include "../engine/Effects.h"
-#include "../model/Ids.h"
-#include "../model/ProjectEdits.h"
-#include "../model/ProjectSchema.h"
+#include "engine/Effects.h"
+#include "model/Ids.h"
+#include "model/ProjectEdits.h"
+#include "model/ProjectSchema.h"
 #include "design/Icons.h"
 #include "design/Tokens.h"
 

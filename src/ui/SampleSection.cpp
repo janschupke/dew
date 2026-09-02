@@ -1,6 +1,6 @@
 #include "SampleSection.h"
 
-#include "../model/ProjectEdits.h"
+#include "model/ProjectEdits.h"
 #include "design/Tokens.h"
 
 namespace dew

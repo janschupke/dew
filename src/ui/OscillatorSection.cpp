@@ -1,9 +1,9 @@
 #include "OscillatorSection.h"
 
-#include "../engine/Wavetable.h"
-#include "../model/Ids.h"
-#include "../model/ProjectEdits.h"
-#include "../model/ProjectSchema.h"
+#include "engine/Wavetable.h"
+#include "model/Ids.h"
+#include "model/ProjectEdits.h"
+#include "model/ProjectSchema.h"
 
 namespace dew
 {

@@ -2,7 +2,7 @@
 
 #include <juce_gui_basics/juce_gui_basics.h>
 
-#include "../model/ProjectDocument.h"
+#include "model/ProjectDocument.h"
 #include "EditorState.h"
 #include "primitives/DewControls.h"
 #include "primitives/DewNumberField.h"

@@ -3,7 +3,7 @@
 #include <algorithm>
 #include <cmath>
 
-#include "../engine/AudioEngine.h"
+#include "engine/AudioEngine.h"
 
 namespace dew
 {

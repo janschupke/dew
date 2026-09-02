@@ -2,9 +2,9 @@
 
 #include <juce_gui_basics/juce_gui_basics.h>
 
-#include "../SignalScope.h"
-#include "../primitives/DewControls.h"
-#include "../primitives/DewNumberField.h"
+#include "ui/SignalScope.h"
+#include "ui/primitives/DewControls.h"
+#include "ui/primitives/DewNumberField.h"
 
 namespace dew
 {
