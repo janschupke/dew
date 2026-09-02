@@ -15,32 +15,55 @@ Start with **Demos → Getting Started** in the menu bar; there are four.
 - **Channel rack** — a step grid, one row per channel, click or drag to write steps.
   Mute and solo per channel. A pattern longer than the width scrolls rather than
   shrinking its steps into hairlines.
-- **Piano roll** — scroll and zoom in time, rubber-band select, move a chord without
-  losing its shape, draw velocities in the lane below, and let the pattern grow when a
-  note is written past its end. A new note takes the length and velocity of the last
+- **Piano roll** — scroll and zoom in time (wheel, ⌘-wheel or a trackpad pinch),
+  rubber-band select, move a chord without losing its shape, grab and drag velocity bars
+  in the lane below, click the keys to hear them, and let the pattern grow when a note is
+  written past its end. A new note takes the length and velocity of the last
   one you drew. It edits *the same notes* as the step grid: a lit step is a note at the
   channel's base pitch, so there is one representation and two views.
 - **Playlist** — pattern clips on tracks along a bar timeline; a clip longer than its
   pattern repeats it, as FL does. Drag clips between tracks, double-click one to open
   its pattern, and mute or solo a lane.
-- **Effects** — reverb, filter, delay, drive, chorus and a 3-band EQ, chained up to
-  four deep on any channel or mixer track, with bypass and reordering.
+- **Effects** — reverb, filter, delay, drive, chorus and a 3-band EQ, chained up to four
+  deep on any channel, mixer track or the master. An accordion: each effect a card that
+  expands in place, several open at once, dragged to reorder.
 - **Automation** — clips on the playlist that drive a curated set of targets: channel
   and track volume and pan, master gain, and any parameter of any effect. Drag points
   on the curve, double-click to add one, alt-click to remove it.
-- **Mixer** — a fader, pan, mute and solo per insert, plus master. Solo is resolved
-  across the whole mixer, so soloing one track silences the rest.
+- **Mixer** — a fader, pan, mute, solo and a peak meter per insert, plus master. Each
+  strip lists the channels routed into it, and clicking one goes to that channel. Solo is
+  resolved across the whole mixer, so soloing one track silences the rest.
 - **Instrument** — one band-limited oscillator (sine/saw/square/triangle) with an
   octave, an ADSR envelope, and channel volume and pan.
 - **Transport** — play/stop, tempo, a pattern-or-song switch with a live playhead, and
   pattern add/duplicate/delete with an editable pattern length.
+- **Status bar** — what the editors are pointed at, transient messages that expire
+  instead of standing forever, and the DSP load and dropout count.
+- **Audio settings** — driver, output, input, sample rate and buffer size, with the
+  resulting latency in milliseconds and a test tone. Under **Audio**, or ⌘,.
+- **It remembers** — window geometry, the active tab, selections, the piano roll's zoom
+  and scroll, the panel width and the chosen device all come back next launch.
 - **File** — New, Open, Save, Save As, with dirty tracking and a save-before-closing
   prompt. Undo/redo covers every edit.
 
 ⌘N ⌘O ⌘S ⇧⌘S, ⌘Z ⇧⌘Z, Space to play, ⌘L to switch pattern/song, ⌘K to add a channel.
 
-In the piano roll: ⌘-scroll to zoom, shift-scroll to scroll in time, ⌘-drag to
+In the piano roll: ⌘-scroll or pinch to zoom, shift-scroll to scroll in time, ⌘-drag to
 rubber-band, ⌘A to select every note on the channel, delete to remove the selection.
+
+### One bug behind three complaints
+
+`juce::Component` intercepts mouse clicks by default, and `Label::setEditable` does not
+change that — it only touches keyboard focus. So a child widget silently ate the press
+and the row's own `mouseDown` never ran. A channel header's name label covered its whole
+left half; a mixer strip's fader took all its remaining height, leaving selection
+reachable only through a 6px border. Three separately reported "this doesn't do
+anything" problems, one cause.
+
+Display-only labels no longer intercept, and renaming moved to a double-click. Controls
+that must keep their click — a fader cannot give one away and still be draggable — select
+their row through their own callback instead. The tests count points in a row that land
+on a click-swallowing child: 168 on a header and 68 on a strip before, zero after.
 
 ## Design system
 
@@ -57,16 +80,24 @@ one page, which is both how the design system is reviewed and how it is tested.
 Four layers, each testable without the one above it:
 
 ```
+app/      Settings (window, view and device state, validated on read)
 ui/       ChannelRack · PianoRoll · Playlist · Mixer · TransportBar · EffectChain
+          StatusBar · AudioSettingsPanel
           design/ (tokens, icons) · primitives/ · TimelineView (shared step↔pixel map)
             │ edits via ProjectEdits (one undo transaction per gesture)
 model/    ProjectDocument (FileBasedDocument) ── ValueTree ── ProjectSchema ── JSON
           AutomationTargets (the curated automatable set) · DemoLibrary
             │ AsyncUpdater coalesces rebuilds ─→ EngineSnapshot
+            │ PreviewQueue carries auditioned notes ─────────┐
 engine/   SnapshotBridge → Transport → Sequencer → SynthChannel[] → EffectUnit[] → MixerBus
             │
 io/       LiveAudioHost (a device)   ·   OfflineRenderer (dew_render, tests)
 ```
+
+Clicking a piano key has to make a sound without the sequencer running, so preview notes
+reach the audio thread through `PreviewQueue` — a single-producer ring, not a
+latest-wins atomic, because both halves of a fast click can land inside one 5.8ms block
+and latest-wins would let the release overwrite the press and the key would be silent.
 
 The message thread owns the ValueTree and builds snapshots. The audio thread only
 reads a published snapshot: it never allocates, locks, or touches the tree.
@@ -200,7 +231,7 @@ project it was overwriting.
 
 ## Testing
 
-Catch2 via CTest. `ctest --preset release` runs all 147.
+Catch2 via CTest. `ctest --preset release` runs all 190.
 
 `dew_render` loads a project and renders it to WAV with no audio device, which is how
 playback correctness is checked without ears:
@@ -231,7 +262,9 @@ sound. That runs in CI and on machines without screen-recording permission.
 
 ```sh
 dew_shot editor out.png --project examples/melody.dew --tab piano-roll --size 1600x1000
-dew_shot gallery out.png
+dew_shot tabs out --project examples/effects.dew     # one PNG per tab
+dew_shot gallery out.png                             # the design system
+dew_shot audio out.png                               # the audio settings panel
 ```
 
 It exists because screen-recording permission is not always available, and because a
