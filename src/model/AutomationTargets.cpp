@@ -1,6 +1,8 @@
 #include "model/AutomationTargets.h"
 
 #include "model/Ids.h"
+#include "model/ModuleCatalog.h"
+#include <array>
 
 namespace dew
 {
@@ -80,52 +82,34 @@ const std::vector<AutomationParamSpec>& oscParams()
 
 const std::vector<AutomationParamSpec>& effectParams (const juce::String& effectType)
 {
-    static const std::vector<AutomationParamSpec> filter {
-        { &ids::cutoff,    "Cutoff",    20.0, 18000.0, false, true },
-        { &ids::resonance, "Resonance",  0.05, 4.0,    false },
-        { &ids::mix,       "Mix",        0.0,  1.0,    false },
-    };
+    // A projection of the catalog, not a sixth copy of the same numbers. This
+    // table used to restate every effect parameter's range and curve, and had
+    // already drifted: it stopped `cutoff` at 18kHz while the engine loaded it
+    // to 20kHz, so the top octave of the filter was reachable by hand and not
+    // by a curve. The EQ's rows were also in a different order here than in the
+    // editor, which is the sort of thing only independent maintenance produces.
+    static const auto byType = []
+    {
+        std::array<std::vector<AutomationParamSpec>, (size_t) kNumEffectTypes> built;
 
-    static const std::vector<AutomationParamSpec> reverb {
-        { &ids::roomSize, "Size",    0.0, 1.0, false },
-        { &ids::damping,  "Damping", 0.0, 1.0, false },
-        { &ids::width,    "Width",   0.0, 1.0, false },
-        { &ids::mix,      "Mix",     0.0, 1.0, false },
-    };
+        for (const auto& descriptor : effectDescriptors())
+        {
+            auto& out = built[(size_t) descriptor.type];
 
-    static const std::vector<AutomationParamSpec> delay {
-        { &ids::delayMs,  "Time",     1.0, 1000.0, false, true },
-        { &ids::feedback, "Feedback", 0.0, 0.95,   false },
-        { &ids::mix,      "Mix",      0.0, 1.0,    false },
-    };
+            for (const auto& param : effectParamsFor (descriptor.type))
+                if (param.automatable)
+                    out.push_back ({ param.property, param.displayName,
+                                     param.minimum, param.maximum, param.bipolar,
+                                     param.curve == ParamCurve::logarithmic });
+        }
 
-    static const std::vector<AutomationParamSpec> drive {
-        { &ids::drive,      "Drive",  1.0, 40.0, false },
-        { &ids::outputGain, "Output", 0.0, 4.0,  false },
-        { &ids::mix,        "Mix",    0.0, 1.0,  false },
-    };
-
-    static const std::vector<AutomationParamSpec> chorus {
-        { &ids::rate,  "Rate",  0.01, 20.0, false, true },
-        { &ids::depth, "Depth", 0.0,  1.0,  false },
-        { &ids::mix,   "Mix",   0.0,  1.0,  false },
-    };
-
-    static const std::vector<AutomationParamSpec> eq {
-        { &ids::lowGainDb,  "Low",   -24.0, 24.0,   true },
-        { &ids::midGainDb,  "Mid",   -24.0, 24.0,   true },
-        { &ids::midFreq,    "Freq",  100.0, 8000.0, false, true },
-        { &ids::highGainDb, "High",  -24.0, 24.0,   true },
-    };
+        return built;
+    }();
 
     static const std::vector<AutomationParamSpec> none {};
 
-    if (effectType == "reverb") return reverb;
-    if (effectType == "delay")  return delay;
-    if (effectType == "drive")  return drive;
-    if (effectType == "chorus") return chorus;
-    if (effectType == "eq")     return eq;
-    if (effectType == "filter") return filter;
+    if (const auto type = effectTypeFor (effectType))
+        return byType[(size_t) *type];
 
     return none;
 }

@@ -254,27 +254,61 @@ AutomationParam automationParamFromString (const juce::String& name)
     return AutomationParam::none;
 }
 
+/** One parameter off a node, clamped, with the DECLARED default when absent.
+
+    The default matters as much as the clamp. Reading a missing property gave a
+    void var, which became 0.0, which for `mix` meant a slot that silently
+    bypassed itself and for an amp envelope's sustain meant a note that decayed
+    to nothing - both with no warning, both looking exactly like a working
+    project that had gone quiet.
+*/
+float readParam (const juce::ValueTree& node, const ParamSpec& spec)
+{
+    return spec.clamp ((float) (double) node.getProperty (*spec.property, spec.defaultVar()));
+}
+
 EffectParams readEffectParams (const juce::ValueTree& effect)
 {
     EffectParams p;
 
-    p.mix        = juce::jlimit (0.0f, 1.0f, (float) (double) effect[ids::mix]);
-    p.filterMode = filterModeFromString (effect[ids::filterMode].toString());
-    p.cutoff     = juce::jlimit (20.0f, 20000.0f, (float) (double) effect[ids::cutoff]);
-    p.resonance  = juce::jlimit (0.05f, 4.0f, (float) (double) effect[ids::resonance]);
-    p.roomSize   = juce::jlimit (0.0f, 1.0f, (float) (double) effect[ids::roomSize]);
-    p.damping    = juce::jlimit (0.0f, 1.0f, (float) (double) effect[ids::damping]);
-    p.width      = juce::jlimit (0.0f, 1.0f, (float) (double) effect[ids::width]);
-    p.delayMs    = juce::jlimit (1.0f, EffectUnit::maxDelayMs, (float) (double) effect[ids::delayMs]);
-    p.feedback   = juce::jlimit (0.0f, 0.95f, (float) (double) effect[ids::feedback]);
-    p.drive      = juce::jlimit (1.0f, 40.0f, (float) (double) effect[ids::drive]);
-    p.outputGain = juce::jlimit (0.0f, 4.0f, (float) (double) effect[ids::outputGain]);
-    p.rate       = juce::jlimit (0.01f, 20.0f, (float) (double) effect[ids::rate]);
-    p.depth      = juce::jlimit (0.0f, 1.0f, (float) (double) effect[ids::depth]);
-    p.lowGainDb  = juce::jlimit (-24.0f, 24.0f, (float) (double) effect[ids::lowGainDb]);
-    p.midGainDb  = juce::jlimit (-24.0f, 24.0f, (float) (double) effect[ids::midGainDb]);
-    p.midFreq    = juce::jlimit (100.0f, 8000.0f, (float) (double) effect[ids::midFreq]);
-    p.highGainDb = juce::jlimit (-24.0f, 24.0f, (float) (double) effect[ids::highGainDb]);
+    const auto by = [] (const juce::Identifier& id) -> const ParamSpec*
+    {
+        for (const auto& param : commonEffectParams())
+            if (*param.property == id)
+                return &param;
+
+        for (const auto& descriptor : effectDescriptors())
+            for (int i = 0; i < descriptor.numParams; ++i)
+                if (*descriptor.params[i].property == id)
+                    return &descriptor.params[i];
+
+        jassertfalse;   // a parameter the catalog does not declare
+        return nullptr;
+    };
+
+    const auto read = [&effect, &by] (const juce::Identifier& id)
+    {
+        const auto* spec = by (id);
+        return spec != nullptr ? readParam (effect, *spec) : 0.0f;
+    };
+
+    p.mix        = read (ids::mix);
+    p.filterMode = filterModeFromString (effect.getProperty (ids::filterMode, "lowpass").toString());
+    p.cutoff     = read (ids::cutoff);
+    p.resonance  = read (ids::resonance);
+    p.roomSize   = read (ids::roomSize);
+    p.damping    = read (ids::damping);
+    p.width      = read (ids::width);
+    p.delayMs    = read (ids::delayMs);
+    p.feedback   = read (ids::feedback);
+    p.drive      = read (ids::drive);
+    p.outputGain = read (ids::outputGain);
+    p.rate       = read (ids::rate);
+    p.depth      = read (ids::depth);
+    p.lowGainDb  = read (ids::lowGainDb);
+    p.midGainDb  = read (ids::midGainDb);
+    p.midFreq    = read (ids::midFreq);
+    p.highGainDb = read (ids::highGainDb);
 
     return p;
 }
@@ -300,9 +334,23 @@ EffectChainSnapshot readEffectChain (const juce::ValueTree& owner, const juce::S
             break;
         }
 
+        // An unrecognised type used to become a low-pass filter, silently. A
+        // project written by a newer dew then played back wrong with nothing
+        // said about it - the one failure in this file that had no warning
+        // while its neighbours all did.
+        const auto typeName = effect[ids::type].toString();
+        const auto type = effectTypeFor (typeName);
+
+        if (! type.has_value())
+        {
+            warn (ownerName + " has an effect of unknown type \"" + typeName
+                  + "\"; it is not rendered.");
+            continue;
+        }
+
         EffectSnapshot slot;
         slot.id = (int) effect[ids::id];
-        slot.type = effectTypeFromString (effect[ids::type].toString());
+        slot.type = *type;
         slot.enabled = (bool) effect[ids::enabled];
         slot.params = readEffectParams (effect);
         slot.unitIndex = claimEffectUnit ((int) effect[ids::id], unitOwners);

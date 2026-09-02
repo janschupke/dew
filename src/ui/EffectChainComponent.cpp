@@ -30,72 +30,6 @@ juce::Path iconForType (EffectType type)
     return icons::effectFilter();
 }
 
-/** How one parameter is presented.
-
-    `knob` for the 0..1 quantities a hand turns, `field` for frequencies and
-    times where the number itself matters. A table rather than a switch full of
-    setter calls: adding an effect type is a row here, and the layout code never
-    has to know what a "cutoff" is.
-*/
-struct ParamSpec
-{
-    enum class Control { knob, field };
-
-    const juce::Identifier& property;
-    const char* caption;
-    double minimum, maximum, interval;
-    int decimals;
-    const char* suffix;
-    Control control;
-    bool bipolar = false;
-    bool logarithmic = false;
-};
-
-std::vector<ParamSpec> parametersFor (EffectType type)
-{
-    using C = ParamSpec::Control;
-
-    switch (type)
-    {
-        case EffectType::filter:
-            return { { ids::cutoff,     "CUTOFF", 20.0, 18000.0, 1.0, 0, " Hz", C::field, false, true },
-                     { ids::resonance,  "RES",    0.05, 4.0,   0.01, 2, "", C::knob },
-                     { ids::mix,        "MIX",    0.0,  1.0,   0.01, 2, "", C::knob } };
-
-        case EffectType::reverb:
-            return { { ids::roomSize,   "SIZE",   0.0,  1.0,   0.01, 2, "", C::knob },
-                     { ids::damping,    "DAMP",   0.0,  1.0,   0.01, 2, "", C::knob },
-                     { ids::width,      "WIDTH",  0.0,  1.0,   0.01, 2, "", C::knob },
-                     { ids::mix,        "MIX",    0.0,  1.0,   0.01, 2, "", C::knob } };
-
-        case EffectType::delay:
-            return { { ids::delayMs,    "TIME",   1.0,  1000.0, 1.0, 0, " ms", C::field, false, true },
-                     { ids::feedback,   "FBK",    0.0,  0.95,  0.01, 2, "", C::knob },
-                     { ids::mix,        "MIX",    0.0,  1.0,   0.01, 2, "", C::knob } };
-
-        case EffectType::drive:
-            return { { ids::drive,      "DRIVE",  1.0,  40.0,  0.1,  1, "", C::knob },
-                     { ids::outputGain, "OUT",    0.0,  4.0,   0.01, 2, "", C::knob },
-                     { ids::mix,        "MIX",    0.0,  1.0,   0.01, 2, "", C::knob } };
-
-        case EffectType::chorus:
-            return { { ids::rate,       "RATE",   0.01, 20.0,  0.01, 2, " Hz", C::field, false, true },
-                     { ids::depth,      "DEPTH",  0.0,  1.0,   0.01, 2, "", C::knob },
-                     { ids::mix,        "MIX",    0.0,  1.0,   0.01, 2, "", C::knob } };
-
-        case EffectType::eq:
-            return { { ids::lowGainDb,  "LOW",    -24.0, 24.0, 0.1,  1, " dB", C::knob, true },
-                     { ids::midGainDb,  "MID",    -24.0, 24.0, 0.1,  1, " dB", C::knob, true },
-                     { ids::highGainDb, "HIGH",   -24.0, 24.0, 0.1,  1, " dB", C::knob, true },
-                     { ids::midFreq,    "FREQ",   100.0, 8000.0, 1.0, 0, " Hz", C::field, false, true } };
-    }
-
-    return {};
-}
-
-const EffectType allEffectTypes[] { EffectType::filter, EffectType::reverb, EffectType::delay,
-                                    EffectType::drive, EffectType::chorus, EffectType::eq };
-
 } // namespace
 
 /** One effect: a header that is always visible, and a body that folds away. */
@@ -120,7 +54,10 @@ public:
     Card (EffectChainComponent& o, ProjectDocument& d, EditorState& s, juce::ValueTree e, int i)
         : owner (o), document (d), editorState (s), effect (std::move (e)), index (i)
     {
-        type = effectTypeFromString (effect[ids::type].toString());
+        // A card for an effect the catalog does not know cannot be built, and
+        // the snapshot builder has already warned about it by the time we are
+        // here; falling back keeps the editor usable rather than empty.
+        type = effectTypeFor (effect[ids::type].toString()).value_or (EffectType::filter);
 
         bypassButton.setClickingTogglesState (true);
         bypassButton.setToggleState (! (bool) effect[ids::enabled], juce::dontSendNotification);
@@ -434,7 +371,7 @@ private:
         }
     }
 
-    struct ParamControl
+    struct ParamWidget
     {
         std::unique_ptr<DewKnob> knob;
         std::unique_ptr<DewNumberField> field;
@@ -487,15 +424,23 @@ private:
             addAndMakeVisible (*modeBox);
         }
 
-        for (const auto& spec : parametersFor (type))
+        for (const auto& spec : effectParamsFor (type))
         {
-            auto control = std::make_unique<ParamControl>();
-            control->property = spec.property;
+            // The filter's mode is a named set, not a number, and it has its own
+            // combo box above. Everything else the catalog declares gets a
+            // control here - which is how the EQ finally shows its mix, a
+            // parameter the engine has always applied and this editor never
+            // offered.
+            if (spec.control == ParamControl::choice)
+                continue;
 
-            const auto property = spec.property;
-            const auto value = (double) effect[property];
+            auto control = std::make_unique<ParamWidget>();
+            control->property = *spec.property;
 
-            if (spec.control == ParamSpec::Control::knob)
+            const auto property = *spec.property;
+            const auto value = (double) effect.getProperty (property, spec.defaultVar());
+
+            if (spec.control == ParamControl::knob)
             {
                 control->knob = std::make_unique<DewKnob> (spec.caption, spec.minimum,
                                                            spec.maximum, spec.interval);
@@ -515,7 +460,7 @@ private:
                 control->field->setNumDecimalPlaces (spec.decimals);
                 control->field->setCaption (spec.caption);
                 control->field->setSuffix (spec.suffix);
-                control->field->setLogarithmic (spec.logarithmic);
+                control->field->setLogarithmic (spec.curve == ParamCurve::logarithmic);
                 control->field->setValue (value, juce::dontSendNotification);
 
                 auto* field = control->field.get();
@@ -548,7 +493,7 @@ private:
     DewIconButton downButton { icons::chevronDown(), "Move later in the chain" };
     DewIconButton removeButton { icons::trash(), "Remove this effect" };
 
-    juce::OwnedArray<ParamControl> params;
+    juce::OwnedArray<ParamWidget> params;
     std::unique_ptr<juce::ComboBox> modeBox;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (Card)
@@ -681,15 +626,21 @@ void EffectChainComponent::showAddMenu (juce::Component& target)
 
     juce::PopupMenu menu;
 
-    for (int i = 0; i < (int) std::size (allEffectTypes); ++i)
-        menu.addItem (i + 1, effectTypeDisplayName (allEffectTypes[i]));
+    // Built from the catalog, so a new effect type appears in the picker
+    // because it exists, not because someone remembered a third list.
+    const auto& all = effectDescriptors();
+
+    for (int i = 0; i < (int) all.size(); ++i)
+        menu.addItem (i + 1, all[(size_t) i].displayName);
 
     menu.setLookAndFeel (&getLookAndFeel());
     menu.showMenuAsync (juce::PopupMenu::Options().withTargetComponent (target),
                         [this] (int choice)
                         {
-                            if (choice > 0 && choice <= (int) std::size (allEffectTypes))
-                                addEffectOfType (effectTypeToString (allEffectTypes[choice - 1]));
+                            const auto& types = effectDescriptors();
+
+                            if (choice > 0 && choice <= (int) types.size())
+                                addEffectOfType (types[(size_t) (choice - 1)].id);
                         });
 }
 

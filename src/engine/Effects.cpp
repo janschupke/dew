@@ -3,69 +3,6 @@
 namespace dew
 {
 
-// --- names -------------------------------------------------------------------
-
-EffectType effectTypeFromString (const juce::String& s)
-{
-    if (s == "reverb") return EffectType::reverb;
-    if (s == "delay")  return EffectType::delay;
-    if (s == "drive")  return EffectType::drive;
-    if (s == "chorus") return EffectType::chorus;
-    if (s == "eq")     return EffectType::eq;
-
-    return EffectType::filter;
-}
-
-juce::String effectTypeToString (EffectType type)
-{
-    switch (type)
-    {
-        case EffectType::reverb: return "reverb";
-        case EffectType::delay:  return "delay";
-        case EffectType::drive:  return "drive";
-        case EffectType::chorus: return "chorus";
-        case EffectType::eq:     return "eq";
-        case EffectType::filter: break;
-    }
-
-    return "filter";
-}
-
-juce::String effectTypeDisplayName (EffectType type)
-{
-    switch (type)
-    {
-        case EffectType::reverb: return "Reverb";
-        case EffectType::delay:  return "Delay";
-        case EffectType::drive:  return "Drive";
-        case EffectType::chorus: return "Chorus";
-        case EffectType::eq:     return "EQ";
-        case EffectType::filter: break;
-    }
-
-    return "Filter";
-}
-
-FilterMode filterModeFromString (const juce::String& s)
-{
-    if (s == "highpass") return FilterMode::highpass;
-    if (s == "bandpass") return FilterMode::bandpass;
-
-    return FilterMode::lowpass;
-}
-
-juce::String filterModeToString (FilterMode mode)
-{
-    switch (mode)
-    {
-        case FilterMode::highpass: return "highpass";
-        case FilterMode::bandpass: return "bandpass";
-        case FilterMode::lowpass:  break;
-    }
-
-    return "lowpass";
-}
-
 // --- Biquad ------------------------------------------------------------------
 
 void Biquad::setCoefficients (double b0n, double b1n, double b2n,
@@ -224,8 +161,13 @@ void EffectUnit::processFilter (const EffectParams& params, float* left, float* 
         case FilterMode::lowpass:  filter.setType (juce::dsp::StateVariableTPTFilterType::lowpass); break;
     }
 
+    // The one range clamp left in this file, and it is not a range: it is what
+    // the device can represent. Cutoff is declared up to 20kHz and at 44.1k the
+    // filter cannot go above about 19.8k, so this is load-bearing rather than
+    // defensive. Every other jlimit here restated a range the catalog already
+    // owns and the snapshot builder had already applied.
     filter.setCutoffFrequency (juce::jlimit (20.0f, (float) (sampleRate * 0.45), params.cutoff));
-    filter.setResonance (juce::jlimit (0.05f, 4.0f, params.resonance));
+    filter.setResonance (params.resonance);
 
     for (int i = 0; i < numSamples; ++i)
     {
@@ -238,9 +180,9 @@ void EffectUnit::processReverb (const EffectParams& params, float* left, float* 
                                 int numSamples) noexcept
 {
     juce::Reverb::Parameters p;
-    p.roomSize = juce::jlimit (0.0f, 1.0f, params.roomSize);
-    p.damping = juce::jlimit (0.0f, 1.0f, params.damping);
-    p.width = juce::jlimit (0.0f, 1.0f, params.width);
+    p.roomSize = params.roomSize;
+    p.damping = params.damping;
+    p.width = params.width;
 
     // The unit's own wet/dry runs the mix, so the reverb itself is fully wet -
     // otherwise `mix` would be applied twice and never reach a full tail.
@@ -259,7 +201,7 @@ void EffectUnit::processDelay (const EffectParams& params, float* left, float* r
                                             params.delayMs * 0.001f * (float) sampleRate);
     delayLine.setDelay (delaySamples);
 
-    const auto feedback = juce::jlimit (0.0f, 0.95f, params.feedback);
+    const auto feedback = params.feedback;
 
     for (int i = 0; i < numSamples; ++i)
     {
@@ -282,8 +224,8 @@ void EffectUnit::processDelay (const EffectParams& params, float* left, float* r
 void EffectUnit::processDrive (const EffectParams& params, float* left, float* right,
                                int numSamples) noexcept
 {
-    const auto drive = juce::jlimit (1.0f, 40.0f, params.drive);
-    const auto gain = juce::jlimit (0.0f, 4.0f, params.outputGain);
+    const auto drive = params.drive;
+    const auto gain = params.outputGain;
 
     // tanh saturation, normalised so raising the drive changes the character
     // rather than only the level.
@@ -299,8 +241,8 @@ void EffectUnit::processDrive (const EffectParams& params, float* left, float* r
 void EffectUnit::processChorus (const EffectParams& params, float* left, float* right,
                                 int numSamples) noexcept
 {
-    chorus.setRate (juce::jlimit (0.01f, 20.0f, params.rate));
-    chorus.setDepth (juce::jlimit (0.0f, 1.0f, params.depth));
+    chorus.setRate (params.rate);
+    chorus.setDepth (params.depth);
     chorus.setCentreDelay (12.0f);
     chorus.setFeedback (0.0f);
     chorus.setMix (1.0f);
@@ -314,13 +256,13 @@ void EffectUnit::processChorus (const EffectParams& params, float* left, float* 
 void EffectUnit::processEq (const EffectParams& params, float* left, float* right,
                             int numSamples) noexcept
 {
-    const auto midFreq = juce::jlimit (100.0f, 8000.0f, params.midFreq);
+    const auto midFreq = params.midFreq;
 
     for (int c = 0; c < 2; ++c)
     {
-        eqLow[c].setLowShelf (sampleRate, 200.0f, juce::jlimit (-24.0f, 24.0f, params.lowGainDb));
-        eqMid[c].setPeak (sampleRate, midFreq, 0.9f, juce::jlimit (-24.0f, 24.0f, params.midGainDb));
-        eqHigh[c].setHighShelf (sampleRate, 4000.0f, juce::jlimit (-24.0f, 24.0f, params.highGainDb));
+        eqLow[c].setLowShelf (sampleRate, 200.0f, params.lowGainDb);
+        eqMid[c].setPeak (sampleRate, midFreq, 0.9f, params.midGainDb);
+        eqHigh[c].setHighShelf (sampleRate, 4000.0f, params.highGainDb);
     }
 
     for (int i = 0; i < numSamples; ++i)

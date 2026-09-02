@@ -1,4 +1,5 @@
 #include "model/ProjectSchema.h"
+#include "model/ModuleCatalog.h"
 
 namespace dew
 {
@@ -99,36 +100,43 @@ const NodeSpec& instrumentSpec()
 */
 const NodeSpec& effectSpec()
 {
-    static const NodeSpec spec {
-        ids::EFFECT,
-        { { ids::id,         1 },
-          { ids::type,       "filter" },
-          { ids::enabled,    true },
-          { ids::mix,        1.0 },
+    // Generated from the catalog rather than restated. Every property below
+    // used to be a second copy of a default that also lived in EffectParams, a
+    // clamp in the snapshot builder, a range in the automation table and a
+    // range in the editor - which is how `cutoff` came to have three different
+    // maxima.
+    //
+    // The ORDER is load-bearing and reproduced deliberately: identifying,
+    // then common, then each type's own in EffectType order. ValueTree equality
+    // is order-sensitive and the committed examples are byte-compared against
+    // what the factory builds, so a different order here is a different file.
+    static const NodeSpec spec = []
+    {
+        std::vector<PropSpec> props {
+            { ids::id,      1 },
+            { ids::type,    "filter" },
+            { ids::enabled, true },
+        };
 
-          { ids::filterMode, "lowpass" },
-          { ids::cutoff,     1200.0 },
-          { ids::resonance,  0.4 },
+        const auto append = [&props] (const ParamSpec& param)
+        {
+            for (const auto& existing : props)
+                if (existing.id == *param.property)
+                    return;
 
-          { ids::roomSize,   0.5 },
-          { ids::damping,    0.5 },
-          { ids::width,      1.0 },
+            props.push_back ({ *param.property, param.defaultVar() });
+        };
 
-          { ids::delayMs,    250.0 },
-          { ids::feedback,   0.35 },
+        for (const auto& param : commonEffectParams())
+            append (param);
 
-          { ids::drive,      2.0 },
-          { ids::outputGain, 1.0 },
+        for (const auto& descriptor : effectDescriptors())
+            for (int i = 0; i < descriptor.numParams; ++i)
+                append (descriptor.params[i]);
 
-          { ids::rate,       1.2 },
-          { ids::depth,      0.3 },
+        return NodeSpec { ids::EFFECT, std::move (props), {} };
+    }();
 
-          { ids::lowGainDb,  0.0 },
-          { ids::midGainDb,  0.0 },
-          { ids::midFreq,    900.0 },
-          { ids::highGainDb, 0.0 } },
-        {}
-    };
     return spec;
 }
 

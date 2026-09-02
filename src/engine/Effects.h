@@ -3,21 +3,11 @@
 #include <juce_audio_basics/juce_audio_basics.h>
 #include <juce_dsp/juce_dsp.h>
 #include "model/Constants.h"
+#include "model/EffectType.h"
+#include "model/ModuleCatalog.h"
 
 namespace dew
 {
-
-/** The effects a chain slot can hold. Ordered as they appear in the picker. */
-enum class EffectType { filter, reverb, delay, drive, chorus, eq };
-
-EffectType effectTypeFromString (const juce::String&);
-juce::String effectTypeToString (EffectType);
-juce::String effectTypeDisplayName (EffectType);
-
-enum class FilterMode { lowpass, highpass, bandpass };
-
-FilterMode filterModeFromString (const juce::String&);
-juce::String filterModeToString (FilterMode);
 
 /** Every parameter of every effect, flat.
 
