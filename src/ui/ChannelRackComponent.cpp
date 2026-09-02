@@ -43,6 +43,13 @@ public:
         muteButton.setToggleState ((bool) channel[ids::muted], juce::dontSendNotification);
         muteButton.onClick = [this]
         {
+            // Selects on the CLICK. This was on onStateChange, which fires for
+            // every internal transition - buttonNormal -> buttonOver among
+            // them - and the row forwards its children's mouse events so it can
+            // light up on hover. Between the two, merely moving the pointer
+            // across M selected that channel with no click at all.
+            select();
+
             auto& undo = document.getUndoManager();
             undo.beginNewTransaction ("Mute channel");
             channel.setProperty (ids::muted, muteButton.getToggleState(), &undo);
@@ -52,6 +59,8 @@ public:
         soloButton.setToggleState ((bool) channel[ids::solo], juce::dontSendNotification);
         soloButton.onClick = [this]
         {
+            select();
+
             auto& undo = document.getUndoManager();
             undo.beginNewTransaction ("Solo channel");
             channel.setProperty (ids::solo, soloButton.getToggleState(), &undo);
@@ -72,14 +81,13 @@ public:
         armButton.setTooltip ("Arm this channel for recording");
         armButton.onClick = [this]
         {
+            select();
             editorState.setArmedChannelId (armButton.getToggleState() ? getChannelId() : 0);
         };
         addChildComponent (armButton);
 
-        // M, S and the knobs must keep their clicks, so they select the row
-        // explicitly.
-        muteButton.onStateChange = [this] { select(); };
-        soloButton.onStateChange = [this] { select(); };
+        // The knobs and the arm button keep their own clicks too, and select
+        // the row from their own handlers - see attachKnob.
 
         // Hover only - see forwardChildMouseEventsTo.
         forwardChildMouseEventsTo (*this);

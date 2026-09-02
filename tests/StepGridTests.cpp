@@ -320,6 +320,105 @@ TEST_CASE ("a left-drag on the step grid still paints", "[stepgrid][erase]")
     REQUIRE (stepsLitOnRow (h, channelId) == 4);
 }
 
+TEST_CASE ("a left click on a lit step keeps it, and selects its channel",
+           "[stepgrid][erase]")
+{
+    // The first cell used to decide whether the whole drag added or removed, so
+    // pressing a lit step turned the gesture into an erase - which made the
+    // ordinary way of looking at a pattern, clicking around it, delete the
+    // thing that was clicked.
+    const juce::ScopedJuceInitialiser_GUI juceInit;
+
+    GridHarness h;
+
+    const auto channel = h.firstChannel();
+    const auto channelId = (int) channel[ids::id];
+
+    juce::UndoManager setup;
+
+    for (int step = 0; step < 16; ++step)
+        if (auto existing = ProjectEdits::findNoteAtStep (h.pattern(), channelId, step);
+            existing.isValid())
+            ProjectEdits::removeNote (h.pattern(), existing, &setup);
+
+    ProjectEdits::addNote (h.pattern(), channelId, 4, 1, (int) channel[ids::basePitch],
+                           1.0f, &setup);
+
+    REQUIRE (stepsLitOnRow (h, channelId) == 1);
+
+    h.editorState.setSelectedChannelId (-1);
+
+    const juce::ModifierKeys left { juce::ModifierKeys::leftButtonModifier };
+
+    h.grid.mouseDown (eventAt (h.grid, cellCentre (h, 4, 0), left));
+    h.grid.mouseUp   (eventAt (h.grid, cellCentre (h, 4, 0), left));
+
+    CHECK (stepsLitOnRow (h, channelId) == 1);
+    CHECK (h.editorState.getSelectedChannelId() == channelId);
+}
+
+TEST_CASE ("a left drag over lit steps fills the gaps and leaves them alone",
+           "[stepgrid][erase]")
+{
+    const juce::ScopedJuceInitialiser_GUI juceInit;
+
+    GridHarness h;
+
+    const auto channel = h.firstChannel();
+    const auto channelId = (int) channel[ids::id];
+    const auto pitch = (int) channel[ids::basePitch];
+
+    juce::UndoManager setup;
+
+    for (int step = 0; step < 16; ++step)
+        if (auto existing = ProjectEdits::findNoteAtStep (h.pattern(), channelId, step);
+            existing.isValid())
+            ProjectEdits::removeNote (h.pattern(), existing, &setup);
+
+    ProjectEdits::addNote (h.pattern(), channelId, 0, 1, pitch, 1.0f, &setup);
+    ProjectEdits::addNote (h.pattern(), channelId, 3, 1, pitch, 1.0f, &setup);
+
+    const juce::ModifierKeys left { juce::ModifierKeys::leftButtonModifier };
+
+    // Starting ON a lit step, which used to mean "erase everything I touch".
+    h.grid.mouseDown (eventAt (h.grid, cellCentre (h, 0, 0), left));
+    h.grid.mouseDrag (eventAt (h.grid, cellCentre (h, 3, 0), left));
+    h.grid.mouseUp   (eventAt (h.grid, cellCentre (h, 3, 0), left));
+
+    CHECK (stepsLitOnRow (h, channelId) == 4);
+}
+
+TEST_CASE ("right-drag is still the way a step is taken back", "[stepgrid][erase]")
+{
+    const juce::ScopedJuceInitialiser_GUI juceInit;
+
+    GridHarness h;
+
+    const auto channel = h.firstChannel();
+    const auto channelId = (int) channel[ids::id];
+    const auto pitch = (int) channel[ids::basePitch];
+
+    juce::UndoManager setup;
+
+    for (int step = 0; step < 16; ++step)
+        if (auto existing = ProjectEdits::findNoteAtStep (h.pattern(), channelId, step);
+            existing.isValid())
+            ProjectEdits::removeNote (h.pattern(), existing, &setup);
+
+    for (int step = 0; step < 4; ++step)
+        ProjectEdits::addNote (h.pattern(), channelId, step, 1, pitch, 1.0f, &setup);
+
+    REQUIRE (stepsLitOnRow (h, channelId) == 4);
+
+    const juce::ModifierKeys right { juce::ModifierKeys::rightButtonModifier };
+
+    h.grid.mouseDown (eventAt (h.grid, cellCentre (h, 0, 0), right));
+    h.grid.mouseDrag (eventAt (h.grid, cellCentre (h, 3, 0), right));
+    h.grid.mouseUp   (eventAt (h.grid, cellCentre (h, 3, 0), right));
+
+    CHECK (stepsLitOnRow (h, channelId) == 0);
+}
+
 TEST_CASE ("rewind zeroes the position even when nothing is processing", "[stepgrid][transport]")
 {
     ProjectDocument document;

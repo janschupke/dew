@@ -138,13 +138,14 @@ namespace
 /** Builds a MouseEvent the way the framework would, so a component's handler
     can be driven directly in a headless test.
 */
-juce::MouseEvent clickAt (juce::Component& target, juce::Point<int> local, int clickCount = 1)
+juce::MouseEvent clickAt (juce::Component& target, juce::Point<int> local, int clickCount = 1,
+                          juce::ModifierKeys mods = juce::ModifierKeys())
 {
     const auto position = local.toFloat();
 
     return { juce::Desktop::getInstance().getMainMouseSource(),
              position,
-             juce::ModifierKeys(),
+             mods,
              1.0f, 0.0f, 0.0f, 0.0f, 0.0f,
              &target, &target,
              juce::Time::getCurrentTime(),
@@ -212,7 +213,7 @@ TEST_CASE ("clicks land on the step grid across window sizes", "[ui][hittest]")
     }
 }
 
-TEST_CASE ("clicking a step writes a note, and clicking it again clears it", "[ui][hittest]")
+TEST_CASE ("clicking a step writes a note, and right-clicking clears it", "[ui][hittest]")
 {
     const juce::ScopedJuceInitialiser_GUI juceInit;
 
@@ -239,6 +240,14 @@ TEST_CASE ("clicking a step writes a note, and clicking it again clears it", "[u
     const auto note = ProjectEdits::findNoteAtStep (pattern, 2, 5);
     REQUIRE (note.isValid());
 
+    // Clicking it again leaves it alone. It used to toggle, which made the
+    // ordinary way of looking at a pattern - clicking around it - delete the
+    // thing that was clicked.
     grid->mouseDown (clickAt (*grid, local));
+    REQUIRE (countNotes (pattern) == 1);
+
+    // Taking a step back is a right-click, the way it is over the piano roll.
+    grid->mouseDown (clickAt (*grid, local, 1,
+                              juce::ModifierKeys (juce::ModifierKeys::rightButtonModifier)));
     REQUIRE (countNotes (pattern) == 0);
 }

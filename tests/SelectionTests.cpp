@@ -12,6 +12,7 @@
 #include "ui/design/Tokens.h"
 #include "ui/EffectChainComponent.h"
 #include "ui/MixerComponent.h"
+#include "ui/primitives/DewControls.h"
 
 using namespace dew;
 
@@ -234,6 +235,48 @@ TEST_CASE ("a mixer strip has no click-swallowing dead zones", "[ui][selection]"
               << (dead.isEmpty() ? "" : juce::String (" first at ") + dead[0].toString()));
         REQUIRE (dead.isEmpty());
     }
+}
+
+TEST_CASE ("hovering a channel's M or S does not select it", "[ui][selection]")
+{
+    // These selected their row from onStateChange, which fires for every
+    // internal transition - buttonNormal -> buttonOver among them. The row also
+    // forwards its children's mouse events so it can light up on hover, so
+    // moving the pointer across the M and S buttons walked the selection down
+    // the list with no click at all.
+    //
+    // Hover itself cannot be driven headlessly: mouseEnter arrives through a
+    // ComponentPeer. What can be checked is that nothing is wired to a state
+    // change in the first place, which is the mechanism that made hover matter.
+    const juce::ScopedJuceInitialiser_GUI juceInit;
+
+    ProjectDocument document;
+    AudioEngine engine;
+    EditorState editorState;
+
+    document.setState (ProjectFactory::createDemo(), true);
+
+    ChannelRackComponent rack { document, engine, editorState };
+    rack.setSize (1000, 600);
+    rack.setVisible (true);
+    rack.resized();
+
+    const auto toggles = findAll<DewLetterToggle> (rack);
+    REQUIRE (toggles.size() >= 8);      // M and S on every channel
+
+    for (auto* toggle : toggles)
+    {
+        INFO ("toggle: " << toggle->getName());
+        CHECK (toggle->onStateChange == nullptr);
+        CHECK (toggle->onClick != nullptr);
+    }
+
+    // The control case: a real click still selects, so this has not passed by
+    // taking the selection away from M and S altogether.
+    editorState.setSelectedChannelId (-1);
+    toggles.getFirst()->onClick();
+
+    CHECK (editorState.getSelectedChannelId() != -1);
 }
 
 TEST_CASE ("controls that keep their own clicks still select their row", "[ui][selection]")

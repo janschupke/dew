@@ -49,24 +49,39 @@ void EffectChainHost::setOwner (juce::ValueTree owner, juce::String name)
 
 int EffectChainHost::getPreferredHeight() const
 {
-    return headingHeight + chain.getRequiredHeight()
+    // The card's bottom inset is part of the height it asks for: leaving it out
+    // is what clips the last few pixels of every card in the row.
+    return headingHeight + chain.getRequiredHeight() + space::xs
            + (chain.isHorizontal() ? viewport.getScrollBarThickness() : 0);
 }
 
 void EffectChainHost::paint (juce::Graphics& g)
 {
-    paint::sectionHeading (g, { space::xxs, 0, getWidth() - size::iconButton, headingHeight },
+    // A card under the whole chain, heading included. Without it the chain sat
+    // straight on the window background with nothing to say where it began, so
+    // in the mixer it read as loose controls under the strips rather than as a
+    // panel belonging to the selected one.
+    paint::container (g, getLocalBounds());
+
+    paint::sectionHeading (g, { space::md, 0, getWidth() - size::iconButton - space::md,
+                                headingHeight },
                            ownerName.isEmpty() ? "EFFECTS" : "EFFECTS - " + ownerName);
+
+    // Between the heading and the cards, the way every other heading in the
+    // app is separated from what it names.
+    g.setColour (colour::divider);
+    g.drawHorizontalLine (headingHeight - 1, (float) space::md,
+                          (float) (getWidth() - space::md));
 }
 
 void EffectChainHost::resized()
 {
-    auto area = getLocalBounds();
+    auto area = getLocalBounds().reduced (space::xs, 0);
     auto heading = area.removeFromTop (headingHeight);
 
     addButton.setBounds (heading.removeFromRight (size::iconButton).reduced (space::xxs));
 
-    viewport.setBounds (area);
+    viewport.setBounds (area.withTrimmedBottom (space::xs));
     layOutChain();
 }
 

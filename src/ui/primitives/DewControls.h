@@ -127,26 +127,6 @@ private:
 
 // -----------------------------------------------------------------------------
 
-/** A titled panel. Draws the surface, the heading and the divider so panels do
-    not each invent their own.
-*/
-class DewPanel : public juce::Component
-{
-public:
-    explicit DewPanel (juce::String title = {});
-
-    void setTitle (juce::String);
-
-    /** Bounds inside the heading and the standard inset. */
-    juce::Rectangle<int> getContentBounds() const;
-
-    void paint (juce::Graphics&) override;
-
-private:
-    juce::String title;
-
-    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (DewPanel)
-};
 
 // -----------------------------------------------------------------------------
 
@@ -175,6 +155,18 @@ namespace paint
 
     void surface (juce::Graphics&, juce::Rectangle<int>, juce::Colour);
     void wellBackground (juce::Graphics&, juce::Rectangle<int>);
+
+    /** The card a group of controls sits on: a rounded surface with a hairline
+        edge.
+
+        The mixer strip and the effect card each hand-rolled this same fill and
+        border, and the panels that hold them drew nothing at all - so an effect
+        chain floated on the window background with no edge to say where it
+        began. There was a DewPanel class meant for this; nothing ever
+        instantiated it, so it had drifted into being a fourth opinion rather
+        than the shared one.
+    */
+    void container (juce::Graphics&, juce::Rectangle<int>);
 
     /** Fills the region beyond the content with a visibly inert texture, so an
         empty area reads as "nothing here" rather than as a broken control.

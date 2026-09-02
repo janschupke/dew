@@ -525,10 +525,14 @@ void StepGridComponent::mouseDown (const juce::MouseEvent& event)
     // the opposite of the piano roll and of what the gesture means anywhere.
     dragErasing = event.mods.isPopupMenu() || event.mods.isAltDown();
 
-    // Otherwise the first cell decides whether the whole drag adds or removes.
-    dragPaintsOn = ! dragErasing
-                && ! ProjectEdits::findNoteAtStep (pattern, (int) channel[ids::id],
-                                                   stepAtX (event.x)).isValid();
+    // A left press NEVER removes. The first cell used to decide whether the
+    // whole drag added or removed, so pressing a lit step turned the gesture
+    // into an erase - which made the ordinary way of looking at a pattern,
+    // clicking around it, delete the thing that was clicked. A left press on a
+    // lit step selects its channel and leaves the step where it is; the run
+    // filling below already skips cells that hold a note, so a drag across a
+    // lit one steps over it rather than through it.
+    dragPaintsOn = ! dragErasing;
     dragging = true;
 
     document.getUndoManager().beginNewTransaction (dragErasing ? "Erase steps"

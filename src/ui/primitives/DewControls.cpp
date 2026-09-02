@@ -261,47 +261,6 @@ void DewKnob::paint (juce::Graphics& g)
                 juce::Justification::centred, false);
 }
 
-// --- DewPanel ----------------------------------------------------------------
-
-DewPanel::DewPanel (juce::String t)
-    : title (std::move (t))
-{
-}
-
-void DewPanel::setTitle (juce::String t)
-{
-    title = std::move (t);
-    repaint();
-}
-
-juce::Rectangle<int> DewPanel::getContentBounds() const
-{
-    auto area = getLocalBounds().reduced (space::lg);
-
-    if (title.isNotEmpty())
-        area.removeFromTop (24);
-
-    return area;
-}
-
-void DewPanel::paint (juce::Graphics& g)
-{
-    g.setColour (colour::surface);
-    g.fillAll();
-
-    if (title.isNotEmpty())
-    {
-        auto heading = getLocalBounds().reduced (space::lg).removeFromTop (24);
-
-        g.setColour (colour::textPrimary);
-        g.setFont (type::font (type::title, true));
-        g.drawText (title, heading, juce::Justification::centredLeft, false);
-
-        g.setColour (colour::divider);
-        g.drawHorizontalLine (heading.getBottom(), (float) space::lg,
-                              (float) (getWidth() - space::lg));
-    }
-}
 
 // --- shared painting ---------------------------------------------------------
 
@@ -373,6 +332,20 @@ void surface (juce::Graphics& g, juce::Rectangle<int> bounds, juce::Colour c)
 {
     g.setColour (c);
     g.fillRect (bounds);
+}
+
+void container (juce::Graphics& g, juce::Rectangle<int> bounds)
+{
+    if (bounds.isEmpty())
+        return;
+
+    const auto body = bounds.toFloat().reduced (0.5f);
+
+    g.setColour (colour::surface);
+    g.fillRoundedRectangle (body, radius::md);
+
+    g.setColour (colour::outline);
+    g.drawRoundedRectangle (body, radius::md, stroke::hairline);
 }
 
 void wellBackground (juce::Graphics& g, juce::Rectangle<int> bounds)

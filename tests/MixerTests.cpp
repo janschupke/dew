@@ -316,6 +316,52 @@ TEST_CASE ("the mixer is two rows: strips above, the effect chain below", "[mixe
     REQUIRE (stripArea->getHeight() > chainHost->getHeight());
 }
 
+TEST_CASE ("the effect chain sits on a container with an edge", "[mixer][ui]")
+{
+    // The chain painted a heading and nothing else, and the mixer under it was
+    // a bare fillAll - so the effect row floated on the window background with
+    // nothing to say where it began or that it belonged to the selected strip.
+    const juce::ScopedJuceInitialiser_GUI juceInit;
+
+    ProjectDocument document;
+    EditorState editorState;
+    document.setState (ProjectFactory::createDefault(), true);
+
+    MixerComponent mixer { document, editorState };
+    mixer.setSize (1200, 700);
+    mixer.setVisible (true);
+    mixer.refresh();
+    mixer.resized();
+
+    auto* chainHost = mixer.findChildWithID ("effectChainHost");
+    REQUIRE (chainHost != nullptr);
+
+    juce::Image image (juce::Image::ARGB, mixer.getWidth(), mixer.getHeight(), true);
+    juce::Graphics g (image);
+    mixer.paintEntireComponent (g, true);
+
+    const auto bounds = chainHost->getBounds();
+
+    // Just outside the card is the mixer's background; just inside is a
+    // surface. If the two are the same colour there is no container.
+    const auto outside = image.getPixelAt (bounds.getCentreX(), bounds.getY() - 3);
+    const auto inside  = image.getPixelAt (bounds.getCentreX(), bounds.getY() + 4);
+
+    INFO ("outside " << outside.toString() << " inside " << inside.toString());
+    CHECK (outside != inside);
+
+    // And an edge along the top of it, brighter than either.
+    auto foundEdge = false;
+
+    for (int y = bounds.getY(); y < bounds.getY() + 3 && ! foundEdge; ++y)
+    {
+        const auto pixel = image.getPixelAt (bounds.getCentreX(), y);
+        foundEdge = pixel.getBrightness() > inside.getBrightness() + 0.02f;
+    }
+
+    CHECK (foundEdge);
+}
+
 TEST_CASE ("dragging a mixer fader is one undo step", "[ui][mixer]")
 {
     // beginNewTransaction arms a new transaction rather than being a no-op when
