@@ -11,6 +11,16 @@ add_library(dew_core STATIC
   model/ProjectFactory.cpp
   model/ProjectDocument.cpp
 
+  engine/EngineSnapshot.cpp
+  engine/SnapshotBridge.cpp
+  engine/Transport.cpp
+  engine/Sequencer.cpp
+  engine/SynthVoice.cpp
+  engine/SynthChannel.cpp
+  engine/MixerBus.cpp
+  engine/AudioEngine.cpp
+  engine/OfflineRenderer.cpp
+
   ui/MainComponent.cpp
 )
 

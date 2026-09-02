@@ -88,7 +88,7 @@ TEST_CASE ("a property missing from the file falls back to its default", "[schem
     const auto loaded = ProjectSerializer::fromJsonString (json);
 
     REQUIRE (loaded.ok());
-    REQUIRE ((double) loaded.tree[ids::tempoBpm] == 128.0);
+    REQUIRE (juce::exactlyEqual ((double) loaded.tree[ids::tempoBpm], 128.0));
 
     // Absent is normal for an older file, so it is not worth warning about.
     REQUIRE (loaded.warnings.isEmpty());
@@ -102,7 +102,7 @@ TEST_CASE ("a property of the wrong type warns and falls back", "[schema][compat
     const auto loaded = ProjectSerializer::fromJsonString (json);
 
     REQUIRE (loaded.ok());
-    REQUIRE ((double) loaded.tree[ids::tempoBpm] == 128.0);
+    REQUIRE (juce::exactlyEqual ((double) loaded.tree[ids::tempoBpm], 128.0));
     REQUIRE (loaded.warnings.size() == 1);
     REQUIRE (loaded.warnings[0].contains ("tempoBpm"));
 }

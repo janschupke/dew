@@ -6,6 +6,11 @@
 add_executable(dew_tests
   BuildInfoTests.cpp
   SchemaTests.cpp
+  TransportTests.cpp
+  SequencerTests.cpp
+  SnapshotBridgeTests.cpp
+  EngineTests.cpp
+  MixerTests.cpp
   UiSmokeTests.cpp
 )
 
@@ -16,5 +21,10 @@ target_link_libraries(dew_tests
     juce::juce_recommended_config_flags
     juce::juce_recommended_warning_flags
 )
+
+# The example project is committed, so a test can check it stays loadable and
+# in step with the factory that generates it.
+target_compile_definitions(dew_tests PRIVATE
+  DEW_EXAMPLES_DIR="${CMAKE_SOURCE_DIR}/examples")
 
 catch_discover_tests(dew_tests)

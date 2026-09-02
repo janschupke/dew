@@ -1,0 +1,306 @@
+{
+    "formatVersion": 1,
+    "name": "dew demo",
+    "tempoBpm": 124.0,
+    "stepsPerBeat": 4,
+    "barsInSong": 4,
+    "channels": [
+      {
+        "id": 1,
+        "name": "Kick",
+        "colour": "ffe4572e",
+        "mixerTrackId": 1,
+        "basePitch": 36,
+        "volume": 0.95,
+        "pan": 0.0,
+        "muted": false,
+        "instrument": {
+          "osc": {
+            "wave": "sine",
+            "octave": 0,
+            "detuneCents": 0.0,
+            "gain": 0.8
+          },
+          "amp": {
+            "attack": 0.001,
+            "decay": 0.14,
+            "sustain": 0.0,
+            "release": 0.06
+          }
+        }
+      },
+      {
+        "id": 2,
+        "name": "Snare",
+        "colour": "ff29a19c",
+        "mixerTrackId": 2,
+        "basePitch": 60,
+        "volume": 0.55,
+        "pan": 0.0,
+        "muted": false,
+        "instrument": {
+          "osc": {
+            "wave": "square",
+            "octave": -1,
+            "detuneCents": 0.0,
+            "gain": 0.8
+          },
+          "amp": {
+            "attack": 0.001,
+            "decay": 0.09,
+            "sustain": 0.0,
+            "release": 0.06
+          }
+        }
+      },
+      {
+        "id": 3,
+        "name": "Bass",
+        "colour": "ff4fa3ff",
+        "mixerTrackId": 3,
+        "basePitch": 40,
+        "volume": 0.75,
+        "pan": 0.0,
+        "muted": false,
+        "instrument": {
+          "osc": {
+            "wave": "saw",
+            "octave": 0,
+            "detuneCents": 0.0,
+            "gain": 0.8
+          },
+          "amp": {
+            "attack": 0.004,
+            "decay": 0.18,
+            "sustain": 0.35,
+            "release": 0.09
+          }
+        }
+      },
+      {
+        "id": 4,
+        "name": "Lead",
+        "colour": "fff2c14e",
+        "mixerTrackId": 4,
+        "basePitch": 72,
+        "volume": 0.6,
+        "pan": 0.0,
+        "muted": false,
+        "instrument": {
+          "osc": {
+            "wave": "triangle",
+            "octave": 0,
+            "detuneCents": 0.0,
+            "gain": 0.8
+          },
+          "amp": {
+            "attack": 0.006,
+            "decay": 0.15,
+            "sustain": 0.55,
+            "release": 0.22
+          }
+        }
+      }
+    ],
+    "patterns": [
+      {
+        "id": 1,
+        "name": "Groove",
+        "lengthSteps": 16,
+        "notes": [
+          {
+            "ch": 1,
+            "step": 0,
+            "lengthSteps": 1,
+            "pitch": 36,
+            "velocity": 1.0
+          },
+          {
+            "ch": 1,
+            "step": 4,
+            "lengthSteps": 1,
+            "pitch": 36,
+            "velocity": 1.0
+          },
+          {
+            "ch": 1,
+            "step": 8,
+            "lengthSteps": 1,
+            "pitch": 36,
+            "velocity": 1.0
+          },
+          {
+            "ch": 1,
+            "step": 12,
+            "lengthSteps": 1,
+            "pitch": 36,
+            "velocity": 1.0
+          },
+          {
+            "ch": 2,
+            "step": 4,
+            "lengthSteps": 1,
+            "pitch": 60,
+            "velocity": 0.9
+          },
+          {
+            "ch": 2,
+            "step": 12,
+            "lengthSteps": 1,
+            "pitch": 60,
+            "velocity": 0.9
+          },
+          {
+            "ch": 3,
+            "step": 1,
+            "lengthSteps": 1,
+            "pitch": 40,
+            "velocity": 0.85
+          },
+          {
+            "ch": 3,
+            "step": 3,
+            "lengthSteps": 1,
+            "pitch": 40,
+            "velocity": 0.85
+          },
+          {
+            "ch": 3,
+            "step": 5,
+            "lengthSteps": 1,
+            "pitch": 47,
+            "velocity": 0.85
+          },
+          {
+            "ch": 3,
+            "step": 7,
+            "lengthSteps": 1,
+            "pitch": 40,
+            "velocity": 0.85
+          },
+          {
+            "ch": 3,
+            "step": 9,
+            "lengthSteps": 1,
+            "pitch": 40,
+            "velocity": 0.85
+          },
+          {
+            "ch": 3,
+            "step": 11,
+            "lengthSteps": 1,
+            "pitch": 40,
+            "velocity": 0.85
+          },
+          {
+            "ch": 3,
+            "step": 13,
+            "lengthSteps": 1,
+            "pitch": 45,
+            "velocity": 0.85
+          },
+          {
+            "ch": 3,
+            "step": 15,
+            "lengthSteps": 1,
+            "pitch": 43,
+            "velocity": 0.85
+          },
+          {
+            "ch": 4,
+            "step": 0,
+            "lengthSteps": 3,
+            "pitch": 72,
+            "velocity": 0.8
+          },
+          {
+            "ch": 4,
+            "step": 4,
+            "lengthSteps": 2,
+            "pitch": 76,
+            "velocity": 0.75
+          },
+          {
+            "ch": 4,
+            "step": 8,
+            "lengthSteps": 3,
+            "pitch": 79,
+            "velocity": 0.8
+          },
+          {
+            "ch": 4,
+            "step": 12,
+            "lengthSteps": 4,
+            "pitch": 74,
+            "velocity": 0.7
+          }
+        ]
+      }
+    ],
+    "playlist": {
+      "tracks": [
+        {
+          "name": "Track 1",
+          "clips": [
+            {
+              "patternId": 1,
+              "startBar": 0,
+              "lengthBars": 4
+            }
+          ]
+        },
+        {
+          "name": "Track 2",
+          "clips": []
+        },
+        {
+          "name": "Track 3",
+          "clips": []
+        },
+        {
+          "name": "Track 4",
+          "clips": []
+        }
+      ]
+    },
+    "mixer": {
+      "master": {
+        "gain": 0.9
+      },
+      "tracks": [
+        {
+          "id": 1,
+          "name": "Insert 1",
+          "gain": 0.8,
+          "pan": 0.0,
+          "mute": false,
+          "solo": false
+        },
+        {
+          "id": 2,
+          "name": "Insert 2",
+          "gain": 0.8,
+          "pan": 0.0,
+          "mute": false,
+          "solo": false
+        },
+        {
+          "id": 3,
+          "name": "Insert 3",
+          "gain": 0.8,
+          "pan": 0.0,
+          "mute": false,
+          "solo": false
+        },
+        {
+          "id": 4,
+          "name": "Insert 4",
+          "gain": 0.8,
+          "pan": 0.0,
+          "mute": false,
+          "solo": false
+        }
+      ]
+    },
+    "format": "dew-project"
+  }
