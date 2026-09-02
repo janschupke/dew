@@ -509,6 +509,19 @@ void PlaylistComponent::mouseDown (const juce::MouseEvent& event)
     // was as inert as the piano roll's.
     if (event.x >= headerWidth && event.y < rulerHeight)
     {
+        // Shift selects a span, a plain drag scrubs. The ruler is the only place
+        // a time selection could go, and scrubbing was there first, so the two
+        // share it on a modifier rather than one of them moving somewhere less
+        // obvious.
+        if (event.mods.isShiftDown())
+        {
+            gesture = Gesture::selectingRange;
+            rangeAnchorBar = barAtX (event.x);
+            editorState.setSelectedBarRange ({ rangeAnchorBar, rangeAnchorBar + 1 });
+            repaint();
+            return;
+        }
+
         gesture = Gesture::scrubbing;
         seekToRulerX (event.x);
         return;
@@ -592,6 +605,17 @@ void PlaylistComponent::mouseDown (const juce::MouseEvent& event)
 
 void PlaylistComponent::mouseDrag (const juce::MouseEvent& event)
 {
+    if (gesture == Gesture::selectingRange)
+    {
+        // Either direction: the anchor is where the drag began, not the lower bar.
+        const auto current = barAtX (event.x);
+
+        editorState.setSelectedBarRange ({ juce::jmin (rangeAnchorBar, current),
+                                           juce::jmax (rangeAnchorBar, current) + 1 });
+        repaint();
+        return;
+    }
+
     if (gesture == Gesture::scrubbing)
     {
         seekToRulerX (event.x);
@@ -645,8 +669,15 @@ void PlaylistComponent::mouseDrag (const juce::MouseEvent& event)
     repaint();
 }
 
-void PlaylistComponent::mouseUp (const juce::MouseEvent&)
+void PlaylistComponent::mouseUp (const juce::MouseEvent& event)
 {
+    // A shift-CLICK on the ruler is how a selection is taken back: it selects one
+    // bar on the way down, and letting go without having moved means the user
+    // asked for nothing rather than for that bar.
+    if (gesture == Gesture::selectingRange && barAtX (event.x) == rangeAnchorBar
+        && ! event.mouseWasDraggedSinceMouseDown())
+        editorState.clearBarSelection();
+
     draggedClip = {};
     draggedClipTrack = {};
     draggedPoint = {};
@@ -819,6 +850,24 @@ void PlaylistComponent::paint (juce::Graphics& g)
     // --- ruler ---------------------------------------------------------------
     g.setColour (colour::surface);
     g.fillRect (0, 0, getWidth(), rulerHeight);
+
+    // The selection's strip goes down before the bar numbers, so the numbers
+    // inside it stay legible instead of being washed out by it.
+    if (editorState.hasBarSelection())
+    {
+        const auto selection = editorState.getSelectedBarRange();
+
+        const auto fromX = (float) headerWidth + timeline.xForStep ((double) selection.getStart());
+        const auto toX = (float) headerWidth + timeline.xForStep ((double) selection.getEnd());
+
+        g.setColour (colour::accent.withAlpha (0.55f));
+        g.fillRect (juce::Rectangle<float> (fromX, 0.0f, juce::jmax (1.0f, toX - fromX),
+                                            (float) rulerHeight)
+                        .getIntersection ({ (float) headerWidth, 0.0f,
+                                            (float) getWidth() - (float) headerWidth,
+                                            (float) rulerHeight }));
+    }
+
     g.setFont (type::font (type::caption));
 
     for (int bar = painted.getStart(); bar < painted.getEnd(); ++bar)
@@ -836,6 +885,42 @@ void PlaylistComponent::paint (juce::Graphics& g)
 
         g.setColour (beyond ? colour::dividerStrong.withAlpha (0.35f) : colour::dividerStrong);
         g.drawVerticalLine ((int) x, 0.0f, (float) bottom);
+    }
+
+    // --- the selected span ----------------------------------------------------
+    // Drawn over the ruler and down through the tracks, under everything else, so
+    // it reads as a region of time rather than as another lane. The playhead gets
+    // the same full-height treatment one layer up.
+    if (editorState.hasBarSelection())
+    {
+        const auto selection = editorState.getSelectedBarRange();
+
+        const auto fromX = (float) headerWidth + timeline.xForStep ((double) selection.getStart());
+        const auto toX = (float) headerWidth + timeline.xForStep ((double) selection.getEnd());
+
+        const juce::Rectangle<float> content ((float) headerWidth, 0.0f,
+                                              (float) getWidth() - (float) headerWidth,
+                                              (float) bottom);
+
+        const juce::Rectangle<float> band (fromX, 0.0f, juce::jmax (1.0f, toX - fromX),
+                                           (float) bottom);
+
+        const auto visible = band.getIntersection (content);
+
+        // Only a wash over the tracks; the ruler's solid strip was drawn earlier,
+        // under the bar numbers. A wash alone is what this had first, and at an
+        // alpha low enough not to bury the clips it was too faint to find -
+        // useless for a marker whose whole job is saying what a render will
+        // contain. The ruler is where the span can be stated outright without
+        // covering anything up.
+        g.setColour (colour::accent.withAlpha (0.10f));
+        g.fillRect (visible.withTrimmedTop ((float) rulerHeight));
+
+        g.setColour (colour::accent);
+
+        for (const auto edge : { fromX, toX })
+            if (edge >= (float) headerWidth && edge <= (float) getWidth())
+                g.fillRect (edge - stroke::regular * 0.5f, 0.0f, stroke::regular, (float) bottom);
     }
 
     // --- tracks --------------------------------------------------------------

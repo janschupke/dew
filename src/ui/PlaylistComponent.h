@@ -71,7 +71,7 @@ public:
 private:
     class TrackHeader;
 
-    enum class Gesture { none, moving, resizing, draggingPoint, scrubbing };
+    enum class Gesture { none, moving, resizing, draggingPoint, scrubbing, selectingRange };
 
     /** Moves the transport to the position a ruler x means. */
     void seekToRulerX (int x);
@@ -130,6 +130,10 @@ private:
     DewButton addAutomationButton { "+ Automation", DewButton::Role::ghost };
 
     static constexpr float pointGrabRadius = 7.0f;
+
+    // Where a shift-drag along the ruler started. The selection runs from here
+    // to wherever the pointer is, in either direction.
+    int rangeAnchorBar = 0;
 
     juce::ValueTree draggedClip;
     juce::ValueTree draggedClipTrack;

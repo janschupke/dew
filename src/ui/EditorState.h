@@ -89,6 +89,30 @@ public:
             sendChangeMessage();
     }
 
+    // --- the selected span of the arrangement --------------------------------
+    /** Which bars are selected in the playlist, half-open and 0-based.
+
+        View state, like everything else here: a selection is not part of the
+        document, must not make a project dirty, and must not land on the undo
+        stack. An empty range means nothing is selected, which is also what a
+        click on the ruler leaves behind.
+    */
+    juce::Range<int> getSelectedBarRange() const noexcept  { return selectedBars; }
+    bool hasBarSelection() const noexcept                  { return ! selectedBars.isEmpty(); }
+
+    void setSelectedBarRange (juce::Range<int> range)
+    {
+        const auto clamped = range.getLength() > 0
+                               ? juce::Range<int> (juce::jmax (0, range.getStart()),
+                                                   juce::jmax (1, range.getEnd()))
+                               : juce::Range<int>();
+
+        if (std::exchange (selectedBars, clamped) != clamped)
+            sendChangeMessage();
+    }
+
+    void clearBarSelection()  { setSelectedBarRange ({}); }
+
     // --- last placed note ----------------------------------------------------
     int getLastNoteLengthSteps() const noexcept { return lastNoteLengthSteps; }
     double getLastNoteVelocity() const noexcept { return lastNoteVelocity; }
@@ -108,6 +132,8 @@ private:
 
     int lastNoteLengthSteps = 1;
     double lastNoteVelocity = 1.0;
+
+    juce::Range<int> selectedBars;
 
     juce::Array<int> expandedEffects;
 };
