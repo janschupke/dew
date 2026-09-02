@@ -114,6 +114,25 @@ DewGallery::DewGallery()
     octave->setNumDecimalPlaces (0);
     octave->setCaption ("OCT");
     add (octave);
+
+    // --- dropdowns -----------------------------------------------------------
+    // Stock JUCE widgets styled by DewLookAndFeel rather than dew primitives,
+    // so this is where a change to that styling gets seen.
+    auto* wave = new juce::ComboBox();
+    wave->addItemList ({ "Sine", "Saw", "Square", "Triangle" }, 1);
+    wave->setSelectedId (2, juce::dontSendNotification);
+    add (wave);
+
+    auto* routing = new juce::ComboBox();
+    routing->addItemList ({ "Insert 1", "Insert 2", "Insert 3", "Insert 4" }, 1);
+    routing->setSelectedId (1, juce::dontSendNotification);
+    add (routing);
+
+    auto* unavailable = new juce::ComboBox();
+    unavailable->addItem ("Unavailable", 1);
+    unavailable->setSelectedId (1, juce::dontSendNotification);
+    unavailable->setEnabled (false);
+    add (unavailable);
 }
 
 DewGallery::~DewGallery() = default;
@@ -202,6 +221,17 @@ int DewGallery::layOut (juce::Rectangle<int> area, bool apply)
         place (controls[index++], row.removeFromLeft (86).withHeight (40));
         row.removeFromLeft (space::md);
         place (controls[index++], row.removeFromLeft (86).withHeight (40));
+    }
+
+    // Dropdowns.
+    {
+        auto row = sectionHeading ("Dropdowns", size::controlHeight);
+
+        for (int i = 0; i < 3; ++i)
+        {
+            place (controls[index++], row.removeFromLeft (150).withHeight (size::controlHeight));
+            row.removeFromLeft (space::md);
+        }
     }
 
     // Icons and palette get painted rather than laid out as components.

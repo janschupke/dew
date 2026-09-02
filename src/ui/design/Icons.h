@@ -37,6 +37,7 @@ juce::Path eraser();
 juce::Path mute();            ///< speaker with a cross
 juce::Path solo();            ///< headphones
 juce::Path power();           ///< effect bypass
+juce::Path check();          ///< a ticked menu item
 juce::Path lock();
 juce::Path chevronUp();
 juce::Path chevronDown();

@@ -2,6 +2,7 @@
 
 #include <juce_gui_basics/juce_gui_basics.h>
 
+#include "ui/DewLookAndFeel.h"
 #include "ui/design/DewGallery.h"
 #include "ui/design/Icons.h"
 #include "ui/design/Tokens.h"
@@ -251,4 +252,104 @@ TEST_CASE ("the gallery lays out and paints every section", "[design][gallery]")
         { 0, gallery.getRequiredHeight() - 120, image.getWidth(), 100 });
 
     REQUIRE (inkCoverage (bottomStrip) > 0.0f);
+}
+
+TEST_CASE ("a combo box is painted in the dew idiom, not JUCE's", "[design][dropdown]")
+{
+    // There were no drawComboBox / drawPopupMenu overrides at all, so a
+    // dropdown was a stock widget sitting beside hand-painted primitives.
+    const juce::ScopedJuceInitialiser_GUI juceInit;
+
+    DewLookAndFeel lookAndFeel;
+
+    juce::ComboBox box;
+    box.setLookAndFeel (&lookAndFeel);
+    box.addItemList ({ "Sine", "Saw", "Square" }, 1);
+    box.setSelectedId (2, juce::dontSendNotification);
+    box.setSize (160, tokens::size::controlHeight);
+
+    const auto image = render (box);
+
+    // The control's own surface, rather than whatever JUCE would have used.
+    INFO ("surfaceRaised coverage: " << coverageOf (image, tokens::colour::surfaceRaised));
+    REQUIRE (coverageOf (image, tokens::colour::surfaceRaised) > 0.5f);
+
+    // The chevron lives in the right-hand end; there has to be ink there.
+    const auto chevronStrip = image.getClippedImage ({ image.getWidth() - 30, 0, 28, image.getHeight() });
+    INFO ("chevron ink: " << inkCoverage (chevronStrip));
+    REQUIRE (inkCoverage (chevronStrip) > 0.02f);
+
+    box.setLookAndFeel (nullptr);
+}
+
+TEST_CASE ("a disabled dropdown reads as disabled", "[design][dropdown]")
+{
+    const juce::ScopedJuceInitialiser_GUI juceInit;
+
+    DewLookAndFeel lookAndFeel;
+
+    const auto renderBox = [&lookAndFeel] (bool enabled)
+    {
+        juce::ComboBox box;
+        box.setLookAndFeel (&lookAndFeel);
+        box.addItem ("Insert 1", 1);
+        box.setSelectedId (1, juce::dontSendNotification);
+        box.setEnabled (enabled);
+        box.setSize (160, tokens::size::controlHeight);
+
+        auto image = render (box);
+        box.setLookAndFeel (nullptr);
+        return image;
+    };
+
+    const auto enabled = renderBox (true);
+    const auto disabled = renderBox (false);
+
+    // Mean brightness, not inkCoverage: that compares against the corner pixel,
+    // which a rounded control leaves transparent, so it calls almost every
+    // pixel "ink" and reports the same number for both.
+    const auto meanBrightness = [] (const juce::Image& image)
+    {
+        double total = 0.0;
+        int sampled = 0;
+
+        for (int y = 0; y < image.getHeight(); ++y)
+            for (int x = 0; x < image.getWidth(); ++x, ++sampled)
+                total += (double) image.getPixelAt (x, y).getBrightness();
+
+        return sampled > 0 ? total / (double) sampled : 0.0;
+    };
+
+    INFO ("brightness enabled " << meanBrightness (enabled)
+          << " disabled " << meanBrightness (disabled));
+    REQUIRE (meanBrightness (disabled) < meanBrightness (enabled));
+}
+
+TEST_CASE ("a menu opens by animating rather than appearing", "[design][dropdown]")
+{
+    // Deliberately modest: this asserts the animation is set up and where it
+    // ends, which is what can be checked without a message loop. It does not
+    // claim anything about the frames in between.
+    const juce::ScopedJuceInitialiser_GUI juceInit;
+
+    DewLookAndFeel lookAndFeel;
+
+    juce::Component window;
+    window.setBounds (100, 200, 180, 120);
+    const auto target = window.getBounds();
+
+    lookAndFeel.preparePopupMenuWindow (window);
+
+    // Starts transparent and below where it will land.
+    REQUIRE (window.getAlpha() < 0.01f);
+    REQUIRE (window.getY() > target.getY());
+    REQUIRE (window.getY() - target.getY() == tokens::motion::popupRisePx);
+
+    auto& animator = juce::Desktop::getInstance().getAnimator();
+    REQUIRE (animator.isAnimating (&window));
+
+    // And it is on its way to exactly where it was told to go.
+    animator.cancelAnimation (&window, true);
+    REQUIRE (window.getBounds() == target);
+    REQUIRE (window.getAlpha() > 0.99f);
 }

@@ -129,6 +129,16 @@ namespace motion
 {
     inline constexpr int uiRefreshHz    = 30;  ///< list and panel refreshes
     inline constexpr int playheadHz     = 60;  ///< anything tracking the transport
+
+    /** Durations, in milliseconds. Short enough that nothing feels laggy, long
+        enough that a change reads as movement rather than as a jump cut.
+    */
+    inline constexpr int quickMs        = 90;   ///< hover and press feedback
+    inline constexpr int popupMs        = 130;  ///< menus and dropdowns opening
+    inline constexpr int panelMs        = 180;  ///< larger surfaces sliding in
+
+    /** How far a popup rises as it fades in. */
+    inline constexpr int popupRisePx    = 6;
 }
 
 } // namespace dew::tokens

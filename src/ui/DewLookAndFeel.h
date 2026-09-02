@@ -58,6 +58,36 @@ public:
 
     void drawTabAreaBehindFrontButton (juce::TabbedButtonBar&, juce::Graphics&,
                                        int width, int height) override;
+
+    // --- combo boxes and menus ----------------------------------------------
+    // These had no overrides at all, so a dropdown was a stock JUCE widget
+    // sitting next to hand-painted dew primitives.
+    void drawComboBox (juce::Graphics&, int width, int height, bool isButtonDown,
+                       int buttonX, int buttonY, int buttonW, int buttonH,
+                       juce::ComboBox&) override;
+
+    void positionComboBoxText (juce::ComboBox&, juce::Label&) override;
+    juce::Font getComboBoxFont (juce::ComboBox&) override;
+
+    void drawPopupMenuBackground (juce::Graphics&, int width, int height) override;
+
+    void drawPopupMenuItem (juce::Graphics&, const juce::Rectangle<int>& area,
+                            bool isSeparator, bool isActive, bool isHighlighted,
+                            bool isTicked, bool hasSubMenu,
+                            const juce::String& text, const juce::String& shortcutKeyText,
+                            const juce::Drawable* icon, const juce::Colour* textColour) override;
+
+    void getIdealPopupMenuItemSize (const juce::String& text, bool isSeparator,
+                                    int standardMenuItemHeight,
+                                    int& idealWidth, int& idealHeight) override;
+
+    int getPopupMenuBorderSize() override;
+
+    /** Fades and lifts a menu as it opens. JUCE gives no hook for the close, so
+        this is deliberately one-directional rather than half an animation
+        pretending to be a whole one.
+    */
+    void preparePopupMenuWindow (juce::Component&) override;
 };
 
 } // namespace dew
