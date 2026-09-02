@@ -12,6 +12,7 @@ EditorTabs::EditorTabs (ProjectDocument& document, AudioEngine& engine, EditorSt
       playlist (document, engine, editorState),
       mixer (document, editorState)
 {
+    setComponentID ("editorTabs");
     setTabBarDepth (30);
 
     addTab ("Channel Rack", Palette::background, &channelRack, false);

@@ -10,6 +10,7 @@ namespace dew
 PlaylistComponent::PlaylistComponent (ProjectDocument& d, AudioEngine& e, EditorState& s)
     : document (d), engine (e), editorState (s)
 {
+    setComponentID ("playlist");
     document.getState().addListener (this);
     editorState.addChangeListener (this);
     startTimerHz (30);

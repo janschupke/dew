@@ -10,6 +10,7 @@ namespace dew
 StepGridComponent::StepGridComponent (ProjectDocument& d, AudioEngine& e, EditorState& s)
     : document (d), engine (e), editorState (s)
 {
+    setComponentID ("stepGrid");
     startTimerHz (30);
 }
 

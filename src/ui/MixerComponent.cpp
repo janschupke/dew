@@ -151,6 +151,8 @@ private:
 MixerComponent::MixerComponent (ProjectDocument& d, EditorState& s)
     : document (d), editorState (s)
 {
+    setComponentID ("mixer");
+
     juce::ignoreUnused (editorState);
 
     document.getState().addListener (this);

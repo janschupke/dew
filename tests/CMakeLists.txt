@@ -5,6 +5,7 @@
 
 add_executable(dew_tests
   BuildInfoTests.cpp
+  DocumentIdentityTests.cpp
   SchemaTests.cpp
   ProjectEditsTests.cpp
   TransportTests.cpp

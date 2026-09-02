@@ -30,6 +30,7 @@ juce::String noteName (int pitch)
 PianoRollComponent::PianoRollComponent (ProjectDocument& d, AudioEngine& e, EditorState& s)
     : document (d), engine (e), editorState (s)
 {
+    setComponentID ("pianoRoll");
     document.getState().addListener (this);
     editorState.addChangeListener (this);
     setSize (900, numRows * rowHeight);

@@ -24,6 +24,8 @@ void styleCaption (juce::Label& label, const juce::String& text)
 InstrumentPanel::InstrumentPanel (ProjectDocument& d, EditorState& s)
     : document (d), editorState (s)
 {
+    setComponentID ("instrumentPanel");
+
     titleLabel.setFont (juce::FontOptions (14.0f, juce::Font::bold));
     titleLabel.setColour (juce::Label::textColourId, Palette::text);
     addAndMakeVisible (titleLabel);

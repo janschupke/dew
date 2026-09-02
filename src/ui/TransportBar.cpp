@@ -9,6 +9,9 @@ namespace dew
 TransportBar::TransportBar (ProjectDocument& d, AudioEngine& e, EditorState& s)
     : document (d), engine (e), editorState (s)
 {
+    setComponentID ("transportBar");
+    patternBox.setComponentID ("patternSelector");
+
     playButton.setClickingTogglesState (false);
     playButton.onClick = [this]
     {

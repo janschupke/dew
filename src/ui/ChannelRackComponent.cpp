@@ -93,6 +93,10 @@ private:
 ChannelRackComponent::ChannelRackComponent (ProjectDocument& d, AudioEngine& e, EditorState& s)
     : document (d), engine (e), editorState (s), grid (d, e, s)
 {
+    setComponentID ("channelRack");
+    contentHolder.setComponentID ("channelRackContent");
+    viewport.setComponentID ("channelRackViewport");
+
     juce::ignoreUnused (engine);
 
     contentHolder.addAndMakeVisible (grid);

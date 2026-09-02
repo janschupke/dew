@@ -18,3 +18,22 @@ target_link_libraries(dew_render
     juce::juce_recommended_config_flags
     juce::juce_recommended_warning_flags
 )
+
+# ==============================================================================
+# dew_shot - renders the UI to PNG offscreen. The only way to see the interface
+# in a headless session, in CI, or without screen-recording permission.
+# ==============================================================================
+
+juce_add_console_app(dew_shot
+  PRODUCT_NAME "dew_shot"
+  VERSION      "${PROJECT_VERSION}"
+)
+
+target_sources(dew_shot PRIVATE shot_main.cpp)
+
+target_link_libraries(dew_shot
+  PRIVATE
+    dew_core
+    juce::juce_recommended_config_flags
+    juce::juce_recommended_warning_flags
+)

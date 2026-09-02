@@ -5,7 +5,7 @@
 namespace dew
 {
 
-MainComponent::MainComponent()
+MainComponent::MainComponent (bool openAudioDevice)
     : audioHost (engine),
       transportBar (document, engine, editorState),
       tabs (document, engine, editorState),
@@ -26,10 +26,18 @@ MainComponent::MainComponent()
     // the engine renders already has something in it.
     projectChanged();
 
-    if (const auto error = audioHost.start(); error.isNotEmpty())
+    if (! openAudioDevice)
+    {
+        deviceStatus = "audio device not opened";
+    }
+    else if (const auto error = audioHost.start(); error.isNotEmpty())
+    {
         deviceStatus = "Audio unavailable: " + error;
+    }
     else
+    {
         deviceStatus = audioHost.describeDevice();
+    }
 
     transportBar.setStatusText (deviceStatus);
 

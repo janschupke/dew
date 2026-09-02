@@ -26,7 +26,10 @@ class MainComponent : public juce::Component,
                       private juce::AsyncUpdater
 {
 public:
-    MainComponent();
+    /** @param openAudioDevice  false for headless use - screenshots and CI have
+                                  no reason to take over the sound card.
+    */
+    explicit MainComponent (bool openAudioDevice = true);
     ~MainComponent() override;
 
     void paint (juce::Graphics&) override;
