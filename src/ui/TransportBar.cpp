@@ -132,10 +132,6 @@ TransportBar::TransportBar (ProjectDocument& d, AudioEngine& e, EditorState& s)
     positionLabel.setJustificationType (juce::Justification::centredLeft);
     addAndMakeVisible (positionLabel);
 
-    statusLabel.setFont (juce::FontOptions (12.0f));
-    statusLabel.setColour (juce::Label::textColourId, Palette::textDim);
-    statusLabel.setJustificationType (juce::Justification::centredRight);
-    addAndMakeVisible (statusLabel);
 
     document.getState().addListener (this);
     editorState.addChangeListener (this);
@@ -182,11 +178,6 @@ void TransportBar::refreshPatternLength()
 
     // Deleting the only pattern would leave nothing to edit or play.
     deletePatternButton.setEnabled (patternBox.getNumItems() > 1);
-}
-
-void TransportBar::setStatusText (const juce::String& text)
-{
-    statusLabel.setText (text, juce::dontSendNotification);
 }
 
 void TransportBar::rebuildPatternList()
@@ -319,7 +310,6 @@ void TransportBar::resized()
     area.removeFromLeft (space::md);
 
     positionLabel.setBounds (area.removeFromLeft (84).withHeight (controlHeight));
-    statusLabel.setBounds (area.withHeight (controlHeight));
 }
 
 } // namespace dew

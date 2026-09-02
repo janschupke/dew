@@ -35,6 +35,7 @@ add_library(dew_core STATIC
 
   ui/DewLookAndFeel.cpp
   ui/EffectChainComponent.cpp
+  ui/StatusBar.cpp
   ui/TransportBar.cpp
   ui/StepGridComponent.cpp
   ui/ChannelRackComponent.cpp

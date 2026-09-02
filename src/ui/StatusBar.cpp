@@ -1,0 +1,208 @@
+#include "StatusBar.h"
+
+#include "../model/Ids.h"
+#include "../model/ProjectEdits.h"
+#include "design/Tokens.h"
+#include "primitives/DewControls.h"
+
+namespace dew
+{
+
+using namespace tokens;
+
+StatusBar::StatusBar (ProjectDocument& d, EditorState& s, LiveAudioHost& h)
+    : document (d), editorState (s), audioHost (h)
+{
+    setComponentID ("statusBar");
+
+    document.getState().addListener (this);
+    editorState.addChangeListener (this);
+
+    updateContext();
+    startTimerHz (motion::uiRefreshHz);
+}
+
+StatusBar::~StatusBar()
+{
+    editorState.removeChangeListener (this);
+    document.getState().removeListener (this);
+}
+
+void StatusBar::refresh()
+{
+    document.getState().addListener (this);
+    updateContext();
+    repaint();
+}
+
+bool StatusBar::hasMessage() const
+{
+    return messageText.isNotEmpty() && messageAgeMs < messageLifetimeMs;
+}
+
+void StatusBar::showMessage (const juce::String& text, Severity severity)
+{
+    // A standing message of higher severity is not displaced by a lesser one:
+    // an error must not be buried by a routine "saved" a moment later.
+    if (hasMessage() && severity < messageSeverity)
+        return;
+
+    messageText = text;
+    messageSeverity = severity;
+    messageAgeMs = 0;
+    repaint (messageBounds);
+}
+
+void StatusBar::advanceMessageClock (int milliseconds)
+{
+    const auto had = hasMessage();
+    messageAgeMs += milliseconds;
+
+    if (had != hasMessage())
+        repaint (messageBounds);
+}
+
+void StatusBar::updateContext()
+{
+    const auto channel = ProjectEdits::findChannel (document.getState(),
+                                                    editorState.getSelectedChannelId());
+    const auto pattern = ProjectEdits::findPattern (document.getState(),
+                                                    editorState.getCurrentPatternId());
+
+    juce::StringArray parts;
+
+    if (channel.isValid())
+        parts.add (channel[ids::name].toString());
+
+    if (pattern.isValid())
+    {
+        parts.add (pattern[ids::name].toString());
+        parts.add (pattern[ids::lengthSteps].toString() + " steps");
+
+        int notes = 0;
+
+        for (const auto& note : pattern)
+            if (note.hasType (ids::NOTE) && channel.isValid()
+                && (int) note[ids::ch] == (int) channel[ids::id])
+                ++notes;
+
+        parts.add (juce::String (notes) + (notes == 1 ? " note" : " notes"));
+    }
+
+    const auto wanted = parts.joinIntoString ("  -  ");
+
+    if (wanted != contextText)
+    {
+        contextText = wanted;
+        repaint (contextBounds);
+    }
+}
+
+void StatusBar::timerCallback()
+{
+    // Also polled, not only driven by change messages: EditorState broadcasts
+    // asynchronously, and a status line that is occasionally a beat stale is
+    // worse than one that costs a few string comparisons per tick. It only
+    // repaints when the text actually differs.
+    updateContext();
+
+    advanceMessageClock (1000 / juce::jmax (1, motion::uiRefreshHz));
+
+    auto& manager = audioHost.getDeviceManager();
+
+    const auto load = manager.getCpuUsage();
+    const auto drops = manager.getXRunCount();
+
+    if (drops > lastDropouts)
+    {
+        // Flash rather than only counting: a dropout you have to notice a
+        // number changing to learn about is one you will not notice.
+        dropoutFlashMs = 900;
+        lastDropouts = drops;
+    }
+    else if (dropoutFlashMs > 0)
+    {
+        dropoutFlashMs = juce::jmax (0, dropoutFlashMs - 1000 / juce::jmax (1, motion::uiRefreshHz));
+    }
+
+    // getXRunCount returns -1 when the device cannot report them at all, which
+    // is not the same as "no dropouts" and must not be shown as zero.
+    if (! juce::approximatelyEqual (load, dspLoad) || drops != dropouts || dropoutFlashMs > 0)
+    {
+        dspLoad = load;
+        dropouts = drops;
+        repaint (loadBounds);
+    }
+}
+
+void StatusBar::changeListenerCallback (juce::ChangeBroadcaster*)
+{
+    updateContext();
+}
+
+void StatusBar::valueTreePropertyChanged (juce::ValueTree&, const juce::Identifier&) { updateContext(); }
+void StatusBar::valueTreeChildAdded (juce::ValueTree&, juce::ValueTree&)             { updateContext(); }
+void StatusBar::valueTreeChildRemoved (juce::ValueTree&, juce::ValueTree&, int)      { updateContext(); }
+
+juce::Colour StatusBar::colourFor (Severity severity) const
+{
+    switch (severity)
+    {
+        case Severity::success: return colour::success;
+        case Severity::warning: return colour::warning;
+        case Severity::error:   return colour::danger;
+        case Severity::info:    break;
+    }
+
+    return colour::textSecondary;
+}
+
+void StatusBar::resized()
+{
+    auto area = getLocalBounds().reduced (space::md, 0);
+
+    loadBounds = area.removeFromRight (150);
+    area.removeFromRight (space::lg);
+    contextBounds = area.removeFromLeft (juce::jmax (0, area.getWidth() / 2));
+    area.removeFromLeft (space::lg);
+    messageBounds = area;
+}
+
+void StatusBar::paint (juce::Graphics& g)
+{
+    g.fillAll (colour::surface);
+
+    g.setColour (colour::dividerStrong);
+    g.drawHorizontalLine (0, 0.0f, (float) getWidth());
+
+    g.setFont (type::font (type::small));
+
+    g.setColour (colour::textSecondary);
+    g.drawText (contextText, contextBounds, juce::Justification::centredLeft, true);
+
+    if (hasMessage())
+    {
+        // Fades out over its last second rather than disappearing, so a message
+        // that has gone does not look like one you missed.
+        const auto remaining = messageLifetimeMs - messageAgeMs;
+        const auto alpha = juce::jlimit (0.0f, 1.0f, (float) remaining / 1000.0f);
+
+        g.setColour (colourFor (messageSeverity).withAlpha (alpha));
+        g.drawText (messageText, messageBounds, juce::Justification::centredLeft, true);
+    }
+
+    // --- load and dropouts ---------------------------------------------------
+    const auto percent = juce::roundToInt (dspLoad * 100.0);
+
+    juce::String right;
+    right << "DSP " << percent << "%";
+
+    if (dropouts >= 0)
+        right << "  -  " << dropouts << (dropouts == 1 ? " drop" : " drops");
+
+    g.setColour (dropoutFlashMs > 0 ? colour::danger
+                                    : percent > 80 ? colour::warning : colour::textDisabled);
+    g.drawText (right, loadBounds, juce::Justification::centredRight, false);
+}
+
+} // namespace dew

@@ -9,7 +9,8 @@ MainComponent::MainComponent (bool openAudioDevice)
     : audioHost (engine),
       transportBar (document, engine, editorState),
       tabs (document, engine, editorState),
-      instrumentPanel (document, editorState)
+      instrumentPanel (document, editorState),
+      statusBar (document, editorState, audioHost)
 {
     juce::Desktop::getInstance().setDefaultLookAndFeel (&lookAndFeel);
 
@@ -26,20 +27,20 @@ MainComponent::MainComponent (bool openAudioDevice)
     // the engine renders already has something in it.
     projectChanged();
 
+    addAndMakeVisible (statusBar);
+
     if (! openAudioDevice)
     {
-        deviceStatus = "audio device not opened";
+        statusBar.showMessage ("Audio device not opened", StatusBar::Severity::warning);
     }
     else if (const auto error = audioHost.start(); error.isNotEmpty())
     {
-        deviceStatus = "Audio unavailable: " + error;
+        statusBar.showMessage ("Audio unavailable: " + error, StatusBar::Severity::error);
     }
     else
     {
-        deviceStatus = audioHost.describeDevice();
+        statusBar.showMessage (audioHost.describeDevice(), StatusBar::Severity::info);
     }
-
-    transportBar.setStatusText (deviceStatus);
 
     setSize (1180, 760);
 }
@@ -62,11 +63,10 @@ void MainComponent::projectChanged()
     engine.setProject (document.getState(), &warnings);
 
     // A project that cannot be rendered as the user expects is worth saying so
-    // once, in the status line, rather than silently playing something else.
+    // once rather than silently playing something else. It expires on its own
+    // now instead of standing until something overwrites it.
     if (! warnings.isEmpty())
-        transportBar.setStatusText (warnings[0]);
-    else
-        transportBar.setStatusText (deviceStatus);
+        statusBar.showMessage (warnings[0], StatusBar::Severity::warning);
 }
 
 void MainComponent::documentWasReplaced()
@@ -76,6 +76,7 @@ void MainComponent::documentWasReplaced()
     transportBar.refresh();
     tabs.refresh();
     instrumentPanel.refresh();
+    statusBar.refresh();
 
     engine.stop();
     engine.rewind();
@@ -92,9 +93,10 @@ void MainComponent::showLoadWarnings (const juce::StringArray& warnings)
     if (warnings.isEmpty())
         return;
 
-    transportBar.setStatusText (juce::String (warnings.size()) + " item"
-                                + (warnings.size() == 1 ? "" : "s")
-                                + " in this file were not understood: " + warnings[0]);
+    statusBar.showMessage (juce::String (warnings.size()) + " item"
+                           + (warnings.size() == 1 ? "" : "s")
+                           + " in this file were not understood: " + warnings[0],
+                           StatusBar::Severity::warning);
 }
 
 void MainComponent::paint (juce::Graphics& g)
@@ -107,6 +109,7 @@ void MainComponent::resized()
     auto area = getLocalBounds();
 
     transportBar.setBounds (area.removeFromTop (46));
+    statusBar.setBounds (area.removeFromBottom (StatusBar::barHeight));
     instrumentPanel.setBounds (area.removeFromRight (300));
     tabs.setBounds (area);
 }

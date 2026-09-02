@@ -27,8 +27,6 @@ public:
     /** Called when the document is replaced wholesale. */
     void refresh();
 
-    void setStatusText (const juce::String&);
-
 private:
     void timerCallback() override;
     void changeListenerCallback (juce::ChangeBroadcaster*) override;
@@ -60,7 +58,6 @@ private:
     DewNumberField patternLengthField;
 
     juce::Label positionLabel;
-    juce::Label statusLabel;
 
     bool updatingPatternList = false;
     juce::Array<int> groupDividers;

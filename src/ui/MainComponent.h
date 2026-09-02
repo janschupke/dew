@@ -10,6 +10,7 @@
 #include "EditorState.h"
 #include "EditorTabs.h"
 #include "InstrumentPanel.h"
+#include "StatusBar.h"
 #include "TransportBar.h"
 
 namespace dew
@@ -71,8 +72,7 @@ private:
     TransportBar transportBar;
     EditorTabs tabs;
     InstrumentPanel instrumentPanel;
-
-    juce::String deviceStatus;
+    StatusBar statusBar;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (MainComponent)
 };
