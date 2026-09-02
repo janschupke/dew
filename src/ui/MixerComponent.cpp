@@ -201,7 +201,7 @@ public:
         const auto body = getLocalBounds().toFloat().reduced (2.0f);
 
         g.setColour (selected ? tokens::colour::surfaceRaised
-                              : hovered ? tokens::colour::surface.brighter (0.06f)
+                              : hovered ? tokens::colour::surface.brighter (tokens::emphasis::surfaceLift)
                                         : tokens::colour::surface);
         g.fillRoundedRectangle (body, tokens::radius::md);
 
@@ -219,7 +219,7 @@ public:
         if (selected)
         {
             g.setColour (tokens::colour::accent);
-            g.fillRoundedRectangle (body.withHeight (3.0f), 1.5f);
+            g.fillRoundedRectangle (body.withHeight (3.0f), tokens::radius::xs);
         }
 
         paintMeter (g);
@@ -235,7 +235,7 @@ public:
             const auto badge = juce::Rectangle<float> ((float) getWidth() - 22.0f, 5.0f, 16.0f, 12.0f);
 
             g.setColour (tokens::colour::accent);
-            g.fillRoundedRectangle (badge, 3.0f);
+            g.fillRoundedRectangle (badge, tokens::radius::sm);
 
             g.setColour (tokens::colour::textOnAccent);
             g.setFont (tokens::type::font (tokens::type::caption, true));
@@ -301,7 +301,7 @@ private:
         const auto well = meterBounds.toFloat();
 
         g.setColour (colour::wellDeep);
-        g.fillRoundedRectangle (well, 2.0f);
+        g.fillRoundedRectangle (well, radius::xs);
 
         if (level <= 0.0f)
             return;
@@ -316,7 +316,7 @@ private:
 
         g.setColour (level >= 1.0f ? colour::danger
                                    : level > 0.7f ? colour::warning : colour::success);
-        g.fillRoundedRectangle (bar, 2.0f);
+        g.fillRoundedRectangle (bar, radius::xs);
     }
 
     void paintRouting (juce::Graphics& g)
@@ -471,7 +471,7 @@ void MixerComponent::valueTreeChildRemoved (juce::ValueTree&, juce::ValueTree& c
 
 void MixerComponent::paint (juce::Graphics& g)
 {
-    g.fillAll (Palette::background);
+    g.fillAll (tokens::colour::background);
 }
 
 void MixerComponent::pointChainAtSelectedTrack()

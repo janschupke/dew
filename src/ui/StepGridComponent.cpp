@@ -288,7 +288,7 @@ void StepGridComponent::paint (juce::Graphics& g)
 
         if (channelId == editorState.getSelectedChannelId())
         {
-            g.setColour (colour::accent.withAlpha (0.08f));
+            g.setColour (colour::accent.withAlpha (emphasis::tint));
             g.fillRect (rowBounds);
         }
 
@@ -322,10 +322,10 @@ void StepGridComponent::paint (juce::Graphics& g)
                                                           (float) (row * size::rowHeight),
                                                           width, (float) size::rowHeight);
 
-                g.setColour (colour::surfaceRaised.withAlpha (0.75f));
+                g.setColour (colour::surfaceRaised.withAlpha (emphasis::strong));
                 g.fillRect (full.reduced (0.5f));
 
-                g.setColour (colour::accent.withAlpha (0.35f));
+                g.setColour (colour::accent.withAlpha (emphasis::subdued));
                 g.drawRect (full.reduced (0.5f), stroke::hairline);
             }
 
@@ -342,7 +342,7 @@ void StepGridComponent::paint (juce::Graphics& g)
 
             auto fill = colourValue.withMultipliedAlpha (muted ? 0.35f : velocity);
 
-            g.setColour (atBasePitch ? fill : fill.withSaturation (0.3f));
+            g.setColour (atBasePitch ? fill : emphasis::secondary (fill));
             g.fillRoundedRectangle (cell, radius::sm);
 
             if (! atBasePitch)
@@ -388,11 +388,11 @@ void StepGridComponent::paint (juce::Graphics& g)
 
         if (playing)
         {
-            g.setColour (colour::playhead.withAlpha (0.22f));
+            g.setColour (colour::playhead.withAlpha (emphasis::wash));
             g.fillRect (juce::Rectangle<float> (x, 0.0f, width, (float) rowsHeight));
         }
 
-        g.setColour (playing ? colour::playhead : colour::playhead.withAlpha (0.5f));
+        g.setColour (playing ? colour::playhead : colour::playhead.withAlpha (emphasis::dimmed));
         g.drawVerticalLine ((int) x, 0.0f, (float) rowsHeight);
     }
 

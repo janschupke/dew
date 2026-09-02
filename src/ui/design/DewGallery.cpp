@@ -31,6 +31,7 @@ std::vector<Swatch> palette()
         { "success", colour::success }, { "warning", colour::warning },
         { "danger", colour::danger },
         { "beatShade", colour::beatShade }, { "barShade", colour::barShade },
+        { "keyBlack", colour::keyBlack }, { "keyWhite", colour::keyWhite },
         // Both were missing, and the ramp's absence was why nothing outside a
         // test referred to it - a token the gallery does not show is a token
         // nobody knows they have.

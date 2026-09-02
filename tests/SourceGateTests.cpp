@@ -214,3 +214,138 @@ TEST_CASE ("no source spells an automatable parameter as a string literal", "[bu
     INFO ("automatable parameters written as string literals:\n" << found.joinIntoString ("\n"));
     CHECK (found.isEmpty());
 }
+
+// =============================================================================
+// The design-system gates.
+//
+// Tokens.h is exempt from all three, because it is where the values are
+// declared; a gate that forbade its own definitions would only be forbidding
+// the design system from existing.
+// =============================================================================
+
+TEST_CASE ("no source names a colour by its hex value", "[build][gate][design]")
+{
+    // A colour written as 0xff4fa3ff is a colour that no theme can change and
+    // that no reader can name. dew had two - the piano keyboard's black and
+    // white keys, written inline in the painter that drew them - and they are
+    // tokens now.
+    //
+    // juce::Colour::fromString is deliberately NOT caught: it reads a colour a
+    // document stored, which is data, not a design decision.
+    const auto found = offenders ([] (const juce::String& line)
+    {
+        const auto trimmed = line.trim();
+
+        if (trimmed.startsWith ("//") || trimmed.startsWith ("*") || trimmed.startsWith ("/*"))
+            return false;
+
+        return line.contains ("juce::Colour (0x") || line.contains ("juce::Colour(0x");
+    }, { "Tokens.h" });
+
+    INFO ("colours written as hex outside the token file:\n" << found.joinIntoString ("\n"));
+    CHECK (found.isEmpty());
+}
+
+TEST_CASE ("no source states an emphasis as a bare number", "[build][gate][design]")
+{
+    // The second, undeclared design system: fifteen alphas and nine brighten
+    // factors, chosen one at a time, which between them made a twenty-four rung
+    // scale nobody had named. Two panels drawn "faintly" were drawn at 0.07 and
+    // 0.10 a week apart.
+    //
+    // 0.0 and 1.0 are allowed: fully transparent and fully opaque are not
+    // rungs on a scale, they are the ends of the axis the scale sits on.
+    const auto found = offenders ([] (const juce::String& line)
+    {
+        const auto trimmed = line.trim();
+
+        if (trimmed.startsWith ("//") || trimmed.startsWith ("*") || trimmed.startsWith ("/*"))
+            return false;
+
+        for (const auto* call : { ".withAlpha (", ".brighter (", ".darker (",
+                                  ".withSaturation (", ".withBrightness (",
+                                  ".withMultipliedSaturation (", ".withMultipliedBrightness (" })
+        {
+            auto rest = line;
+
+            while (rest.contains (call))
+            {
+                rest = rest.fromFirstOccurrenceOf (call, false, false);
+
+                // Just this call's own argument list, so a token argument
+                // followed later in the line by an unrelated number is not a
+                // false positive.
+                const auto argument = rest.upToFirstOccurrenceOf (")", false, false);
+
+                for (int i = 0; i < argument.length(); ++i)
+                {
+                    if (! juce::CharacterFunctions::isDigit (argument[i]))
+                        continue;
+
+                    if (i > 0 && (juce::CharacterFunctions::isLetterOrDigit (argument[i - 1])
+                                  || argument[i - 1] == '.' || argument[i - 1] == '_'))
+                        continue;
+
+                    const auto number = argument.substring (i).initialSectionContainingOnly ("0123456789.");
+
+                    if (number != "0.0" && number != "1.0" && number != "0" && number != "1")
+                        return true;
+                }
+            }
+        }
+
+        return false;
+    }, { "Tokens.h" });
+
+    INFO ("emphasis written as bare numbers:\n" << found.joinIntoString ("\n"));
+    CHECK (found.isEmpty());
+}
+
+TEST_CASE ("no source states a radius or a stroke as a bare number", "[build][gate][design]")
+{
+    // A corner drawn at 4.0 when the scale says 3 or 5 is not a decision, it is
+    // a component that was written without the scale open. drawButtonBackground
+    // had exactly that.
+    //
+    // Icons.cpp is exempt: its numbers are path GEOMETRY in the icon's own 0..1
+    // space - where 0.22 is a position, not a width - and its stroke weights
+    // already come from icon::. A gate that read them as pixel values would be
+    // reading a different coordinate system.
+    const auto found = offenders ([] (const juce::String& line)
+    {
+        const auto trimmed = line.trim();
+
+        if (trimmed.startsWith ("//") || trimmed.startsWith ("*") || trimmed.startsWith ("/*"))
+            return false;
+
+        const auto numberAfterComma = [] (const juce::String& text)
+        {
+            for (int i = 1; i < text.length(); ++i)
+                if (text[i - 1] == ','
+                    && juce::CharacterFunctions::isDigit (text.substring (i).trimStart()[0]))
+                    return true;
+
+            return false;
+        };
+
+        for (const auto* call : { "RoundedRectangle (", "drawRect (", "drawEllipse (" })
+            if (line.contains (call)
+                && numberAfterComma (line.fromFirstOccurrenceOf (call, false, false)))
+                return true;
+
+        auto rest = line;
+
+        while (rest.contains ("PathStrokeType ("))
+        {
+            rest = rest.fromFirstOccurrenceOf ("PathStrokeType (", false, false);
+
+            if (juce::CharacterFunctions::isDigit (rest.trimStart()[0]))
+                return true;
+        }
+
+        return false;
+    }, { "Tokens.h", "Icons.cpp" });
+
+    INFO ("radii and strokes written as bare numbers:\n" << found.joinIntoString ("\n"));
+    CHECK (found.isEmpty());
+}

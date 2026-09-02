@@ -11,52 +11,52 @@ namespace dew
 
 DewLookAndFeel::DewLookAndFeel()
 {
-    setColour (juce::ResizableWindow::backgroundColourId, Palette::background);
-    setColour (juce::DocumentWindow::textColourId, Palette::text);
+    setColour (juce::ResizableWindow::backgroundColourId, tokens::colour::background);
+    setColour (juce::DocumentWindow::textColourId, tokens::colour::textPrimary);
 
-    setColour (juce::Label::textColourId, Palette::text);
-    setColour (juce::TextEditor::backgroundColourId, Palette::panelDark);
-    setColour (juce::TextEditor::textColourId, Palette::text);
-    setColour (juce::TextEditor::outlineColourId, Palette::line);
-    setColour (juce::TextEditor::focusedOutlineColourId, Palette::accent);
+    setColour (juce::Label::textColourId, tokens::colour::textPrimary);
+    setColour (juce::TextEditor::backgroundColourId, tokens::colour::well);
+    setColour (juce::TextEditor::textColourId, tokens::colour::textPrimary);
+    setColour (juce::TextEditor::outlineColourId, tokens::colour::divider);
+    setColour (juce::TextEditor::focusedOutlineColourId, tokens::colour::accent);
 
-    setColour (juce::TextButton::buttonColourId, Palette::panel);
-    setColour (juce::TextButton::buttonOnColourId, Palette::accent);
-    setColour (juce::TextButton::textColourOffId, Palette::text);
-    setColour (juce::TextButton::textColourOnId, Palette::background);
+    setColour (juce::TextButton::buttonColourId, tokens::colour::surface);
+    setColour (juce::TextButton::buttonOnColourId, tokens::colour::accent);
+    setColour (juce::TextButton::textColourOffId, tokens::colour::textPrimary);
+    setColour (juce::TextButton::textColourOnId, tokens::colour::background);
 
-    setColour (juce::ComboBox::backgroundColourId, Palette::panel);
-    setColour (juce::ComboBox::textColourId, Palette::text);
-    setColour (juce::ComboBox::outlineColourId, Palette::line);
-    setColour (juce::ComboBox::arrowColourId, Palette::textDim);
+    setColour (juce::ComboBox::backgroundColourId, tokens::colour::surface);
+    setColour (juce::ComboBox::textColourId, tokens::colour::textPrimary);
+    setColour (juce::ComboBox::outlineColourId, tokens::colour::divider);
+    setColour (juce::ComboBox::arrowColourId, tokens::colour::textSecondary);
 
-    setColour (juce::PopupMenu::backgroundColourId, Palette::panel);
-    setColour (juce::PopupMenu::textColourId, Palette::text);
-    setColour (juce::PopupMenu::highlightedBackgroundColourId, Palette::accent);
-    setColour (juce::PopupMenu::highlightedTextColourId, Palette::background);
+    setColour (juce::PopupMenu::backgroundColourId, tokens::colour::surface);
+    setColour (juce::PopupMenu::textColourId, tokens::colour::textPrimary);
+    setColour (juce::PopupMenu::highlightedBackgroundColourId, tokens::colour::accent);
+    setColour (juce::PopupMenu::highlightedTextColourId, tokens::colour::background);
 
-    setColour (juce::Slider::thumbColourId, Palette::accent);
-    setColour (juce::Slider::trackColourId, Palette::accent);
-    setColour (juce::Slider::backgroundColourId, Palette::panelDark);
-    setColour (juce::Slider::textBoxTextColourId, Palette::text);
-    setColour (juce::Slider::textBoxBackgroundColourId, Palette::panelDark);
-    setColour (juce::Slider::textBoxOutlineColourId, Palette::line);
+    setColour (juce::Slider::thumbColourId, tokens::colour::accent);
+    setColour (juce::Slider::trackColourId, tokens::colour::accent);
+    setColour (juce::Slider::backgroundColourId, tokens::colour::well);
+    setColour (juce::Slider::textBoxTextColourId, tokens::colour::textPrimary);
+    setColour (juce::Slider::textBoxBackgroundColourId, tokens::colour::well);
+    setColour (juce::Slider::textBoxOutlineColourId, tokens::colour::divider);
 
-    setColour (juce::TabbedComponent::backgroundColourId, Palette::background);
-    setColour (juce::TabbedComponent::outlineColourId, Palette::line);
-    setColour (juce::TabbedButtonBar::tabOutlineColourId, Palette::line);
-    setColour (juce::TabbedButtonBar::frontOutlineColourId, Palette::accent);
-    setColour (juce::TabbedButtonBar::tabTextColourId, Palette::textDim);
-    setColour (juce::TabbedButtonBar::frontTextColourId, Palette::text);
+    setColour (juce::TabbedComponent::backgroundColourId, tokens::colour::background);
+    setColour (juce::TabbedComponent::outlineColourId, tokens::colour::divider);
+    setColour (juce::TabbedButtonBar::tabOutlineColourId, tokens::colour::divider);
+    setColour (juce::TabbedButtonBar::frontOutlineColourId, tokens::colour::accent);
+    setColour (juce::TabbedButtonBar::tabTextColourId, tokens::colour::textSecondary);
+    setColour (juce::TabbedButtonBar::frontTextColourId, tokens::colour::textPrimary);
 
-    setColour (juce::ScrollBar::thumbColourId, Palette::lineStrong);
-    setColour (juce::ToggleButton::textColourId, Palette::text);
-    setColour (juce::ToggleButton::tickColourId, Palette::accent);
-    setColour (juce::ToggleButton::tickDisabledColourId, Palette::lineStrong);
+    setColour (juce::ScrollBar::thumbColourId, tokens::colour::dividerStrong);
+    setColour (juce::ToggleButton::textColourId, tokens::colour::textPrimary);
+    setColour (juce::ToggleButton::tickColourId, tokens::colour::accent);
+    setColour (juce::ToggleButton::tickDisabledColourId, tokens::colour::dividerStrong);
 
-    setColour (juce::AlertWindow::backgroundColourId, Palette::panel);
-    setColour (juce::AlertWindow::textColourId, Palette::text);
-    setColour (juce::AlertWindow::outlineColourId, Palette::line);
+    setColour (juce::AlertWindow::backgroundColourId, tokens::colour::surface);
+    setColour (juce::AlertWindow::textColourId, tokens::colour::textPrimary);
+    setColour (juce::AlertWindow::outlineColourId, tokens::colour::divider);
 }
 
 juce::Font DewLookAndFeel::getLabelFont (juce::Label& label)
@@ -192,20 +192,20 @@ void DewLookAndFeel::drawButtonBackground (juce::Graphics& g, juce::Button& butt
                                            bool shouldDrawButtonAsDown)
 {
     const auto bounds = button.getLocalBounds().toFloat().reduced (0.5f);
-    const auto corner = 4.0f;
+    const auto corner = tokens::radius::sm;
 
     auto fill = backgroundColour;
 
     if (shouldDrawButtonAsDown)
-        fill = fill.brighter (0.25f);
+        fill = fill.brighter (tokens::emphasis::pressLift);
     else if (shouldDrawButtonAsHighlighted)
-        fill = fill.brighter (0.12f);
+        fill = fill.brighter (tokens::emphasis::controlLift);
 
     g.setColour (fill);
     g.fillRoundedRectangle (bounds, corner);
 
-    g.setColour (button.getToggleState() ? Palette::accent : Palette::line);
-    g.drawRoundedRectangle (bounds, corner, 1.0f);
+    g.setColour (button.getToggleState() ? tokens::colour::accent : tokens::colour::divider);
+    g.drawRoundedRectangle (bounds, corner, tokens::stroke::hairline);
 }
 
 void DewLookAndFeel::drawTabButton (juce::TabBarButton& button, juce::Graphics& g,
@@ -237,7 +237,7 @@ void DewLookAndFeel::drawTabButton (juce::TabBarButton& button, juce::Graphics& 
     }
 
     g.setColour (active ? colour::textPrimary
-                        : isMouseOver ? colour::textPrimary.withAlpha (0.85f)
+                        : isMouseOver ? colour::textPrimary.withAlpha (emphasis::strong)
                                       : colour::textSecondary);
     g.setFont (type::font (type::body, active));
     g.drawText (button.getButtonText(), button.getLocalBounds(),
@@ -279,12 +279,12 @@ void DewLookAndFeel::drawComboBox (juce::Graphics& g, int width, int height, boo
     // Painted like DewButton, because that is what it is standing next to.
     g.setColour (! box.isEnabled() ? colour::surface
                                    : isButtonDown ? colour::surfaceHover
-                                                  : over ? colour::surfaceHover.withAlpha (0.75f)
+                                                  : over ? colour::surfaceHover.withAlpha (emphasis::strong)
                                                          : colour::surfaceRaised);
     g.fillRoundedRectangle (bounds, radius::md);
 
     g.setColour (box.hasKeyboardFocus (false) ? colour::accent
-                                              : over ? colour::outline.brighter (0.15f)
+                                              : over ? colour::outline.brighter (emphasis::controlLift)
                                                      : colour::outline);
     g.drawRoundedRectangle (bounds, radius::md, stroke::hairline);
 
@@ -422,7 +422,7 @@ void DewLookAndFeel::drawPopupMenuItem (juce::Graphics& g, const juce::Rectangle
 
     if (shortcutKeyText.isNotEmpty())
     {
-        g.setColour (textColour.withAlpha (0.6f));
+        g.setColour (textColour.withAlpha (emphasis::dimmed));
         g.setFont (type::font (type::small));
         g.drawText (shortcutKeyText, content.removeFromRight (72),
                     juce::Justification::centredRight, false);

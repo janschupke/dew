@@ -16,7 +16,7 @@ class DewApplication::MainWindow : public juce::DocumentWindow
 public:
     MainWindow (const juce::String& name, juce::ApplicationCommandManager& manager,
                 const Settings& savedSession)
-        : DocumentWindow (name, Palette::background, DocumentWindow::allButtons)
+        : DocumentWindow (name, tokens::colour::background, DocumentWindow::allButtons)
     {
         setUsingNativeTitleBar (true);
         setContentOwned (new MainComponent(), true);

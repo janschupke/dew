@@ -62,7 +62,7 @@ void paint (juce::Graphics& g, juce::Rectangle<int> bounds,
 
         if (step % stepsPerBar == 0)
         {
-            g.setColour (beyond ? colour::dividerStrong.withAlpha (0.35f) : colour::dividerStrong);
+            g.setColour (beyond ? colour::dividerStrong.withAlpha (emphasis::subdued) : colour::dividerStrong);
             g.drawVerticalLine ((int) x, (float) bounds.getY(), (float) bounds.getBottom());
 
             // Bar numbers only where there is room for them to be readable.
@@ -76,7 +76,7 @@ void paint (juce::Graphics& g, juce::Rectangle<int> bounds,
         }
         else if (step % stepsPerBeat == 0 && timeline.pixelsPerStep * stepsPerBeat >= 10.0)
         {
-            g.setColour (beyond ? colour::divider.withAlpha (0.35f) : colour::divider);
+            g.setColour (beyond ? colour::divider.withAlpha (emphasis::subdued) : colour::divider);
             g.drawVerticalLine ((int) x, (float) bounds.getBottom() - 6.0f, (float) bounds.getBottom());
         }
     }
@@ -89,7 +89,7 @@ void paint (juce::Graphics& g, juce::Rectangle<int> bounds,
 
         if (x >= (float) bounds.getX() - 6.0f && x <= (float) bounds.getRight() + 6.0f)
         {
-            g.setColour (style.playing ? colour::playhead : colour::playhead.withAlpha (0.5f));
+            g.setColour (style.playing ? colour::playhead : colour::playhead.withAlpha (emphasis::dimmed));
 
             juce::Path head;
             head.addTriangle (x - 5.0f, (float) bounds.getBottom() - 8.0f,

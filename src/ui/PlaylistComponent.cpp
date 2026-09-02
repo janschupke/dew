@@ -136,7 +136,7 @@ public:
         // across the arrangement and not only from the letter.
         if ((bool) track[ids::mute])
         {
-            g.setColour (colour::wellDeep.withAlpha (0.35f));
+            g.setColour (colour::wellDeep.withAlpha (emphasis::subdued));
             g.fillAll();
         }
 
@@ -1283,11 +1283,11 @@ void PlaylistComponent::paintAudioClip (juce::Graphics& g, const juce::ValueTree
                           : colour::textDisabled;
 
     if (! audible)
-        clipColour = clipColour.withSaturation (0.1f).withMultipliedBrightness (0.6f);
+        clipColour = emphasis::silenced (clipColour);
 
-    g.setColour (clipColour.withAlpha (audible ? 0.35f : 0.2f));
+    g.setColour (clipColour.withAlpha (audible ? emphasis::subdued : emphasis::wash));
     g.fillRoundedRectangle (bounds, radius::sm);
-    g.setColour (clipColour.brighter (0.3f).withAlpha (audible ? 1.0f : 0.5f));
+    g.setColour (clipColour.brighter (emphasis::edgeLift).withAlpha (audible ? 1.0f : emphasis::dimmed));
     g.drawRoundedRectangle (bounds, radius::sm, stroke::regular);
 
     auto* pool = samplePool;
@@ -1309,7 +1309,7 @@ void PlaylistComponent::paintAudioClip (juce::Graphics& g, const juce::ValueTree
             const auto centre = bounds.getCentreY();
             const auto halfHeight = bounds.getHeight() * 0.5f - 2.0f;
 
-            g.setColour (clipColour.brighter (0.4f).withAlpha (audible ? 0.9f : 0.4f));
+            g.setColour (clipColour.brighter (emphasis::edgeLift).withAlpha (audible ? emphasis::strong : emphasis::subdued));
 
             for (int x = (int) bounds.getX(); x < (int) bounds.getRight(); ++x)
             {
@@ -1326,7 +1326,7 @@ void PlaylistComponent::paintAudioClip (juce::Graphics& g, const juce::ValueTree
         }
     }
 
-    g.setColour (colour::textPrimary.withAlpha (audible ? 0.9f : 0.5f));
+    g.setColour (colour::textPrimary.withAlpha (audible ? emphasis::strong : emphasis::dimmed));
     g.setFont (type::font (type::small, true));
     g.drawText (channel.isValid() ? channel[ids::name].toString()
                                   : "channel " + clip[ids::channelId].toString(),
@@ -1342,11 +1342,11 @@ void PlaylistComponent::paintAutomationClip (juce::Graphics& g, const juce::Valu
     // An automation clip reads as a different kind of thing from a pattern
     // clip: no fill, a visible curve, and its own colour.
     const auto clipColour = audible ? colour::warning
-                                    : colour::warning.withSaturation (0.1f).withMultipliedBrightness (0.6f);
+                                    : emphasis::silenced (colour::warning);
 
-    g.setColour (colour::wellDeep.withAlpha (0.85f));
+    g.setColour (colour::wellDeep.withAlpha (emphasis::strong));
     g.fillRoundedRectangle (bounds, radius::sm);
-    g.setColour (clipColour.withAlpha (audible ? 0.7f : 0.35f));
+    g.setColour (clipColour.withAlpha (audible ? emphasis::strong : emphasis::subdued));
     g.drawRoundedRectangle (bounds, radius::sm, stroke::regular);
 
     if (! automation.isValid())
@@ -1360,7 +1360,7 @@ void PlaylistComponent::paintAutomationClip (juce::Graphics& g, const juce::Valu
 
     // Underneath the curve rather than over it: the curve is the content, and
     // an automation lane is only a row tall.
-    g.setColour (clipColour.withAlpha (0.45f));
+    g.setColour (clipColour.withAlpha (emphasis::subdued));
     g.setFont (type::font (type::caption));
     g.drawText (automation[ids::name].toString(), bounds.toNearestInt().reduced (5, 1),
                 juce::Justification::topLeft, true);
@@ -1389,7 +1389,7 @@ void PlaylistComponent::paintAutomationClip (juce::Graphics& g, const juce::Valu
     if (points.size() > 1)
     {
         g.setColour (clipColour);
-        g.strokePath (curve, juce::PathStrokeType (1.6f));
+        g.strokePath (curve, juce::PathStrokeType (stroke::regular));
     }
 
     for (const auto& point : points)
@@ -1441,7 +1441,7 @@ void PlaylistComponent::paint (juce::Graphics& g)
         const auto fromX = (float) headerWidth + timeline.xForStep ((double) selection.getStart());
         const auto toX = (float) headerWidth + timeline.xForStep ((double) selection.getEnd());
 
-        g.setColour (colour::accent.withAlpha (0.55f));
+        g.setColour (colour::accent.withAlpha (emphasis::dimmed));
         g.fillRect (juce::Rectangle<float> (fromX, (float) rulerTop(),
                                             juce::jmax (1.0f, toX - fromX), (float) rulerHeight)
                         .getIntersection ({ (float) headerWidth, (float) rulerTop(),
@@ -1464,7 +1464,7 @@ void PlaylistComponent::paint (juce::Graphics& g)
         g.drawText (juce::String (bar + 1), (int) x + 3, rulerTop(), (int) width - 4, rulerHeight,
                     juce::Justification::centredLeft, false);
 
-        g.setColour (beyond ? colour::dividerStrong.withAlpha (0.35f) : colour::dividerStrong);
+        g.setColour (beyond ? colour::dividerStrong.withAlpha (emphasis::subdued) : colour::dividerStrong);
         g.drawVerticalLine ((int) x, (float) rulerTop(), (float) bottom);
     }
 
@@ -1495,7 +1495,7 @@ void PlaylistComponent::paint (juce::Graphics& g)
         // useless for a marker whose whole job is saying what a render will
         // contain. The ruler is where the span can be stated outright without
         // covering anything up.
-        g.setColour (colour::accent.withAlpha (0.10f));
+        g.setColour (colour::accent.withAlpha (emphasis::tint));
         g.fillRect (visible.withTrimmedTop ((float) rulerHeight));   // below the ruler strip
 
         g.setColour (colour::accent);
@@ -1519,7 +1519,7 @@ void PlaylistComponent::paint (juce::Graphics& g)
 
         if (trackIndex % 2 == 1)
         {
-            g.setColour (colour::wellDeep.withAlpha (0.5f));
+            g.setColour (colour::wellDeep.withAlpha (emphasis::dimmed));
             g.fillRect (headerWidth, y, getWidth() - headerWidth, rowHeight);
         }
 
@@ -1527,7 +1527,7 @@ void PlaylistComponent::paint (juce::Graphics& g)
         // where you meant it to.
         if (gesture == Gesture::moving && trackIndex == dropTrackIndex)
         {
-            g.setColour (colour::accent.withAlpha (0.07f));
+            g.setColour (colour::accent.withAlpha (emphasis::tint));
             g.fillRect (headerWidth, y, getWidth() - headerWidth, rowHeight);
         }
 
@@ -1562,16 +1562,16 @@ void PlaylistComponent::paint (juce::Graphics& g)
                                                             (int) clip[ids::patternId]);
 
             const auto isCurrent = (int) clip[ids::patternId] == editorState.getCurrentPatternId();
-            auto clipColour = isCurrent ? colour::accent : colour::accent.withSaturation (0.35f);
+            auto clipColour = isCurrent ? colour::accent : emphasis::secondary (colour::accent);
 
             // A clip on a silenced track is drawn as silenced, so mute and solo
             // are visible in the arrangement and not only in the headers.
             if (! audible)
-                clipColour = clipColour.withSaturation (0.1f).withMultipliedBrightness (0.6f);
+                clipColour = emphasis::silenced (clipColour);
 
-            g.setColour (clipColour.withAlpha (audible ? 0.75f : 0.4f));
+            g.setColour (clipColour.withAlpha (audible ? emphasis::strong : emphasis::subdued));
             g.fillRoundedRectangle (bounds, radius::sm);
-            g.setColour (clipColour.brighter (0.3f).withAlpha (audible ? 1.0f : 0.5f));
+            g.setColour (clipColour.brighter (emphasis::edgeLift).withAlpha (audible ? 1.0f : emphasis::dimmed));
             g.drawRoundedRectangle (bounds, radius::sm, stroke::regular);
 
             g.setColour (colour::textOnAccent);
@@ -1603,7 +1603,7 @@ void PlaylistComponent::paint (juce::Graphics& g)
         if (x >= (float) headerWidth)
         {
             g.setColour (engine.isPlaying() ? colour::playhead
-                                            : colour::playhead.withAlpha (0.5f));
+                                            : colour::playhead.withAlpha (emphasis::dimmed));
             g.fillRect (juce::Rectangle<float> (x - 1.0f, (float) lanesTop(),
                                                 2.0f, (float) (bottom - lanesTop())));
 

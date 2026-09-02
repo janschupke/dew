@@ -47,6 +47,14 @@ namespace colour
     inline const juce::Colour warning       { 0xfff2c14e };
     inline const juce::Colour danger        { 0xffe4572e };
 
+    /** A piano keyboard's two key colours. Not "black" and "white": a black key
+        is a dark surface and a white key is a light one, and calling them what
+        they ARE is what lets a light theme swap them here rather than in the
+        piano roll's painter.
+    */
+    inline const juce::Colour keyBlack      { 0xff1c1f24 };
+    inline const juce::Colour keyWhite      { 0xffd8dce3 };
+
     // Step grid shading.
     inline const juce::Colour beatShade     { 0xff1b1e23 };  ///< every other beat
     inline const juce::Colour barShade      { 0xff20242b };  ///< first beat of a bar
@@ -100,6 +108,35 @@ namespace emphasis
     inline constexpr float controlLift = 0.10f;  ///< a button under the cursor
     inline constexpr float pressLift   = 0.22f;  ///< a button being held
     inline constexpr float edgeLift    = 0.35f;  ///< a note's border against its own fill
+
+    /** The same statement made of a colour rather than of an alpha.
+
+        Three of dew's surfaces say "this is here but not sounding" by draining
+        a colour rather than by fading it, because a faded clip on a dark well
+        disappears while a drained one still reads as a clip. That was written
+        out three times as `.withSaturation (0.1f).withMultipliedBrightness
+        (0.6f)`, and a fourth idea of "inactive" - 0.3 and 0.7 - lived in the
+        button primitive.
+    */
+    inline juce::Colour silenced (juce::Colour c)
+    {
+        return c.withSaturation (0.1f).withMultipliedBrightness (0.6f);
+    }
+
+    /** A control that cannot be used. Weaker than `silenced`: a disabled button
+        must still read as a button, where a muted clip may recede. */
+    inline juce::Colour disabled (juce::Colour c)
+    {
+        return c.withMultipliedSaturation (0.3f).withMultipliedBrightness (0.7f);
+    }
+
+    /** Present, usable, and not the one being talked about - a step off the
+        base pitch, a pattern that is not the current one. Hue intact so it is
+        still recognisably the same thing. */
+    inline juce::Colour secondary (juce::Colour c)
+    {
+        return c.withSaturation (0.3f);
+    }
 }
 
 // --- spacing -----------------------------------------------------------------
@@ -148,6 +185,11 @@ namespace stroke
     inline constexpr float whisper  = 0.5f;
 
     inline constexpr float hairline = 1.0f;
+
+    /** The same weight for JUCE's integer overloads - drawRect on an integer
+        rectangle takes an int, and a cast at the call site would only be
+        hiding that. */
+    inline constexpr int hairlinePx = 1;
     inline constexpr float regular  = 1.5f;
     inline constexpr float bold     = 2.0f;
 }

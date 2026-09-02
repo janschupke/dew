@@ -301,7 +301,7 @@ void SampleSection::paint (juce::Graphics& g)
         // trimmed away is context, and hiding it makes a mis-drag look like
         // audio that has been destroyed.
         const auto inside = pixelX >= startX && pixelX <= endX;
-        g.setColour (inside ? colour::accent : colour::textDisabled.withAlpha (0.35f));
+        g.setColour (inside ? colour::accent : colour::textDisabled.withAlpha (emphasis::subdued));
 
         const auto top = centre - bin.maximum * halfHeight;
         const auto bottom = centre - bin.minimum * halfHeight;
@@ -322,7 +322,7 @@ void SampleSection::paint (juce::Graphics& g)
     }
 
     g.setColour (colour::outline);
-    g.drawRect (bounds, 1.0f);
+    g.drawRect (bounds, stroke::hairline);
 }
 
 } // namespace dew

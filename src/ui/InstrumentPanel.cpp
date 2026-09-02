@@ -15,7 +15,7 @@ void styleCaption (juce::Label& label, const juce::String& text)
 {
     label.setText (text, juce::dontSendNotification);
     label.setFont (tokens::type::font (tokens::type::caption));
-    label.setColour (juce::Label::textColourId, Palette::textDim);
+    label.setColour (juce::Label::textColourId, tokens::colour::textSecondary);
     label.setJustificationType (juce::Justification::centred);
 }
 
@@ -32,7 +32,7 @@ InstrumentPanel::InstrumentPanel (ProjectDocument& d, EditorState& s, SamplePool
     addAndMakeVisible (chainHost);
 
     titleLabel.setFont (tokens::type::font (tokens::type::title, true));
-    titleLabel.setColour (juce::Label::textColourId, Palette::text);
+    titleLabel.setColour (juce::Label::textColourId, tokens::colour::textPrimary);
     addAndMakeVisible (titleLabel);
 
     // The oscillator section's height depends on the mode of the slot it is
@@ -238,8 +238,8 @@ void InstrumentPanel::refresh()
 
 void InstrumentPanel::paint (juce::Graphics& g)
 {
-    g.fillAll (Palette::panel);
-    g.setColour (Palette::line);
+    g.fillAll (tokens::colour::surface);
+    g.setColour (tokens::colour::divider);
     g.drawVerticalLine (0, 0.0f, (float) getHeight());
 }
 

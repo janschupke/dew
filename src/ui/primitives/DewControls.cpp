@@ -10,9 +10,9 @@ namespace
 
 juce::Colour fillFor (bool enabled, bool highlighted, bool down, juce::Colour base)
 {
-    if (! enabled)  return base.withMultipliedSaturation (0.3f).withMultipliedBrightness (0.7f);
-    if (down)       return base.brighter (0.22f);
-    if (highlighted) return base.brighter (0.10f);
+    if (! enabled)  return emphasis::disabled (base);
+    if (down)       return base.brighter (emphasis::pressLift);
+    if (highlighted) return base.brighter (emphasis::controlLift);
     return base;
 }
 
@@ -50,7 +50,7 @@ void DewButton::paintButton (juce::Graphics& g, bool highlighted, bool down)
         case Role::danger:
             background = on ? colour::danger : colour::surfaceRaised;
             text = on ? colour::textOnAccent : colour::danger;
-            border = colour::danger.withAlpha (0.6f);
+            border = colour::danger.withAlpha (emphasis::dimmed);
             break;
 
         case Role::ghost:
@@ -298,7 +298,7 @@ void rotary (juce::Graphics& g, juce::Rectangle<float> bounds, float proportion,
     // used to be `well`, which on a `surface` panel is nearly invisible, so a
     // knob at the bottom of its range looked like a stray tick mark rather than
     // a knob - which is exactly how the ADSR knobs at their minimums looked.
-    g.setColour (colour::outline.withAlpha (0.6f));
+    g.setColour (colour::outline.withAlpha (emphasis::dimmed));
     g.strokePath (track, juce::PathStrokeType (thickness, juce::PathStrokeType::curved,
                                                juce::PathStrokeType::rounded));
 
@@ -323,7 +323,7 @@ void rotary (juce::Graphics& g, juce::Rectangle<float> bounds, float proportion,
                     centre.y - (radius - thickness * 0.2f) * std::cos (angle));
 
     g.setColour (enabled ? colour::textPrimary : colour::textDisabled);
-    g.strokePath (pointer, juce::PathStrokeType (juce::jmax (1.5f, thickness * 0.42f),
+    g.strokePath (pointer, juce::PathStrokeType (juce::jmax (stroke::regular, thickness * 0.42f),
                                                  juce::PathStrokeType::curved,
                                                  juce::PathStrokeType::rounded));
 }
@@ -366,7 +366,7 @@ void inertArea (juce::Graphics& g, juce::Rectangle<int> bounds)
     g.setColour (colour::wellDeep);
     g.fillRect (bounds);
 
-    g.setColour (colour::divider.withAlpha (0.25f));
+    g.setColour (colour::divider.withAlpha (emphasis::hatch));
 
     const auto spacing = 12.0f;
     const auto span = (float) (bounds.getWidth() + bounds.getHeight());
@@ -387,7 +387,7 @@ void beyondEnd (juce::Graphics& g, juce::Rectangle<int> bounds, float edgeX)
     // A scrim rather than a fill: the grid underneath stays visible, so the
     // view reads as continuing rather than as ending in a void, while still
     // being obviously not part of the pattern.
-    g.setColour (colour::wellDeep.withAlpha (0.55f));
+    g.setColour (colour::wellDeep.withAlpha (emphasis::dimmed));
     g.fillRect (bounds);
 
     // The edge itself carries the meaning, so it is drawn at full strength.

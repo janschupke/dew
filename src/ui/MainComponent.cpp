@@ -167,7 +167,7 @@ void MainComponent::showLoadWarnings (const juce::StringArray& warnings)
 
 void MainComponent::paint (juce::Graphics& g)
 {
-    g.fillAll (Palette::background);
+    g.fillAll (tokens::colour::background);
 }
 
 MainComponent::PanelDivider::PanelDivider (MainComponent& o) : owner (o)

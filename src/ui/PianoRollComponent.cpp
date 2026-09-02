@@ -1415,7 +1415,7 @@ void PianoRollComponent::paintKeyboard (juce::Graphics& g)
         const auto y = (float) keys.getY() + (float) (row * rowHeight) - (float) pitchScrollPx;
         const auto black = isBlackKey (pitch);
 
-        auto colourValue = black ? juce::Colour (0xff1c1f24) : juce::Colour (0xffd8dce3);
+        auto colourValue = black ? colour::keyBlack : colour::keyWhite;
 
         // The key under the pointer lights while it sounds, so a click on the
         // keyboard is visibly doing something and not only audibly.
@@ -1427,7 +1427,7 @@ void PianoRollComponent::paintKeyboard (juce::Graphics& g)
 
         if (pitch % 12 == 0)
         {
-            g.setColour (pitch == auditionPitch ? colour::textOnAccent : colour::textOnAccent);
+            g.setColour (colour::textOnAccent);
             g.setFont (type::font (type::caption));
             g.drawText (noteName (pitch), keys.getX() + 3, (int) y, keys.getWidth() - 6, rowHeight,
                         juce::Justification::centredLeft, false);
@@ -1512,7 +1512,7 @@ void PianoRollComponent::paintNotes (juce::Graphics& g)
             g.fillRect ((float) area.getX(), y, (float) area.getWidth(), (float) rowHeight);
         }
 
-        g.setColour (pitch % 12 == 0 ? colour::dividerStrong : colour::divider.withAlpha (0.4f));
+        g.setColour (pitch % 12 == 0 ? colour::dividerStrong : colour::divider.withAlpha (emphasis::subdued));
         g.drawHorizontalLine ((int) y, (float) area.getX(), (float) area.getRight());
     }
 
@@ -1534,7 +1534,7 @@ void PianoRollComponent::paintNotes (juce::Graphics& g)
         else if (step % stepsPerBeat == 0)
             g.setColour (colour::divider);
         else if (timeline.pixelsPerStep >= 6.0)
-            g.setColour (colour::divider.withAlpha (0.4f));
+            g.setColour (colour::divider.withAlpha (emphasis::subdued));
         else
             continue;
 
@@ -1575,8 +1575,8 @@ void PianoRollComponent::paintNotes (juce::Graphics& g)
         if ((int) note[ids::ch] != channelId)
         {
             // Other channels' notes are context, not something editable here.
-            g.setColour (colour::dividerStrong.withAlpha (0.35f));
-            g.fillRoundedRectangle (bounds, 2.0f);
+            g.setColour (colour::dividerStrong.withAlpha (emphasis::subdued));
+            g.fillRoundedRectangle (bounds, radius::xs);
             continue;
         }
 
@@ -1584,11 +1584,15 @@ void PianoRollComponent::paintNotes (juce::Graphics& g)
         // quiet note reads as quiet while you are writing the melody.
         const auto velocity = (float) juce::jlimit (0.0, 1.0, (double) note[ids::velocity]);
 
-        g.setColour (colourForChannel.withAlpha (0.35f + 0.6f * velocity));
-        g.fillRoundedRectangle (bounds, 2.0f);
+        // A silent note is stated as faintly as anything else that is there but
+        // not sounding; a full-velocity one is stated completely.
+        g.setColour (colourForChannel.withAlpha (
+            emphasis::subdued + (1.0f - emphasis::subdued) * velocity));
+        g.fillRoundedRectangle (bounds, radius::xs);
 
-        g.setColour (isSelected (note) ? colour::textPrimary : colourForChannel.brighter (0.4f));
-        g.drawRoundedRectangle (bounds, 2.0f, isSelected (note) ? 1.6f : 1.0f);
+        g.setColour (isSelected (note) ? colour::textPrimary : colourForChannel.brighter (emphasis::edgeLift));
+        g.drawRoundedRectangle (bounds, radius::xs,
+                                isSelected (note) ? stroke::regular : stroke::hairline);
     }
 
     // --- position indicator --------------------------------------------------
@@ -1603,21 +1607,21 @@ void PianoRollComponent::paintNotes (juce::Graphics& g)
 
         if (playing)
         {
-            g.setColour (colour::playhead.withAlpha (0.2f));
+            g.setColour (colour::playhead.withAlpha (emphasis::wash));
             g.fillRect (x, (float) area.getY(), (float) timeline.pixelsPerStep, (float) area.getHeight());
         }
 
-        g.setColour (playing ? colour::playhead : colour::playhead.withAlpha (0.5f));
+        g.setColour (playing ? colour::playhead : colour::playhead.withAlpha (emphasis::dimmed));
         g.fillRect (x, (float) area.getY(), 1.5f, (float) area.getHeight());
     }
 
     // --- rubber band ---------------------------------------------------------
     if (gesture == Gesture::selecting && ! rubberBand.isEmpty())
     {
-        g.setColour (colour::accent.withAlpha (0.18f));
+        g.setColour (colour::accent.withAlpha (emphasis::wash));
         g.fillRect (rubberBand);
         g.setColour (colour::accent);
-        g.drawRect (rubberBand, 1);
+        g.drawRect (rubberBand, stroke::hairlinePx);
     }
 }
 
@@ -1662,7 +1666,7 @@ void PianoRollComponent::paintVelocityLane (juce::Graphics& g)
         if (lineX > (float) area.getRight())
             break;
 
-        g.setColour (step >= steps ? colour::dividerStrong.withAlpha (0.35f) : colour::dividerStrong);
+        g.setColour (step >= steps ? colour::dividerStrong.withAlpha (emphasis::subdued) : colour::dividerStrong);
         g.drawVerticalLine ((int) lineX, (float) area.getY(), (float) area.getBottom());
     }
 
@@ -1688,7 +1692,7 @@ void PianoRollComponent::paintVelocityLane (juce::Graphics& g)
         const auto bar = juce::Rectangle<float> (x + 1.0f, (float) area.getBottom() - 4.0f - height,
                                                  barWidth, height);
 
-        g.setColour (isSelected (note) ? colour::textPrimary : colourForChannel.withAlpha (0.85f));
+        g.setColour (isSelected (note) ? colour::textPrimary : colourForChannel.withAlpha (emphasis::strong));
         g.fillRect (bar);
         g.setColour (colour::wellDeep);
         g.fillEllipse (bar.getX() - 1.0f, bar.getY() - 2.0f, barWidth + 2.0f, 4.0f);

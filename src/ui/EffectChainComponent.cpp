@@ -215,7 +215,7 @@ public:
         auto header = getLocalBounds().removeFromTop (size::rowHeight).toFloat();
 
         g.setColour (selected ? colour::surfaceHover
-                              : hovered ? colour::surfaceRaised.brighter (0.05f)
+                              : hovered ? colour::surfaceRaised.brighter (emphasis::surfaceLift)
                                         : colour::surfaceRaised);
         g.fillRoundedRectangle (header, radius::md);
 

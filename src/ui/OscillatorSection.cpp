@@ -94,7 +94,7 @@ public:
         auto body = getLocalBounds().toFloat().reduced (0.5f);
 
         g.setColour (selected      ? colour::surfaceHover
-                     : highlighted ? colour::surfaceRaised.brighter (0.05f)
+                     : highlighted ? colour::surfaceRaised.brighter (emphasis::surfaceLift)
                                    : colour::surfaceRaised);
         g.fillRoundedRectangle (body, radius::sm);
 

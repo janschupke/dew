@@ -140,7 +140,7 @@ public:
         {
             g.setColour (colour::accent);
             g.fillRect (0, 0, 4, getHeight());
-            g.drawRect (getLocalBounds(), 1);
+            g.drawRect (getLocalBounds(), stroke::hairlinePx);
         }
 
         // The base pitch, so a melodic channel says what it is playing. Its
@@ -566,7 +566,7 @@ void ChannelRackComponent::paint (juce::Graphics& g)
     // The header column continues below the last channel so the split between
     // names and steps stays readable down the whole panel. It runs the full
     // height now that the add button is a row of the list rather than a footer.
-    g.setColour (colour::surface.withAlpha (0.4f));
+    g.setColour (colour::surface.withAlpha (emphasis::subdued));
     g.fillRect (0, 0, size::gutterChannel, getHeight());
 
     g.setColour (colour::dividerStrong);

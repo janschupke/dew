@@ -1,5 +1,7 @@
 #include "ui/design/Icons.h"
 
+#include "ui/design/Tokens.h"
+
 namespace dew::icons
 {
 
@@ -9,7 +11,7 @@ namespace
 /** Strokes are drawn as outlines so an icon is one filled path - it scales and
     recolours as a unit, and callers never have to know a stroke width.
 */
-juce::Path strokedLine (float x1, float y1, float x2, float y2, float thickness = 0.1f)
+juce::Path strokedLine (float x1, float y1, float x2, float y2, float thickness = tokens::icon::regular)
 {
     juce::Path line;
     line.startNewSubPath (x1, y1);
@@ -21,7 +23,7 @@ juce::Path strokedLine (float x1, float y1, float x2, float y2, float thickness 
     return stroked;
 }
 
-juce::Path strokeOf (const juce::Path& source, float thickness = 0.1f)
+juce::Path strokeOf (const juce::Path& source, float thickness = tokens::icon::regular)
 {
     juce::Path stroked;
     juce::PathStrokeType (thickness, juce::PathStrokeType::curved,
@@ -77,7 +79,7 @@ juce::Path loop()
                        juce::MathConstants<float>::pi * 0.35f,
                        juce::MathConstants<float>::pi * 1.85f, true);
 
-    auto p = strokeOf (arc, 0.11f);
+    auto p = strokeOf (arc, tokens::icon::regular);
     p.addTriangle (0.62f, 0.06f, 0.62f, 0.34f, 0.90f, 0.20f);
     return p;
 }
@@ -137,7 +139,7 @@ juce::Path magnet()
                          -juce::MathConstants<float>::halfPi,
                          juce::MathConstants<float>::halfPi, true);
 
-    auto p = strokeOf (outer, 0.26f);
+    auto p = strokeOf (outer, tokens::icon::ring);
 
     // Square off the poles so it reads as a magnet rather than a hook.
     p.addRectangle (0.11f, 0.52f, 0.26f, 0.30f);
@@ -170,7 +172,7 @@ juce::Path eraser()
     body.closeSubPath();
 
     juce::Path p (body);
-    p.addPath (strokedLine (0.34f, 0.44f, 0.68f, 0.66f, 0.07f));
+    p.addPath (strokedLine (0.34f, 0.44f, 0.68f, 0.66f, tokens::icon::hair));
     return p;
 }
 
@@ -180,13 +182,13 @@ juce::Path scissors()
     // enough to survive a 24px button - drawn smaller they close up into two
     // dots and the whole thing reads as a cross.
     juce::Path p;
-    p.addPath (strokedLine (0.26f, 0.10f, 0.62f, 0.56f, 0.09f));
-    p.addPath (strokedLine (0.74f, 0.10f, 0.38f, 0.56f, 0.09f));
+    p.addPath (strokedLine (0.26f, 0.10f, 0.62f, 0.56f, tokens::icon::regular));
+    p.addPath (strokedLine (0.74f, 0.10f, 0.38f, 0.56f, tokens::icon::regular));
 
     juce::Path rings;
     rings.addEllipse (0.12f, 0.58f, 0.30f, 0.30f);
     rings.addEllipse (0.58f, 0.58f, 0.30f, 0.30f);
-    p.addPath (strokeOf (rings, 0.10f));
+    p.addPath (strokeOf (rings, tokens::icon::regular));
 
     return p;
 }
@@ -223,7 +225,7 @@ juce::Path quantize()
     juce::Path p;
 
     for (const auto x : { 0.14f, 0.5f, 0.86f })
-        p.addPath (strokedLine (x, 0.10f, x, 0.90f, 0.06f));
+        p.addPath (strokedLine (x, 0.10f, x, 0.90f, tokens::icon::hair));
 
     // Centred ON the middle line, not butted against one of the outer two:
     // touching a line merges the two shapes into a letter H at button size.
@@ -246,8 +248,8 @@ juce::Path mute()
     p.lineTo (0.28f, 0.62f);
     p.closeSubPath();
 
-    p.addPath (strokedLine (0.62f, 0.36f, 0.88f, 0.64f, 0.09f));
-    p.addPath (strokedLine (0.88f, 0.36f, 0.62f, 0.64f, 0.09f));
+    p.addPath (strokedLine (0.62f, 0.36f, 0.88f, 0.64f, tokens::icon::regular));
+    p.addPath (strokedLine (0.88f, 0.36f, 0.62f, 0.64f, tokens::icon::regular));
     return p;
 }
 
@@ -258,7 +260,7 @@ juce::Path solo()
                         -juce::MathConstants<float>::halfPi * 1.6f,
                         juce::MathConstants<float>::halfPi * 1.6f, true);
 
-    auto p = strokeOf (band, 0.1f);
+    auto p = strokeOf (band, tokens::icon::regular);
     p.addRoundedRectangle (0.14f, 0.52f, 0.16f, 0.32f, 0.06f);
     p.addRoundedRectangle (0.70f, 0.52f, 0.16f, 0.32f, 0.06f);
     return p;
@@ -271,8 +273,8 @@ juce::Path power()
                        juce::MathConstants<float>::pi * 0.25f,
                        juce::MathConstants<float>::pi * 1.75f, true);
 
-    auto p = strokeOf (arc, 0.11f);
-    p.addPath (strokedLine (0.5f, 0.1f, 0.5f, 0.45f, 0.11f));
+    auto p = strokeOf (arc, tokens::icon::regular);
+    p.addPath (strokedLine (0.5f, 0.1f, 0.5f, 0.45f, tokens::icon::regular));
     return p;
 }
 
@@ -283,7 +285,7 @@ juce::Path lock()
                            -juce::MathConstants<float>::halfPi,
                            juce::MathConstants<float>::halfPi, true);
 
-    auto p = strokeOf (shackle, 0.1f);
+    auto p = strokeOf (shackle, tokens::icon::regular);
     p.addRoundedRectangle (0.22f, 0.44f, 0.56f, 0.42f, 0.06f);
     return p;
 }
@@ -294,7 +296,7 @@ juce::Path check()
     line.startNewSubPath (0.22f, 0.52f);
     line.lineTo (0.42f, 0.72f);
     line.lineTo (0.78f, 0.28f);
-    return strokeOf (line, 0.13f);
+    return strokeOf (line, tokens::icon::bold);
 }
 
 juce::Path chevronUp()
@@ -303,7 +305,7 @@ juce::Path chevronUp()
     line.startNewSubPath (0.24f, 0.62f);
     line.lineTo (0.5f, 0.36f);
     line.lineTo (0.76f, 0.62f);
-    return strokeOf (line, 0.12f);
+    return strokeOf (line, tokens::icon::bold);
 }
 
 juce::Path chevronDown()
@@ -312,7 +314,7 @@ juce::Path chevronDown()
     line.startNewSubPath (0.24f, 0.38f);
     line.lineTo (0.5f, 0.64f);
     line.lineTo (0.76f, 0.38f);
-    return strokeOf (line, 0.12f);
+    return strokeOf (line, tokens::icon::bold);
 }
 
 juce::Path chevronLeft()
@@ -321,7 +323,7 @@ juce::Path chevronLeft()
     line.startNewSubPath (0.62f, 0.24f);
     line.lineTo (0.36f, 0.5f);
     line.lineTo (0.62f, 0.76f);
-    return strokeOf (line, 0.12f);
+    return strokeOf (line, tokens::icon::bold);
 }
 
 juce::Path chevronRight()
@@ -330,7 +332,7 @@ juce::Path chevronRight()
     line.startNewSubPath (0.38f, 0.24f);
     line.lineTo (0.64f, 0.5f);
     line.lineTo (0.38f, 0.76f);
-    return strokeOf (line, 0.12f);
+    return strokeOf (line, tokens::icon::bold);
 }
 
 juce::Path grip()
@@ -361,7 +363,7 @@ juce::Path waveSine()
                      0.5f - 0.34f * std::sin (t * juce::MathConstants<float>::twoPi));
     }
 
-    return strokeOf (wave, 0.1f);
+    return strokeOf (wave, tokens::icon::regular);
 }
 
 juce::Path waveSaw()
@@ -375,7 +377,7 @@ juce::Path waveSaw()
     wave.lineTo (0.82f, 0.18f);
     wave.lineTo (0.82f, 0.82f);
     wave.lineTo (0.92f, 0.64f);
-    return strokeOf (wave, 0.1f);
+    return strokeOf (wave, tokens::icon::regular);
 }
 
 juce::Path waveSquare()
@@ -389,7 +391,7 @@ juce::Path waveSquare()
     wave.lineTo (0.64f, 0.18f);
     wave.lineTo (0.92f, 0.18f);
     wave.lineTo (0.92f, 0.5f);
-    return strokeOf (wave, 0.1f);
+    return strokeOf (wave, tokens::icon::regular);
 }
 
 juce::Path waveTriangle()
@@ -400,7 +402,7 @@ juce::Path waveTriangle()
     wave.lineTo (0.5f, 0.8f);
     wave.lineTo (0.71f, 0.2f);
     wave.lineTo (0.92f, 0.66f);
-    return strokeOf (wave, 0.1f);
+    return strokeOf (wave, tokens::icon::regular);
 }
 
 // --- effects -----------------------------------------------------------------
@@ -413,7 +415,7 @@ juce::Path effectFilter()
     curve.lineTo (0.44f, 0.34f);
     curve.quadraticTo (0.60f, 0.34f, 0.66f, 0.5f);
     curve.lineTo (0.92f, 0.86f);
-    return strokeOf (curve, 0.1f);
+    return strokeOf (curve, tokens::icon::regular);
 }
 
 juce::Path effectReverb()
@@ -455,7 +457,7 @@ juce::Path effectDrive()
         wave.lineTo (0.08f + t * 0.84f, 0.5f - 0.34f * juce::jlimit (-1.0f, 1.0f, raw));
     }
 
-    return strokeOf (wave, 0.1f);
+    return strokeOf (wave, tokens::icon::regular);
 }
 
 juce::Path effectChorus()
@@ -476,7 +478,7 @@ juce::Path effectChorus()
         }
     }
 
-    return strokeOf (wave, 0.085f);
+    return strokeOf (wave, tokens::icon::regular);
 }
 
 juce::Path effectEq()
@@ -503,8 +505,8 @@ juce::Path magnifier()
     juce::Path glass;
     glass.addEllipse (0.14f, 0.14f, 0.5f, 0.5f);
 
-    auto p = strokeOf (glass, 0.1f);
-    p.addPath (strokedLine (0.60f, 0.60f, 0.86f, 0.86f, 0.13f));
+    auto p = strokeOf (glass, tokens::icon::regular);
+    p.addPath (strokedLine (0.60f, 0.60f, 0.86f, 0.86f, tokens::icon::bold));
     return p;
 }
 
@@ -530,7 +532,7 @@ juce::Path fitToContent()
     juce::Path p;
     p.addRoundedRectangle (0.10f, 0.18f, 0.08f, 0.64f, 0.03f);
     p.addRoundedRectangle (0.82f, 0.18f, 0.08f, 0.64f, 0.03f);
-    p.addPath (strokedLine (0.26f, 0.5f, 0.74f, 0.5f, 0.09f));
+    p.addPath (strokedLine (0.26f, 0.5f, 0.74f, 0.5f, tokens::icon::regular));
     p.addTriangle (0.26f, 0.5f, 0.40f, 0.36f, 0.40f, 0.64f);
     p.addTriangle (0.74f, 0.5f, 0.60f, 0.36f, 0.60f, 0.64f);
     return p;
@@ -544,7 +546,7 @@ juce::Path automation()
     line.lineTo (0.64f, 0.60f);
     line.lineTo (0.90f, 0.20f);
 
-    auto p = strokeOf (line, 0.09f);
+    auto p = strokeOf (line, tokens::icon::regular);
     p.addEllipse (0.30f, 0.22f, 0.12f, 0.12f);
     p.addEllipse (0.58f, 0.54f, 0.12f, 0.12f);
     return p;

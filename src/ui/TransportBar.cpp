@@ -167,7 +167,7 @@ TransportBar::TransportBar (ProjectDocument& d, AudioEngine& e, EditorState& s)
 
     positionLabel.setComponentID ("transportPosition");
     positionLabel.setFont (tokens::type::monospaced (tokens::type::body));
-    positionLabel.setColour (juce::Label::textColourId, Palette::playhead);
+    positionLabel.setColour (juce::Label::textColourId, tokens::colour::playhead);
     positionLabel.setJustificationType (juce::Justification::centredLeft);
     addAndMakeVisible (positionLabel);
 
