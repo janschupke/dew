@@ -56,6 +56,13 @@ public:
     void setSelectedChannel (int channelId);
     int getSelectedChannel() const noexcept;
 
+    /** The project's notational denominator, which names the snap divisions.
+        Handed in for the same reason the channels are: this strip never reads
+        the document. Relabels the box in place, keeping the current selection.
+    */
+    void setBeatUnit (int);
+    int getBeatUnit() const noexcept { return beatUnit; }
+
     std::function<void()>    onToolChanged;
     std::function<void()>    onSnapChanged;
     std::function<void (int)> onChannelChanged;   ///< channel id
@@ -69,8 +76,11 @@ public:
 private:
     void updateToolButtons();
 
+    void rebuildSnapBox();
+
     RollTool tool = RollTool::select;
     SnapDivision snap = SnapDivision::sixteenth;
+    int beatUnit = 4;
 
     DewIconButton selectButton { icons::pointer(), "Select tool (1)" };
     DewIconButton paintButton { icons::pencil(), "Paint tool - drag to write a run of notes (2)" };

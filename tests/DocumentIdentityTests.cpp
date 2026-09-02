@@ -56,6 +56,32 @@ juce::Component* findDescendantWithID (juce::Component& parent, const juce::Stri
 
 } // namespace
 
+namespace
+{
+
+/** The pattern selector, found by its component ID.
+
+    By type would be ambiguous - the transport bar has carried more than one
+    ComboBox since it gained a time signature - and findChildWithID is not
+    recursive, so this walks.
+*/
+juce::ComboBox* findPatternSelector (juce::Component& parent)
+{
+    for (auto* child : parent.getChildren())
+    {
+        if (child->getComponentID() == "patternSelector")
+            if (auto* asBox = dynamic_cast<juce::ComboBox*> (child))
+                return asBox;
+
+        if (auto* found = findPatternSelector (*child))
+            return found;
+    }
+
+    return nullptr;
+}
+
+} // namespace
+
 TEST_CASE ("a listener registered once keeps working after the document is replaced", "[document][identity]")
 {
     // juce::ValueTree::operator= migrates listeners to the new object and fires
@@ -93,21 +119,8 @@ TEST_CASE ("the pattern dropdown offers a way to make one", "[ui][transport]")
     MainComponent component;
     component.setSize (1280, 800);
 
-    juce::ComboBox* box = nullptr;
-
-    std::function<void (juce::Component&)> findBox = [&] (juce::Component& parent)
-    {
-        for (auto* child : parent.getChildren())
-        {
-            if (auto* asBox = dynamic_cast<juce::ComboBox*> (child); asBox != nullptr && box == nullptr)
-                box = asBox;
-            else
-                findBox (*child);
-        }
-    };
-
     REQUIRE_FALSE (component.getChildren().isEmpty());
-    findBox (*component.getChildren().getFirst());
+    auto* box = findPatternSelector (*component.getChildren().getFirst());
     REQUIRE (box != nullptr);
 
     REQUIRE (box->indexOfItemId (TransportBar::newPatternItemId) >= 0);
@@ -152,23 +165,11 @@ TEST_CASE ("the transport bar still tracks the project after New and Open", "[do
 
     const auto patternCountInBox = [&component]
     {
-        juce::ComboBox* box = nullptr;
-
-        // The transport bar's only ComboBox is the pattern selector.
-        std::function<void (juce::Component&)> findBox = [&] (juce::Component& parent)
-        {
-            for (auto* child : parent.getChildren())
-            {
-                if (auto* asBox = dynamic_cast<juce::ComboBox*> (child); asBox != nullptr && box == nullptr)
-                    box = asBox;
-                else
-                    findBox (*child);
-            }
-        };
-
         // Only search the transport bar, which is the first child.
-        if (! component.getChildren().isEmpty())
-            findBox (*component.getChildren().getFirst());
+        if (component.getChildren().isEmpty())
+            return -1;
+
+        auto* box = findPatternSelector (*component.getChildren().getFirst());
 
         if (box == nullptr)
             return -1;

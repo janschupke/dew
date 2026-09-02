@@ -1,6 +1,7 @@
 #include "PianoRollComponent.h"
 
 #include "../model/Ids.h"
+#include "../model/Meter.h"
 #include "../model/ProjectEdits.h"
 #include "DewLookAndFeel.h"
 #include "RandomizePanel.h"
@@ -164,6 +165,10 @@ void PianoRollComponent::updateChannelList()
 
     toolbar.setChannels (names, ids);
     toolbar.setSelectedChannel (editorState.getSelectedChannelId());
+
+    // The snap divisions are fractions of a beat, so their labels depend on
+    // what a beat is called.
+    toolbar.setBeatUnit (Meter::of (document.getState()).beatUnit);
 }
 
 int PianoRollComponent::numSteps() const
@@ -300,8 +305,8 @@ juce::ValueTree PianoRollComponent::noteAt (juce::Point<int> position) const
 
 int PianoRollComponent::snapSteps() const
 {
-    const auto stepsPerBeat = juce::jmax (1, (int) document.getState()[ids::stepsPerBeat]);
-    return NoteTools::stepsForSnap (toolbar.getSnap(), stepsPerBeat);
+    const auto meter = Meter::of (document.getState());
+    return NoteTools::stepsForSnap (toolbar.getSnap(), meter.stepsPerBeat, meter.beatsPerBar);
 }
 
 juce::Array<juce::ValueTree> PianoRollComponent::editScope() const
@@ -1308,6 +1313,9 @@ void PianoRollComponent::valueTreePropertyChanged (juce::ValueTree&, const juce:
     if (property == ids::name)
         updateChannelList();
 
+    if (property == ids::beatUnit)
+        toolbar.setBeatUnit (Meter::of (document.getState()).beatUnit);
+
     repaint();
 }
 
@@ -1434,10 +1442,11 @@ void PianoRollComponent::paintRuler (juce::Graphics& g)
 {
     using namespace tokens;
 
-    const auto stepsPerBeat = juce::jmax (1, (int) document.getState()[ids::stepsPerBeat]);
+    const auto meter = Meter::of (document.getState());
 
     ruler::Style style;
-    style.stepsPerBar = stepsPerBeat * 4;
+    style.stepsPerBar = meter.stepsPerBar();
+    style.beatsPerBar = meter.beatsPerBar;
     style.totalSteps = numSteps();
     style.playing = engine.isPlaying();
 
@@ -1479,8 +1488,9 @@ void PianoRollComponent::paintNotes (juce::Graphics& g)
     const juce::Graphics::ScopedSaveState clip (g);
     g.reduceClipRegion (area);
 
-    const auto stepsPerBeat = juce::jmax (1, (int) document.getState()[ids::stepsPerBeat]);
-    const auto stepsPerBar = stepsPerBeat * 4;
+    const auto meter = Meter::of (document.getState());
+    const auto stepsPerBeat = meter.stepsPerBeat;
+    const auto stepsPerBar = meter.stepsPerBar();
 
     // --- rows ----------------------------------------------------------------
     const auto firstRow = juce::jmax (0, (int) (pitchScrollPx / rowHeight));
@@ -1636,8 +1646,8 @@ void PianoRollComponent::paintVelocityLane (juce::Graphics& g)
     // Bar lines, so a velocity bar can be read against the same grid as the
     // note it belongs to. The lane had no grid at all, which made it hard to
     // tell which bar went with which note once the view was zoomed out.
-    const auto stepsPerBeat = juce::jmax (1, (int) document.getState()[ids::stepsPerBeat]);
-    const auto stepsPerBar = stepsPerBeat * 4;
+    const auto meter = Meter::of (document.getState());
+    const auto stepsPerBar = meter.stepsPerBar();
     const auto steps = numSteps();
 
     const auto laneRange = timeline.visibleStepRange (contentWidth());

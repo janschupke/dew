@@ -25,6 +25,13 @@ struct Style
 {
     int stepsPerBar = 16;
 
+    /** Beats to the bar - the project's meter numerator. Carried alongside
+        stepsPerBar rather than derived from it: the ruler used to recover the
+        beat as `stepsPerBar / 4`, which is silently wrong in every meter but
+        4/4 and put beat ticks on non-beats in all three editors at once.
+    */
+    int beatsPerBar = 4;
+
     /** Steps in the material. Bars past this are drawn dimmed rather than
         omitted, matching how the grids below them behave.
     */

@@ -16,6 +16,7 @@ add_library(dew_core STATIC
   model/ProjectDocument.cpp
   model/ProjectEdits.cpp
   model/NoteTools.cpp
+  model/Meter.cpp
   model/AssetPaths.cpp
 
   engine/Effects.cpp

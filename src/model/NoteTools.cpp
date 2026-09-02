@@ -14,9 +14,10 @@ const SnapDivision NoteTools::allSnapDivisions[NoteTools::numSnapDivisions] = {
     SnapDivision::bar
 };
 
-int NoteTools::stepsForSnap (SnapDivision division, int stepsPerBeat) noexcept
+int NoteTools::stepsForSnap (SnapDivision division, int stepsPerBeat, int beatsPerBar) noexcept
 {
     const auto perBeat = juce::jmax (1, stepsPerBeat);
+    const auto perBar = perBeat * juce::jmax (1, beatsPerBar);
 
     switch (division)
     {
@@ -24,24 +25,31 @@ int NoteTools::stepsForSnap (SnapDivision division, int stepsPerBeat) noexcept
         case SnapDivision::eighth:    return juce::jmax (1, perBeat / 2);
         case SnapDivision::quarter:   return perBeat;
         case SnapDivision::half:      return perBeat * 2;
-        case SnapDivision::bar:       return perBeat * 4;
+        case SnapDivision::bar:       return perBar;
     }
 
     return 1;
 }
 
-juce::String NoteTools::nameForSnap (SnapDivision division)
+juce::String NoteTools::nameForSnap (SnapDivision division, int beatUnit)
 {
+    // The divisions are fractions OF A BEAT, so their names are the beat's note
+    // value scaled by the division. In 4/4 that reproduces the old fixed
+    // labels exactly; in 6/8 "quarter" correctly reads 1/8.
+    const auto unit = juce::jmax (1, beatUnit);
+    const auto noteValue = [unit] (int multiplier) { return juce::String (unit * multiplier); };
+
     switch (division)
     {
-        case SnapDivision::sixteenth: return "1/16";
-        case SnapDivision::eighth:    return "1/8";
-        case SnapDivision::quarter:   return "1/4";
-        case SnapDivision::half:      return "1/2";
+        case SnapDivision::sixteenth: return "1/" + noteValue (4);
+        case SnapDivision::eighth:    return "1/" + noteValue (2);
+        case SnapDivision::quarter:   return "1/" + noteValue (1);
+        case SnapDivision::half:      return unit >= 2 ? "1/" + juce::String (unit / 2)
+                                                       : juce::String ("2/1");
         case SnapDivision::bar:       return "Bar";
     }
 
-    return "1/16";
+    return "1/" + noteValue (4);
 }
 
 SnapDivision NoteTools::snapFromIndex (int index) noexcept

@@ -85,8 +85,15 @@ struct NodeSpec
     predates the mode and loads as "classic", which is what it was. Bumped for
     the same reason v7 was: an older build would drop the wavetable settings
     without a word rather than say it cannot read the file.
+
+    v9 added the meter: `beatsPerBar` and `beatUnit` on the project. Additive
+    with declared defaults of 4 and 4, so every earlier file loads as 4/4 -
+    which is what it was, since four beats to the bar used to be a compile-time
+    constant. Bumped because an older build would read a 7/8 project and play
+    it in 4/4 without saying so, which puts every bar line and every clip
+    boundary somewhere else.
 */
-inline constexpr int kFormatVersion = 8;
+inline constexpr int kFormatVersion = 9;
 
 /** How many effects one channel or mixer track may carry. A document limit
     rather than an engine one: a chain longer than this cannot be saved, so it

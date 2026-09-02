@@ -1,6 +1,7 @@
 #include "ChannelRackComponent.h"
 
 #include "../model/Ids.h"
+#include "../model/Meter.h"
 #include "../model/ProjectEdits.h"
 #include "design/Icons.h"
 #include "design/Tokens.h"
@@ -336,7 +337,9 @@ ChannelRackComponent::ChannelRackComponent (ProjectDocument& d, AudioEngine& e, 
     ruler.styleSource = [this]
     {
         ruler::Style style;
-        style.stepsPerBar = juce::jmax (1, (int) document.getState()[ids::stepsPerBeat]) * 4;
+        const auto meter = Meter::of (document.getState());
+        style.stepsPerBar = meter.stepsPerBar();
+        style.beatsPerBar = meter.beatsPerBar;
         style.totalSteps = grid.getNumSteps();
         style.playing = engine.isPlaying();
 
@@ -534,6 +537,17 @@ void ChannelRackComponent::valueTreePropertyChanged (juce::ValueTree& tree,
             resized();
 
         grid.repaint();
+    }
+    else if (tree.hasType (ids::PROJECT))
+    {
+        // The rack had no branch for the project node at all, so a change to
+        // the metre - or to the tempo, or to stepsPerBeat - left its bar
+        // shading and its ruler drawn to the old grid until something else
+        // happened to repaint them. resized() as well as a repaint, because the
+        // ruler's Style is rebuilt during layout.
+        resized();
+        grid.repaint();
+        repaint();
     }
 }
 

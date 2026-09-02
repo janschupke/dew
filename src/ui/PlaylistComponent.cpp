@@ -3,6 +3,7 @@
 #include "../engine/SamplePool.h"
 
 #include "../model/Ids.h"
+#include "../model/Meter.h"
 #include "../model/ProjectEdits.h"
 #include "TimelineRuler.h"
 #include "design/Tokens.h"
@@ -210,7 +211,7 @@ PlaylistComponent::PlaylistComponent (ProjectDocument& d, AudioEngine& e, Editor
 
     rulerGesture.context = [this]
     {
-        const auto stepsPerBar = juce::jmax (1, (int) document.getState()[ids::stepsPerBeat]) * 4;
+        const auto stepsPerBar = Meter::of (document.getState()).stepsPerBar();
 
         ruler::GestureContext ctx;
         ctx.snapUnits = 1;
@@ -222,7 +223,7 @@ PlaylistComponent::PlaylistComponent (ProjectDocument& d, AudioEngine& e, Editor
 
     rulerGesture.onSeek = [this] (double bars)
     {
-        const auto stepsPerBar = juce::jmax (1, (int) document.getState()[ids::stepsPerBeat]) * 4;
+        const auto stepsPerBar = Meter::of (document.getState()).stepsPerBar();
 
         engine.setPlayheadSteps (bars * (double) stepsPerBar);
         repaint();
@@ -339,7 +340,7 @@ bool PlaylistComponent::isOnRightEdge (const juce::ValueTree& clip, int trackInd
 
 float PlaylistComponent::playheadX() const
 {
-    const auto stepsPerBar = juce::jmax (1, (int) document.getState()[ids::stepsPerBeat]) * 4;
+    const auto stepsPerBar = Meter::of (document.getState()).stepsPerBar();
     const auto position = engine.getPlayheadSteps() / (double) stepsPerBar;
 
     return (float) headerWidth + timeline.xForStep (position);
@@ -556,7 +557,7 @@ juce::Point<float> PlaylistComponent::pointPosition (const juce::ValueTree& clip
                                                      const juce::ValueTree& point) const
 {
     const auto bounds = boundsForClip (clip, trackIndex).reduced (2.0f, 3.0f);
-    const auto stepsPerBar = juce::jmax (1, (int) document.getState()[ids::stepsPerBeat]) * 4;
+    const auto stepsPerBar = Meter::of (document.getState()).stepsPerBar();
     const auto clipSteps = juce::jmax (1, (int) clip[ids::lengthBars] * stepsPerBar);
 
     const auto t = juce::jlimit (0.0, 1.0, (double) point[ids::step] / (double) clipSteps);
@@ -570,7 +571,7 @@ void PlaylistComponent::positionToCurve (const juce::ValueTree& clip, int trackI
                                          juce::Point<int> position, double& step, double& value) const
 {
     const auto bounds = boundsForClip (clip, trackIndex).reduced (2.0f, 3.0f);
-    const auto stepsPerBar = juce::jmax (1, (int) document.getState()[ids::stepsPerBeat]) * 4;
+    const auto stepsPerBar = Meter::of (document.getState()).stepsPerBar();
     const auto clipSteps = juce::jmax (1, (int) clip[ids::lengthBars] * stepsPerBar);
 
     const auto t = bounds.getWidth() > 0.0f

@@ -259,6 +259,28 @@ struct ProjectEdits
 
     /** The clip covering this bar on this track, or an invalid tree. */
     static juce::ValueTree findClipAtBar (const juce::ValueTree& playlistTrack, int bar);
+
+    /** Sets the project's meter, rescaling the arrangement so it keeps sounding
+        the same.
+
+        A clip is stored in BARS, and the sequencer windows it as
+        `startBar * stepsPerBar` to `+ lengthBars * stepsPerBar`. So redefining
+        a bar moves every clip boundary: left alone, a one-bar clip of a
+        sixteen-step pattern would span twelve steps in 3/4 and the pattern's
+        last four steps would simply stop sounding. Every clip is therefore
+        rescaled by `oldStepsPerBar / newStepsPerBar`, which holds its absolute
+        position in steps, and `barsInSong` with them.
+
+        The rescale is exact only when the ratio divides evenly - 16 to 12 is
+        4/3, so a clip at bar 4 wants bar 5.33 and has to round. `wasExact`, if
+        given, reports whether every clip landed on a whole bar, so the caller
+        can say so rather than let it be discovered.
+
+        Does nothing at all when the meter is unchanged, so this is safe to call
+        from a combo box that re-selects the value it already had.
+    */
+    static void setMeter (juce::ValueTree project, int beatsPerBar, int beatUnit,
+                          juce::UndoManager*, bool* wasExact = nullptr);
 };
 
 } // namespace dew

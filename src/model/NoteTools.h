@@ -41,9 +41,14 @@ struct NoteTools
         every snap a division by zero, and a step is already the finest position
         a note can hold.
     */
-    static int stepsForSnap (SnapDivision, int stepsPerBeat) noexcept;
+    static int stepsForSnap (SnapDivision, int stepsPerBeat, int beatsPerBar = 4) noexcept;
 
-    static juce::String nameForSnap (SnapDivision);
+    /** The division's label. `beatUnit` is the project's notational denominator:
+        the divisions are relative to a BEAT, so "quarter" is one beat and reads
+        as 1/4 only while a beat is a quarter note. In 6/8 the same division is
+        an eighth, and a fixed label would lie about it.
+    */
+    static juce::String nameForSnap (SnapDivision, int beatUnit = 4);
 
     /** The division's ordinal, for persisting it. Out-of-range reads fall back
         to `sixteenth` rather than restoring a grid that does not exist.

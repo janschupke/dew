@@ -259,9 +259,20 @@ juce::MidiFile MidiExporter::build (const juce::ValueTree& project,
                             juce::roundToInt (60'000'000.0 / juce::jmax (1.0, snapshot.tempoBpm))),
                         0.0);
 
-    // dew has no time signature in its schema at all; EngineSnapshot::beatsPerBar
-    // is a constant. This is the one line to change if that ever stops being true.
-    conductor.addEvent (juce::MidiMessage::timeSignatureMetaEvent (EngineSnapshot::beatsPerBar, 4), 0.0);
+    // The denominator is NOTATIONAL. dew's beat is a quarter note's worth of
+    // ticks whatever beatUnit says - ticksPerQuarterNoteFor and the tempo event
+    // above both depend on stepsPerBeat alone - so a 6/8 project exports its
+    // notes at the right ticks under a 6/8 signature, and an importing DAW,
+    // which reads that bar as three quarter notes where dew's is six, draws its
+    // bar lines somewhere else. Rescaling the ticks instead would move every
+    // note to keep the barring, which is the worse of the two trades: the notes
+    // are the content and the barring is the label.
+    //
+    // juce::MidiMessage stores log2 of the denominator and rounds UP to the
+    // next power of two, which is why beatUnit is constrained to one already.
+    conductor.addEvent (juce::MidiMessage::timeSignatureMetaEvent (snapshot.beatsPerBar,
+                                                                   snapshot.beatUnit),
+                        0.0);
 
     if (sequences.size() > 15)
         warnings.add ("This project has more than fifteen channels, so some share a MIDI channel.");

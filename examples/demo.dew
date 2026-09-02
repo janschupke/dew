@@ -1,8 +1,10 @@
 {
-    "formatVersion": 8,
+    "formatVersion": 9,
     "name": "dew demo",
     "tempoBpm": 124.0,
     "stepsPerBeat": 4,
+    "beatsPerBar": 4,
+    "beatUnit": 4,
     "barsInSong": 4,
     "channels": [
       {

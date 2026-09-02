@@ -282,6 +282,13 @@ struct EngineSnapshot
     int stepsPerBeat = 4;
     int barsInSong = 16;
 
+    /** The project's meter. `beatsPerBar` groups beats into bars and is what
+        every bar computation below divides by; `beatUnit` is notational and the
+        engine never reads it - only MidiExporter does, for the time signature.
+    */
+    int beatsPerBar = 4;
+    int beatUnit = 4;
+
     std::vector<ChannelSnapshot> channels;
     std::vector<PatternSnapshot> patterns;
     std::vector<ClipSnapshot> clips;          ///< flattened across all playlist tracks
@@ -303,7 +310,6 @@ struct EngineSnapshot
     */
     juce::uint64 generation = 0;
 
-    static constexpr int beatsPerBar = 4;
     int stepsPerBar() const { return stepsPerBeat * beatsPerBar; }
 
     int patternIndexForId (int patternId) const;

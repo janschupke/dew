@@ -400,6 +400,8 @@ const NodeSpec& projectSpec()
           { ids::name,          "Untitled" },
           { ids::tempoBpm,      128.0 },
           { ids::stepsPerBeat,  4 },
+          { ids::beatsPerBar,   4 },
+          { ids::beatUnit,      4 },
           { ids::barsInSong,    16 } },
         { { "channels",    &channelSpec(),    true },
           { "patterns",    &patternSpec(),    true },

@@ -67,10 +67,18 @@ Start with **Demos → Getting Started** in the menu bar; there are four.
   inside it rather than around the whole pattern or the whole song, so eight bars can be
   worked on without hearing the other fifty-six. A loop drawn ahead of the playhead is
   played into rather than jumped to; one drawn behind it snaps to its start.
-- **Transport** — play/stop, tempo, a pattern-or-song switch, and pattern
+- **Transport** — play/stop, tempo, a time signature, a pattern-or-song switch, and pattern
   add/duplicate/delete with an editable pattern length. Click or drag any ruler — piano
   roll, sequencer or playlist — to move the position. The indicator stays on screen while
   stopped, dimmed, so Stop visibly returns it to the start rather than hiding it.
+- **Time signature** — 3/4, 5/4, 6/8, 7/8 and the rest, beside the tempo, driving bar
+  lines and bar numbers in all three editors, the beat shading in the step grid, the
+  bars:beats:ticks readout, what "Bar" snaps to, and the metre written into an exported
+  MIDI file. It is a *metre*, not a tempo: a step is the same length in 3/4 as in 4/4, so
+  changing it regroups the grid without altering the speed or the sound of anything
+  already written. Because a clip is stored in bars, redefining a bar would move every
+  clip boundary — so changing the signature rescales the arrangement with it, and says so
+  when a clip had to round to a whole bar.
 - **Visualisation** — an oscilloscope and a spectrum of the master output at the right
   end of the transport bar. Empty when nothing is sounding — the wells and their
   baselines stay put, so nothing moves when sound starts — and filled the moment signal
@@ -378,7 +386,7 @@ which would be portable to nothing.
 
 ## Testing
 
-Catch2 via CTest. `ctest --preset release` runs all 539.
+Catch2 via CTest. `ctest --preset release` runs all 621.
 
 MP3 is the one thing here that needs a tool dew does not ship. JUCE can only decode MP3
 on its own, so encoding drives an installed `lame` binary as a child process - which is

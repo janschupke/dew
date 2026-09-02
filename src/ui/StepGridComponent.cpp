@@ -3,6 +3,7 @@
 #include "../engine/SamplePool.h"
 
 #include "../model/Ids.h"
+#include "../model/Meter.h"
 #include "../model/ProjectEdits.h"
 #include "design/Tokens.h"
 #include "primitives/DewControls.h"
@@ -245,7 +246,8 @@ void StepGridComponent::paint (juce::Graphics& g)
     // reach the edge of the panel even when the pattern is shorter than the
     // view. Notes still only exist inside `visible`.
     const auto painted = timeline.visibleStepRange ((float) getWidth());
-    const auto stepsPerBeat = juce::jmax (1, (int) document.getState()[ids::stepsPerBeat]);
+    const auto meter = Meter::of (document.getState());
+    const auto stepsPerBeat = meter.stepsPerBeat;
     const auto rows = getNumRows();
     const auto rowsHeight = getRowsHeight();
 
@@ -259,9 +261,14 @@ void StepGridComponent::paint (juce::Graphics& g)
     for (int step = painted.getStart(); step < painted.getEnd(); ++step)
     {
         const auto beat = step / stepsPerBeat;
-        const auto isBarStart = beat % 4 == 0;
 
-        if (beat % 2 == 0 || isBarStart)
+        // Counted WITHIN the bar, so the alternation restarts at every bar
+        // line. Against the absolute beat index it would phase-flip each bar in
+        // any odd meter, and a 3/4 grid visibly breathes.
+        const auto beatInBar = beat % meter.beatsPerBar;
+        const auto isBarStart = beatInBar == 0;
+
+        if (beatInBar % 2 == 0)
         {
             g.setColour (isBarStart ? colour::barShade : colour::beatShade);
             g.fillRect (juce::Rectangle<float> (timeline.xForStep ((double) step), 0.0f,
@@ -350,7 +357,7 @@ void StepGridComponent::paint (juce::Graphics& g)
     for (int step = painted.getStart(); step <= painted.getEnd(); ++step)
     {
         const auto x = timeline.xForStep ((double) step);
-        const auto isBarLine = (step % (stepsPerBeat * 4)) == 0;
+        const auto isBarLine = (step % meter.stepsPerBar()) == 0;
 
         g.setColour (isBarLine ? colour::dividerStrong : colour::divider);
         g.drawVerticalLine ((int) x, 0.0f, (float) rowsHeight);

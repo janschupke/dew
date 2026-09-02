@@ -3,6 +3,7 @@
 #include <cmath>
 
 #include "../model/AssetPaths.h"
+#include "../model/Meter.h"
 
 #include "AudioSettingsPanel.h"
 #include "MidiSettingsPanel.h"
@@ -52,6 +53,22 @@ MainComponent::MainComponent (bool openAudioDevice)
     };
 
     transportBar.isRecording = [this] { return isRecording(); };
+
+    transportBar.onMeterChanged = [this] (bool wasExact)
+    {
+        const auto meter = Meter::of (document.getState());
+
+        // Said once, here, rather than left to be noticed: redefining a bar
+        // moves every clip, and a ratio that does not divide evenly has to
+        // round one to the nearest whole bar.
+        if (wasExact)
+            statusBar.showMessage ("Time signature is now " + meter.toString() + ".",
+                                   StatusBar::Severity::info);
+        else
+            statusBar.showMessage ("Time signature is now " + meter.toString()
+                                       + ". Some clips were rounded to the nearest bar.",
+                                   StatusBar::Severity::warning);
+    };
 
     // Which channel MIDI plays follows the selection, and has to be pushed to
     // the router as an index because the MIDI thread cannot read EditorState.
@@ -313,7 +330,7 @@ juce::String MainComponent::toggleRecording()
                                                       channel[ids::name].toString());
 
     const auto numInputs = juce::jlimit (1, 2, device->getActiveInputChannels().countNumberOfSetBits());
-    const auto stepsPerBar = juce::jmax (1, (int) document.getState()[ids::stepsPerBeat] * 4);
+    const auto stepsPerBar = Meter::of (document.getState()).stepsPerBar();
     const auto punchInBar = (int) (engine.getPlayheadSteps() / (double) stepsPerBar);
 
     if (const auto error = recorder.start (file, device->getCurrentSampleRate(), numInputs, punchInBar);
@@ -358,10 +375,14 @@ void MainComponent::finishRecording()
         return;
     }
 
-    // Four beats to the bar, as EngineSnapshot::beatsPerBar has it. Measured in
-    // the SOURCE's own frames, because that is what the take was captured in.
+    // A bar is however many beats the meter says, measured in the SOURCE's own
+    // frames because that is what the take was captured in. This used to read
+    // 240.0 / bpm, with the four beats folded into the constant, which made
+    // every take a quarter too long in 3/4.
     const auto bpm = juce::jmax (1.0, (double) document.getState()[ids::tempoBpm]);
-    const auto samplesPerBar = juce::jmax (1.0, (240.0 / bpm) * entry.sourceSampleRate);
+    const auto beatsPerBar = Meter::of (document.getState()).beatsPerBar;
+    const auto samplesPerBar = juce::jmax (1.0, (60.0 * (double) beatsPerBar / bpm)
+                                                    * entry.sourceSampleRate);
 
     // Rounded up: a take that runs a hair past a bar line needs the whole next
     // bar, or its tail would be cut by the clip that contains it.
@@ -420,7 +441,7 @@ void MainComponent::updateLoopRange()
         return;
     }
 
-    const auto stepsPerBar = juce::jmax (1, (int) document.getState()[ids::stepsPerBeat]) * 4;
+    const auto stepsPerBar = Meter::of (document.getState()).stepsPerBar();
 
     engine.setLoopRangeSteps (Transport::Mode::song,
                               (double) (bars.getStart() * stepsPerBar),

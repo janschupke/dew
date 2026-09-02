@@ -1,6 +1,7 @@
 #include "ProjectEdits.h"
 
 #include "Ids.h"
+#include "Meter.h"
 #include "ProjectSchema.h"
 
 namespace dew
@@ -923,6 +924,78 @@ juce::ValueTree ProjectEdits::findClipAtBar (const juce::ValueTree& playlistTrac
     }
 
     return {};
+}
+
+void ProjectEdits::setMeter (juce::ValueTree project, int beatsPerBar, int beatUnit,
+                             juce::UndoManager* undo, bool* wasExact)
+{
+    if (wasExact != nullptr)
+        *wasExact = true;
+
+    if (! project.isValid())
+        return;
+
+    const auto before = Meter::of (project);
+
+    Meter after = before;
+    after.beatsPerBar = juce::jlimit (1, Meter::maxBeatsPerBar, beatsPerBar);
+    after.beatUnit = Meter::clampBeatUnit (beatUnit);
+
+    if (after == before)
+        return;
+
+    const auto oldStepsPerBar = before.stepsPerBar();
+    const auto newStepsPerBar = after.stepsPerBar();
+
+    project.setProperty (ids::beatsPerBar, after.beatsPerBar, undo);
+    project.setProperty (ids::beatUnit, after.beatUnit, undo);
+
+    // beatUnit alone is notational, so it moves no bar line and nothing below
+    // needs doing.
+    if (oldStepsPerBar == newStepsPerBar)
+        return;
+
+    // Bars in, steps out, bars back: the rescale is expressed as "what step was
+    // this, and which bar is that now" rather than as a ratio, so there is one
+    // place to read the intent and no ratio to get upside down.
+    const auto barsForSteps = [newStepsPerBar] (int steps)
+    {
+        return juce::roundToInt ((double) steps / (double) newStepsPerBar);
+    };
+
+    auto exact = true;
+
+    for (auto track : project.getChildWithName (ids::PLAYLIST))
+    {
+        if (! track.hasType (ids::PLAYLIST_TRACK))
+            continue;
+
+        for (auto clip : track)
+        {
+            if (! clip.hasType (ids::CLIP))
+                continue;
+
+            const auto startSteps = juce::jmax (0, (int) clip[ids::startBar]) * oldStepsPerBar;
+            const auto lengthSteps = juce::jmax (1, (int) clip[ids::lengthBars]) * oldStepsPerBar;
+
+            exact = exact && startSteps % newStepsPerBar == 0
+                          && lengthSteps % newStepsPerBar == 0;
+
+            clip.setProperty (ids::startBar, juce::jmax (0, barsForSteps (startSteps)), undo);
+            clip.setProperty (ids::lengthBars, juce::jmax (1, barsForSteps (lengthSteps)), undo);
+        }
+    }
+
+    // Ceiling rather than rounding, and then grown to fit: the song is a
+    // container, and rounding it down would crop the arrangement it holds.
+    const auto songSteps = juce::jmax (1, (int) project[ids::barsInSong]) * oldStepsPerBar;
+    const auto songBars = (songSteps + newStepsPerBar - 1) / newStepsPerBar;
+
+    project.setProperty (ids::barsInSong, juce::jmax (1, songBars), undo);
+    growSongToFitClips (project, undo);
+
+    if (wasExact != nullptr)
+        *wasExact = exact;
 }
 
 } // namespace dew

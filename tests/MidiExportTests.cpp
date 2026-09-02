@@ -4,6 +4,8 @@
 #include "engine/MidiExporter.h"
 #include "engine/Sequencer.h"
 #include "model/Ids.h"
+#include "model/Meter.h"
+#include "model/ProjectEdits.h"
 #include "model/ProjectFactory.h"
 
 using namespace dew;
@@ -118,6 +120,86 @@ TEST_CASE ("MIDI channel numbering skips the percussion channel", "[midi][export
     REQUIRE (MidiExporter::midiChannelFor (9) == 11);
 }
 
+TEST_CASE ("the exported time signature is the project's", "[midi][export][meter]")
+{
+    auto project = ProjectFactory::createDemo();
+    ProjectEdits::setMeter (project, 7, 8, nullptr);
+
+    juce::StringArray warnings;
+    juce::int64 numNotes = 0;
+    const auto file = MidiExporter::build (project, {}, warnings, numNotes);
+    REQUIRE (numNotes > 0);
+
+    const auto readBack = roundTrip (file, 1);
+
+    bool foundSignature = false;
+    const auto* conductor = readBack->getTrack (0);
+
+    for (int i = 0; i < conductor->getNumEvents(); ++i)
+    {
+        const auto& message = conductor->getEventPointer (i)->message;
+
+        if (message.isTimeSignatureMetaEvent())
+        {
+            foundSignature = true;
+
+            int numerator = 0, denominator = 0;
+            message.getTimeSignatureInfo (numerator, denominator);
+
+            CHECK (numerator == 7);
+            CHECK (denominator == 8);
+        }
+    }
+
+    CHECK (foundSignature);
+
+    // The ticks are untouched by the denominator: a beat is still a quarter
+    // note's worth of them, so the time format is what stepsPerBeat alone says.
+    CHECK (readBack->getTimeFormat()
+           == MidiExporter::ticksPerQuarterNoteFor ((int) project[ids::stepsPerBeat]));
+}
+
+TEST_CASE ("a metre change moves no exported note", "[midi][export][meter]")
+{
+    // A metre is not a tempo, and the denominator is notational, so every note
+    // must land on the tick it already had. Checked with 4/4 -> 2/4, where the
+    // ratio is a whole number and setMeter's rescale is exact - a metre that
+    // has to round loses whole bars off the end of the arrangement, which is a
+    // different claim, tested in MeterTests.
+    auto project = ProjectFactory::createDemo();
+
+    const auto onsetsOf = [] (const juce::ValueTree& tree)
+    {
+        juce::StringArray warnings;
+        juce::int64 numNotes = 0;
+        const auto file = MidiExporter::build (tree, {}, warnings, numNotes);
+        REQUIRE (numNotes > 0);
+
+        const auto readBack = roundTrip (file, 1);
+
+        juce::Array<double> onsets;
+
+        for (int track = 0; track < readBack->getNumTracks(); ++track)
+        {
+            const auto* sequence = readBack->getTrack (track);
+
+            for (int i = 0; i < sequence->getNumEvents(); ++i)
+                if (sequence->getEventPointer (i)->message.isNoteOn())
+                    onsets.add (sequence->getEventPointer (i)->message.getTimeStamp());
+        }
+
+        return onsets;
+    };
+
+    const auto before = onsetsOf (project);
+
+    auto exact = false;
+    ProjectEdits::setMeter (project, 2, 4, nullptr, &exact);
+    REQUIRE (exact);
+
+    CHECK (onsetsOf (project) == before);
+}
+
 TEST_CASE ("an exported file carries the tempo and time signature", "[midi][export]")
 {
     const auto project = ProjectFactory::createDemo();
@@ -159,8 +241,9 @@ TEST_CASE ("an exported file carries the tempo and time signature", "[midi][expo
             int numerator = 0, denominator = 0;
             message.getTimeSignatureInfo (numerator, denominator);
 
-            REQUIRE (numerator == EngineSnapshot::beatsPerBar);
-            REQUIRE (denominator == 4);
+            const auto meter = Meter::of (project);
+            REQUIRE (numerator == meter.beatsPerBar);
+            REQUIRE (denominator == meter.beatUnit);
         }
     }
 
@@ -296,7 +379,7 @@ TEST_CASE ("a bar range trims the notes and rebases them to zero", "[midi][expor
 
     // Rebased: the first note has to sit inside the first bar, not at bar one.
     const auto ticksPerBar = MidiExporter::ticksPerQuarterNoteFor ((int) project[ids::stepsPerBeat])
-                             * EngineSnapshot::beatsPerBar;
+                             * Meter::of (project).beatsPerBar;
 
     double earliest = 1.0e12;
 

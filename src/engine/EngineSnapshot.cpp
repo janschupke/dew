@@ -9,6 +9,7 @@
 #include <functional>
 
 #include "../model/Ids.h"
+#include "../model/Meter.h"
 
 namespace dew
 {
@@ -454,8 +455,15 @@ EngineSnapshot buildSnapshot (const juce::ValueTree& project, juce::StringArray*
         return snapshot;
 
     snapshot.tempoBpm     = juce::jlimit (20.0, 999.0, (double) project[ids::tempoBpm]);
-    snapshot.stepsPerBeat = juce::jlimit (1, 16, (int) project[ids::stepsPerBeat]);
     snapshot.barsInSong   = juce::jmax (1, (int) project[ids::barsInSong]);
+
+    // Through Meter rather than read here, so the engine's idea of a bar and
+    // the editors' cannot drift apart - both clamp the same way and both treat
+    // an absent property as 4/4.
+    const auto meter = Meter::of (project);
+    snapshot.stepsPerBeat = meter.stepsPerBeat;
+    snapshot.beatsPerBar  = meter.beatsPerBar;
+    snapshot.beatUnit     = meter.beatUnit;
 
     // Which pool unit each effect id has claimed, for the whole project. -1 is
     // free; the map is rebuilt from scratch every time, and is a pure function

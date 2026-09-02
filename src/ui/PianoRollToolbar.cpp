@@ -26,10 +26,7 @@ PianoRollToolbar::PianoRollToolbar()
     addTool (paintButton, RollTool::paint);
     addTool (sliceButton, RollTool::slice);
 
-    for (int i = 0; i < NoteTools::numSnapDivisions; ++i)
-        snapBox.addItem (NoteTools::nameForSnap (NoteTools::allSnapDivisions[i]), i + 1);
-
-    snapBox.setSelectedId (NoteTools::indexOfSnap (snap) + 1, juce::dontSendNotification);
+    rebuildSnapBox();
     snapBox.setTooltip ("Grid the editing gestures snap to");
     snapBox.setWantsKeyboardFocus (false);
     snapBox.onChange = [this]
@@ -165,6 +162,29 @@ void PianoRollToolbar::updateToolButtons()
     selectButton.setToggleState (tool == RollTool::select, juce::dontSendNotification);
     paintButton.setToggleState (tool == RollTool::paint, juce::dontSendNotification);
     sliceButton.setToggleState (tool == RollTool::slice, juce::dontSendNotification);
+}
+
+void PianoRollToolbar::rebuildSnapBox()
+{
+    // Guarded because clear() fires onChange, which would read a selected id of
+    // 0 back as "sixteenth" and quietly reset the user's grid on every refresh.
+    const juce::ScopedValueSetter<bool> guard (updatingSnapBox, true);
+
+    snapBox.clear (juce::dontSendNotification);
+
+    for (int i = 0; i < NoteTools::numSnapDivisions; ++i)
+        snapBox.addItem (NoteTools::nameForSnap (NoteTools::allSnapDivisions[i], beatUnit), i + 1);
+
+    snapBox.setSelectedId (NoteTools::indexOfSnap (snap) + 1, juce::dontSendNotification);
+}
+
+void PianoRollToolbar::setBeatUnit (int newBeatUnit)
+{
+    if (newBeatUnit == beatUnit)
+        return;
+
+    beatUnit = newBeatUnit;
+    rebuildSnapBox();
 }
 
 void PianoRollToolbar::paint (juce::Graphics& g)

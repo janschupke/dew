@@ -25,7 +25,7 @@ void paint (juce::Graphics& g, juce::Rectangle<int> bounds,
     g.reduceClipRegion (bounds);
 
     const auto stepsPerBar = juce::jmax (1, style.stepsPerBar);
-    const auto stepsPerBeat = juce::jmax (1, stepsPerBar / 4);
+    const auto stepsPerBeat = juce::jmax (1, stepsPerBar / juce::jmax (1, style.beatsPerBar));
 
     // Before the bar lines and numbers, so they stay legible on top of it -
     // the order the playlist's own strip already uses.
@@ -319,7 +319,11 @@ void RulerStrip::prepareGesture()
         const auto style = styleSource != nullptr ? styleSource() : ruler::Style();
 
         ruler::GestureContext ctx;
-        ctx.snapUnits = juce::jmax (1, style.stepsPerBar / 4);
+
+        // One beat, which is what a ruler drag has always snapped to - but
+        // written as the meter says rather than as stepsPerBar / 4, which is a
+        // beat only in 4/4.
+        ctx.snapUnits = juce::jmax (1, style.stepsPerBar / juce::jmax (1, style.beatsPerBar));
         ctx.totalUnits = style.totalSteps;
         ctx.playheadUnits = juce::jmax (0.0, style.playheadSteps);
 

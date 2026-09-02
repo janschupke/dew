@@ -56,6 +56,8 @@ DEW_DECLARE_ID (formatVersion)
 DEW_DECLARE_ID (name)
 DEW_DECLARE_ID (tempoBpm)
 DEW_DECLARE_ID (stepsPerBeat)
+DEW_DECLARE_ID (beatsPerBar)
+DEW_DECLARE_ID (beatUnit)
 DEW_DECLARE_ID (barsInSong)
 
 DEW_DECLARE_ID (id)
