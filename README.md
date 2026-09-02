@@ -143,17 +143,29 @@ on a click-swallowing child: 168 on a header and 68 on a strip before, zero afte
 `UndoManager::beginNewTransaction` **arms** a new transaction rather than being a no-op
 when one is already open. Every knob called it on each value change, so a drag that
 produced two hundred value changes produced two hundred undo steps — the opposite of what
-the call was there for, and invisible until something counted. A knob now opens its
-transaction at `onEditStart` and stops re-opening it until `onEditEnd`, which leaves
-`ValueTree`'s own coalescing to fold the gesture into one action. Wheel and keyboard
-changes produce no drag, so they still open their own.
+the call was there for, and invisible until something counted.
+
+The rule now lives in `ProjectEdits::setProperty`, which is the only way `src/ui` writes an
+undoable property; a source-scanning test refuses any other. Before that it was copy-pasted
+into five components and **missing from a sixth**: `SampleSection` had no gesture guard at
+all, so this section described a fix that an audio channel's fade and transpose knobs had
+never received. A write of the value already present now records nothing at all, which
+keeps a `refresh()` out of the undo history.
 
 ## Design system
 
-`src/ui/design/` holds the vocabulary — semantic colour roles, a 4px spacing scale, a
-type scale, and thirty-odd icons drawn as `juce::Path` rather than shipped as assets.
-`src/ui/primitives/` holds the controls built on it, including `DewNumberField`, which
-is the drag-up-and-down number entry used for every numeric value.
+`src/ui/design/` holds the vocabulary — semantic colour roles, a spacing scale, a type
+scale, a size ladder, an *emphasis* scale, and thirty-odd icons drawn as `juce::Path`
+rather than shipped as assets. `src/ui/primitives/` holds the controls built on it,
+including `DewNumberField`, which is the drag-up-and-down number entry used for every
+numeric value.
+
+Six source-scanning tests keep the vocabulary whole, and each one exists because of a
+second one that had grown beside it: no colour written as hex, no emphasis written as a
+bare number, no radius or stroke written as a bare number, no gap or inset off the
+spacing scale, no component redeclaring a dimension the size ladder already names, no
+timer picking its own refresh rate. A seventh refuses the opposite mistake — a token
+nothing refers to, which is a claim the code does not back.
 
 `dew_shot gallery out.png` renders every token, icon and primitive in every state onto
 one page, which is both how the design system is reviewed and how it is tested.
@@ -172,6 +184,30 @@ menu, 13 **bold** on every tooltip — and the label a `Slider` builds for its o
 kept JUCE's 15pt default inside a 15px box. Those hooks are overridden now, and a test
 scans every source file and fails on a raw `FontOptions` outside `Tokens.cpp`, naming the
 file and line.
+
+### Motion
+
+Every eased value in the application is stepped from one clock. Before it there was
+exactly one animation — a menu fading in — and sixteen state changes that were hard cuts.
+
+Two decisions shape it. It is a `juce::Timer` rather than a `VBlankAttachment`, because a
+vblank needs a `ComponentPeer` and every UI test here paints into an `Image` with no peer
+and no message loop: a design that cannot run where the suite runs is a design the suite
+cannot check. And **animation is off unless the application turns it on**, which is
+deliberately the wrong way round from how it looks — every headless test and every
+`dew_shot` render then behaves exactly as it did before the class existed. Motion is a
+property of a running application, not of a widget.
+
+`Animator::advance (deltaMs)` steps every client by a chosen number of milliseconds with
+no wall clock, so a test walks a whole interaction frame by frame rather than sampling it
+at the ends. Reduce motion sets every duration to zero, which makes `animateTo` identical
+to `snapTo` — so no call site needs a branch.
+
+Three rules govern a knob, in priority order: animation is off unless turned on; a **drag
+is never eased**, because a needle trailing the pointer moving it feels broken; and the
+**first** value a knob is ever given snaps, or a panel built from a document sweeps every
+knob up from zero. The wheel is never eased at all: adding lag to the one gesture that
+must feel direct is a regression, not a polish.
 
 ## Architecture
 
