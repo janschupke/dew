@@ -376,6 +376,23 @@ void inertArea (juce::Graphics& g, juce::Rectangle<int> bounds)
     }
 }
 
+void beyondEnd (juce::Graphics& g, juce::Rectangle<int> bounds, float edgeX)
+{
+    if (bounds.isEmpty())
+        return;
+
+    // A scrim rather than a fill: the grid underneath stays visible, so the
+    // view reads as continuing rather than as ending in a void, while still
+    // being obviously not part of the pattern.
+    g.setColour (colour::wellDeep.withAlpha (0.55f));
+    g.fillRect (bounds);
+
+    // The edge itself carries the meaning, so it is drawn at full strength.
+    g.setColour (colour::dividerStrong);
+    g.fillRect (juce::Rectangle<float> (edgeX - 1.0f, (float) bounds.getY(),
+                                        2.0f, (float) bounds.getHeight()));
+}
+
 void caption (juce::Graphics& g, juce::Rectangle<int> bounds, const juce::String& text,
               juce::Justification justification)
 {

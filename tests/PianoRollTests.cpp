@@ -547,3 +547,107 @@ TEST_CASE ("notes never paint over the keyboard", "[ui][pianoroll]")
     INFO ("channel-coloured pixels inside the keyboard gutter: " << bleeding);
     REQUIRE (bleeding == 0);
 }
+
+TEST_CASE ("the grid keeps drawing past the end of a short pattern", "[pianoroll][grid]")
+{
+    const juce::ScopedJuceInitialiser_GUI juceInit;
+
+    RollHarness h { 1200, 700 };
+
+    // Four steps in a 1200px window: zoomToFit caps at 120px per step, so the
+    // pattern occupies 480px and roughly half the note area is past its end.
+    // That is exactly the case that used to be a hatched dead rectangle.
+    h.pattern().setProperty (ids::lengthSteps, 4, nullptr);
+    h.roll.refresh();
+    h.roll.zoomToFit();
+
+    const auto notes = h.roll.getNoteArea();
+    const auto endX = (float) notes.getX()
+                    + (float) h.roll.getTimeline().xForStep (4.0);
+
+    REQUIRE (endX < (float) notes.getRight() - 100.0f);
+
+    juce::Image image (juce::Image::ARGB, h.roll.getWidth(), h.roll.getHeight(), true);
+    juce::Graphics g (image);
+    h.roll.paintEntireComponent (g, true);
+
+    // Mean brightness down a whole column. A vertical grid line is bright at
+    // every y, so it shows as a tall peak; the diagonal hatch this replaced
+    // crosses each column at ONE y and cannot produce one.
+    const auto columnMean = [&image, notes] (int x)
+    {
+        double total = 0.0;
+
+        for (int y = notes.getY() + 4; y < notes.getBottom() - 4; ++y)
+            total += image.getPixelAt (x, y).getBrightness();
+
+        return total / juce::jmax (1, notes.getHeight() - 8);
+    };
+
+    juce::Array<double> beyond;
+
+    for (int x = (int) endX + 4; x < notes.getRight() - 2; ++x)
+        beyond.add (columnMean (x));
+
+    REQUIRE (beyond.size() > 100);
+
+    auto sorted = beyond;
+    sorted.sort();
+    const auto background = sorted[sorted.size() / 2];
+
+    int verticalLines = 0;
+
+    for (auto value : beyond)
+        if (value > background * 1.15 + 0.002)
+            ++verticalLines;
+
+    INFO ("vertical grid lines past the pattern end: " << verticalLines
+          << " (background column mean " << background << ")");
+    REQUIRE (verticalLines >= 3);
+}
+
+TEST_CASE ("the end of the pattern is marked, and past it is dimmer", "[pianoroll][grid]")
+{
+    const juce::ScopedJuceInitialiser_GUI juceInit;
+
+    RollHarness h { 1200, 700 };
+
+    h.pattern().setProperty (ids::lengthSteps, 4, nullptr);
+    h.roll.refresh();
+    h.roll.zoomToFit();
+
+    const auto notes = h.roll.getNoteArea();
+    const auto endX = notes.getX() + (int) h.roll.getTimeline().xForStep (4.0);
+
+    juce::Image image (juce::Image::ARGB, h.roll.getWidth(), h.roll.getHeight(), true);
+    juce::Graphics g (image);
+    h.roll.paintEntireComponent (g, true);
+
+    const auto meanOver = [&image] (juce::Rectangle<int> area)
+    {
+        double total = 0.0;
+        int counted = 0;
+
+        for (int y = area.getY(); y < area.getBottom(); ++y)
+            for (int x = area.getX(); x < area.getRight(); ++x, ++counted)
+                total += image.getPixelAt (x, y).getBrightness();
+
+        return total / juce::jmax (1, counted);
+    };
+
+    // A rule at the pattern end, at full strength - it is what carries the
+    // meaning now that the region past it is no longer blanked out.
+    const auto ruleMean = meanOver ({ endX - 1, notes.getY() + 4, 3, notes.getHeight() - 8 });
+    const auto nearbyMean = meanOver ({ endX + 20, notes.getY() + 4, 3, notes.getHeight() - 8 });
+
+    INFO ("rule " << ruleMean << " vs nearby " << nearbyMean);
+    REQUIRE (ruleMean > nearbyMean * 2.0);
+
+    // And past it reads as out of bounds without being blank.
+    const auto insideMean = meanOver ({ endX - 120, notes.getY() + 4, 100, notes.getHeight() - 8 });
+    const auto beyondMean = meanOver ({ endX + 20, notes.getY() + 4, 100, notes.getHeight() - 8 });
+
+    INFO ("inside " << insideMean << " vs beyond " << beyondMean);
+    REQUIRE (beyondMean < insideMean);
+    REQUIRE (beyondMean > 0.0);
+}

@@ -161,8 +161,20 @@ namespace paint
 
     /** Fills the region beyond the content with a visibly inert texture, so an
         empty area reads as "nothing here" rather than as a broken control.
+
+        For a region with nothing to continue into it - the panel below the last
+        channel row. Where the grid DOES continue, use beyondEnd() instead.
     */
     void inertArea (juce::Graphics&, juce::Rectangle<int>);
+
+    /** Marks the part of a timeline that is past the end of the material.
+
+        Drawn OVER a grid that has already been painted across the full width,
+        so the rows and bar lines keep going and the region still reads as
+        out of bounds. Replacing the grid with a hatch, which is what this used
+        to do, left a dead rectangle wherever the view was wider than the music.
+    */
+    void beyondEnd (juce::Graphics&, juce::Rectangle<int>, float edgeX);
 
     /** A control's caption - the word under a knob or beside a number field.
         The smallest thing in the system, and deliberately so.

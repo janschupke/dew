@@ -914,7 +914,11 @@ void PianoRollComponent::paintRuler (juce::Graphics& g)
 
     const auto stepsPerBeat = juce::jmax (1, (int) document.getState()[ids::stepsPerBeat]);
     const auto stepsPerBar = stepsPerBeat * 4;
-    const auto range = timeline.visibleStepRange (contentWidth(), numSteps() + 1);
+
+    // Unclamped, so the ruler does not stop numbering half way across the
+    // window. Bars past the end of the pattern are dimmed rather than absent.
+    const auto steps = numSteps();
+    const auto range = timeline.visibleStepRange (contentWidth());
 
     g.setFont (type::font (type::caption));
 
@@ -925,15 +929,18 @@ void PianoRollComponent::paintRuler (juce::Graphics& g)
         if (x > (float) area.getRight())
             break;
 
+        const auto beyond = step >= steps;
+        const auto fade = [beyond] (juce::Colour c) { return beyond ? c.withAlpha (0.35f) : c; };
+
         if (step % stepsPerBar == 0)
         {
-            g.setColour (colour::dividerStrong);
+            g.setColour (fade (colour::dividerStrong));
             g.drawVerticalLine ((int) x, (float) area.getY(), (float) area.getBottom());
 
             // Bar numbers, but only when there is room for them to be readable.
             if (timeline.pixelsPerStep * stepsPerBar >= 28.0)
             {
-                g.setColour (colour::textSecondary);
+                g.setColour (beyond ? colour::textDisabled : colour::textSecondary);
                 g.drawText (juce::String (step / stepsPerBar + 1),
                             juce::Rectangle<int> ((int) x + 3, area.getY(), 40, area.getHeight()),
                             juce::Justification::centredLeft, false);
@@ -941,7 +948,7 @@ void PianoRollComponent::paintRuler (juce::Graphics& g)
         }
         else if (step % stepsPerBeat == 0 && timeline.pixelsPerStep * stepsPerBeat >= 10.0)
         {
-            g.setColour (colour::divider);
+            g.setColour (fade (colour::divider));
             g.drawVerticalLine ((int) x, (float) area.getBottom() - 6.0f, (float) area.getBottom());
         }
     }
@@ -972,6 +979,11 @@ void PianoRollComponent::paintNotes (juce::Graphics& g)
     const auto firstRow = juce::jmax (0, (int) (pitchScrollPx / rowHeight));
     const auto lastRow  = juce::jmin (numRows - 1, (int) ((pitchScrollPx + area.getHeight()) / rowHeight));
 
+    // Where the last pitch row ends. Only below the note area on a window tall
+    // enough to show all 97 rows at once, but if it ever is, that strip should
+    // be marked out rather than left as bare background.
+    const auto rowsBottom = (float) area.getY() + (float) (numRows * rowHeight) - (float) pitchScrollPx;
+
     for (int row = firstRow; row <= lastRow; ++row)
     {
         const auto pitch = highestPitch - row;
@@ -988,8 +1000,10 @@ void PianoRollComponent::paintNotes (juce::Graphics& g)
     }
 
     // --- columns -------------------------------------------------------------
+    // The UNCLAMPED range: bar lines carry on to the edge of the window even
+    // where the pattern has ended, so the grid never stops mid-view.
     const auto steps = numSteps();
-    const auto range = timeline.visibleStepRange (contentWidth(), steps + 1);
+    const auto range = timeline.visibleStepRange (contentWidth());
 
     for (int step = range.getStart(); step <= range.getEnd(); ++step)
     {
@@ -1010,14 +1024,21 @@ void PianoRollComponent::paintNotes (juce::Graphics& g)
         g.drawVerticalLine ((int) x, (float) area.getY(), (float) area.getBottom());
     }
 
-    // Past the end of the pattern is not part of the pattern, and should not
-    // look like empty bars you can write into.
+    // Past the end of the pattern is still drawn - it is just dimmed, with the
+    // end itself marked. It used to be hatched over, which turned every window
+    // wider than the music into a dead rectangle.
     const auto endX = (float) keyboardWidth + timeline.xForStep ((double) steps);
 
     if (endX < (float) area.getRight())
-        paint::inertArea (g, juce::Rectangle<float> (endX, (float) area.getY(),
+        paint::beyondEnd (g, juce::Rectangle<float> (endX, (float) area.getY(),
                                                      (float) area.getRight() - endX,
-                                                     (float) area.getHeight()).toNearestInt());
+                                                     (float) area.getHeight()).toNearestInt(), endX);
+
+    // Below the lowest pitch, for the same reason and in the same idiom.
+    if (rowsBottom < (float) area.getBottom())
+        paint::inertArea (g, juce::Rectangle<float> ((float) area.getX(), rowsBottom,
+                                                     (float) area.getWidth(),
+                                                     (float) area.getBottom() - rowsBottom).toNearestInt());
 
     // --- notes ---------------------------------------------------------------
     const auto pattern = currentPattern();
@@ -1096,6 +1117,36 @@ void PianoRollComponent::paintVelocityLane (juce::Graphics& g)
 
     const juce::Graphics::ScopedSaveState clip (g);
     g.reduceClipRegion (area);
+
+    // Bar lines, so a velocity bar can be read against the same grid as the
+    // note it belongs to. The lane had no grid at all, which made it hard to
+    // tell which bar went with which note once the view was zoomed out.
+    const auto stepsPerBeat = juce::jmax (1, (int) document.getState()[ids::stepsPerBeat]);
+    const auto stepsPerBar = stepsPerBeat * 4;
+    const auto steps = numSteps();
+
+    const auto laneRange = timeline.visibleStepRange (contentWidth());
+
+    for (int step = laneRange.getStart(); step <= laneRange.getEnd(); ++step)
+    {
+        if (step % stepsPerBar != 0)
+            continue;
+
+        const auto lineX = (float) keyboardWidth + timeline.xForStep ((double) step);
+
+        if (lineX > (float) area.getRight())
+            break;
+
+        g.setColour (step >= steps ? colour::dividerStrong.withAlpha (0.35f) : colour::dividerStrong);
+        g.drawVerticalLine ((int) lineX, (float) area.getY(), (float) area.getBottom());
+    }
+
+    const auto laneEndX = (float) keyboardWidth + timeline.xForStep ((double) steps);
+
+    if (laneEndX < (float) area.getRight())
+        paint::beyondEnd (g, juce::Rectangle<float> (laneEndX, (float) area.getY(),
+                                                     (float) area.getRight() - laneEndX,
+                                                     (float) area.getHeight()).toNearestInt(), laneEndX);
 
     for (const auto& note : currentPattern())
     {

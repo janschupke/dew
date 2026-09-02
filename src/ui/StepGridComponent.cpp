@@ -156,6 +156,11 @@ void StepGridComponent::paint (juce::Graphics& g)
     const auto steps = numSteps();
     const auto width = (float) timeline.pixelsPerStep;
     const auto visible = timeline.visibleStepRange ((float) getWidth(), steps);
+
+    // The grid itself is drawn over the WHOLE width, so shading and bar lines
+    // reach the edge of the panel even when the pattern is shorter than the
+    // view. Notes still only exist inside `visible`.
+    const auto painted = timeline.visibleStepRange ((float) getWidth());
     const auto stepsPerBeat = juce::jmax (1, (int) document.getState()[ids::stepsPerBeat]);
     const auto rows = getNumRows();
     const auto rowsHeight = getRowsHeight();
@@ -167,7 +172,7 @@ void StepGridComponent::paint (juce::Graphics& g)
     g.fillRect (0, 0, getWidth(), rowsHeight);
 
     // --- beat and bar shading ------------------------------------------------
-    for (int step = visible.getStart(); step < visible.getEnd(); ++step)
+    for (int step = painted.getStart(); step < painted.getEnd(); ++step)
     {
         const auto beat = step / stepsPerBeat;
         const auto isBarStart = beat % 4 == 0;
@@ -247,7 +252,7 @@ void StepGridComponent::paint (juce::Graphics& g)
     }
 
     // --- grid lines ----------------------------------------------------------
-    for (int step = visible.getStart(); step <= visible.getEnd(); ++step)
+    for (int step = painted.getStart(); step <= painted.getEnd(); ++step)
     {
         const auto x = timeline.xForStep ((double) step);
         const auto isBarLine = (step % (stepsPerBeat * 4)) == 0;
@@ -262,11 +267,12 @@ void StepGridComponent::paint (juce::Graphics& g)
         g.drawHorizontalLine (row * size::rowHeight, 0.0f, (float) getWidth());
     }
 
-    // Past the end of a short pattern is not part of the pattern.
+    // Past the end of a short pattern is dimmed, not blanked - the rows and bar
+    // lines carry on underneath, so the panel does not end in a void.
     const auto endX = timeline.xForStep ((double) steps);
 
     if (endX < (float) getWidth())
-        paint::inertArea (g, { (int) endX, 0, getWidth() - (int) endX, rowsHeight });
+        paint::beyondEnd (g, { (int) endX, 0, getWidth() - (int) endX, rowsHeight }, endX);
 
     // --- playhead ------------------------------------------------------------
     if (engine.isPlaying() && engine.getMode() == Transport::Mode::pattern && rows > 0)

@@ -15,6 +15,7 @@ add_executable(dew_tests
   ProjectEditsTests.cpp
   TransportTests.cpp
   SequencerTests.cpp
+  StepGridTests.cpp
   PreviewQueueTests.cpp
   SnapshotBridgeTests.cpp
   AudioSettingsTests.cpp

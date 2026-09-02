@@ -57,6 +57,22 @@ struct TimelineView
         return { first, last };
     }
 
+    /** Every step touching the content area, INCLUDING past the end of the
+        material.
+
+        The clamped overload above is for walking notes: there is nothing to
+        draw past the last step. This one is for drawing the grid itself, which
+        has to reach the edge of the window - stopping it at the pattern end is
+        what left a bare rectangle wherever the view was wider than the music.
+    */
+    juce::Range<int> visibleStepRange (float contentWidth) const noexcept
+    {
+        const auto first = juce::jmax (0, (int) std::floor (scrollOffsetSteps));
+        const auto last  = juce::jmax (first, (int) std::ceil (stepForX (contentWidth)) + 1);
+
+        return { first, last };
+    }
+
     /** Zooms by a factor while keeping whatever step is under anchorX put -
         otherwise zooming walks the music out from under the pointer.
     */
