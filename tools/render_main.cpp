@@ -24,6 +24,8 @@ Options:
 
   --write-demo <f>   Write the built-in demo project to f and exit. Used to
                      regenerate examples/demo.dew.
+  --write-demos <d>  Write the whole demo library into directory d and exit.
+                     Used to regenerate examples/, which the app embeds.
 )";
 
 int fail (const juce::String& message)
@@ -122,6 +124,32 @@ int main (int argc, char* argv[])
             return fail (result.getErrorMessage());
 
         std::cout << "wrote " << target.getFullPathName() << std::endl;
+        return 0;
+    }
+
+    if (args.has ("--write-demos"))
+    {
+        const auto path = args.value ("--write-demos");
+
+        if (path.isEmpty())
+            return fail ("--write-demos needs a directory to write to");
+
+        const auto directory = juce::File::getCurrentWorkingDirectory().getChildFile (path);
+
+        if (! directory.createDirectory())
+            return fail ("could not create " + directory.getFullPathName());
+
+        for (const auto& demo : dew::ProjectFactory::demos())
+        {
+            const auto target = directory.getChildFile (demo.fileName);
+            const auto result = dew::ProjectSerializer::writeToFile (demo.build(), target);
+
+            if (result.failed())
+                return fail (result.getErrorMessage());
+
+            std::cout << "wrote " << target.getFullPathName() << std::endl;
+        }
+
         return 0;
     }
 

@@ -1,6 +1,7 @@
 #include "DewApplication.h"
 
 #include "BuildInfo.h"
+#include "model/DemoLibrary.h"
 #include "model/Ids.h"
 #include "model/ProjectEdits.h"
 #include "model/ProjectFactory.h"
@@ -339,7 +340,7 @@ bool DewApplication::perform (const InvocationInfo& info)
 
 juce::StringArray DewApplication::getMenuBarNames()
 {
-    return { "File", "Edit", "Transport", "Project" };
+    return { "File", "Edit", "Transport", "Project", "Demos" };
 }
 
 juce::PopupMenu DewApplication::getMenuForIndex (int index, const juce::String&)
@@ -373,11 +374,63 @@ juce::PopupMenu DewApplication::getMenuForIndex (int index, const juce::String&)
             menu.addCommandItem (&commandManager, CommandIDs::addPattern);
             break;
 
+        case 4:
+        {
+            const auto& demos = ProjectFactory::demos();
+
+            for (int i = 0; i < (int) demos.size(); ++i)
+                menu.addItem (demoMenuBaseId + i, demos[(size_t) i].menuName);
+
+            break;
+        }
+
         default:
             break;
     }
 
     return menu;
+}
+
+void DewApplication::menuItemSelected (int menuItemID, int topLevelMenuIndex)
+{
+    if (topLevelMenuIndex == 4)
+        openDemo (menuItemID - demoMenuBaseId);
+}
+
+void DewApplication::openDemo (int index)
+{
+    auto* document = getDocument();
+    auto* main = getMainComponent();
+
+    if (document == nullptr || main == nullptr)
+        return;
+
+    // Same courtesy as File > New: never discard unsaved work without asking.
+    document->saveIfNeededAndUserAgreesAsync (
+        [this, document, main, index] (juce::FileBasedDocument::SaveResult result)
+        {
+            if (result != juce::FileBasedDocument::savedOk)
+                return;
+
+            juce::StringArray warnings;
+            auto project = DemoLibrary::load (index, warnings);
+
+            if (! project.isValid())
+            {
+                main->showLoadWarnings (warnings);
+                return;
+            }
+
+            // Untitled on purpose: a demo opened and edited must not be
+            // saveable straight back over the one the next person opens.
+            document->setState (std::move (project), false);
+            document->setFile ({});
+
+            main->documentWasReplaced();
+            updateWindowTitle();
+            commandManager.commandStatusChanged();
+            main->showLoadWarnings (warnings);
+        });
 }
 
 } // namespace dew

@@ -2,6 +2,8 @@
 
 #include <juce_data_structures/juce_data_structures.h>
 
+#include <vector>
+
 namespace dew
 {
 
@@ -18,6 +20,31 @@ struct ProjectFactory
         render that produces silence is obviously wrong.
     */
     static juce::ValueTree createDemo();
+
+    /** The demo library: one project per part of the app, so each feature has
+        something that already uses it rather than only a description.
+
+        Shipped as files under examples/ and embedded in the binary, so the
+        Demos menu works from a build with no source tree beside it.
+    */
+    struct Demo
+    {
+        const char* fileName;
+        const char* menuName;
+        const char* description;
+        juce::ValueTree (*build)();
+    };
+
+    static const std::vector<Demo>& demos();
+
+    /** Chords, held notes and varied velocities: what the piano roll is for. */
+    static juce::ValueTree createMelodyDemo();
+
+    /** A pad through a filter, a delay and a reverb, plus drive on the mix. */
+    static juce::ValueTree createEffectsDemo();
+
+    /** An arpeggio under a filter sweep and a fade, both as automation clips. */
+    static juce::ValueTree createAutomationDemo();
 };
 
 } // namespace dew

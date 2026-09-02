@@ -1,0 +1,497 @@
+{
+    "formatVersion": 4,
+    "name": "Piano Roll",
+    "tempoBpm": 96.0,
+    "stepsPerBeat": 4,
+    "barsInSong": 4,
+    "channels": [
+      {
+        "id": 1,
+        "name": "Melody",
+        "colour": "ffe4572e",
+        "mixerTrackId": 1,
+        "basePitch": 36,
+        "volume": 0.95,
+        "pan": 0.0,
+        "muted": false,
+        "solo": false,
+        "instrument": {
+          "osc": {
+            "wave": "saw",
+            "octave": 0,
+            "detuneCents": 0.0,
+            "gain": 0.8
+          },
+          "amp": {
+            "attack": 0.001,
+            "decay": 0.14,
+            "sustain": 0.0,
+            "release": 0.3
+          }
+        },
+        "effects": []
+      },
+      {
+        "id": 2,
+        "name": "Chords",
+        "colour": "ff29a19c",
+        "mixerTrackId": 2,
+        "basePitch": 60,
+        "volume": 0.55,
+        "pan": 0.0,
+        "muted": false,
+        "solo": false,
+        "instrument": {
+          "osc": {
+            "wave": "triangle",
+            "octave": -1,
+            "detuneCents": 0.0,
+            "gain": 0.8
+          },
+          "amp": {
+            "attack": 0.02,
+            "decay": 0.09,
+            "sustain": 0.7,
+            "release": 0.45
+          }
+        },
+        "effects": []
+      },
+      {
+        "id": 3,
+        "name": "Bass",
+        "colour": "ff4fa3ff",
+        "mixerTrackId": 3,
+        "basePitch": 40,
+        "volume": 0.75,
+        "pan": 0.0,
+        "muted": false,
+        "solo": false,
+        "instrument": {
+          "osc": {
+            "wave": "saw",
+            "octave": 0,
+            "detuneCents": 0.0,
+            "gain": 0.8
+          },
+          "amp": {
+            "attack": 0.004,
+            "decay": 0.18,
+            "sustain": 0.35,
+            "release": 0.25
+          }
+        },
+        "effects": []
+      },
+      {
+        "id": 4,
+        "name": "Counter",
+        "colour": "fff2c14e",
+        "mixerTrackId": 4,
+        "basePitch": 72,
+        "volume": 0.4,
+        "pan": 0.0,
+        "muted": false,
+        "solo": false,
+        "instrument": {
+          "osc": {
+            "wave": "sine",
+            "octave": 0,
+            "detuneCents": 0.0,
+            "gain": 0.8
+          },
+          "amp": {
+            "attack": 0.006,
+            "decay": 0.15,
+            "sustain": 0.55,
+            "release": 0.22
+          }
+        },
+        "effects": []
+      }
+    ],
+    "patterns": [
+      {
+        "id": 1,
+        "name": "Am - F - C - G",
+        "lengthSteps": 64,
+        "notes": [
+          {
+            "ch": 3,
+            "step": 0,
+            "lengthSteps": 6,
+            "pitch": 45,
+            "velocity": 0.9
+          },
+          {
+            "ch": 3,
+            "step": 8,
+            "lengthSteps": 4,
+            "pitch": 57,
+            "velocity": 0.55
+          },
+          {
+            "ch": 2,
+            "step": 2,
+            "lengthSteps": 12,
+            "pitch": 57,
+            "velocity": 0.5
+          },
+          {
+            "ch": 2,
+            "step": 2,
+            "lengthSteps": 12,
+            "pitch": 60,
+            "velocity": 0.5
+          },
+          {
+            "ch": 2,
+            "step": 2,
+            "lengthSteps": 12,
+            "pitch": 64,
+            "velocity": 0.5
+          },
+          {
+            "ch": 3,
+            "step": 16,
+            "lengthSteps": 6,
+            "pitch": 41,
+            "velocity": 0.9
+          },
+          {
+            "ch": 3,
+            "step": 24,
+            "lengthSteps": 4,
+            "pitch": 53,
+            "velocity": 0.55
+          },
+          {
+            "ch": 2,
+            "step": 18,
+            "lengthSteps": 12,
+            "pitch": 53,
+            "velocity": 0.5
+          },
+          {
+            "ch": 2,
+            "step": 18,
+            "lengthSteps": 12,
+            "pitch": 57,
+            "velocity": 0.5
+          },
+          {
+            "ch": 2,
+            "step": 18,
+            "lengthSteps": 12,
+            "pitch": 60,
+            "velocity": 0.5
+          },
+          {
+            "ch": 3,
+            "step": 32,
+            "lengthSteps": 6,
+            "pitch": 48,
+            "velocity": 0.9
+          },
+          {
+            "ch": 3,
+            "step": 40,
+            "lengthSteps": 4,
+            "pitch": 60,
+            "velocity": 0.55
+          },
+          {
+            "ch": 2,
+            "step": 34,
+            "lengthSteps": 12,
+            "pitch": 60,
+            "velocity": 0.5
+          },
+          {
+            "ch": 2,
+            "step": 34,
+            "lengthSteps": 12,
+            "pitch": 64,
+            "velocity": 0.5
+          },
+          {
+            "ch": 2,
+            "step": 34,
+            "lengthSteps": 12,
+            "pitch": 67,
+            "velocity": 0.5
+          },
+          {
+            "ch": 3,
+            "step": 48,
+            "lengthSteps": 6,
+            "pitch": 43,
+            "velocity": 0.9
+          },
+          {
+            "ch": 3,
+            "step": 56,
+            "lengthSteps": 4,
+            "pitch": 55,
+            "velocity": 0.55
+          },
+          {
+            "ch": 2,
+            "step": 50,
+            "lengthSteps": 12,
+            "pitch": 55,
+            "velocity": 0.5
+          },
+          {
+            "ch": 2,
+            "step": 50,
+            "lengthSteps": 12,
+            "pitch": 59,
+            "velocity": 0.5
+          },
+          {
+            "ch": 2,
+            "step": 50,
+            "lengthSteps": 12,
+            "pitch": 62,
+            "velocity": 0.5
+          },
+          {
+            "ch": 1,
+            "step": 0,
+            "lengthSteps": 3,
+            "pitch": 76,
+            "velocity": 0.95
+          },
+          {
+            "ch": 1,
+            "step": 4,
+            "lengthSteps": 2,
+            "pitch": 74,
+            "velocity": 0.7
+          },
+          {
+            "ch": 1,
+            "step": 6,
+            "lengthSteps": 2,
+            "pitch": 72,
+            "velocity": 0.6
+          },
+          {
+            "ch": 1,
+            "step": 8,
+            "lengthSteps": 6,
+            "pitch": 69,
+            "velocity": 0.85
+          },
+          {
+            "ch": 1,
+            "step": 16,
+            "lengthSteps": 3,
+            "pitch": 72,
+            "velocity": 0.9
+          },
+          {
+            "ch": 1,
+            "step": 20,
+            "lengthSteps": 2,
+            "pitch": 74,
+            "velocity": 0.65
+          },
+          {
+            "ch": 1,
+            "step": 22,
+            "lengthSteps": 2,
+            "pitch": 76,
+            "velocity": 0.75
+          },
+          {
+            "ch": 1,
+            "step": 24,
+            "lengthSteps": 6,
+            "pitch": 77,
+            "velocity": 0.95
+          },
+          {
+            "ch": 1,
+            "step": 32,
+            "lengthSteps": 4,
+            "pitch": 79,
+            "velocity": 1.0
+          },
+          {
+            "ch": 1,
+            "step": 38,
+            "lengthSteps": 2,
+            "pitch": 76,
+            "velocity": 0.6
+          },
+          {
+            "ch": 1,
+            "step": 40,
+            "lengthSteps": 6,
+            "pitch": 74,
+            "velocity": 0.8
+          },
+          {
+            "ch": 1,
+            "step": 48,
+            "lengthSteps": 3,
+            "pitch": 71,
+            "velocity": 0.85
+          },
+          {
+            "ch": 1,
+            "step": 52,
+            "lengthSteps": 3,
+            "pitch": 74,
+            "velocity": 0.7
+          },
+          {
+            "ch": 1,
+            "step": 56,
+            "lengthSteps": 8,
+            "pitch": 69,
+            "velocity": 0.9
+          },
+          {
+            "ch": 4,
+            "step": 2,
+            "lengthSteps": 1,
+            "pitch": 88,
+            "velocity": 0.35
+          },
+          {
+            "ch": 4,
+            "step": 10,
+            "lengthSteps": 1,
+            "pitch": 88,
+            "velocity": 0.35
+          },
+          {
+            "ch": 4,
+            "step": 18,
+            "lengthSteps": 1,
+            "pitch": 86,
+            "velocity": 0.35
+          },
+          {
+            "ch": 4,
+            "step": 26,
+            "lengthSteps": 1,
+            "pitch": 86,
+            "velocity": 0.35
+          },
+          {
+            "ch": 4,
+            "step": 34,
+            "lengthSteps": 1,
+            "pitch": 84,
+            "velocity": 0.35
+          },
+          {
+            "ch": 4,
+            "step": 42,
+            "lengthSteps": 1,
+            "pitch": 84,
+            "velocity": 0.35
+          },
+          {
+            "ch": 4,
+            "step": 50,
+            "lengthSteps": 1,
+            "pitch": 82,
+            "velocity": 0.35
+          },
+          {
+            "ch": 4,
+            "step": 58,
+            "lengthSteps": 1,
+            "pitch": 82,
+            "velocity": 0.35
+          }
+        ]
+      }
+    ],
+    "automations": [],
+    "playlist": {
+      "tracks": [
+        {
+          "name": "Track 1",
+          "mute": false,
+          "solo": false,
+          "clips": [
+            {
+              "kind": "pattern",
+              "patternId": 1,
+              "automationId": 1,
+              "startBar": 0,
+              "lengthBars": 4
+            }
+          ]
+        },
+        {
+          "name": "Track 2",
+          "mute": false,
+          "solo": false,
+          "clips": []
+        },
+        {
+          "name": "Track 3",
+          "mute": false,
+          "solo": false,
+          "clips": []
+        },
+        {
+          "name": "Track 4",
+          "mute": false,
+          "solo": false,
+          "clips": []
+        }
+      ]
+    },
+    "mixer": {
+      "master": {
+        "gain": 0.9
+      },
+      "tracks": [
+        {
+          "id": 1,
+          "name": "Insert 1",
+          "gain": 0.8,
+          "pan": 0.0,
+          "mute": false,
+          "solo": false,
+          "effects": []
+        },
+        {
+          "id": 2,
+          "name": "Insert 2",
+          "gain": 0.8,
+          "pan": 0.0,
+          "mute": false,
+          "solo": false,
+          "effects": []
+        },
+        {
+          "id": 3,
+          "name": "Insert 3",
+          "gain": 0.8,
+          "pan": 0.0,
+          "mute": false,
+          "solo": false,
+          "effects": []
+        },
+        {
+          "id": 4,
+          "name": "Insert 4",
+          "gain": 0.8,
+          "pan": 0.0,
+          "mute": false,
+          "solo": false,
+          "effects": []
+        }
+      ]
+    },
+    "format": "dew-project"
+  }

@@ -48,7 +48,7 @@ public:
     // --- MenuBarModel -------------------------------------------------------
     juce::StringArray getMenuBarNames() override;
     juce::PopupMenu getMenuForIndex (int index, const juce::String& name) override;
-    void menuItemSelected (int, int) override {}
+    void menuItemSelected (int menuItemID, int topLevelMenuIndex) override;
 
 private:
     class MainWindow;
@@ -57,6 +57,14 @@ private:
     ProjectDocument* getDocument() const;
 
     void updateWindowTitle();
+
+    /** Opens a demo as an untitled document, so saving cannot overwrite it and
+        the user is asked where it should go.
+    */
+    void openDemo (int index);
+
+    /** Menu ids for the Demos menu, kept clear of the command ids. */
+    static constexpr int demoMenuBaseId = 0x3000;
 
     std::unique_ptr<MainWindow> mainWindow;
     juce::ApplicationCommandManager commandManager;

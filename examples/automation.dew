@@ -1,0 +1,433 @@
+{
+    "formatVersion": 4,
+    "name": "Automation",
+    "tempoBpm": 126.0,
+    "stepsPerBeat": 4,
+    "barsInSong": 8,
+    "channels": [
+      {
+        "id": 1,
+        "name": "Arp",
+        "colour": "ffe4572e",
+        "mixerTrackId": 1,
+        "basePitch": 36,
+        "volume": 0.6,
+        "pan": 0.0,
+        "muted": false,
+        "solo": false,
+        "instrument": {
+          "osc": {
+            "wave": "saw",
+            "octave": 0,
+            "detuneCents": 0.0,
+            "gain": 0.8
+          },
+          "amp": {
+            "attack": 0.002,
+            "decay": 0.16,
+            "sustain": 0.25,
+            "release": 0.12
+          }
+        },
+        "effects": [
+          {
+            "id": 1,
+            "type": "filter",
+            "enabled": true,
+            "mix": 1.0,
+            "filterMode": "lowpass",
+            "cutoff": 16000.0,
+            "resonance": 2.2,
+            "roomSize": 0.5,
+            "damping": 0.5,
+            "width": 1.0,
+            "delayMs": 250.0,
+            "feedback": 0.35,
+            "drive": 2.0,
+            "outputGain": 1.0,
+            "rate": 1.2,
+            "depth": 0.3,
+            "lowGainDb": 0.0,
+            "midGainDb": 0.0,
+            "midFreq": 900.0,
+            "highGainDb": 0.0
+          }
+        ]
+      },
+      {
+        "id": 2,
+        "name": "Kick",
+        "colour": "ff29a19c",
+        "mixerTrackId": 2,
+        "basePitch": 36,
+        "volume": 0.95,
+        "pan": 0.0,
+        "muted": false,
+        "solo": false,
+        "instrument": {
+          "osc": {
+            "wave": "sine",
+            "octave": -1,
+            "detuneCents": 0.0,
+            "gain": 0.8
+          },
+          "amp": {
+            "attack": 0.001,
+            "decay": 0.15,
+            "sustain": 0.0,
+            "release": 0.06
+          }
+        },
+        "effects": []
+      },
+      {
+        "id": 3,
+        "name": "Bass",
+        "colour": "ff4fa3ff",
+        "mixerTrackId": 3,
+        "basePitch": 40,
+        "volume": 0.75,
+        "pan": 0.0,
+        "muted": true,
+        "solo": false,
+        "instrument": {
+          "osc": {
+            "wave": "saw",
+            "octave": 0,
+            "detuneCents": 0.0,
+            "gain": 0.8
+          },
+          "amp": {
+            "attack": 0.004,
+            "decay": 0.18,
+            "sustain": 0.35,
+            "release": 0.09
+          }
+        },
+        "effects": []
+      },
+      {
+        "id": 4,
+        "name": "Lead",
+        "colour": "fff2c14e",
+        "mixerTrackId": 4,
+        "basePitch": 72,
+        "volume": 0.6,
+        "pan": 0.0,
+        "muted": true,
+        "solo": false,
+        "instrument": {
+          "osc": {
+            "wave": "triangle",
+            "octave": 0,
+            "detuneCents": 0.0,
+            "gain": 0.8
+          },
+          "amp": {
+            "attack": 0.006,
+            "decay": 0.15,
+            "sustain": 0.55,
+            "release": 0.22
+          }
+        },
+        "effects": []
+      }
+    ],
+    "patterns": [
+      {
+        "id": 1,
+        "name": "Arp",
+        "lengthSteps": 16,
+        "notes": [
+          {
+            "ch": 1,
+            "step": 0,
+            "lengthSteps": 1,
+            "pitch": 57,
+            "velocity": 0.9
+          },
+          {
+            "ch": 1,
+            "step": 1,
+            "lengthSteps": 1,
+            "pitch": 60,
+            "velocity": 0.6
+          },
+          {
+            "ch": 1,
+            "step": 2,
+            "lengthSteps": 1,
+            "pitch": 64,
+            "velocity": 0.6
+          },
+          {
+            "ch": 1,
+            "step": 3,
+            "lengthSteps": 1,
+            "pitch": 69,
+            "velocity": 0.6
+          },
+          {
+            "ch": 1,
+            "step": 4,
+            "lengthSteps": 1,
+            "pitch": 64,
+            "velocity": 0.9
+          },
+          {
+            "ch": 1,
+            "step": 5,
+            "lengthSteps": 1,
+            "pitch": 60,
+            "velocity": 0.6
+          },
+          {
+            "ch": 1,
+            "step": 6,
+            "lengthSteps": 1,
+            "pitch": 64,
+            "velocity": 0.6
+          },
+          {
+            "ch": 1,
+            "step": 7,
+            "lengthSteps": 1,
+            "pitch": 69,
+            "velocity": 0.6
+          },
+          {
+            "ch": 1,
+            "step": 8,
+            "lengthSteps": 1,
+            "pitch": 57,
+            "velocity": 0.9
+          },
+          {
+            "ch": 1,
+            "step": 9,
+            "lengthSteps": 1,
+            "pitch": 60,
+            "velocity": 0.6
+          },
+          {
+            "ch": 1,
+            "step": 10,
+            "lengthSteps": 1,
+            "pitch": 64,
+            "velocity": 0.6
+          },
+          {
+            "ch": 1,
+            "step": 11,
+            "lengthSteps": 1,
+            "pitch": 72,
+            "velocity": 0.6
+          },
+          {
+            "ch": 1,
+            "step": 12,
+            "lengthSteps": 1,
+            "pitch": 69,
+            "velocity": 0.9
+          },
+          {
+            "ch": 1,
+            "step": 13,
+            "lengthSteps": 1,
+            "pitch": 64,
+            "velocity": 0.6
+          },
+          {
+            "ch": 1,
+            "step": 14,
+            "lengthSteps": 1,
+            "pitch": 60,
+            "velocity": 0.6
+          },
+          {
+            "ch": 1,
+            "step": 15,
+            "lengthSteps": 1,
+            "pitch": 64,
+            "velocity": 0.6
+          },
+          {
+            "ch": 2,
+            "step": 0,
+            "lengthSteps": 1,
+            "pitch": 36,
+            "velocity": 1.0
+          },
+          {
+            "ch": 2,
+            "step": 4,
+            "lengthSteps": 1,
+            "pitch": 36,
+            "velocity": 1.0
+          },
+          {
+            "ch": 2,
+            "step": 8,
+            "lengthSteps": 1,
+            "pitch": 36,
+            "velocity": 1.0
+          },
+          {
+            "ch": 2,
+            "step": 12,
+            "lengthSteps": 1,
+            "pitch": 36,
+            "velocity": 1.0
+          }
+        ]
+      }
+    ],
+    "automations": [
+      {
+        "id": 1,
+        "name": "Arp > Filter > Cutoff",
+        "scope": "channelEffect",
+        "targetId": 1,
+        "slot": 0,
+        "param": "cutoff",
+        "points": [
+          {
+            "step": 0.0,
+            "value": 0.15,
+            "curve": 0.0
+          },
+          {
+            "step": 32.0,
+            "value": 0.55,
+            "curve": 0.0
+          },
+          {
+            "step": 64.0,
+            "value": 1.0,
+            "curve": 0.0
+          }
+        ]
+      },
+      {
+        "id": 2,
+        "name": "Master > Gain",
+        "scope": "master",
+        "targetId": 0,
+        "slot": -1,
+        "param": "gain",
+        "points": [
+          {
+            "step": 0.0,
+            "value": 0.9,
+            "curve": 0.0
+          },
+          {
+            "step": 48.0,
+            "value": 0.9,
+            "curve": 0.0
+          },
+          {
+            "step": 64.0,
+            "value": 0.0,
+            "curve": 0.0
+          }
+        ]
+      }
+    ],
+    "playlist": {
+      "tracks": [
+        {
+          "name": "Track 1",
+          "mute": false,
+          "solo": false,
+          "clips": [
+            {
+              "kind": "pattern",
+              "patternId": 1,
+              "automationId": 1,
+              "startBar": 0,
+              "lengthBars": 8
+            }
+          ]
+        },
+        {
+          "name": "Track 2",
+          "mute": false,
+          "solo": false,
+          "clips": [
+            {
+              "kind": "automation",
+              "patternId": 1,
+              "automationId": 1,
+              "startBar": 0,
+              "lengthBars": 4
+            }
+          ]
+        },
+        {
+          "name": "Track 3",
+          "mute": false,
+          "solo": false,
+          "clips": [
+            {
+              "kind": "automation",
+              "patternId": 1,
+              "automationId": 2,
+              "startBar": 4,
+              "lengthBars": 4
+            }
+          ]
+        },
+        {
+          "name": "Track 4",
+          "mute": false,
+          "solo": false,
+          "clips": []
+        }
+      ]
+    },
+    "mixer": {
+      "master": {
+        "gain": 0.9
+      },
+      "tracks": [
+        {
+          "id": 1,
+          "name": "Insert 1",
+          "gain": 0.8,
+          "pan": 0.0,
+          "mute": false,
+          "solo": false,
+          "effects": []
+        },
+        {
+          "id": 2,
+          "name": "Insert 2",
+          "gain": 0.8,
+          "pan": 0.0,
+          "mute": false,
+          "solo": false,
+          "effects": []
+        },
+        {
+          "id": 3,
+          "name": "Insert 3",
+          "gain": 0.8,
+          "pan": 0.0,
+          "mute": false,
+          "solo": false,
+          "effects": []
+        },
+        {
+          "id": 4,
+          "name": "Insert 4",
+          "gain": 0.8,
+          "pan": 0.0,
+          "mute": false,
+          "solo": false,
+          "effects": []
+        }
+      ]
+    },
+    "format": "dew-project"
+  }
