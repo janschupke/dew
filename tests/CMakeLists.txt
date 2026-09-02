@@ -37,6 +37,7 @@ add_executable(dew_tests
   MidiExportTests.cpp
   RenderFormatTests.cpp
   RenderPostTests.cpp
+  RenderStemTests.cpp
   RenderRangeTests.cpp
   UiSmokeTests.cpp
 )

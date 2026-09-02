@@ -107,6 +107,11 @@ struct RenderOptions
 
     /** Where lame is. Empty means "go and find it". */
     juce::File lameExecutable;
+
+    /** Skip a stem nothing is routed to. Without this a project with thirty-two
+        inserts and four channels produces twenty-eight empty files.
+    */
+    bool skipSilentStems = true;
 };
 
 /** Progress out, cancellation in.
@@ -215,6 +220,18 @@ struct OfflineRenderer
                                       const juce::File& destination,
                                       const RenderOptions& options = {},
                                       RenderProgress* progress = nullptr);
+
+    /** Renders one file per mixer track into `folder`.
+
+        Each stem is a complete render with the other tracks muted, so it carries
+        its own effect tails, its own automation and the master chain's response
+        to it - which is what makes a stem sound the way that track sounds in the
+        mix. The cost is one full render per track.
+    */
+    static RenderReport renderStems (const juce::ValueTree& project,
+                                     const juce::File& folder,
+                                     const RenderOptions& options = {},
+                                     RenderProgress* progress = nullptr);
 
     /** The extension a format wants, including the dot. */
     static juce::String extensionFor (RenderFormat) noexcept;

@@ -1,6 +1,7 @@
 #include "OfflineRenderer.h"
 
 #include "MidiExporter.h"
+#include "../model/Ids.h"
 #include "RenderPost.h"
 
 namespace dew
@@ -297,6 +298,93 @@ juce::AudioFormatWriterOptions writerOptionsFor (const RenderOptions& options)
     return writerOptions;
 }
 
+/** Names, which the snapshot deliberately does not carry: a juce::String has no
+    business in a struct the audio thread reads every block.
+*/
+juce::StringArray mixerTrackNames (const juce::ValueTree& project)
+{
+    juce::StringArray names;
+
+    if (const auto mixer = project.getChildWithName (ids::MIXER); mixer.isValid())
+        for (const auto& track : mixer)
+            if (track.hasType (ids::MIXER_TRACK))
+                names.add (track[ids::name].toString());
+
+    return names;
+}
+
+bool anyEnabled (const EffectChainSnapshot& chain) noexcept
+{
+    for (int i = 0; i < chain.numSlots; ++i)
+        if (chain.slots[(size_t) i].enabled)
+            return true;
+
+    return false;
+}
+
+/** Dithers, then writes one buffer to one file, atomically.
+
+    Shared by renderToFile and every stem, so the temporary-file swap, the
+    format switch and the MP3 destructor rule exist in exactly one place.
+*/
+juce::Result writeAudio (juce::AudioBuffer<float>& buffer,
+                         const juce::File& destination,
+                         const RenderOptions& options)
+{
+    // Dither belongs to the destination's LSB, so it happens here rather than in
+    // renderToBuffer, which hands back a float buffer that has no bit depth. It
+    // runs after the report was filled in, so peak and rms stay the numbers the
+    // render produced rather than drifting by a fraction of an LSB.
+    if (options.dither && ! options.floatingPoint)
+        RenderPost::dither (buffer, options.bitDepth, options.ditherSeed);
+
+    destination.getParentDirectory().createDirectory();
+
+    // Write to a temporary and swap, as ProjectSerializer does. Writing in place
+    // means a render that fails, or that the user cancels, destroys whatever
+    // export was already sitting at that path.
+    juce::TemporaryFile temp (destination);
+
+    {
+        auto fileStream = std::unique_ptr<juce::FileOutputStream> (temp.getFile().createOutputStream());
+
+        if (fileStream == nullptr || ! fileStream->openedOk())
+            return juce::Result::fail ("Could not create " + destination.getFullPathName());
+
+        std::unique_ptr<juce::OutputStream> outputStream (std::move (fileStream));
+
+        auto format = audioFormatFor (options);
+
+        if (format == nullptr)
+            return juce::Result::fail ("Cannot write " + OfflineRenderer::nameFor (options.format)
+                                       + " on this machine.");
+
+        auto writer = format->createWriterFor (outputStream, writerOptionsFor (options));
+
+        if (writer == nullptr)
+            return juce::Result::fail ("Could not create a " + OfflineRenderer::nameFor (options.format)
+                                       + " writer at " + juce::String (options.bitDepth)
+                                       + "-bit / " + juce::String (options.sampleRate, 0) + " Hz.");
+
+        if (! writer->writeFromAudioSampleBuffer (buffer, 0, buffer.getNumSamples()))
+            return juce::Result::fail ("Could not write audio to " + destination.getFullPathName());
+    }
+    // The writer is destroyed HERE, and that brace is load-bearing. The MP3
+    // writer streams to a temporary WAV and only runs lame when it is destroyed,
+    // piping the result into the stream - so nothing exists until this point. It
+    // also returns void and gives up silently after one retry, which is why the
+    // size check below is required rather than defensive.
+
+    if (temp.getFile().getSize() <= 0)
+        return juce::Result::fail (OfflineRenderer::nameFor (options.format)
+                                   + " encoding produced no output.");
+
+    if (! temp.overwriteTargetFileWithTemporary())
+        return juce::Result::fail ("Could not replace " + destination.getFullPathName());
+
+    return juce::Result::ok();
+}
+
 } // namespace
 
 juce::String OfflineRenderer::extensionFor (RenderFormat format) noexcept
@@ -434,76 +522,146 @@ RenderReport OfflineRenderer::renderToFile (const juce::ValueTree& project,
     if (! report.ok() || report.cancelled)
         return report;
 
-    // Dither belongs to the destination's LSB, so it happens here rather than in
-    // renderToBuffer, which hands back a float buffer that has no bit depth. It
-    // is applied after the report was filled in, so peak and rms stay the numbers
-    // the render produced rather than drifting by a fraction of an LSB.
-    if (options.dither && ! options.floatingPoint)
-        RenderPost::dither (rendered, options.bitDepth, options.ditherSeed);
+    report.result = writeAudio (rendered, destination, options);
 
-    destination.getParentDirectory().createDirectory();
+    if (report.ok())
+        report.files.add (destination);
 
-    // Write to a temporary and swap, as ProjectSerializer does. Writing in place
-    // means a render that fails, or that the user cancels, destroys whatever
-    // export was already sitting at that path.
-    juce::TemporaryFile temp (destination);
+    return report;
+}
 
+RenderReport OfflineRenderer::renderStems (const juce::ValueTree& project,
+                                           const juce::File& folder,
+                                           const RenderOptions& options,
+                                           RenderProgress* progress)
+{
+    RenderReport report;
+
+    if (options.format == RenderFormat::midi)
     {
-        auto fileStream = std::unique_ptr<juce::FileOutputStream> (temp.getFile().createOutputStream());
-
-        if (fileStream == nullptr || ! fileStream->openedOk())
-        {
-            report.result = juce::Result::fail ("Could not create " + destination.getFullPathName());
-            return report;
-        }
-
-        std::unique_ptr<juce::OutputStream> outputStream (std::move (fileStream));
-
-        auto format = audioFormatFor (options);
-
-        if (format == nullptr)
-        {
-            report.result = juce::Result::fail ("Cannot write " + nameFor (options.format)
-                                                + " on this machine.");
-            return report;
-        }
-
-        auto writer = format->createWriterFor (outputStream, writerOptionsFor (options));
-
-        if (writer == nullptr)
-        {
-            report.result = juce::Result::fail ("Could not create a " + nameFor (options.format)
-                                                + " writer at " + juce::String (options.bitDepth)
-                                                + "-bit / " + juce::String (options.sampleRate, 0) + " Hz.");
-            return report;
-        }
-
-        if (! writer->writeFromAudioSampleBuffer (rendered, 0, rendered.getNumSamples()))
-        {
-            report.result = juce::Result::fail ("Could not write audio to " + destination.getFullPathName());
-            return report;
-        }
-    }
-    // The writer is destroyed HERE, and that brace is load-bearing. The MP3
-    // writer streams to a temporary WAV and only runs lame when it is destroyed,
-    // piping the result into the stream - so nothing exists until this point. It
-    // also returns void and gives up silently after one retry, which is why the
-    // size check below is required rather than defensive.
-
-    if (temp.getFile().getSize() <= 0)
-    {
-        report.result = juce::Result::fail (nameFor (options.format)
-                                            + " encoding produced no output.");
+        report.result = juce::Result::fail ("Stems are audio; MIDI is one file.");
         return report;
     }
 
-    if (! temp.overwriteTargetFileWithTemporary())
+    report.result = validateForFormat (options);
+
+    if (report.result.failed())
+        return report;
+
+    juce::StringArray warnings;
+    const auto base = buildSnapshot (project, &warnings);
+    report.warnings.addArray (warnings);
+
+    const auto names = mixerTrackNames (project);
+    const auto numTracks = (int) base.mixerTracks.size();
+
+    if (numTracks <= 0)
     {
-        report.result = juce::Result::fail ("Could not replace " + destination.getFullPathName());
+        report.result = juce::Result::fail ("This project has no mixer tracks to render.");
         return report;
     }
 
-    report.files.add (destination);
+    if (! folder.createDirectory())
+    {
+        report.result = juce::Result::fail ("Could not create " + folder.getFullPathName());
+        return report;
+    }
+
+    // A stem is a full render, so it goes through the master chain like anything
+    // else. That is what makes each one sound the way it does in the mix - and it
+    // is also why a non-linear master effect stops the stems summing back to it.
+    if (anyEnabled (base.masterEffects))
+        report.warnings.add ("The master chain processes each stem, so the stems will not sum "
+                             "exactly back to the mix.");
+
+    // One engine for every pass. A fresh AudioEngine preallocates thirty-two
+    // effect units at their maximum size; prepare() resets voices, effect units
+    // and the unit-type table, so it is a complete reset without the churn.
+    AudioEngine engine;
+
+    juce::StringArray silent;
+
+    for (int track = 0; track < numTracks; ++track)
+    {
+        if (progress != nullptr)
+        {
+            if (progress->cancelled.load (std::memory_order_relaxed))
+            {
+                report.cancelled = true;
+                return report;
+            }
+
+            progress->setStage ("Stem " + juce::String (track + 1) + " of " + juce::String (numTracks));
+        }
+
+        auto stem = base;
+
+        // Isolate by MUTING the others rather than soloing this one: isAudible
+        // checks mute first, and clearing anySolo means a project that already
+        // has a track soloed still yields a stem for every track, which is what
+        // stems are for.
+        for (int i = 0; i < numTracks; ++i)
+            stem.mixerTracks[(size_t) i].mute = (i != track);
+
+        stem.anySolo = false;
+
+        juce::AudioBuffer<float> rendered;
+
+        auto pass = renderSnapshot (std::move (stem), engine, rendered, options, progress,
+                                    (double) track / (double) numTracks,
+                                    (double) (track + 1) / (double) numTracks);
+
+        if (pass.cancelled)
+        {
+            report.cancelled = true;
+            return report;
+        }
+
+        if (! pass.ok())
+        {
+            report.result = pass.result;
+            return report;
+        }
+
+        const auto name = juce::isPositiveAndBelow (track, names.size()) && names[track].isNotEmpty()
+                            ? names[track]
+                            : "Track " + juce::String (track + 1);
+
+        if (options.skipSilentStems && pass.peak <= 0.0f)
+        {
+            silent.add (name);
+            continue;
+        }
+
+        // The index keeps the mixer's order, and disambiguates two inserts that
+        // happen to have been given the same name.
+        const auto fileName = juce::File::createLegalFileName (
+            juce::String (track + 1).paddedLeft ('0', 2) + " " + name)
+            + extensionFor (options.format);
+
+        const auto destination = folder.getChildFile (fileName);
+
+        if (const auto result = writeAudio (rendered, destination, options); result.failed())
+        {
+            report.result = result;
+            return report;
+        }
+
+        report.files.add (destination);
+
+        report.peak = juce::jmax (report.peak, pass.peak);
+        report.numSamples = juce::jmax (report.numSamples, pass.numSamples);
+        report.seconds = juce::jmax (report.seconds, pass.seconds);
+    }
+
+    if (! silent.isEmpty())
+        report.warnings.add ("Nothing was routed to " + silent.joinIntoString (", ")
+                             + ", so no file was written for "
+                             + (silent.size() == 1 ? juce::String ("it.") : juce::String ("them.")));
+
+    if (report.files.isEmpty())
+        report.result = juce::Result::fail ("Every stem was silent, so nothing was written.");
+
     return report;
 }
 
