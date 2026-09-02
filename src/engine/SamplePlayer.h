@@ -1,5 +1,7 @@
 #pragma once
 
+#include <span>
+
 #include "engine/EngineSnapshot.h"
 #include "engine/Transport.h"
 
@@ -31,8 +33,11 @@ public:
         sum instead of one silently winning. Never allocates, never locks.
     */
     static void renderAdd (float* mono, int numSamples,
-                           const EngineSnapshot& snapshot,
+                           const SampleSettings& settings,
+                           const juce::AudioBuffer<float>& audio,
+                           juce::Span<const ClipSnapshot> clips,
                            int channelIndex,
+                           int stepsPerBar,
                            double positionSteps,
                            double samplesPerStep,
                            double engineSampleRate) noexcept;

@@ -11,7 +11,8 @@
 #include "engine/PreviewQueue.h"
 #include "engine/Sequencer.h"
 #include "engine/SnapshotBridge.h"
-#include "engine/SynthChannel.h"
+#include "engine/InstrumentModule.h"
+#include "engine/modules/Instruments.h"
 #include "engine/Transport.h"
 #include "model/Constants.h"
 
@@ -50,6 +51,11 @@ public:
         pool used to build every type in every unit up front, whether or not a
         project used one. */
     int getMaterialisedEffectModuleCount() const noexcept { return modulePool.materialisedCount(); }
+
+    /** How many instrument modules exist, by kind. For the test that pins the
+        laziness: sixty-four SynthChannels - a thousand and twenty-four voices -
+        used to exist whether a project had a synth in it or not. */
+    int getMaterialisedInstrumentCount (InstrumentType) const noexcept;
 
     /** Message thread: hand over a prebuilt snapshot. */
     void publish (EngineSnapshot snapshot);
@@ -226,7 +232,34 @@ private:
 
     SampleProvider* samplePool = nullptr;
 
-    std::vector<SynthChannel> channels;
+    /** Each channel's instruments, made on the message thread and never
+        destroyed - the same lifetime rule the effect pool follows, and for the
+        same reason: a published snapshot may still be being rendered.
+
+        Both kinds are held rather than one, because a channel can be switched
+        between them and its voices should survive the trip back.
+    */
+    struct ChannelInstruments
+    {
+        std::unique_ptr<SynthInstrument> synth;
+        std::unique_ptr<SampleInstrument> sampler;
+    };
+
+    std::vector<ChannelInstruments> instruments;
+
+    /** This block's note events, per channel.
+
+        Bucketed on the audio thread from the preview queues and the sequencer's
+        triggers, then handed to each instrument as one span - which is the
+        shape a plugin receives notes in, and which lets a module see a whole
+        block's timing rather than being poked once per note.
+
+        Reserved in prepare(); cleared, never freed.
+    */
+    std::vector<std::vector<NoteEvent>> channelEvents;
+
+    InstrumentModule* instrumentFor (int channelIndex, InstrumentType) noexcept;
+    void resetAllInstruments() noexcept;
 
     // Preallocated scratch: one mono buffer per channel, one stereo pair per
     // mixer track, all sized in prepare() so processBlock never allocates.

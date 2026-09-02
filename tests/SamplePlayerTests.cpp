@@ -21,7 +21,7 @@ EngineSnapshot snapshotWith (std::shared_ptr<juce::AudioBuffer<float>> audio,
 
     ChannelSnapshot channel;
     channel.id = 1;
-    channel.source = ChannelSource::audio;
+    channel.source = InstrumentType::audio;
     channel.sample.sourceSampleRate = rate;
     channel.sample.startSample = 0;
     channel.sample.endSample = audio->getNumSamples();
@@ -72,6 +72,31 @@ float peakOf (const std::vector<float>& block)
 /** Samples per step at 120 bpm, 4 steps per beat, 48 kHz. */
 constexpr double samplesPerStep = rate * 60.0 / 120.0 / 4.0;
 
+/** Renders one channel's clips out of a whole snapshot.
+
+    SamplePlayer takes what it reads rather than a snapshot and an index now -
+    the settings, the audio, the clips and the metre - so that an instrument
+    module can call it without the engine's whole state in its interface. This
+    unpacks a snapshot exactly as the engine does, so these tests still say what
+    they said.
+*/
+void renderChannel (float* out, int numSamples, const EngineSnapshot& snapshot, int channelIndex,
+                    double positionSteps, double sps, double engineRate)
+{
+    if (channelIndex < 0 || channelIndex >= (int) snapshot.channels.size())
+        return;
+
+    const auto& channel = snapshot.channels[(size_t) channelIndex];
+
+    if (channel.source != InstrumentType::audio || channel.audio == nullptr)
+        return;
+
+    SamplePlayer::renderAdd (out, numSamples, channel.sample, *channel.audio,
+                             { snapshot.clips.data(), snapshot.clips.size() },
+                             channelIndex, snapshot.stepsPerBar(),
+                             positionSteps, sps, engineRate);
+}
+
 } // namespace
 
 TEST_CASE ("an audio clip sounds at its own bar and nowhere else", "[audio][sampler]")
@@ -81,17 +106,17 @@ TEST_CASE ("an audio clip sounds at its own bar and nowhere else", "[audio][samp
     std::vector<float> block (512, 0.0f);
 
     // Bar 0: before the clip.
-    SamplePlayer::renderAdd (block.data(), 512, snapshot, 0, 0.0, samplesPerStep, rate);
+    renderChannel (block.data(), 512, snapshot, 0, 0.0, samplesPerStep, rate);
     REQUIRE (peakOf (block) == Catch::Approx (0.0f));
 
     // Bar 2, where it starts.
     std::fill (block.begin(), block.end(), 0.0f);
-    SamplePlayer::renderAdd (block.data(), 512, snapshot, 0, 32.0, samplesPerStep, rate);
+    renderChannel (block.data(), 512, snapshot, 0, 32.0, samplesPerStep, rate);
     REQUIRE (peakOf (block) == Catch::Approx (0.5f));
 
     // Bar 4: past the end of a one-bar clip.
     std::fill (block.begin(), block.end(), 0.0f);
-    SamplePlayer::renderAdd (block.data(), 512, snapshot, 0, 64.0, samplesPerStep, rate);
+    renderChannel (block.data(), 512, snapshot, 0, 64.0, samplesPerStep, rate);
     REQUIRE (peakOf (block) == Catch::Approx (0.0f));
 }
 
@@ -105,7 +130,7 @@ TEST_CASE ("seeking into the middle of a clip lands at the right offset", "[audi
 
     // Four steps in. The clip starts at bar 0, so the read offset is exactly
     // four steps' worth of frames.
-    SamplePlayer::renderAdd (block.data(), 16, snapshot, 0, 4.0, samplesPerStep, rate);
+    renderChannel (block.data(), 16, snapshot, 0, 4.0, samplesPerStep, rate);
 
     REQUIRE (block[0] == Catch::Approx (4.0 * samplesPerStep).margin (1.0));
     REQUIRE (block[1] == Catch::Approx (4.0 * samplesPerStep + 1.0).margin (1.0));
@@ -118,7 +143,7 @@ TEST_CASE ("a one-shot stops at the end of its audio", "[audio][sampler]")
     auto snapshot = snapshotWith (constant (100, 1.0f), 0, 1);
 
     std::vector<float> block (512, 0.0f);
-    SamplePlayer::renderAdd (block.data(), 512, snapshot, 0, 0.0, samplesPerStep, rate);
+    renderChannel (block.data(), 512, snapshot, 0, 0.0, samplesPerStep, rate);
 
     REQUIRE (block[50] == Catch::Approx (1.0f));
     REQUIRE (block[400] == Catch::Approx (0.0f));
@@ -130,7 +155,7 @@ TEST_CASE ("looping fills the clip instead of stopping", "[audio][sampler]")
     snapshot.channels[0].sample.loop = true;
 
     std::vector<float> block (512, 0.0f);
-    SamplePlayer::renderAdd (block.data(), 512, snapshot, 0, 0.0, samplesPerStep, rate);
+    renderChannel (block.data(), 512, snapshot, 0, 0.0, samplesPerStep, rate);
 
     REQUIRE (block[400] == Catch::Approx (1.0f));
 }
@@ -149,7 +174,7 @@ TEST_CASE ("trim silences what it excludes", "[audio][sampler]")
     snapshot.channels[0].sample.endSample = 1000;
 
     std::vector<float> block (256, 0.0f);
-    SamplePlayer::renderAdd (block.data(), 256, snapshot, 0, 0.0, samplesPerStep, rate);
+    renderChannel (block.data(), 256, snapshot, 0, 0.0, samplesPerStep, rate);
 
     REQUIRE (peakOf (block) == Catch::Approx (0.0f));
 }
@@ -160,7 +185,7 @@ TEST_CASE ("reverse plays the region backwards", "[audio][sampler]")
     snapshot.channels[0].sample.reverse = true;
 
     std::vector<float> block (8, 0.0f);
-    SamplePlayer::renderAdd (block.data(), 8, snapshot, 0, 0.0, samplesPerStep, rate);
+    renderChannel (block.data(), 8, snapshot, 0, 0.0, samplesPerStep, rate);
 
     // Starts at the last frame and counts down.
     REQUIRE (block[0] == Catch::Approx (999.0f).margin (1.0));
@@ -176,7 +201,7 @@ TEST_CASE ("transpose changes the read rate", "[audio][sampler]")
     snapshot.channels[0].sample.pitchRatio = 2.0f;
 
     std::vector<float> block (8, 0.0f);
-    SamplePlayer::renderAdd (block.data(), 8, snapshot, 0, 0.0, samplesPerStep, rate);
+    renderChannel (block.data(), 8, snapshot, 0, 0.0, samplesPerStep, rate);
 
     REQUIRE (block[1] == Catch::Approx (2.0f).margin (0.01));
     REQUIRE (block[4] == Catch::Approx (8.0f).margin (0.01));
@@ -190,7 +215,7 @@ TEST_CASE ("a device running at another rate does not transpose the sample", "[a
     auto snapshot = snapshotWith (counting (200000), 0, 4);
 
     std::vector<float> block (8, 0.0f);
-    SamplePlayer::renderAdd (block.data(), 8, snapshot, 0, 0.0, samplesPerStep * 2.0, 96000.0);
+    renderChannel (block.data(), 8, snapshot, 0, 0.0, samplesPerStep * 2.0, 96000.0);
 
     REQUIRE (block[2] == Catch::Approx (1.0f).margin (0.01));
 }
@@ -201,7 +226,7 @@ TEST_CASE ("a fade in ramps from silence", "[audio][sampler]")
     snapshot.channels[0].sample.fadeInSamples = 1000;
 
     std::vector<float> block (1200, 0.0f);
-    SamplePlayer::renderAdd (block.data(), 1200, snapshot, 0, 0.0, samplesPerStep, rate);
+    renderChannel (block.data(), 1200, snapshot, 0, 0.0, samplesPerStep, rate);
 
     REQUIRE (block[0] == Catch::Approx (0.0f).margin (0.01));
     REQUIRE (block[500] == Catch::Approx (0.5f).margin (0.02));
@@ -214,7 +239,7 @@ TEST_CASE ("a muted playlist track silences an audio clip", "[audio][sampler]")
     snapshot.clips[0].trackAudible = false;
 
     std::vector<float> block (256, 0.0f);
-    SamplePlayer::renderAdd (block.data(), 256, snapshot, 0, 0.0, samplesPerStep, rate);
+    renderChannel (block.data(), 256, snapshot, 0, 0.0, samplesPerStep, rate);
 
     REQUIRE (peakOf (block) == Catch::Approx (0.0f));
 }
@@ -224,7 +249,7 @@ TEST_CASE ("a channel with no audio renders nothing rather than crashing", "[aud
     EngineSnapshot snapshot;
 
     ChannelSnapshot channel;
-    channel.source = ChannelSource::audio;
+    channel.source = InstrumentType::audio;
     snapshot.channels.push_back (channel);
 
     ClipSnapshot clip;
@@ -232,7 +257,7 @@ TEST_CASE ("a channel with no audio renders nothing rather than crashing", "[aud
     snapshot.clips.push_back (clip);
 
     std::vector<float> block (256, 0.0f);
-    SamplePlayer::renderAdd (block.data(), 256, snapshot, 0, 0.0, samplesPerStep, rate);
+    renderChannel (block.data(), 256, snapshot, 0, 0.0, samplesPerStep, rate);
 
     REQUIRE (peakOf (block) == Catch::Approx (0.0f));
 }
@@ -269,7 +294,7 @@ TEST_CASE ("adding is not replacing: two clips of one channel sum", "[audio][sam
     snapshot.clips.push_back (second);
 
     std::vector<float> block (256, 0.0f);
-    SamplePlayer::renderAdd (block.data(), 256, snapshot, 0, 0.0, samplesPerStep, rate);
+    renderChannel (block.data(), 256, snapshot, 0, 0.0, samplesPerStep, rate);
 
     REQUIRE (block[10] == Catch::Approx (0.5f));
 }

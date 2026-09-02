@@ -105,6 +105,7 @@ add_library(dew_engine STATIC
   engine/EffectModulePool.cpp
   engine/ModuleFactory.cpp
   engine/modules/EffectModules.cpp
+  engine/modules/Instruments.cpp
   engine/WaveformPeaks.cpp
   engine/PreviewQueue.cpp
   engine/SignalTap.cpp

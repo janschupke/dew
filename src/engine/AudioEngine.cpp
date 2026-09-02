@@ -30,7 +30,13 @@ constexpr size_t loopSlotFor (Transport::Mode mode) noexcept
 
 AudioEngine::AudioEngine()
 {
-    channels.resize (kMaxChannels);
+    instruments.resize (kMaxChannels);
+    channelEvents.resize (kMaxChannels);
+
+    // A block cannot produce more note events than the sequencer produces
+    // triggers, plus the preview queues' capacity.
+    for (auto& events : channelEvents)
+        events.reserve (64);
     triggers.reserve (256);
 
     effectUnitTypes.assign (kMaxEffectUnits, -1);
@@ -50,8 +56,11 @@ void AudioEngine::prepare (double sampleRate, int maximumBlockSize)
     transport.prepare (currentSampleRate);
     signalTap.setSampleRate (currentSampleRate);
 
-    for (auto& channel : channels)
-        channel.prepare (currentSampleRate);
+    for (auto& channel : instruments)
+    {
+        if (channel.synth != nullptr)   channel.synth->prepare (currentSampleRate, currentBlockSize);
+        if (channel.sampler != nullptr) channel.sampler->prepare (currentSampleRate, currentBlockSize);
+    }
 
     // Everything the audio thread might need, allocated once.
     channelBuffers.setSize (kMaxChannels, currentBlockSize);
@@ -72,8 +81,7 @@ void AudioEngine::prepare (double sampleRate, int maximumBlockSize)
 
 void AudioEngine::releaseResources()
 {
-    for (auto& channel : channels)
-        channel.reset();
+    resetAllInstruments();
 
     channelBuffers.setSize (0, 0);
     mixerBuffers.setSize (0, 0);
@@ -178,8 +186,8 @@ void AudioEngine::applyPreviewEvent (const EngineSnapshot& snapshot, const Previ
 {
     if (event.kind == PreviewEvent::Kind::allOff)
     {
-        for (auto& channel : channels)
-            channel.allNotesOff();
+        for (int i = 0; i < numChannels && i < (int) channelEvents.size(); ++i)
+            channelEvents[(size_t) i].push_back ({ NoteEvent::Kind::allOff });
 
         return;
     }
@@ -187,11 +195,11 @@ void AudioEngine::applyPreviewEvent (const EngineSnapshot& snapshot, const Previ
     if (event.channelIndex < 0 || event.channelIndex >= numChannels)
         return;
 
-    auto& channel = channels[(size_t) event.channelIndex];
+    auto& events = channelEvents[(size_t) event.channelIndex];
 
     if (event.kind == PreviewEvent::Kind::noteOff)
     {
-        channel.noteOff (event.pitch);
+        events.push_back ({ NoteEvent::Kind::off, 0, event.pitch });
         return;
     }
 
@@ -206,9 +214,9 @@ void AudioEngine::applyPreviewEvent (const EngineSnapshot& snapshot, const Previ
     // the check here would save a voice nobody can hear and change one thing
     // that can be heard: unmuting mid-preview would no longer let the held note
     // through. Not worth an untestable behaviour change.
-    const auto& channelSnapshot = snapshot.channels[(size_t) event.channelIndex];
-    channel.noteOn (event.pitch, event.velocity, channelSnapshot.osc, channelSnapshot.amp,
-                    std::numeric_limits<int>::max());
+    juce::ignoreUnused (snapshot);
+    events.push_back ({ NoteEvent::Kind::on, 0, event.pitch, event.velocity,
+                        std::numeric_limits<int>::max() });
 }
 
 void AudioEngine::drainPreviewQueue (const EngineSnapshot& snapshot) noexcept
@@ -556,8 +564,74 @@ void AudioEngine::runChain (const EffectChainSnapshot& chain, float* left, float
     }
 }
 
+int AudioEngine::getMaterialisedInstrumentCount (InstrumentType type) const noexcept
+{
+    auto count = 0;
+
+    for (const auto& channel : instruments)
+        if (type == InstrumentType::synth ? channel.synth != nullptr : channel.sampler != nullptr)
+            ++count;
+
+    return count;
+}
+
+InstrumentModule* AudioEngine::instrumentFor (int channelIndex, InstrumentType type) noexcept
+{
+    if (channelIndex < 0 || channelIndex >= (int) instruments.size())
+        return nullptr;
+
+    auto& channel = instruments[(size_t) channelIndex];
+
+    // Never made here - only read. Making one allocates, and this runs on the
+    // audio thread; resolveModules does the making, on the message thread.
+    switch (type)
+    {
+        case InstrumentType::synth: return channel.synth.get();
+        case InstrumentType::audio: return channel.sampler.get();
+    }
+
+    return nullptr;
+}
+
+void AudioEngine::resetAllInstruments() noexcept
+{
+    for (auto& channel : instruments)
+    {
+        if (channel.synth != nullptr)   channel.synth->reset();
+        if (channel.sampler != nullptr) channel.sampler->reset();
+    }
+}
+
 void AudioEngine::resolveModules (EngineSnapshot& snapshot)
 {
+    // Instruments, made for what the project actually has. Sixty-four
+    // SynthChannels - a thousand and twenty-four voices - used to exist
+    // whether or not a single channel was a synth, so a project of audio
+    // channels paid for sixteen voices each of nothing.
+    for (size_t i = 0; i < snapshot.channels.size() && i < instruments.size(); ++i)
+    {
+        auto& channel = instruments[i];
+
+        switch (snapshot.channels[i].source)
+        {
+            case InstrumentType::synth:
+                if (channel.synth == nullptr)
+                {
+                    channel.synth = std::make_unique<SynthInstrument>();
+                    channel.synth->prepare (currentSampleRate, currentBlockSize);
+                }
+                break;
+
+            case InstrumentType::audio:
+                if (channel.sampler == nullptr)
+                {
+                    channel.sampler = std::make_unique<SampleInstrument>();
+                    channel.sampler->prepare (currentSampleRate, currentBlockSize);
+                }
+                break;
+        }
+    }
+
     // Message thread, between building a snapshot and publishing it: acquire()
     // allocates on first use, and the audio thread must never do that.
     const auto resolve = [this] (EffectChainSnapshot& chain)
@@ -644,16 +718,14 @@ void AudioEngine::processBlock (juce::AudioBuffer<float>& buffer) noexcept
 
         // Same reason as rewind below: jumping leaves anything that was
         // sounding with no note-off ahead of it.
-        for (auto& channel : channels)
-            channel.reset();
+        resetAllInstruments();
     }
 
     if (rewindRequested.exchange (false))
     {
         transport.rewind();
 
-        for (auto& channel : channels)
-            channel.reset();
+        resetAllInstruments();
     }
 
     // A loop drawn BEHIND the playhead is the one case where folding is wrong:
@@ -678,8 +750,7 @@ void AudioEngine::processBlock (juce::AudioBuffer<float>& buffer) noexcept
 
         // Same reason a seek resets them: what was sounding has no note-off
         // ahead of it any more.
-        for (auto& channel : channels)
-            channel.reset();
+        resetAllInstruments();
     }
 
     const auto isPlayingNow = playing.load();
@@ -709,8 +780,14 @@ void AudioEngine::processBlock (juce::AudioBuffer<float>& buffer) noexcept
     channelBuffers.clear (0, numSamples);
     mixerBuffers.clear (0, numSamples);
 
+    // Last block's events are gone; the vectors keep their storage.
+    for (int i = 0; i < numChannels && i < (int) channelEvents.size(); ++i)
+        channelEvents[(size_t) i].clear();
+
     // Preview notes are drained whether or not the transport is running: the
-    // whole point is to hear a pitch without playing the project.
+    // whole point is to hear a pitch without playing the project. Drained
+    // first, so a preview and a step landing in the same block reach the
+    // instrument in the order they always did.
     drainPreviewQueue (snapshot);
 
     // --- trigger notes -------------------------------------------------------
@@ -724,12 +801,9 @@ void AudioEngine::processBlock (juce::AudioBuffer<float>& buffer) noexcept
         if (! snapshot.isChannelAudible (channelSnapshot))
             continue;
 
-        channels[(size_t) trigger.channelIndex].noteOn (trigger.pitch,
-                                                        trigger.velocity,
-                                                        channelSnapshot.osc,
-                                                        channelSnapshot.amp,
-                                                        trigger.durationSamples,
-                                                        trigger.sampleOffset);
+        channelEvents[(size_t) trigger.channelIndex].push_back (
+            { NoteEvent::Kind::on, trigger.sampleOffset, trigger.pitch, trigger.velocity,
+              trigger.durationSamples });
     }
 
     // --- render channels into their mixer tracks -----------------------------
@@ -753,23 +827,31 @@ void AudioEngine::processBlock (juce::AudioBuffer<float>& buffer) noexcept
         const auto& osc    = automated != nullptr ? automated->osc     : channel.osc;
         const auto& chain  = automated != nullptr ? automated->effects : channel.effects;
 
-        if (channel.source == ChannelSource::audio)
+        // One dispatch, not a branch on the kind of channel. It was an `if` on
+        // an enum, with the two arms taking different arguments and sharing
+        // nothing - which is what made a third kind of instrument a fourth
+        // place to edit rather than a new class.
+        if (auto* instrument = instrumentFor (i, channel.source))
         {
-            // Audio clips live in the arrangement, so they sound in song mode
-            // only - the same rule automation follows, and for the same reason:
-            // pattern mode has no playlist position for a clip to cover.
-            if (isPlayingNow && mode == Transport::Mode::song)
-                SamplePlayer::renderAdd (mono, numSamples, snapshot, i,
-                                         transport.getPositionSamples() / juce::jmax (1.0, transport.samplesPerStep()),
-                                         transport.samplesPerStep(), currentSampleRate);
-        }
-        else
-        {
+            InstrumentContext ctx;
+            ctx.transport = { transport.getPositionSamples() / juce::jmax (1.0, transport.samplesPerStep()),
+                              transport.samplesPerStep(), currentSampleRate,
+                              isPlayingNow, mode == Transport::Mode::song };
+            ctx.events = { channelEvents[(size_t) i].data(), channelEvents[(size_t) i].size() };
+
             // One read of each controller per block, like the transport's atomics.
-            channels[(size_t) i].renderAdd (mono, numSamples,
-                                            channelBend[(size_t) i].load (std::memory_order_relaxed),
-                                            channelModulation[(size_t) i].load (std::memory_order_relaxed),
-                                            &osc);
+            ctx.bendSemitones = channelBend[(size_t) i].load (std::memory_order_relaxed);
+            ctx.modulation = channelModulation[(size_t) i].load (std::memory_order_relaxed);
+
+            ctx.osc = &osc;
+            ctx.amp = &channel.amp;
+            ctx.sample = &channel.sample;
+            ctx.audio = channel.audio.get();
+            ctx.clips = { snapshot.clips.data(), snapshot.clips.size() };
+            ctx.channelIndex = i;
+            ctx.stepsPerBar = snapshot.stepsPerBar();
+
+            instrument->processAdd (ctx, mono, numSamples);
         }
 
         if (! snapshot.isChannelAudible (channel))

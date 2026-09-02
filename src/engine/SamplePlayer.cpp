@@ -79,8 +79,11 @@ double SamplePlayer::readOffsetFor (const SampleSettings& settings, double elaps
 }
 
 void SamplePlayer::renderAdd (float* mono, int numSamples,
-                              const EngineSnapshot& snapshot,
+                              const SampleSettings& settings,
+                              const juce::AudioBuffer<float>& audio,
+                              juce::Span<const ClipSnapshot> clips,
                               int channelIndex,
+                              int stepsPerBarIn,
                               double positionSteps,
                               double samplesPerStep,
                               double engineSampleRate) noexcept
@@ -88,26 +91,18 @@ void SamplePlayer::renderAdd (float* mono, int numSamples,
     if (mono == nullptr || numSamples <= 0 || samplesPerStep <= 0.0)
         return;
 
-    if (channelIndex < 0 || channelIndex >= (int) snapshot.channels.size())
-        return;
-
-    const auto& channel = snapshot.channels[(size_t) channelIndex];
-
-    if (channel.source != ChannelSource::audio || channel.audio == nullptr)
-        return;
-
-    const auto& audio = *channel.audio;
-    const auto& settings = channel.sample;
-
     const auto region = settings.endSample - settings.startSample;
 
     if (region <= 0)
         return;
 
-    const auto stepsPerBar = (double) snapshot.stepsPerBar();
+    const auto stepsPerBar = (double) stepsPerBarIn;
     const auto blockSteps = (double) numSamples / samplesPerStep;
 
-    for (const auto& clip : snapshot.clips)
+    // The clips are the snapshot's own vector, in its own order - filtered
+    // here rather than pre-grouped, because Sequencer walks the same vector and
+    // its order decides note-trigger order, hence voice stealing.
+    for (const auto& clip : clips)
     {
         if (clip.channelIndex != channelIndex || ! clip.trackAudible)
             continue;

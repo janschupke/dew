@@ -5,6 +5,9 @@
 #include "SourceScan.h"
 #include "engine/AudioEngine.h"
 #include "engine/EngineSnapshot.h"
+#include "model/Ids.h"
+#include "model/ProjectEdits.h"
+#include "model/ProjectFactory.h"
 
 using namespace dew;
 using namespace dew::testing;
@@ -55,3 +58,39 @@ TEST_CASE ("the render path takes no snapshot entry by value", "[realtime][snaps
     CHECK (found.isEmpty());
 }
 
+
+TEST_CASE ("instruments are built only for the channels that have them", "[realtime][instruments]")
+{
+    // Sixty-four SynthChannels - sixteen voices each, so 1,024 SynthVoice
+    // objects - existed unconditionally, whether or not a project contained a
+    // single synth. A project of audio channels paid for all of them.
+    AudioEngine engine;
+    engine.prepare (kDefaultSampleRate, 256);
+
+    REQUIRE (engine.getMaterialisedInstrumentCount (InstrumentType::synth) == 0);
+    REQUIRE (engine.getMaterialisedInstrumentCount (InstrumentType::audio) == 0);
+
+    auto project = ProjectFactory::createDefault();
+
+    juce::StringArray warnings;
+    engine.setProject (project, &warnings);
+
+    auto synths = 0;
+
+    for (const auto& channel : project)
+        if (channel.hasType (ids::CHANNEL))
+            ++synths;
+
+    REQUIRE (synths > 0);
+    REQUIRE (engine.getMaterialisedInstrumentCount (InstrumentType::synth) == synths);
+    REQUIRE (engine.getMaterialisedInstrumentCount (InstrumentType::audio) == 0);
+
+    // Adding an audio channel makes one sampler, and leaves the synths alone -
+    // a channel switched back to a synth should find its voices where it left
+    // them, which is why nothing is ever destroyed.
+    ProjectEdits::addAudioChannel (project, "Take", nullptr);
+    engine.setProject (project, &warnings);
+
+    REQUIRE (engine.getMaterialisedInstrumentCount (InstrumentType::synth) == synths);
+    REQUIRE (engine.getMaterialisedInstrumentCount (InstrumentType::audio) == 1);
+}

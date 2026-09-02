@@ -1,0 +1,62 @@
+#include "engine/modules/Instruments.h"
+
+namespace dew
+{
+
+void SynthInstrument::prepare (double sampleRate, int)
+{
+    channel.prepare (sampleRate);
+}
+
+void SynthInstrument::reset() noexcept
+{
+    channel.reset();
+}
+
+void SynthInstrument::processAdd (const InstrumentContext& ctx, float* out, int numSamples) noexcept
+{
+    if (ctx.osc == nullptr || ctx.amp == nullptr)
+        return;
+
+    for (const auto& event : ctx.events)
+    {
+        switch (event.kind)
+        {
+            case NoteEvent::Kind::on:
+                channel.noteOn (event.pitch, event.velocity, *ctx.osc, *ctx.amp,
+                                event.durationSamples, event.sampleOffset);
+                break;
+
+            case NoteEvent::Kind::off:
+                channel.noteOff (event.pitch);
+                break;
+
+            case NoteEvent::Kind::allOff:
+                channel.allNotesOff();
+                break;
+        }
+    }
+
+    // One read of each controller per block, and the live bank so a wavetable
+    // position reaches notes already sounding.
+    channel.renderAdd (out, numSamples, ctx.bendSemitones, ctx.modulation, ctx.osc);
+}
+
+void SampleInstrument::processAdd (const InstrumentContext& ctx, float* out, int numSamples) noexcept
+{
+    // Audio clips live in the arrangement, so they sound in song mode only -
+    // the same rule automation follows, and for the same reason: pattern mode
+    // has no playlist position for a clip to cover.
+    if (! ctx.transport.playing || ! ctx.transport.arrangement)
+        return;
+
+    if (ctx.sample == nullptr || ctx.audio == nullptr)
+        return;
+
+    SamplePlayer::renderAdd (out, numSamples, *ctx.sample, *ctx.audio, ctx.clips,
+                             ctx.channelIndex, ctx.stepsPerBar,
+                             ctx.transport.positionSteps, ctx.transport.samplesPerStep,
+                             ctx.transport.sampleRate);
+}
+
+} // namespace dew

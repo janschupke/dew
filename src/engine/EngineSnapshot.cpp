@@ -591,10 +591,10 @@ EngineSnapshot buildSnapshot (const juce::ValueTree& project, juce::StringArray*
         c.effects = readEffectChain (channel, "Channel \"" + channel[ids::name].toString() + "\"",
                                      unitOwners, warn);
 
-        c.source = channel[ids::source].toString() == "audio" ? ChannelSource::audio
-                                                              : ChannelSource::synth;
+        c.source = channel[ids::source].toString() == "audio" ? InstrumentType::audio
+                                                              : InstrumentType::synth;
 
-        if (c.source == ChannelSource::audio)
+        if (c.source == InstrumentType::audio)
             readSample (c, channel, samples, warn);
 
         snapshot.channels.push_back (c);

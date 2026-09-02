@@ -178,7 +178,7 @@ struct EffectChainSnapshot
 };
 
 /** What a channel gets its samples from. */
-enum class ChannelSource { synth, audio };
+enum class InstrumentType { synth, audio };
 
 /** An audio channel's playback settings, resolved.
 
@@ -214,7 +214,7 @@ struct ChannelSnapshot
     AmpSettings amp;
     EffectChainSnapshot effects;
 
-    ChannelSource source = ChannelSource::synth;
+    InstrumentType source = InstrumentType::synth;
     SampleSettings sample;
 
     /** The audio an "audio" channel plays, or null.
