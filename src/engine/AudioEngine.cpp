@@ -82,40 +82,109 @@ bool AudioEngine::previewAllOff() noexcept
     return previewQueue.push ({ PreviewEvent::Kind::allOff, 0, 0, 0.0f });
 }
 
+bool AudioEngine::midiNoteOn (int channelIndex, int pitch, float velocity) noexcept
+{
+    return midiQueue.push ({ PreviewEvent::Kind::noteOn, channelIndex,
+                             juce::jlimit (0, 127, pitch), juce::jlimit (0.0f, 1.0f, velocity) });
+}
+
+bool AudioEngine::midiNoteOff (int channelIndex, int pitch) noexcept
+{
+    return midiQueue.push ({ PreviewEvent::Kind::noteOff, channelIndex,
+                             juce::jlimit (0, 127, pitch), 0.0f });
+}
+
+bool AudioEngine::midiAllOff() noexcept
+{
+    return midiQueue.push ({ PreviewEvent::Kind::allOff, 0, 0, 0.0f });
+}
+
+void AudioEngine::setChannelBend (int channelIndex, float semitones) noexcept
+{
+    if (channelIndex < 0 || channelIndex >= kMaxChannels)
+        return;
+
+    channelBend[(size_t) channelIndex].store (semitones, std::memory_order_relaxed);
+}
+
+void AudioEngine::setChannelModulation (int channelIndex, float amount) noexcept
+{
+    if (channelIndex < 0 || channelIndex >= kMaxChannels)
+        return;
+
+    channelModulation[(size_t) channelIndex].store (juce::jlimit (0.0f, 1.0f, amount),
+                                                    std::memory_order_relaxed);
+}
+
+float AudioEngine::getChannelBend (int channelIndex) const noexcept
+{
+    if (channelIndex < 0 || channelIndex >= kMaxChannels)
+        return 0.0f;
+
+    return channelBend[(size_t) channelIndex].load (std::memory_order_relaxed);
+}
+
+float AudioEngine::getChannelModulation (int channelIndex) const noexcept
+{
+    if (channelIndex < 0 || channelIndex >= kMaxChannels)
+        return 0.0f;
+
+    return channelModulation[(size_t) channelIndex].load (std::memory_order_relaxed);
+}
+
+void AudioEngine::resetControllers() noexcept
+{
+    for (int i = 0; i < kMaxChannels; ++i)
+    {
+        channelBend[(size_t) i].store (0.0f, std::memory_order_relaxed);
+        channelModulation[(size_t) i].store (0.0f, std::memory_order_relaxed);
+    }
+}
+
+void AudioEngine::applyPreviewEvent (const EngineSnapshot& snapshot, const PreviewEvent& event,
+                                     int numChannels) noexcept
+{
+    if (event.kind == PreviewEvent::Kind::allOff)
+    {
+        for (auto& channel : channels)
+            channel.allNotesOff();
+
+        return;
+    }
+
+    if (event.channelIndex < 0 || event.channelIndex >= numChannels)
+        return;
+
+    auto& channel = channels[(size_t) event.channelIndex];
+
+    if (event.kind == PreviewEvent::Kind::noteOff)
+    {
+        channel.noteOff (event.pitch);
+        return;
+    }
+
+    // A preview note has no duration to run out - it lasts until the user
+    // lets go - so it is triggered with one long enough that the release
+    // always comes first.
+    const auto& channelSnapshot = snapshot.channels[(size_t) event.channelIndex];
+    channel.noteOn (event.pitch, event.velocity, channelSnapshot.osc, channelSnapshot.amp,
+                    std::numeric_limits<int>::max());
+}
+
 void AudioEngine::drainPreviewQueue (const EngineSnapshot& snapshot) noexcept
 {
     const auto numChannels = juce::jmin ((int) snapshot.channels.size(), kMaxChannels);
 
     PreviewEvent event;
 
+    // Both rings, one consumer. Order between them is not meaningful - they are
+    // fed by different threads - but order WITHIN each is, and each ring
+    // preserves its own.
     while (previewQueue.pop (event))
-    {
-        if (event.kind == PreviewEvent::Kind::allOff)
-        {
-            for (auto& channel : channels)
-                channel.allNotesOff();
+        applyPreviewEvent (snapshot, event, numChannels);
 
-            continue;
-        }
-
-        if (event.channelIndex < 0 || event.channelIndex >= numChannels)
-            continue;
-
-        auto& channel = channels[(size_t) event.channelIndex];
-
-        if (event.kind == PreviewEvent::Kind::noteOff)
-        {
-            channel.noteOff (event.pitch);
-            continue;
-        }
-
-        // A preview note has no duration to run out - it lasts until the user
-        // lets go - so it is triggered with one long enough that the release
-        // always comes first.
-        const auto& channelSnapshot = snapshot.channels[(size_t) event.channelIndex];
-        channel.noteOn (event.pitch, event.velocity, channelSnapshot.osc, channelSnapshot.amp,
-                        std::numeric_limits<int>::max());
-    }
+    while (midiQueue.pop (event))
+        applyPreviewEvent (snapshot, event, numChannels);
 }
 
 void AudioEngine::recordPeak (std::atomic<float>& slot, const float* left, const float* right,
@@ -467,7 +536,11 @@ void AudioEngine::processBlock (juce::AudioBuffer<float>& buffer) noexcept
     for (int i = 0; i < numChannels; ++i)
     {
         auto* mono = channelBuffers.getWritePointer (i);
-        channels[(size_t) i].renderAdd (mono, numSamples);
+
+        // One read of each controller per block, like the transport's atomics.
+        channels[(size_t) i].renderAdd (mono, numSamples,
+                                        channelBend[(size_t) i].load (std::memory_order_relaxed),
+                                        channelModulation[(size_t) i].load (std::memory_order_relaxed));
 
         auto channelSnapshot = snapshot.channels[(size_t) i];
 

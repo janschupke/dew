@@ -64,6 +64,46 @@ public:
     bool previewNoteOff (int channelIndex, int pitch) noexcept;
     bool previewAllOff() noexcept;
 
+    // --- MIDI input, from the MIDI thread ------------------------------------
+    /** The same three events, from a hardware controller.
+
+        A SEPARATE queue from the preview one, and that is the whole point.
+        PreviewQueue is single-producer by construction - the writer owns
+        writeIndex, the reader owns readIndex - and the preview queue's producer
+        is the message thread. MIDI callbacks arrive on the OS MIDI thread, so
+        sharing one queue would put two producers on one writeIndex, which is a
+        data race rather than a policy choice.
+
+        Two queues keep that invariant exactly as written for each, and add no
+        new concurrency primitive - the same move the effect pool makes.
+    */
+    bool midiNoteOn (int channelIndex, int pitch, float velocity) noexcept;
+    bool midiNoteOff (int channelIndex, int pitch) noexcept;
+    bool midiAllOff() noexcept;
+
+    // --- continuous controllers, callable from any thread --------------------
+    /** Pitch bend in semitones, and vibrato depth 0..1, for one channel.
+
+        Plain atomics rather than the queue, and deliberately so. PreviewQueue
+        earns its ring because both halves of a click matter: press and release
+        can land inside one block and latest-wins would lose the press. A wheel
+        position has no halves - only the newest value is audible, dropping the
+        ones in between is inaudible, and a sweep sends hundreds of messages a
+        second, which is exactly the traffic that would fill a 64-entry ring and
+        start refusing NOTES.
+
+        So: notes take the ring, controllers take latest-wins atomics, in the
+        same idiom as the meters.
+    */
+    void setChannelBend (int channelIndex, float semitones) noexcept;
+    void setChannelModulation (int channelIndex, float amount) noexcept;
+
+    float getChannelBend (int channelIndex) const noexcept;
+    float getChannelModulation (int channelIndex) const noexcept;
+
+    /** Returns every channel's controllers to rest. */
+    void resetControllers() noexcept;
+
     // --- metering ------------------------------------------------------------
     /** Peak level of a mixer track since the last read, 0..1.
 
@@ -150,7 +190,15 @@ private:
     std::vector<ActiveAutomation> activeAutomation;
 
     std::vector<NoteTrigger> triggers;
+
+    /** One ring per producer thread: the message thread writes previewQueue,
+        the MIDI thread writes midiQueue, and the audio thread drains both.
+    */
     PreviewQueue previewQueue;
+    PreviewQueue midiQueue;
+
+    std::array<std::atomic<float>, kMaxChannels> channelBend {};
+    std::array<std::atomic<float>, kMaxChannels> channelModulation {};
 
     std::array<std::atomic<float>, kMaxMixerTracks> trackPeaks {};
     std::atomic<float> masterPeak { 0.0f };
@@ -159,6 +207,7 @@ private:
                             int numSamples, float scale) noexcept;
 
     void drainPreviewQueue (const EngineSnapshot&) noexcept;
+    void applyPreviewEvent (const EngineSnapshot&, const PreviewEvent&, int numChannels) noexcept;
 
     juce::uint64 appliedGeneration = 0;
 

@@ -159,4 +159,25 @@ void Settings::setAudioState (const juce::XmlElement* state)
         file().removeValue ("audioDevice");
 }
 
+int Settings::getMidiChannelFilter() const
+{
+    return juce::jlimit (0, 16, file().getIntValue ("midiChannelFilter", 0));
+}
+
+void Settings::setMidiChannelFilter (int channel)
+{
+    file().setValue ("midiChannelFilter", juce::jlimit (0, 16, channel));
+}
+
+int Settings::getMidiTranspose() const
+{
+    return juce::jlimit (-maxMidiTranspose, maxMidiTranspose,
+                         file().getIntValue ("midiTranspose", 0));
+}
+
+void Settings::setMidiTranspose (int semitones)
+{
+    file().setValue ("midiTranspose", juce::jlimit (-maxMidiTranspose, maxMidiTranspose, semitones));
+}
+
 } // namespace dew

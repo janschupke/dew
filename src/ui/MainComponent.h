@@ -4,6 +4,7 @@
 
 #include "../engine/AudioEngine.h"
 #include "../engine/LiveAudioHost.h"
+#include "../engine/MidiInputHost.h"
 #include "../model/ProjectDocument.h"
 #include "ChannelRackComponent.h"
 #include "DewLookAndFeel.h"
@@ -25,7 +26,8 @@ namespace dew
     causes one rebuild per message-loop turn rather than one per pixel.
 */
 class MainComponent : public juce::Component,
-                      private juce::AsyncUpdater
+                      private juce::AsyncUpdater,
+                      private juce::ChangeListener
 {
 public:
     /** @param openAudioDevice  false for headless use - screenshots and CI have
@@ -50,6 +52,9 @@ public:
     /** Opens the audio settings over this window. */
     void showAudioSettings();
 
+    /** Opens the MIDI settings over this window. */
+    void showMidiSettings();
+
     /** Restores what was saved last time, and captures it again on exit. The
         app owns the store; this only knows how to read and write itself.
     */
@@ -57,6 +62,7 @@ public:
     void captureSettings (Settings&) const;
 
     LiveAudioHost& getAudioHost() noexcept { return audioHost; }
+    MidiInputHost& getMidiHost() noexcept  { return midiHost; }
 
     /** Applies any pending snapshot rebuild immediately instead of waiting for
         the message loop. Edits are coalesced through an AsyncUpdater, so
@@ -67,7 +73,14 @@ public:
 
 private:
     void handleAsyncUpdate() override;
+    void changeListenerCallback (juce::ChangeBroadcaster*) override;
     void projectChanged();
+
+    /** Points MIDI input at whatever channel is selected, resolved to the index
+        the engine uses. The MIDI thread must never read EditorState, so the
+        index is pushed down to the router from here instead.
+    */
+    void updateMidiTargetChannel();
 
     DewLookAndFeel lookAndFeel;
 
@@ -79,6 +92,12 @@ private:
     ProjectDocument document;
     AudioEngine engine;
     LiveAudioHost audioHost;
+
+    /** Shares the audio host's device manager, which is the one object that
+        knows about both kinds of device.
+    */
+    MidiInputHost midiHost;
+
     EditorState editorState;
 
     TransportBar transportBar;

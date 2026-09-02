@@ -62,10 +62,14 @@ void SynthChannel::allNotesOff() noexcept
             voice.release();
 }
 
-void SynthChannel::renderAdd (float* buffer, int numSamples) noexcept
+void SynthChannel::renderAdd (float* buffer, int numSamples,
+                              float bendSemitones, float modulation) noexcept
 {
     for (auto& voice : voices)
+    {
+        voice.setPitchModulation (bendSemitones, modulation, numSamples);
         voice.renderAdd (buffer, numSamples);
+    }
 }
 
 int SynthChannel::countActiveVoices() const noexcept

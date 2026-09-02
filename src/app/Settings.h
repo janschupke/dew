@@ -81,6 +81,21 @@ public:
     std::unique_ptr<juce::XmlElement> getAudioState() const;
     void setAudioState (const juce::XmlElement*);
 
+    // --- MIDI ----------------------------------------------------------------
+    /** Which MIDI channel plays: 0 for omni, or 1..16.
+
+        Only these two live here. WHICH devices are enabled is already carried
+        by the audio device state XML - AudioDeviceManager writes a MIDIINPUT
+        child per enabled device, and keeps ones that are merely unplugged - so
+        storing the list again here would be a second, competing answer.
+    */
+    int getMidiChannelFilter() const;
+    void setMidiChannelFilter (int);
+
+    /** Semitones added to every incoming note. */
+    int getMidiTranspose() const;
+    void setMidiTranspose (int);
+
     /** Writes to disk. Called on exit; safe to call more often. */
     void flush();
 
@@ -88,6 +103,7 @@ public:
     static constexpr int maxPanelWidth = 640;
     static constexpr int defaultPanelWidth = 300;
     static constexpr int numTabs = 4;
+    static constexpr int maxMidiTranspose = 24;
 
 private:
     juce::PropertiesFile& file() const { return *properties; }

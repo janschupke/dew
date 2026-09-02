@@ -55,6 +55,8 @@ void SynthVoice::reset() noexcept
         osc = {};
 
     numOscillators = 0;
+    vibratoPhase = 0.0;
+    modulated = false;
     samplesSinceStart = 0;
     samplesUntilRelease = 0;
     adsr.reset();
@@ -91,8 +93,14 @@ void SynthVoice::start (int pitch, float velocity, const OscBankSnapshot& bank,
                                                       + 12.0 * (double) settings.octave);
         const auto frequency = midiToHz (effectivePitch, (double) settings.detuneCents);
 
-        osc.phaseIncrement = juce::jlimit (0.0, 0.5, frequency / currentSampleRate);
+        osc.baseIncrement = frequency / currentSampleRate;
+        osc.phaseIncrement = juce::jlimit (0.0, 0.5, osc.baseIncrement);
     }
+
+    // A new note starts unbent; the next block re-applies whatever the wheel
+    // is actually holding.
+    vibratoPhase = 0.0;
+    modulated = false;
 
     adsrParams.attack  = amp.attack;
     adsrParams.decay   = amp.decay;
@@ -115,6 +123,55 @@ void SynthVoice::release() noexcept
         adsr.noteOff();
         samplesUntilRelease = 0;
     }
+}
+
+void SynthVoice::setPitchModulation (float bendSemitones, float modulation, int numSamples) noexcept
+{
+    if (! active)
+        return;
+
+    const auto silent = juce::exactlyEqual (bendSemitones, 0.0f)
+                     && juce::exactlyEqual (modulation, 0.0f);
+
+    if (silent)
+    {
+        // Restore exactly what note-on latched, once, and then stay out of the
+        // way. Assigning the same doubles back is what makes an untouched
+        // controller bit-identical to no controller at all.
+        if (! modulated)
+            return;
+
+        for (int i = 0; i < numOscillators; ++i)
+        {
+            auto& osc = oscillators[(size_t) i];
+            osc.phaseIncrement = juce::jlimit (0.0, 0.5, osc.baseIncrement);
+        }
+
+        vibratoPhase = 0.0;
+        modulated = false;
+        return;
+    }
+
+    const auto depth = juce::jlimit (0.0f, 1.0f, modulation) * maxVibratoSemitones;
+
+    // Advance first, so a block's vibrato is the value at its start and the
+    // LFO keeps moving at the same rate whatever the block size is.
+    vibratoPhase += (double) vibratoHz * (double) juce::jmax (0, numSamples) / currentSampleRate;
+    vibratoPhase -= std::floor (vibratoPhase);
+
+    const auto vibrato = (double) depth
+                       * std::sin (juce::MathConstants<double>::twoPi * vibratoPhase);
+
+    const auto semitones = (double) bendSemitones + vibrato;
+    const auto factor = std::pow (2.0, semitones / 12.0);
+
+    for (int i = 0; i < numOscillators; ++i)
+    {
+        auto& osc = oscillators[(size_t) i];
+        osc.phaseIncrement = juce::jlimit (0.0, 0.5, osc.baseIncrement * factor);
+    }
+
+    modulated = true;
 }
 
 float SynthVoice::Oscillator::nextSample() noexcept

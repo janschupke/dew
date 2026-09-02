@@ -20,6 +20,9 @@ add_executable(dew_tests
   PreviewQueueTests.cpp
   SnapshotBridgeTests.cpp
   AudioSettingsTests.cpp
+  MidiRouterTests.cpp
+  MidiInputTests.cpp
+  PitchBendTests.cpp
   AutomationTests.cpp
   EffectTests.cpp
   EngineTests.cpp

@@ -1063,22 +1063,8 @@ void PianoRollComponent::startAudition (int pitch)
 
     stopAudition();
 
-    // The engine indexes channels by position, and so does the snapshot; the
-    // editor knows the channel by id, so resolve it the same way the snapshot
-    // builder does rather than assuming they agree.
-    int index = 0;
-    int channelIndex = -1;
-
-    for (const auto& channel : document.getState())
-    {
-        if (! channel.hasType (ids::CHANNEL))
-            continue;
-
-        if ((int) channel[ids::id] == editorState.getSelectedChannelId())
-            channelIndex = index;
-
-        ++index;
-    }
+    const auto channelIndex = ProjectEdits::channelIndexForId (document.getState(),
+                                                               editorState.getSelectedChannelId());
 
     if (channelIndex < 0)
         return;

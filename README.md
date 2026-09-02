@@ -113,7 +113,7 @@ Four layers, each testable without the one above it:
 app/      Settings (window, view and device state, validated on read)
 ui/       ChannelRack · PianoRoll · Playlist · Mixer · TransportBar
           EffectChainHost (heading, add button, scrolling) → EffectChainComponent
-          StatusBar · AudioSettingsPanel · PianoRollToolbar · RandomizePanel
+          StatusBar · AudioSettingsPanel · MidiSettingsPanel · PianoRollToolbar · RandomizePanel
           design/ (tokens, icons) · primitives/ · TimelineView (shared step↔pixel map)
           TimelineRuler (one ruler, drawn and clicked the same way in three editors)
             │ edits via ProjectEdits (one undo transaction per gesture)
@@ -124,13 +124,38 @@ model/    ProjectDocument (FileBasedDocument) ── ValueTree ── ProjectSch
             │ PreviewQueue carries auditioned notes ─────────┐
 engine/   SnapshotBridge → Transport → Sequencer → SynthChannel[] → EffectUnit[] → MixerBus
             │
-io/       LiveAudioHost (a device)   ·   OfflineRenderer (dew_render, tests)
+io/       LiveAudioHost (a device)   ·   MidiInputHost + MidiRouter (a controller)
+          OfflineRenderer (dew_render, tests)
 ```
 
 Clicking a piano key has to make a sound without the sequencer running, so preview notes
 reach the audio thread through `PreviewQueue` — a single-producer ring, not a
 latest-wins atomic, because both halves of a fast click can land inside one 5.8ms block
 and latest-wins would let the release overwrite the press and the key would be silent.
+
+### MIDI input: two rings, and controllers that are not queued at all
+
+`PreviewQueue` is single-producer *by construction* — the writer owns `writeIndex`, the reader
+owns `readIndex` — and its producer is the message thread. MIDI callbacks arrive on the OS MIDI
+thread, so sharing one queue would put two producers on one index. dew gives MIDI its **own**
+`PreviewQueue` instead: the invariant holds exactly as written for each ring, the audio thread
+drains both, and no new concurrency primitive appears. Marshalling MIDI to the message thread
+would have kept one producer at the cost of message-loop latency between a key and its note,
+which is the one thing a controller exists to avoid.
+
+Pitch bend and the mod wheel do **not** go through a ring. A ring earns its place for notes
+because both halves of a click matter — press and release can land inside one block, and
+latest-wins would lose the press. A wheel position has no halves: only the newest value is
+audible, and a sweep sends hundreds of messages a second, which is exactly the traffic that would
+fill a 64-entry ring and start refusing notes. So controllers are per-channel latest-wins
+atomics, read once per block, in the same idiom as the meters.
+
+`MidiRouter` holds every rule (velocity-0 is a note-off, channel filter, sustain, transpose, bend
+scaling) and takes a `juce::MidiMessage` rather than a device, so all of it is testable without
+hardware. `MidiInputHost` owns only which ports exist — and one correction to JUCE: a device
+enabled during a session that is unplugged leaves `AudioDeviceManager` holding a dead port it
+believes is still open, so it never reopens on replug. The host reconciles on every device-list
+change, and `MidiInputHost::actionFor` pins that rule as a truth table.
 
 The message thread owns the ValueTree and builds snapshots. The audio thread only
 reads a published snapshot: it never allocates, locks, or touches the tree.
@@ -264,7 +289,7 @@ project it was overwriting.
 
 ## Testing
 
-Catch2 via CTest. `ctest --preset release` runs all 260.
+Catch2 via CTest. `ctest --preset release` runs all 326.
 
 `dew_render` loads a project and renders it to WAV with no audio device, which is how
 playback correctness is checked without ears:
@@ -298,6 +323,7 @@ dew_shot editor out.png --project examples/melody.dew --tab piano-roll --size 16
 dew_shot tabs out --project examples/effects.dew     # one PNG per tab
 dew_shot gallery out.png                             # the design system
 dew_shot audio out.png                               # the audio settings panel
+dew_shot midi out.png                                # the MIDI settings panel
 dew_shot randomize out.png                           # the piano roll's randomize dialog
 ```
 

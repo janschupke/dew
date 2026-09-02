@@ -185,7 +185,7 @@ void DewApplication::getAllCommands (juce::Array<juce::CommandID>& commands)
                          CommandIDs::transportPlayStop, CommandIDs::transportRewind,
                          CommandIDs::transportToggleMode,
                          CommandIDs::addChannel, CommandIDs::addPattern,
-                     CommandIDs::audioSettings });
+                     CommandIDs::audioSettings, CommandIDs::midiSettings });
 }
 
 void DewApplication::getCommandInfo (juce::CommandID id, juce::ApplicationCommandInfo& info)
@@ -261,6 +261,14 @@ void DewApplication::getCommandInfo (juce::CommandID id, juce::ApplicationComman
             info.addDefaultKeypress ('p', juce::ModifierKeys::commandModifier
                                               | juce::ModifierKeys::shiftModifier);
             info.setActive (document != nullptr);
+            break;
+
+        case CommandIDs::midiSettings:
+            info.setInfo ("MIDI Settings...", "Choose which MIDI controllers play",
+                          "Audio", 0);
+            info.addDefaultKeypress (',', juce::ModifierKeys::commandModifier
+                                            | juce::ModifierKeys::shiftModifier);
+            info.setActive (main != nullptr);
             break;
 
         case CommandIDs::audioSettings:
@@ -389,6 +397,10 @@ bool DewApplication::perform (const InvocationInfo& info)
             main->showAudioSettings();
             return true;
 
+        case CommandIDs::midiSettings:
+            main->showMidiSettings();
+            return true;
+
         case CommandIDs::addPattern:
         {
             auto& undo = document->getUndoManager();
@@ -447,6 +459,7 @@ juce::PopupMenu DewApplication::getMenuForIndex (int index, const juce::String&)
 
         case 4:
             menu.addCommandItem (&commandManager, CommandIDs::audioSettings);
+            menu.addCommandItem (&commandManager, CommandIDs::midiSettings);
             break;
 
         case 5:

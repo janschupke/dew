@@ -32,6 +32,15 @@ struct ProjectEdits
     */
     static juce::ValueTree findNoteAtStep (const juce::ValueTree& pattern, int channelId, int step);
 
+    /** The channel's position among the project's channels, or -1.
+
+        The engine and the snapshot index channels by position, while the editor
+        knows a channel by id. Anything crossing that boundary - auditioning a
+        key, pointing MIDI input at a channel - has to resolve it the same way
+        the snapshot builder does rather than assume the two agree.
+    */
+    static int channelIndexForId (const juce::ValueTree& project, int channelId);
+
     static int nextFreeId (const juce::ValueTree& project, const juce::Identifier& childType);
 
     // --- notes ---------------------------------------------------------------

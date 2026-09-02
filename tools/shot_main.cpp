@@ -4,6 +4,7 @@
 #include "model/ProjectFactory.h"
 #include "model/ProjectSerializer.h"
 #include "ui/AudioSettingsPanel.h"
+#include "ui/MidiSettingsPanel.h"
 #include "ui/MainComponent.h"
 #include "ui/RandomizePanel.h"
 #include "ui/design/DewGallery.h"
@@ -22,6 +23,7 @@ Usage:
   dew_shot tabs <out-prefix> [options]      one PNG per tab
   dew_shot gallery <out.png> [options]      the design system
   dew_shot audio <out.png>                  the audio settings panel
+  dew_shot midi <out.png>                   the MIDI settings panel
   dew_shot randomize <out.png>              the piano roll's randomize dialog
 
 Options:
@@ -184,6 +186,30 @@ int main (int argc, char* argv[])
         panel.setVisible (true);
         panel.setSize (dew::AudioSettingsPanel::preferredWidth,
                        dew::AudioSettingsPanel::preferredHeight);
+
+        const auto destination = juce::File::getCurrentWorkingDirectory()
+                                     .getChildFile (args.positional[1]);
+
+        if (const auto result = writePng (panel, destination); result.failed())
+            return fail (result.getErrorMessage());
+
+        std::cout << "wrote " << destination.getFullPathName()
+                  << "  (" << panel.getWidth() << "x" << panel.getHeight() << ")" << std::endl;
+        return 0;
+    }
+
+    if (mode == "midi")
+    {
+        // The panel with whatever this machine actually has attached, which on
+        // CI is nothing - and "nothing" is the state most worth looking at.
+        dew::AudioEngine engine;
+        dew::LiveAudioHost host { engine };
+        dew::MidiInputHost midiHost { host.getDeviceManager(), engine };
+
+        dew::MidiSettingsPanel panel { midiHost, nullptr };
+        panel.setVisible (true);
+        panel.setSize (dew::MidiSettingsPanel::preferredWidth,
+                       dew::MidiSettingsPanel::preferredHeight);
 
         const auto destination = juce::File::getCurrentWorkingDirectory()
                                      .getChildFile (args.positional[1]);

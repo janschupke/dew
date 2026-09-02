@@ -31,8 +31,15 @@ public:
     /** Releases everything, without cutting the tails. */
     void allNotesOff() noexcept;
 
-    /** Adds the channel's mono output into `buffer`. */
-    void renderAdd (float* buffer, int numSamples) noexcept;
+    /** Adds the channel's mono output into `buffer`.
+
+        `bendSemitones` and `modulation` are this channel's continuous
+        controllers, applied to every sounding voice before the block is
+        rendered. They default to nothing, so a caller that has no controller
+        renders exactly what it always did.
+    */
+    void renderAdd (float* buffer, int numSamples,
+                    float bendSemitones = 0.0f, float modulation = 0.0f) noexcept;
 
     int countActiveVoices() const noexcept;
 

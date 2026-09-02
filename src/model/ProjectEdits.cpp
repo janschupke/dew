@@ -58,6 +58,24 @@ juce::ValueTree ProjectEdits::findNoteAtStep (const juce::ValueTree& pattern, in
     return {};
 }
 
+int ProjectEdits::channelIndexForId (const juce::ValueTree& project, int channelId)
+{
+    int index = 0;
+
+    for (const auto& channel : project)
+    {
+        if (! channel.hasType (ids::CHANNEL))
+            continue;
+
+        if ((int) channel[ids::id] == channelId)
+            return index;
+
+        ++index;
+    }
+
+    return -1;
+}
+
 int ProjectEdits::nextFreeId (const juce::ValueTree& project, const juce::Identifier& childType)
 {
     int highest = 0;

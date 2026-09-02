@@ -1,6 +1,9 @@
 #include "MainComponent.h"
 
 #include "AudioSettingsPanel.h"
+#include "MidiSettingsPanel.h"
+
+#include "../model/ProjectEdits.h"
 #include "design/Tokens.h"
 
 #include "../model/Ids.h"
@@ -10,6 +13,7 @@ namespace dew
 
 MainComponent::MainComponent (bool openAudioDevice)
     : audioHost (engine),
+      midiHost (audioHost.getDeviceManager(), engine),
       transportBar (document, engine, editorState),
       tabs (document, engine, editorState),
       instrumentPanel (document, editorState),
@@ -33,6 +37,11 @@ MainComponent::MainComponent (bool openAudioDevice)
     addAndMakeVisible (statusBar);
     addAndMakeVisible (divider);
 
+    // Which channel MIDI plays follows the selection, and has to be pushed to
+    // the router as an index because the MIDI thread cannot read EditorState.
+    editorState.addChangeListener (this);
+    updateMidiTargetChannel();
+
     if (! openAudioDevice)
     {
         statusBar.showMessage ("Audio device not opened", StatusBar::Severity::warning);
@@ -46,12 +55,21 @@ MainComponent::MainComponent (bool openAudioDevice)
         statusBar.showMessage (audioHost.describeDevice(), StatusBar::Severity::info);
     }
 
+    // MIDI is opened alongside audio, and skipped for the same reason: a
+    // screenshot or a CI run has no business taking over the ports. Anything
+    // the saved state re-enabled starts working here, without the panel being
+    // opened at all.
+    if (openAudioDevice)
+        midiHost.start();
+
     setSize (1180, 760);
 }
 
 MainComponent::~MainComponent()
 {
     cancelPendingUpdate();
+    editorState.removeChangeListener (this);
+    midiHost.stop();
     audioHost.stop();
     juce::Desktop::getInstance().setDefaultLookAndFeel (nullptr);
 }
@@ -65,6 +83,10 @@ void MainComponent::projectChanged()
 {
     juce::StringArray warnings;
     engine.setProject (document.getState(), &warnings);
+
+    // Channels may have been added or removed, which moves every index after
+    // them - including the one MIDI is pointed at.
+    updateMidiTargetChannel();
 
     // A project that cannot be rendered as the user expects is worth saying so
     // once rather than silently playing something else. It expires on its own
@@ -140,6 +162,11 @@ void MainComponent::applySettings (const Settings& settings)
                              settings.getPianoRollPitchScroll());
     tabs.setPianoRollSnap (settings.getPianoRollSnap());
 
+    // Which devices are enabled rides the audio device XML, restored by the
+    // app; only these two are dew's own.
+    midiHost.getRouter().setChannelFilter (settings.getMidiChannelFilter());
+    midiHost.getRouter().setTranspose (settings.getMidiTranspose());
+
     resized();
 }
 
@@ -154,10 +181,49 @@ void MainComponent::captureSettings (Settings& settings) const
     double zoom = 0.0, scroll = 0.0, pitch = 0.0;
     tabs.capturePianoRollView (zoom, scroll, pitch);
 
+    settings.setMidiChannelFilter (midiHost.getRouter().getChannelFilter());
+    settings.setMidiTranspose (midiHost.getRouter().getTranspose());
+
     settings.setPianoRollZoom (zoom);
     settings.setPianoRollScroll (scroll);
     settings.setPianoRollPitchScroll (pitch);
     settings.setPianoRollSnap (tabs.getPianoRollSnap());
+}
+
+void MainComponent::changeListenerCallback (juce::ChangeBroadcaster*)
+{
+    updateMidiTargetChannel();
+}
+
+void MainComponent::updateMidiTargetChannel()
+{
+    const auto index = ProjectEdits::channelIndexForId (document.getState(),
+                                                        editorState.getSelectedChannelId());
+
+    // A selection pointing at nothing leaves the router where it was rather
+    // than sending notes to channel 0 by accident.
+    if (index >= 0)
+        midiHost.getRouter().setTargetChannel (index);
+}
+
+void MainComponent::showMidiSettings()
+{
+    auto* panel = new MidiSettingsPanel (midiHost, nullptr);
+
+    panel->onDevicesChanged = [this]
+    {
+        statusBar.showMessage (midiHost.describeInputs(), StatusBar::Severity::info);
+    };
+
+    juce::DialogWindow::LaunchOptions options;
+    options.content.setOwned (panel);
+    options.dialogTitle = "MIDI Settings";
+    options.dialogBackgroundColour = tokens::colour::background;
+    options.componentToCentreAround = this;
+    options.escapeKeyTriggersCloseButton = true;
+    options.useNativeTitleBar = true;
+    options.resizable = false;
+    options.launchAsync();
 }
 
 void MainComponent::showAudioSettings()

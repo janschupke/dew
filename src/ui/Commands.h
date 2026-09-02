@@ -17,6 +17,7 @@ enum
     addChannel,
     addPattern,
     audioSettings,
+    midiSettings,
 };
 
 } // namespace dew::CommandIDs

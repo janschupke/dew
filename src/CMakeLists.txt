@@ -29,6 +29,8 @@ add_library(dew_core STATIC
   engine/AudioEngine.cpp
   engine/OfflineRenderer.cpp
   engine/LiveAudioHost.cpp
+  engine/MidiRouter.cpp
+  engine/MidiInputHost.cpp
 
   ui/design/Tokens.cpp
   ui/design/Icons.cpp
@@ -41,6 +43,7 @@ add_library(dew_core STATIC
   ui/OscillatorSection.cpp
   ui/EffectChainHost.cpp
   ui/AudioSettingsPanel.cpp
+  ui/MidiSettingsPanel.cpp
   ui/StatusBar.cpp
   ui/TransportBar.cpp
   ui/TimelineRuler.cpp
@@ -104,7 +107,7 @@ juce_add_gui_app(dew
   BUNDLE_ID                 "io.dew.app"
   VERSION                   "${PROJECT_VERSION}"
   MICROPHONE_PERMISSION_ENABLED FALSE
-  NEEDS_MIDI_INPUT          FALSE
+  NEEDS_MIDI_INPUT          TRUE
   NEEDS_MIDI_OUTPUT         FALSE
   DOCUMENT_EXTENSIONS       "dew"
 )
