@@ -5,36 +5,65 @@ rack with a step grid, a piano roll, a playlist of pattern clips, and a mixer, d
 by a single-oscillator synth per channel.
 
 Status: **working prototype**. New, open, edit, save and playback all function end to
-end. It is a skeleton, not a product — but every layer is real and wired to the next.
+end, with effects and automation on top. It is not a product — but every layer is real
+and wired to the next.
+
+Start with **Demos → Getting Started** in the menu bar; there are four.
 
 ## What it does
 
 - **Channel rack** — a step grid, one row per channel, click or drag to write steps.
-- **Piano roll** — click to add, drag to move, drag the right edge to resize,
-  right-click to delete. It edits *the same notes* as the step grid: a lit step is a
-  note at the channel's base pitch, so there is one representation and two views.
+  Mute and solo per channel. A pattern longer than the width scrolls rather than
+  shrinking its steps into hairlines.
+- **Piano roll** — scroll and zoom in time, rubber-band select, move a chord without
+  losing its shape, draw velocities in the lane below, and let the pattern grow when a
+  note is written past its end. A new note takes the length and velocity of the last
+  one you drew. It edits *the same notes* as the step grid: a lit step is a note at the
+  channel's base pitch, so there is one representation and two views.
 - **Playlist** — pattern clips on tracks along a bar timeline; a clip longer than its
-  pattern repeats it, as FL does.
+  pattern repeats it, as FL does. Drag clips between tracks, double-click one to open
+  its pattern, and mute or solo a lane.
+- **Effects** — reverb, filter, delay, drive, chorus and a 3-band EQ, chained up to
+  four deep on any channel or mixer track, with bypass and reordering.
+- **Automation** — clips on the playlist that drive a curated set of targets: channel
+  and track volume and pan, master gain, and any parameter of any effect. Drag points
+  on the curve, double-click to add one, alt-click to remove it.
 - **Mixer** — a fader, pan, mute and solo per insert, plus master. Solo is resolved
   across the whole mixer, so soloing one track silences the rest.
 - **Instrument** — one band-limited oscillator (sine/saw/square/triangle) with an
   octave, an ADSR envelope, and channel volume and pan.
-- **Transport** — play/stop, tempo, and a pattern-or-song switch with a live playhead.
+- **Transport** — play/stop, tempo, a pattern-or-song switch with a live playhead, and
+  pattern add/duplicate/delete with an editable pattern length.
 - **File** — New, Open, Save, Save As, with dirty tracking and a save-before-closing
   prompt. Undo/redo covers every edit.
 
 ⌘N ⌘O ⌘S ⇧⌘S, ⌘Z ⇧⌘Z, Space to play, ⌘L to switch pattern/song, ⌘K to add a channel.
+
+In the piano roll: ⌘-scroll to zoom, shift-scroll to scroll in time, ⌘-drag to
+rubber-band, ⌘A to select every note on the channel, delete to remove the selection.
+
+## Design system
+
+`src/ui/design/` holds the vocabulary — semantic colour roles, a 4px spacing scale, a
+type scale, and thirty-odd icons drawn as `juce::Path` rather than shipped as assets.
+`src/ui/primitives/` holds the controls built on it, including `DewNumberField`, which
+is the drag-up-and-down number entry used for every numeric value.
+
+`dew_shot gallery out.png` renders every token, icon and primitive in every state onto
+one page, which is both how the design system is reviewed and how it is tested.
 
 ## Architecture
 
 Four layers, each testable without the one above it:
 
 ```
-ui/       ChannelRack · PianoRoll · Playlist · Mixer · TransportBar · InstrumentPanel
+ui/       ChannelRack · PianoRoll · Playlist · Mixer · TransportBar · EffectChain
+          design/ (tokens, icons) · primitives/ · TimelineView (shared step↔pixel map)
             │ edits via ProjectEdits (one undo transaction per gesture)
 model/    ProjectDocument (FileBasedDocument) ── ValueTree ── ProjectSchema ── JSON
+          AutomationTargets (the curated automatable set) · DemoLibrary
             │ AsyncUpdater coalesces rebuilds ─→ EngineSnapshot
-engine/   SnapshotBridge → Transport → Sequencer → SynthChannel[] → MixerBus
+engine/   SnapshotBridge → Transport → Sequencer → SynthChannel[] → EffectUnit[] → MixerBus
             │
 io/       LiveAudioHost (a device)   ·   OfflineRenderer (dew_render, tests)
 ```
@@ -45,6 +74,37 @@ reads a published snapshot: it never allocates, locks, or touches the tree.
 swapped by compare-exchange, so `front != back` is an invariant of the encoding rather
 than an argument about interleavings — an earlier version reasoned its way to a design
 that tore roughly twice per ten thousand publishes.
+
+### Effects without a command queue
+
+Effect *parameters* travel in the snapshot like everything else. Effect *instances* own
+state — delay lines, reverb tanks — that has to survive a snapshot swap, and the usual
+answer is a lock-free command queue with the message thread building an effect and the
+audio thread swapping a pointer in.
+
+dew does not have one. A capped pool of 32 `EffectUnit`s is allocated in `prepare()`,
+each holding **all six** effect types at their maximum size, so switching a slot from
+delay to reverb is a `reset()` rather than a construction. Topology then travels in the
+snapshot like every other piece of project state, and the audio thread neither
+allocates, frees, nor blocks — with no new concurrency primitive to get wrong. The cost
+is about 11MB of mostly-idle DSP state, which is a good trade for deleting a
+hand-written lock-free queue.
+
+Pool slots are keyed on each effect's persistent id by open addressing, so the mapping
+is a pure function of the ids in the document: adding an effect to an earlier channel
+does not renumber the later ones and cut the reverb tail they were in the middle of.
+
+### Automation targets are declared, not addressed
+
+An automation clip points at `scope + targetId + slot + param`, resolved once on the
+message thread to direct indices. Targets come from a table in `AutomationTargets.cpp`,
+so nothing that is not a continuous quantity can be automated, and a clip pointing at a
+deleted channel — or an effect slot that changed type — is dropped with a warning like
+any other dangling reference.
+
+Frequency-like parameters map exponentially rather than linearly. A cutoff swept
+linearly from 20Hz to 18kHz spends four fifths of the drawn curve above 3kHz, where
+almost nothing audible happens, and crosses the whole musical range in the last fifth.
 
 The engine knows nothing about audio devices. It is prepared with a sample rate and a
 block size and fills a buffer, so live playback and offline rendering run the same code
@@ -68,6 +128,7 @@ Artefacts land in `build/<preset>/`:
 |---|---|
 | `dew` (GUI app) | `build/release/src/dew_artefacts/RelWithDebInfo/dew.app` |
 | `dew_render` (offline renderer) | `build/release/tools/dew_render_artefacts/RelWithDebInfo/dew_render` |
+| `dew_shot` (offscreen UI renderer) | `build/release/tools/dew_shot_artefacts/RelWithDebInfo/dew_shot` |
 | `dew_tests` | `build/release/tests/dew_tests` |
 
 ## Dependencies
@@ -139,7 +200,7 @@ project it was overwriting.
 
 ## Testing
 
-Catch2 via CTest. `ctest --preset release` runs all 63.
+Catch2 via CTest. `ctest --preset release` runs all 147.
 
 `dew_render` loads a project and renders it to WAV with no audio device, which is how
 playback correctness is checked without ears:
@@ -147,17 +208,37 @@ playback correctness is checked without ears:
 ```sh
 dew_render examples/demo.dew out.wav              # the arrangement, once, plus its tail
 dew_render examples/demo.dew out.wav --pattern 1 --seconds 8
-dew_render --write-demo examples/demo.dew         # regenerate the example
+dew_render --write-demos examples                 # regenerate the demo library
 ```
 
 It exits non-zero on a silent render, because "loaded but made no sound" is the failure
 it exists to catch.
 
+Every effect has a test that asserts what it *does*, not that it ran: the lowpass
+leaves 80Hz alone and removes 5kHz, the delay's peak lands within 100 samples of the
+time it was set to, feedback produces repeats that decay, reverb puts sound where there
+was silence, drive lowers the crest factor, and each EQ band moves the frequency it
+names and not the others. Automation is checked the same way — a sweep has to produce a
+measurably rising envelope through the real engine.
+
 The GUI is tested **headlessly**: components are painted into an offscreen
-`juce::Image` and asserted to have produced content, every tab is rendered, and the
-editor's own engine is driven through `processBlock` to prove that writing a step makes
-sound and that undoing it stops the sound. That runs in CI and on machines without
-screen-recording permission.
+`juce::Image` and asserted to have produced content, every tab is rendered, gestures are
+driven through real `MouseEvent`s, and the editor's own engine is driven through
+`processBlock` to prove that writing a step makes sound and that undoing it stops the
+sound. That runs in CI and on machines without screen-recording permission.
+
+`dew_shot` renders any tab, or the design-system gallery, straight to PNG:
+
+```sh
+dew_shot editor out.png --project examples/melody.dew --tab piano-roll --size 1600x1000
+dew_shot gallery out.png
+```
+
+It exists because screen-recording permission is not always available, and because a
+layout defect is obvious in a picture and nearly invisible in code. Both bugs reported
+against the first version of this app — "channel rack clicks don't go through" and
+"can't add more patterns" — turned out to be layout and affordance problems that two
+rounds of code-reading had missed and one PNG made obvious.
 
 ## Licence
 
