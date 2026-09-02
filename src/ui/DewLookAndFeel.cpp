@@ -1,9 +1,9 @@
-#include "DewLookAndFeel.h"
+#include "ui/DewLookAndFeel.h"
 
-#include "design/Icons.h"
-#include "design/Tokens.h"
+#include "ui/design/Icons.h"
+#include "ui/design/Tokens.h"
 
-#include "primitives/DewControls.h"
+#include "ui/primitives/DewControls.h"
 
 namespace dew
 {

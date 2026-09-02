@@ -175,26 +175,51 @@ file and line.
 
 ## Architecture
 
-Four layers, each testable without the one above it:
+Six layers, each a static library, each testable without the ones that depend on it.
+They are libraries rather than directories on purpose: the include graph was already
+acyclic and correctly directed, but nothing enforced it, and the headless `dew_render`
+linked all thirty UI translation units to write a WAV. Split, a layering mistake is a
+link error.
 
 ```
-app/      Settings (window, view and device state, validated on read)
-ui/       ChannelRack · PianoRoll · Playlist · Mixer · TransportBar
-          EffectChainHost (heading, add button, scrolling) → EffectChainComponent
-          StatusBar · AudioSettingsPanel · MidiSettingsPanel · PianoRollToolbar · RandomizePanel
-          design/ (tokens, icons) · primitives/ · TimelineView (shared step↔pixel map)
-          TimelineRuler (one ruler, drawn and clicked the same way in three editors)
-            │ edits via ProjectEdits (one undo transaction per gesture)
-model/    ProjectDocument (FileBasedDocument) ── ValueTree ── ProjectSchema ── JSON
-          AutomationTargets (the curated automatable set) · DemoLibrary
-          NoteTools (snap, quantize, transpose, slice, randomize - no GUI)
-            │ AsyncUpdater coalesces rebuilds ─→ EngineSnapshot
-            │ PreviewQueue carries auditioned notes ─────────┐
-engine/   SnapshotBridge → Transport → Sequencer → SynthChannel[] → EffectUnit[] → MixerBus
-            │
-io/       LiveAudioHost (a device)   ·   MidiInputHost + MidiRouter (a controller)
-          OfflineRenderer (dew_render, tests)
+dew_ui       ChannelRack · PianoRoll · Playlist · Mixer · TransportBar
+             EffectChainHost (heading, add button, scrolling) → EffectChainComponent
+             StatusBar · AudioSettingsPanel · MidiSettingsPanel · PianoRollToolbar
+             TimelineView (shared step↔pixel map)
+             TimelineRuler (one ruler, drawn and clicked the same way in three editors)
+               │ edits via ProjectEdits (one undo transaction per gesture)
+             ├────────────────┬──────────────────┬─────────────────┐
+             ▼                ▼                  ▼                 │
+dew_design   tokens · icons · primitives · look and feel           │
+             SignalScope                                           │
+                              │                                    │
+dew_app      Settings (window, view and device state, validated on read)
+               A leaf, not a top: it holds state the UI reads.     │
+                                                 ▼                 │
+dew_io       LiveAudioHost (a device) · MidiInputHost + MidiRouter (a controller)
+             SamplePool (files) · OfflineRenderer + RenderJob + MidiExporter (files)
+             AudioRecorder (a device and a file)
+                                                 │
+                                                 ▼
+dew_engine   SnapshotBridge → Transport → Sequencer → SynthChannel[] → EffectUnit[] → MixerBus
+             Opens no files and no devices. That is what lets the whole test suite
+             drive it with neither, and it is why buildSnapshot takes a
+             SampleProvider rather than the SamplePool that implements it.
+                                                 │
+                                                 ▼
+dew_model    ProjectDocument (FileBasedDocument) ── ValueTree ── ProjectSchema ── JSON
+             AutomationTargets (the curated automatable set) · DemoLibrary
+             NoteTools (snap, quantize, transpose, slice, randomize - no GUI)
+             A leaf: it depends on nothing of dew's.
+
+             │ AsyncUpdater coalesces rebuilds ─→ EngineSnapshot
+             │ PreviewQueue carries auditioned notes
 ```
+
+Production code lives under `src/`, and a new library is a subdirectory of it rather
+than a sibling. Several tests enforce a convention by scanning the sources, and each of
+them passes silently when it finds nothing; `SourceGateTests` checks that walk against
+the libraries' own source lists, so code that moves out cannot quietly disarm them.
 
 Clicking a piano key has to make a sound without the sequencer running, so preview notes
 reach the audio thread through `PreviewQueue` — a single-producer ring, not a

@@ -4,8 +4,8 @@
 
 #include <array>
 
-#include "EngineSnapshot.h"
-#include "Wavetable.h"
+#include "engine/EngineSnapshot.h"
+#include "engine/Wavetable.h"
 #include "model/Constants.h"
 
 namespace dew

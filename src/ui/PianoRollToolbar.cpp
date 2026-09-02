@@ -1,6 +1,6 @@
-#include "PianoRollToolbar.h"
+#include "ui/PianoRollToolbar.h"
 
-#include "design/Tokens.h"
+#include "ui/design/Tokens.h"
 
 namespace dew
 {

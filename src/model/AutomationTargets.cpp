@@ -1,6 +1,6 @@
-#include "AutomationTargets.h"
+#include "model/AutomationTargets.h"
 
-#include "Ids.h"
+#include "model/Ids.h"
 
 namespace dew
 {

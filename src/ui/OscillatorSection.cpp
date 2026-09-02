@@ -1,4 +1,4 @@
-#include "OscillatorSection.h"
+#include "ui/OscillatorSection.h"
 
 #include "engine/Wavetable.h"
 #include "model/Ids.h"

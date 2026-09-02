@@ -4,8 +4,8 @@
 
 #include "engine/AudioEngine.h"
 #include "model/ProjectDocument.h"
-#include "EditorState.h"
-#include "EffectChainHost.h"
+#include "ui/EditorState.h"
+#include "ui/EffectChainHost.h"
 
 namespace dew
 {

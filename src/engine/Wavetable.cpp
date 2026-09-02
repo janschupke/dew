@@ -1,4 +1,4 @@
-#include "Wavetable.h"
+#include "engine/Wavetable.h"
 
 #include <juce_dsp/juce_dsp.h>
 

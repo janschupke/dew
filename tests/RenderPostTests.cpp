@@ -1,7 +1,7 @@
 #include <catch2/catch_approx.hpp>
 #include <catch2/catch_test_macros.hpp>
 
-#include "engine/OfflineRenderer.h"
+#include "io/OfflineRenderer.h"
 #include "engine/RenderPost.h"
 #include "model/ProjectFactory.h"
 

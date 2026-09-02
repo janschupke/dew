@@ -30,11 +30,59 @@ TEST_CASE ("the source gates can see every source directory", "[build][gate]")
     }
 }
 
+TEST_CASE ("every compiled source is one the gates can see", "[build][gate]")
+{
+    // The compiled-sources file is the six libraries' own SOURCES lists, written
+    // out by CMake at generate time. DEW_SOURCE_DIR is a directory that is merely named src.
+    //
+    // They agree today. The day they stop - a layer moved out, a generated file
+    // compiled from the build tree - every gate built on the directory walk
+    // silently stops covering it and keeps reporting success. This is the test
+    // that refuses to let that be quiet.
+    const juce::File list { DEW_COMPILED_SOURCES_FILE };
+    REQUIRE (list.existsAsFile());
+
+    juce::StringArray compiled;
+    compiled.addLines (list.loadFileAsString());
+    compiled.removeEmptyStrings();
+
+    juce::StringArray walked;
+
+    for (const auto& f : sourceFiles())
+        walked.add (f.getFileName());
+
+    juce::StringArray missing;
+    auto ours = 0;
+
+    for (const auto& source : compiled)
+    {
+        // JUCE puts its own module sources into every target that links a
+        // module, and juce_add_binary_data generates into the build tree. Both
+        // arrive here as ABSOLUTE paths; dew's own sources are listed relative
+        // to src/, which is exactly the distinction we want.
+        if (juce::File::isAbsolutePath (source))
+            continue;
+
+        ++ours;
+
+        const auto name = source.fromLastOccurrenceOf ("/", false, false);
+
+        if (! walked.contains (name))
+            missing.add (source);
+    }
+
+    INFO ("dew sources found in the libraries: " << ours);
+    CHECK (ours > 60);
+
+    INFO ("compiled but not seen by the source gates:\n" << missing.joinIntoString ("\n"));
+    CHECK (missing.isEmpty());
+}
+
 TEST_CASE ("every layer is represented in the scanned sources", "[build][gate]")
 {
     // Named directories rather than a count, so moving one layer out cannot be
     // masked by another growing.
-    for (const auto* layer : { "model", "engine", "ui", "app" })
+    for (const auto* layer : { "model", "engine", "io", "ui", "app" })
     {
         auto seen = false;
 
@@ -62,4 +110,41 @@ TEST_CASE ("no source file includes another layer by relative path", "[build][ga
 
     INFO ("relative-parent includes:\n" << found.joinIntoString ("\n"));
     CHECK (found.isEmpty());
+}
+
+TEST_CASE ("the engine layer opens no files and no devices", "[build][layering]")
+{
+    // The property the io split exists to create, stated as a test rather than
+    // left to whoever edits src/CMakeLists.txt next.
+    //
+    // An engine that cannot reach a device or the filesystem is one the whole
+    // test suite can drive with neither - which is why 633 tests run in CI with
+    // no audio hardware - and it is the precondition for ever wrapping this
+    // engine as a plugin, since a plugin must not go looking at the filesystem
+    // on its host's behalf.
+    const auto found = offenders ([] (const juce::String& line)
+    {
+        const auto trimmed = line.trim();
+
+        if (! trimmed.startsWith ("#include"))
+            return false;
+
+        return trimmed.contains ("juce_audio_devices")
+               || trimmed.contains ("juce_audio_formats")
+               || trimmed.contains ("\"io/");
+    });
+
+    juce::StringArray fromEngine;
+
+    for (const auto& offender : found)
+    {
+        // offenders() reports by file NAME, so ask the walk where it lives.
+        for (const auto& f : sourceFiles())
+            if (offender.startsWith (f.getFileName() + ":")
+                && f.getParentDirectory().getFileName() == "engine")
+                fromEngine.add (offender);
+    }
+
+    INFO ("engine sources reaching for a device or a file:\n" << fromEngine.joinIntoString ("\n"));
+    CHECK (fromEngine.isEmpty());
 }

@@ -6,7 +6,8 @@
 
 #include <juce_audio_formats/juce_audio_formats.h>
 
-#include "WaveformPeaks.h"
+#include "engine/SampleProvider.h"
+#include "engine/WaveformPeaks.h"
 #include "model/Constants.h"
 
 namespace dew
@@ -29,7 +30,7 @@ namespace dew
     drop an entry while a snapshot the audio thread is still rendering keeps the
     audio alive to the end of the block.
 */
-class SamplePool
+class SamplePool : public SampleProvider
 {
 public:
     SamplePool();
@@ -71,6 +72,20 @@ public:
 
     /** How many files are cached. For tests. */
     int size() const noexcept  { return (int) entries.size(); }
+
+    /** SampleProvider. What the snapshot builder needs, and nothing else - the
+        peaks stay behind loadReference, because they are for drawing. */
+    std::shared_ptr<const juce::AudioBuffer<float>>
+        audioFor (const juce::String& storedPath, double& sourceSampleRate) override
+    {
+        const auto& entry = loadReference (storedPath);
+
+        if (! entry.isValid())
+            return nullptr;
+
+        sourceSampleRate = entry.sourceSampleRate;
+        return entry.audio;
+    }
 
 private:
     struct Key

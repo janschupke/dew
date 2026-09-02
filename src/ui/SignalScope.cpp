@@ -1,4 +1,4 @@
-#include "SignalScope.h"
+#include "ui/SignalScope.h"
 
 #include <algorithm>
 #include <cmath>

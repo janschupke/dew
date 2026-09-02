@@ -94,7 +94,7 @@ TEST_CASE ("out-of-range pan is clamped rather than wrapped", "[mixer]")
 
 #include <juce_gui_basics/juce_gui_basics.h>
 
-#include "engine/OfflineRenderer.h"
+#include "io/OfflineRenderer.h"
 #include "model/Ids.h"
 #include "model/ProjectDocument.h"
 #include "model/ProjectEdits.h"

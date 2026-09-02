@@ -1,6 +1,6 @@
-#include "PlaylistToolbar.h"
+#include "ui/PlaylistToolbar.h"
 
-#include "design/Tokens.h"
+#include "ui/design/Tokens.h"
 
 namespace dew
 {

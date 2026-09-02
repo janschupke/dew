@@ -5,9 +5,9 @@
 
 #include "app/Settings.h"
 #include "engine/AudioEngine.h"
-#include "engine/LiveAudioHost.h"
-#include "engine/MidiInputHost.h"
-#include "engine/MidiRouter.h"
+#include "io/LiveAudioHost.h"
+#include "io/MidiInputHost.h"
+#include "io/MidiRouter.h"
 #include "model/ProjectFactory.h"
 #include "ui/MidiSettingsPanel.h"
 

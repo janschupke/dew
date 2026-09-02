@@ -3,7 +3,7 @@
 
 #include "engine/Effects.h"
 #include "engine/EngineSnapshot.h"
-#include "engine/OfflineRenderer.h"
+#include "io/OfflineRenderer.h"
 #include "model/Ids.h"
 #include "model/ProjectEdits.h"
 #include "model/ProjectFactory.h"

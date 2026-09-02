@@ -1,4 +1,4 @@
-#include "AssetPaths.h"
+#include "model/AssetPaths.h"
 
 namespace dew
 {

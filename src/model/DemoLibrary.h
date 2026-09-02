@@ -2,7 +2,7 @@
 
 #include <juce_data_structures/juce_data_structures.h>
 
-#include "ProjectFactory.h"
+#include "model/ProjectFactory.h"
 
 namespace dew
 {

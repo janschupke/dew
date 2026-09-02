@@ -1,13 +1,13 @@
-#include "PianoRollComponent.h"
+#include "ui/PianoRollComponent.h"
 
 #include "model/Ids.h"
 #include "model/Meter.h"
 #include "model/ProjectEdits.h"
-#include "DewLookAndFeel.h"
-#include "RandomizePanel.h"
-#include "TimelineRuler.h"
-#include "design/Tokens.h"
-#include "primitives/DewControls.h"
+#include "ui/DewLookAndFeel.h"
+#include "ui/RandomizePanel.h"
+#include "ui/TimelineRuler.h"
+#include "ui/design/Tokens.h"
+#include "ui/primitives/DewControls.h"
 
 namespace dew
 {

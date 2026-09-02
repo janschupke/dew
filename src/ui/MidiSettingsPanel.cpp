@@ -1,6 +1,6 @@
-#include "MidiSettingsPanel.h"
+#include "ui/MidiSettingsPanel.h"
 
-#include "design/Tokens.h"
+#include "ui/design/Tokens.h"
 
 namespace dew
 {

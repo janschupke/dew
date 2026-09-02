@@ -1,77 +1,52 @@
 # ==============================================================================
-# dew_core - model + engine, shared by the GUI app, the renderer and the tests.
-# dew      - the GUI application.
+# The layers, as libraries.
+#
+#   dew_model   the project: ValueTree, schema, edits, serialization. A leaf.
+#   dew_engine  the audio: snapshot, transport, sequencer, voices, effects, mix.
+#               Opens no files and no devices - that is what makes the whole
+#               test suite able to drive it with neither.
+#   dew_io      everything that touches the OS: audio and MIDI devices, the
+#               sample cache, the offline renderer, the exporters.
+#   dew_design  the design system: tokens, icons, primitives, look and feel.
+#   dew_app     validated window/view/device state. A leaf that the UI reads.
+#   dew_ui      the editors.
+#
+# They were one static library called dew_core, whose own header comment said
+# "model + engine" and which then listed thirty UI translation units. The
+# include graph was already acyclic and correctly directed; nothing enforced it,
+# and dew_render - which is headless and includes no UI at all - linked every
+# piece of the interface and all of juce_gui_extra.
+#
+# Split, the layering claims are link errors rather than good intentions.
 # ==============================================================================
 
-add_library(dew_core STATIC
-  BuildInfo.cpp
+# ------------------------------------------------------------------------------
+# Shared JUCE configuration. INTERFACE, so every layer gets the same definitions
+# and the same include root without one of them owning the others' settings.
+# ------------------------------------------------------------------------------
+add_library(dew_juce_config INTERFACE)
 
-  app/Settings.cpp
+target_include_directories(dew_juce_config INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}")
 
-  model/AutomationTargets.cpp
-  model/ProjectSchema.cpp
-  model/ProjectSerializer.cpp
-  model/DemoLibrary.cpp
-  model/ProjectFactory.cpp
-  model/ProjectDocument.cpp
-  model/ProjectEdits.cpp
-  model/NoteTools.cpp
-  model/Meter.cpp
-  model/AssetPaths.cpp
-
-  engine/Effects.cpp
-  engine/WaveformPeaks.cpp
-  engine/SamplePool.cpp
-  engine/PreviewQueue.cpp
-  engine/SignalTap.cpp
-  engine/EngineSnapshot.cpp
-  engine/SnapshotBridge.cpp
-  engine/Transport.cpp
-  engine/Sequencer.cpp
-  engine/Wavetable.cpp
-  engine/SynthVoice.cpp
-  engine/SynthChannel.cpp
-  engine/SamplePlayer.cpp
-  engine/MixerBus.cpp
-  engine/AudioEngine.cpp
-  engine/OfflineRenderer.cpp
-  engine/RenderPost.cpp
-  engine/MidiExporter.cpp
-  engine/RenderJob.cpp
-  engine/AudioRecorder.cpp
-  engine/LiveAudioHost.cpp
-  engine/MidiRouter.cpp
-  engine/MidiInputHost.cpp
-
-  ui/design/Tokens.cpp
-  ui/design/Icons.cpp
-  ui/design/DewGallery.cpp
-  ui/primitives/DewControls.cpp
-  ui/primitives/DewNumberField.cpp
-
-  ui/DewLookAndFeel.cpp
-  ui/EffectChainComponent.cpp
-  ui/OscillatorSection.cpp
-  ui/SampleSection.cpp
-  ui/EffectChainHost.cpp
-  ui/AudioSettingsPanel.cpp
-  ui/RenderPanel.cpp
-  ui/MidiSettingsPanel.cpp
-  ui/StatusBar.cpp
-  ui/SignalScope.cpp
-  ui/TransportBar.cpp
-  ui/TimelineRuler.cpp
-  ui/StepGridComponent.cpp
-  ui/ChannelRackComponent.cpp
-  ui/PianoRollToolbar.cpp
-  ui/RandomizePanel.cpp
-  ui/PianoRollComponent.cpp
-  ui/PlaylistComponent.cpp
-  ui/PlaylistToolbar.cpp
-  ui/MixerComponent.cpp
-  ui/InstrumentPanel.cpp
-  ui/EditorTabs.cpp
-  ui/MainComponent.cpp
+target_compile_definitions(dew_juce_config
+  INTERFACE
+    JUCE_WEB_BROWSER=0
+    JUCE_USE_CURL=0
+    # MP3 ENCODING. JUCE can only decode MP3 on its own; encoding shells out to
+    # an installed lame binary, so this ships no LAME code and adds no build
+    # dependency. Without the binary the format simply reports itself
+    # unavailable - see OfflineRenderer::isAvailable.
+    JUCE_USE_LAME_AUDIO_FORMAT=1
+    # Set by juce_add_gui_app / juce_add_console_app on THOSE targets only. A
+    # static library shared between them never sees it, and JUCE's headers
+    # behave differently without it, so it has to be declared here by hand.
+    #
+    # It is also exactly the definition a plugin build must NOT have, which is
+    # why it lives on an interface target that a plugin could decline rather
+    # than baked into every layer.
+    JUCE_STANDALONE_APPLICATION=1
+    DEW_VERSION_STRING="${PROJECT_VERSION}"
+    DEW_JUCE_PIN="${DEW_PIN_JUCE}"
 )
 
 # The demo library, embedded so the Demos menu works from a build with no
@@ -88,35 +63,169 @@ juce_add_binary_data(dew_demo_data
     "${CMAKE_SOURCE_DIR}/examples/automation.dew"
 )
 
-target_include_directories(dew_core PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}")
+# ------------------------------------------------------------------------------
+# dew_model - the document. Depends on nothing of dew's.
+# ------------------------------------------------------------------------------
+add_library(dew_model STATIC
+  BuildInfo.cpp
 
-target_link_libraries(dew_core
+  model/AutomationTargets.cpp
+  model/ProjectSchema.cpp
+  model/ProjectSerializer.cpp
+  model/DemoLibrary.cpp
+  model/ProjectFactory.cpp
+  model/ProjectDocument.cpp
+  model/ProjectEdits.cpp
+  model/NoteTools.cpp
+  model/Meter.cpp
+  model/AssetPaths.cpp
+)
+
+target_link_libraries(dew_model
   PUBLIC
-    juce::juce_audio_utils      # pulls audio_basics / devices / formats / processors
-    juce::juce_dsp
     juce::juce_data_structures  # ValueTree, UndoManager
     juce::juce_gui_extra        # FileBasedDocument
     dew_demo_data
+    dew_juce_config
   PRIVATE
     juce::juce_recommended_config_flags
     juce::juce_recommended_warning_flags
 )
 
-target_compile_definitions(dew_core
+# ------------------------------------------------------------------------------
+# dew_engine - the audio. NOT juce_audio_devices, NOT juce_audio_formats: an
+# engine that cannot open a device or a file is one a test can drive with
+# neither, and one a plugin could host later without lying to its host.
+# ------------------------------------------------------------------------------
+add_library(dew_engine STATIC
+  engine/Effects.cpp
+  engine/WaveformPeaks.cpp
+  engine/PreviewQueue.cpp
+  engine/SignalTap.cpp
+  engine/EngineSnapshot.cpp
+  engine/SnapshotBridge.cpp
+  engine/Transport.cpp
+  engine/Sequencer.cpp
+  engine/Wavetable.cpp
+  engine/SynthVoice.cpp
+  engine/SynthChannel.cpp
+  engine/SamplePlayer.cpp
+  engine/MixerBus.cpp
+  engine/AudioEngine.cpp
+  engine/RenderPost.cpp
+)
+
+target_link_libraries(dew_engine
   PUBLIC
-    JUCE_WEB_BROWSER=0
-    JUCE_USE_CURL=0
-    # MP3 ENCODING. JUCE can only decode MP3 on its own; encoding shells out to
-    # an installed lame binary, so this ships no LAME code and adds no build
-    # dependency. Without the binary the format simply reports itself
-    # unavailable - see OfflineRenderer::isAvailable.
-    JUCE_USE_LAME_AUDIO_FORMAT=1
-    # Set by juce_add_gui_app / juce_add_console_app on THOSE targets only. A
-    # static library shared between them never sees it, and JUCE's headers
-    # behave differently without it, so it has to be declared here by hand.
-    JUCE_STANDALONE_APPLICATION=1
-    DEW_VERSION_STRING="${PROJECT_VERSION}"
-    DEW_JUCE_PIN="${DEW_PIN_JUCE}"
+    dew_model
+    juce::juce_audio_basics
+    juce::juce_dsp
+  PRIVATE
+    juce::juce_recommended_config_flags
+    juce::juce_recommended_warning_flags
+)
+
+# ------------------------------------------------------------------------------
+# dew_io - the OS. Devices, files, threads that write them.
+# ------------------------------------------------------------------------------
+add_library(dew_io STATIC
+  io/SamplePool.cpp
+  io/OfflineRenderer.cpp
+  io/MidiExporter.cpp
+  io/RenderJob.cpp
+  io/AudioRecorder.cpp
+  io/LiveAudioHost.cpp
+  io/MidiRouter.cpp
+  io/MidiInputHost.cpp
+)
+
+target_link_libraries(dew_io
+  PUBLIC
+    dew_engine
+    juce::juce_audio_devices
+    juce::juce_audio_formats
+  PRIVATE
+    juce::juce_recommended_config_flags
+    juce::juce_recommended_warning_flags
+)
+
+# ------------------------------------------------------------------------------
+# dew_design - the vocabulary. Knows nothing about a project.
+# ------------------------------------------------------------------------------
+add_library(dew_design STATIC
+  ui/design/Tokens.cpp
+  ui/design/Icons.cpp
+  ui/design/DewGallery.cpp
+  ui/primitives/DewControls.cpp
+  ui/primitives/DewNumberField.cpp
+  ui/DewLookAndFeel.cpp
+  ui/SignalScope.cpp
+)
+
+target_link_libraries(dew_design
+  PUBLIC
+    dew_engine          # SignalScope reads a SignalTap
+    juce::juce_gui_basics
+    juce::juce_dsp
+    dew_juce_config
+  PRIVATE
+    juce::juce_recommended_config_flags
+    juce::juce_recommended_warning_flags
+)
+
+# ------------------------------------------------------------------------------
+# dew_app - stored settings. A leaf the UI reads, which is the opposite of where
+# an "app" layer usually sits; it is named for what it holds, not for a rank.
+# ------------------------------------------------------------------------------
+add_library(dew_app STATIC
+  app/Settings.cpp
+)
+
+target_link_libraries(dew_app
+  PUBLIC
+    dew_model
+    juce::juce_gui_basics
+  PRIVATE
+    juce::juce_recommended_config_flags
+    juce::juce_recommended_warning_flags
+)
+
+# ------------------------------------------------------------------------------
+# dew_ui - the editors.
+# ------------------------------------------------------------------------------
+add_library(dew_ui STATIC
+  ui/EffectChainComponent.cpp
+  ui/OscillatorSection.cpp
+  ui/SampleSection.cpp
+  ui/EffectChainHost.cpp
+  ui/AudioSettingsPanel.cpp
+  ui/RenderPanel.cpp
+  ui/MidiSettingsPanel.cpp
+  ui/StatusBar.cpp
+  ui/TransportBar.cpp
+  ui/TimelineRuler.cpp
+  ui/StepGridComponent.cpp
+  ui/ChannelRackComponent.cpp
+  ui/PianoRollToolbar.cpp
+  ui/RandomizePanel.cpp
+  ui/PianoRollComponent.cpp
+  ui/PlaylistComponent.cpp
+  ui/PlaylistToolbar.cpp
+  ui/MixerComponent.cpp
+  ui/InstrumentPanel.cpp
+  ui/EditorTabs.cpp
+  ui/MainComponent.cpp
+)
+
+target_link_libraries(dew_ui
+  PUBLIC
+    dew_design
+    dew_app
+    dew_io
+    juce::juce_gui_extra
+  PRIVATE
+    juce::juce_recommended_config_flags
+    juce::juce_recommended_warning_flags
 )
 
 # ------------------------------------------------------------------------------
@@ -140,7 +249,7 @@ target_sources(dew PRIVATE
 
 target_link_libraries(dew
   PRIVATE
-    dew_core
+    dew_ui
     juce::juce_recommended_config_flags
     juce::juce_recommended_warning_flags
 )

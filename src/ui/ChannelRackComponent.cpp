@@ -1,11 +1,11 @@
-#include "ChannelRackComponent.h"
+#include "ui/ChannelRackComponent.h"
 
 #include "model/Ids.h"
 #include "model/Meter.h"
 #include "model/ProjectEdits.h"
-#include "design/Icons.h"
-#include "design/Tokens.h"
-#include "primitives/DewControls.h"
+#include "ui/design/Icons.h"
+#include "ui/design/Tokens.h"
+#include "ui/primitives/DewControls.h"
 
 namespace dew
 {
@@ -322,8 +322,8 @@ private:
 
 // -----------------------------------------------------------------------------
 
-ChannelRackComponent::ChannelRackComponent (ProjectDocument& d, AudioEngine& e, EditorState& s)
-    : document (d), engine (e), editorState (s), grid (d, e, s)
+ChannelRackComponent::ChannelRackComponent (ProjectDocument& d, AudioEngine& e, EditorState& s, SamplePool* p)
+    : document (d), engine (e), editorState (s), grid (d, e, s, p)
 {
     setComponentID ("channelRack");
     contentHolder.setComponentID ("channelRackContent");

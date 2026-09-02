@@ -1,10 +1,10 @@
-#include "OfflineRenderer.h"
+#include "io/OfflineRenderer.h"
 
-#include "SamplePool.h"
+#include "io/SamplePool.h"
 
-#include "MidiExporter.h"
+#include "io/MidiExporter.h"
 #include "model/Ids.h"
-#include "RenderPost.h"
+#include "engine/RenderPost.h"
 
 namespace dew
 {

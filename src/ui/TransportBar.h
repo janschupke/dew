@@ -5,10 +5,10 @@
 #include "engine/AudioEngine.h"
 #include "model/Meter.h"
 #include "model/ProjectDocument.h"
-#include "EditorState.h"
-#include "SignalScope.h"
-#include "primitives/DewControls.h"
-#include "primitives/DewNumberField.h"
+#include "ui/EditorState.h"
+#include "ui/SignalScope.h"
+#include "ui/primitives/DewControls.h"
+#include "ui/primitives/DewNumberField.h"
 
 namespace dew
 {

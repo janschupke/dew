@@ -4,7 +4,7 @@
 #include <thread>
 
 #include "engine/AudioEngine.h"
-#include "engine/OfflineRenderer.h"
+#include "io/OfflineRenderer.h"
 #include "engine/SynthVoice.h"
 #include "model/ProjectFactory.h"
 

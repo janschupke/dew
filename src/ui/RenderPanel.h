@@ -3,11 +3,11 @@
 #include <juce_gui_basics/juce_gui_basics.h>
 
 #include "app/Settings.h"
-#include "engine/OfflineRenderer.h"
+#include "io/OfflineRenderer.h"
 #include "model/ProjectDocument.h"
-#include "EditorState.h"
-#include "primitives/DewControls.h"
-#include "primitives/DewNumberField.h"
+#include "ui/EditorState.h"
+#include "ui/primitives/DewControls.h"
+#include "ui/primitives/DewNumberField.h"
 
 namespace dew
 {

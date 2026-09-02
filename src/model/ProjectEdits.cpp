@@ -1,8 +1,8 @@
-#include "ProjectEdits.h"
+#include "model/ProjectEdits.h"
 
-#include "Ids.h"
-#include "Meter.h"
-#include "ProjectSchema.h"
+#include "model/Ids.h"
+#include "model/Meter.h"
+#include "model/ProjectSchema.h"
 
 namespace dew
 {

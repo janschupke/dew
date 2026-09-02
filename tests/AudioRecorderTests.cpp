@@ -2,8 +2,8 @@
 #include <catch2/catch_test_macros.hpp>
 
 #include "engine/AudioEngine.h"
-#include "engine/AudioRecorder.h"
-#include "engine/LiveAudioHost.h"
+#include "io/AudioRecorder.h"
+#include "io/LiveAudioHost.h"
 #include "TestSupport.h"
 
 using namespace dew::testing;

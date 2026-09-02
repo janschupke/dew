@@ -4,15 +4,17 @@
 
 #include "engine/AudioEngine.h"
 #include "model/ProjectDocument.h"
-#include "EditorState.h"
+#include "ui/EditorState.h"
 #include "model/AutomationTargets.h"
-#include "PlaylistToolbar.h"
-#include "TimelineRuler.h"
-#include "TimelineView.h"
-#include "primitives/DewControls.h"
+#include "ui/PlaylistToolbar.h"
+#include "ui/TimelineRuler.h"
+#include "ui/TimelineView.h"
+#include "ui/primitives/DewControls.h"
 
 namespace dew
 {
+
+class SamplePool;
 
 /** The arrangement: pattern clips placed on tracks along a bar timeline.
 
@@ -31,7 +33,14 @@ class PlaylistComponent : public juce::Component,
                           private juce::ScrollBar::Listener
 {
 public:
-    PlaylistComponent (ProjectDocument&, AudioEngine&, EditorState&);
+    /** The sample pool is passed in rather than reached through the engine.
+
+        A file cache is not the engine's to lend out - the engine only needs
+        somewhere to get samples from, which is what SampleProvider is for. The
+        UI wants the peaks too, so it takes the pool itself, the way
+        InstrumentPanel and SampleSection already do.
+    */
+    PlaylistComponent (ProjectDocument&, AudioEngine&, EditorState&, SamplePool* = nullptr);
     ~PlaylistComponent() override;
 
     void paint (juce::Graphics&) override;
@@ -203,6 +212,7 @@ private:
     ProjectDocument& document;
     AudioEngine& engine;
     EditorState& editorState;
+    SamplePool* samplePool = nullptr;
 
     PlaylistToolbar toolbar;
 

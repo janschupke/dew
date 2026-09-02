@@ -1,6 +1,6 @@
-#include "RandomizePanel.h"
+#include "ui/RandomizePanel.h"
 
-#include "design/Tokens.h"
+#include "ui/design/Tokens.h"
 
 namespace dew
 {

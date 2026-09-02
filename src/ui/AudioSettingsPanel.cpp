@@ -1,6 +1,6 @@
-#include "AudioSettingsPanel.h"
+#include "ui/AudioSettingsPanel.h"
 
-#include "design/Tokens.h"
+#include "ui/design/Tokens.h"
 
 namespace dew
 {

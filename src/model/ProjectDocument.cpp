@@ -1,9 +1,9 @@
-#include "ProjectDocument.h"
+#include "model/ProjectDocument.h"
 
-#include "AssetPaths.h"
-#include "ProjectEdits.h"
-#include "ProjectFactory.h"
-#include "ProjectSerializer.h"
+#include "model/AssetPaths.h"
+#include "model/ProjectEdits.h"
+#include "model/ProjectFactory.h"
+#include "model/ProjectSerializer.h"
 
 namespace dew
 {

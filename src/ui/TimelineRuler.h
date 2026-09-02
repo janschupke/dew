@@ -2,7 +2,7 @@
 
 #include <juce_gui_basics/juce_gui_basics.h>
 
-#include "TimelineView.h"
+#include "ui/TimelineView.h"
 
 namespace dew
 {

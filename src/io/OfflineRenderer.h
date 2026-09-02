@@ -4,7 +4,7 @@
 
 #include <juce_audio_formats/juce_audio_formats.h>
 
-#include "AudioEngine.h"
+#include "engine/AudioEngine.h"
 #include "model/Constants.h"
 
 namespace dew

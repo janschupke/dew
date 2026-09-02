@@ -3,9 +3,9 @@
 #include <juce_gui_basics/juce_gui_basics.h>
 
 #include "model/ProjectDocument.h"
-#include "EditorState.h"
-#include "EffectChainComponent.h"
-#include "primitives/DewControls.h"
+#include "ui/EditorState.h"
+#include "ui/EffectChainComponent.h"
+#include "ui/primitives/DewControls.h"
 
 namespace dew
 {

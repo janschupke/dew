@@ -1,7 +1,7 @@
 #include <catch2/catch_approx.hpp>
 #include <catch2/catch_test_macros.hpp>
 
-#include "engine/MidiExporter.h"
+#include "io/MidiExporter.h"
 #include "engine/Sequencer.h"
 #include "model/Ids.h"
 #include "model/Meter.h"

@@ -3,7 +3,7 @@
 #include <array>
 #include <atomic>
 
-#include "EngineSnapshot.h"
+#include "engine/EngineSnapshot.h"
 
 namespace dew
 {

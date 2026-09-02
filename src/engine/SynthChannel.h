@@ -2,7 +2,7 @@
 
 #include <array>
 
-#include "SynthVoice.h"
+#include "engine/SynthVoice.h"
 
 namespace dew
 {

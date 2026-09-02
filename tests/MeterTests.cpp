@@ -10,7 +10,7 @@
 #include "engine/EngineSnapshot.h"
 #include "engine/Sequencer.h"
 #include "engine/Transport.h"
-#include "engine/OfflineRenderer.h"
+#include "io/OfflineRenderer.h"
 #include "engine/AudioEngine.h"
 #include "ui/EditorState.h"
 #include "ui/TimelineRuler.h"

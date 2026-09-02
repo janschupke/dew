@@ -1,10 +1,10 @@
-#include "TransportBar.h"
+#include "ui/TransportBar.h"
 
 #include "model/Ids.h"
 #include "model/Meter.h"
 #include "model/ProjectEdits.h"
-#include "DewLookAndFeel.h"
-#include "design/Tokens.h"
+#include "ui/DewLookAndFeel.h"
+#include "ui/design/Tokens.h"
 
 namespace dew
 {

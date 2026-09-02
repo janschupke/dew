@@ -1,8 +1,11 @@
 # ==============================================================================
 # dew_render - offline renderer. Loads a .dew project and writes a WAV without
 # touching an audio device, which is how playback gets verified in CI and
-# without ears. Real rendering lands in phase 3; phase 1 proves the console-app
-# target links dew_core.
+# without ears.
+#
+# It links dew_io and stops there. It used to link dew_core, which meant this
+# headless tool compiled and linked all thirty UI translation units and the
+# whole of juce_gui_extra to write a WAV.
 # ==============================================================================
 
 juce_add_console_app(dew_render
@@ -14,7 +17,7 @@ target_sources(dew_render PRIVATE render_main.cpp)
 
 target_link_libraries(dew_render
   PRIVATE
-    dew_core
+    dew_io
     juce::juce_recommended_config_flags
     juce::juce_recommended_warning_flags
 )
@@ -33,7 +36,7 @@ target_sources(dew_shot PRIVATE shot_main.cpp)
 
 target_link_libraries(dew_shot
   PRIVATE
-    dew_core
+    dew_ui
     juce::juce_recommended_config_flags
     juce::juce_recommended_warning_flags
 )

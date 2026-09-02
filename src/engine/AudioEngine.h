@@ -4,13 +4,13 @@
 #include <atomic>
 #include <vector>
 
-#include "MixerBus.h"
-#include "SignalTap.h"
-#include "PreviewQueue.h"
-#include "Sequencer.h"
-#include "SnapshotBridge.h"
-#include "SynthChannel.h"
-#include "Transport.h"
+#include "engine/MixerBus.h"
+#include "engine/SignalTap.h"
+#include "engine/PreviewQueue.h"
+#include "engine/Sequencer.h"
+#include "engine/SnapshotBridge.h"
+#include "engine/SynthChannel.h"
+#include "engine/Transport.h"
 #include "model/Constants.h"
 
 namespace dew
@@ -40,9 +40,9 @@ public:
         any one project and because the offline renderer and every engine test
         build snapshots with no audio at all. Null leaves audio channels silent.
     */
-    void setSamplePool (SamplePool* pool) noexcept  { samplePool = pool; }
+    void setSamplePool (SampleProvider* provider) noexcept  { samplePool = provider; }
 
-    SamplePool* getSamplePool() const noexcept      { return samplePool; }
+    SampleProvider* getSamplePool() const noexcept          { return samplePool; }
 
     /** Message thread: hand over a prebuilt snapshot. */
     void publish (EngineSnapshot snapshot);
@@ -217,7 +217,7 @@ private:
     SnapshotBridge bridge;
     Transport transport;
 
-    SamplePool* samplePool = nullptr;
+    SampleProvider* samplePool = nullptr;
 
     std::vector<SynthChannel> channels;
 

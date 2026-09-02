@@ -4,13 +4,15 @@
 
 #include "engine/AudioEngine.h"
 #include "model/ProjectDocument.h"
-#include "EditorState.h"
-#include "TimelineRuler.h"
-#include "StepGridComponent.h"
-#include "primitives/DewControls.h"
+#include "ui/EditorState.h"
+#include "ui/TimelineRuler.h"
+#include "ui/StepGridComponent.h"
+#include "ui/primitives/DewControls.h"
 
 namespace dew
 {
+
+class SamplePool;
 
 /** Channel headers on the left, the step grid on the right.
 
@@ -23,7 +25,7 @@ class ChannelRackComponent : public juce::Component,
                              private juce::ChangeListener
 {
 public:
-    ChannelRackComponent (ProjectDocument&, AudioEngine&, EditorState&);
+    ChannelRackComponent (ProjectDocument&, AudioEngine&, EditorState&, SamplePool* = nullptr);
     ~ChannelRackComponent() override;
 
     void paint (juce::Graphics&) override;

@@ -2,7 +2,7 @@
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/generators/catch_generators.hpp>
 
-#include "engine/OfflineRenderer.h"
+#include "io/OfflineRenderer.h"
 #include "model/ProjectFactory.h"
 
 using namespace dew;

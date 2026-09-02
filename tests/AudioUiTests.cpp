@@ -4,7 +4,7 @@
 #include <juce_gui_basics/juce_gui_basics.h>
 
 #include "engine/AudioEngine.h"
-#include "engine/SamplePool.h"
+#include "io/SamplePool.h"
 #include "model/Ids.h"
 #include "model/ProjectDocument.h"
 #include "model/ProjectEdits.h"
@@ -133,7 +133,7 @@ TEST_CASE ("an audio channel's row draws a waveform instead of cells", "[ui][aud
     auto channel = ProjectEdits::addAudioChannel (document.getState(), "Take", nullptr);
     ProjectEdits::setSampleSource (channel, audio.getFullPathName(), 44100, 44100, nullptr);
 
-    StepGridComponent grid { document, engine, editorState };
+    StepGridComponent grid { document, engine, editorState, &pool };
     grid.setSize (1200, 400);
     grid.setVisible (true);
     grid.resized();
@@ -177,7 +177,7 @@ TEST_CASE ("an audio row ignores clicks that would toggle a step", "[ui][audio]"
     const auto pattern = ProjectEdits::findPattern (document.getState(), 1);
     const auto notesBefore = pattern.getNumChildren();
 
-    StepGridComponent grid { document, engine, editorState };
+    StepGridComponent grid { document, engine, editorState, &pool };
     grid.setSize (1200, 400);
     grid.setVisible (true);
     grid.resized();
@@ -334,7 +334,7 @@ TEST_CASE ("a missing audio file does not take the editor down", "[ui][audio]")
     auto channel = ProjectEdits::addAudioChannel (document.getState(), "Gone", nullptr);
     ProjectEdits::setSampleSource (channel, "/nowhere/at/all/missing.wav", 44100, 44100, nullptr);
 
-    StepGridComponent grid { document, engine, editorState };
+    StepGridComponent grid { document, engine, editorState, &pool };
     grid.setSize (1200, 400);
     grid.setVisible (true);
     grid.resized();

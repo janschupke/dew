@@ -4,11 +4,13 @@
 
 #include "engine/AudioEngine.h"
 #include "model/ProjectDocument.h"
-#include "EditorState.h"
-#include "TimelineView.h"
+#include "ui/EditorState.h"
+#include "ui/TimelineView.h"
 
 namespace dew
 {
+
+class SamplePool;
 
 /** The FL-style step grid: one row per channel, one column per step.
 
@@ -27,7 +29,14 @@ class StepGridComponent : public juce::Component,
                           private juce::ScrollBar::Listener
 {
 public:
-    StepGridComponent (ProjectDocument&, AudioEngine&, EditorState&);
+    /** The sample pool is passed in rather than reached through the engine.
+
+        A file cache is not the engine's to lend out - the engine only needs
+        somewhere to get samples from, which is what SampleProvider is for. The
+        UI wants the peaks too, so it takes the pool itself, the way
+        InstrumentPanel and SampleSection already do.
+    */
+    StepGridComponent (ProjectDocument&, AudioEngine&, EditorState&, SamplePool* = nullptr);
     ~StepGridComponent() override;
 
     void paint (juce::Graphics&) override;
@@ -94,6 +103,7 @@ private:
     ProjectDocument& document;
     AudioEngine& engine;
     EditorState& editorState;
+    SamplePool* samplePool = nullptr;
 
     // A drag paints a run of steps to the same state as the first cell, rather
     // than toggling each one under the cursor - dragging over a lit step would

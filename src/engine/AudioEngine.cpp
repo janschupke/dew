@@ -1,10 +1,10 @@
-#include "AudioEngine.h"
+#include "engine/AudioEngine.h"
 
-#include "SamplePlayer.h"
+#include "engine/SamplePlayer.h"
 
 #include <cmath>
 #include <limits>
-#include "AtomicPeak.h"
+#include "engine/AtomicPeak.h"
 
 namespace dew
 {

@@ -4,8 +4,8 @@
 #include <juce_gui_basics/juce_gui_basics.h>
 
 #include "engine/AudioEngine.h"
-#include "engine/LiveAudioHost.h"
-#include "primitives/DewControls.h"
+#include "io/LiveAudioHost.h"
+#include "ui/primitives/DewControls.h"
 
 namespace dew
 {

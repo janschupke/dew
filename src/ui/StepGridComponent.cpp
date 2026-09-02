@@ -1,20 +1,20 @@
-#include "StepGridComponent.h"
+#include "ui/StepGridComponent.h"
 
-#include "engine/SamplePool.h"
+#include "io/SamplePool.h"
 
 #include "model/Ids.h"
 #include "model/Meter.h"
 #include "model/ProjectEdits.h"
-#include "design/Tokens.h"
-#include "primitives/DewControls.h"
+#include "ui/design/Tokens.h"
+#include "ui/primitives/DewControls.h"
 
 namespace dew
 {
 
 using namespace tokens;
 
-StepGridComponent::StepGridComponent (ProjectDocument& d, AudioEngine& e, EditorState& s)
-    : document (d), engine (e), editorState (s)
+StepGridComponent::StepGridComponent (ProjectDocument& d, AudioEngine& e, EditorState& s, SamplePool* p)
+    : document (d), engine (e), editorState (s), samplePool (p)
 {
     setComponentID ("stepGrid");
     horizontalScroll.addListener (this);
@@ -173,7 +173,7 @@ void StepGridComponent::paintWaveformRow (juce::Graphics& g, const juce::ValueTr
                                           juce::Rectangle<int> rowBounds,
                                           juce::Colour channelColour, bool muted)
 {
-    auto* pool = engine.getSamplePool();
+    auto* pool = samplePool;
 
     const auto sample = channel.getChildWithName (ids::SAMPLE);
     const auto path = sample.isValid() ? sample[ids::file].toString() : juce::String();

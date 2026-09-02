@@ -1,8 +1,8 @@
-#include "TimelineRuler.h"
+#include "ui/TimelineRuler.h"
 
 #include <cmath>
 
-#include "design/Tokens.h"
+#include "ui/design/Tokens.h"
 
 namespace dew
 {

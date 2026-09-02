@@ -1,8 +1,8 @@
-#include "DemoLibrary.h"
+#include "model/DemoLibrary.h"
 
 #include <DemoData.h>
 
-#include "ProjectSerializer.h"
+#include "model/ProjectSerializer.h"
 
 namespace dew
 {

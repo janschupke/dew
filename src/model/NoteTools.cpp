@@ -1,7 +1,7 @@
-#include "NoteTools.h"
+#include "model/NoteTools.h"
 
-#include "Ids.h"
-#include "ProjectEdits.h"
+#include "model/Ids.h"
+#include "model/ProjectEdits.h"
 
 namespace dew
 {

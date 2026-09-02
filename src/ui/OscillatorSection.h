@@ -4,8 +4,8 @@
 
 #include "engine/EngineSnapshot.h"
 #include "model/ProjectDocument.h"
-#include "EditorState.h"
-#include "primitives/DewControls.h"
+#include "ui/EditorState.h"
+#include "ui/primitives/DewControls.h"
 
 namespace dew
 {

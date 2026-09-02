@@ -4,20 +4,22 @@
 
 #include "engine/AudioEngine.h"
 #include "model/ProjectDocument.h"
-#include "ChannelRackComponent.h"
-#include "EditorState.h"
-#include "MixerComponent.h"
-#include "PianoRollComponent.h"
-#include "PlaylistComponent.h"
+#include "ui/ChannelRackComponent.h"
+#include "ui/EditorState.h"
+#include "ui/MixerComponent.h"
+#include "ui/PianoRollComponent.h"
+#include "ui/PlaylistComponent.h"
 
 namespace dew
 {
+
+class SamplePool;
 
 /** The four editors, one per tab: channel rack, piano roll, playlist, mixer. */
 class EditorTabs : public juce::TabbedComponent
 {
 public:
-    EditorTabs (ProjectDocument&, AudioEngine&, EditorState&);
+    EditorTabs (ProjectDocument&, AudioEngine&, EditorState&, SamplePool* = nullptr);
 
     void refresh();
 

@@ -1,4 +1,4 @@
-#include "MidiInputHost.h"
+#include "io/MidiInputHost.h"
 
 namespace dew
 {

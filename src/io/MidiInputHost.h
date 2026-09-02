@@ -2,7 +2,7 @@
 
 #include <juce_audio_devices/juce_audio_devices.h>
 
-#include "MidiRouter.h"
+#include "io/MidiRouter.h"
 
 namespace dew
 {

@@ -3,20 +3,20 @@
 #include <juce_gui_extra/juce_gui_extra.h>
 
 #include "engine/AudioEngine.h"
-#include "engine/LiveAudioHost.h"
-#include "engine/MidiInputHost.h"
-#include "engine/SamplePool.h"
+#include "io/LiveAudioHost.h"
+#include "io/MidiInputHost.h"
+#include "io/SamplePool.h"
 #include "model/ProjectDocument.h"
-#include "ChannelRackComponent.h"
-#include "DewLookAndFeel.h"
-#include "EditorState.h"
-#include "EditorTabs.h"
-#include "InstrumentPanel.h"
+#include "ui/ChannelRackComponent.h"
+#include "ui/DewLookAndFeel.h"
+#include "ui/EditorState.h"
+#include "ui/EditorTabs.h"
+#include "ui/InstrumentPanel.h"
 #include "app/Settings.h"
-#include "engine/RenderJob.h"
-#include "RenderPanel.h"
-#include "StatusBar.h"
-#include "TransportBar.h"
+#include "io/RenderJob.h"
+#include "ui/RenderPanel.h"
+#include "ui/StatusBar.h"
+#include "ui/TransportBar.h"
 
 namespace dew
 {

@@ -1,8 +1,8 @@
-#include "EngineSnapshot.h"
+#include "engine/EngineSnapshot.h"
 
 #include "model/AssetPaths.h"
-#include "SamplePool.h"
-#include "Wavetable.h"
+#include "engine/SampleProvider.h"
+#include "engine/Wavetable.h"
 
 #include <atomic>
 #include <cmath>
@@ -374,7 +374,7 @@ namespace
     against what the document claims, so a trim left over from a longer take
     cannot make the render path read off the end of a shorter one.
 */
-void readSample (ChannelSnapshot& c, const juce::ValueTree& channel, SamplePool* pool,
+void readSample (ChannelSnapshot& c, const juce::ValueTree& channel, SampleProvider* samples,
                  const std::function<void (const juce::String&)>& warn)
 {
     const auto node = channel.getChildWithName (ids::SAMPLE);
@@ -387,24 +387,25 @@ void readSample (ChannelSnapshot& c, const juce::ValueTree& channel, SamplePool*
     if (path.isEmpty())
         return;
 
-    if (pool == nullptr)
+    if (samples == nullptr)
         return;
 
-    const auto& entry = pool->loadReference (path);
+    auto sourceSampleRate = kDefaultSampleRate;
+    auto audio = samples->audioFor (path, sourceSampleRate);
 
-    if (! entry.isValid())
+    if (audio == nullptr || audio->getNumSamples() == 0)
     {
         warn ("Channel \"" + channel[ids::name].toString() + "\" refers to audio \"" + path
               + "\", which could not be read; it will not play.");
         return;
     }
 
-    c.audio = entry.audio;
+    c.audio = audio;
 
-    const auto available = entry.audio->getNumSamples();
+    const auto available = audio->getNumSamples();
 
     auto& settings = c.sample;
-    settings.sourceSampleRate = entry.sourceSampleRate;
+    settings.sourceSampleRate = sourceSampleRate;
 
     settings.startSample = juce::jlimit (0, available, (int) node[ids::startSample]);
 
@@ -416,9 +417,9 @@ void readSample (ChannelSnapshot& c, const juce::ValueTree& channel, SamplePool*
 
     const auto region = juce::jmax (0, settings.endSample - settings.startSample);
 
-    const auto toFrames = [&entry] (double ms)
+    const auto toFrames = [sourceSampleRate] (double ms)
     {
-        return (int) juce::jmax (0.0, ms * 0.001 * entry.sourceSampleRate);
+        return (int) juce::jmax (0.0, ms * 0.001 * sourceSampleRate);
     };
 
     // Fades are clamped to the region and then to each other: two fades longer
@@ -440,7 +441,7 @@ void readSample (ChannelSnapshot& c, const juce::ValueTree& channel, SamplePool*
 } // namespace
 
 EngineSnapshot buildSnapshot (const juce::ValueTree& project, juce::StringArray* warnings,
-                              SamplePool* pool)
+                              SampleProvider* samples)
 {
     const auto warn = [warnings] (const juce::String& message)
     {
@@ -554,7 +555,7 @@ EngineSnapshot buildSnapshot (const juce::ValueTree& project, juce::StringArray*
                                                               : ChannelSource::synth;
 
         if (c.source == ChannelSource::audio)
-            readSample (c, channel, pool, warn);
+            readSample (c, channel, samples, warn);
 
         snapshot.channels.push_back (c);
     }

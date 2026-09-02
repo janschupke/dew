@@ -1,10 +1,10 @@
-#include "MixerComponent.h"
+#include "ui/MixerComponent.h"
 
 #include "model/ProjectEdits.h"
-#include "design/Tokens.h"
+#include "ui/design/Tokens.h"
 
 #include "model/Ids.h"
-#include "DewLookAndFeel.h"
+#include "ui/DewLookAndFeel.h"
 
 namespace dew
 {

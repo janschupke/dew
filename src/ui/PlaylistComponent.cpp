@@ -1,13 +1,13 @@
-#include "PlaylistComponent.h"
+#include "ui/PlaylistComponent.h"
 
-#include "engine/SamplePool.h"
+#include "io/SamplePool.h"
 
 #include "model/Ids.h"
 #include "model/Meter.h"
 #include "model/ProjectEdits.h"
-#include "TimelineRuler.h"
-#include "design/Tokens.h"
-#include "primitives/DewControls.h"
+#include "ui/TimelineRuler.h"
+#include "ui/design/Tokens.h"
+#include "ui/primitives/DewControls.h"
 
 namespace dew
 {
@@ -169,8 +169,8 @@ private:
 
 // -----------------------------------------------------------------------------
 
-PlaylistComponent::PlaylistComponent (ProjectDocument& d, AudioEngine& e, EditorState& s)
-    : document (d), engine (e), editorState (s)
+PlaylistComponent::PlaylistComponent (ProjectDocument& d, AudioEngine& e, EditorState& s, SamplePool* p)
+    : document (d), engine (e), editorState (s), samplePool (p)
 {
     setComponentID ("playlist");
     document.getState().addListener (this);
@@ -1290,7 +1290,7 @@ void PlaylistComponent::paintAudioClip (juce::Graphics& g, const juce::ValueTree
     g.setColour (clipColour.brighter (0.3f).withAlpha (audible ? 1.0f : 0.5f));
     g.drawRoundedRectangle (bounds, radius::sm, stroke::regular);
 
-    auto* pool = engine.getSamplePool();
+    auto* pool = samplePool;
     const auto sample = channel.getChildWithName (ids::SAMPLE);
     const auto path = sample.isValid() ? sample[ids::file].toString() : juce::String();
 

@@ -2,7 +2,7 @@
 
 #include <juce_gui_extra/juce_gui_extra.h>
 
-#include "Ids.h"
+#include "model/Ids.h"
 
 namespace dew
 {

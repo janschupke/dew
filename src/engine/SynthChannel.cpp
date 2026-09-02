@@ -1,4 +1,4 @@
-#include "SynthChannel.h"
+#include "engine/SynthChannel.h"
 
 namespace dew
 {

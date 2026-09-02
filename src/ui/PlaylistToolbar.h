@@ -2,7 +2,7 @@
 
 #include <juce_gui_basics/juce_gui_basics.h>
 
-#include "primitives/DewControls.h"
+#include "ui/primitives/DewControls.h"
 
 namespace dew
 {

@@ -1,7 +1,7 @@
 #include <catch2/catch_approx.hpp>
 #include <catch2/catch_test_macros.hpp>
 
-#include "engine/MidiRouter.h"
+#include "io/MidiRouter.h"
 #include "model/ProjectFactory.h"
 
 using namespace dew;

@@ -2,7 +2,7 @@
 #include <catch2/matchers/catch_matchers_floating_point.hpp>
 
 #include "engine/EngineSnapshot.h"
-#include "engine/OfflineRenderer.h"
+#include "io/OfflineRenderer.h"
 #include "model/AutomationTargets.h"
 #include "model/Ids.h"
 #include "model/ProjectEdits.h"

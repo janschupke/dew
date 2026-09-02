@@ -2,8 +2,8 @@
 
 #include <juce_audio_devices/juce_audio_devices.h>
 
-#include "AudioEngine.h"
-#include "AudioRecorder.h"
+#include "engine/AudioEngine.h"
+#include "io/AudioRecorder.h"
 
 namespace dew
 {

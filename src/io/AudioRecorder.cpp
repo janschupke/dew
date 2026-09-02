@@ -1,5 +1,5 @@
-#include "AudioRecorder.h"
-#include "AtomicPeak.h"
+#include "io/AudioRecorder.h"
+#include "engine/AtomicPeak.h"
 
 namespace dew
 {

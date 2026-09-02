@@ -5,10 +5,10 @@
 #include "engine/AudioEngine.h"
 #include "model/NoteTools.h"
 #include "model/ProjectDocument.h"
-#include "EditorState.h"
-#include "PianoRollToolbar.h"
-#include "TimelineRuler.h"
-#include "TimelineView.h"
+#include "ui/EditorState.h"
+#include "ui/PianoRollToolbar.h"
+#include "ui/TimelineRuler.h"
+#include "ui/TimelineView.h"
 
 namespace dew
 {

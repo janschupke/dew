@@ -3,7 +3,7 @@
 
 #include <juce_gui_basics/juce_gui_basics.h>
 
-#include "engine/OfflineRenderer.h"
+#include "io/OfflineRenderer.h"
 #include "engine/SynthChannel.h"
 #include "model/Ids.h"
 #include "model/ProjectDocument.h"

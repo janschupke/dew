@@ -3,10 +3,10 @@
 #include <juce_gui_basics/juce_gui_basics.h>
 
 #include "model/ProjectDocument.h"
-#include "EditorState.h"
-#include "EffectChainHost.h"
-#include "OscillatorSection.h"
-#include "SampleSection.h"
+#include "ui/EditorState.h"
+#include "ui/EffectChainHost.h"
+#include "ui/OscillatorSection.h"
+#include "ui/SampleSection.h"
 
 namespace dew
 {

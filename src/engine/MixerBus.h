@@ -2,7 +2,7 @@
 
 #include <juce_audio_basics/juce_audio_basics.h>
 
-#include "EngineSnapshot.h"
+#include "engine/EngineSnapshot.h"
 
 namespace dew
 {

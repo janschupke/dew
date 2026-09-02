@@ -1,15 +1,15 @@
-#include "MainComponent.h"
+#include "ui/MainComponent.h"
 
 #include <cmath>
 
 #include "model/AssetPaths.h"
 #include "model/Meter.h"
 
-#include "AudioSettingsPanel.h"
-#include "MidiSettingsPanel.h"
+#include "ui/AudioSettingsPanel.h"
+#include "ui/MidiSettingsPanel.h"
 
 #include "model/ProjectEdits.h"
-#include "design/Tokens.h"
+#include "ui/design/Tokens.h"
 
 #include "model/Ids.h"
 
@@ -20,7 +20,7 @@ MainComponent::MainComponent (bool openAudioDevice)
     : audioHost (engine),
       midiHost (audioHost.getDeviceManager(), engine),
       transportBar (document, engine, editorState),
-      tabs (document, engine, editorState),
+      tabs (document, engine, editorState, &samplePool),
       instrumentPanel (document, editorState, &samplePool),
       statusBar (document, editorState, audioHost)
 {

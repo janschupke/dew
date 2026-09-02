@@ -1,7 +1,7 @@
 #include <catch2/catch_test_macros.hpp>
 
 #include "engine/EngineSnapshot.h"
-#include "engine/OfflineRenderer.h"
+#include "io/OfflineRenderer.h"
 #include "model/DemoLibrary.h"
 #include "model/Ids.h"
 #include "model/ProjectFactory.h"

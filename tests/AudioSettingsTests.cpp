@@ -3,7 +3,7 @@
 #include <juce_gui_basics/juce_gui_basics.h>
 
 #include "engine/AudioEngine.h"
-#include "engine/LiveAudioHost.h"
+#include "io/LiveAudioHost.h"
 #include "model/ProjectFactory.h"
 #include "ui/AudioSettingsPanel.h"
 

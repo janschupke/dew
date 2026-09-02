@@ -3,8 +3,8 @@
 #include <juce_gui_basics/juce_gui_basics.h>
 
 #include "app/Settings.h"
-#include "engine/MidiInputHost.h"
-#include "primitives/DewControls.h"
+#include "io/MidiInputHost.h"
+#include "ui/primitives/DewControls.h"
 
 namespace dew
 {

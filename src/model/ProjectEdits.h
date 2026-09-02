@@ -2,7 +2,7 @@
 
 #include <juce_data_structures/juce_data_structures.h>
 
-#include "AutomationTargets.h"
+#include "model/AutomationTargets.h"
 
 namespace dew
 {

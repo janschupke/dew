@@ -1,15 +1,16 @@
-#include "EditorTabs.h"
+#include "ui/EditorTabs.h"
 
-#include "DewLookAndFeel.h"
+#include "ui/DewLookAndFeel.h"
 
 namespace dew
 {
 
-EditorTabs::EditorTabs (ProjectDocument& document, AudioEngine& engine, EditorState& editorState)
+EditorTabs::EditorTabs (ProjectDocument& document, AudioEngine& engine, EditorState& editorState,
+                        SamplePool* pool)
     : juce::TabbedComponent (juce::TabbedButtonBar::TabsAtTop),
-      channelRack (document, engine, editorState),
+      channelRack (document, engine, editorState, pool),
       pianoRoll (document, engine, editorState),
-      playlist (document, engine, editorState),
+      playlist (document, engine, editorState, pool),
       mixer (document, editorState, &engine)
 {
     setComponentID ("editorTabs");

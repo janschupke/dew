@@ -1,10 +1,10 @@
-#include "DewGallery.h"
+#include "ui/design/DewGallery.h"
 
 #include <array>
 #include <cmath>
 
-#include "Icons.h"
-#include "Tokens.h"
+#include "ui/design/Icons.h"
+#include "ui/design/Tokens.h"
 
 namespace dew
 {

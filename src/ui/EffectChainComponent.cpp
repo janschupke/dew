@@ -1,11 +1,11 @@
-#include "EffectChainComponent.h"
+#include "ui/EffectChainComponent.h"
 
 #include "engine/Effects.h"
 #include "model/Ids.h"
 #include "model/ProjectEdits.h"
 #include "model/ProjectSchema.h"
-#include "design/Icons.h"
-#include "design/Tokens.h"
+#include "ui/design/Icons.h"
+#include "ui/design/Tokens.h"
 
 namespace dew
 {

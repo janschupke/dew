@@ -8,7 +8,7 @@
 
 #include "model/AutomationTargets.h"
 #include "model/ProjectSchema.h"
-#include "Effects.h"
+#include "engine/Effects.h"
 #include "model/Constants.h"
 
 namespace dew
@@ -354,7 +354,7 @@ struct EngineSnapshot
     bool anyAutomation = false;
 };
 
-class SamplePool;
+struct SampleProvider;
 
 /** Builds a snapshot from a project tree. Runs on the message thread.
     Anything beyond the engine limits is dropped, and described in `warnings`.
@@ -366,6 +366,6 @@ class SamplePool;
 */
 EngineSnapshot buildSnapshot (const juce::ValueTree& project,
                               juce::StringArray* warnings = nullptr,
-                              SamplePool* pool = nullptr);
+                              SampleProvider* samples = nullptr);
 
 } // namespace dew

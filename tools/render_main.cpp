@@ -1,8 +1,8 @@
 #include <juce_core/juce_core.h>
 
 #include "BuildInfo.h"
-#include "engine/OfflineRenderer.h"
-#include "engine/SamplePool.h"
+#include "io/OfflineRenderer.h"
+#include "io/SamplePool.h"
 #include "model/ProjectFactory.h"
 #include "model/ProjectSerializer.h"
 #include "CliArgs.h"

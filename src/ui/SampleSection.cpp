@@ -1,7 +1,7 @@
-#include "SampleSection.h"
+#include "ui/SampleSection.h"
 
 #include "model/ProjectEdits.h"
-#include "design/Tokens.h"
+#include "ui/design/Tokens.h"
 
 namespace dew
 {

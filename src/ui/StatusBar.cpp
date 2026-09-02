@@ -1,9 +1,9 @@
-#include "StatusBar.h"
+#include "ui/StatusBar.h"
 
 #include "model/Ids.h"
 #include "model/ProjectEdits.h"
-#include "design/Tokens.h"
-#include "primitives/DewControls.h"
+#include "ui/design/Tokens.h"
+#include "ui/primitives/DewControls.h"
 
 namespace dew
 {
