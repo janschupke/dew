@@ -6,6 +6,7 @@
 #include "model/ProjectSchema.h"
 #include "ui/design/Icons.h"
 #include "ui/design/Tokens.h"
+#include "ui/primitives/HoverTracker.h"
 
 namespace dew
 {
@@ -199,8 +200,8 @@ public:
         draggingFromGrip = false;
     }
 
-    void mouseEnter (const juce::MouseEvent&) override { setHovered (true); }
-    void mouseExit (const juce::MouseEvent&) override  { setHovered (isMouseOver (true)); }
+    void mouseEnter (const juce::MouseEvent&) override { hover.enter(); }
+    void mouseExit (const juce::MouseEvent&) override  { hover.exit(); }
 
     void paint (juce::Graphics& g) override
     {
@@ -214,7 +215,7 @@ public:
         auto header = getLocalBounds().removeFromTop (size::rowHeight).toFloat();
 
         g.setColour (selected ? colour::surfaceHover
-                              : hovered ? colour::surfaceRaised.brighter (emphasis::surfaceLift)
+                              : hover.isHovered() ? colour::surfaceRaised.brighter (emphasis::surfaceLift)
                                         : colour::surfaceRaised);
         g.fillRoundedRectangle (header, radius::md);
 
@@ -382,12 +383,6 @@ private:
         juce::Identifier property;
     };
 
-    void setHovered (bool shouldBeHovered)
-    {
-        if (std::exchange (hovered, shouldBeHovered) != shouldBeHovered)
-            repaint();
-    }
-
     void write (const juce::Identifier& property, double value)
     {
         if (updating)
@@ -485,7 +480,7 @@ private:
     EffectType type = EffectType::filter;
 
     bool selected = false;
-    bool hovered = false;
+    HoverTracker hover { *this };
     bool updating = false;
     bool draggingFromGrip = false;
 

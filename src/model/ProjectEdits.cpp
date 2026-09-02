@@ -1,5 +1,6 @@
 #include "model/ProjectEdits.h"
 
+#include "model/ChannelColour.h"
 #include "model/Ids.h"
 #include "model/Meter.h"
 #include "model/ProjectSchema.h"
@@ -173,6 +174,12 @@ juce::ValueTree ProjectEdits::addChannel (juce::ValueTree project, const juce::S
     const auto id = nextFreeId (project, ids::CHANNEL);
     channel.setProperty (ids::id, id, nullptr);
     channel.setProperty (ids::name, name.isNotEmpty() ? name : "Channel " + juce::String (id), nullptr);
+
+    // Round the ramp rather than taking the schema default, which is one blue:
+    // every channel a user added came out the same colour as the last, in an
+    // application whose channel rack, step grid, piano roll, playlist and mixer
+    // all identify a channel BY its colour.
+    channel.setProperty (ids::colour, channelColour::defaultHex (id - 1), nullptr);
 
     // Route to a mixer track if one with a matching number exists, else insert 1.
     const auto mixer = project.getChildWithName (ids::MIXER);

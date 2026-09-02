@@ -3,6 +3,7 @@
 #include <juce_gui_basics/juce_gui_basics.h>
 
 #include "RollHarness.h"
+#include "model/ChannelColour.h"
 #include "ui/ChannelRackComponent.h"
 
 using namespace dew;
@@ -518,7 +519,10 @@ TEST_CASE ("notes never paint over the keyboard", "[ui][pianoroll]")
     h.roll.paintEntireComponent (g, true);
 
     const auto keys = h.roll.getKeyboardArea();
-    const juce::Colour channelColour (0xffe4572e);
+    // The first ramp entry, read from where it is declared: hard-coding the
+    // hex made this test fail for a reason that had nothing to do with the
+    // piano roll the day the palette changed.
+    const auto rampColour = juce::Colour::fromString (dew::channelColour::defaultHex (0));
 
     int bleeding = 0;
 
@@ -527,9 +531,9 @@ TEST_CASE ("notes never paint over the keyboard", "[ui][pianoroll]")
         {
             const auto pixel = image.getPixelAt (x, y);
 
-            if (std::abs ((int) pixel.getRed()   - (int) channelColour.getRed())   < 24
-             && std::abs ((int) pixel.getGreen() - (int) channelColour.getGreen()) < 24
-             && std::abs ((int) pixel.getBlue()  - (int) channelColour.getBlue())  < 24)
+            if (std::abs ((int) pixel.getRed()   - (int) rampColour.getRed())   < 24
+             && std::abs ((int) pixel.getGreen() - (int) rampColour.getGreen()) < 24
+             && std::abs ((int) pixel.getBlue()  - (int) rampColour.getBlue())  < 24)
                 ++bleeding;
         }
 

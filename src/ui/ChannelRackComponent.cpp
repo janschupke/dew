@@ -1,11 +1,13 @@
 #include "ui/ChannelRackComponent.h"
 
+#include "model/ChannelColour.h"
 #include "model/Ids.h"
 #include "model/Meter.h"
 #include "model/ProjectEdits.h"
 #include "ui/design/Icons.h"
 #include "ui/design/Tokens.h"
 #include "ui/primitives/DewControls.h"
+#include "ui/primitives/HoverTracker.h"
 
 namespace dew
 {
@@ -124,11 +126,10 @@ public:
         const auto selected = editorState.getSelectedChannelId() == getChannelId();
 
         g.setColour (selected ? colour::surfaceHover
-                              : hovered ? colour::surfaceRaised : colour::surface);
+                              : hover.isHovered() ? colour::surfaceRaised : colour::surface);
         g.fillAll();
 
-        const auto colourValue = juce::Colour::fromString (
-            "ff" + channel[ids::colour].toString().getLastCharacters (6));
+        const auto colourValue = channelColour::of (channel);
 
         g.setColour (colourValue);
         g.fillRect (0, 0, 4, getHeight());
@@ -225,8 +226,8 @@ public:
             nameLabel.showEditor();
     }
 
-    void mouseEnter (const juce::MouseEvent&) override { setHovered (true); }
-    void mouseExit (const juce::MouseEvent&) override  { setHovered (! isMouseOver (true)); }
+    void mouseEnter (const juce::MouseEvent&) override { hover.enter(); }
+    void mouseExit (const juce::MouseEvent&) override  { hover.exit(); }
 
     void resized() override
     {
@@ -302,15 +303,9 @@ private:
         addAndMakeVisible (knob);
     }
 
-    void setHovered (bool shouldBeHovered)
-    {
-        if (std::exchange (hovered, shouldBeHovered) != shouldBeHovered)
-            repaint();
-    }
-
     juce::Label nameLabel;
     juce::Rectangle<int> pitchBounds;
-    bool hovered = false;
+    HoverTracker hover { *this };
     bool updating = false;
     bool dragging = false;
     DewLetterToggle muteButton { "M", colour::warning, "Mute this channel" };

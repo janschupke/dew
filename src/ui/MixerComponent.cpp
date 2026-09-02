@@ -2,7 +2,9 @@
 
 #include "model/ProjectEdits.h"
 #include "ui/design/Tokens.h"
+#include "ui/primitives/HoverTracker.h"
 
+#include "model/ChannelColour.h"
 #include "model/Ids.h"
 #include "ui/DewLookAndFeel.h"
 
@@ -181,8 +183,8 @@ public:
             nameLabel.showEditor();
     }
 
-    void mouseEnter (const juce::MouseEvent&) override { setHovered (true); }
-    void mouseExit (const juce::MouseEvent&) override  { setHovered (isMouseOver (true)); }
+    void mouseEnter (const juce::MouseEvent&) override { hover.enter(); }
+    void mouseExit (const juce::MouseEvent&) override  { hover.exit(); }
 
     void mouseDown (const juce::MouseEvent& event) override
     {
@@ -203,7 +205,7 @@ public:
         const auto body = getLocalBounds().toFloat().reduced (2.0f);
 
         g.setColour (selected ? tokens::colour::surfaceRaised
-                              : hovered ? tokens::colour::surface.brighter (tokens::emphasis::surfaceLift)
+                              : hover.isHovered() ? tokens::colour::surface.brighter (tokens::emphasis::surfaceLift)
                                         : tokens::colour::surface);
         g.fillRoundedRectangle (body, tokens::radius::md);
 
@@ -357,19 +359,13 @@ private:
         }
     }
 
-    void setHovered (bool shouldBeHovered)
-    {
-        if (std::exchange (hovered, shouldBeHovered) != shouldBeHovered)
-            repaint();
-    }
-
     static constexpr int meterWidth = 8;
     static constexpr int routingHeight = 58;
     static constexpr double meterFloorDb = -48.0;
 
     bool isMaster;
     bool selected = false;
-    bool hovered = false;
+    HoverTracker hover { *this };
 
     float level = 0.0f;
     float lastPaintedLevel = -1.0f;
@@ -538,8 +534,7 @@ void MixerComponent::updateRouting()
                     continue;
 
                 names.add (channel[ids::name].toString());
-                colours.add (juce::Colour::fromString (
-                    "ff" + channel[ids::colour].toString().getLastCharacters (6)));
+                colours.add (channelColour::of (channel));
                 channelIds.add ((int) channel[ids::id]);
             }
         }

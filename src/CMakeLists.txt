@@ -76,6 +76,7 @@ add_library(dew_model STATIC
   model/ProjectSchema.cpp
   model/ProjectSerializer.cpp
   model/DemoLibrary.cpp
+  model/ChannelColour.cpp
   model/ProjectFactory.cpp
   model/ProjectDocument.cpp
   model/ProjectEdits.cpp

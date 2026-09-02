@@ -1,5 +1,6 @@
 #include "ui/PianoRollComponent.h"
 
+#include "model/ChannelColour.h"
 #include "model/Ids.h"
 #include "model/Meter.h"
 #include "model/ProjectEdits.h"
@@ -192,7 +193,7 @@ juce::Colour PianoRollComponent::channelColour() const
     if (! channel.isValid())
         return tokens::colour::accent;
 
-    return juce::Colour::fromString ("ff" + channel[ids::colour].toString().getLastCharacters (6));
+    return channelColour::of (channel);
 }
 
 // --- geometry ----------------------------------------------------------------

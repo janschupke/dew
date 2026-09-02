@@ -2,6 +2,7 @@
 
 #include "io/SamplePool.h"
 
+#include "model/ChannelColour.h"
 #include "model/Ids.h"
 #include "model/Meter.h"
 #include "model/ProjectEdits.h"
@@ -1279,7 +1280,7 @@ void PlaylistComponent::paintAudioClip (juce::Graphics& g, const juce::ValueTree
     // its channel - one recording, one channel - and the arrangement should say
     // which one at a glance, the way the channel rack's colour tabs do.
     auto clipColour = channel.isValid()
-                          ? juce::Colour::fromString ("ff" + channel[ids::colour].toString().getLastCharacters (6))
+                          ? channelColour::of (channel)
                           : colour::textDisabled;
 
     if (! audible)

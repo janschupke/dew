@@ -2,6 +2,7 @@
 
 #include "io/SamplePool.h"
 
+#include "model/ChannelColour.h"
 #include "model/Ids.h"
 #include "model/Meter.h"
 #include "model/ProjectEdits.h"
@@ -281,8 +282,7 @@ void StepGridComponent::paint (juce::Graphics& g)
     {
         const auto channel = channelForRow (row);
         const auto channelId = (int) channel[ids::id];
-        const auto colourValue = juce::Colour::fromString (
-            "ff" + channel[ids::colour].toString().getLastCharacters (6));
+        const auto colourValue = channelColour::of (channel);
 
         const juce::Rectangle<int> rowBounds (0, row * size::rowHeight, getWidth(), size::rowHeight);
 

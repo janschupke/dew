@@ -6,7 +6,10 @@
 #include "ui/design/DewGallery.h"
 #include "ui/SignalScope.h"
 #include "ui/design/Icons.h"
+#include "model/ChannelColour.h"
+#include "model/Ids.h"
 #include "ui/design/Tokens.h"
+#include "ui/primitives/HoverTracker.h"
 #include "ui/primitives/DewControls.h"
 #include "ui/primitives/DewNumberField.h"
 #include "PaintProbe.h"
@@ -481,4 +484,86 @@ TEST_CASE ("the gallery shows the signal scope empty and with a signal", "[desig
     // looks like as well as what a signal does.
     REQUIRE (idle == 1);
     REQUIRE (driven == 1);
+}
+
+TEST_CASE ("hover is tracked once, and the right way round", "[ui][design]")
+{
+    // The rack row's exit handler read `setHovered (! isMouseOver (true))`, so
+    // it lit up when the pointer left and went dark when it arrived - the same
+    // three lines as the mixer strip's and the effect card's, negated.
+    juce::Component owner;
+    owner.setSize (100, 30);
+
+    dew::HoverTracker hover { owner };
+    auto changes = 0;
+    hover.onChange = [&changes] { ++changes; };
+
+    REQUIRE_FALSE (hover.isHovered());
+
+    hover.enter();
+    CHECK (hover.isHovered());
+    CHECK (changes == 1);
+
+    // Idempotent: mouseEnter fires again when the pointer crosses back from a
+    // child, and re-stating the same value must not cost a repaint.
+    hover.enter();
+    CHECK (hover.isHovered());
+    CHECK (changes == 1);
+
+    // Nothing is under the pointer in a headless harness, so exit means gone.
+    hover.exit();
+    CHECK_FALSE (hover.isHovered());
+    CHECK (changes == 2);
+
+    hover.exit();
+    CHECK (changes == 2);
+}
+
+TEST_CASE ("the channel ramp says the same thing in both layers", "[design][model]")
+{
+    // The ramp is stated twice on purpose. The document layer needs it without
+    // depending on the design system - a .dew file stores a colour, and
+    // dew_model must not link the UI's vocabulary to write one - and the design
+    // system needs it for painting a channel that has no stored colour.
+    //
+    // Two declarations and no dependency is a deliberate trade, and this is the
+    // half of it that has to be paid: they are compared here, so a palette
+    // change that touches one and not the other is a failing test rather than a
+    // rack whose rows disagree with its grid.
+    REQUIRE (dew::channelColour::rampSize()
+             == (int) (sizeof (tokens::colour::channelRamp) / sizeof (tokens::colour::channelRamp[0])));
+
+    for (int i = 0; i < dew::channelColour::rampSize(); ++i)
+    {
+        INFO ("ramp entry " << i);
+        REQUIRE (juce::Colour::fromString (dew::channelColour::defaultHex (i))
+                 == tokens::colour::channelColour (i));
+    }
+
+    // Both wrap, and both wrap the same way, so channel 9 and channel 1 are one
+    // colour in the document and one colour on screen.
+    REQUIRE (dew::channelColour::defaultHex (8) == dew::channelColour::defaultHex (0));
+    REQUIRE (dew::channelColour::defaultHex (-1) == dew::channelColour::defaultHex (7));
+}
+
+TEST_CASE ("a channel with no colour still has one", "[design][model]")
+{
+    // Three of the five copied read expressions produced transparent black from
+    // a missing property, which paints as nothing at all - a channel with no
+    // stripe, no clip fill and no note colour, and no clue why.
+    juce::ValueTree channel { dew::ids::CHANNEL };
+    CHECK (dew::channelColour::of (channel).isOpaque());
+
+    // Length is not validity - "not a colour" also ends in six characters, and
+    // juce reads a non-hex digit as a zero, so this used to come back as an
+    // almost-black that looked like a deliberate choice.
+    channel.setProperty (dew::ids::colour, "not a colour", nullptr);
+    CHECK (dew::channelColour::of (channel) == tokens::colour::channelColour (0));
+
+    // And a real value reads back exactly, in either stored spelling.
+    channel.setProperty (dew::ids::colour, "ff29a19c", nullptr);
+    CHECK (dew::channelColour::of (channel) == tokens::colour::channelColour (1));
+
+    channel.setProperty (dew::ids::colour, "29a19c", nullptr);
+    CHECK (dew::channelColour::of (channel) == tokens::colour::channelColour (1));
 }
