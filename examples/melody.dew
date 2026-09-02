@@ -1,5 +1,5 @@
 {
-    "formatVersion": 4,
+    "formatVersion": 5,
     "name": "Piano Roll",
     "tempoBpm": 96.0,
     "stepsPerBeat": 4,
@@ -452,7 +452,8 @@
     },
     "mixer": {
       "master": {
-        "gain": 0.9
+        "gain": 0.9,
+        "effects": []
       },
       "tracks": [
         {

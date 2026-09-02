@@ -294,8 +294,12 @@ EngineSnapshot buildSnapshot (const juce::ValueTree& project, juce::StringArray*
 
     // --- mixer ---------------------------------------------------------------
     const auto mixer = project.getChildWithName (ids::MIXER);
-    snapshot.masterGain = juce::jlimit (0.0f, 2.0f,
-                                        (float) (double) mixer.getChildWithName (ids::MASTER)[ids::gain]);
+    const auto master = mixer.getChildWithName (ids::MASTER);
+    snapshot.masterGain = juce::jlimit (0.0f, 2.0f, (float) (double) master[ids::gain]);
+
+    // Before the tracks, so the master's effects claim their pool units first
+    // and adding an insert cannot move them.
+    snapshot.masterEffects = readEffectChain (master, "Master", unitOwners, warn);
 
     for (const auto& track : mixer)
     {
@@ -384,6 +388,8 @@ EngineSnapshot buildSnapshot (const juce::ValueTree& project, juce::StringArray*
 
     for (const auto& track : snapshot.mixerTracks)
         snapshot.anyEffects = snapshot.anyEffects || chainHasWork (track.effects);
+
+    snapshot.anyEffects = snapshot.anyEffects || chainHasWork (snapshot.masterEffects);
 
     // --- patterns ------------------------------------------------------------
     for (const auto& pattern : project)

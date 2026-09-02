@@ -118,6 +118,40 @@ void AudioEngine::drainPreviewQueue (const EngineSnapshot& snapshot) noexcept
     }
 }
 
+void AudioEngine::recordPeak (std::atomic<float>& slot, const float* left, const float* right,
+                              int numSamples, float scale) noexcept
+{
+    auto peak = 0.0f;
+
+    for (int i = 0; i < numSamples; ++i)
+        peak = juce::jmax (peak, std::abs (left[i]), std::abs (right[i]));
+
+    peak *= scale;
+
+    // Keep the loudest seen since the last read: a meter must not miss a
+    // transient just because it fell between two message-thread ticks.
+    auto current = slot.load (std::memory_order_relaxed);
+
+    while (peak > current
+           && ! slot.compare_exchange_weak (current, peak, std::memory_order_release,
+                                            std::memory_order_relaxed))
+    {
+    }
+}
+
+float AudioEngine::readAndClearTrackPeak (int trackIndex) noexcept
+{
+    if (trackIndex < 0 || trackIndex >= kMaxMixerTracks)
+        return 0.0f;
+
+    return trackPeaks[(size_t) trackIndex].exchange (0.0f, std::memory_order_acquire);
+}
+
+float AudioEngine::readAndClearMasterPeak() noexcept
+{
+    return masterPeak.exchange (0.0f, std::memory_order_acquire);
+}
+
 void AudioEngine::play()
 {
     playing.store (true);
@@ -459,9 +493,22 @@ void AudioEngine::processBlock (juce::AudioBuffer<float>& buffer) noexcept
                                                       mixerBuffers.getReadPointer (i * 2 + 1),
                                                       track.gain * rightGain * juce::MathConstants<float>::sqrt2,
                                                       numSamples);
+
+        // The buffers hold the track PRE-fader - the gain is applied during the
+        // add above - so the meter has to scale by what the fader is doing, or
+        // it would sit beside a fader it does not answer to.
+        recordPeak (trackPeaks[(size_t) i], mixerBuffers.getReadPointer (i * 2),
+                    mixerBuffers.getReadPointer (i * 2 + 1), numSamples,
+                    track.gain * juce::jmax (leftGain, rightGain) * juce::MathConstants<float>::sqrt2);
     }
 
+    // On the summed mix, before the master fader - so the fader rides the
+    // processed signal rather than the effects riding the fader.
+    runChain (snapshot.masterEffects, outLeft, outRight, numSamples);
+
     buffer.applyGain (automatedMasterGain (snapshot.masterGain));
+
+    recordPeak (masterPeak, outLeft, outRight, numSamples, 1.0f);
 
     if (isPlayingNow && loopSteps > 0)
         transport.advance (numSamples);

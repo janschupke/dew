@@ -1,5 +1,6 @@
 #pragma once
 
+#include <array>
 #include <atomic>
 #include <vector>
 
@@ -51,6 +52,16 @@ public:
     bool previewNoteOn (int channelIndex, int pitch, float velocity) noexcept;
     bool previewNoteOff (int channelIndex, int pitch) noexcept;
     bool previewAllOff() noexcept;
+
+    // --- metering ------------------------------------------------------------
+    /** Peak level of a mixer track since the last read, 0..1.
+
+        Read-and-clear: the message thread takes the peak and resets it, so a
+        meter falls when the music stops instead of holding its highest value
+        forever. Plain atomics, like getPlayheadSteps - no new bridge.
+    */
+    float readAndClearTrackPeak (int trackIndex) noexcept;
+    float readAndClearMasterPeak() noexcept;
 
     /** Which pattern plays in pattern mode, by pattern id. */
     void setCurrentPatternId (int patternId) noexcept  { requestedPatternId.store (patternId); }
@@ -129,6 +140,12 @@ private:
 
     std::vector<NoteTrigger> triggers;
     PreviewQueue previewQueue;
+
+    std::array<std::atomic<float>, kMaxMixerTracks> trackPeaks {};
+    std::atomic<float> masterPeak { 0.0f };
+
+    static void recordPeak (std::atomic<float>&, const float* left, const float* right,
+                            int numSamples, float scale) noexcept;
 
     void drainPreviewQueue (const EngineSnapshot&) noexcept;
 

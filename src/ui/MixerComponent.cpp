@@ -115,6 +115,39 @@ public:
             repaint();
     }
 
+    /** New peak from the engine, 0..1. Falls back smoothly rather than snapping,
+        so a meter reads as a level and not as a flicker.
+    */
+    void setLevel (float peak)
+    {
+        // Rise instantly, fall over about a third of a second: a meter that
+        // fell as fast as it rose would be unreadable on percussive material.
+        level = peak > level ? peak : level * 0.82f + peak * 0.18f;
+
+        if (level < 0.001f)
+            level = 0.0f;
+
+        if (! juce::approximatelyEqual (level, lastPaintedLevel))
+        {
+            lastPaintedLevel = level;
+            repaint (meterBounds);
+        }
+    }
+
+    /** Names of the channels routed into this strip, with their colours and
+        ids, so a routing row is a way to reach the channel it names.
+    */
+    void setRouting (juce::Array<juce::var> names, juce::Array<juce::Colour> colours,
+                     juce::Array<int> ids)
+    {
+        routedNames = std::move (names);
+        routedColours = std::move (colours);
+        routedIds = std::move (ids);
+        repaint();
+    }
+
+    std::function<void (int channelId)> onChannelClicked;
+
     bool isMasterStrip() const noexcept { return isMaster; }
     int getTrackId() const { return (int) track[ids::id]; }
 
@@ -135,9 +168,18 @@ public:
     void mouseEnter (const juce::MouseEvent&) override { setHovered (true); }
     void mouseExit (const juce::MouseEvent&) override  { setHovered (isMouseOver (true)); }
 
-    void mouseDown (const juce::MouseEvent&) override
+    void mouseDown (const juce::MouseEvent& event) override
     {
         select();
+
+        // A routing row names a channel; clicking it should go there.
+        if (routingBounds.contains (event.getPosition()) && onChannelClicked != nullptr)
+        {
+            const auto row = (event.getPosition().y - routingBounds.getY() - tokens::space::xs) / 12;
+
+            if (juce::isPositiveAndBelow (row, routedIds.size()))
+                onChannelClicked (routedIds[row]);
+        }
     }
 
     void paint (juce::Graphics& g) override
@@ -166,6 +208,9 @@ public:
             g.fillRoundedRectangle (body.withHeight (3.0f), 1.5f);
         }
 
+        paintMeter (g);
+        paintRouting (g);
+
         // How many effects the strip carries, so it says what it holds without
         // having to be selected first. Top corner rather than the bottom, which
         // is where the fader's value box already is.
@@ -187,22 +232,31 @@ public:
 
     void resized() override
     {
-        auto area = getLocalBounds().reduced (6, 8);
+        using namespace tokens;
+
+        auto area = getLocalBounds().reduced (space::sm, space::md);
 
         nameLabel.setBounds (area.removeFromTop (18));
-        area.removeFromTop (4);
+        area.removeFromTop (space::xs);
 
         if (! isMaster)
         {
-            panSlider.setBounds (area.removeFromTop (40).reduced (8, 0));
-            area.removeFromTop (4);
+            panSlider.setBounds (area.removeFromTop (38).reduced (space::lg, 0));
+            area.removeFromTop (space::xs);
 
-            auto buttons = area.removeFromTop (22);
+            auto buttons = area.removeFromTop (size::minTouchTarget);
             muteButton.setBounds (buttons.removeFromLeft (buttons.getWidth() / 2).reduced (1));
             soloButton.setBounds (buttons.reduced (1));
-            area.removeFromTop (4);
+            area.removeFromTop (space::xs);
         }
 
+        // The routing list sits at the bottom; the fader and its meter take
+        // what is left.
+        routingBounds = isMaster ? juce::Rectangle<int>()
+                                 : area.removeFromBottom (juce::jmin (routingHeight, area.getHeight() / 3));
+
+        meterBounds = area.removeFromRight (meterWidth).reduced (0, space::xxs);
+        area.removeFromRight (space::xs);
         gainSlider.setBounds (area);
     }
 
@@ -223,15 +277,91 @@ private:
 
     ProjectDocument& document;
     juce::ValueTree track;
+    void paintMeter (juce::Graphics& g)
+    {
+        using namespace tokens;
+
+        if (meterBounds.isEmpty())
+            return;
+
+        const auto well = meterBounds.toFloat();
+
+        g.setColour (colour::wellDeep);
+        g.fillRoundedRectangle (well, 2.0f);
+
+        if (level <= 0.0f)
+            return;
+
+        // Scaled the way a level is heard rather than by amplitude: linear, a
+        // healthy mix sits in the bottom fifth of the meter and looks broken.
+        const auto db = juce::Decibels::gainToDecibels (level, (float) meterFloorDb);
+        const auto proportion = juce::jlimit (0.0f, 1.0f,
+                                              (float) ((db - meterFloorDb) / -meterFloorDb));
+
+        auto bar = well.withTop (well.getBottom() - proportion * well.getHeight());
+
+        g.setColour (level >= 1.0f ? colour::danger
+                                   : level > 0.7f ? colour::warning : colour::success);
+        g.fillRoundedRectangle (bar, 2.0f);
+    }
+
+    void paintRouting (juce::Graphics& g)
+    {
+        using namespace tokens;
+
+        if (routingBounds.isEmpty())
+            return;
+
+        auto area = routingBounds;
+
+        g.setColour (colour::divider);
+        g.drawHorizontalLine (area.getY(), (float) area.getX(), (float) area.getRight());
+        area.removeFromTop (space::xs);
+
+        if (routedNames.isEmpty())
+        {
+            g.setColour (colour::textDisabled);
+            g.setFont (type::font (type::caption));
+            g.drawText ("no channels", area, juce::Justification::centredTop, false);
+            return;
+        }
+
+        g.setFont (type::font (type::caption));
+
+        for (int i = 0; i < routedNames.size() && area.getHeight() >= 12; ++i)
+        {
+            auto row = area.removeFromTop (12);
+
+            const auto dot = row.removeFromLeft (8).withSizeKeepingCentre (5, 5).toFloat();
+            g.setColour (i < routedColours.size() ? routedColours[i] : colour::textDisabled);
+            g.fillEllipse (dot);
+
+            g.setColour (colour::textSecondary);
+            g.drawText (routedNames[i].toString(), row, juce::Justification::centredLeft, true);
+        }
+    }
+
     void setHovered (bool shouldBeHovered)
     {
         if (std::exchange (hovered, shouldBeHovered) != shouldBeHovered)
             repaint();
     }
 
+    static constexpr int meterWidth = 8;
+    static constexpr int routingHeight = 58;
+    static constexpr double meterFloorDb = -48.0;
+
     bool isMaster;
     bool selected = false;
     bool hovered = false;
+
+    float level = 0.0f;
+    float lastPaintedLevel = -1.0f;
+
+    juce::Rectangle<int> meterBounds, routingBounds;
+    juce::Array<juce::var> routedNames;
+    juce::Array<juce::Colour> routedColours;
+    juce::Array<int> routedIds;
 
     juce::Label nameLabel;
     juce::Slider gainSlider;
@@ -241,10 +371,20 @@ private:
 
 // -----------------------------------------------------------------------------
 
-MixerComponent::MixerComponent (ProjectDocument& d, EditorState& s)
-    : document (d), editorState (s), effectChain (d, s)
+MixerComponent::MixerComponent (ProjectDocument& d, EditorState& s, AudioEngine* e)
+    : document (d), editorState (s), engine (e), effectChain (d, s)
 {
     setComponentID ("mixer");
+
+    // Strips scroll. removeFromLeft on a fixed rectangle clamps at the right
+    // edge, so past about twelve inserts every further strip - including the
+    // master, which is added last - was silently given no width at all.
+    stripViewport.setViewedComponent (&stripHolder, false);
+    stripViewport.setScrollBarsShown (false, true);
+    addAndMakeVisible (stripViewport);
+
+    if (engine != nullptr)
+        startTimerHz (tokens::motion::uiRefreshHz);
 
     chainViewport.setViewedComponent (&effectChain, false);
     chainViewport.setScrollBarsShown (true, false);
@@ -292,8 +432,9 @@ void MixerComponent::rebuildStrips()
     }
 
     for (auto* strip : strips)
-        addAndMakeVisible (strip);
+        stripHolder.addAndMakeVisible (strip);
 
+    updateRouting();
     pointChainAtSelectedTrack();
     resized();
     repaint();
@@ -319,15 +460,22 @@ void MixerComponent::paint (juce::Graphics& g)
 void MixerComponent::pointChainAtSelectedTrack()
 {
     const auto selectedId = editorState.getSelectedMixerTrackId();
-    juce::ValueTree selectedTrack;
+    const auto mixer = document.getState().getChildWithName (ids::MIXER);
 
-    for (const auto& track : document.getState().getChildWithName (ids::MIXER))
-        if (track.hasType (ids::MIXER_TRACK) && (int) track[ids::id] == selectedId)
-            selectedTrack = track;
+    // The master is a bus like any other and carries its own chain, so it
+    // resolves here rather than being excluded.
+    auto selectedTrack = selectedId == masterTrackId ? mixer.getChildWithName (ids::MASTER)
+                                                     : juce::ValueTree();
+
+    if (selectedId != masterTrackId)
+        for (const auto& track : mixer)
+            if (track.hasType (ids::MIXER_TRACK) && (int) track[ids::id] == selectedId)
+                selectedTrack = track;
 
     effectChain.setOwner (selectedTrack);
-    effectChain.setOwnerName (selectedTrack.isValid() ? selectedTrack[ids::name].toString()
-                                                      : juce::String());
+    effectChain.setOwnerName (! selectedTrack.isValid() ? juce::String()
+                              : selectedId == masterTrackId ? "Master"
+                                                            : selectedTrack[ids::name].toString());
 
     for (auto* strip : strips)
         strip->setSelected (strip->isMasterStrip() ? selectedId == masterTrackId
@@ -346,6 +494,56 @@ void MixerComponent::changeListenerCallback (juce::ChangeBroadcaster*)
     pointChainAtSelectedTrack();
 }
 
+void MixerComponent::timerCallback()
+{
+    if (engine == nullptr)
+        return;
+
+    for (int i = 0; i < strips.size(); ++i)
+    {
+        auto* strip = strips[i];
+        strip->setLevel (strip->isMasterStrip() ? engine->readAndClearMasterPeak()
+                                                : engine->readAndClearTrackPeak (i));
+    }
+}
+
+void MixerComponent::updateRouting()
+{
+    // Which channels feed each insert. Without this the mixer is a row of
+    // anonymous faders and there is nothing to say what any of them carries.
+    for (auto* strip : strips)
+    {
+        juce::Array<juce::var> names;
+        juce::Array<juce::Colour> colours;
+        juce::Array<int> channelIds;
+
+        if (! strip->isMasterStrip())
+        {
+            for (const auto& channel : document.getState())
+            {
+                if (! channel.hasType (ids::CHANNEL)
+                    || (int) channel[ids::mixerTrackId] != strip->getTrackId())
+                    continue;
+
+                names.add (channel[ids::name].toString());
+                colours.add (juce::Colour::fromString (
+                    "ff" + channel[ids::colour].toString().getLastCharacters (6)));
+                channelIds.add ((int) channel[ids::id]);
+            }
+        }
+
+        strip->onChannelClicked = [this] (int channelId)
+        {
+            editorState.setSelectedChannelId (channelId);
+
+            if (onShowChannelRack != nullptr)
+                onShowChannelRack();
+        };
+
+        strip->setRouting (std::move (names), std::move (colours), std::move (channelIds));
+    }
+}
+
 void MixerComponent::resized()
 {
     auto area = getLocalBounds().reduced (8);
@@ -360,8 +558,16 @@ void MixerComponent::resized()
                                       .withWidth (juce::jmin (chainWidth, chainArea.getWidth())));
     layOutChain();
 
+    stripViewport.setBounds (area);
+
+    const auto contentWidth = juce::jmax (stripViewport.getMaximumVisibleWidth(),
+                                          strips.size() * stripWidth);
+    stripHolder.setSize (contentWidth, stripViewport.getMaximumVisibleHeight());
+
+    auto holder = stripHolder.getLocalBounds();
+
     for (auto* strip : strips)
-        strip->setBounds (area.removeFromLeft (stripWidth));
+        strip->setBounds (holder.removeFromLeft (stripWidth));
 }
 
 } // namespace dew

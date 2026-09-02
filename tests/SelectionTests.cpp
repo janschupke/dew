@@ -147,10 +147,13 @@ TEST_CASE ("a mixer strip has no click-swallowing dead zones", "[ui][selection]"
 
     juce::Array<juce::Component*> strips;
 
-    for (auto* component : all)
-        if (component->getParentComponent() == &mixer
-            && findAll<juce::Slider> (*component).size() >= 1)
-            strips.add (component);
+    // Strips live inside a scrolling holder now, not directly under the mixer.
+    // Each owns exactly one vertical fader, so find them through that.
+    juce::ignoreUnused (all);
+
+    for (auto* slider : findAll<juce::Slider> (mixer))
+        if (slider->getSliderStyle() == juce::Slider::LinearVertical)
+            strips.addIfNotAlreadyThere (slider->getParentComponent());
 
     REQUIRE (strips.size() >= 4);
 

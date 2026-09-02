@@ -183,6 +183,7 @@ struct EngineSnapshot
     std::vector<AutomationSnapshot> automations;
 
     float masterGain = 0.9f;
+    EffectChainSnapshot masterEffects;
 
     // Solo is a property of the whole mixer, not of one track: one track soloed
     // silences every track that is not. Precomputed per scope so neither the

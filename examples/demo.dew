@@ -1,5 +1,5 @@
 {
-    "formatVersion": 4,
+    "formatVersion": 5,
     "name": "dew demo",
     "tempoBpm": 124.0,
     "stepsPerBeat": 4,
@@ -284,7 +284,8 @@
     },
     "mixer": {
       "master": {
-        "gain": 0.9
+        "gain": 0.9,
+        "effects": []
       },
       "tracks": [
         {

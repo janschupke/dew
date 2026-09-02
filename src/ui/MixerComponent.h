@@ -2,6 +2,7 @@
 
 #include <juce_gui_basics/juce_gui_basics.h>
 
+#include "../engine/AudioEngine.h"
 #include "../model/ProjectDocument.h"
 #include "EditorState.h"
 #include "EffectChainComponent.h"
@@ -18,10 +19,14 @@ namespace dew
 */
 class MixerComponent : public juce::Component,
                        private juce::ValueTree::Listener,
-                       private juce::ChangeListener
+                       private juce::ChangeListener,
+                       private juce::Timer
 {
 public:
-    MixerComponent (ProjectDocument&, EditorState&);
+    /** The engine is optional: it only supplies meter levels, and the mixer is
+        constructed without one in tests and in the screenshot tool.
+    */
+    MixerComponent (ProjectDocument&, EditorState&, AudioEngine* = nullptr);
     ~MixerComponent() override;
 
     void paint (juce::Graphics&) override;
@@ -34,24 +39,34 @@ public:
     */
     static constexpr int masterTrackId = 0;
 
+    /** Selects a channel and asks whoever owns the tabs to show the rack, so a
+        routing entry in the mixer is a way to reach that channel.
+    */
+    std::function<void()> onShowChannelRack;
+
 private:
     class Strip;
 
     void valueTreeChildAdded (juce::ValueTree&, juce::ValueTree&) override;
     void valueTreeChildRemoved (juce::ValueTree&, juce::ValueTree&, int) override;
     void changeListenerCallback (juce::ChangeBroadcaster*) override;
+    void timerCallback() override;
 
     void rebuildStrips();
     void pointChainAtSelectedTrack();
     void layOutChain();
+    void updateRouting();
 
-    static constexpr int stripWidth = 78;
-    static constexpr int chainHeight = 210;
+    static constexpr int stripWidth = 96;
+    static constexpr int chainHeight = 230;
     static constexpr int chainWidth = 430;
 
     ProjectDocument& document;
     EditorState& editorState;
+    AudioEngine* engine = nullptr;
     juce::OwnedArray<Strip> strips;
+    juce::Viewport stripViewport;
+    juce::Component stripHolder;
     EffectChainComponent effectChain;
     juce::Viewport chainViewport;
 

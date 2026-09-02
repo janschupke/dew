@@ -10,7 +10,7 @@ EditorTabs::EditorTabs (ProjectDocument& document, AudioEngine& engine, EditorSt
       channelRack (document, engine, editorState),
       pianoRoll (document, engine, editorState),
       playlist (document, engine, editorState),
-      mixer (document, editorState)
+      mixer (document, editorState, &engine)
 {
     setComponentID ("editorTabs");
     setTabBarDepth (30);
@@ -26,6 +26,9 @@ EditorTabs::EditorTabs (ProjectDocument& document, AudioEngine& engine, EditorSt
     // Double-clicking a clip is the obvious way to go and edit its pattern.
     // The playlist does not know about tabs, so the wiring lives here.
     playlist.onOpenPatternInPianoRoll = [this] { setCurrentTabIndex (1); };
+
+    // A routing entry in the mixer is a way to reach the channel it names.
+    mixer.onShowChannelRack = [this] { setCurrentTabIndex (0); };
 
     addTab ("Playlist", Palette::background, &playlist, false);
     addTab ("Mixer", Palette::background, &mixer, false);

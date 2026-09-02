@@ -211,7 +211,9 @@ const NodeSpec& masterSpec()
     static const NodeSpec spec {
         ids::MASTER,
         { { ids::gain, 0.9 } },
-        {}
+        // The master is a bus like any other, and every insert could carry a
+        // chain while it could not - which read as an omission, not a rule.
+        { { "effects", &effectSpec(), true } }
     };
     return spec;
 }
