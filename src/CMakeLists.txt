@@ -5,6 +5,12 @@
 
 add_library(dew_core STATIC
   BuildInfo.cpp
+
+  model/ProjectSchema.cpp
+  model/ProjectSerializer.cpp
+  model/ProjectFactory.cpp
+  model/ProjectDocument.cpp
+
   ui/MainComponent.cpp
 )
 
