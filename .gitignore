@@ -1,0 +1,14 @@
+# Build trees (see CMakePresets.json)
+/build/
+/out/
+
+# macOS
+.DS_Store
+
+# Editor
+/.vscode/
+/.idea/
+*.swp
+
+# Local overrides
+CMakeUserPresets.json

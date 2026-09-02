@@ -1,0 +1,73 @@
+name: ci
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: macOS · build · test
+    runs-on: macos-15
+
+    env:
+      CPM_SOURCE_CACHE: ${{ github.workspace }}/.cache/CPM
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # Fails fast on an unpinnable lock, before minutes are spent on a build.
+      - name: Check dependency pins
+        run: ./scripts/check-deps.sh
+
+      # Keyed on the lock, so a dependency bump busts the cache and nothing else does.
+      - name: Restore dependency sources
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.CPM_SOURCE_CACHE }}
+          key: cpm-${{ runner.os }}-${{ hashFiles('cpm-package-lock.cmake', 'cmake/DependencyPins.cmake') }}
+
+      - name: Restore compile cache
+        uses: actions/cache@v4
+        with:
+          path: ~/Library/Caches/ccache
+          key: ccache-${{ runner.os }}-${{ github.sha }}
+          restore-keys: ccache-${{ runner.os }}-
+
+      - name: Install toolchain
+        run: brew bundle
+
+      # The ci preset is the release preset plus warnings-as-errors.
+      - name: Configure
+        run: cmake --preset ci
+
+      - name: Build
+        run: cmake --build --preset ci
+
+      - name: Test
+        run: ctest --preset ci
+
+      # End-to-end without an audio device: load a project, render it, check the
+      # result is a real non-silent WAV. Becomes meaningful in phase 3.
+      - name: Offline render smoke test
+        run: |
+          ./build/ci/tools/dew_render_artefacts/RelWithDebInfo/dew_render \
+            examples/demo.dew "${RUNNER_TEMP}/out.wav" --seconds 4
+
+      # The manifest is generated at configure time; if it differs from what is
+      # committed, the two have drifted.
+      - name: Dependency manifest is up to date
+        run: git diff --exit-code -- THIRD_PARTY.md
+
+      - name: Upload build log artefacts
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-logs
+          path: build/ci/CMakeFiles/*.log
+          if-no-files-found: ignore
