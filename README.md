@@ -139,7 +139,7 @@ project it was overwriting.
 
 ## Testing
 
-Catch2 via CTest. `ctest --preset release` runs all 54.
+Catch2 via CTest. `ctest --preset release` runs all 63.
 
 `dew_render` loads a project and renders it to WAV with no audio device, which is how
 playback correctness is checked without ears:
