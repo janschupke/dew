@@ -5,6 +5,59 @@
 namespace dew
 {
 
+namespace
+{
+
+/** v5 -> v6: one oscillator per channel became a fixed array of slots.
+
+    Runs on the parsed JSON rather than on the tree, for two reasons. The
+    schema's unknown-key sweep would otherwise report the legacy "osc" as a key
+    it does not recognise and drop it - a warning on a file that is perfectly
+    valid for the version it claims. And by the time there is a tree, the slots
+    have already been filled with defaults, so there is nothing left to migrate
+    into.
+
+    Only the first slot is written here. Leaving the array one element long lets
+    the schema materialise the rest, so there is exactly one description of what
+    an unused oscillator looks like.
+*/
+void migrateOscillatorsToArray (juce::var& project)
+{
+    auto* root = project.getDynamicObject();
+
+    if (root == nullptr)
+        return;
+
+    auto* channels = root->getProperty ("channels").getArray();
+
+    if (channels == nullptr)
+        return;
+
+    for (const auto& channelValue : *channels)
+    {
+        auto* channel = channelValue.getDynamicObject();
+
+        if (channel == nullptr)
+            continue;
+
+        auto* instrument = channel->getProperty ("instrument").getDynamicObject();
+
+        if (instrument == nullptr || ! instrument->hasProperty ("osc"))
+            continue;
+
+        // Moved whatever its type: a malformed oscillator becomes a malformed
+        // element, which the schema then reports with a path, rather than
+        // disappearing silently here.
+        juce::Array<juce::var> slots;
+        slots.add (instrument->getProperty ("osc"));
+
+        instrument->removeProperty ("osc");
+        instrument->setProperty ("oscillators", slots);
+    }
+}
+
+} // namespace
+
 juce::String ProjectSerializer::toJsonString (const juce::ValueTree& project)
 {
     auto value = varFromTree (project, projectSpec());
@@ -71,9 +124,11 @@ ProjectSerializer::LoadResult ProjectSerializer::fromJsonString (const juce::Str
         return loaded;
     }
 
-    // Older-but-supported versions land here. Migrations go in this space; with
-    // only version 1 in existence there is nothing to migrate yet, and the
-    // schema's per-property defaults already cover added properties.
+    // Older-but-supported versions land here. The schema's per-property defaults
+    // already cover anything that was merely ADDED, so a migration is needed
+    // only where the shape of a node changed.
+    if (version < 6)
+        migrateOscillatorsToArray (parsed);
 
     loaded.tree = treeFromVar (parsed, projectSpec(), loaded.warnings);
 

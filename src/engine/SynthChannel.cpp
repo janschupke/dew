@@ -15,7 +15,7 @@ void SynthChannel::reset() noexcept
         voice.reset();
 }
 
-void SynthChannel::noteOn (int pitch, float velocity, const OscSettings& osc,
+void SynthChannel::noteOn (int pitch, float velocity, const OscBankSnapshot& osc,
                            const AmpSettings& amp, int durationSamples)
 {
     SynthVoice* target = nullptr;

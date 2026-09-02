@@ -2,7 +2,7 @@
 
 A desktop digital synth DAW — pattern composition in the FL Studio shape: a channel
 rack with a step grid, a piano roll, a playlist of pattern clips, and a mixer, driven
-by a single-oscillator synth per channel.
+by a three-oscillator synth per channel.
 
 Status: **working prototype**. New, open, edit, save and playback all function end to
 end, with effects and automation on top. It is not a product — but every layer is real
@@ -42,8 +42,10 @@ Start with **Demos → Getting Started** in the menu bar; there are four.
   insert, plus master; along the bottom, the effect chain of whichever strip is selected.
   Each strip lists the channels routed into it, and clicking one goes to that channel.
   Solo is resolved across the whole mixer, so soloing one track silences the rest.
-- **Instrument** — one band-limited oscillator (sine/saw/square/triangle) with an
-  octave, an ADSR envelope, and channel volume and pan.
+- **Instrument** — three band-limited oscillators (sine/saw/square/triangle), each
+  with its own octave, detune and gain and its own on/off switch, edited a tab at a
+  time. Only the first is on by default, so a new channel is a single oscillator until
+  you stack one on it. Behind them, one ADSR envelope, and channel volume and pan.
 - **Transport** — play/stop, tempo, a pattern-or-song switch, and pattern
   add/duplicate/delete with an editable pattern length. Click or drag any ruler — piano
   roll, sequencer or playlist — to move the position. The indicator stays on screen while

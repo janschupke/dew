@@ -90,6 +90,18 @@ struct ProjectEdits
     */
     static int lengthNeededForNotes (const juce::ValueTree& pattern);
 
+    // --- oscillators ---------------------------------------------------------
+    /** A channel's nth oscillator slot, or an invalid tree.
+
+        Named rather than open-coded because the panel, the factory and the
+        tests all need "the second oscillator of this channel", and
+        getChildWithName (ids::OSC) - which every one of them used to say -
+        silently means "the first" now that a channel carries several.
+    */
+    static juce::ValueTree oscillatorAt (const juce::ValueTree& channel, int index);
+
+    static int countOscillators (const juce::ValueTree& channel);
+
     // --- effects -------------------------------------------------------------
     /** Appends an effect of this type to a channel or mixer track's chain.
 

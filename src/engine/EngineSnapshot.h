@@ -41,10 +41,25 @@ juce::String waveformToString (Waveform);
 
 struct OscSettings
 {
+    bool enabled = true;
     Waveform wave = Waveform::saw;
     int octave = 0;
     float detuneCents = 0.0f;
     float gain = 0.8f;
+};
+
+/** A channel's oscillators, resolved.
+
+    Fixed size for the same reason EffectChainSnapshot is: a snapshot is copied
+    onto the audio thread, and the audio thread never chases a pointer it did
+    not allocate. Disabled slots travel with the rest rather than being dropped,
+    so a voice can be started from the bank alone.
+*/
+struct OscBankSnapshot
+{
+    std::array<OscSettings, kMaxOscillators> slots;
+    int numSlots = 0;
+    bool anyEnabled = false;   ///< precomputed, so nothing downstream has to scan
 };
 
 struct AmpSettings
@@ -86,7 +101,7 @@ struct ChannelSnapshot
     float pan = 0.0f;
     bool muted = false;
     bool solo = false;
-    OscSettings osc;
+    OscBankSnapshot osc;
     AmpSettings amp;
     EffectChainSnapshot effects;
 };

@@ -11,7 +11,7 @@
         PROJECT
           CHANNEL*                     -> "channels": []
             INSTRUMENT                 -> "instrument": {}
-              OSC                      -> "osc": {}
+              OSC (x kMaxOscillators)  -> "oscillators": []
               AMP                      -> "amp": {}
             EFFECT*                    -> "effects": []
           PATTERN*                     -> "patterns": []

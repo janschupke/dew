@@ -12,17 +12,42 @@ namespace
 // All of these are function-local statics with static storage duration, so the
 // pointers stay valid for the life of the process.
 
+/** One oscillator slot.
+
+    `enabled` defaults to true because a file written before there were slots
+    had exactly one oscillator and it was playing - there is no "enabled" key in
+    such a file to say so. The slots the schema materialises alongside it are
+    switched off by makeOscillatorSlot.
+*/
 const NodeSpec& oscSpec()
 {
     static const NodeSpec spec {
         ids::OSC,
-        { { ids::wave,        "saw" },
+        { { ids::enabled,     true },
+          { ids::wave,        "saw" },
           { ids::octave,      0 },
           { ids::detuneCents, 0.0 },
           { ids::gain,        0.8 } },
         {}
     };
     return spec;
+}
+
+/** Oscillator slot `index`, as the schema materialises it.
+
+    Only the first is on. Three oscillators at full gain out of the box would be
+    three times the level of every project written before this, and a new
+    channel would sound nothing like the one-oscillator instrument the panel
+    still opens on.
+*/
+juce::ValueTree makeOscillatorSlot (const NodeSpec& spec, int index)
+{
+    // setProperty rather than building a fresh list: it updates the value in
+    // place, so every slot's properties stay in the spec's own order. ValueTree
+    // equality is order-sensitive, and the demo library is checked with it.
+    auto node = defaultTreeFor (spec);
+    node.setProperty (ids::enabled, index == 0, nullptr);
+    return node;
 }
 
 const NodeSpec& ampSpec()
@@ -43,8 +68,8 @@ const NodeSpec& instrumentSpec()
     static const NodeSpec spec {
         ids::INSTRUMENT,
         {},
-        { { "osc", &oscSpec(), false },
-          { "amp", &ampSpec(), false } }
+        { { "oscillators", &oscSpec(), true, kMaxOscillators, &makeOscillatorSlot },
+          { "amp",         &ampSpec(), false } }
     };
     return spec;
 }
@@ -297,6 +322,15 @@ bool coerceToTypeOf (const juce::var& fallback, const juce::var& value, juce::va
     return true;
 }
 
+/** Slot `index` of a fixed-length array child. One helper rather than three
+    copies, so the three walkers cannot drift over what an unused slot is.
+*/
+juce::ValueTree makeArraySlot (const ChildSpec& child, int index)
+{
+    return child.makeSlot != nullptr ? child.makeSlot (*child.spec, index)
+                                     : defaultTreeFor (*child.spec);
+}
+
 } // namespace
 
 const NodeSpec& projectSpec()
@@ -334,10 +368,16 @@ juce::ValueTree defaultTreeFor (const NodeSpec& spec)
     for (const auto& prop : spec.props)
         tree.setProperty (prop.id, prop.defaultValue, nullptr);
 
-    // Only single-object children are materialised; arrays start empty.
+    // Single-object children are materialised, and so are fixed-length arrays;
+    // variable-length ones start empty.
     for (const auto& child : spec.children)
+    {
         if (! child.isArray)
             tree.appendChild (defaultTreeFor (*child.spec), nullptr);
+        else
+            for (int i = 0; i < child.fixedCount; ++i)
+                tree.appendChild (makeArraySlot (child, i), nullptr);
+    }
 
     return tree;
 }
@@ -353,9 +393,25 @@ juce::ValueTree canonicalTree (const juce::ValueTree& tree, const NodeSpec& spec
     {
         if (child.isArray)
         {
+            int count = 0;
+
             for (const auto& node : tree)
-                if (node.hasType (child.spec->type))
-                    out.appendChild (canonicalTree (node, *child.spec), nullptr);
+            {
+                if (! node.hasType (child.spec->type))
+                    continue;
+
+                if (child.fixedCount > 0 && count >= child.fixedCount)
+                    break;
+
+                out.appendChild (canonicalTree (node, *child.spec), nullptr);
+                ++count;
+            }
+
+            // A fixed array is always full. A tree assembled by hand has as many
+            // slots as the code that built it happened to append, and the editor
+            // has to be able to point at all of them.
+            for (int i = count; i < child.fixedCount; ++i)
+                out.appendChild (makeArraySlot (child, i), nullptr);
         }
         else
         {
@@ -458,20 +514,35 @@ juce::ValueTree treeFromVar (const juce::var& value,
 
         if (child.isArray)
         {
+            int index = 0;
+
             if (const auto* elements = childValue.getArray())
             {
-                int index = 0;
-
                 for (const auto& element : *elements)
+                {
+                    if (child.fixedCount > 0 && index >= child.fixedCount)
+                    {
+                        warnings.add (path + "." + child.jsonKey + ": more than "
+                                      + juce::String (child.fixedCount)
+                                      + " entries - the rest are dropped");
+                        break;
+                    }
+
                     tree.appendChild (treeFromVar (element, *child.spec, warnings,
                                                    path + "." + child.jsonKey
                                                         + "[" + juce::String (index++) + "]"),
                                       nullptr);
+                }
             }
             else if (! childValue.isVoid())
             {
                 warnings.add (path + "." + child.jsonKey + ": expected an array - ignored");
             }
+
+            // Fill the slots the file did not carry. An older file, or one
+            // hand-edited down to a single entry, still loads as a full node.
+            for (int i = index; i < child.fixedCount; ++i)
+                tree.appendChild (makeArraySlot (child, i), nullptr);
         }
         else
         {

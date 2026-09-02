@@ -34,6 +34,24 @@ struct ChildSpec
     juce::String jsonKey;    ///< key this child occupies in the JSON object
     const NodeSpec* spec;    ///< the child node's own schema
     bool isArray;            ///< true: every child of this type becomes an array element
+
+    /** Arrays with a fixed number of slots. 0 means variable length.
+
+        A fixed array is materialised at its full length everywhere the schema
+        builds a node - defaults, canonicalisation and loading - so the editor
+        always has every slot to point at, whether the document came from a
+        file, from the factory or from a tree a test assembled by hand. A file
+        carrying more than this many is truncated and the excess reported.
+    */
+    int fixedCount = 0;
+
+    /** How slot `index` is created when the schema has to materialise it.
+
+        Lets a fixed array have per-slot defaults - oscillator 1 on, the rest
+        off - without a second table beside this one. Null means "the node's
+        declared defaults", which is right for anything uniform.
+    */
+    juce::ValueTree (*makeSlot) (const NodeSpec&, int index) = nullptr;
 };
 
 struct NodeSpec
@@ -49,14 +67,27 @@ struct NodeSpec
     v2 added channel solo, and mute and solo on playlist tracks. Version 1 files
     still load: every added property has a declared default, so an older file is
     simply one that predates them.
+
+    v6 replaced the single "osc" object with an "oscillators" array of fixed
+    slots. That one is a shape change rather than an added property, so it needs
+    a real migration; see ProjectSerializer.
 */
-inline constexpr int kFormatVersion = 5;
+inline constexpr int kFormatVersion = 6;
 
 /** How many effects one channel or mixer track may carry. A document limit
     rather than an engine one: a chain longer than this cannot be saved, so it
     can never turn into an effect that silently stopped working.
 */
 inline constexpr int kMaxEffectsPerChain = 4;
+
+/** How many oscillators one channel carries.
+
+    Fixed, not a maximum: every channel has exactly this many slots at all
+    times, most of them switched off. A slot that only came into existence once
+    it was enabled would leave the editor with nothing to show until you had
+    already committed to using it.
+*/
+inline constexpr int kMaxOscillators = 3;
 
 /** Value of the "format" key, so a wrong-but-valid JSON file is rejected with a
     useful message instead of loading as an empty project.

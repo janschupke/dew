@@ -348,6 +348,31 @@ juce::Array<juce::ValueTree> ProjectEdits::effectChainOwners (const juce::ValueT
     return owners;
 }
 
+juce::ValueTree ProjectEdits::oscillatorAt (const juce::ValueTree& channel, int index)
+{
+    if (index < 0)
+        return {};
+
+    int seen = 0;
+
+    for (const auto& node : channel.getChildWithName (ids::INSTRUMENT))
+        if (node.hasType (ids::OSC) && seen++ == index)
+            return node;
+
+    return {};
+}
+
+int ProjectEdits::countOscillators (const juce::ValueTree& channel)
+{
+    int count = 0;
+
+    for (const auto& node : channel.getChildWithName (ids::INSTRUMENT))
+        if (node.hasType (ids::OSC))
+            ++count;
+
+    return count;
+}
+
 juce::ValueTree ProjectEdits::addEffect (juce::ValueTree project, juce::ValueTree owner,
                                          const juce::String& type, juce::UndoManager* undo)
 {

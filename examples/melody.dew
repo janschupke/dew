@@ -1,5 +1,5 @@
 {
-    "formatVersion": 5,
+    "formatVersion": 6,
     "name": "Piano Roll",
     "tempoBpm": 96.0,
     "stepsPerBeat": 4,
@@ -16,12 +16,29 @@
         "muted": false,
         "solo": false,
         "instrument": {
-          "osc": {
-            "wave": "saw",
-            "octave": 0,
-            "detuneCents": 0.0,
-            "gain": 0.8
-          },
+          "oscillators": [
+            {
+              "enabled": true,
+              "wave": "saw",
+              "octave": 0,
+              "detuneCents": 0.0,
+              "gain": 0.8
+            },
+            {
+              "enabled": false,
+              "wave": "saw",
+              "octave": 0,
+              "detuneCents": 0.0,
+              "gain": 0.8
+            },
+            {
+              "enabled": false,
+              "wave": "saw",
+              "octave": 0,
+              "detuneCents": 0.0,
+              "gain": 0.8
+            }
+          ],
           "amp": {
             "attack": 0.001,
             "decay": 0.14,
@@ -42,12 +59,29 @@
         "muted": false,
         "solo": false,
         "instrument": {
-          "osc": {
-            "wave": "triangle",
-            "octave": -1,
-            "detuneCents": 0.0,
-            "gain": 0.8
-          },
+          "oscillators": [
+            {
+              "enabled": true,
+              "wave": "triangle",
+              "octave": -1,
+              "detuneCents": 0.0,
+              "gain": 0.8
+            },
+            {
+              "enabled": false,
+              "wave": "saw",
+              "octave": 0,
+              "detuneCents": 0.0,
+              "gain": 0.8
+            },
+            {
+              "enabled": false,
+              "wave": "saw",
+              "octave": 0,
+              "detuneCents": 0.0,
+              "gain": 0.8
+            }
+          ],
           "amp": {
             "attack": 0.02,
             "decay": 0.09,
@@ -68,12 +102,29 @@
         "muted": false,
         "solo": false,
         "instrument": {
-          "osc": {
-            "wave": "saw",
-            "octave": 0,
-            "detuneCents": 0.0,
-            "gain": 0.8
-          },
+          "oscillators": [
+            {
+              "enabled": true,
+              "wave": "saw",
+              "octave": 0,
+              "detuneCents": 0.0,
+              "gain": 0.8
+            },
+            {
+              "enabled": false,
+              "wave": "saw",
+              "octave": 0,
+              "detuneCents": 0.0,
+              "gain": 0.8
+            },
+            {
+              "enabled": false,
+              "wave": "saw",
+              "octave": 0,
+              "detuneCents": 0.0,
+              "gain": 0.8
+            }
+          ],
           "amp": {
             "attack": 0.004,
             "decay": 0.18,
@@ -94,12 +145,29 @@
         "muted": false,
         "solo": false,
         "instrument": {
-          "osc": {
-            "wave": "sine",
-            "octave": 0,
-            "detuneCents": 0.0,
-            "gain": 0.8
-          },
+          "oscillators": [
+            {
+              "enabled": true,
+              "wave": "sine",
+              "octave": 0,
+              "detuneCents": 0.0,
+              "gain": 0.8
+            },
+            {
+              "enabled": false,
+              "wave": "saw",
+              "octave": 0,
+              "detuneCents": 0.0,
+              "gain": 0.8
+            },
+            {
+              "enabled": false,
+              "wave": "saw",
+              "octave": 0,
+              "detuneCents": 0.0,
+              "gain": 0.8
+            }
+          ],
           "amp": {
             "attack": 0.006,
             "decay": 0.15,

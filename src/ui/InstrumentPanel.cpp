@@ -22,7 +22,7 @@ void styleCaption (juce::Label& label, const juce::String& text)
 } // namespace
 
 InstrumentPanel::InstrumentPanel (ProjectDocument& d, EditorState& s)
-    : document (d), editorState (s),
+    : document (d), editorState (s), oscSection (d, s),
       chainHost (d, s, EffectChainHost::Orientation::vertical)
 {
     setComponentID ("instrumentPanel");
@@ -33,32 +33,7 @@ InstrumentPanel::InstrumentPanel (ProjectDocument& d, EditorState& s)
     titleLabel.setColour (juce::Label::textColourId, Palette::text);
     addAndMakeVisible (titleLabel);
 
-    waveBox.addItem ("Sine", 1);
-    waveBox.addItem ("Saw", 2);
-    waveBox.addItem ("Square", 3);
-    waveBox.addItem ("Triangle", 4);
-    waveBox.onChange = [this]
-    {
-        if (updating)
-            return;
-
-        auto channel = selectedChannel();
-
-        if (! channel.isValid())
-            return;
-
-        static const char* waves[] = { "sine", "saw", "square", "triangle" };
-        const auto index = juce::jlimit (0, 3, waveBox.getSelectedId() - 1);
-
-        auto& undo = document.getUndoManager();
-        undo.beginNewTransaction ("Change waveform");
-        channel.getChildWithName (ids::INSTRUMENT)
-               .getChildWithName (ids::OSC)
-               .setProperty (ids::wave, waves[index], &undo);
-    };
-    addAndMakeVisible (waveBox);
-    styleCaption (waveLabel, "WAVE");
-    addAndMakeVisible (waveLabel);
+    addAndMakeVisible (oscSection);
 
     mixerBox.onChange = [this]
     {
@@ -78,14 +53,9 @@ InstrumentPanel::InstrumentPanel (ProjectDocument& d, EditorState& s)
     styleCaption (mixerLabel, "MIXER");
     addAndMakeVisible (mixerLabel);
 
-    const auto oscOf = [this] { return selectedChannel().getChildWithName (ids::INSTRUMENT)
-                                                        .getChildWithName (ids::OSC); };
     const auto ampOf = [this] { return selectedChannel().getChildWithName (ids::INSTRUMENT)
                                                         .getChildWithName (ids::AMP); };
     const auto channelOf = [this] { return selectedChannel(); };
-
-    octaveSlider.setSliderStyle (juce::Slider::IncDecButtons);
-    attachRotary (octaveSlider, octaveLabel, "OCT", oscOf, ids::octave, -3, 3, 1, "Change octave");
 
     basePitchSlider.setSliderStyle (juce::Slider::IncDecButtons);
     attachRotary (basePitchSlider, basePitchLabel, "PITCH", channelOf, ids::basePitch, 0, 127, 1,
@@ -178,7 +148,9 @@ void InstrumentPanel::changeListenerCallback (juce::ChangeBroadcaster*)
 
 void InstrumentPanel::valueTreePropertyChanged (juce::ValueTree& tree, const juce::Identifier&)
 {
-    if (tree.hasType (ids::CHANNEL) || tree.hasType (ids::OSC) || tree.hasType (ids::AMP)
+    // Not ids::OSC: the oscillator section listens for its own nodes, by
+    // identity rather than by type - this filter would fire for every channel's.
+    if (tree.hasType (ids::CHANNEL) || tree.hasType (ids::AMP)
         || tree.hasType (ids::MIXER_TRACK))
         refresh();
 }
@@ -191,6 +163,7 @@ void InstrumentPanel::refresh()
     const auto valid = channel.isValid();
 
     setEnabled (valid);
+    oscSection.setOwner (channel.getChildWithName (ids::INSTRUMENT));
     chainHost.setOwner (channel, channel.isValid() ? channel[ids::name].toString()
                                                    : juce::String());
 
@@ -202,12 +175,7 @@ void InstrumentPanel::refresh()
 
     titleLabel.setText (channel[ids::name].toString(), juce::dontSendNotification);
 
-    const auto osc = channel.getChildWithName (ids::INSTRUMENT).getChildWithName (ids::OSC);
     const auto amp = channel.getChildWithName (ids::INSTRUMENT).getChildWithName (ids::AMP);
-
-    const auto wave = osc[ids::wave].toString();
-    waveBox.setSelectedId (wave == "sine" ? 1 : wave == "saw" ? 2 : wave == "square" ? 3 : 4,
-                           juce::dontSendNotification);
 
     mixerBox.clear (juce::dontSendNotification);
 
@@ -217,7 +185,6 @@ void InstrumentPanel::refresh()
 
     mixerBox.setSelectedId ((int) channel[ids::mixerTrackId], juce::dontSendNotification);
 
-    octaveSlider.setValue ((double) osc[ids::octave], juce::dontSendNotification);
     basePitchSlider.setValue ((double) channel[ids::basePitch], juce::dontSendNotification);
 
     attackSlider.setValue ((double) amp[ids::attack], juce::dontSendNotification);
@@ -245,20 +212,21 @@ void InstrumentPanel::resized()
 
     const auto row = [&area] (int height) { auto r = area.removeFromTop (height); area.removeFromTop (6); return r; };
 
-    auto waveRow = row (44);
-    waveLabel.setBounds (waveRow.removeFromLeft (46));
-    waveBox.setBounds (waveRow.reduced (0, 10));
+    oscSection.setBounds (row (OscillatorSection::requiredHeight));
 
-    auto mixerRow = row (44);
-    mixerLabel.setBounds (mixerRow.removeFromLeft (46));
-    mixerBox.setBounds (mixerRow.reduced (0, 10));
+    // Routing and base pitch share a row. The oscillator section costs the panel
+    // about 120px more than the single wave combo it replaces, and at the
+    // smallest window the app opens at that was the whole effect chain.
+    auto routingRow = row (44);
 
-    auto pitchRow = row (30);
-    octaveLabel.setBounds (pitchRow.removeFromLeft (36));
-    octaveSlider.setBounds (pitchRow.removeFromLeft (96));
-    pitchRow.removeFromLeft (8);
-    basePitchLabel.setBounds (pitchRow.removeFromLeft (42));
-    basePitchSlider.setBounds (pitchRow);
+    // The pitch stepper is measured from the right and the combo takes what is
+    // left: an inc/dec pair given "half of whatever remains" is the one control
+    // here that clips rather than shrinking.
+    basePitchSlider.setBounds (routingRow.removeFromRight (96).reduced (0, 10));
+    basePitchLabel.setBounds (routingRow.removeFromRight (38));
+    routingRow.removeFromRight (8);
+    mixerLabel.setBounds (routingRow.removeFromLeft (46));
+    mixerBox.setBounds (routingRow.reduced (0, 10));
 
     auto adsr = row (86);
     const auto knobWidth = adsr.getWidth() / 4;

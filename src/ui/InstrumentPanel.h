@@ -5,11 +5,12 @@
 #include "../model/ProjectDocument.h"
 #include "EditorState.h"
 #include "EffectChainHost.h"
+#include "OscillatorSection.h"
 
 namespace dew
 {
 
-/** The selected channel's oscillator and envelope.
+/** The selected channel's oscillators and envelope.
 
     Controls write straight into the ValueTree through the UndoManager; the
     engine picks the change up on its next snapshot, so a knob turn is audible
@@ -46,11 +47,11 @@ private:
 
     juce::Label titleLabel;
 
-    juce::ComboBox waveBox;
-    juce::Label waveLabel;
-
-    juce::Slider octaveSlider { juce::Slider::IncDecButtons, juce::Slider::TextBoxLeft };
-    juce::Label octaveLabel;
+    /** The channel's oscillator slots. Its own component: it carries its own
+        selection, its own listener scoped to one instrument's nodes and its own
+        test seams, none of which the rest of this panel has any use for.
+    */
+    OscillatorSection oscSection;
 
     juce::Slider basePitchSlider { juce::Slider::IncDecButtons, juce::Slider::TextBoxLeft };
     juce::Label basePitchLabel;

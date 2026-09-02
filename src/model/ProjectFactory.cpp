@@ -1,6 +1,7 @@
 #include "ProjectFactory.h"
 
 #include "Ids.h"
+#include "ProjectEdits.h"
 #include "ProjectSchema.h"
 
 namespace dew
@@ -24,7 +25,7 @@ juce::ValueTree makeChannel (int id, const juce::String& name, const juce::Strin
     channel.setProperty (ids::volume, volume, nullptr);
 
     auto instrument = channel.getChildWithName (ids::INSTRUMENT);
-    auto osc = instrument.getChildWithName (ids::OSC);
+    auto osc = ProjectEdits::oscillatorAt (channel, 0);
     osc.setProperty (ids::wave, wave, nullptr);
     osc.setProperty (ids::octave, octave, nullptr);
 
@@ -224,16 +225,16 @@ juce::ValueTree ProjectFactory::createMelodyDemo()
         auto amp = channel.getChildWithName (ids::INSTRUMENT).getChildWithName (ids::AMP);
 
         if (index == 0) { channel.setProperty (ids::name, "Melody", nullptr); amp.setProperty (ids::release, 0.30, nullptr);
-                          channel.getChildWithName (ids::INSTRUMENT).getChildWithName (ids::OSC)
-                                 .setProperty (ids::wave, "saw", nullptr); }
+                          ProjectEdits::oscillatorAt (channel, 0)
+                                       .setProperty (ids::wave, "saw", nullptr); }
         if (index == 1) { channel.setProperty (ids::name, "Chords", nullptr); amp.setProperty (ids::attack, 0.02, nullptr);
                           amp.setProperty (ids::sustain, 0.7, nullptr); amp.setProperty (ids::release, 0.45, nullptr);
-                          channel.getChildWithName (ids::INSTRUMENT).getChildWithName (ids::OSC)
-                                 .setProperty (ids::wave, "triangle", nullptr); }
+                          ProjectEdits::oscillatorAt (channel, 0)
+                                       .setProperty (ids::wave, "triangle", nullptr); }
         if (index == 2) { channel.setProperty (ids::name, "Bass", nullptr); amp.setProperty (ids::release, 0.25, nullptr); }
         if (index == 3) { channel.setProperty (ids::name, "Counter", nullptr); channel.setProperty (ids::volume, 0.4, nullptr);
-                          channel.getChildWithName (ids::INSTRUMENT).getChildWithName (ids::OSC)
-                                 .setProperty (ids::wave, "sine", nullptr); }
+                          ProjectEdits::oscillatorAt (channel, 0)
+                                       .setProperty (ids::wave, "sine", nullptr); }
 
         ++index;
     }
@@ -304,7 +305,7 @@ juce::ValueTree ProjectFactory::createEffectsDemo()
             // A pad, through a filter and a chorus on the channel itself.
             channel.setProperty (ids::name, "Pad", nullptr);
             channel.setProperty (ids::volume, 0.30, nullptr);
-            instrument.getChildWithName (ids::OSC).setProperty (ids::wave, "saw", nullptr);
+            ProjectEdits::oscillatorAt (channel, 0).setProperty (ids::wave, "saw", nullptr);
             amp.setProperty (ids::attack, 0.35, nullptr);
             amp.setProperty (ids::sustain, 0.85, nullptr);
             amp.setProperty (ids::release, 0.9, nullptr);
@@ -320,7 +321,7 @@ juce::ValueTree ProjectFactory::createEffectsDemo()
             // A pluck feeding the delay on its mixer track.
             channel.setProperty (ids::name, "Pluck", nullptr);
             channel.setProperty (ids::volume, 0.35, nullptr);
-            instrument.getChildWithName (ids::OSC).setProperty (ids::wave, "triangle", nullptr);
+            ProjectEdits::oscillatorAt (channel, 0).setProperty (ids::wave, "triangle", nullptr);
             amp.setProperty (ids::attack, 0.001, nullptr);
             amp.setProperty (ids::decay, 0.22, nullptr);
             amp.setProperty (ids::sustain, 0.0, nullptr);
@@ -338,7 +339,7 @@ juce::ValueTree ProjectFactory::createEffectsDemo()
             channel.setProperty (ids::name, "Kick", nullptr);
             channel.setProperty (ids::basePitch, 36, nullptr);
             channel.setProperty (ids::volume, 0.60, nullptr);
-            instrument.getChildWithName (ids::OSC).setProperty (ids::wave, "sine", nullptr);
+            ProjectEdits::oscillatorAt (channel, 0).setProperty (ids::wave, "sine", nullptr);
             amp.setProperty (ids::attack, 0.001, nullptr);
             amp.setProperty (ids::decay, 0.16, nullptr);
             amp.setProperty (ids::sustain, 0.0, nullptr);
@@ -425,7 +426,7 @@ juce::ValueTree ProjectFactory::createAutomationDemo()
         {
             channel.setProperty (ids::name, "Arp", nullptr);
             channel.setProperty (ids::volume, 0.6, nullptr);
-            instrument.getChildWithName (ids::OSC).setProperty (ids::wave, "saw", nullptr);
+            ProjectEdits::oscillatorAt (channel, 0).setProperty (ids::wave, "saw", nullptr);
             amp.setProperty (ids::attack, 0.002, nullptr);
             amp.setProperty (ids::decay, 0.16, nullptr);
             amp.setProperty (ids::sustain, 0.25, nullptr);
@@ -441,7 +442,7 @@ juce::ValueTree ProjectFactory::createAutomationDemo()
             channel.setProperty (ids::name, "Kick", nullptr);
             channel.setProperty (ids::basePitch, 36, nullptr);
             channel.setProperty (ids::volume, 0.95, nullptr);
-            instrument.getChildWithName (ids::OSC).setProperty (ids::wave, "sine", nullptr);
+            ProjectEdits::oscillatorAt (channel, 0).setProperty (ids::wave, "sine", nullptr);
             amp.setProperty (ids::attack, 0.001, nullptr);
             amp.setProperty (ids::decay, 0.15, nullptr);
             amp.setProperty (ids::sustain, 0.0, nullptr);

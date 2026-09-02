@@ -86,14 +86,46 @@ namespace
 
 std::atomic<juce::uint64> nextGeneration { 1 };
 
-OscSettings readOsc (const juce::ValueTree& osc)
+OscBankSnapshot readOscBank (const juce::ValueTree& instrument,
+                             const juce::String& ownerName,
+                             const std::function<void (const juce::String&)>& warn)
 {
-    OscSettings s;
-    s.wave        = waveformFromString (osc[ids::wave].toString());
-    s.octave      = juce::jlimit (-4, 4, (int) osc[ids::octave]);
-    s.detuneCents = juce::jlimit (-1200.0f, 1200.0f, (float) (double) osc[ids::detuneCents]);
-    s.gain        = juce::jlimit (0.0f, 1.0f, (float) (double) osc[ids::gain]);
-    return s;
+    OscBankSnapshot bank;
+
+    for (const auto& osc : instrument)
+    {
+        if (! osc.hasType (ids::OSC))
+            continue;
+
+        if (bank.numSlots >= kMaxOscillators)
+        {
+            warn (ownerName + " has more than " + juce::String (kMaxOscillators)
+                  + " oscillators; the rest are not rendered.");
+            break;
+        }
+
+        auto& s = bank.slots[(size_t) bank.numSlots++];
+        s.enabled     = (bool) osc.getProperty (ids::enabled, true);
+        s.wave        = waveformFromString (osc[ids::wave].toString());
+        s.octave      = juce::jlimit (-4, 4, (int) osc[ids::octave]);
+        s.detuneCents = juce::jlimit (-1200.0f, 1200.0f, (float) (double) osc[ids::detuneCents]);
+        s.gain        = juce::jlimit (0.0f, 1.0f, (float) (double) osc[ids::gain]);
+
+        bank.anyEnabled = bank.anyEnabled || s.enabled;
+    }
+
+    // An instrument carrying no oscillator node at all - one a test assembled by
+    // hand, not one the schema produced - gets a single default one, which is
+    // what reading a missing node used to yield. Silence here would make a
+    // missing child indistinguishable from a channel someone switched off.
+    if (bank.numSlots == 0)
+    {
+        bank.slots[0] = {};
+        bank.numSlots = 1;
+        bank.anyEnabled = true;
+    }
+
+    return bank;
 }
 
 AmpSettings readAmp (const juce::ValueTree& amp)
@@ -349,7 +381,8 @@ EngineSnapshot buildSnapshot (const juce::ValueTree& project, juce::StringArray*
         snapshot.anyChannelSolo = snapshot.anyChannelSolo || c.solo;
 
         const auto instrument = channel.getChildWithName (ids::INSTRUMENT);
-        c.osc = readOsc (instrument.getChildWithName (ids::OSC));
+        c.osc = readOscBank (instrument,
+                             "Channel \"" + channel[ids::name].toString() + "\"", warn);
         c.amp = readAmp (instrument.getChildWithName (ids::AMP));
 
         // Resolve the mixer routing now; the audio thread must not search.

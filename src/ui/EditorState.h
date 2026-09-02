@@ -69,6 +69,26 @@ public:
         sendChangeMessage();
     }
 
+    // --- oscillators ---------------------------------------------------------
+    /** Which oscillator slot the instrument panel is editing.
+
+        View state, for the same reasons the expanded effect cards are: it is
+        not part of the project, has no business on the undo stack, and must not
+        make a document dirty. Not remembered per channel - the panel shows one
+        channel at a time, and a per-channel slot would make the header jump
+        about as you click through the rack.
+
+        Clamped by the panel rather than here, so this header does not have to
+        know how many oscillators the schema declares.
+    */
+    int getSelectedOscillator() const noexcept { return selectedOscillator; }
+
+    void setSelectedOscillator (int index)
+    {
+        if (std::exchange (selectedOscillator, index) != index)
+            sendChangeMessage();
+    }
+
     // --- last placed note ----------------------------------------------------
     int getLastNoteLengthSteps() const noexcept { return lastNoteLengthSteps; }
     double getLastNoteVelocity() const noexcept { return lastNoteVelocity; }
@@ -84,6 +104,7 @@ private:
     int selectedChannelId = 1;
     int currentPatternId = 1;
     int selectedMixerTrackId = 1;
+    int selectedOscillator = 0;
 
     int lastNoteLengthSteps = 1;
     double lastNoteVelocity = 1.0;

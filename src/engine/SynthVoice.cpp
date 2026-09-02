@@ -50,29 +50,49 @@ void SynthVoice::prepare (double sampleRate)
 void SynthVoice::reset() noexcept
 {
     active = false;
-    phase = 0.0;
-    phaseIncrement = 0.0;
-    triangleState = 0.0;
+
+    for (auto& osc : oscillators)
+        osc = {};
+
+    numOscillators = 0;
     samplesSinceStart = 0;
     samplesUntilRelease = 0;
     adsr.reset();
 }
 
-void SynthVoice::start (int pitch, float velocity, const OscSettings& osc,
+void SynthVoice::start (int pitch, float velocity, const OscBankSnapshot& bank,
                         const AmpSettings& amp, int durationSamples)
 {
     currentPitch = pitch;
-    wave = osc.wave;
-    oscGain = osc.gain;
     level = juce::jlimit (0.0f, 1.0f, velocity);
 
-    const auto effectivePitch = juce::jlimit (0.0, 127.0,
-                                              (double) pitch + 12.0 * (double) osc.octave);
-    const auto frequency = midiToHz (effectivePitch, (double) osc.detuneCents);
+    numOscillators = 0;
 
-    phase = 0.0;
-    triangleState = 0.0;
-    phaseIncrement = juce::jlimit (0.0, 0.5, frequency / currentSampleRate);
+    for (int i = 0; i < bank.numSlots; ++i)
+    {
+        const auto& settings = bank.slots[(size_t) i];
+
+        if (! settings.enabled)
+            continue;
+
+        auto& osc = oscillators[(size_t) numOscillators++];
+
+        osc.wave = settings.wave;
+        osc.gain = settings.gain;
+
+        // Every oscillator starts at zero phase, as the single one did. Two
+        // slots set the same way therefore sum coherently, which is what makes
+        // detuning one of them audible as a beat rather than as noise.
+        osc.phase = 0.0;
+        osc.triangleState = 0.0;
+
+        const auto effectivePitch = juce::jlimit (0.0, 127.0,
+                                                  (double) pitch
+                                                      + 12.0 * (double) settings.octave);
+        const auto frequency = midiToHz (effectivePitch, (double) settings.detuneCents);
+
+        osc.phaseIncrement = juce::jlimit (0.0, 0.5, frequency / currentSampleRate);
+    }
 
     adsrParams.attack  = amp.attack;
     adsrParams.decay   = amp.decay;
@@ -97,7 +117,7 @@ void SynthVoice::release() noexcept
     }
 }
 
-float SynthVoice::nextSample() noexcept
+float SynthVoice::Oscillator::nextSample() noexcept
 {
     const auto t = phase;
     const auto dt = phaseIncrement;
@@ -154,7 +174,15 @@ void SynthVoice::renderAdd (float* buffer, int numSamples) noexcept
 
         const auto envelope = adsr.getNextSample();
 
-        buffer[i] += nextSample() * envelope * level * oscGain;
+        // Summed plainly, each by its own gain. Dividing by the number of
+        // enabled oscillators would make switching one on quieten the ones
+        // already playing, which is not what a second oscillator is for.
+        float sum = 0.0f;
+
+        for (int o = 0; o < numOscillators; ++o)
+            sum += oscillators[(size_t) o].nextSample() * oscillators[(size_t) o].gain;
+
+        buffer[i] += sum * envelope * level;
 
         ++samplesSinceStart;
 
