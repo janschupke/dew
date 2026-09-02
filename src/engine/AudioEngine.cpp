@@ -5,6 +5,7 @@
 #include <cmath>
 #include <limits>
 #include "engine/AtomicPeak.h"
+#include "engine/ModuleFactory.h"
 
 namespace dew
 {
@@ -31,11 +32,6 @@ AudioEngine::AudioEngine()
 {
     channels.resize (kMaxChannels);
     triggers.reserve (256);
-
-    effectUnits.reserve (kMaxEffectUnits);
-
-    for (int i = 0; i < kMaxEffectUnits; ++i)
-        effectUnits.push_back (std::make_unique<EffectUnit>());
 
     effectUnitTypes.assign (kMaxEffectUnits, -1);
     activeAutomation.reserve (kMaxAutomations);
@@ -65,8 +61,9 @@ void AudioEngine::prepare (double sampleRate, int maximumBlockSize)
     mixerBuffers.clear();
     channelStereo.clear();
 
-    for (auto& unit : effectUnits)
-        unit->prepare (currentSampleRate, currentBlockSize);
+    modulePool.prepare (currentSampleRate, currentBlockSize);
+    dryScratch.setSize (2, currentBlockSize);
+    dryScratch.clear();
 
     effectUnitTypes.assign (kMaxEffectUnits, -1);
 
@@ -92,6 +89,11 @@ void AudioEngine::setProject (const juce::ValueTree& project, juce::StringArray*
 
 void AudioEngine::publish (EngineSnapshot snapshot)
 {
+    // Every snapshot goes through here, so this is the one place a slot can be
+    // pointed at its DSP - and it is on the message thread, which is where
+    // making a module is allowed to allocate.
+    resolveModules (snapshot);
+
     bridge.publish (std::move (snapshot));
 }
 
@@ -363,45 +365,6 @@ void AudioEngine::applySnapshotIfChanged (const EngineSnapshot& snapshot) noexce
     transport.setTempo (snapshot.tempoBpm, snapshot.stepsPerBeat);
 }
 
-namespace
-{
-
-/** Writes one automated value into an effect's parameters. Only the fields a
-    type actually reads are automatable, so an unmatched code is a no-op rather
-    than a silent write to the wrong parameter.
-*/
-void applyToEffect (EffectParams& params, AutomationParam param, float value) noexcept
-{
-    switch (param)
-    {
-        case AutomationParam::cutoff:     params.cutoff = value; break;
-        case AutomationParam::resonance:  params.resonance = value; break;
-        case AutomationParam::mix:        params.mix = value; break;
-        case AutomationParam::roomSize:   params.roomSize = value; break;
-        case AutomationParam::damping:    params.damping = value; break;
-        case AutomationParam::width:      params.width = value; break;
-        case AutomationParam::delayMs:    params.delayMs = value; break;
-        case AutomationParam::feedback:   params.feedback = value; break;
-        case AutomationParam::drive:      params.drive = value; break;
-        case AutomationParam::outputGain: params.outputGain = value; break;
-        case AutomationParam::rate:       params.rate = value; break;
-        case AutomationParam::depth:      params.depth = value; break;
-        case AutomationParam::lowGainDb:  params.lowGainDb = value; break;
-        case AutomationParam::midGainDb:  params.midGainDb = value; break;
-        case AutomationParam::midFreq:    params.midFreq = value; break;
-        case AutomationParam::highGainDb: params.highGainDb = value; break;
-
-        case AutomationParam::none:
-        case AutomationParam::volume:
-        case AutomationParam::pan:
-        case AutomationParam::gain:
-        case AutomationParam::position:
-            break;
-    }
-}
-
-} // namespace
-
 void AudioEngine::collectAutomation (const EngineSnapshot& snapshot, double positionSteps) noexcept
 {
     activeAutomation.clear();
@@ -432,9 +395,29 @@ void AudioEngine::collectAutomation (const EngineSnapshot& snapshot, double posi
         // clip is placed rather than only at bar one.
         activeAutomation.push_back ({ automation.scope, automation.targetIndex,
                                       automation.slotIndex, automation.param,
+                                      automation.paramIndex,
                                       automation.valueAt (positionSteps - start) });
     }
 }
+
+namespace
+{
+
+/** Writes an automated value into a slot's parameter block.
+
+    This was a sixteen-case switch - one per parameter of every effect type -
+    that had to grow for each new one, and that silently did nothing for a
+    parameter nobody had added a case for. The index is resolved on the message
+    thread, where the slot's type is known, so the audio thread does an array
+    write.
+*/
+void writeEffectParam (EffectSnapshot& slot, int paramIndex, float value) noexcept
+{
+    if (paramIndex >= 0 && paramIndex < kMaxEffectParams)
+        slot.params[(size_t) paramIndex] = value;
+}
+
+} // namespace
 
 const AudioEngine::ChannelOverrides*
 AudioEngine::overridesFor (const ChannelSnapshot& channel, int channelIndex) noexcept
@@ -482,8 +465,8 @@ AudioEngine::overridesFor (const ChannelSnapshot& channel, int channelIndex) noe
         else if (active.scope == AutomationScope::channelEffect
                  && active.slotIndex >= 0 && active.slotIndex < overrides.effects.numSlots)
         {
-            applyToEffect (overrides.effects.slots[(size_t) active.slotIndex].params,
-                           active.param, active.value);
+            writeEffectParam (overrides.effects.slots[(size_t) active.slotIndex],
+                              active.paramIndex, active.value);
         }
     }
 
@@ -528,8 +511,8 @@ AudioEngine::overridesFor (const MixerTrackSnapshot& track, int trackIndex) noex
         else if (active.scope == AutomationScope::mixerEffect
                  && active.slotIndex >= 0 && active.slotIndex < overrides.effects.numSlots)
         {
-            applyToEffect (overrides.effects.slots[(size_t) active.slotIndex].params,
-                           active.param, active.value);
+            writeEffectParam (overrides.effects.slots[(size_t) active.slotIndex],
+                              active.paramIndex, active.value);
         }
     }
 
@@ -552,21 +535,48 @@ void AudioEngine::runChain (const EffectChainSnapshot& chain, float* left, float
     {
         const auto& slot = chain.slots[(size_t) i];
 
-        if (! slot.enabled || slot.unitIndex < 0 || slot.unitIndex >= (int) effectUnits.size())
+        if (! slot.enabled || slot.module == nullptr)
             continue;
 
         // A unit reused as a different effect must start clean: a reverb tail
-        // read out through a delay line is noise, not a crossfade.
+        // read out through a delay line is noise, not a crossfade. Belt and
+        // braces now that each type has its own object - but switching a slot
+        // away and back would otherwise resume the first one's tail.
         const auto typeCode = (int) slot.type;
 
-        if (effectUnitTypes[(size_t) slot.unitIndex] != typeCode)
+        if (slot.unitIndex >= 0 && slot.unitIndex < (int) effectUnitTypes.size()
+            && effectUnitTypes[(size_t) slot.unitIndex] != typeCode)
         {
             effectUnitTypes[(size_t) slot.unitIndex] = typeCode;
-            effectUnits[(size_t) slot.unitIndex]->reset();
+            slot.module->reset();
         }
 
-        effectUnits[(size_t) slot.unitIndex]->process (slot.type, slot.params, left, right, numSamples);
+        processEffectSlot (*slot.module, slot.params, slot.type,
+                           { left, right, numSamples }, dryScratch);
     }
+}
+
+void AudioEngine::resolveModules (EngineSnapshot& snapshot)
+{
+    // Message thread, between building a snapshot and publishing it: acquire()
+    // allocates on first use, and the audio thread must never do that.
+    const auto resolve = [this] (EffectChainSnapshot& chain)
+    {
+        for (int i = 0; i < chain.numSlots; ++i)
+        {
+            auto& slot = chain.slots[(size_t) i];
+            slot.module = slot.unitIndex >= 0 ? modulePool.acquire (slot.unitIndex, slot.type)
+                                              : nullptr;
+        }
+    };
+
+    for (auto& channel : snapshot.channels)
+        resolve (channel.effects);
+
+    for (auto& track : snapshot.mixerTracks)
+        resolve (track.effects);
+
+    resolve (snapshot.masterEffects);
 }
 
 void AudioEngine::processBlock (juce::AudioBuffer<float>& buffer) noexcept

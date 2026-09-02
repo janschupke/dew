@@ -2,6 +2,9 @@
 #include <catch2/matchers/catch_matchers_floating_point.hpp>
 
 #include "engine/Effects.h"
+#include "engine/AudioEngine.h"
+#include "engine/ModuleFactory.h"
+#include "model/ModuleCatalog.h"
 #include "engine/EngineSnapshot.h"
 #include "io/OfflineRenderer.h"
 #include "model/Ids.h"
@@ -18,19 +21,76 @@ namespace
 constexpr double sampleRate = 44100.0;
 constexpr int blockSize = 512;
 
-/** Runs a signal through one effect and hands back the result. */
-void runEffect (EffectType type, const EffectParams& params,
-                juce::AudioBuffer<float>& buffer)
+/** One effect's parameters, named rather than indexed.
+
+    The block the engine passes a module is positional, which is right for the
+    audio thread and unreadable in a test. This names them through the catalog,
+    so a test still says `.set (ids::cutoff, 200.0f)` and a reordered descriptor
+    moves the value with it rather than silently driving the neighbour.
+*/
+struct Params
 {
-    EffectUnit unit;
-    unit.prepare (sampleRate, blockSize);
+    explicit Params (EffectType t) : type (t)
+    {
+        // Start from the declared defaults, so a test only states what it cares
+        // about - exactly as `EffectParams params;` used to.
+        for (const auto& spec : effectParamsFor (type))
+        {
+            const auto index = effectParamIndex (type, *spec.property);
+
+            if (index < 0)
+                continue;
+
+            if (spec.control == ParamControl::choice)
+            {
+                for (int i = 0; i < spec.numChoices; ++i)
+                    if (juce::String (spec.choices[i].id) == spec.defaultText)
+                        block[(size_t) index] = (float) i;
+            }
+            else
+            {
+                block[(size_t) index] = (float) spec.defaultValue;
+            }
+        }
+    }
+
+    Params& set (const juce::Identifier& property, float value)
+    {
+        const auto index = effectParamIndex (type, property);
+        REQUIRE (index >= 0);
+        block[(size_t) index] = value;
+        return *this;
+    }
+
+    Params& setMode (FilterMode mode) { return set (ids::filterMode, (float) mode); }
+
+    EffectType type;
+    EffectParamBlock block {};
+};
+
+/** Runs a signal through one effect and hands back the result.
+
+    Through processEffectSlot, which is the same function the engine's chain
+    runner calls. A test that applied its own dry/wet would pin its own
+    arithmetic rather than the engine's - and the fully-dry passthrough below is
+    exactly the assertion that would then prove nothing.
+*/
+void runEffect (const Params& params, juce::AudioBuffer<float>& buffer)
+{
+    auto module = createEffectModule (params.type);
+    REQUIRE (module != nullptr);
+
+    module->prepare (sampleRate, blockSize);
+
+    juce::AudioBuffer<float> dryScratch (2, blockSize);
 
     for (int start = 0; start < buffer.getNumSamples(); start += blockSize)
     {
         const auto n = juce::jmin (blockSize, buffer.getNumSamples() - start);
-        unit.process (type, params,
-                      buffer.getWritePointer (0) + start,
-                      buffer.getWritePointer (1) + start, n);
+        processEffectSlot (*module, params.block, params.type,
+                           { buffer.getWritePointer (0) + start,
+                             buffer.getWritePointer (1) + start, n },
+                           dryScratch);
     }
 }
 
@@ -60,10 +120,10 @@ float rmsOf (const juce::AudioBuffer<float>& buffer, int start, int length)
 
 TEST_CASE ("a lowpass removes high content and keeps low content", "[effects][dsp]")
 {
-    EffectParams params;
-    params.filterMode = FilterMode::lowpass;
-    params.cutoff = 200.0f;
-    params.resonance = 0.5f;
+    Params params { EffectType::filter };
+    params.setMode (FilterMode::lowpass);
+    params.set (ids::cutoff, 200.0f);
+    params.set (ids::resonance, 0.5f);
 
     // The same filter, on two tones an order of magnitude apart in frequency.
     auto low = sineBuffer (80.0, 22050);
@@ -72,8 +132,8 @@ TEST_CASE ("a lowpass removes high content and keeps low content", "[effects][ds
     const auto lowBefore = rmsOf (low, 11025, 11025);
     const auto highBefore = rmsOf (high, 11025, 11025);
 
-    runEffect (EffectType::filter, params, low);
-    runEffect (EffectType::filter, params, high);
+    runEffect (params, low);
+    runEffect (params, high);
 
     const auto lowAfter = rmsOf (low, 11025, 11025);
     const auto highAfter = rmsOf (high, 11025, 11025);
@@ -87,9 +147,9 @@ TEST_CASE ("a lowpass removes high content and keeps low content", "[effects][ds
 
 TEST_CASE ("a highpass does the opposite", "[effects][dsp]")
 {
-    EffectParams params;
-    params.filterMode = FilterMode::highpass;
-    params.cutoff = 2000.0f;
+    Params params { EffectType::filter };
+    params.setMode (FilterMode::highpass);
+    params.set (ids::cutoff, 2000.0f);
 
     auto low = sineBuffer (80.0, 22050);
     auto high = sineBuffer (8000.0, 22050);
@@ -97,8 +157,8 @@ TEST_CASE ("a highpass does the opposite", "[effects][dsp]")
     const auto lowBefore = rmsOf (low, 11025, 11025);
     const auto highBefore = rmsOf (high, 11025, 11025);
 
-    runEffect (EffectType::filter, params, low);
-    runEffect (EffectType::filter, params, high);
+    runEffect (params, low);
+    runEffect (params, high);
 
     REQUIRE (rmsOf (low, 11025, 11025) < lowBefore * 0.05f);
     REQUIRE (rmsOf (high, 11025, 11025) > highBefore * 0.7f);
@@ -106,10 +166,10 @@ TEST_CASE ("a highpass does the opposite", "[effects][dsp]")
 
 TEST_CASE ("a delay produces a repeat at the time it was set to", "[effects][dsp]")
 {
-    EffectParams params;
-    params.delayMs = 200.0f;
-    params.feedback = 0.0f;      // one repeat only, so the position is unambiguous
-    params.mix = 1.0f;
+    Params params { EffectType::delay };
+    params.set (ids::delayMs, 200.0f);
+    params.set (ids::feedback, 0.0f);      // one repeat only, so the position is unambiguous
+    params.set (ids::mix, 1.0f);
 
     // A short click at the very start, then silence.
     juce::AudioBuffer<float> buffer (2, (int) (sampleRate * 1.0));
@@ -121,7 +181,7 @@ TEST_CASE ("a delay produces a repeat at the time it was set to", "[effects][dsp
         buffer.setSample (1, i, 0.8f);
     }
 
-    runEffect (EffectType::delay, params, buffer);
+    runEffect (params, buffer);
 
     // Find where the energy actually landed.
     int loudest = -1;
@@ -147,9 +207,9 @@ TEST_CASE ("a delay produces a repeat at the time it was set to", "[effects][dsp
 
 TEST_CASE ("delay feedback makes repeats that decay rather than one or forever", "[effects][dsp]")
 {
-    EffectParams params;
-    params.delayMs = 100.0f;
-    params.feedback = 0.6f;
+    Params params { EffectType::delay };
+    params.set (ids::delayMs, 100.0f);
+    params.set (ids::feedback, 0.6f);
 
     juce::AudioBuffer<float> buffer (2, (int) (sampleRate * 1.0));
     buffer.clear();
@@ -158,7 +218,7 @@ TEST_CASE ("delay feedback makes repeats that decay rather than one or forever",
         for (int c = 0; c < 2; ++c)
             buffer.setSample (c, i, 0.8f);
 
-    runEffect (EffectType::delay, params, buffer);
+    runEffect (params, buffer);
 
     const auto window = (int) (sampleRate * 0.05);
     const auto first  = rmsOf (buffer, (int) (sampleRate * 0.100) - window / 2, window);
@@ -175,10 +235,10 @@ TEST_CASE ("delay feedback makes repeats that decay rather than one or forever",
 
 TEST_CASE ("reverb extends a sound past where it ended", "[effects][dsp]")
 {
-    EffectParams params;
-    params.roomSize = 0.85f;
-    params.damping = 0.2f;
-    params.mix = 1.0f;
+    Params params { EffectType::reverb };
+    params.set (ids::roomSize, 0.85f);
+    params.set (ids::damping, 0.2f);
+    params.set (ids::mix, 1.0f);
 
     // A quarter second of tone, then silence.
     juce::AudioBuffer<float> buffer (2, (int) (sampleRate * 1.5));
@@ -192,7 +252,7 @@ TEST_CASE ("reverb extends a sound past where it ended", "[effects][dsp]")
     const auto tailBefore = rmsOf (buffer, (int) (sampleRate * 0.4), (int) (sampleRate * 0.2));
     REQUIRE (tailBefore < 1.0e-6f);      // silent before the reverb
 
-    runEffect (EffectType::reverb, params, buffer);
+    runEffect (params, buffer);
 
     const auto tailAfter = rmsOf (buffer, (int) (sampleRate * 0.4), (int) (sampleRate * 0.2));
     const auto laterTail = rmsOf (buffer, (int) (sampleRate * 1.0), (int) (sampleRate * 0.2));
@@ -206,14 +266,14 @@ TEST_CASE ("reverb extends a sound past where it ended", "[effects][dsp]")
 
 TEST_CASE ("drive adds harmonics rather than only volume", "[effects][dsp]")
 {
-    EffectParams params;
-    params.drive = 20.0f;
-    params.outputGain = 1.0f;
+    Params params { EffectType::drive };
+    params.set (ids::drive, 20.0f);
+    params.set (ids::outputGain, 1.0f);
 
     auto buffer = sineBuffer (200.0, 8192, 0.5f);
     const auto before = buffer;
 
-    runEffect (EffectType::drive, params, buffer);
+    runEffect (params, buffer);
 
     // A hard-driven sine becomes something square-ish: its peak sits far closer
     // to its RMS than a sine's does. Comparing crest factors says "the shape
@@ -231,47 +291,46 @@ TEST_CASE ("drive adds harmonics rather than only volume", "[effects][dsp]")
 
 TEST_CASE ("the EQ bands move the frequencies they name", "[effects][dsp]")
 {
-    const auto gainAt = [] (double frequency, const EffectParams& params)
+    const auto gainAt = [] (double frequency, const Params& params)
     {
         auto buffer = sineBuffer (frequency, 22050);
         const auto before = rmsOf (buffer, 11025, 11025);
-        runEffect (EffectType::eq, params, buffer);
+        runEffect (params, buffer);
         return rmsOf (buffer, 11025, 11025) / juce::jmax (1.0e-9f, before);
     };
 
-    EffectParams flat;
+    Params flat { EffectType::eq };
     REQUIRE_THAT (gainAt (100.0, flat), WithinAbs (1.0, 0.05));
     REQUIRE_THAT (gainAt (900.0, flat), WithinAbs (1.0, 0.05));
     REQUIRE_THAT (gainAt (8000.0, flat), WithinAbs (1.0, 0.05));
 
-    EffectParams boostLow;
-    boostLow.lowGainDb = 12.0f;
+    Params boostLow { EffectType::eq };
+    boostLow.set (ids::lowGainDb, 12.0f);
     REQUIRE (gainAt (60.0, boostLow) > 2.5f);          // roughly +12dB
     REQUIRE_THAT (gainAt (8000.0, boostLow), WithinAbs (1.0, 0.1));
 
-    EffectParams cutMid;
-    cutMid.midGainDb = -18.0f;
-    cutMid.midFreq = 900.0f;
+    Params cutMid { EffectType::eq };
+    cutMid.set (ids::midGainDb, -18.0f).set (ids::midFreq, 900.0f);
     REQUIRE (gainAt (900.0, cutMid) < 0.3f);
     REQUIRE (gainAt (60.0, cutMid) > 0.9f);
 
-    EffectParams boostHigh;
-    boostHigh.highGainDb = 12.0f;
+    Params boostHigh { EffectType::eq };
+    boostHigh.set (ids::highGainDb, 12.0f);
     REQUIRE (gainAt (12000.0, boostHigh) > 2.5f);
     REQUIRE_THAT (gainAt (60.0, boostHigh), WithinAbs (1.0, 0.1));
 }
 
 TEST_CASE ("chorus modulates rather than passing the signal through", "[effects][dsp]")
 {
-    EffectParams params;
-    params.rate = 3.0f;
-    params.depth = 0.8f;
-    params.mix = 1.0f;
+    Params params { EffectType::chorus };
+    params.set (ids::rate, 3.0f);
+    params.set (ids::depth, 0.8f);
+    params.set (ids::mix, 1.0f);
 
     auto buffer = sineBuffer (440.0, (int) (sampleRate * 1.0));
     const auto before = buffer;
 
-    runEffect (EffectType::chorus, params, buffer);
+    runEffect (params, buffer);
 
     // Compare the second half, past the chorus's own delay: a modulated copy
     // differs from the original sample by sample even though its level is
@@ -291,14 +350,14 @@ TEST_CASE ("chorus modulates rather than passing the signal through", "[effects]
 
 TEST_CASE ("a fully dry slot leaves the signal exactly as it was", "[effects][dsp]")
 {
-    EffectParams params;
-    params.mix = 0.0f;
-    params.cutoff = 100.0f;
+    Params params { EffectType::filter };
+    params.set (ids::mix, 0.0f);
+    params.set (ids::cutoff, 100.0f);
 
     auto buffer = sineBuffer (5000.0, 4096);
     const auto before = buffer;
 
-    runEffect (EffectType::filter, params, buffer);
+    runEffect (params, buffer);
 
     for (int i = 0; i < buffer.getNumSamples(); ++i)
         REQUIRE (juce::exactlyEqual (buffer.getSample (0, i), before.getSample (0, i)));
@@ -308,12 +367,12 @@ TEST_CASE ("mix blends between dry and wet", "[effects][dsp]")
 {
     const auto highContentAt = [] (float mix)
     {
-        EffectParams params;
-        params.mix = mix;
-        params.cutoff = 200.0f;
+        Params params { EffectType::filter };
+        params.set (ids::mix, mix);
+        params.set (ids::cutoff, 200.0f);
 
         auto buffer = sineBuffer (5000.0, 22050);
-        runEffect (EffectType::filter, params, buffer);
+        runEffect (params, buffer);
         return rmsOf (buffer, 11025, 11025);
     };
 
@@ -1096,4 +1155,125 @@ TEST_CASE ("a chain whose slots are all disabled renders as if it had none", "[e
             }
         }
     }
+}
+
+TEST_CASE ("effect DSP is built only for what a project uses", "[effects][pool]")
+{
+    // Every pool unit used to hold every effect type at once - a filter, a
+    // reverb tank, a one-second delay line, a chorus and six biquads - all
+    // constructed and prepared up front. About 0.45MB per unit, thirty-two
+    // units, so roughly 15MB per AudioEngine at 44.1kHz and 30MB at 96k,
+    // whether the project had one effect or none. The offline renderer builds a
+    // fresh engine for every render and paid it every time.
+    AudioEngine engine;
+    engine.prepare (kDefaultSampleRate, 512);
+
+    REQUIRE (engine.getMaterialisedEffectModuleCount() == 0);
+
+    juce::StringArray warnings;
+    engine.setProject (ProjectFactory::createDefault(), &warnings);
+    REQUIRE (engine.getMaterialisedEffectModuleCount() == 0);
+
+    auto project = ProjectFactory::createDefault();
+    auto channel = project.getChild (0);
+    REQUIRE (channel.hasType (ids::CHANNEL));
+
+    ProjectEdits::addEffect (project, channel, "reverb", nullptr);
+    ProjectEdits::addEffect (project, channel, "delay", nullptr);
+
+    engine.setProject (project, &warnings);
+    REQUIRE (engine.getMaterialisedEffectModuleCount() == 2);
+
+    // Publishing the same project again reuses what is there rather than
+    // building it twice - which is also what keeps a pointer in an older
+    // snapshot valid.
+    engine.setProject (project, &warnings);
+    REQUIRE (engine.getMaterialisedEffectModuleCount() == 2);
+}
+
+TEST_CASE ("a project with more effects than the old pool held keeps all of them",
+           "[effects][pool]")
+{
+    // The pool was capped at 32 units while the schema permits four effects on
+    // each of 64 channels and 32 mixer tracks plus the master. Past 32,
+    // buildSnapshot warned and then stopped reading that chain - and the
+    // warning went to an argument whose default was nullptr.
+    auto project = ProjectFactory::createDemo();
+
+    auto added = 0;
+
+    for (auto channel : project)
+    {
+        if (! channel.hasType (ids::CHANNEL))
+            continue;
+
+        while (ProjectEdits::countEffects (channel) < kMaxEffectsPerChain)
+        {
+            ProjectEdits::addEffect (project, channel, "drive", nullptr);
+            ++added;
+        }
+    }
+
+    REQUIRE (added > 0);
+
+    juce::StringArray warnings;
+    juce::AudioBuffer<float> rendered;
+
+    RenderOptions options;
+    const auto report = OfflineRenderer::renderToBuffer (project, rendered, options);
+
+    INFO ("warnings: " << report.warnings.joinIntoString ("; "));
+    REQUIRE (report.ok());
+    REQUIRE (report.warnings.isEmpty());
+}
+
+TEST_CASE ("a slot switched away and back does not resume its old tail", "[effects][pool]")
+{
+    // Modules are keyed on (pool index, type) and are never destroyed, so
+    // switching a slot from reverb to filter and back finds the reverb exactly
+    // as it was left - with its tail still in the tanks. The chain runner
+    // resets a unit whose type changed for this reason; without it, a slot
+    // toggled between two effects would leak the first one's decay into the
+    // second's output.
+    auto module = createEffectModule (EffectType::reverb);
+    REQUIRE (module != nullptr);
+    module->prepare (sampleRate, blockSize);
+
+    juce::AudioBuffer<float> dryScratch (2, blockSize);
+
+    Params reverb { EffectType::reverb };
+    reverb.set (ids::roomSize, 0.9f).set (ids::mix, 1.0f);
+
+    // A tone for long enough to charge it, then silence: the tail is what is
+    // left in the tanks. Long enough matters - juce::Reverb ramps its wet gain,
+    // so a single block in produces almost nothing out and the test would be
+    // measuring the ramp rather than the tail.
+    auto burst = sineBuffer (440.0, blockSize * 16);
+
+    for (int start = 0; start < burst.getNumSamples(); start += blockSize)
+        processEffectSlot (*module, reverb.block, EffectType::reverb,
+                           { burst.getWritePointer (0) + start,
+                             burst.getWritePointer (1) + start, blockSize },
+                           dryScratch);
+
+    juce::AudioBuffer<float> silence (2, blockSize);
+    silence.clear();
+    processEffectSlot (*module, reverb.block, EffectType::reverb,
+                       { silence.getWritePointer (0), silence.getWritePointer (1), blockSize },
+                       dryScratch);
+
+    const auto tail = silence.getMagnitude (0, blockSize);
+    INFO ("tail after the burst: " << tail);
+    REQUIRE (tail > 1.0e-5f);   // there IS something to leak
+
+    // What the chain runner does when a slot's type changed.
+    module->reset();
+
+    juce::AudioBuffer<float> afterReset (2, blockSize);
+    afterReset.clear();
+    processEffectSlot (*module, reverb.block, EffectType::reverb,
+                       { afterReset.getWritePointer (0), afterReset.getWritePointer (1), blockSize },
+                       dryScratch);
+
+    REQUIRE (afterReset.getMagnitude (0, blockSize) < tail * 0.01f);
 }

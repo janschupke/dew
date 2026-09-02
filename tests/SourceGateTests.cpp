@@ -24,7 +24,7 @@ TEST_CASE ("the source gates can see every source directory", "[build][gate]")
 
     for (const auto* expected : { "Tokens.h", "DewControls.cpp", "PianoRollComponent.cpp",
                                   "AudioEngine.cpp", "ProjectSchema.cpp", "Settings.cpp",
-                                  "Effects.cpp", "MainComponent.cpp" })
+                                  "EffectModules.cpp", "MainComponent.cpp" })
     {
         INFO ("expected a file named " << expected << " under DEW_SOURCE_DIR");
         REQUIRE (std::any_of (files.begin(), files.end(),

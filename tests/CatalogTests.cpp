@@ -170,3 +170,44 @@ TEST_CASE ("a choice parameter declares its choices and a default among them", "
     // above proved nothing and should stop claiming to.
     REQUIRE (seenAChoice);
 }
+
+TEST_CASE ("the parameter block is wide enough for every effect", "[catalog]")
+{
+    // kMaxEffectParams sizes the array the audio thread reads. A type wider than
+    // it would not fail to compile - it would read whatever followed in memory.
+    for (const auto& descriptor : effectDescriptors())
+    {
+        INFO ("effect " << descriptor.id << " has " << descriptor.numParams << " parameters");
+        REQUIRE (kNumCommonEffectParams + descriptor.numParams <= kMaxEffectParams);
+    }
+}
+
+TEST_CASE ("every parameter has a place in its block, and mix is first", "[catalog]")
+{
+    for (const auto type : allTypes)
+    {
+        // Index 0 is mix for every type, which is what lets the host apply
+        // dry/wet identically without asking the module where its mix lives.
+        REQUIRE (effectParamIndex (type, ids::mix) == 0);
+
+        juce::Array<int> seen;
+
+        for (const auto& param : effectParamsFor (type))
+        {
+            const auto index = effectParamIndex (type, *param.property);
+
+            INFO ("parameter " << param.property->toString());
+            REQUIRE (index >= 0);
+            REQUIRE (index < kMaxEffectParams);
+
+            // No two parameters may share a slot, or one would silently drive
+            // the other.
+            REQUIRE_FALSE (seen.contains (index));
+            seen.add (index);
+        }
+    }
+
+    // A property this type does not have is refused rather than aliased onto
+    // something it does have.
+    REQUIRE (effectParamIndex (EffectType::reverb, ids::cutoff) == -1);
+}

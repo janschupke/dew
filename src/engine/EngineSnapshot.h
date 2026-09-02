@@ -9,6 +9,7 @@
 #include "model/AutomationTargets.h"
 #include "model/ProjectSchema.h"
 #include "engine/Effects.h"
+#include "engine/Module.h"
 #include "model/Constants.h"
 
 namespace dew
@@ -33,7 +34,17 @@ inline constexpr int kMaxVoicesPerChannel  = 16;
     topology travel in the snapshot instead of needing a command queue and a
     pointer swap on the audio thread.
 */
-inline constexpr int kMaxEffectUnits       = 32;
+/** One DSP unit per effect the document can hold, so a chain is never dropped.
+
+    It was 32, while the schema permits four effects on each of 64 channels and
+    32 mixer tracks plus the master - 388. Past 32, buildSnapshot warned and
+    then stopped reading that chain, and the warning went to an argument whose
+    default was nullptr. Raising it costs nothing now that modules are made on
+    first use rather than all at once.
+*/
+inline constexpr int kMaxEffectUnits       = kMaxChannels * kMaxEffectsPerChain
+                                             + kMaxMixerTracks * kMaxEffectsPerChain
+                                             + kMaxEffectsPerChain;
 inline constexpr int kMaxAutomations       = 32;
 
 /** How many detuned copies of itself one wavetable slot may stack.
@@ -127,7 +138,18 @@ struct EffectSnapshot
     EffectType type = EffectType::filter;
     bool enabled = true;
     int unitIndex = -1;
-    EffectParams params;
+    EffectParamBlock params {};
+
+    /** The DSP for this slot, resolved on the message thread.
+
+        Raw and non-owning, and safe for one reason: EffectModulePool never
+        destroys a module while it lives, so this cannot dangle. The same idiom
+        SynthVoice uses for its `const Wavetable*`, and for the same reason -
+        SnapshotBridge cannot tell the message thread when the audio thread has
+        finished with an old snapshot, so anything a snapshot points at must
+        outlive every snapshot.
+    */
+    EffectModule* module = nullptr;
 };
 
 /** A chain of effect slots. Fixed size so a snapshot is trivially copyable and
@@ -255,6 +277,15 @@ struct AutomationSnapshot
     int targetIndex = -1;      ///< channel index or mixer track index; -1 for master
     int slotIndex = -1;        ///< effect slot in the chain, -1 when not an effect
     AutomationParam param = AutomationParam::none;
+
+    /** Where this parameter sits in the slot's block, for effect scopes.
+
+        Resolved on the message thread, where the slot's type is known. It is
+        what turned applyToEffect from a sixteen-case switch - one case per
+        parameter of every type, which had to be extended for each new one -
+        into a single indexed write.
+    */
+    int paramIndex = -1;
     float minimum = 0.0f;
     float maximum = 1.0f;
     bool logarithmic = false;

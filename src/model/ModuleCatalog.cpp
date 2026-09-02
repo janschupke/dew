@@ -122,6 +122,21 @@ const std::vector<ParamSpec>& commonEffectParams()
     return common;
 }
 
+int effectParamIndex (EffectType type, const juce::Identifier& property) noexcept
+{
+    for (const auto& param : commonEffectParams())
+        if (*param.property == property)
+            return 0;
+
+    const auto& descriptor = effectDescriptor (type);
+
+    for (int i = 0; i < descriptor.numParams; ++i)
+        if (*descriptor.params[i].property == property)
+            return kNumCommonEffectParams + i;
+
+    return -1;
+}
+
 std::vector<ParamSpec> effectParamsFor (EffectType type)
 {
     const auto& descriptor = effectDescriptor (type);

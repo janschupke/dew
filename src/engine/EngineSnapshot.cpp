@@ -267,63 +267,44 @@ AutomationParam automationParamFromIdentifier (const juce::Identifier& property)
     return AutomationParam::none;
 }
 
-/** One parameter off a node, clamped, with the DECLARED default when absent.
-
-    The default matters as much as the clamp. Reading a missing property gave a
-    void var, which became 0.0, which for `mix` meant a slot that silently
-    bypassed itself and for an amp envelope's sustain meant a note that decayed
-    to nothing - both with no warning, both looking exactly like a working
-    project that had gone quiet.
-*/
-float readParam (const juce::ValueTree& node, const ParamSpec& spec)
+EffectParamBlock readEffectParams (const juce::ValueTree& effect, EffectType type)
 {
-    return spec.clamp ((float) (double) node.getProperty (*spec.property, spec.defaultVar()));
-}
+    EffectParamBlock block {};
 
-EffectParams readEffectParams (const juce::ValueTree& effect)
-{
-    EffectParams p;
-
-    const auto by = [] (const juce::Identifier& id) -> const ParamSpec*
+    const auto write = [&effect, &block] (int index, const ParamSpec& spec)
     {
-        for (const auto& param : commonEffectParams())
-            if (*param.property == id)
-                return &param;
+        if (index < 0 || index >= kMaxEffectParams)
+            return;
 
-        for (const auto& descriptor : effectDescriptors())
-            for (int i = 0; i < descriptor.numParams; ++i)
-                if (*descriptor.params[i].property == id)
-                    return &descriptor.params[i];
+        if (spec.control == ParamControl::choice)
+        {
+            const auto text = effect.getProperty (*spec.property, spec.defaultVar()).toString();
+            auto choice = 0;
 
-        jassertfalse;   // a parameter the catalog does not declare
-        return nullptr;
+            for (int i = 0; i < spec.numChoices; ++i)
+                if (text == spec.choices[i].id)
+                    choice = i;
+
+            block[(size_t) index] = (float) choice;
+            return;
+        }
+
+        // The DEFAULT matters as much as the clamp. A missing property used to
+        // read as a void var, which became 0.0 - and for `mix` that meant a
+        // slot that silently bypassed itself.
+        block[(size_t) index] = spec.clamp ((float) (double) effect.getProperty (*spec.property,
+                                                                                 spec.defaultVar()));
     };
 
-    const auto read = [&effect, &by] (const juce::Identifier& id)
-    {
-        const auto* spec = by (id);
-        return spec != nullptr ? readParam (effect, *spec) : 0.0f;
-    };
+    for (const auto& spec : commonEffectParams())
+        write (effectParamIndex (type, *spec.property), spec);
 
-    p.mix        = read (ids::mix);
-    p.filterMode = filterModeFromString (effect.getProperty (ids::filterMode, "lowpass").toString());
-    p.cutoff     = read (ids::cutoff);
-    p.resonance  = read (ids::resonance);
-    p.roomSize   = read (ids::roomSize);
-    p.damping    = read (ids::damping);
-    p.width      = read (ids::width);
-    p.delayMs    = read (ids::delayMs);
-    p.feedback   = read (ids::feedback);
-    p.drive      = read (ids::drive);
-    p.outputGain = read (ids::outputGain);
-    p.rate       = read (ids::rate);
-    p.depth      = read (ids::depth);
-    p.lowGainDb  = read (ids::lowGainDb);
-    p.midGainDb  = read (ids::midGainDb);
-    p.midFreq    = read (ids::midFreq);
-    p.highGainDb = read (ids::highGainDb);
+    const auto& descriptor = effectDescriptor (type);
 
-    return p;
+    for (int i = 0; i < descriptor.numParams; ++i)
+        write (effectParamIndex (type, *descriptor.params[i].property), descriptor.params[i]);
+
+    return block;
 }
 
 /** Reads a chain off any node that can carry one. `ownerName` is only used for
@@ -365,7 +346,7 @@ EffectChainSnapshot readEffectChain (const juce::ValueTree& owner, const juce::S
         slot.id = (int) effect[ids::id];
         slot.type = *type;
         slot.enabled = (bool) effect[ids::enabled];
-        slot.params = readEffectParams (effect);
+        slot.params = readEffectParams (effect, *type);
         slot.unitIndex = claimEffectUnit ((int) effect[ids::id], unitOwners);
 
         if (slot.unitIndex < 0)
@@ -792,6 +773,10 @@ EngineSnapshot buildSnapshot (const juce::ValueTree& project, juce::StringArray*
         a.minimum = (float) spec->minimum;
         a.maximum = (float) spec->maximum;
         a.logarithmic = spec->logarithmic;
+
+        if (a.scope == AutomationScope::channelEffect || a.scope == AutomationScope::mixerEffect)
+            if (const auto type = effectTypeFor (effectType))
+                a.paramIndex = effectParamIndex (*type, property);
 
         for (const auto& point : automation)
             if (point.hasType (ids::POINT))

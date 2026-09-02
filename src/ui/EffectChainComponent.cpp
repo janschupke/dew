@@ -17,17 +17,22 @@ namespace
 
 juce::Path iconForType (EffectType type)
 {
+    // Every case listed and nothing after the switch, so a new effect type is a
+    // compile error here rather than a card that silently wears the filter's
+    // icon. It was the last of the four things that used to go quietly wrong
+    // when someone added a type.
     switch (type)
     {
+        case EffectType::filter: return icons::effectFilter();
         case EffectType::reverb: return icons::effectReverb();
         case EffectType::delay:  return icons::effectDelay();
         case EffectType::drive:  return icons::effectDrive();
         case EffectType::chorus: return icons::effectChorus();
         case EffectType::eq:     return icons::effectEq();
-        case EffectType::filter: break;
     }
 
-    return icons::effectFilter();
+    jassertfalse;
+    return {};
 }
 
 } // namespace

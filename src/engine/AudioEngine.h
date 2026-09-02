@@ -7,6 +7,7 @@
 
 #include "engine/MixerBus.h"
 #include "engine/SignalTap.h"
+#include "engine/EffectModulePool.h"
 #include "engine/PreviewQueue.h"
 #include "engine/Sequencer.h"
 #include "engine/SnapshotBridge.h"
@@ -44,6 +45,11 @@ public:
     void setSamplePool (SampleProvider* provider) noexcept  { samplePool = provider; }
 
     SampleProvider* getSamplePool() const noexcept          { return samplePool; }
+
+    /** How many effect modules exist. For the test that pins the laziness: the
+        pool used to build every type in every unit up front, whether or not a
+        project used one. */
+    int getMaterialisedEffectModuleCount() const noexcept { return modulePool.materialisedCount(); }
 
     /** Message thread: hand over a prebuilt snapshot. */
     void publish (EngineSnapshot snapshot);
@@ -232,11 +238,19 @@ private:
     */
     juce::AudioBuffer<float> channelStereo;
 
-    /** The DSP-state pool. Every unit holds every effect type, prepared at its
-        maximum size, so switching a slot's type is a reset rather than an
-        allocation and the audio thread never builds anything.
+    /** The DSP-state pool. Modules are made on the message thread on first use
+        and never destroyed while the engine lives - see EffectModulePool for
+        why the second half of that is a correctness rule rather than thrift.
     */
-    std::vector<std::unique_ptr<EffectUnit>> effectUnits;
+    EffectModulePool modulePool;
+
+    /** One dry copy for the wet/dry mix.
+
+        One, not one per unit: chains run strictly one at a time, so a buffer
+        per pool unit was thirty-two copies of a scratch that only ever had a
+        single live user.
+    */
+    juce::AudioBuffer<float> dryScratch;
 
     /** What each unit was last used as. A unit that changes type is reset, so a
         reverb tail cannot leak into the delay that replaced it.
@@ -244,6 +258,10 @@ private:
     std::vector<int> effectUnitTypes;
 
     void runChain (const EffectChainSnapshot&, float* left, float* right, int numSamples) noexcept;
+
+    /** Points every slot at its DSP. Message thread, between building a
+        snapshot and publishing it. */
+    void resolveModules (EngineSnapshot&);
 
     /** One automation's value at the current position, already in the
         parameter's own units, with its target resolved.
@@ -254,6 +272,7 @@ private:
         int targetIndex = -1;
         int slotIndex = -1;
         AutomationParam param = AutomationParam::none;
+        int paramIndex = -1;      ///< into the effect slot's block; -1 for other scopes
         float value = 0.0f;
     };
 

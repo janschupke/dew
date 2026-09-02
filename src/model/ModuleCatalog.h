@@ -44,6 +44,26 @@ std::optional<EffectType> effectTypeFor (juce::StringRef id);
 juce::String effectTypeToString (EffectType);
 juce::String effectTypeDisplayName (EffectType);
 
+/** How many floats a slot's parameter block holds: one common parameter, then
+    the widest type's own.
+
+    A choice like the filter's mode is a float in the block, the way a discrete
+    parameter is a float in every plugin API - which keeps the module interface
+    one shape rather than one shape plus an exception.
+*/
+inline constexpr int kNumCommonEffectParams = 1;
+
+/** Where `mix` sits, for every type. The host reads it without asking the
+    module, which is what keeps dry/wet identical across all six. */
+inline constexpr int kMixParamIndex = 0;
+inline constexpr int kMaxEffectParams = 8;
+
+/** Where a parameter sits in its slot's block, or -1 if it is not one of them.
+
+    Index 0 is always `mix`; a type's own parameters follow in descriptor order.
+*/
+int effectParamIndex (EffectType, const juce::Identifier&) noexcept;
+
 /** The parameters every effect has, whatever its type.
 
     Just `mix`, and it is deliberately not in the per-type tables: the host

@@ -101,7 +101,10 @@ target_link_libraries(dew_model
 # neither, and one a plugin could host later without lying to its host.
 # ------------------------------------------------------------------------------
 add_library(dew_engine STATIC
-  engine/Effects.cpp
+  engine/Biquad.cpp
+  engine/EffectModulePool.cpp
+  engine/ModuleFactory.cpp
+  engine/modules/EffectModules.cpp
   engine/WaveformPeaks.cpp
   engine/PreviewQueue.cpp
   engine/SignalTap.cpp
