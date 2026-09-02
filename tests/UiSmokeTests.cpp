@@ -60,6 +60,44 @@ TEST_CASE ("the editor lays out and paints", "[ui][smoke]")
     REQUIRE (content > 0.01f);
 }
 
+TEST_CASE ("the instrument panel folds away, and comes back", "[ui][smoke]")
+{
+    const juce::ScopedJuceInitialiser_GUI juceInit;
+
+    dew::MainComponent component;
+    component.setSize (1400, 900);
+
+    auto* panel = component.findChildWithID ("instrumentPanel");
+    auto* divider = component.findChildWithID ("panelDivider");
+
+    REQUIRE (panel != nullptr);
+    REQUIRE (divider != nullptr);
+
+    const auto openWidth = panel->getWidth();
+    REQUIRE (openWidth > 0);
+
+    auto* toggle = dynamic_cast<juce::Button*> (divider->findChildWithID ("panelToggle"));
+    REQUIRE (toggle != nullptr);
+
+    toggle->onClick();
+
+    // Hidden as well as given no width: a zero-width panel still lays its
+    // children out and paints, and its knobs would keep taking the clicks meant
+    // for the editor beside it.
+    CHECK (panel->getWidth() == 0);
+    CHECK_FALSE (panel->isVisible());
+
+    // The toggle lives on the DIVIDER, not in the panel, so it is still there
+    // to press once the panel it hides is gone.
+    CHECK (divider->getWidth() > 0);
+    CHECK (divider->isVisible());
+
+    toggle->onClick();
+
+    CHECK (panel->getWidth() == openWidth);
+    CHECK (panel->isVisible());
+}
+
 TEST_CASE ("the editor survives being resized to its limits", "[ui][smoke]")
 {
     const juce::ScopedJuceInitialiser_GUI juceInit;

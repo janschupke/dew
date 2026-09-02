@@ -175,31 +175,38 @@ private:
     class PanelDivider : public juce::Component
     {
     public:
-        explicit PanelDivider (MainComponent& o) : owner (o)
-        {
-            setMouseCursor (juce::MouseCursor::LeftRightResizeCursor);
-        }
+        explicit PanelDivider (MainComponent& o);
 
-        void mouseDown (const juce::MouseEvent&) override { widthAtDragStart = owner.panelWidth; }
-
-        void mouseDrag (const juce::MouseEvent& event) override
-        {
-            owner.setPanelWidth (widthAtDragStart - event.getDistanceFromDragStartX());
-        }
+        void mouseDown (const juce::MouseEvent&) override;
+        void mouseDrag (const juce::MouseEvent&) override;
 
         void paint (juce::Graphics&) override;
+        void resized() override;
+
+        /** Points the chevron the way the panel will go when it is pressed. */
+        void updateToggle();
 
     private:
         MainComponent& owner;
         int widthAtDragStart = 0;
+
+        /** At the top of the divider rather than inside the panel: it has to
+            stay reachable once the panel it hides is gone.
+        */
+        DewIconButton toggleButton { icons::chevronRight(), "Hide the instrument panel" };
     };
 
     void setPanelWidth (int);
+    void setPanelCollapsed (bool);
 
     PanelDivider divider { *this };
     int panelWidth = Settings::defaultPanelWidth;
+    bool panelCollapsed = false;
 
-    static constexpr int dividerWidth = 5;
+    /** Wide enough to hold the collapse toggle. It was five pixels of drag
+        handle, which is not enough room for a control.
+    */
+    static constexpr int dividerWidth = 16;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (MainComponent)
 };

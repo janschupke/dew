@@ -293,6 +293,64 @@ TEST_CASE ("the loop region moves when the material shrinks under it", "[loop][e
     }
 }
 
+TEST_CASE ("a seek past the loop end reports the folded position at once",
+           "[loop][engine]")
+{
+    // The seeker flickering. setPlayheadSteps stored the RAW position for
+    // instant feedback and the next audio block folded it, so a click landing
+    // outside the loop painted the clicked spot for a frame and then jumped.
+    LoopHarness h;
+    h.engine.setLoopRangeSteps (Transport::Mode::song, 16.0, 32.0);
+
+    // One block, so the audio thread has published the window it is applying -
+    // the message thread reads that rather than deriving it, because the
+    // material's length comes from the snapshot.
+    h.renderPeak();
+
+    h.engine.setPlayheadSteps (40.0);
+
+    const auto immediate = h.playhead();
+
+    INFO ("immediately after the seek: " << immediate);
+    CHECK (immediate >= 16.0);
+    CHECK (immediate < 32.0);
+
+    // And the audio thread agrees, rather than correcting it to somewhere else.
+    h.renderPeak();
+
+    INFO ("after a block: " << h.playhead());
+    CHECK (h.playhead() >= 16.0);
+    CHECK (h.playhead() < 32.0);
+}
+
+TEST_CASE ("a seek before the loop start is left where it was clicked", "[loop][engine]")
+{
+    // Playing INTO a loop is deliberate: setting one four bars ahead must not
+    // teleport the music there. So the fold is not a clamp, and this is the
+    // control case that says so.
+    LoopHarness h;
+    h.engine.setLoopRangeSteps (Transport::Mode::song, 32.0, 48.0);
+    h.renderPeak();
+
+    h.engine.setPlayheadSteps (8.0);
+
+    INFO ("immediately after the seek: " << h.playhead());
+    CHECK (h.playhead() < 16.0);
+}
+
+TEST_CASE ("the wrap rule is one function, whoever asks it", "[loop]")
+{
+    // Transport::wrapIntoLoop and the engine's optimistic seek both go through
+    // this, so the position the UI is shown cannot disagree with the one the
+    // audio thread arrives at.
+    CHECK (Transport::wrappedIntoLoop (250, 100, 200) == 150);
+    CHECK (Transport::wrappedIntoLoop (150, 100, 200) == 150);
+
+    // Before the window, and a window with no width, are both left alone.
+    CHECK (Transport::wrappedIntoLoop (50, 100, 200) == 50);
+    CHECK (Transport::wrappedIntoLoop (250, 100, 100) == 250);
+}
+
 TEST_CASE ("the loop region reads back as the pair that was set", "[loop]")
 {
     AudioEngine engine;

@@ -354,6 +354,60 @@ TEST_CASE ("a dropdown's menu opens below the box, not over it", "[design][dropd
     box.setLookAndFeel (nullptr);
 }
 
+TEST_CASE ("a dropdown inside a dialog opens inside it, not as a window",
+           "[design][dropdown]")
+{
+    // Every dew dialog is a DialogWindow with a native title bar, so it is a
+    // real system window with real system buttons. A PopupMenu on the desktop
+    // is another window, and opening one takes key status away from the dialog -
+    // at which point macOS greys out its close and zoom buttons and stops them
+    // answering. Nothing was hiding them; the dialog had stopped being active
+    // because its own dropdown was open.
+    const juce::ScopedJuceInitialiser_GUI juceInit;
+
+    DewLookAndFeel lookAndFeel;
+    juce::Label label;
+    label.setSize (160, tokens::size::controlHeight);
+
+    // Not added to the desktop: a headless test has no display, and the only
+    // thing that matters here is what the box's top-level component IS.
+    juce::DialogWindow dialog { "Audio Settings", tokens::colour::background, true, false };
+    dialog.setSize (420, 300);
+
+    auto* content = new juce::Component();
+    content->setSize (400, 280);
+
+    juce::ComboBox box;
+    box.setLookAndFeel (&lookAndFeel);
+    box.addItemList ({ "Built-in Output", "Aggregate Device" }, 1);
+    box.setSize (160, tokens::size::controlHeight);
+    content->addAndMakeVisible (box);
+
+    dialog.setContentOwned (content, false);
+
+    REQUIRE (box.getTopLevelComponent() == &dialog);
+    CHECK (lookAndFeel.getOptionsForComboBoxPopupMenu (box, label).getParentComponent()
+             == &dialog);
+
+    // The control case, and the reason this is scoped to dialogs: the main
+    // window's own boxes keep a desktop menu, which is free to overflow the
+    // window they sit in.
+    juce::Component plain;
+    plain.setSize (400, 280);
+
+    juce::ComboBox loose;
+    loose.setLookAndFeel (&lookAndFeel);
+    loose.addItemList ({ "Sine", "Saw" }, 1);
+    loose.setSize (160, tokens::size::controlHeight);
+    plain.addAndMakeVisible (loose);
+
+    CHECK (lookAndFeel.getOptionsForComboBoxPopupMenu (loose, label).getParentComponent()
+             == nullptr);
+
+    box.setLookAndFeel (nullptr);
+    loose.setLookAndFeel (nullptr);
+}
+
 TEST_CASE ("a disabled dropdown reads as disabled", "[design][dropdown]")
 {
     const juce::ScopedJuceInitialiser_GUI juceInit;

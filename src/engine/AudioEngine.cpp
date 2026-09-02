@@ -2,6 +2,7 @@
 
 #include "SamplePlayer.h"
 
+#include <cmath>
 #include <limits>
 
 namespace dew
@@ -285,8 +286,25 @@ void AudioEngine::setPlayheadSteps (double steps)
                                                    transport.getStepsPerBeat(),
                                                    currentSampleRate);
 
-    if (sps > 0.0)
-        playheadSamples.store ((juce::int64) (clamped * sps));
+    if (sps <= 0.0)
+        return;
+
+    auto position = (juce::int64) (clamped * sps);
+
+    // Folded HERE as well, through the one wrap rule, so what is shown at once
+    // is where the next block will actually land. Storing the raw position and
+    // letting the audio thread fold it a moment later is what made a click
+    // outside the loop paint the clicked spot and then jump - the seeker
+    // flickering. Rounded from the tempo the same way Transport rounds it, so
+    // the two cannot land a sample apart.
+    const auto wrap = appliedWrap.load (std::memory_order_relaxed);
+
+    if (! wrap.isEmpty())
+        position = Transport::wrappedIntoLoop (position,
+                                               (juce::int64) std::llround (sps * (double) wrap.startSteps),
+                                               (juce::int64) std::llround (sps * (double) wrap.endSteps));
+
+    playheadSamples.store (position);
 }
 
 void AudioEngine::setLoopRangeSteps (Transport::Mode mode, double startSteps, double endSteps) noexcept
@@ -542,6 +560,10 @@ void AudioEngine::processBlock (juce::AudioBuffer<float>& buffer) noexcept
     // Re-applied every block, like the length it replaces: the material can be
     // shortened underneath a loop, and the clamp has to move with it.
     transport.setLoopRange (wrapStart, wrapEnd);
+
+    // Published for setPlayheadSteps, which has to fold a click the same way
+    // this block will and cannot work the window out for itself.
+    appliedWrap.store ({ (float) wrapStart, (float) wrapEnd }, std::memory_order_relaxed);
 
     if (seekRequested.exchange (false))
     {

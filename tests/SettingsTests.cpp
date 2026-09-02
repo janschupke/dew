@@ -30,6 +30,27 @@ struct TempSettings
 
 } // namespace
 
+TEST_CASE ("a collapsed instrument panel survives a relaunch", "[settings]")
+{
+    const juce::ScopedJuceInitialiser_GUI juceInit;
+    TempSettings temp;
+
+    {
+        auto settings = temp.open();
+
+        // Kept beside the width rather than derived from it: a folded panel has
+        // to come back to the width it had.
+        CHECK_FALSE (settings->getPanelCollapsed());
+        settings->setPanelWidth (420);
+        settings->setPanelCollapsed (true);
+        settings->flush();
+    }
+
+    auto settings = temp.open();
+    CHECK (settings->getPanelCollapsed());
+    CHECK (settings->getPanelWidth() == 420);
+}
+
 TEST_CASE ("settings round-trip to disk", "[settings]")
 {
     const juce::ScopedJuceInitialiser_GUI juceInit;

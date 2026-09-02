@@ -152,12 +152,53 @@ void MainComponent::paint (juce::Graphics& g)
     g.fillAll (Palette::background);
 }
 
+MainComponent::PanelDivider::PanelDivider (MainComponent& o) : owner (o)
+{
+    setMouseCursor (juce::MouseCursor::LeftRightResizeCursor);
+
+    setComponentID ("panelDivider");
+
+    toggleButton.setComponentID ("panelToggle");
+    toggleButton.setWantsKeyboardFocus (false);
+    toggleButton.setMouseCursor (juce::MouseCursor::PointingHandCursor);
+    toggleButton.onClick = [this] { owner.setPanelCollapsed (! owner.panelCollapsed); };
+    addAndMakeVisible (toggleButton);
+}
+
+void MainComponent::PanelDivider::mouseDown (const juce::MouseEvent&)
+{
+    widthAtDragStart = owner.panelWidth;
+}
+
+void MainComponent::PanelDivider::mouseDrag (const juce::MouseEvent& event)
+{
+    // Dragging brings a folded panel back. Otherwise a collapse would strand
+    // the width being dragged behind a panel nothing can be seen of.
+    owner.setPanelCollapsed (false);
+    owner.setPanelWidth (widthAtDragStart - event.getDistanceFromDragStartX());
+}
+
+void MainComponent::PanelDivider::updateToggle()
+{
+    toggleButton.setIcon (owner.panelCollapsed ? icons::chevronLeft() : icons::chevronRight());
+    toggleButton.setTooltip (owner.panelCollapsed ? "Show the instrument panel"
+                                                  : "Hide the instrument panel");
+}
+
+void MainComponent::PanelDivider::resized()
+{
+    toggleButton.setBounds (getLocalBounds().removeFromTop (tokens::size::iconButton)
+                                            .reduced (0, tokens::space::xxs));
+}
+
 void MainComponent::PanelDivider::paint (juce::Graphics& g)
 {
     g.fillAll (tokens::colour::background);
 
+    // Below the toggle only: a rule drawn through the button reads as a line
+    // with a hole in it.
     g.setColour (isMouseOverOrDragging() ? tokens::colour::accent : tokens::colour::dividerStrong);
-    g.drawVerticalLine (getWidth() / 2, 0.0f, (float) getHeight());
+    g.drawVerticalLine (getWidth() / 2, (float) toggleButton.getBottom(), (float) getHeight());
 }
 
 void MainComponent::setPanelWidth (int width)
@@ -171,9 +212,21 @@ void MainComponent::setPanelWidth (int width)
     resized();
 }
 
+void MainComponent::setPanelCollapsed (bool collapsed)
+{
+    if (collapsed == panelCollapsed)
+        return;
+
+    panelCollapsed = collapsed;
+    divider.updateToggle();
+    resized();
+}
+
 void MainComponent::applySettings (const Settings& settings)
 {
     panelWidth = settings.getPanelWidth();
+    panelCollapsed = settings.getPanelCollapsed();
+    divider.updateToggle();
 
     editorState.setSelectedChannelId (settings.getSelectedChannelId());
     editorState.setSelectedMixerTrackId (settings.getSelectedMixerTrackId());
@@ -195,6 +248,7 @@ void MainComponent::applySettings (const Settings& settings)
 void MainComponent::captureSettings (Settings& settings) const
 {
     settings.setPanelWidth (panelWidth);
+    settings.setPanelCollapsed (panelCollapsed);
     settings.setTabIndex (tabs.getCurrentTabIndex());
     settings.setSelectedChannelId (editorState.getSelectedChannelId());
     settings.setSelectedMixerTrackId (editorState.getSelectedMixerTrackId());
@@ -570,11 +624,20 @@ void MainComponent::resized()
     transportBar.setBounds (area.removeFromTop (46));
     statusBar.setBounds (area.removeFromBottom (StatusBar::barHeight));
 
-    const auto width = juce::jlimit (Settings::minPanelWidth,
-                                     juce::jmax (Settings::minPanelWidth, area.getWidth() - 360),
-                                     panelWidth);
+    const auto width = panelCollapsed
+                           ? 0
+                           : juce::jlimit (Settings::minPanelWidth,
+                                           juce::jmax (Settings::minPanelWidth, area.getWidth() - 360),
+                                           panelWidth);
 
+    // Hidden as well as given no width: a zero-width panel still lays its
+    // children out and still paints, and its knobs would keep taking the
+    // clicks meant for the editor beside it.
+    instrumentPanel.setVisible (! panelCollapsed);
     instrumentPanel.setBounds (area.removeFromRight (width));
+
+    // The divider stays whichever way the panel goes - it is what the panel is
+    // brought back with.
     divider.setBounds (area.removeFromRight (dividerWidth));
     tabs.setBounds (area);
 }

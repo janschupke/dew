@@ -201,6 +201,16 @@ void Settings::setPanelWidth (int width)
     file().setValue ("panelWidth", juce::jlimit (minPanelWidth, maxPanelWidth, width));
 }
 
+bool Settings::getPanelCollapsed() const
+{
+    return file().getBoolValue ("panelCollapsed", false);
+}
+
+void Settings::setPanelCollapsed (bool collapsed)
+{
+    file().setValue ("panelCollapsed", collapsed);
+}
+
 // --- audio -------------------------------------------------------------------
 
 std::unique_ptr<juce::XmlElement> Settings::getAudioState() const

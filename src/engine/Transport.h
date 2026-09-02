@@ -66,6 +66,19 @@ public:
     */
     void wrapIntoLoop() noexcept;
 
+    /** The same rule as arithmetic, over a window given in samples.
+
+        Static and pure so the MESSAGE thread can predict it without a
+        transport. It has to: a ruler click stores the raw position for instant
+        feedback and the next audio block folds it, so a click landing outside
+        the loop painted the clicked spot for a frame and then jumped - the
+        seeker flickering. Predicting the fold makes the optimistic value the
+        one the audio thread arrives at, rather than a different one.
+    */
+    static juce::int64 wrappedIntoLoop (juce::int64 positionSamples,
+                                        juce::int64 startSamples,
+                                        juce::int64 endSamples) noexcept;
+
     /** The old length-at-zero form, kept and not deprecated: most callers still
         mean precisely it - wrap at the end of the material, starting at the top.
     */

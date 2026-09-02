@@ -77,6 +77,13 @@ public:
     int getPanelWidth() const;
     void setPanelWidth (int);
 
+    /** Whether the instrument panel is folded away. Kept beside its width
+        rather than derived from one: a collapsed panel has to come back to the
+        width it had, so the two are separate facts.
+    */
+    bool getPanelCollapsed() const;
+    void setPanelCollapsed (bool);
+
     // --- rendering -----------------------------------------------------------
     /** Where the last render was written, so the next chooser opens there
         rather than wherever the system last felt like.

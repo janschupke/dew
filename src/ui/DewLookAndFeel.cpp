@@ -331,13 +331,33 @@ juce::PopupMenu::Options DewLookAndFeel::getOptionsForComboBoxPopupMenu (juce::C
     // area has to come after it. The area is EXPANDED downwards rather than
     // moved, because calculateWindowPos takes y = target.getBottom() - that is
     // what leaves a small gap under the box instead of butting against it.
-    return juce::PopupMenu::Options()
+    auto options = juce::PopupMenu::Options()
         .withTargetComponent (&box)
         .withTargetScreenArea (box.getScreenBounds().withHeight (box.getHeight() + space::xxs))
         .withInitiallySelectedItem (box.getSelectedId())
         .withMinimumWidth (box.getWidth())
         .withMaximumNumColumns (1)
         .withStandardItemHeight (label.getHeight());
+
+    // Inside a dialog, the menu is drawn INTO the dialog rather than as a
+    // window of its own.
+    //
+    // Every dew dialog is a DialogWindow with useNativeTitleBar set, so it is a
+    // real NSWindow with real system buttons. A PopupMenu on the desktop is
+    // another window, and opening one takes key status away from the dialog -
+    // at which point macOS greys out its close and zoom buttons and stops them
+    // answering. Nothing in dew was hiding them; the dialog had simply stopped
+    // being the active window because its own dropdown was open.
+    //
+    // Only dialogs. The main window's boxes - the pattern selector, the roll's
+    // snap grid - keep a desktop menu, which is free to overflow the window
+    // they sit in; a dialog is small enough that its own bounds are no worse,
+    // and JUCE scrolls a list too long to fit.
+    if (auto* topLevel = box.getTopLevelComponent();
+        dynamic_cast<juce::DialogWindow*> (topLevel) != nullptr)
+        options = options.withParentComponent (topLevel);
+
+    return options;
 }
 
 void DewLookAndFeel::drawPopupMenuBackground (juce::Graphics& g, int width, int height)

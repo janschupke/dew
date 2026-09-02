@@ -316,6 +316,17 @@ private:
         an atomic.
     */
     LoopRegion lastAppliedLoop;
+
+    /** The wrap window processBlock last APPLIED - a user's loop clamped to the
+        material, or the material's own extent when there is none.
+
+        Published so setPlayheadSteps can predict the fold the next block will
+        do. It cannot derive the window itself: the material's length comes from
+        the snapshot, and only the audio thread holds a stable one. Reading the
+        window the audio thread last used is at worst one block stale, which is
+        the same block that is about to apply it.
+    */
+    std::atomic<LoopRegion> appliedWrap {};
     std::atomic<int> requestedPatternId { 1 };
     std::atomic<juce::int64> playheadSamples { 0 };
 
