@@ -125,7 +125,8 @@ void DewApplication::getAllCommands (juce::Array<juce::CommandID>& commands)
                          CommandIDs::fileSaveAs, CommandIDs::editUndo, CommandIDs::editRedo,
                          CommandIDs::transportPlayStop, CommandIDs::transportRewind,
                          CommandIDs::transportToggleMode,
-                         CommandIDs::addChannel, CommandIDs::addPattern });
+                         CommandIDs::addChannel, CommandIDs::addPattern,
+                     CommandIDs::audioSettings });
 }
 
 void DewApplication::getCommandInfo (juce::CommandID id, juce::ApplicationCommandInfo& info)
@@ -201,6 +202,13 @@ void DewApplication::getCommandInfo (juce::CommandID id, juce::ApplicationComman
             info.addDefaultKeypress ('p', juce::ModifierKeys::commandModifier
                                               | juce::ModifierKeys::shiftModifier);
             info.setActive (document != nullptr);
+            break;
+
+        case CommandIDs::audioSettings:
+            info.setInfo ("Audio Settings...", "Choose the audio device, sample rate and buffer size",
+                          "Audio", 0);
+            info.addDefaultKeypress (',', juce::ModifierKeys::commandModifier);
+            info.setActive (main != nullptr);
             break;
 
         default:
@@ -318,6 +326,10 @@ bool DewApplication::perform (const InvocationInfo& info)
             return true;
         }
 
+        case CommandIDs::audioSettings:
+            main->showAudioSettings();
+            return true;
+
         case CommandIDs::addPattern:
         {
             auto& undo = document->getUndoManager();
@@ -340,7 +352,7 @@ bool DewApplication::perform (const InvocationInfo& info)
 
 juce::StringArray DewApplication::getMenuBarNames()
 {
-    return { "File", "Edit", "Transport", "Project", "Demos" };
+    return { "File", "Edit", "Transport", "Project", "Audio", "Demos" };
 }
 
 juce::PopupMenu DewApplication::getMenuForIndex (int index, const juce::String&)
@@ -375,6 +387,10 @@ juce::PopupMenu DewApplication::getMenuForIndex (int index, const juce::String&)
             break;
 
         case 4:
+            menu.addCommandItem (&commandManager, CommandIDs::audioSettings);
+            break;
+
+        case 5:
         {
             const auto& demos = ProjectFactory::demos();
 
@@ -393,7 +409,7 @@ juce::PopupMenu DewApplication::getMenuForIndex (int index, const juce::String&)
 
 void DewApplication::menuItemSelected (int menuItemID, int topLevelMenuIndex)
 {
-    if (topLevelMenuIndex == 4)
+    if (topLevelMenuIndex == 5)
         openDemo (menuItemID - demoMenuBaseId);
 }
 

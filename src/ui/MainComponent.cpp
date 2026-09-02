@@ -1,5 +1,8 @@
 #include "MainComponent.h"
 
+#include "AudioSettingsPanel.h"
+#include "design/Tokens.h"
+
 #include "../model/Ids.h"
 
 namespace dew
@@ -102,6 +105,26 @@ void MainComponent::showLoadWarnings (const juce::StringArray& warnings)
 void MainComponent::paint (juce::Graphics& g)
 {
     g.fillAll (Palette::background);
+}
+
+void MainComponent::showAudioSettings()
+{
+    auto* panel = new AudioSettingsPanel (audioHost, engine);
+
+    panel->onDeviceChanged = [this]
+    {
+        statusBar.showMessage (audioHost.describeDevice(), StatusBar::Severity::info);
+    };
+
+    juce::DialogWindow::LaunchOptions options;
+    options.content.setOwned (panel);
+    options.dialogTitle = "Audio Settings";
+    options.dialogBackgroundColour = tokens::colour::background;
+    options.componentToCentreAround = this;
+    options.escapeKeyTriggersCloseButton = true;
+    options.useNativeTitleBar = true;
+    options.resizable = false;
+    options.launchAsync();
 }
 
 void MainComponent::resized()

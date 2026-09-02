@@ -16,6 +16,7 @@ enum
     transportToggleMode,
     addChannel,
     addPattern,
+    audioSettings,
 };
 
 } // namespace dew::CommandIDs

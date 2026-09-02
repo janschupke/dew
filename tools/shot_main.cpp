@@ -3,6 +3,7 @@
 #include "BuildInfo.h"
 #include "model/ProjectFactory.h"
 #include "model/ProjectSerializer.h"
+#include "ui/AudioSettingsPanel.h"
 #include "ui/MainComponent.h"
 #include "ui/design/DewGallery.h"
 
@@ -19,6 +20,7 @@ Usage:
   dew_shot editor <out.png> [options]
   dew_shot tabs <out-prefix> [options]      one PNG per tab
   dew_shot gallery <out.png> [options]      the design system
+  dew_shot audio <out.png>                  the audio settings panel
 
 Options:
   --project <file.dew>   Project to load (default: the built-in demo)
@@ -166,6 +168,29 @@ int main (int argc, char* argv[])
 
         std::cout << "wrote " << destination.getFullPathName()
                   << "  (" << gallery.getWidth() << "x" << gallery.getHeight() << ")" << std::endl;
+        return 0;
+    }
+
+    if (mode == "audio")
+    {
+        // Without a device open, which is both the CI case and the one worth
+        // looking at: the panel has to be honest rather than blank.
+        dew::AudioEngine engine;
+        dew::LiveAudioHost host { engine };
+
+        dew::AudioSettingsPanel panel { host, engine };
+        panel.setVisible (true);
+        panel.setSize (dew::AudioSettingsPanel::preferredWidth,
+                       dew::AudioSettingsPanel::preferredHeight);
+
+        const auto destination = juce::File::getCurrentWorkingDirectory()
+                                     .getChildFile (args.positional[1]);
+
+        if (const auto result = writePng (panel, destination); result.failed())
+            return fail (result.getErrorMessage());
+
+        std::cout << "wrote " << destination.getFullPathName()
+                  << "  (" << panel.getWidth() << "x" << panel.getHeight() << ")" << std::endl;
         return 0;
     }
 

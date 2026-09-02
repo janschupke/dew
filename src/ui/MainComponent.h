@@ -46,6 +46,9 @@ public:
     /** Warnings from the last load, shown once in the status line. */
     void showLoadWarnings (const juce::StringArray&);
 
+    /** Opens the audio settings over this window. */
+    void showAudioSettings();
+
     /** Applies any pending snapshot rebuild immediately instead of waiting for
         the message loop. Edits are coalesced through an AsyncUpdater, so
         anything that needs the engine to reflect the document right now - a
