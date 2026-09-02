@@ -264,6 +264,72 @@ TEST_CASE ("clicking empty lane space does nothing at all", "[ui][pianoroll]")
     REQUIRE (undo.getNumberOfUnitsTakenUpByStoredCommands() == before);
 }
 
+TEST_CASE ("a velocity drag that misses a bar still paints the ones it crosses",
+           "[ui][pianoroll]")
+{
+    const juce::ScopedJuceInitialiser_GUI juceInit;
+    RollHarness h;
+
+    juce::UndoManager& undo = h.document.getUndoManager();
+    auto first  = ProjectEdits::addNote (h.pattern(), 1, 2, 1, 72, 0.9f, &undo);
+    auto second = ProjectEdits::addNote (h.pattern(), 1, 9, 1, 72, 0.9f, &undo);
+
+    const auto lane = h.roll.getVelocityArea();
+    const auto firstBar = h.roll.getVelocityBarBounds (first);
+    const auto secondBar = h.roll.getVelocityBarBounds (second);
+
+    // A bar is three pixels wide at any zoom worth using. Requiring the press
+    // to land on one made the whole lane inert, because a press that missed
+    // did not merely do nothing - it abandoned the gesture, so the drag that
+    // followed did nothing either.
+    const auto startX = (int) firstBar.getX() - 30;
+    const auto y = lane.getBottom() - 6;
+
+    REQUIRE (startX > lane.getX());
+
+    h.roll.mouseDown (eventAt (h.roll, { startX, y }));
+    h.roll.mouseDrag (eventAt (h.roll, { (int) firstBar.getCentreX(), y }, {}, 1, true));
+    h.roll.mouseDrag (eventAt (h.roll, { (int) secondBar.getCentreX(), y }, {}, 1, true));
+    h.roll.mouseUp   (eventAt (h.roll, { (int) secondBar.getCentreX(), y }, {}, 1, true));
+
+    INFO ("first " << (double) first[ids::velocity]
+          << " second " << (double) second[ids::velocity]);
+    CHECK ((double) first[ids::velocity] < 0.3);
+    CHECK ((double) second[ids::velocity] < 0.3);
+}
+
+TEST_CASE ("painting repeats the selected note's shape", "[ui][pianoroll]")
+{
+    const juce::ScopedJuceInitialiser_GUI juceInit;
+    RollHarness h;
+
+    juce::UndoManager& undo = h.document.getUndoManager();
+    ProjectEdits::addNote (h.pattern(), 1, 2, 4, 72, 0.4f, &undo);
+
+    // Rubber-banded rather than clicked: a click starts a move, and a move
+    // remembers the note on its own release, so clicking would make this pass
+    // without the selection being read at all.
+    const juce::ModifierKeys mod { juce::ModifierKeys::commandModifier };
+    dragBetween (h.roll, pointFor (h, 0, 74), pointFor (h, 6, 70), 8, mod);
+
+    REQUIRE (h.roll.getNumSelectedNotes() == 1);
+
+    h.roll.setTool (RollTool::paint);
+    dragBetween (h.roll, pointFor (h, 8, 66), pointFor (h, 12, 66));
+
+    int painted = 0;
+
+    for (const auto& note : h.pattern())
+        if (note.hasType (ids::NOTE) && (int) note[ids::pitch] == 66)
+        {
+            ++painted;
+            CHECK ((int) note[ids::lengthSteps] == 4);
+            CHECK ((double) note[ids::velocity] < 0.5);
+        }
+
+    REQUIRE (painted > 1);
+}
+
 TEST_CASE ("clicking a piano key auditions it", "[ui][pianoroll]")
 {
     // The keyboard gutter was never tested in mouseDown, so clicking a key did
@@ -889,21 +955,86 @@ TEST_CASE ("double-clicking the piano roll ruler clears the span", "[ui][pianoro
     REQUIRE_FALSE (h.editorState.hasStepSelection());
 }
 
-TEST_CASE ("double-clicking the keyboard gutter still frames the pattern", "[ui][pianoroll][loop]")
+TEST_CASE ("double-clicking a piano key does not throw the view away",
+           "[ui][pianoroll][zoom]")
 {
     const juce::ScopedJuceInitialiser_GUI juceInit;
     RollHarness h;
 
-    // Zoom right in, so framing the pattern is a visible change.
+    // Zoom right in, so framing the pattern would be a visible change.
     h.roll.applyView (100.0, 4.0, 0.0);
     const auto zoomed = h.roll.getTimeline().pixelsPerStep;
 
     const auto keys = h.roll.getKeyboardArea();
     h.roll.mouseDoubleClick (eventAt (h.roll, keys.getCentre(), {}, 2));
 
-    // The ruler gave zoom-to-fit up to the span; the gutter kept it.
+    // A double-click on a key means auditioning that note twice. It used to
+    // ALSO reframe the whole editor, which is not something a key can mean.
     INFO ("pixelsPerStep " << zoomed << " -> " << h.roll.getTimeline().pixelsPerStep);
-    REQUIRE (h.roll.getTimeline().pixelsPerStep < zoomed);
+    CHECK (juce::exactlyEqual (h.roll.getTimeline().pixelsPerStep, zoomed));
+}
+
+TEST_CASE ("the toolbar frames the pattern, and zooms in and out", "[ui][pianoroll][zoom]")
+{
+    const juce::ScopedJuceInitialiser_GUI juceInit;
+    RollHarness h;
+
+    auto& toolbar = h.roll.getToolbar();
+    REQUIRE (toolbar.onZoom != nullptr);
+
+    h.roll.applyView (100.0, 4.0, 0.0);
+    const auto zoomed = h.roll.getTimeline().pixelsPerStep;
+
+    toolbar.onZoom (1.0 / 1.5);
+    const auto out = h.roll.getTimeline().pixelsPerStep;
+    CHECK (out < zoomed);
+
+    toolbar.onZoom (1.5);
+    CHECK (h.roll.getTimeline().pixelsPerStep > out);
+
+    // Zero is "fit", which is where zoom-to-fit went when the keyboard gutter
+    // stopped meaning it.
+    h.roll.applyView (100.0, 4.0, 0.0);
+    toolbar.onZoom (0.0);
+    CHECK (h.roll.getTimeline().pixelsPerStep < 100.0);
+    CHECK (juce::exactlyEqual (h.roll.getTimeline().scrollOffsetSteps, 0.0));
+}
+
+TEST_CASE ("the toolbar points the roll at another channel", "[ui][pianoroll]")
+{
+    const juce::ScopedJuceInitialiser_GUI juceInit;
+    RollHarness h;
+
+    auto& toolbar = h.roll.getToolbar();
+
+    // The roll could say "Select a channel in the Channel Rack" but offered no
+    // way to do it, so its own empty state was a dead end.
+    REQUIRE (toolbar.getSelectedChannel() == h.editorState.getSelectedChannelId());
+    REQUIRE (toolbar.onChannelChanged != nullptr);
+
+    toolbar.onChannelChanged (3);
+    CHECK (h.editorState.getSelectedChannelId() == 3);
+
+    // And it follows a selection made anywhere else - the rack, the mixer, the
+    // step grid all write the same field.
+    h.editorState.setSelectedChannelId (2);
+    h.editorState.dispatchPendingMessages();
+    CHECK (toolbar.getSelectedChannel() == 2);
+}
+
+TEST_CASE ("the channel selector lists every channel, by name", "[ui][pianoroll]")
+{
+    const juce::ScopedJuceInitialiser_GUI juceInit;
+    RollHarness h;
+
+    auto& toolbar = h.roll.getToolbar();
+
+    // A renamed channel is one the selector can no longer be used to find.
+    ProjectEdits::findChannel (h.document.getState(), 3)
+        .setProperty (ids::name, "Sub", &h.document.getUndoManager());
+
+    toolbar.setSelectedChannel (3);
+    CHECK (toolbar.getSelectedChannel() == 3);
 }
 
 TEST_CASE ("mod-clicking the piano roll ruler spans from the playhead", "[ui][pianoroll][loop]")

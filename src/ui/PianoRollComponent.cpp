@@ -61,6 +61,28 @@ PianoRollComponent::PianoRollComponent (ProjectDocument& d, AudioEngine& e, Edit
     toolbar.onQuantize = [this] { quantizeScope(); };
     toolbar.onRandomize = [this] { openRandomizeDialog(); };
     toolbar.onTranspose = [this] (int semitones) { transposeScope (semitones); };
+
+    toolbar.onChannelChanged = [this] (int channelId)
+    {
+        editorState.setSelectedChannelId (channelId);
+    };
+
+    toolbar.onZoom = [this] (double factor)
+    {
+        // Zero means "frame the pattern". It used to be reachable only by
+        // double-clicking the piano keys, where a double-click already means
+        // auditioning the same note twice.
+        if (juce::exactlyEqual (factor, 0.0))
+        {
+            zoomToFit();
+            return;
+        }
+
+        timeline.zoomAround (factor, contentWidth() * 0.5f);
+        updateScrollBars();
+        repaint();
+    };
+
     addAndMakeVisible (toolbar);
 
     rulerGesture.unitForX = [this] (int x)
@@ -96,6 +118,8 @@ PianoRollComponent::PianoRollComponent (ProjectDocument& d, AudioEngine& e, Edit
         repaint();
     };
 
+    updateChannelList();
+
     // Middle C somewhere near the middle, rather than at the very top where the
     // default scroll position would leave it.
     pitchScrollPx = (double) ((highestPitch - 72) * rowHeight);
@@ -112,6 +136,7 @@ PianoRollComponent::~PianoRollComponent()
 void PianoRollComponent::refresh()
 {
     document.getState().addListener (this);
+    updateChannelList();
     selection.clearQuick();
     didFitOnce = false;
     updateScrollBars();
@@ -123,6 +148,22 @@ void PianoRollComponent::refresh()
 juce::ValueTree PianoRollComponent::currentPattern() const
 {
     return ProjectEdits::findPattern (document.getState(), editorState.getCurrentPatternId());
+}
+
+void PianoRollComponent::updateChannelList()
+{
+    juce::StringArray names;
+    juce::Array<int> ids;
+
+    for (const auto& channel : document.getState())
+        if (channel.hasType (ids::CHANNEL))
+        {
+            names.add (channel[ids::name].toString());
+            ids.add ((int) channel[ids::id]);
+        }
+
+    toolbar.setChannels (names, ids);
+    toolbar.setSelectedChannel (editorState.getSelectedChannelId());
 }
 
 int PianoRollComponent::numSteps() const
@@ -741,10 +782,10 @@ void PianoRollComponent::mouseDoubleClick (const juce::MouseEvent& event)
         return;
     }
 
-    // Double-clicking the keyboard gutter frames the pattern, which is the
-    // quickest way back after zooming into a detail.
-    if (keyboardArea().contains (event.getPosition()))
-        zoomToFit();
+    // The keyboard gutter used to frame the pattern here, which meant a
+    // double-click on a piano key both auditioned it twice and threw the view
+    // away. Framing lives on the toolbar now, where it can be seen.
+    juce::ignoreUnused (event);
 }
 
 void PianoRollComponent::eraseAlong (juce::Point<int> from, juce::Point<int> to)
@@ -826,15 +867,13 @@ void PianoRollComponent::mouseDown (const juce::MouseEvent& event)
     {
         gesture = Gesture::velocity;
 
-        // Grab a bar rather than snapping wherever the click landed, and do not
-        // open an undo transaction for a click on empty lane space.
+        // A press that lands ON a bar grabs it, so a vertical drag reshapes
+        // that one note wherever the pointer then goes. A press that misses
+        // does NOT end the gesture: the bar is three pixels wide at any zoom
+        // worth using, so requiring a hit made the whole lane inert, and the
+        // drag has to be able to sweep into bars it did not start on - the same
+        // rule the erase sweep over the grid already follows.
         draggedVelocityNote = velocityBarAt (event.getPosition());
-
-        if (! draggedVelocityNote.isValid())
-        {
-            gesture = Gesture::none;
-            return;
-        }
 
         document.getUndoManager().beginNewTransaction ("Change velocity");
         applyVelocityAt (event.getPosition());
@@ -934,6 +973,16 @@ void PianoRollComponent::mouseDown (const juce::MouseEvent& event)
         gesture = Gesture::painting;
         lastPaintedCell = { -1, -1 };
         undo.beginNewTransaction ("Paint notes");
+
+        // A stroke repeats whatever is selected, so shaping one note and then
+        // painting writes that note rather than the last one that happened to
+        // be dragged. Read before the selection is cleared, and through the
+        // same remember/read path a resize uses - one source of note defaults,
+        // not two.
+        if (! selection.isEmpty())
+            editorState.rememberNote ((int) selection.getFirst()[ids::lengthSteps],
+                                      (double) selection.getFirst()[ids::velocity]);
+
         selection.clearQuick();
 
         if (paintNoteAt (event.getPosition()))
@@ -1254,15 +1303,31 @@ void PianoRollComponent::valueTreePropertyChanged (juce::ValueTree&, const juce:
     if (property == ids::lengthSteps)
         updateScrollBars();
 
+    // A renamed channel is a channel the selector can no longer be used to
+    // find, so the strip follows the name rather than holding the old one.
+    if (property == ids::name)
+        updateChannelList();
+
     repaint();
 }
-void PianoRollComponent::valueTreeChildAdded (juce::ValueTree&, juce::ValueTree&)             { repaint(); }
+
+void PianoRollComponent::valueTreeChildAdded (juce::ValueTree&, juce::ValueTree& child)
+{
+    if (child.hasType (ids::CHANNEL))
+        updateChannelList();
+
+    repaint();
+}
 
 void PianoRollComponent::valueTreeChildRemoved (juce::ValueTree&, juce::ValueTree& child, int)
 {
     // A selection holding removed notes would delete or move nothing on the next
     // gesture, and looks like the editor ignoring input.
     selection.removeAllInstancesOf (child);
+
+    if (child.hasType (ids::CHANNEL))
+        updateChannelList();
+
     repaint();
 }
 
@@ -1287,6 +1352,10 @@ void PianoRollComponent::changeListenerCallback (juce::ChangeBroadcaster*)
         selection.clearQuick();
         scrollToNotesIfOffscreen();
     }
+
+    // Kept in step whoever changed it - the rack, the mixer, the step grid or
+    // the strip itself.
+    toolbar.setSelectedChannel (channelId);
 
     repaint();
 }

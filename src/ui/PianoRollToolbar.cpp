@@ -41,6 +41,32 @@ PianoRollToolbar::PianoRollToolbar()
     };
     addAndMakeVisible (snapBox);
 
+    channelBox.setTooltip ("Channel being edited");
+    channelBox.setWantsKeyboardFocus (false);
+    channelBox.onChange = [this]
+    {
+        if (updatingChannelBox)
+            return;
+
+        if (onChannelChanged && channelBox.getSelectedId() > 0)
+            onChannelChanged (channelBox.getSelectedId());
+    };
+    addAndMakeVisible (channelBox);
+
+    const auto addZoom = [this] (DewIconButton& button, double factor)
+    {
+        button.setWantsKeyboardFocus (false);
+        button.onClick = [this, factor] { if (onZoom) onZoom (factor); };
+        addAndMakeVisible (button);
+    };
+
+    // The same factor the +/- keys use, and 0 for "frame the whole pattern".
+    // Zoom-to-fit used to be reachable only by double-clicking the piano keys,
+    // which is also where a double-click means "audition this twice".
+    addZoom (zoomOutButton, 1.0 / 1.5);
+    addZoom (zoomInButton, 1.5);
+    addZoom (zoomFitButton, 0.0);
+
     const auto addAction = [this] (juce::Button& button, std::function<void()>& callback)
     {
         button.setWantsKeyboardFocus (false);
@@ -103,6 +129,37 @@ void PianoRollToolbar::setSnap (SnapDivision newSnap, juce::NotificationType not
         onSnapChanged();
 }
 
+void PianoRollToolbar::setChannels (const juce::StringArray& names, const juce::Array<int>& ids)
+{
+    jassert (names.size() == ids.size());
+
+    const auto wanted = channelBox.getSelectedId();
+
+    const juce::ScopedValueSetter<bool> quiet (updatingChannelBox, true);
+    channelBox.clear (juce::dontSendNotification);
+
+    for (int i = 0; i < ids.size(); ++i)
+        channelBox.addItem (names[i], ids[i]);
+
+    // Channel ids are the item ids, so a rebuild that still holds the current
+    // channel keeps it selected rather than jumping to the first row.
+    channelBox.setSelectedId (wanted, juce::dontSendNotification);
+}
+
+void PianoRollToolbar::setSelectedChannel (int channelId)
+{
+    if (channelBox.getSelectedId() == channelId)
+        return;
+
+    const juce::ScopedValueSetter<bool> quiet (updatingChannelBox, true);
+    channelBox.setSelectedId (channelId, juce::dontSendNotification);
+}
+
+int PianoRollToolbar::getSelectedChannel() const noexcept
+{
+    return channelBox.getSelectedId();
+}
+
 void PianoRollToolbar::updateToolButtons()
 {
     selectButton.setToggleState (tool == RollTool::select, juce::dontSendNotification);
@@ -154,6 +211,10 @@ void PianoRollToolbar::resized()
 
     divider();
 
+    place (channelBox, 132);
+
+    divider();
+
     place (snapBox, 78);
 
     divider();
@@ -167,6 +228,12 @@ void PianoRollToolbar::resized()
     place (upButton, size::iconButton);
     place (octaveDownButton, 34);
     place (octaveUpButton, 34);
+
+    divider();
+
+    place (zoomOutButton, size::iconButton);
+    place (zoomInButton, size::iconButton);
+    place (zoomFitButton, size::iconButton);
 }
 
 } // namespace dew

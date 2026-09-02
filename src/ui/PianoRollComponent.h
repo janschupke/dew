@@ -132,6 +132,11 @@ public:
     RollTool getTool() const noexcept { return toolbar.getTool(); }
     void setTool (RollTool tool) { toolbar.setTool (tool); }
 
+    /** The tool strip, so a test can drive the channel selector and the zoom
+        buttons through the same seam the user reaches them by.
+    */
+    PianoRollToolbar& getToolbar() noexcept { return toolbar; }
+
     /** The notes an edit acts on: the selection when there is one, otherwise
         every note of the current channel.
     */
@@ -155,6 +160,13 @@ private:
     void scrollBarMoved (juce::ScrollBar*, double) override;
 
     juce::ValueTree currentPattern() const;
+
+    /** Refills the toolbar's channel list from the project. Called whenever a
+        channel is added, removed or renamed - the strip holds names, and a
+        stale one is a channel the user cannot find.
+    */
+    void updateChannelList();
+
     juce::ValueTree noteAt (juce::Point<int>) const;
 
     /** Deletes every note the pointer passed over between two drag samples.

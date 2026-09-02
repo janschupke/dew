@@ -46,8 +46,20 @@ public:
     SnapDivision getSnap() const noexcept { return snap; }
     void setSnap (SnapDivision, juce::NotificationType = juce::sendNotification);
 
+    /** The channels the roll can be pointed at, and which one it is on.
+
+        Handed in rather than read from the document: this strip is built out of
+        primitives and can be laid out and driven in a test with no project
+        behind it, and reaching into the tree here would end that.
+    */
+    void setChannels (const juce::StringArray& names, const juce::Array<int>& ids);
+    void setSelectedChannel (int channelId);
+    int getSelectedChannel() const noexcept;
+
     std::function<void()>    onToolChanged;
     std::function<void()>    onSnapChanged;
+    std::function<void (int)> onChannelChanged;   ///< channel id
+    std::function<void (double)> onZoom;          ///< factor, or 0 to fit
     std::function<void (int)> onTranspose;   ///< semitones, positive for up
     std::function<void()>    onQuantize;
     std::function<void()>    onRandomize;
@@ -66,6 +78,16 @@ private:
 
     juce::ComboBox snapBox;
 
+    /** Which channel the roll is editing. The roll used to be a passive
+        consumer of a selection made in the channel rack, so its own empty state
+        could tell you to go and pick a channel but offered no way to do it.
+    */
+    juce::ComboBox channelBox;
+
+    DewIconButton zoomOutButton { icons::zoomOut(), "Zoom out (-)" };
+    DewIconButton zoomInButton { icons::zoomIn(), "Zoom in (+)" };
+    DewIconButton zoomFitButton { icons::fitToContent(), "Fit the pattern to the window" };
+
     DewIconButton quantizeButton { icons::quantize(), "Quantize to the snap grid (Q)" };
     DewIconButton randomizeButton { icons::dice(), "Randomize velocity and timing (R)" };
 
@@ -81,6 +103,7 @@ private:
     juce::Array<int> groupDividers;
 
     bool updatingSnapBox = false;
+    bool updatingChannelBox = false;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (PianoRollToolbar)
 };
