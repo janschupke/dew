@@ -16,6 +16,14 @@ EditorTabs::EditorTabs (ProjectDocument& document, AudioEngine& engine, EditorSt
     setComponentID ("editorTabs");
     setTabBarDepth (tokens::size::stripTabs);
 
+    // The alpha belongs to the editor, not to the whole tabbed component: the
+    // tab bar must not fade with the thing it switched to.
+    arrival.onChanged = [this]
+    {
+        if (auto* content = getCurrentContentComponent())
+            content->setAlpha (arrival.get());
+    };
+
     addTab ("Channel Rack", tokens::colour::background, &channelRack, false);
 
     // The piano roll used to live in a Viewport, which meant a ruler would have
@@ -33,6 +41,14 @@ EditorTabs::EditorTabs (ProjectDocument& document, AudioEngine& engine, EditorSt
 
     addTab ("Playlist", tokens::colour::background, &playlist, false);
     addTab ("Mixer", tokens::colour::background, &mixer, false);
+}
+
+void EditorTabs::currentTabChanged (int newIndex, const juce::String& newName)
+{
+    juce::TabbedComponent::currentTabChanged (newIndex, newName);
+
+    arrival.snapTo (0.0f);
+    arrival.animateTo (1.0f, tokens::motion::panelMs, Ease::decelerate);
 }
 
 void EditorTabs::refresh()

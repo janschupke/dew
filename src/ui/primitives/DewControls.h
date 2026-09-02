@@ -27,17 +27,33 @@ namespace dew
 class ButtonLift
 {
 public:
-    explicit ButtonLift (juce::Button& b) : button (b), motion (b) {}
+    explicit ButtonLift (juce::Button& b) : button (b), motion (b), toggled (b) {}
 
-    /** Call from buttonStateChanged(). */
+    /** Call from buttonStateChanged(), which JUCE sends for a change of toggle
+        state as well as a change of mouse state. */
     void update();
 
     /** The fill, lifted by however far the animation has got. */
     juce::Colour apply (juce::Colour base) const;
 
+    /** The same, crossing between an off colour and an on one.
+
+        Mute, solo, arm and bypass all switched colour outright, and those are
+        the four states a person flips most often while listening - the one
+        moment a hard cut is most likely to be read as a glitch rather than as
+        a change.
+    */
+    juce::Colour apply (juce::Colour off, juce::Colour on) const;
+
+    /** The cross on its own, with no hover lift - for a border or a label,
+        which the pointer does not brighten. Without this the fill crossed
+        while the outline cut, which reads worse than either. */
+    juce::Colour cross (juce::Colour off, juce::Colour on) const;
+
 private:
     juce::Button& button;
     ComponentMotion motion;
+    ComponentMotion toggled;
 };
 
 /** A text button in one of the system's roles.

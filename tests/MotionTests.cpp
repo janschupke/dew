@@ -5,6 +5,7 @@
 
 #include "PaintProbe.h"
 #include "ui/DewLookAndFeel.h"
+#include "ui/MainComponent.h"
 #include "ui/design/Animator.h"
 #include "ui/design/Tokens.h"
 #include "ui/primitives/DewControls.h"
@@ -361,4 +362,77 @@ TEST_CASE ("a button lifts into a hover rather than cutting to it", "[motion][bu
     Animator::shared().advance (motion::quickMs);
 
     CHECK (testing::meanBrightness (testing::render (button)) > hovered);
+}
+
+TEST_CASE ("a toggle crosses between its two colours", "[motion][button]")
+{
+    // Mute, solo, arm and bypass switched colour outright, and those are the
+    // four states a person flips most often while listening - the one moment a
+    // hard cut is most likely to read as a glitch rather than as a change.
+    const juce::ScopedJuceInitialiser_GUI juceInit;
+    ScopedAnimation animating;
+
+    DewLetterToggle toggle { "M", tokens::colour::warning, "Mute" };
+    toggle.setSize (size::letterToggle, size::letterToggle);
+
+    const auto off = testing::coverageOf (testing::render (toggle), tokens::colour::warning);
+
+    toggle.setToggleState (true, juce::dontSendNotification);
+
+    // Not yet: the cross is a transition, and no time has passed.
+    CHECK (testing::coverageOf (testing::render (toggle), tokens::colour::warning)
+           == Approx (off).margin (0.02));
+
+    Animator::shared().advance (motion::quickMs / 2);
+    const auto midway = testing::coverageOf (testing::render (toggle), tokens::colour::warning);
+
+    Animator::shared().advance (motion::quickMs);
+    const auto on = testing::coverageOf (testing::render (toggle), tokens::colour::warning);
+
+    INFO ("off " << off << ", midway " << midway << ", on " << on);
+    CHECK (on > off);
+    CHECK_FALSE (Animator::shared().isAnimating());
+}
+
+TEST_CASE ("the instrument panel folds rather than vanishing", "[motion][panel]")
+{
+    // A width, not a paint: repainting a component does not lay it out again,
+    // so this is the one animation in dew that drives resized().
+    const juce::ScopedJuceInitialiser_GUI juceInit;
+    ScopedAnimation animating;
+
+    MainComponent main { false };
+    main.setSize (1400, 900);
+    main.resized();
+
+    const auto openWidth = main.getInstrumentPanelWidthForTesting();
+    REQUIRE (openWidth > 0);
+
+    main.setPanelCollapsedForTesting (true);
+
+    // Sampled across the whole fold. A panel that stayed put for 179ms and then
+    // disappeared would pass a check on the ends alone.
+    auto previous = openWidth;
+    auto sawMiddle = false;
+
+    for (int step = 0; step < 10; ++step)
+    {
+        Animator::shared().advance (motion::panelMs / 10);
+
+        const auto now = main.getInstrumentPanelWidthForTesting();
+        CHECK (now <= previous);
+
+        if (now > 0 && now < openWidth)
+            sawMiddle = true;
+
+        previous = now;
+    }
+
+    CHECK (sawMiddle);
+    CHECK (previous == 0);
+
+    // And it comes back to where it was.
+    main.setPanelCollapsedForTesting (false);
+    Animator::shared().advance (motion::panelMs * 2);
+    CHECK (main.getInstrumentPanelWidthForTesting() == openWidth);
 }

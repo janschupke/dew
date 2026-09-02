@@ -18,6 +18,8 @@ namespace
 
 void ButtonLift::update()
 {
+    toggled.animateTo (button.getToggleState() ? 1.0f : 0.0f, motion::quickMs);
+
     const auto target = ! button.isEnabled() ? 0.0f
                       : button.isDown()      ? emphasis::pressLift
                       : button.isOver()      ? emphasis::controlLift
@@ -36,6 +38,16 @@ juce::Colour ButtonLift::apply (juce::Colour base) const
         return emphasis::disabled (base);
 
     return base.brighter (motion.get());
+}
+
+juce::Colour ButtonLift::apply (juce::Colour off, juce::Colour on) const
+{
+    return apply (cross (off, on));
+}
+
+juce::Colour ButtonLift::cross (juce::Colour off, juce::Colour on) const
+{
+    return off.interpolatedWith (on, juce::jlimit (0.0f, 1.0f, toggled.get()));
 }
 
 // --- DewButton ---------------------------------------------------------------
@@ -124,19 +136,17 @@ void DewIconButton::setOnColour (juce::Colour c)
 void DewIconButton::paintButton (juce::Graphics& g, bool highlighted, bool down)
 {
     const auto bounds = paint::bodyRect (*this);
-    const auto on = getToggleState();
 
-    const auto background = on ? onColour
-                               : (highlighted || down ? colour::surfaceHover : colour::surfaceRaised);
+    const auto off = highlighted || down ? colour::surfaceHover : colour::surfaceRaised;
 
-    g.setColour (lift.apply (background));
+    g.setColour (lift.apply (off, onColour));
     g.fillRoundedRectangle (bounds, radius::sm);
 
-    g.setColour (on ? onColour : colour::outline);
+    g.setColour (lift.cross (colour::outline, onColour));
     g.drawRoundedRectangle (bounds, radius::sm, stroke::hairline);
 
     const auto tint = ! isEnabled() ? colour::textDisabled
-                                    : (on ? colour::textOnAccent : colour::textPrimary);
+                                    : lift.cross (colour::textPrimary, colour::textOnAccent);
 
     icons::draw (g, icon, bounds.reduced (bounds.getWidth() * 0.28f), tint);
 }
@@ -154,15 +164,14 @@ DewLetterToggle::DewLetterToggle (const juce::String& l, juce::Colour c,
 void DewLetterToggle::paintButton (juce::Graphics& g, bool, bool)
 {
     const auto bounds = paint::bodyRect (*this);
-    const auto on = getToggleState();
 
-    g.setColour (lift.apply (on ? onColour : colour::surfaceRaised));
+    g.setColour (lift.apply (colour::surfaceRaised, onColour));
     g.fillRoundedRectangle (bounds, radius::sm);
 
-    g.setColour (on ? onColour : colour::outline);
+    g.setColour (lift.cross (colour::outline, onColour));
     g.drawRoundedRectangle (bounds, radius::sm, stroke::hairline);
 
-    g.setColour (on ? colour::textOnAccent : colour::textSecondary);
+    g.setColour (lift.cross (colour::textSecondary, colour::textOnAccent));
     g.setFont (type::font (type::small, true));
     g.drawText (letter, getLocalBounds(), juce::Justification::centred, false);
 }

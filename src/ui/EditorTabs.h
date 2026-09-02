@@ -6,6 +6,7 @@
 #include "model/ProjectDocument.h"
 #include "ui/ChannelRackComponent.h"
 #include "ui/EditorState.h"
+#include "ui/design/Animator.h"
 #include "ui/MixerComponent.h"
 #include "ui/PianoRollComponent.h"
 #include "ui/PlaylistComponent.h"
@@ -32,6 +33,17 @@ public:
     void setPianoRollSnap (int index);
 
 private:
+    /** The incoming editor's alpha, 0 to 1 over panelMs.
+
+        Deliberately NOT a crossfade. Keeping the outgoing editor visible means
+        two live editors, two sixty-hertz playhead timers and visibly two
+        playheads; the incoming one fades up over the window background
+        instead, which is what "switched tab" actually looks like.
+    */
+    void currentTabChanged (int newIndex, const juce::String& newName) override;
+
+    ComponentMotion arrival { *this, 1.0f };
+
     ChannelRackComponent channelRack;
     PianoRollComponent pianoRoll;
     PlaylistComponent playlist;

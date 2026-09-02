@@ -169,19 +169,27 @@ void ComponentMotion::animateTo (float target, int durationMs, Ease ease)
     // branch lives here rather than at sixteen call sites.
     value.animateTo (target, Animator::shared().motionIsOn() ? durationMs : 0, ease);
 
-    if (value.isMoving())
+    notifyChanged();
+}
+
+void ComponentMotion::notifyChanged()
+{
+    if (onChanged != nullptr)
+        onChanged();
+    else
         owner.repaint();
 }
 
 void ComponentMotion::snapTo (float target)
 {
     value.snapTo (target);
+    notifyChanged();
 }
 
 bool ComponentMotion::advanceAnimation (int deltaMs)
 {
     if (value.advance (deltaMs))
-        owner.repaint();
+        notifyChanged();
 
     return value.isMoving();
 }

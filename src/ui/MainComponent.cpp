@@ -25,6 +25,9 @@ MainComponent::MainComponent (bool openAudioDevice)
       instrumentPanel (document, editorState, &samplePool),
       statusBar (document, editorState, audioHost)
 {
+    // A layout, not a paint.
+    collapse.onChanged = [this] { resized(); };
+
     juce::Desktop::getInstance().setDefaultLookAndFeel (&lookAndFeel);
 
     // Before the first projectChanged(), or the opening snapshot would resolve
@@ -230,6 +233,11 @@ void MainComponent::setPanelWidth (int width)
     resized();
 }
 
+int MainComponent::getInstrumentPanelWidthForTesting() const
+{
+    return instrumentPanel.getWidth();
+}
+
 void MainComponent::setPanelCollapsed (bool collapsed)
 {
     if (collapsed == panelCollapsed)
@@ -237,6 +245,7 @@ void MainComponent::setPanelCollapsed (bool collapsed)
 
     panelCollapsed = collapsed;
     divider.updateToggle();
+    collapse.animateTo (collapsed ? 1.0f : 0.0f, tokens::motion::panelMs);
     resized();
 }
 
@@ -648,16 +657,20 @@ void MainComponent::resized()
     transportBar.setBounds (area.removeFromTop (tokens::size::stripTransport));
     statusBar.setBounds (area.removeFromBottom (tokens::size::stripStatus));
 
-    const auto width = panelCollapsed
-                           ? 0
-                           : juce::jlimit (Settings::minPanelWidth,
-                                           juce::jmax (Settings::minPanelWidth, area.getWidth() - 360),
-                                           panelWidth);
+    const auto open = juce::jlimit (Settings::minPanelWidth,
+                                    juce::jmax (Settings::minPanelWidth, area.getWidth() - 360),
+                                    panelWidth);
 
-    // Hidden as well as given no width: a zero-width panel still lays its
-    // children out and still paints, and its knobs would keep taking the
-    // clicks meant for the editor beside it.
-    instrumentPanel.setVisible (! panelCollapsed);
+    // Folded rather than switched: the panel's width is the open width scaled
+    // by how far the fold has got, so the editor beside it grows into the space
+    // at the same rate.
+    const auto width = juce::roundToInt ((double) open * (1.0 - (double) collapse.get()));
+
+    // Hidden as well as given no width, but only once it has ARRIVED: a
+    // zero-width panel still lays its children out and still paints, and its
+    // knobs would keep taking the clicks meant for the editor beside it -
+    // while a panel hidden on the first frame of a fold just vanishes.
+    instrumentPanel.setVisible (width > 0);
     instrumentPanel.setBounds (area.removeFromRight (width));
 
     // The divider stays whichever way the panel goes - it is what the panel is

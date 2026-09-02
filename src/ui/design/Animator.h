@@ -182,8 +182,14 @@ public:
     float getTarget() const noexcept { return value.getTarget(); }
     bool  isMoving() const noexcept  { return value.isMoving(); }
 
+    /** What to do when the number moves. Repaints the owner if unset, which is
+        what a painted value wants; a value that drives a LAYOUT sets this to
+        resized(), because repainting a component does not lay it out again. */
+    std::function<void()> onChanged;
+
 private:
     bool advanceAnimation (int deltaMs) override;
+    void notifyChanged();
 
     juce::Component& owner;
     MotionValue value;

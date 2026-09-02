@@ -17,6 +17,7 @@
 #include "ui/RenderPanel.h"
 #include "ui/StatusBar.h"
 #include "ui/TransportBar.h"
+#include "ui/design/Animator.h"
 
 namespace dew
 {
@@ -33,6 +34,15 @@ class MainComponent : public juce::Component,
                       private juce::ChangeListener
 {
 public:
+    /** Folds the instrument panel away, and unfolds it. Public because the
+        fold is animated, and there is nothing in a rendered image to measure a
+        LAYOUT by - so a test drives it and reads the width back. */
+    void setPanelCollapsedForTesting (bool collapsed) { setPanelCollapsed (collapsed); }
+
+    /** The panel's width as laid out, which during a fold is neither the open
+        width nor zero. */
+    int getInstrumentPanelWidthForTesting() const;
+
     /** @param openAudioDevice  false for headless use - screenshots and CI have
                                   no reason to take over the sound card.
     */
@@ -201,6 +211,13 @@ private:
 
     PanelDivider divider { *this };
     int panelWidth = Settings::defaultPanelWidth;
+
+    /** How far the instrument panel has folded away, 0 open and 1 collapsed.
+
+        A layout, not a paint, so it drives resized() rather than a repaint -
+        repainting a component does not lay it out again.
+    */
+    ComponentMotion collapse { *this };
     bool panelCollapsed = false;
 
     /** Wide enough to hold the collapse toggle. It was five pixels of drag
