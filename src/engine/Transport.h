@@ -1,6 +1,7 @@
 #pragma once
 
 #include <juce_core/juce_core.h>
+#include "../model/Constants.h"
 
 namespace dew
 {
@@ -105,7 +106,7 @@ public:
     static double samplesPerStepFor (double bpm, int stepsPerBeat, double sampleRate) noexcept;
 
 private:
-    double sampleRate = 44100.0;
+    double sampleRate = kDefaultSampleRate;
     double tempoBpm = 128.0;
     int stepsPerBeat = 4;
     double loopStartSteps = 0.0;

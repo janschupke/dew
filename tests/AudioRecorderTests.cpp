@@ -4,25 +4,15 @@
 #include "engine/AudioEngine.h"
 #include "engine/AudioRecorder.h"
 #include "engine/LiveAudioHost.h"
+#include "TestSupport.h"
+
+using namespace dew::testing;
 
 using namespace dew;
 
 namespace
 {
 
-struct TempDir
-{
-    TempDir()
-        : dir (juce::File::getSpecialLocation (juce::File::tempDirectory)
-                   .getChildFile ("dew-record-" + juce::Uuid().toDashedString()))
-    {
-        dir.createDirectory();
-    }
-
-    ~TempDir() { dir.deleteRecursively(); }
-
-    juce::File dir;
-};
 
 /** Feeds `numBlocks` blocks of a constant value straight to the audio-thread
     entry point. No device is opened anywhere in this file: the recorder's
@@ -59,7 +49,7 @@ juce::AudioBuffer<float> readBack (const juce::File& file, double& sampleRate)
 
 TEST_CASE ("a recorder writes what the audio thread pushed into it", "[audio][record]")
 {
-    TempDir temp;
+    TempDir temp { "dew-record-" };
     const auto file = temp.dir.getChildFile ("take.wav");
 
     AudioRecorder recorder;
@@ -88,7 +78,7 @@ TEST_CASE ("the punch-in bar survives the take", "[audio][record]")
 {
     // The transport has moved on by the time a take ends, so where the clip
     // goes has to be remembered when it starts.
-    TempDir temp;
+    TempDir temp { "dew-record-" };
 
     AudioRecorder recorder;
     REQUIRE (recorder.start (temp.dir.getChildFile ("take.wav"), 44100.0, 1, 7).isEmpty());
@@ -103,7 +93,7 @@ TEST_CASE ("stopping without any input yields no file to use", "[audio][record]"
 {
     // An armed channel with a dead input must not produce a silent clip that
     // looks like a successful take.
-    TempDir temp;
+    TempDir temp { "dew-record-" };
 
     AudioRecorder recorder;
     REQUIRE (recorder.start (temp.dir.getChildFile ("take.wav"), 44100.0, 1, 0).isEmpty());
@@ -147,7 +137,7 @@ TEST_CASE ("the meter keeps the loudest peak between reads", "[audio][record]")
 
 TEST_CASE ("a second take does not append to the first", "[audio][record]")
 {
-    TempDir temp;
+    TempDir temp { "dew-record-" };
     const auto first = temp.dir.getChildFile ("one.wav");
     const auto second = temp.dir.getChildFile ("two.wav");
 

@@ -26,6 +26,19 @@ void MixerBus::panGains (float pan, float& leftGain, float& rightGain) noexcept
     rightGain = std::sin (angle);
 }
 
+MixerBus::TrackGains MixerBus::trackGains (float pan, float gain) noexcept
+{
+    float leftGain = 0.0f, rightGain = 0.0f;
+    panGains (pan, leftGain, rightGain);
+
+    // Written exactly as the three call sites wrote it. Float multiplication is
+    // not associative, so re-grouping any of these three would move the last
+    // bits of every render and EngineTests' save/load identity would fail.
+    return { gain * leftGain * juce::MathConstants<float>::sqrt2,
+             gain * rightGain * juce::MathConstants<float>::sqrt2,
+             gain * juce::jmax (leftGain, rightGain) * juce::MathConstants<float>::sqrt2 };
+}
+
 void MixerBus::addPanned (const float* mono, int numSamples, float gain, float pan,
                           float* left, float* right) noexcept
 {

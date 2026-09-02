@@ -2,6 +2,7 @@
 
 #include <juce_audio_basics/juce_audio_basics.h>
 #include <juce_dsp/juce_dsp.h>
+#include "../model/Constants.h"
 
 namespace dew
 {
@@ -127,8 +128,8 @@ private:
     void processChorus (const EffectParams&, float*, float*, int) noexcept;
     void processEq (const EffectParams&, float*, float*, int) noexcept;
 
-    double sampleRate = 44100.0;
-    int blockSize = 512;
+    double sampleRate = kDefaultSampleRate;
+    int blockSize = kDefaultBlockSize;
 
     juce::dsp::StateVariableTPTFilter<float> filter;
     juce::Reverb reverb;

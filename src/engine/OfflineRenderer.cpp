@@ -315,15 +315,6 @@ juce::StringArray mixerTrackNames (const juce::ValueTree& project)
     return names;
 }
 
-bool anyEnabled (const EffectChainSnapshot& chain) noexcept
-{
-    for (int i = 0; i < chain.numSlots; ++i)
-        if (chain.slots[(size_t) i].enabled)
-            return true;
-
-    return false;
-}
-
 /** Dithers, then writes one buffer to one file, atomically.
 
     Shared by renderToFile and every stem, so the temporary-file swap, the
@@ -572,7 +563,7 @@ RenderReport OfflineRenderer::renderStems (const juce::ValueTree& project,
     // A stem is a full render, so it goes through the master chain like anything
     // else. That is what makes each one sound the way it does in the mix - and it
     // is also why a non-linear master effect stops the stems summing back to it.
-    if (anyEnabled (base.masterEffects))
+    if (base.masterEffects.anyEnabled())
         report.warnings.add ("The master chain processes each stem, so the stems will not sum "
                              "exactly back to the mix.");
 

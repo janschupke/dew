@@ -42,7 +42,7 @@ inline double midiToHz (double pitch, double detuneCents) noexcept
 
 void SynthVoice::prepare (double sampleRate)
 {
-    currentSampleRate = sampleRate > 0.0 ? sampleRate : 44100.0;
+    currentSampleRate = sampleRate > 0.0 ? sampleRate : kDefaultSampleRate;
     adsr.setSampleRate (currentSampleRate);
     reset();
 }

@@ -11,6 +11,7 @@
 #include "SnapshotBridge.h"
 #include "SynthChannel.h"
 #include "Transport.h"
+#include "../model/Constants.h"
 
 namespace dew
 {
@@ -299,8 +300,8 @@ private:
 
     juce::uint64 appliedGeneration = 0;
 
-    double currentSampleRate = 44100.0;
-    int currentBlockSize = 512;
+    double currentSampleRate = kDefaultSampleRate;
+    int currentBlockSize = kDefaultBlockSize;
 
     std::atomic<bool> playing { false };
     std::atomic<bool> rewindRequested { false };

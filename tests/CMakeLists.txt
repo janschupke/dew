@@ -54,6 +54,8 @@ add_executable(dew_tests
   AssetPathTests.cpp
   AudioRecorderTests.cpp
   AudioUiTests.cpp
+  CliArgsTests.cpp
+  SourceGateTests.cpp
 )
 
 target_link_libraries(dew_tests
@@ -71,5 +73,9 @@ target_link_libraries(dew_tests
 target_compile_definitions(dew_tests PRIVATE
   DEW_EXAMPLES_DIR="${CMAKE_SOURCE_DIR}/examples"
   DEW_SOURCE_DIR="${CMAKE_SOURCE_DIR}/src")
+
+# The console tools' shared argument parser is header-only and lives beside them,
+# so the suite can test it without either tool being on the link line.
+target_include_directories(dew_tests PRIVATE "${CMAKE_SOURCE_DIR}/tools")
 
 catch_discover_tests(dew_tests)

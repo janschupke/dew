@@ -560,22 +560,13 @@ EngineSnapshot buildSnapshot (const juce::ValueTree& project, juce::StringArray*
     }
 
     // Lets the engine skip the whole stereo effect stage on a project with none.
-    const auto chainHasWork = [] (const EffectChainSnapshot& chain)
-    {
-        for (int i = 0; i < chain.numSlots; ++i)
-            if (chain.slots[(size_t) i].enabled)
-                return true;
-
-        return false;
-    };
-
     for (const auto& channel : snapshot.channels)
-        snapshot.anyEffects = snapshot.anyEffects || chainHasWork (channel.effects);
+        snapshot.anyEffects = snapshot.anyEffects || channel.effects.anyEnabled();
 
     for (const auto& track : snapshot.mixerTracks)
-        snapshot.anyEffects = snapshot.anyEffects || chainHasWork (track.effects);
+        snapshot.anyEffects = snapshot.anyEffects || track.effects.anyEnabled();
 
-    snapshot.anyEffects = snapshot.anyEffects || chainHasWork (snapshot.masterEffects);
+    snapshot.anyEffects = snapshot.anyEffects || snapshot.masterEffects.anyEnabled();
 
     // --- patterns ------------------------------------------------------------
     for (const auto& pattern : project)

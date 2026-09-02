@@ -7,6 +7,9 @@
 #include "model/ProjectEdits.h"
 #include "model/ProjectFactory.h"
 #include "ui/MainComponent.h"
+#include "PaintProbe.h"
+
+using namespace dew::testing;
 
 namespace
 {
@@ -18,15 +21,6 @@ namespace
     path. A component that silently failed to lay out paints a flat fill, which
     these tests can tell apart from one that drew something.
 */
-juce::Image renderToImage (juce::Component& c)
-{
-    juce::Image image (juce::Image::ARGB, juce::jmax (1, c.getWidth()),
-                       juce::jmax (1, c.getHeight()), true);
-    juce::Graphics g (image);
-    c.paintEntireComponent (g, true);
-    return image;
-}
-
 float fractionOfNonBackgroundPixels (const juce::Image& image)
 {
     const auto background = image.getPixelAt (0, 0);
@@ -52,7 +46,7 @@ TEST_CASE ("the editor lays out and paints", "[ui][smoke]")
     REQUIRE (component.getWidth() > 0);
     REQUIRE (component.getHeight() > 0);
 
-    const auto image = renderToImage (component);
+    const auto image = render (component);
     REQUIRE (image.isValid());
 
     const auto content = fractionOfNonBackgroundPixels (image);
@@ -107,7 +101,7 @@ TEST_CASE ("the editor survives being resized to its limits", "[ui][smoke]")
     for (auto size : { juce::Point<int> { 900, 560 }, juce::Point<int> { 2400, 1400 } })
     {
         component.setSize (size.x, size.y);
-        const auto image = renderToImage (component);
+        const auto image = render (component);
 
         REQUIRE (image.getWidth() == size.x);
         REQUIRE (image.getHeight() == size.y);
@@ -140,7 +134,7 @@ TEST_CASE ("every editor tab paints something", "[ui][smoke]")
         tabs->setCurrentTabIndex (i, true);
         component.resized();
 
-        const auto image = renderToImage (component);
+        const auto image = render (component);
 
         INFO ("tab " << i << " (" << tabs->getTabNames()[i] << ")");
         REQUIRE (fractionOfNonBackgroundPixels (image) > 0.01f);
@@ -295,7 +289,7 @@ TEST_CASE ("every tab is painted, not only the active one", "[ui][smoke]")
     REQUIRE (bar->getWidth() > 0);
 
     // Paint the whole editor, then look only at the tab strip.
-    const auto image = renderToImage (component);
+    const auto image = render (component);
     const auto strip = bar->getLocalArea (&component, bar->getLocalBounds())
                           .withPosition (bar->getScreenPosition() - component.getScreenPosition());
 

@@ -13,7 +13,7 @@ double Transport::samplesPerStepFor (double bpm, int stepsPerBeat, double sample
 
 void Transport::prepare (double newSampleRate)
 {
-    sampleRate = newSampleRate > 0.0 ? newSampleRate : 44100.0;
+    sampleRate = newSampleRate > 0.0 ? newSampleRate : kDefaultSampleRate;
     positionSamples = 0;
 }
 

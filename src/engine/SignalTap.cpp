@@ -57,7 +57,7 @@ bool SignalTap::readLatest (float* destination, int numSamples) const noexcept
 
 void SignalTap::setSampleRate (double newRate) noexcept
 {
-    sampleRate.store (newRate > 0.0 ? newRate : 44100.0, std::memory_order_relaxed);
+    sampleRate.store (newRate > 0.0 ? newRate : kDefaultSampleRate, std::memory_order_relaxed);
 }
 
 double SignalTap::getSampleRate() const noexcept

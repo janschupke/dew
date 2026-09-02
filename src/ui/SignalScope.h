@@ -7,6 +7,7 @@
 #include <juce_gui_basics/juce_gui_basics.h>
 
 #include "design/Tokens.h"
+#include "../model/Constants.h"
 
 namespace dew
 {
@@ -141,7 +142,7 @@ private:
     bool triggered = false;
     int triggerOffset = 0;
     int displaySamples = 0;
-    double frameSampleRate = 44100.0;
+    double frameSampleRate = kDefaultSampleRate;
     juce::int64 lastWriteCount = -1;
 
     juce::Rectangle<int> scopeBounds, spectrumBounds;

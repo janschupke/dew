@@ -5,6 +5,10 @@
 #include "ui/DewLookAndFeel.h"
 #include "ui/design/Tokens.h"
 #include "ui/primitives/DewControls.h"
+#include "PaintProbe.h"
+#include "SourceScan.h"
+
+using namespace dew::testing;
 
 using namespace dew;
 
@@ -25,45 +29,8 @@ bool isOnTheScale (float height)
     return false;
 }
 
-juce::Array<juce::File> sourceFiles()
-{
-    juce::Array<juce::File> files;
 
-    const juce::File root { DEW_SOURCE_DIR };
 
-    for (const auto& entry : juce::RangedDirectoryIterator (root, true, "*.cpp;*.h"))
-        files.add (entry.getFile());
-
-    return files;
-}
-
-juce::Image render (juce::Component& c)
-{
-    juce::Image image (juce::Image::ARGB, juce::jmax (1, c.getWidth()),
-                       juce::jmax (1, c.getHeight()), true);
-    juce::Graphics g (image);
-    c.paintEntireComponent (g, true);
-    return image;
-}
-
-/** Mean brightness over non-transparent pixels. Text that is bigger, or in a
-    lighter grey, raises this; it is how "readable" is measured here.
-*/
-float meanBrightness (const juce::Image& image)
-{
-    double total = 0.0;
-    int counted = 0;
-
-    for (int y = 0; y < image.getHeight(); ++y)
-        for (int x = 0; x < image.getWidth(); ++x)
-            if (const auto pixel = image.getPixelAt (x, y); pixel.getAlpha() > 0)
-            {
-                total += pixel.getBrightness();
-                ++counted;
-            }
-
-    return counted > 0 ? (float) (total / counted) : 0.0f;
-}
 
 /** A component whose only job is to run one paint:: helper, so a helper can be
     measured without dragging a whole panel and its document into the test.

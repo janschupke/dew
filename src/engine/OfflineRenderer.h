@@ -5,6 +5,7 @@
 #include <juce_audio_formats/juce_audio_formats.h>
 
 #include "AudioEngine.h"
+#include "../model/Constants.h"
 
 namespace dew
 {
@@ -55,8 +56,8 @@ struct RenderOptions
     */
     SamplePool* samplePool = nullptr;
 
-    double sampleRate = 44100.0;
-    int blockSize = 512;
+    double sampleRate = kDefaultSampleRate;
+    int blockSize = kDefaultBlockSize;
     int bitDepth = 24;
 
     /** 0 means "as long as the material": the arrangement in song mode, or one

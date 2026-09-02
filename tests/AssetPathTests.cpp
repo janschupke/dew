@@ -4,6 +4,9 @@
 #include "model/Ids.h"
 #include "model/ProjectDocument.h"
 #include "model/ProjectEdits.h"
+#include "TestSupport.h"
+
+using namespace dew::testing;
 
 using namespace dew;
 
@@ -11,19 +14,6 @@ namespace
 {
 
 /** A temporary directory that cleans up after itself. */
-struct TempDir
-{
-    TempDir()
-        : dir (juce::File::getSpecialLocation (juce::File::tempDirectory)
-                   .getChildFile ("dew-assets-" + juce::Uuid().toDashedString()))
-    {
-        dir.createDirectory();
-    }
-
-    ~TempDir() { dir.deleteRecursively(); }
-
-    juce::File dir;
-};
 
 void writeSomething (const juce::File& file)
 {
@@ -56,7 +46,7 @@ TEST_CASE ("the sidecar folder sits beside the project", "[assets]")
 
 TEST_CASE ("a path inside the project folder is stored relative", "[assets]")
 {
-    TempDir temp;
+    TempDir temp { "dew-assets-" };
 
     const auto project = temp.dir.getChildFile ("Song.dew");
     const auto audio = temp.dir.getChildFile ("Song Assets").getChildFile ("Take 001.wav");
@@ -73,8 +63,8 @@ TEST_CASE ("a path inside the project folder is stored relative", "[assets]")
 
 TEST_CASE ("a path outside the project folder stays absolute", "[assets]")
 {
-    TempDir temp;
-    TempDir elsewhere;
+    TempDir temp { "dew-assets-" };
+    TempDir elsewhere { "dew-assets-" };
 
     const auto project = temp.dir.getChildFile ("Song.dew");
     const auto audio = elsewhere.dir.getChildFile ("Imported.wav");
@@ -97,7 +87,7 @@ TEST_CASE ("an empty path resolves to nothing, not to the project folder", "[ass
 
 TEST_CASE ("take names never collide", "[assets]")
 {
-    TempDir temp;
+    TempDir temp { "dew-assets-" };
 
     const auto first = AssetPaths::nextTakeFile (temp.dir, "Bass");
     REQUIRE (first.getFileName() == "Bass Take 001.wav");
@@ -113,8 +103,8 @@ TEST_CASE ("saving gathers a staged recording into the sidecar", "[assets][docum
 {
     // The first save is where a take recorded into an untitled project stops
     // depending on a folder in Application Support.
-    TempDir staging;
-    TempDir projectDir;
+    TempDir staging { "dew-assets-" };
+    TempDir projectDir { "dew-assets-" };
 
     const auto staged = staging.dir.getChildFile ("Take 001.wav");
     writeSomething (staged);
@@ -142,8 +132,8 @@ TEST_CASE ("gathering does not land on the undo stack", "[assets][document]")
 {
     // Saving is not an edit. If the rewrite were undoable, one Undo after a save
     // would point the project back at a folder the user never sees.
-    TempDir staging;
-    TempDir projectDir;
+    TempDir staging { "dew-assets-" };
+    TempDir projectDir { "dew-assets-" };
 
     const auto staged = staging.dir.getChildFile ("Take 001.wav");
     writeSomething (staged);
@@ -169,9 +159,9 @@ TEST_CASE ("gathering does not land on the undo stack", "[assets][document]")
 
 TEST_CASE ("Save As brings the audio to the new location", "[assets][document]")
 {
-    TempDir staging;
-    TempDir firstHome;
-    TempDir secondHome;
+    TempDir staging { "dew-assets-" };
+    TempDir firstHome { "dew-assets-" };
+    TempDir secondHome { "dew-assets-" };
 
     const auto staged = staging.dir.getChildFile ("Take 001.wav");
     writeSomething (staged);

@@ -7,6 +7,7 @@
 #include <juce_audio_formats/juce_audio_formats.h>
 
 #include "WaveformPeaks.h"
+#include "../model/Constants.h"
 
 namespace dew
 {
@@ -36,7 +37,7 @@ public:
     struct Entry
     {
         std::shared_ptr<const juce::AudioBuffer<float>> audio;
-        double sourceSampleRate = 44100.0;
+        double sourceSampleRate = kDefaultSampleRate;
         WaveformPeaks peaks;
 
         bool isValid() const noexcept  { return audio != nullptr && audio->getNumSamples() > 0; }

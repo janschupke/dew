@@ -136,7 +136,7 @@ EffectUnit::EffectUnit() = default;
 
 void EffectUnit::prepare (double newSampleRate, int maximumBlockSize)
 {
-    sampleRate = newSampleRate > 0.0 ? newSampleRate : 44100.0;
+    sampleRate = newSampleRate > 0.0 ? newSampleRate : kDefaultSampleRate;
     blockSize = juce::jmax (1, maximumBlockSize);
 
     const juce::dsp::ProcessSpec spec { sampleRate, (juce::uint32) blockSize, 2 };

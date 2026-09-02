@@ -1,4 +1,5 @@
 #include "AudioRecorder.h"
+#include "AtomicPeak.h"
 
 namespace dew
 {
@@ -107,14 +108,9 @@ void AudioRecorder::writeBlock (const float* const* inputChannelData, int numInp
             peak = juce::jmax (peak, juce::FloatVectorOperations::findMinAndMax (
                                          inputChannelData[channel], numSamples).getEnd());
 
-    // Latest-wins maximum, like the mixer meters: a reader that missed a peak
-    // between two frames would rather see the louder one.
-    auto previous = inputPeak.load (std::memory_order_relaxed);
-
-    while (peak > previous
-           && ! inputPeak.compare_exchange_weak (previous, peak, std::memory_order_relaxed))
-    {
-    }
+    // Latest-wins maximum, like the mixer meters - and now literally the same
+    // code as the mixer meters.
+    atomicPeakMax (inputPeak, peak);
 
     // A try-lock, not a lock: the render path must never wait on the message
     // thread swapping a writer in or out.

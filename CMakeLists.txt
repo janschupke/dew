@@ -16,6 +16,11 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
+# Declared, not merely referenced. Before this, DEW_BUILD_TESTS was set only by
+# CMakePresets.json, so a plain `cmake -S . -B build` configured with no tests
+# and no Catch2 and said nothing about it.
+option(DEW_BUILD_TESTS "Build the test suite" ON)
+
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
 if(APPLE AND NOT CMAKE_OSX_DEPLOYMENT_TARGET)

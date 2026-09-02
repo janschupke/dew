@@ -6,6 +6,7 @@
 
 #include "EngineSnapshot.h"
 #include "Wavetable.h"
+#include "../model/Constants.h"
 
 namespace dew
 {
@@ -157,7 +158,7 @@ private:
         void updateMip() noexcept;
     };
 
-    double currentSampleRate = 44100.0;
+    double currentSampleRate = kDefaultSampleRate;
 
     std::array<Oscillator, kMaxOscillators> oscillators;
     std::array<WavetableOscillator, kMaxOscillators> wavetables;

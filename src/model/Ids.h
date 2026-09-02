@@ -30,7 +30,15 @@
 namespace dew::ids
 {
 
-#define DEW_DECLARE_ID(name) const juce::Identifier name (#name);
+/** An identifier, declared once for the whole program.
+
+    `inline` is load-bearing, not decoration. A namespace-scope `const` has
+    INTERNAL linkage in C++, so without it every translation unit that includes
+    this header gets its own copy of all eighty-seven Identifiers plus its own
+    dynamic initialiser for each - and this header reaches most of src/ and all
+    of tests/.
+*/
+#define DEW_DECLARE_ID(name) inline const juce::Identifier name (#name);
 
 // --- node types --------------------------------------------------------------
 DEW_DECLARE_ID (PROJECT)

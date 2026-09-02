@@ -4,6 +4,7 @@
 
 #include <cmath>
 #include <limits>
+#include "AtomicPeak.h"
 
 namespace dew
 {
@@ -42,7 +43,7 @@ AudioEngine::AudioEngine()
 
 void AudioEngine::prepare (double sampleRate, int maximumBlockSize)
 {
-    currentSampleRate = sampleRate > 0.0 ? sampleRate : 44100.0;
+    currentSampleRate = sampleRate > 0.0 ? sampleRate : kDefaultSampleRate;
     currentBlockSize = juce::jmax (1, maximumBlockSize);
 
     transport.prepare (currentSampleRate);
@@ -221,15 +222,7 @@ void AudioEngine::recordPeak (std::atomic<float>& slot, const float* left, const
 
     peak *= scale;
 
-    // Keep the loudest seen since the last read: a meter must not miss a
-    // transient just because it fell between two message-thread ticks.
-    auto current = slot.load (std::memory_order_relaxed);
-
-    while (peak > current
-           && ! slot.compare_exchange_weak (current, peak, std::memory_order_release,
-                                            std::memory_order_relaxed))
-    {
-    }
+    atomicPeakMax (slot, peak);
 }
 
 float AudioEngine::readAndClearTrackPeak (int trackIndex) noexcept
@@ -752,24 +745,22 @@ void AudioEngine::processBlock (juce::AudioBuffer<float>& buffer) noexcept
         runChain (track.effects, mixerBuffers.getWritePointer (i * 2),
                   mixerBuffers.getWritePointer (i * 2 + 1), numSamples);
 
-        float leftGain = 0.0f, rightGain = 0.0f;
-        MixerBus::panGains (track.pan, leftGain, rightGain);
+        const auto gains = MixerBus::trackGains (track.pan, track.gain);
 
         juce::FloatVectorOperations::addWithMultiply (outLeft,
                                                       mixerBuffers.getReadPointer (i * 2),
-                                                      track.gain * leftGain * juce::MathConstants<float>::sqrt2,
+                                                      gains.left,
                                                       numSamples);
         juce::FloatVectorOperations::addWithMultiply (outRight,
                                                       mixerBuffers.getReadPointer (i * 2 + 1),
-                                                      track.gain * rightGain * juce::MathConstants<float>::sqrt2,
+                                                      gains.right,
                                                       numSamples);
 
         // The buffers hold the track PRE-fader - the gain is applied during the
         // add above - so the meter has to scale by what the fader is doing, or
         // it would sit beside a fader it does not answer to.
         recordPeak (trackPeaks[(size_t) i], mixerBuffers.getReadPointer (i * 2),
-                    mixerBuffers.getReadPointer (i * 2 + 1), numSamples,
-                    track.gain * juce::jmax (leftGain, rightGain) * juce::MathConstants<float>::sqrt2);
+                    mixerBuffers.getReadPointer (i * 2 + 1), numSamples, gains.meter);
     }
 
     // On the summed mix, before the master fader - so the fader rides the

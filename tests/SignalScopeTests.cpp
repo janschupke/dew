@@ -15,6 +15,9 @@
 #include "ui/SignalScope.h"
 #include "ui/TransportBar.h"
 #include "ui/design/Tokens.h"
+#include "PaintProbe.h"
+
+using namespace dew::testing;
 
 using namespace dew;
 using Catch::Approx;
@@ -22,48 +25,8 @@ using Catch::Approx;
 namespace
 {
 
-juce::Image render (juce::Component& c)
-{
-    juce::Image image (juce::Image::ARGB, juce::jmax (1, c.getWidth()),
-                       juce::jmax (1, c.getHeight()), true);
-    juce::Graphics g (image);
-    c.paintEntireComponent (g, true);
-    return image;
-}
 
-float coverageOf (const juce::Image& image, juce::Colour target)
-{
-    int matching = 0, sampled = 0;
 
-    for (int y = 0; y < image.getHeight(); ++y)
-    {
-        for (int x = 0; x < image.getWidth(); ++x, ++sampled)
-        {
-            const auto pixel = image.getPixelAt (x, y);
-
-            if (std::abs ((int) pixel.getRed() - (int) target.getRed()) < 24
-                && std::abs ((int) pixel.getGreen() - (int) target.getGreen()) < 24
-                && std::abs ((int) pixel.getBlue() - (int) target.getBlue()) < 24
-                && pixel.getAlpha() > 200)
-                ++matching;
-        }
-    }
-
-    return sampled > 0 ? (float) matching / (float) sampled : 0.0f;
-}
-
-float inkCoverage (const juce::Image& image)
-{
-    const auto background = image.getPixelAt (0, 0);
-    int differing = 0, sampled = 0;
-
-    for (int y = 0; y < image.getHeight(); ++y)
-        for (int x = 0; x < image.getWidth(); ++x, ++sampled)
-            if (image.getPixelAt (x, y) != background)
-                ++differing;
-
-    return sampled > 0 ? (float) differing / (float) sampled : 0.0f;
-}
 
 /** How much of `area`'s height the accent-coloured pixels span. A trace drawn at
     the wrong scale still puts pixels on screen; this says how tall it got.

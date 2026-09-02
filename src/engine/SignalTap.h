@@ -4,6 +4,7 @@
 #include <atomic>
 
 #include <juce_core/juce_core.h>
+#include "../model/Constants.h"
 
 namespace dew
 {
@@ -94,7 +95,7 @@ private:
 
     std::array<std::atomic<float>, capacity> samples {};
     std::atomic<juce::int64> writeCount { 0 };
-    std::atomic<double> sampleRate { 44100.0 };
+    std::atomic<double> sampleRate { kDefaultSampleRate };
 };
 
 } // namespace dew

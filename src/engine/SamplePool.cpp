@@ -58,7 +58,7 @@ const SamplePool::Entry& SamplePool::load (const juce::File& file)
             reader->read (audio.get(), 0, length, 0, true, true);
 
             entry.peaks = WaveformPeaks::compute (*audio);
-            entry.sourceSampleRate = reader->sampleRate > 0.0 ? reader->sampleRate : 44100.0;
+            entry.sourceSampleRate = reader->sampleRate > 0.0 ? reader->sampleRate : kDefaultSampleRate;
             entry.audio = std::move (audio);
         }
     }

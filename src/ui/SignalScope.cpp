@@ -227,7 +227,7 @@ void SignalScope::pushFrame (const float* mono, int numSamples, double sampleRat
     if (mono == nullptr || numSamples <= 0)
         return;
 
-    frameSampleRate = sampleRate > 0.0 ? sampleRate : 44100.0;
+    frameSampleRate = sampleRate > 0.0 ? sampleRate : kDefaultSampleRate;
 
     const auto kept = juce::jmin (numSamples, windowSamples);
     std::fill (window.begin(), window.end(), 0.0f);

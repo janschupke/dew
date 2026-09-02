@@ -9,6 +9,7 @@
 #include "../model/AutomationTargets.h"
 #include "../model/ProjectSchema.h"
 #include "Effects.h"
+#include "../model/Constants.h"
 
 namespace dew
 {
@@ -136,6 +137,22 @@ struct EffectChainSnapshot
 {
     std::array<EffectSnapshot, kMaxEffectsPerChain> slots;
     int numSlots = 0;
+
+    /** True if any slot would actually do something.
+
+        Written out twice before this - once in buildSnapshot to decide
+        `anyEffects`, once in the offline renderer to decide whether a stem needs
+        the stereo path - which is two chances for "an effect chain that matters"
+        to come to mean two different things.
+    */
+    bool anyEnabled() const noexcept
+    {
+        for (int i = 0; i < numSlots; ++i)
+            if (slots[(size_t) i].enabled)
+                return true;
+
+        return false;
+    }
 };
 
 /** What a channel gets its samples from. */
@@ -158,7 +175,7 @@ struct SampleSettings
     int fadeInSamples = 0;
     int fadeOutSamples = 0;
     float pitchRatio = 1.0f;
-    double sourceSampleRate = 44100.0;
+    double sourceSampleRate = kDefaultSampleRate;
     bool reverse = false;
     bool loop = false;
 };

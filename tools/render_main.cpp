@@ -5,6 +5,7 @@
 #include "engine/SamplePool.h"
 #include "model/ProjectFactory.h"
 #include "model/ProjectSerializer.h"
+#include "CliArgs.h"
 
 namespace
 {
@@ -57,76 +58,6 @@ int fail (const juce::String& message)
     return 1;
 }
 
-/** True for something like "-1" or "-.5", as opposed to an option. */
-bool looksLikeNegativeNumber (const juce::String& text)
-{
-    if (! text.startsWith ("-") || text.length() < 2)
-        return false;
-
-    const auto next = text[1];
-    return juce::CharacterFunctions::isDigit (next) || next == '.';
-}
-
-/** Command line, parsed so that both `--opt value` and `--opt=value` work.
-
-    juce::ArgumentList deliberately supports only the `=` form for long options
-    (getValueForOption returns the value after `=`, and takes the NEXT argument
-    only for short options). Accepting `--seconds 4` silently as "no value" is
-    exactly the kind of thing nobody notices until a render comes out the wrong
-    length, so the parsing is done here instead.
-
-    A value that is a negative number is taken as a value rather than as the next
-    option, so `--peak -1` means what it looks like.
-*/
-struct CommandLine
-{
-    explicit CommandLine (int argc, char* argv[])
-    {
-        juce::StringArray raw;
-
-        for (int i = 1; i < argc; ++i)
-            raw.add (juce::String::fromUTF8 (argv[i]));
-
-        for (int i = 0; i < raw.size(); ++i)
-        {
-            const auto& arg = raw[i];
-
-            if (! arg.startsWith ("-") || looksLikeNegativeNumber (arg))
-            {
-                positional.add (arg);
-                continue;
-            }
-
-            const auto name = arg.upToFirstOccurrenceOf ("=", false, false);
-
-            if (arg.contains ("="))
-            {
-                options.set (name, arg.fromFirstOccurrenceOf ("=", false, false));
-            }
-            else if (i + 1 < raw.size()
-                     && (! raw[i + 1].startsWith ("-") || looksLikeNegativeNumber (raw[i + 1])))
-            {
-                options.set (name, raw[i + 1]);
-                ++i;
-            }
-            else
-            {
-                options.set (name, "");
-            }
-        }
-    }
-
-    bool has (const juce::String& name) const  { return options.containsKey (name); }
-
-    juce::String value (const juce::String& name, const juce::String& fallback = {}) const
-    {
-        return has (name) && options[name].isNotEmpty() ? options[name] : fallback;
-    }
-
-    juce::StringPairArray options;
-    juce::StringArray positional;
-};
-
 bool parseFormat (const juce::String& text, dew::RenderFormat& format)
 {
     const auto lower = text.toLowerCase();
@@ -172,7 +103,7 @@ juce::File withExtensionFor (const juce::File& file, dew::RenderFormat format)
 
 int main (int argc, char* argv[])
 {
-    const CommandLine args (argc, argv);
+    const dew::CliArgs args (argc, argv);
 
     if (args.has ("--help") || args.has ("-h")
         || (args.positional.isEmpty() && args.options.size() == 0))

@@ -10,6 +10,7 @@
 #include "ui/RandomizePanel.h"
 #include "ui/DewLookAndFeel.h"
 #include "ui/design/DewGallery.h"
+#include "CliArgs.h"
 
 namespace
 {
@@ -41,47 +42,6 @@ int fail (const juce::String& message)
     std::cerr << "dew_shot: " << message << std::endl;
     return 1;
 }
-
-struct Args
-{
-    explicit Args (int argc, char* argv[])
-    {
-        juce::StringArray raw;
-
-        for (int i = 1; i < argc; ++i)
-            raw.add (juce::String::fromUTF8 (argv[i]));
-
-        for (int i = 0; i < raw.size(); ++i)
-        {
-            const auto& arg = raw[i];
-
-            if (! arg.startsWith ("-"))
-            {
-                positional.add (arg);
-                continue;
-            }
-
-            const auto name = arg.upToFirstOccurrenceOf ("=", false, false);
-
-            if (arg.contains ("="))
-                options.set (name, arg.fromFirstOccurrenceOf ("=", false, false));
-            else if (i + 1 < raw.size() && ! raw[i + 1].startsWith ("-"))
-                options.set (name, raw[++i]);
-            else
-                options.set (name, "");
-        }
-    }
-
-    bool has (const juce::String& n) const { return options.containsKey (n); }
-
-    juce::String value (const juce::String& n, const juce::String& fallback = {}) const
-    {
-        return has (n) && options[n].isNotEmpty() ? options[n] : fallback;
-    }
-
-    juce::StringPairArray options;
-    juce::StringArray positional;
-};
 
 juce::Rectangle<int> parseSize (const juce::String& text)
 {
@@ -144,7 +104,7 @@ juce::Result writePng (juce::Component& component, const juce::File& destination
 
 int main (int argc, char* argv[])
 {
-    const Args args (argc, argv);
+    const dew::CliArgs args (argc, argv);
 
     if (args.has ("--help") || args.has ("-h") || args.positional.isEmpty())
     {

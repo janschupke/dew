@@ -14,25 +14,16 @@
 #include "ui/SampleSection.h"
 #include "ui/StepGridComponent.h"
 #include "ui/design/Tokens.h"
+#include "PaintProbe.h"
+#include "TestSupport.h"
+
+using namespace dew::testing;
 
 using namespace dew;
 
 namespace
 {
 
-struct TempDir
-{
-    TempDir()
-        : dir (juce::File::getSpecialLocation (juce::File::tempDirectory)
-                   .getChildFile ("dew-audioui-" + juce::Uuid().toDashedString()))
-    {
-        dir.createDirectory();
-    }
-
-    ~TempDir() { dir.deleteRecursively(); }
-
-    juce::File dir;
-};
 
 /** A real WAV on disk. The pool reads files, so a test that wants a waveform
     drawn has to give it one - there is no in-memory shortcut, and inventing one
@@ -64,14 +55,6 @@ juce::File writeTone (const juce::File& file, int numSamples = 44100)
     return file;
 }
 
-juce::Image render (juce::Component& component)
-{
-    juce::Image image (juce::Image::ARGB, juce::jmax (1, component.getWidth()),
-                       juce::jmax (1, component.getHeight()), true);
-    juce::Graphics g (image);
-    component.paintEntireComponent (g, true);
-    return image;
-}
 
 /** Fraction of pixels that are not the background, as every UI test here does. */
 float inkFraction (const juce::Image& image)
@@ -135,7 +118,7 @@ int rowOf (const juce::ValueTree& project, const juce::ValueTree& channel)
 TEST_CASE ("an audio channel's row draws a waveform instead of cells", "[ui][audio]")
 {
     const juce::ScopedJuceInitialiser_GUI juceInit;
-    TempDir temp;
+    TempDir temp { "dew-audioui-" };
 
     ProjectDocument document;
     AudioEngine engine;
@@ -177,7 +160,7 @@ TEST_CASE ("an audio row ignores clicks that would toggle a step", "[ui][audio]"
     // The row is a waveform, not a sequence of cells. A click on it must not
     // write a note onto a channel that has no notes to play.
     const juce::ScopedJuceInitialiser_GUI juceInit;
-    TempDir temp;
+    TempDir temp { "dew-audioui-" };
 
     ProjectDocument document;
     AudioEngine engine;
@@ -222,7 +205,7 @@ TEST_CASE ("an audio row ignores clicks that would toggle a step", "[ui][audio]"
 TEST_CASE ("the sidebar swaps faces with the selected channel", "[ui][audio]")
 {
     const juce::ScopedJuceInitialiser_GUI juceInit;
-    TempDir temp;
+    TempDir temp { "dew-audioui-" };
 
     ProjectDocument document;
     EditorState editorState;
@@ -272,7 +255,7 @@ TEST_CASE ("the sidebar swaps faces with the selected channel", "[ui][audio]")
 TEST_CASE ("the sample section draws its audio and its trim handles", "[ui][audio]")
 {
     const juce::ScopedJuceInitialiser_GUI juceInit;
-    TempDir temp;
+    TempDir temp { "dew-audioui-" };
 
     ProjectDocument document;
     EditorState editorState;
@@ -361,7 +344,7 @@ TEST_CASE ("a missing audio file does not take the editor down", "[ui][audio]")
 
 TEST_CASE ("the sample pool reads a file once and notices a new one", "[audio][pool]")
 {
-    TempDir temp;
+    TempDir temp { "dew-audioui-" };
     SamplePool pool;
 
     const auto file = writeTone (temp.dir.getChildFile ("take.wav"), 2048);
@@ -386,7 +369,7 @@ TEST_CASE ("the sample pool reads a file once and notices a new one", "[audio][p
 
 TEST_CASE ("the pool resolves a relative path against the project", "[audio][pool]")
 {
-    TempDir temp;
+    TempDir temp { "dew-audioui-" };
 
     const auto projectFile = temp.dir.getChildFile ("Song.dew");
     const auto assets = temp.dir.getChildFile ("Song Assets");
