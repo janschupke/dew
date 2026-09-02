@@ -44,6 +44,7 @@ juce::Path check();          ///< a ticked menu item
 juce::Path lock();
 juce::Path chevronUp();
 juce::Path chevronDown();
+juce::Path chevronLeft();
 juce::Path chevronRight();
 juce::Path grip();            ///< drag handle
 
@@ -73,8 +74,11 @@ juce::Path fitted (juce::Path path, juce::Rectangle<float> bounds);
 /** Draws an icon centred in `bounds` in the given colour. */
 void draw (juce::Graphics&, const juce::Path&, juce::Rectangle<float> bounds, juce::Colour);
 
-/** Every icon with its name, for the gallery and for tests that must fail when
-    an icon is added but never drawn anywhere.
+/** Every icon with its name, for the gallery and for the tests that check each
+    one actually marks pixels inside its bounds and that no two share a name.
+
+    Registering here is what puts an icon in the gallery, so an icon left out of
+    this list is drawn by nothing and checked by nothing.
 */
 struct NamedIcon { const char* name; juce::Path (*make)(); };
 std::vector<NamedIcon> all();

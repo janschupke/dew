@@ -38,6 +38,7 @@ add_library(dew_core STATIC
 
   ui/DewLookAndFeel.cpp
   ui/EffectChainComponent.cpp
+  ui/EffectChainHost.cpp
   ui/AudioSettingsPanel.cpp
   ui/StatusBar.cpp
   ui/TransportBar.cpp

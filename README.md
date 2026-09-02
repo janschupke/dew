@@ -31,14 +31,17 @@ Start with **Demos → Getting Started** in the menu bar; there are four.
   pattern repeats it, as FL does. Drag clips between tracks, double-click one to open
   its pattern, and mute or solo a lane.
 - **Effects** — reverb, filter, delay, drive, chorus and a 3-band EQ, chained up to four
-  deep on any channel, mixer track or the master. An accordion: each effect a card that
-  expands in place, several open at once, dragged to reorder.
+  deep on any channel, mixer track or the master. One editor, pointed either way round:
+  down the instrument panel it is an accordion, each effect a card that expands in place
+  with several open at once; across the bottom of the mixer it is a single row of cards,
+  all open, scrolling sideways. Drag a card by its grip to reorder it.
 - **Automation** — clips on the playlist that drive a curated set of targets: channel
   and track volume and pan, master gain, and any parameter of any effect. Drag points
   on the curve, double-click to add one, alt-click to remove it.
-- **Mixer** — a fader, pan, mute, solo and a peak meter per insert, plus master. Each
-  strip lists the channels routed into it, and clicking one goes to that channel. Solo is
-  resolved across the whole mixer, so soloing one track silences the rest.
+- **Mixer** — two rows. Along the top, a fader, pan, mute, solo and a peak meter per
+  insert, plus master; along the bottom, the effect chain of whichever strip is selected.
+  Each strip lists the channels routed into it, and clicking one goes to that channel.
+  Solo is resolved across the whole mixer, so soloing one track silences the rest.
 - **Instrument** — one band-limited oscillator (sine/saw/square/triangle) with an
   octave, an ADSR envelope, and channel volume and pan.
 - **Transport** — play/stop, tempo, a pattern-or-song switch, and pattern
@@ -106,7 +109,8 @@ Four layers, each testable without the one above it:
 
 ```
 app/      Settings (window, view and device state, validated on read)
-ui/       ChannelRack · PianoRoll · Playlist · Mixer · TransportBar · EffectChain
+ui/       ChannelRack · PianoRoll · Playlist · Mixer · TransportBar
+          EffectChainHost (heading, add button, scrolling) → EffectChainComponent
           StatusBar · AudioSettingsPanel · PianoRollToolbar · RandomizePanel
           design/ (tokens, icons) · primitives/ · TimelineView (shared step↔pixel map)
           TimelineRuler (one ruler, drawn and clicked the same way in three editors)

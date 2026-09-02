@@ -22,15 +22,12 @@ void styleCaption (juce::Label& label, const juce::String& text)
 } // namespace
 
 InstrumentPanel::InstrumentPanel (ProjectDocument& d, EditorState& s)
-    : document (d), editorState (s), effectChain (d, s)
+    : document (d), editorState (s),
+      chainHost (d, s, EffectChainHost::Orientation::vertical)
 {
     setComponentID ("instrumentPanel");
 
-    chainViewport.setViewedComponent (&effectChain, false);
-    chainViewport.setScrollBarsShown (true, false);
-    addAndMakeVisible (chainViewport);
-
-    effectChain.onRequiredHeightChanged = [this] { layOutChain(); };
+    addAndMakeVisible (chainHost);
 
     titleLabel.setFont (tokens::type::font (tokens::type::title, true));
     titleLabel.setColour (juce::Label::textColourId, Palette::text);
@@ -194,8 +191,8 @@ void InstrumentPanel::refresh()
     const auto valid = channel.isValid();
 
     setEnabled (valid);
-    effectChain.setOwner (channel);
-    effectChain.setOwnerName (channel.isValid() ? channel[ids::name].toString() : juce::String());
+    chainHost.setOwner (channel, channel.isValid() ? channel[ids::name].toString()
+                                                   : juce::String());
 
     if (! valid)
     {
@@ -281,16 +278,7 @@ void InstrumentPanel::resized()
     placeKnob (levels.removeFromLeft (levels.getWidth() / 2), volumeLabel, volumeSlider);
     placeKnob (levels, panLabel, panSlider);
 
-    chainViewport.setBounds (area);
-    layOutChain();
-}
-
-void InstrumentPanel::layOutChain()
-{
-    // The chain is as tall as it needs to be; the viewport scrolls it.
-    const auto width = juce::jmax (120, chainViewport.getMaximumVisibleWidth());
-    effectChain.setSize (width, juce::jmax (chainViewport.getHeight(),
-                                            effectChain.getRequiredHeight()));
+    chainHost.setBounds (area);
 }
 
 } // namespace dew

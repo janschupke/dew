@@ -102,6 +102,21 @@ const EffectType allEffectTypes[] { EffectType::filter, EffectType::reverb, Effe
 class EffectChainComponent::Card : public juce::Component
 {
 public:
+    static constexpr int columns = 3;            ///< down a column
+    static constexpr int paramRowHeight = 68;
+    static constexpr int numberFieldHeight = 40;
+    static constexpr int captionHeight = 12;
+
+    // A column is sized rather than stretched: a number field wider than a hand
+    // is not easier to drag, only emptier. 88 is what the gallery gives a knob
+    // (72 wide) and a number field (86) with room for the cell inset.
+    static constexpr int paramColumnWidth = 88;
+    static constexpr int modeColumnWidth = 120;  ///< fits "Low pass" and the chevron
+    static constexpr int cardMinWidth = 276;     ///< what the header packs
+
+    /** Every card in a row is this tall. The chain quotes it to size the band. */
+    static constexpr int cardHeight = size::rowHeight + paramRowHeight + space::sm;
+
     Card (EffectChainComponent& o, ProjectDocument& d, EditorState& s, juce::ValueTree e, int i)
         : owner (o), document (d), editorState (s), effect (std::move (e)), index (i)
     {
@@ -151,15 +166,38 @@ public:
             repaint();
     }
 
-    /** Header plus, when open, the parameters. */
+    /** Header plus, when open, the parameters.
+
+        In a row every card is the same height whatever it holds. Cards of
+        different heights side by side do not read as a row, and nothing folds
+        there anyway.
+    */
     int getRequiredHeight() const
     {
+        if (owner.isHorizontal())
+            return cardHeight;
+
         if (! isExpanded())
             return size::rowHeight;
 
-        const auto rows = (params.size() + columns - 1) / columns;
+        const auto rows = (params.size() + columnCount() - 1) / columnCount();
         return size::rowHeight + rows * paramRowHeight + space::sm
                + (modeBox != nullptr ? size::controlHeight + space::sm : 0);
+    }
+
+    /** How wide the card has to be for its header and its one row of controls.
+
+        Only meaningful in a row; in a column a card is given the chain's width.
+        The floor is what the header packs: the grip, bypass and type icon on
+        the left, reorder and remove on the right, and enough between them for
+        the effect's name beside a "BYPASSED" that is drawn into the same space.
+    */
+    int getRequiredWidth() const
+    {
+        const auto mode = modeBox != nullptr ? modeColumnWidth : 0;
+
+        return juce::jmax (cardMinWidth,
+                           columnCount() * paramColumnWidth + mode + 2 * space::sm);
     }
 
     void refreshValues()
@@ -195,12 +233,16 @@ public:
         if (! draggingFromGrip)
             return;
 
-        const auto local = event.getEventRelativeTo (this).getPosition();
-        const auto rowsMoved = local.y / juce::jmax (1, size::rowHeight);
+        // Which card the cursor is over, not how far it has travelled divided
+        // by a row height: that divisor was size::rowHeight even though an open
+        // card is three times that tall, so dragging a card by its own height
+        // moved it three places. And in a row the cards are not even all the
+        // same width, so there is no divisor to use.
+        const auto target = owner.slotAtPosition (event.getEventRelativeTo (&owner).getPosition());
 
-        if (rowsMoved != 0)
+        if (target != index)
         {
-            owner.moveSlot (index, index + rowsMoved);
+            owner.moveSlot (index, target);
             draggingFromGrip = false;      // the cards were rebuilt under us
         }
     }
@@ -209,7 +251,7 @@ public:
     {
         const auto local = event.getEventRelativeTo (this).getPosition();
 
-        if (! draggingFromGrip && local.y < size::rowHeight
+        if (! owner.isHorizontal() && ! draggingFromGrip && local.y < size::rowHeight
             && event.getDistanceFromDragStart() < 4)
             owner.setSlotExpanded (index, ! isExpanded());
 
@@ -235,7 +277,7 @@ public:
                                         : colour::surfaceRaised);
         g.fillRoundedRectangle (header, radius::md);
 
-        if (isExpanded())
+        if (showsParameters())
             g.fillRect (header.withTop (header.getBottom() - radius::md));
 
         g.setColour (selected ? colour::accent : colour::outline);
@@ -259,11 +301,74 @@ public:
             g.setFont (type::font (type::caption, true));
             g.drawText ("BYPASSED", nameBounds, juce::Justification::centredRight, false);
         }
+
+        // The mode box is the one control in a row that does not caption
+        // itself, so beside captioned knobs it would be the odd one out.
+        if (! modeCaptionBounds.isEmpty())
+            paint::caption (g, modeCaptionBounds, "MODE", juce::Justification::centred);
     }
 
     void resized() override
     {
-        auto header = getLocalBounds().removeFromTop (size::rowHeight).reduced (space::xs, space::xxs);
+        layOutHeader (getLocalBounds().removeFromTop (size::rowHeight));
+
+        auto area = getLocalBounds().withTrimmedTop (size::rowHeight).reduced (space::sm, 0);
+        const auto visible = showsParameters();
+
+        modeCaptionBounds = {};
+
+        if (modeBox != nullptr)
+        {
+            modeBox->setVisible (visible);
+
+            if (visible)
+            {
+                if (owner.isHorizontal())
+                {
+                    // Beside the parameters as one more column, because there
+                    // is no room above them in a card of fixed height.
+                    auto cell = area.removeFromLeft (modeColumnWidth)
+                                    .removeFromTop (paramRowHeight)
+                                    .reduced (space::xxs, 0);
+
+                    modeCaptionBounds = cell.removeFromTop (captionHeight);
+                    modeBox->setBounds (cell.withSizeKeepingCentre (cell.getWidth(),
+                                                                    size::controlHeight));
+                }
+                else
+                {
+                    modeBox->setBounds (area.removeFromTop (size::controlHeight));
+                    area.removeFromTop (space::sm);
+                }
+            }
+        }
+
+        layOutParams (area, visible);
+    }
+
+private:
+    /** Whether the parameters are showing. Folding is a column behaviour; in a
+        row every card is open, so there is nothing for the chevron to do.
+    */
+    bool showsParameters() const { return owner.isHorizontal() || isExpanded(); }
+
+    /** Three to a row down a column, everything on one row across a band.
+
+        jmax because parametersFor() has a fallback that returns nothing, and a
+        column count of zero is both an infinite loop and a divide by zero in
+        layOutParams.
+    */
+    int columnCount() const
+    {
+        return owner.isHorizontal() ? juce::jmax (1, params.size()) : columns;
+    }
+
+    /** The header is identical whichever way the chain runs - only the reorder
+        arrows change, because they point the way the chain goes.
+    */
+    void layOutHeader (juce::Rectangle<int> bounds)
+    {
+        auto header = bounds.reduced (space::xs, space::xxs);
 
         gripBounds = header.removeFromLeft (14);
         header.removeFromLeft (space::xxs);
@@ -278,34 +383,36 @@ public:
         downButton.setBounds (header.removeFromRight (size::minTouchTarget));
         upButton.setBounds (header.removeFromRight (size::minTouchTarget));
         header.removeFromRight (space::xs);
-        expandButton.setBounds (header.removeFromRight (size::minTouchTarget + 4));
-        header.removeFromRight (space::sm);
+
+        expandButton.setVisible (! owner.isHorizontal());
+
+        if (! owner.isHorizontal())
+        {
+            expandButton.setBounds (header.removeFromRight (size::minTouchTarget + 4));
+            header.removeFromRight (space::sm);
+        }
 
         nameBounds = header;
 
         expandButton.setIcon (isExpanded() ? icons::chevronUp() : icons::chevronDown());
 
-        auto area = getLocalBounds().withTrimmedTop (size::rowHeight).reduced (space::sm, 0);
+        upButton.setIcon (owner.isHorizontal() ? icons::chevronLeft() : icons::chevronUp());
+        downButton.setIcon (owner.isHorizontal() ? icons::chevronRight() : icons::chevronDown());
+    }
 
-        const auto visible = isExpanded();
+    /** The parameter grid. Shared by both orientations: they differ only in how
+        many columns there are and in the rectangle they hand it.
+    */
+    void layOutParams (juce::Rectangle<int> area, bool visible)
+    {
+        const auto columnsHere = columnCount();
 
-        if (modeBox != nullptr)
-        {
-            modeBox->setVisible (visible);
-
-            if (visible)
-            {
-                modeBox->setBounds (area.removeFromTop (size::controlHeight));
-                area.removeFromTop (space::sm);
-            }
-        }
-
-        for (int i = 0; i < params.size(); i += columns)
+        for (int i = 0; i < params.size(); i += columnsHere)
         {
             auto row = visible ? area.removeFromTop (paramRowHeight) : juce::Rectangle<int>();
-            const auto width = juce::jmax (1, row.getWidth() / columns);
+            const auto width = juce::jmax (1, row.getWidth() / columnsHere);
 
-            for (int c = 0; c < columns && i + c < params.size(); ++c)
+            for (int c = 0; c < columnsHere && i + c < params.size(); ++c)
             {
                 auto* control = params[i + c];
                 auto* component = control->knob != nullptr ? (juce::Component*) control->knob.get()
@@ -327,17 +434,12 @@ public:
         }
     }
 
-private:
     struct ParamControl
     {
         std::unique_ptr<DewKnob> knob;
         std::unique_ptr<DewNumberField> field;
         juce::Identifier property;
     };
-
-    static constexpr int columns = 3;
-    static constexpr int paramRowHeight = 68;
-    static constexpr int numberFieldHeight = 40;
 
     void setHovered (bool shouldBeHovered)
     {
@@ -438,7 +540,7 @@ private:
     bool updating = false;
     bool draggingFromGrip = false;
 
-    juce::Rectangle<int> gripBounds, iconBounds, nameBounds;
+    juce::Rectangle<int> gripBounds, iconBounds, nameBounds, modeCaptionBounds;
 
     DewIconButton bypassButton { icons::power(), "Bypass this effect" };
     DewIconButton expandButton { icons::chevronDown(), "Show or hide this effect's controls" };
@@ -458,9 +560,6 @@ EffectChainComponent::EffectChainComponent (ProjectDocument& d, EditorState& s)
     : document (d), editorState (s)
 {
     setComponentID ("effectChain");
-
-    addButton.onClick = [this] { showAddMenu(); };
-    addAndMakeVisible (addButton);
 
     document.getState().addListener (this);
     editorState.addChangeListener (this);
@@ -482,13 +581,22 @@ void EffectChainComponent::setOwner (juce::ValueTree owner)
     rebuild();
 }
 
-void EffectChainComponent::setOwnerName (juce::String name)
+void EffectChainComponent::setOrientation (Orientation wanted)
 {
-    if (ownerName == name)
+    if (std::exchange (orientation, wanted) == wanted)
         return;
 
-    ownerName = std::move (name);
+    for (auto* card : cards)
+        card->resized();
+
+    resized();
     repaint();
+    notifyRequiredSizeChanged();
+}
+
+bool EffectChainComponent::canAddEffect() const
+{
+    return chainOwner.isValid() && cards.size() < kMaxEffectsPerChain;
 }
 
 juce::ValueTree EffectChainComponent::effectAt (int index) const
@@ -566,7 +674,7 @@ void EffectChainComponent::addEffectOfType (const juce::String& type)
     editorState.setEffectExpanded ((int) added[ids::id], true);
 }
 
-void EffectChainComponent::showAddMenu()
+void EffectChainComponent::showAddMenu (juce::Component& target)
 {
     if (ProjectEdits::countEffects (chainOwner) >= kMaxEffectsPerChain)
         return;
@@ -577,7 +685,7 @@ void EffectChainComponent::showAddMenu()
         menu.addItem (i + 1, effectTypeDisplayName (allEffectTypes[i]));
 
     menu.setLookAndFeel (&getLookAndFeel());
-    menu.showMenuAsync (juce::PopupMenu::Options().withTargetComponent (addButton),
+    menu.showMenuAsync (juce::PopupMenu::Options().withTargetComponent (target),
                         [this] (int choice)
                         {
                             if (choice > 0 && choice <= (int) std::size (allEffectTypes))
@@ -613,16 +721,19 @@ void EffectChainComponent::rebuild()
     for (int i = 0; i < cards.size(); ++i)
         cards[i]->setSelected (i == selectedSlot);
 
-    addButton.setEnabled (chainOwner.isValid() && cards.size() < kMaxEffectsPerChain);
-
     resized();
     repaint();
-    notifyHeightChanged();
+    notifyRequiredSizeChanged();
 }
 
 int EffectChainComponent::getRequiredHeight() const
 {
-    auto height = headingHeight;
+    // A row is one card tall whether it holds four effects or none, so the
+    // mixer's effect band does not change height as you fill it.
+    if (isHorizontal())
+        return Card::cardHeight + space::xs + space::sm;
+
+    auto height = 0;
 
     for (auto* card : cards)
         height += card->getRequiredHeight() + space::xs;
@@ -633,18 +744,54 @@ int EffectChainComponent::getRequiredHeight() const
     return height + space::sm;
 }
 
-void EffectChainComponent::notifyHeightChanged()
+int EffectChainComponent::getRequiredWidth() const
 {
-    if (onRequiredHeightChanged != nullptr)
-        onRequiredHeightChanged();
+    if (! isHorizontal())
+        return getWidth();
+
+    auto width = space::xs;
+
+    for (auto* card : cards)
+        width += card->getRequiredWidth() + space::xs;
+
+    return width;
+}
+
+int EffectChainComponent::slotAtPosition (juce::Point<int> position) const
+{
+    for (int i = 0; i < cards.size(); ++i)
+        if (isHorizontal() ? position.x < cards[i]->getRight()
+                           : position.y < cards[i]->getBottom())
+            return i;
+
+    return juce::jmax (0, cards.size() - 1);
+}
+
+void EffectChainComponent::notifyRequiredSizeChanged()
+{
+    if (onRequiredSizeChanged != nullptr)
+        onRequiredSizeChanged();
 }
 
 void EffectChainComponent::resized()
 {
     auto area = getLocalBounds();
 
-    auto heading = area.removeFromTop (headingHeight);
-    addButton.setBounds (heading.removeFromRight (size::iconButton).reduced (space::xxs));
+    if (isHorizontal())
+    {
+        // The band is one card tall; the cards run across it and the viewport
+        // scrolls sideways when there are more than fit.
+        auto row = area.removeFromTop (Card::cardHeight);
+        row.removeFromLeft (space::xs);
+
+        for (auto* card : cards)
+        {
+            card->setBounds (row.removeFromLeft (card->getRequiredWidth()));
+            row.removeFromLeft (space::xs);
+        }
+
+        return;
+    }
 
     for (auto* card : cards)
     {
@@ -655,20 +802,18 @@ void EffectChainComponent::resized()
 
 void EffectChainComponent::paint (juce::Graphics& g)
 {
-    paint::sectionHeading (g, { space::xxs, 0, getWidth() - size::iconButton, headingHeight },
-                           ownerName.isEmpty() ? "EFFECTS" : "EFFECTS - " + ownerName);
-
     if (! chainOwner.isValid())
     {
-        paint::emptyState (g, getLocalBounds().withTrimmedTop (headingHeight)
-                                                .removeFromTop (size::rowHeight * 2),
+        paint::emptyState (g, getLocalBounds().removeFromTop (size::rowHeight * 2),
                            "Nothing selected");
         return;
     }
 
     if (cards.isEmpty())
     {
-        const juce::Rectangle<int> empty { 0, headingHeight, getWidth(), size::rowHeight };
+        // Across the viewport, not across the content: with no cards the two
+        // are the same, and this way the message cannot start off-screen.
+        const juce::Rectangle<int> empty { 0, 0, getWidth(), size::rowHeight };
 
         paint::inertArea (g, empty);
 
@@ -714,7 +859,7 @@ void EffectChainComponent::changeListenerCallback (juce::ChangeBroadcaster*)
 
     resized();
     repaint();
-    notifyHeightChanged();
+    notifyRequiredSizeChanged();
 }
 
 } // namespace dew

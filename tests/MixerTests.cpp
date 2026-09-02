@@ -273,3 +273,45 @@ TEST_CASE ("strips scroll rather than vanishing when there are many", "[mixer][u
         REQUIRE (strip->getWidth() > 20);
     }
 }
+
+TEST_CASE ("the mixer is two rows: strips above, the effect chain below", "[mixer][ui]")
+{
+    // The chain used to be capped at 430px wide in a panel over a thousand
+    // wide, with a column of cards scrolling inside it. It is a full-width row
+    // now, and it must not eat into the strips or hang off the bottom.
+    const juce::ScopedJuceInitialiser_GUI juceInit;
+
+    ProjectDocument document;
+    EditorState editorState;
+    document.setState (ProjectFactory::createDefault(), true);
+
+    MixerComponent mixer { document, editorState };
+    mixer.setSize (1200, 700);
+    mixer.setVisible (true);
+    mixer.refresh();
+    mixer.resized();
+
+    auto* chainHost = mixer.findChildWithID ("effectChainHost");
+    REQUIRE (chainHost != nullptr);
+
+    juce::Component* stripArea = nullptr;
+
+    for (auto* child : mixer.getChildren())
+        if (dynamic_cast<juce::Viewport*> (child) != nullptr)
+            stripArea = child;
+
+    REQUIRE (stripArea != nullptr);
+
+    INFO ("strips " << stripArea->getBounds().toString()
+          << " chain " << chainHost->getBounds().toString());
+
+    // Two rows, in that order, neither overlapping the other.
+    REQUIRE (chainHost->getY() >= stripArea->getBottom());
+    REQUIRE (chainHost->getBottom() <= mixer.getHeight());
+
+    // The row spans the mixer rather than a fixed slot at one end of it.
+    REQUIRE (chainHost->getWidth() > mixer.getWidth() * 3 / 4);
+
+    // And the strips still get the larger share.
+    REQUIRE (stripArea->getHeight() > chainHost->getHeight());
+}

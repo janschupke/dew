@@ -5,17 +5,25 @@
 #include "../engine/AudioEngine.h"
 #include "../model/ProjectDocument.h"
 #include "EditorState.h"
-#include "EffectChainComponent.h"
+#include "EffectChainHost.h"
 
 namespace dew
 {
 
-/** Mixer strips: a fader, a pan knob, mute and solo per insert, plus master,
-    and the effect chain of whichever strip is selected.
+/** Two rows. Along the top, one strip per insert - a fader, a pan knob, mute
+    and solo - plus master; along the bottom, the effect chain of whichever
+    strip is selected, its effects side by side.
 
-    The chain editor is shared rather than one per strip: a strip is 78px wide,
+    The chain editor is shared rather than one per strip: a strip is 96px wide,
     which is nowhere near enough to edit a delay in, and a single editor also
     makes it obvious which chain you are looking at.
+
+    It runs across rather than down because that is the shape the space has. A
+    column of cards in the bottom of a mixer is a narrow slot with a thousand
+    pixels of empty panel beside it, and it was one - the chain used to be
+    capped at 430px wide and scrolled inside a 230px porthole.
+
+    Both rows scroll sideways independently, so both carry a scrollbar.
 */
 class MixerComponent : public juce::Component,
                        private juce::ValueTree::Listener,
@@ -54,12 +62,9 @@ private:
 
     void rebuildStrips();
     void pointChainAtSelectedTrack();
-    void layOutChain();
     void updateRouting();
 
     static constexpr int stripWidth = 96;
-    static constexpr int chainHeight = 230;
-    static constexpr int chainWidth = 430;
 
     ProjectDocument& document;
     EditorState& editorState;
@@ -67,8 +72,7 @@ private:
     juce::OwnedArray<Strip> strips;
     juce::Viewport stripViewport;
     juce::Component stripHolder;
-    EffectChainComponent effectChain;
-    juce::Viewport chainViewport;
+    EffectChainHost chainHost;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (MixerComponent)
 };

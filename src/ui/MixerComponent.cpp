@@ -372,7 +372,8 @@ private:
 // -----------------------------------------------------------------------------
 
 MixerComponent::MixerComponent (ProjectDocument& d, EditorState& s, AudioEngine* e)
-    : document (d), editorState (s), engine (e), effectChain (d, s)
+    : document (d), editorState (s), engine (e),
+      chainHost (d, s, EffectChainHost::Orientation::horizontal)
 {
     setComponentID ("mixer");
 
@@ -386,11 +387,8 @@ MixerComponent::MixerComponent (ProjectDocument& d, EditorState& s, AudioEngine*
     if (engine != nullptr)
         startTimerHz (tokens::motion::uiRefreshHz);
 
-    chainViewport.setViewedComponent (&effectChain, false);
-    chainViewport.setScrollBarsShown (true, false);
-    addAndMakeVisible (chainViewport);
+    addAndMakeVisible (chainHost);
 
-    effectChain.onRequiredHeightChanged = [this] { layOutChain(); };
     editorState.addChangeListener (this);
 
     document.getState().addListener (this);
@@ -472,21 +470,14 @@ void MixerComponent::pointChainAtSelectedTrack()
             if (track.hasType (ids::MIXER_TRACK) && (int) track[ids::id] == selectedId)
                 selectedTrack = track;
 
-    effectChain.setOwner (selectedTrack);
-    effectChain.setOwnerName (! selectedTrack.isValid() ? juce::String()
-                              : selectedId == masterTrackId ? "Master"
-                                                            : selectedTrack[ids::name].toString());
+    chainHost.setOwner (selectedTrack,
+                        ! selectedTrack.isValid() ? juce::String()
+                        : selectedId == masterTrackId ? "Master"
+                                                      : selectedTrack[ids::name].toString());
 
     for (auto* strip : strips)
         strip->setSelected (strip->isMasterStrip() ? selectedId == masterTrackId
                                                    : strip->getTrackId() == selectedId);
-}
-
-void MixerComponent::layOutChain()
-{
-    const auto width = juce::jmax (120, chainViewport.getMaximumVisibleWidth());
-    effectChain.setSize (width, juce::jmax (chainViewport.getHeight(),
-                                            effectChain.getRequiredHeight()));
 }
 
 void MixerComponent::changeListenerCallback (juce::ChangeBroadcaster*)
@@ -548,15 +539,15 @@ void MixerComponent::resized()
 {
     auto area = getLocalBounds().reduced (8);
 
-    // The chain editor gets the bottom of the panel, at a fixed height: strips
-    // need the rest and a fader is useless once it is shorter than a thumb.
-    auto chainArea = area.removeFromBottom (juce::jmin (chainHeight, area.getHeight() / 2));
+    // The chain row gets the bottom of the panel, at exactly the height one row
+    // of cards needs: strips need the rest and a fader is useless once it is
+    // shorter than a thumb. Still halved as a floor, for a very short window.
+    const auto wanted = chainHost.getPreferredHeight() + tokens::space::md;
+    auto chainArea = area.removeFromBottom (juce::jmin (wanted, area.getHeight() / 2));
 
-    // Capped rather than stretched: a number field wider than a hand is not
-    // easier to drag, only emptier.
-    chainViewport.setBounds (chainArea.withTrimmedTop (tokens::space::md)
-                                      .withWidth (juce::jmin (chainWidth, chainArea.getWidth())));
-    layOutChain();
+    // Full width. The cards size themselves and scroll; it is the row that has
+    // the width to give them.
+    chainHost.setBounds (chainArea.withTrimmedTop (tokens::space::md));
 
     stripViewport.setBounds (area);
 

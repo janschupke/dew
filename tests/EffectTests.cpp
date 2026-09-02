@@ -582,12 +582,36 @@ namespace
 
 struct ChainHarness
 {
-    ChainHarness()
+    explicit ChainHarness (EffectChainComponent::Orientation orientation
+                               = EffectChainComponent::Orientation::vertical)
     {
         document.setState (ProjectFactory::createDefault(), true);
+        chain.setOrientation (orientation);
         chain.setSize (300, 400);
         chain.setVisible (true);
         chain.setOwner (channel());
+    }
+
+    /** What EffectChainHost does after a rebuild: give the chain the size it
+        asked for along the axis it runs. A bare chain has no host to do it.
+    */
+    void layOutLikeAHost()
+    {
+        if (chain.isHorizontal())
+            chain.setSize (juce::jmax (300, chain.getRequiredWidth()), 140);
+        else
+            chain.setSize (300, juce::jmax (400, chain.getRequiredHeight()));
+    }
+
+    /** The cards, which are the chain's only children. */
+    juce::Array<juce::Rectangle<int>> cardBounds()
+    {
+        juce::Array<juce::Rectangle<int>> bounds;
+
+        for (auto* child : chain.getChildren())
+            bounds.add (child->getBounds());
+
+        return bounds;
     }
 
     juce::ValueTree channel() { return document.getState().getChildWithName (ids::CHANNEL); }
@@ -832,6 +856,141 @@ TEST_CASE ("dragging a card by its grip reorders the chain", "[effects][ui]")
 
     h.chain.moveSlot (2, -5);
     REQUIRE (h.typesInOrder() == juce::StringArray { "reverb", "filter", "delay" });
+}
+
+TEST_CASE ("the grip drops a card where the cursor is", "[effects][ui]")
+{
+    // The reorder used to divide how far the cursor had travelled by a row
+    // height - and by the FOLDED row height, though an open card is three times
+    // that tall, so dragging one card down by its own height moved it three
+    // places. A row's cards are not all the same width either, so there is no
+    // divisor that would work. It is a hit test now.
+    const juce::ScopedJuceInitialiser_GUI juceInit;
+
+    for (const auto orientation : { EffectChainComponent::Orientation::vertical,
+                                    EffectChainComponent::Orientation::horizontal })
+    {
+        ChainHarness h { orientation };
+
+        h.chain.addEffectOfType ("filter");
+        h.chain.addEffectOfType ("delay");
+        h.chain.addEffectOfType ("reverb");
+        h.layOutLikeAHost();
+
+        const auto cards = h.cardBounds();
+        REQUIRE (cards.size() == 3);
+
+        for (int i = 0; i < cards.size(); ++i)
+        {
+            INFO ("card " << i << " at " << cards[i].toString());
+            REQUIRE (h.chain.slotAtPosition (cards[i].getCentre()) == i);
+        }
+
+        // Dragged past the end it lands on the last card, not out of range.
+        REQUIRE (h.chain.slotAtPosition (cards.getLast().getBottomRight()
+                                         + juce::Point<int> { 400, 400 }) == 2);
+    }
+}
+
+TEST_CASE ("a chain in a row lays its cards side by side", "[effects][ui]")
+{
+    const juce::ScopedJuceInitialiser_GUI juceInit;
+    ChainHarness h { EffectChainComponent::Orientation::horizontal };
+
+    h.chain.addEffectOfType ("filter");
+    h.chain.addEffectOfType ("delay");
+    h.chain.addEffectOfType ("reverb");
+    h.chain.addEffectOfType ("eq");
+    h.layOutLikeAHost();
+
+    const auto cards = h.cardBounds();
+    REQUIRE (cards.size() == 4);
+
+    for (int i = 0; i < cards.size(); ++i)
+    {
+        INFO ("card " << i << " at " << cards[i].toString());
+
+        // Every card has real width. removeFromLeft on a fixed rectangle clamps
+        // at the right edge, which is how a mixer full of strips used to give
+        // the last of them nothing at all - the chain asks for the width it
+        // needs and the host scrolls it instead.
+        REQUIRE (cards[i].getWidth() > 0);
+        REQUIRE (cards[i].getY() == cards[0].getY());
+        REQUIRE (cards[i].getHeight() == cards[0].getHeight());
+
+        if (i > 0)
+            REQUIRE (cards[i].getX() >= cards[i - 1].getRight());
+    }
+
+    REQUIRE (cards.getLast().getRight() <= h.chain.getRequiredWidth());
+}
+
+TEST_CASE ("a row of cards is one card tall however many effects it holds", "[effects][ui]")
+{
+    // The mixer sizes its effect row from this. A row that grew as you filled
+    // it would shove the faders about every time you added a delay.
+    const juce::ScopedJuceInitialiser_GUI juceInit;
+    ChainHarness h { EffectChainComponent::Orientation::horizontal };
+
+    const auto rowHeight = h.chain.getRequiredHeight();
+    auto width = h.chain.getRequiredWidth();
+
+    for (const auto* type : { "filter", "delay", "reverb", "eq" })
+    {
+        h.chain.addEffectOfType (type);
+        h.layOutLikeAHost();
+
+        INFO ("after adding " << type);
+        REQUIRE (h.chain.getRequiredHeight() == rowHeight);
+        REQUIRE (h.chain.getRequiredWidth() > width);
+
+        width = h.chain.getRequiredWidth();
+    }
+
+    // Folding is hidden in a row, and asking for it changes nothing.
+    h.chain.setSlotExpanded (0, false);
+    h.layOutLikeAHost();
+
+    REQUIRE (h.chain.getRequiredHeight() == rowHeight);
+    REQUIRE (h.cardBounds()[0].getHeight() == h.cardBounds()[1].getHeight());
+}
+
+TEST_CASE ("a chain in a column still stacks its cards", "[effects][ui]")
+{
+    // The instrument panel's chain. Nothing about the mixer's row reaches it,
+    // which is why vertical is the default rather than a mode you switch to.
+    const juce::ScopedJuceInitialiser_GUI juceInit;
+    ChainHarness h;
+
+    REQUIRE (! h.chain.isHorizontal());
+
+    h.chain.addEffectOfType ("filter");
+    h.chain.addEffectOfType ("delay");
+    h.chain.addEffectOfType ("reverb");
+    h.layOutLikeAHost();
+
+    const auto cards = h.cardBounds();
+    REQUIRE (cards.size() == 3);
+
+    for (int i = 0; i < cards.size(); ++i)
+    {
+        INFO ("card " << i << " at " << cards[i].toString());
+
+        REQUIRE (cards[i].getHeight() > 0);
+        REQUIRE (cards[i].getX() == cards[0].getX());
+        REQUIRE (cards[i].getWidth() == cards[0].getWidth());
+
+        if (i > 0)
+            REQUIRE (cards[i].getY() >= cards[i - 1].getBottom());
+    }
+
+    // And a card still folds, which is the whole reason the column exists.
+    h.chain.setSlotExpanded (0, true);
+    h.chain.setSlotExpanded (1, false);
+    h.layOutLikeAHost();
+
+    const auto folded = h.cardBounds();
+    REQUIRE (folded[0].getHeight() > folded[1].getHeight());
 }
 
 TEST_CASE ("a frequency field drags by ratio, not by hertz", "[effects][ui]")
