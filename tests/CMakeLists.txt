@@ -60,11 +60,13 @@ add_executable(dew_tests
   RealtimeTests.cpp
   CatalogTests.cpp
   MotionTests.cpp
+  ScoreLexerTests.cpp
 )
 
 target_link_libraries(dew_tests
   PRIVATE
     dew_ui
+    dew_lang
     Catch2::Catch2WithMain
     juce::juce_recommended_config_flags
     juce::juce_recommended_warning_flags
@@ -89,7 +91,7 @@ target_compile_definitions(dew_tests PRIVATE
 # paths and its natural separator is the semicolon, which is also CMake's list
 # separator, so passing it as a definition turns each path into its own -D flag.
 set(DEW_GATE_SOURCES "")
-foreach(dew_layer dew_model dew_engine dew_io dew_design dew_app dew_ui)
+foreach(dew_layer dew_lang dew_model dew_engine dew_io dew_design dew_app dew_ui)
   list(APPEND DEW_GATE_SOURCES "$<TARGET_PROPERTY:${dew_layer},SOURCES>")
 endforeach()
 

@@ -86,7 +86,7 @@ TEST_CASE ("every layer is represented in the scanned sources", "[build][gate]")
 {
     // Named directories rather than a count, so moving one layer out cannot be
     // masked by another growing.
-    for (const auto* layer : { "model", "engine", "io", "ui", "app" })
+    for (const auto* layer : { "lang", "model", "engine", "io", "ui", "app" })
     {
         auto seen = false;
 
@@ -113,6 +113,88 @@ TEST_CASE ("no source file includes another layer by relative path", "[build][ga
                                   { return line.trim().startsWith ("#include \"../"); });
 
     INFO ("relative-parent includes:\n" << found.joinIntoString ("\n"));
+    CHECK (found.isEmpty());
+}
+
+TEST_CASE ("the score language layer knows nothing of JUCE", "[build][layering]")
+{
+    // dew_lang links no JUCE, so a leak would normally be a link error - but a
+    // header-only one is not. juce::String would compile, and the first thing it
+    // would cost is diagnostics reported in CHARACTER indices where the editor
+    // needs BYTE offsets; the second is juce::Random becoming part of the file
+    // format the moment a seeded score is rendered.
+    //
+    // So the rule is checked at the source, where it is actually stated.
+    juce::StringArray found;
+
+    const juce::File langDir { juce::String (DEW_SOURCE_DIR) + "/lang" };
+    REQUIRE (langDir.isDirectory());
+
+    auto scanned = 0;
+
+    for (const auto& entry : juce::RangedDirectoryIterator (langDir, true, "*.cpp;*.h"))
+    {
+        const auto file = entry.getFile();
+        ++scanned;
+
+        juce::StringArray lines;
+        lines.addLines (file.loadFileAsString());
+
+        // Comments are stripped before the check, because these files
+        // legitimately TALK about juce::CodeDocument::Iterator - the shared
+        // scanner's other instantiation lives in the UI layer, and the comment
+        // saying so is what makes the design legible. A gate that reads its own
+        // prose reports the documentation as the violation.
+        //
+        // Tracked across lines rather than per line, because dew's doc comments
+        // continue without a leading asterisk, so "starts with *" sees the body
+        // of every /** */ block as code.
+        auto inBlockComment = false;
+
+        for (int i = 0; i < lines.size(); ++i)
+        {
+            auto code = lines[i];
+
+            if (inBlockComment)
+            {
+                const auto closes = code.indexOf ("*/");
+
+                if (closes < 0)
+                    continue;
+
+                code = code.substring (closes + 2);
+                inBlockComment = false;
+            }
+
+            if (const auto opens = code.indexOf ("/*"); opens >= 0)
+            {
+                const auto closes = code.indexOf (opens + 2, "*/");
+
+                if (closes < 0)
+                {
+                    code = code.substring (0, opens);
+                    inBlockComment = true;
+                }
+                else
+                {
+                    code = code.substring (0, opens) + code.substring (closes + 2);
+                }
+            }
+
+            if (const auto lineComment = code.indexOf ("//"); lineComment >= 0)
+                code = code.substring (0, lineComment);
+
+            if (code.contains ("#include <juce") || code.contains ("juce::"))
+                found.add (file.getFileName() + ":" + juce::String (i + 1) + "  " + code.trim());
+        }
+    }
+
+    // A gate that scanned nothing passes silently, which is the failure mode
+    // every other gate here is written to avoid.
+    INFO ("scanned " << scanned << " files under src/lang");
+    REQUIRE (scanned > 0);
+
+    INFO ("JUCE in the language layer:\n" << found.joinIntoString ("\n"));
     CHECK (found.isEmpty());
 }
 

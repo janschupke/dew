@@ -64,6 +64,33 @@ juce_add_binary_data(dew_demo_data
 )
 
 # ------------------------------------------------------------------------------
+# dew_lang - the score language. Depends on nothing at all, JUCE included.
+#
+# A compiler that cannot reach into the document is one whose only output is its
+# IR, which is what keeps the boundary honest. It also makes the tests instant -
+# no ScopedJuceInitialiser, no message thread - lets diagnostics use plain UTF-8
+# byte offsets rather than juce::String's character indices, and keeps parser
+# iteration off the DAW's build graph.
+#
+# The juce_recommended_* targets carry compile options only, no include
+# directories, so linking them adds no JUCE while keeping this library under the
+# same warnings-as-errors gate as everything else. That it stays JUCE-free is
+# checked by a source gate, because a header-only include would still compile.
+# ------------------------------------------------------------------------------
+add_library(dew_lang STATIC
+  lang/SourceRange.cpp
+  lang/Lexer.cpp
+)
+
+target_include_directories(dew_lang PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}")
+
+target_link_libraries(dew_lang
+  PRIVATE
+    juce::juce_recommended_config_flags
+    juce::juce_recommended_warning_flags
+)
+
+# ------------------------------------------------------------------------------
 # dew_model - the document. Depends on nothing of dew's.
 # ------------------------------------------------------------------------------
 add_library(dew_model STATIC
