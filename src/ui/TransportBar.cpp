@@ -1,7 +1,9 @@
 #include "TransportBar.h"
 
 #include "../model/Ids.h"
+#include "../model/ProjectEdits.h"
 #include "DewLookAndFeel.h"
+#include "design/Tokens.h"
 
 namespace dew
 {
@@ -12,7 +14,6 @@ TransportBar::TransportBar (ProjectDocument& d, AudioEngine& e, EditorState& s)
     setComponentID ("transportBar");
     patternBox.setComponentID ("patternSelector");
 
-    playButton.setClickingTogglesState (false);
     playButton.onClick = [this]
     {
         if (engine.isPlaying())
@@ -20,7 +21,7 @@ TransportBar::TransportBar (ProjectDocument& d, AudioEngine& e, EditorState& s)
         else
             engine.play();
 
-        playButton.setButtonText (engine.isPlaying() ? "Pause" : "Play");
+        playButton.setIcon (engine.isPlaying() ? icons::pause() : icons::play());
     };
     addAndMakeVisible (playButton);
 
@@ -28,20 +29,24 @@ TransportBar::TransportBar (ProjectDocument& d, AudioEngine& e, EditorState& s)
     {
         engine.stop();
         engine.rewind();
-        playButton.setButtonText ("Play");
+        playButton.setIcon (icons::play());
     };
     addAndMakeVisible (stopButton);
 
-    tempoSlider.setRange (20.0, 300.0, 0.5);
-    tempoSlider.setNumDecimalPlacesToDisplay (1);
-    tempoSlider.setTextValueSuffix (" bpm");
-    tempoSlider.onValueChange = [this]
+    tempoField.setRange (20.0, 300.0, 0.1);
+    tempoField.setNumDecimalPlaces (1);
+    tempoField.setSuffix (" bpm");
+    tempoField.setTooltip ("Tempo - drag up and down, or double-click to type");
+    tempoField.onEditStart = [this]
+    {
+        document.getUndoManager().beginNewTransaction ("Change tempo");
+    };
+    tempoField.onValueChange = [this]
     {
         auto& undo = document.getUndoManager();
-        undo.beginNewTransaction ("Change tempo");
-        document.getState().setProperty (ids::tempoBpm, tempoSlider.getValue(), &undo);
+        document.getState().setProperty (ids::tempoBpm, tempoField.getValue(), &undo);
     };
-    addAndMakeVisible (tempoSlider);
+    addAndMakeVisible (tempoField);
 
     modeButton.setClickingTogglesState (true);
     modeButton.onClick = [this]
@@ -68,6 +73,57 @@ TransportBar::TransportBar (ProjectDocument& d, AudioEngine& e, EditorState& s)
     };
     addAndMakeVisible (patternBox);
 
+    addPatternButton.onClick = [this]
+    {
+        auto& undo = document.getUndoManager();
+        undo.beginNewTransaction ("Add pattern");
+        const auto pattern = ProjectEdits::addPattern (document.getState(), &undo);
+        editorState.setCurrentPatternId ((int) pattern[ids::id]);
+        engine.setCurrentPatternId ((int) pattern[ids::id]);
+    };
+    addAndMakeVisible (addPatternButton);
+
+    clonePatternButton.onClick = [this]
+    {
+        auto& undo = document.getUndoManager();
+        undo.beginNewTransaction ("Duplicate pattern");
+        const auto copy = ProjectEdits::duplicatePattern (document.getState(),
+                                                          currentPattern(), &undo);
+
+        if (copy.isValid())
+        {
+            editorState.setCurrentPatternId ((int) copy[ids::id]);
+            engine.setCurrentPatternId ((int) copy[ids::id]);
+        }
+    };
+    addAndMakeVisible (clonePatternButton);
+
+    deletePatternButton.onClick = [this]
+    {
+        auto& undo = document.getUndoManager();
+        undo.beginNewTransaction ("Delete pattern");
+        ProjectEdits::removePattern (document.getState(), currentPattern(), &undo);
+    };
+    addAndMakeVisible (deletePatternButton);
+
+    patternLengthField.setRange (1.0, 256.0, 1.0);
+    patternLengthField.setNumDecimalPlaces (0);
+    patternLengthField.setCaption ("STEPS");
+    patternLengthField.setTooltip ("Pattern length in steps - drag up and down");
+    patternLengthField.onEditStart = [this]
+    {
+        document.getUndoManager().beginNewTransaction ("Change pattern length");
+    };
+    patternLengthField.onValueChange = [this]
+    {
+        auto pattern = currentPattern();
+
+        if (pattern.isValid())
+            pattern.setProperty (ids::lengthSteps, (int) patternLengthField.getValue(),
+                                 &document.getUndoManager());
+    };
+    addAndMakeVisible (patternLengthField);
+
     positionLabel.setFont (juce::FontOptions (juce::Font::getDefaultMonospacedFontName(), 13.0f, juce::Font::plain));
     positionLabel.setColour (juce::Label::textColourId, Palette::playhead);
     positionLabel.setJustificationType (juce::Justification::centredLeft);
@@ -93,13 +149,36 @@ TransportBar::~TransportBar()
 
 void TransportBar::refresh()
 {
-    tempoSlider.setValue ((double) document.getState()[ids::tempoBpm], juce::dontSendNotification);
+    tempoField.setValue ((double) document.getState()[ids::tempoBpm], juce::dontSendNotification);
     rebuildPatternList();
+    refreshPatternLength();
 
     const auto song = engine.getMode() == Transport::Mode::song;
     modeButton.setToggleState (song, juce::dontSendNotification);
     modeButton.setButtonText (song ? "Song" : "Pattern");
-    playButton.setButtonText (engine.isPlaying() ? "Pause" : "Play");
+    playButton.setIcon (engine.isPlaying() ? icons::pause() : icons::play());
+
+    // Otherwise the readout is blank until the first timer tick.
+    updatePositionLabel();
+}
+
+juce::ValueTree TransportBar::currentPattern() const
+{
+    return ProjectEdits::findPattern (document.getState(), editorState.getCurrentPatternId());
+}
+
+void TransportBar::refreshPatternLength()
+{
+    const auto pattern = currentPattern();
+
+    patternLengthField.setEnabled (pattern.isValid());
+
+    if (pattern.isValid())
+        patternLengthField.setValue ((double) (int) pattern[ids::lengthSteps],
+                                     juce::dontSendNotification);
+
+    // Deleting the only pattern would leave nothing to edit or play.
+    deletePatternButton.setEnabled (patternBox.getNumItems() > 1);
 }
 
 void TransportBar::setStatusText (const juce::String& text)
@@ -133,26 +212,36 @@ void TransportBar::changeListenerCallback (juce::ChangeBroadcaster*)
 {
     if (patternBox.getSelectedId() != editorState.getCurrentPatternId())
         patternBox.setSelectedId (editorState.getCurrentPatternId(), juce::dontSendNotification);
+
+    refreshPatternLength();
 }
 
 void TransportBar::valueTreePropertyChanged (juce::ValueTree& tree, const juce::Identifier& property)
 {
     if (property == ids::tempoBpm)
-        tempoSlider.setValue ((double) tree[ids::tempoBpm], juce::dontSendNotification);
+        tempoField.setValue ((double) tree[ids::tempoBpm], juce::dontSendNotification);
     else if (property == ids::name && tree.hasType (ids::PATTERN))
         rebuildPatternList();
+    else if (property == ids::lengthSteps && tree.hasType (ids::PATTERN))
+        refreshPatternLength();
 }
 
 void TransportBar::valueTreeChildAdded (juce::ValueTree&, juce::ValueTree& child)
 {
     if (child.hasType (ids::PATTERN))
+    {
         rebuildPatternList();
+        refreshPatternLength();
+    }
 }
 
 void TransportBar::valueTreeChildRemoved (juce::ValueTree&, juce::ValueTree& child, int)
 {
     if (child.hasType (ids::PATTERN))
+    {
         rebuildPatternList();
+        refreshPatternLength();
+    }
 }
 
 void TransportBar::timerCallback()
@@ -177,31 +266,58 @@ void TransportBar::updatePositionLabel()
 
 void TransportBar::paint (juce::Graphics& g)
 {
-    g.fillAll (Palette::panel);
-    g.setColour (Palette::line);
+    g.fillAll (tokens::colour::surface);
+
+    g.setColour (tokens::colour::dividerStrong);
     g.drawHorizontalLine (getHeight() - 1, 0.0f, (float) getWidth());
+
+    // Separators between the transport, the pattern controls and the readout.
+    for (auto x : groupDividers)
+    {
+        g.setColour (tokens::colour::divider);
+        g.drawVerticalLine (x, 8.0f, (float) getHeight() - 8.0f);
+    }
 }
 
 void TransportBar::resized()
 {
-    auto area = getLocalBounds().reduced (8, 6);
+    using namespace tokens;
 
-    playButton.setBounds (area.removeFromLeft (72));
-    area.removeFromLeft (6);
-    stopButton.setBounds (area.removeFromLeft (64));
-    area.removeFromLeft (14);
+    groupDividers.clear();
 
-    tempoSlider.setBounds (area.removeFromLeft (150));
-    area.removeFromLeft (14);
+    auto area = getLocalBounds().reduced (space::md, space::sm);
+    const auto controlHeight = juce::jmin (size::controlHeight, area.getHeight());
 
-    modeButton.setBounds (area.removeFromLeft (84));
-    area.removeFromLeft (6);
-    patternBox.setBounds (area.removeFromLeft (150));
-    area.removeFromLeft (14);
+    const auto place = [&area, controlHeight] (juce::Component& c, int width)
+    {
+        c.setBounds (area.removeFromLeft (width).withHeight (controlHeight));
+        area.removeFromLeft (space::xs);
+    };
 
-    positionLabel.setBounds (area.removeFromLeft (90));
+    place (playButton, 30);
+    place (stopButton, 30);
+    area.removeFromLeft (space::sm);
+    place (tempoField, 96);
+    area.removeFromLeft (space::sm);
+    place (modeButton, 78);
 
-    statusLabel.setBounds (area);
+    area.removeFromLeft (space::sm);
+    groupDividers.add (area.getX());
+    area.removeFromLeft (space::md);
+
+    place (patternBox, 148);
+    place (addPatternButton, 26);
+    place (clonePatternButton, 26);
+    place (deletePatternButton, 26);
+    area.removeFromLeft (space::xs);
+    patternLengthField.setBounds (area.removeFromLeft (68).withHeight (juce::jmax (34, controlHeight)));
+    area.removeFromLeft (space::md);
+
+    groupDividers.add (area.getX());
+    area.removeFromLeft (space::md);
+
+    positionLabel.setBounds (area.removeFromLeft (84).withHeight (controlHeight));
+    statusLabel.setBounds (area.withHeight (controlHeight));
 }
 
 } // namespace dew

@@ -221,3 +221,117 @@ TEST_CASE ("edits refuse to produce nonsense values", "[edits]")
     REQUIRE ((int) clip[ids::startBar] == 0);
     REQUIRE ((int) clip[ids::lengthBars] == 1);
 }
+
+TEST_CASE ("duplicating a pattern copies its notes under a new identity", "[edits][patterns]")
+{
+    auto project = ProjectFactory::createDefault();
+    auto source  = ProjectEdits::findPattern (project, 1);
+    juce::UndoManager undo;
+
+    ProjectEdits::toggleStep (source, 1, 0, 60, &undo);
+    ProjectEdits::toggleStep (source, 1, 4, 67, &undo);
+    source.setProperty (ids::lengthSteps, 32, &undo);
+
+    const auto copy = ProjectEdits::duplicatePattern (project, source, &undo);
+
+    REQUIRE (copy.isValid());
+    REQUIRE ((int) copy[ids::id] != (int) source[ids::id]);
+    REQUIRE (countChildren (copy, ids::NOTE) == 2);
+    REQUIRE ((int) copy[ids::lengthSteps] == 32);
+
+    // A deep copy, not a shared reference: editing the copy must not reach back.
+    auto mutableCopy = copy;
+    ProjectEdits::toggleStep (mutableCopy, 1, 8, 72, &undo);
+    REQUIRE (countChildren (copy, ids::NOTE) == 3);
+    REQUIRE (countChildren (source, ids::NOTE) == 2);
+
+    // It lands next to the original rather than at the end of the list.
+    REQUIRE (project.indexOf (copy) == project.indexOf (source) + 1);
+
+    // An auto-named pattern gets the next auto name; a renamed one is marked.
+    REQUIRE (copy[ids::name].toString() == "Pattern " + juce::String ((int) copy[ids::id]));
+
+    source.setProperty (ids::name, "Drums", &undo);
+    const auto second = ProjectEdits::duplicatePattern (project, source, &undo);
+    REQUIRE (second[ids::name].toString() == "Drums copy");
+}
+
+TEST_CASE ("removing a pattern removes the clips that referred to it", "[edits][patterns]")
+{
+    auto project = ProjectFactory::createDefault();
+    juce::UndoManager undo;
+
+    const auto first  = ProjectEdits::findPattern (project, 1);
+    const auto second = ProjectEdits::addPattern (project, &undo);
+    const auto secondId = (int) second[ids::id];
+
+    auto playlist = project.getChildWithName (ids::PLAYLIST);
+    auto track    = playlist.getChild (0);
+    REQUIRE (track.hasType (ids::PLAYLIST_TRACK));
+
+    ProjectEdits::addClip (track, (int) first[ids::id], 0, 1, &undo);
+    ProjectEdits::addClip (track, secondId, 1, 1, &undo);
+    ProjectEdits::addClip (track, secondId, 2, 1, &undo);
+
+    const auto clipsBefore = countChildren (track, ids::CLIP);
+
+    REQUIRE (ProjectEdits::removePattern (project, second, &undo));
+    REQUIRE (countChildren (project, ids::PATTERN) == 1);
+
+    // Both clips that pointed at it go; the one that did not, stays.
+    REQUIRE (countChildren (track, ids::CLIP) == clipsBefore - 2);
+
+    for (const auto& clip : track)
+        if (clip.hasType (ids::CLIP))
+            REQUIRE ((int) clip[ids::patternId] != secondId);
+}
+
+TEST_CASE ("the last pattern cannot be removed", "[edits][patterns]")
+{
+    auto project = ProjectFactory::createDefault();
+    juce::UndoManager undo;
+
+    REQUIRE (countChildren (project, ids::PATTERN) == 1);
+    REQUIRE (! ProjectEdits::removePattern (project, ProjectEdits::findPattern (project, 1), &undo));
+    REQUIRE (countChildren (project, ids::PATTERN) == 1);
+}
+
+TEST_CASE ("pattern deletion is one undo step", "[edits][patterns][undo]")
+{
+    auto project = ProjectFactory::createDefault();
+    juce::UndoManager undo;
+
+    const auto second = ProjectEdits::addPattern (project, &undo);
+    auto playlist = project.getChildWithName (ids::PLAYLIST);
+    auto track    = playlist.getChild (0);
+    ProjectEdits::addClip (track, (int) second[ids::id], 0, 1, &undo);
+
+    const auto patterns = countChildren (project, ids::PATTERN);
+    const auto clips    = countChildren (track, ids::CLIP);
+
+    undo.beginNewTransaction ("Delete pattern");
+    REQUIRE (ProjectEdits::removePattern (project, second, &undo));
+    REQUIRE (undo.undo());
+
+    REQUIRE (countChildren (project, ids::PATTERN) == patterns);
+    REQUIRE (countChildren (track, ids::CLIP) == clips);
+}
+
+TEST_CASE ("a pattern length that fits its notes covers the last one entirely", "[edits][patterns]")
+{
+    auto project = ProjectFactory::createDefault();
+    auto pattern = ProjectEdits::findPattern (project, 1);
+    juce::UndoManager undo;
+
+    // Empty patterns still need somewhere to put a note.
+    REQUIRE (ProjectEdits::lengthNeededForNotes (pattern) == 1);
+
+    ProjectEdits::addNote (pattern, 1, 4, 1, 60, 1.0f, &undo);
+    REQUIRE (ProjectEdits::lengthNeededForNotes (pattern) == 5);
+
+    // The length of the last note counts, not just where it starts, and an
+    // earlier long note can outreach a later short one.
+    ProjectEdits::addNote (pattern, 1, 8, 12, 62, 1.0f, &undo);
+    ProjectEdits::addNote (pattern, 1, 15, 1, 64, 1.0f, &undo);
+    REQUIRE (ProjectEdits::lengthNeededForNotes (pattern) == 20);
+}

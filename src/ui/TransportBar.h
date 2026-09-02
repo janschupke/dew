@@ -5,6 +5,8 @@
 #include "../engine/AudioEngine.h"
 #include "../model/ProjectDocument.h"
 #include "EditorState.h"
+#include "primitives/DewControls.h"
+#include "primitives/DewNumberField.h"
 
 namespace dew
 {
@@ -36,20 +38,32 @@ private:
 
     void rebuildPatternList();
     void updatePositionLabel();
+    void refreshPatternLength();
+    juce::ValueTree currentPattern() const;
 
     ProjectDocument& document;
     AudioEngine& engine;
     EditorState& editorState;
 
-    juce::TextButton playButton { "Play" };
-    juce::TextButton stopButton { "Stop" };
-    juce::Slider tempoSlider { juce::Slider::IncDecButtons, juce::Slider::TextBoxLeft };
-    juce::TextButton modeButton { "Pattern" };
+    DewIconButton playButton { icons::play(), "Play or pause (Space)" };
+    DewIconButton stopButton { icons::stop(), "Stop and rewind" };
+    DewNumberField tempoField;
+    DewButton modeButton { "Pattern", DewButton::Role::normal };
+
+    // Pattern management lives here because the pattern selector does: adding a
+    // pattern used to be reachable only from a menu shortcut, which meant it
+    // read as "you cannot add more patterns".
     juce::ComboBox patternBox;
+    DewIconButton addPatternButton { icons::plus(), "Add a pattern" };
+    DewIconButton clonePatternButton { icons::duplicate(), "Duplicate this pattern" };
+    DewIconButton deletePatternButton { icons::trash(), "Delete this pattern" };
+    DewNumberField patternLengthField;
+
     juce::Label positionLabel;
     juce::Label statusLabel;
 
     bool updatingPatternList = false;
+    juce::Array<int> groupDividers;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (TransportBar)
 };

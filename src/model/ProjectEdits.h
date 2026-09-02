@@ -58,6 +58,27 @@ struct ProjectEdits
     // --- patterns ------------------------------------------------------------
     static juce::ValueTree addPattern (juce::ValueTree project, juce::UndoManager*);
 
+    /** Deep-copies a pattern, notes and all, under a new id and name. Returns an
+        invalid tree if the source is not a pattern of this project.
+    */
+    static juce::ValueTree duplicatePattern (juce::ValueTree project, juce::ValueTree pattern,
+                                             juce::UndoManager*);
+
+    /** Removes a pattern and every playlist clip that referred to it, as one undo
+        step - a clip pointing at a missing pattern would be dropped by the next
+        snapshot anyway, so removing it here keeps the document consistent.
+
+        Refuses to remove the last pattern: a project with none has nothing to
+        edit and nothing to play. Returns true if the pattern was removed.
+    */
+    static bool removePattern (juce::ValueTree project, juce::ValueTree pattern,
+                               juce::UndoManager*);
+
+    /** Steps needed to contain every note in this pattern, for "fit to notes".
+        At least one step, so an empty pattern does not collapse to nothing.
+    */
+    static int lengthNeededForNotes (const juce::ValueTree& pattern);
+
     // --- playlist ------------------------------------------------------------
     static juce::ValueTree addClip (juce::ValueTree playlistTrack, int patternId, int startBar,
                                     int lengthBars, juce::UndoManager*);

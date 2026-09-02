@@ -209,6 +209,98 @@ juce::ValueTree ProjectEdits::addPattern (juce::ValueTree project, juce::UndoMan
     return pattern;
 }
 
+juce::ValueTree ProjectEdits::duplicatePattern (juce::ValueTree project, juce::ValueTree pattern,
+                                                juce::UndoManager* undo)
+{
+    if (! pattern.isValid() || ! pattern.hasType (ids::PATTERN))
+        return {};
+
+    const auto index = project.indexOf (pattern);
+
+    if (index < 0)
+        return {};
+
+    // createCopy is a deep copy, so the notes come along; only the identity has
+    // to change.
+    auto copy = pattern.createCopy();
+
+    const auto sourceId = (int) pattern[ids::id];
+    const auto newId    = nextFreeId (project, ids::PATTERN);
+
+    copy.setProperty (ids::id, newId, nullptr);
+
+    // An auto-named pattern gets the next auto name; a renamed one keeps the
+    // name it was given, marked as a copy, because that name is information.
+    const auto sourceName = pattern[ids::name].toString();
+    const auto autoName   = "Pattern " + juce::String (sourceId);
+
+    copy.setProperty (ids::name,
+                      sourceName == autoName ? "Pattern " + juce::String (newId)
+                                             : sourceName + " copy",
+                      nullptr);
+
+    // Next to the original, so the pattern list reads in the order it was built.
+    project.addChild (copy, index + 1, undo);
+    return copy;
+}
+
+bool ProjectEdits::removePattern (juce::ValueTree project, juce::ValueTree pattern,
+                                  juce::UndoManager* undo)
+{
+    if (! pattern.isValid() || ! pattern.hasType (ids::PATTERN))
+        return false;
+
+    const auto index = project.indexOf (pattern);
+
+    if (index < 0)
+        return false;
+
+    int patternCount = 0;
+
+    for (const auto& child : project)
+        if (child.hasType (ids::PATTERN))
+            ++patternCount;
+
+    // A project with no patterns has nothing to edit and nothing to play.
+    if (patternCount <= 1)
+        return false;
+
+    const auto patternId = (int) pattern[ids::id];
+
+    // Clips referring to a pattern that no longer exists would be dropped by the
+    // next snapshot with a warning. Remove them here so the document stays
+    // consistent and the whole deletion is one undo step.
+    const auto playlist = project.getChildWithName (ids::PLAYLIST);
+
+    for (auto track : playlist)
+    {
+        if (! track.hasType (ids::PLAYLIST_TRACK))
+            continue;
+
+        for (int i = track.getNumChildren(); --i >= 0;)
+        {
+            const auto clip = track.getChild (i);
+
+            if (clip.hasType (ids::CLIP) && (int) clip[ids::patternId] == patternId)
+                track.removeChild (i, undo);
+        }
+    }
+
+    project.removeChild (index, undo);
+    return true;
+}
+
+int ProjectEdits::lengthNeededForNotes (const juce::ValueTree& pattern)
+{
+    int needed = 1;
+
+    for (const auto& note : pattern)
+        if (note.hasType (ids::NOTE))
+            needed = juce::jmax (needed, (int) note[ids::step] + (int) note[ids::lengthSteps]);
+
+    return needed;
+}
+
 juce::ValueTree ProjectEdits::addClip (juce::ValueTree playlistTrack, int patternId, int startBar,
                                        int lengthBars, juce::UndoManager* undo)
 {
