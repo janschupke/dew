@@ -35,8 +35,10 @@ Start with **Demos → Getting Started** in the menu bar; there are four.
   resolved across the whole mixer, so soloing one track silences the rest.
 - **Instrument** — one band-limited oscillator (sine/saw/square/triangle) with an
   octave, an ADSR envelope, and channel volume and pan.
-- **Transport** — play/stop, tempo, a pattern-or-song switch with a live playhead, and
-  pattern add/duplicate/delete with an editable pattern length.
+- **Transport** — play/stop, tempo, a pattern-or-song switch, and pattern
+  add/duplicate/delete with an editable pattern length. Click or drag any ruler — piano
+  roll, sequencer or playlist — to move the position. The indicator stays on screen while
+  stopped, dimmed, so Stop visibly returns it to the start rather than hiding it.
 - **Status bar** — what the editors are pointed at, transient messages that expire
   instead of standing forever, and the DSP load and dropout count.
 - **Audio settings** — driver, output, input, sample rate and buffer size, with the
@@ -50,6 +52,10 @@ Start with **Demos → Getting Started** in the menu bar; there are four.
 
 In the piano roll: ⌘-scroll or pinch to zoom, shift-scroll to scroll in time, ⌘-drag to
 rubber-band, ⌘A to select every note on the channel, delete to remove the selection.
+
+Right-drag erases, and means the same thing in the piano roll and the step sequencer: one
+undo step for the whole sweep, and it fills the cells between drag samples, so a quick
+flick does not leave survivors behind it. Alt-drag is the same gesture.
 
 ### One bug behind three complaints
 
@@ -75,6 +81,14 @@ is the drag-up-and-down number entry used for every numeric value.
 `dew_shot gallery out.png` renders every token, icon and primitive in every state onto
 one page, which is both how the design system is reviewed and how it is tested.
 
+The type scale is five sizes, and it is enforced rather than merely documented. Twelve
+distinct sizes were reaching the screen: six font paths fell through to JUCE's defaults
+and landed on values that exist nowhere in the system — 10.8 on an 18px button, 17 in a
+menu, 13 **bold** on every tooltip — and the label a `Slider` builds for its own text box
+kept JUCE's 15pt default inside a 15px box. Those hooks are overridden now, and a test
+scans every source file and fails on a raw `FontOptions` outside `Tokens.cpp`, naming the
+file and line.
+
 ## Architecture
 
 Four layers, each testable without the one above it:
@@ -84,6 +98,7 @@ app/      Settings (window, view and device state, validated on read)
 ui/       ChannelRack · PianoRoll · Playlist · Mixer · TransportBar · EffectChain
           StatusBar · AudioSettingsPanel
           design/ (tokens, icons) · primitives/ · TimelineView (shared step↔pixel map)
+          TimelineRuler (one ruler, drawn and clicked the same way in three editors)
             │ edits via ProjectEdits (one undo transaction per gesture)
 model/    ProjectDocument (FileBasedDocument) ── ValueTree ── ProjectSchema ── JSON
           AutomationTargets (the curated automatable set) · DemoLibrary
