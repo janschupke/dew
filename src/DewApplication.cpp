@@ -184,7 +184,7 @@ void DewApplication::getAllCommands (juce::Array<juce::CommandID>& commands)
                          CommandIDs::fileSaveAs, CommandIDs::fileRender,
                          CommandIDs::editUndo, CommandIDs::editRedo,
                          CommandIDs::transportPlayStop, CommandIDs::transportRewind,
-                         CommandIDs::transportToggleMode,
+                         CommandIDs::transportToggleMode, CommandIDs::transportRecord,
                          CommandIDs::addChannel, CommandIDs::addPattern,
                      CommandIDs::audioSettings, CommandIDs::midiSettings });
 }
@@ -248,6 +248,12 @@ void DewApplication::getCommandInfo (juce::CommandID id, juce::ApplicationComman
             info.setInfo ("Toggle Pattern / Song", "Switch between pattern and song playback",
                           "Transport", 0);
             info.addDefaultKeypress ('l', juce::ModifierKeys::commandModifier);
+            info.setActive (main != nullptr);
+            break;
+
+        case CommandIDs::transportRecord:
+            info.setInfo ("Record", "Record audio into the armed channel", "Transport", 0);
+            info.addDefaultKeypress ('r', 0);
             info.setActive (main != nullptr);
             break;
 
@@ -390,6 +396,12 @@ bool DewApplication::perform (const InvocationInfo& info)
             return true;
         }
 
+        case CommandIDs::transportRecord:
+            if (const auto error = main->toggleRecording(); error.isNotEmpty())
+                main->showLoadWarnings ({ error });
+
+            return true;
+
         case CommandIDs::addChannel:
         {
             auto& undo = document->getUndoManager();
@@ -461,6 +473,8 @@ juce::PopupMenu DewApplication::getMenuForIndex (int index, const juce::String&)
         case 2:
             menu.addCommandItem (&commandManager, CommandIDs::transportPlayStop);
             menu.addCommandItem (&commandManager, CommandIDs::transportRewind);
+            menu.addSeparator();
+            menu.addCommandItem (&commandManager, CommandIDs::transportRecord);
             menu.addSeparator();
             menu.addCommandItem (&commandManager, CommandIDs::transportToggleMode);
             break;

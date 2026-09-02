@@ -17,11 +17,18 @@ namespace dew
     AudioDeviceManager underneath - the one LiveAudioHost::getDeviceManager has
     exposed all along with no callers.
 
-    dew never records, so the input defaults to None: asking for an input at
-    startup triggers a microphone permission prompt for nothing.
+    The input defaults to None, and opening one is what asks macOS for the
+    microphone. That request is deliberately deferred to here (or to arming a
+    channel) rather than made at startup: a permission prompt that arrives
+    before the user has asked dew for anything is one people refuse.
+
+    Choosing an input therefore does two things - it names the device, and it
+    tells LiveAudioHost to reopen with input channels. The meter beside it is
+    the confirmation that both worked, which a combo box alone cannot give.
 */
 class AudioSettingsPanel : public juce::Component,
-                           private juce::ChangeListener
+                           private juce::ChangeListener,
+                           private juce::Timer
 {
 public:
     AudioSettingsPanel (LiveAudioHost&, AudioEngine&);
@@ -40,20 +47,39 @@ public:
     juce::String getSummaryText() const { return summaryText; }
     int getNumDeviceOptions() const     { return outputBox.getNumItems(); }
 
+    /** Whether an input is selected. The meter is only meaningful when it is. */
+    bool isInputSelected() const        { return inputBox.getSelectedId() > 1; }
+
+    /** The last input level drawn, 0..1. */
+    float getInputLevel() const noexcept { return inputLevel; }
+
     static constexpr int preferredWidth = 420;
-    static constexpr int preferredHeight = 320;
+
+    // Taller than it was by one row and the meter: the input is no longer a
+    // combo box nobody reads.
+    static constexpr int preferredHeight = 392;
 
 private:
     void changeListenerCallback (juce::ChangeBroadcaster*) override;
+    void timerCallback() override;
+
+    /** Where the input meter is drawn. */
+    juce::Rectangle<int> meterBounds() const;
 
     void rebuildLists();
     void updateSummary();
     void applySetup (const juce::AudioDeviceManager::AudioDeviceSetup&);
 
+    LiveAudioHost& audioHost;
     juce::AudioDeviceManager& deviceManager;
     AudioEngine& engine;
 
-    juce::ComboBox typeBox, outputBox, inputBox, rateBox, bufferBox;
+    juce::ComboBox typeBox, outputBox, inputBox, inputChannelBox, rateBox, bufferBox;
+
+    /** Falls back rather than snapping, so a meter reads as a level rather than
+        as a flicker. Decay per frame at the refresh rate the tokens declare.
+    */
+    float inputLevel = 0.0f;
     juce::Array<juce::Rectangle<int>> labelBounds;
     juce::StringArray labels;
 

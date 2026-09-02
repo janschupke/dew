@@ -117,14 +117,15 @@ TEST_CASE ("a channel header has no click-swallowing dead zones", "[ui][selectio
     const auto buttons = findAll<juce::Button> (rack);
     REQUIRE (buttons.size() >= 8);      // M and S per demo channel, plus the footer
 
-    // The header rows are the components holding a Label plus two Buttons.
+    // By id. Counting the widgets on a row identified it only for as long as
+    // every row had exactly one label and two buttons, and an audio channel's
+    // arm toggle is a third.
     juce::Array<juce::Component*> headers;
     juce::Array<juce::Component*> all;
     collect (rack, all);
 
     for (auto* component : all)
-        if (findAll<juce::Label> (*component).size() == 1
-            && findAll<juce::Button> (*component).size() == 2)
+        if (component->getComponentID() == "channelHeader")
             headers.add (component);
 
     REQUIRE (headers.size() >= 4);

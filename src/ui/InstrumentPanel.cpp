@@ -21,10 +21,12 @@ void styleCaption (juce::Label& label, const juce::String& text)
 
 } // namespace
 
-InstrumentPanel::InstrumentPanel (ProjectDocument& d, EditorState& s)
-    : document (d), editorState (s), oscSection (d, s),
+InstrumentPanel::InstrumentPanel (ProjectDocument& d, EditorState& s, SamplePool* pool)
+    : document (d), editorState (s), oscSection (d, s), sampleSection (d, pool),
       chainHost (d, s, EffectChainHost::Orientation::vertical)
 {
+    addChildComponent (sampleSection);
+
     setComponentID ("instrumentPanel");
 
     addAndMakeVisible (chainHost);
@@ -171,7 +173,32 @@ void InstrumentPanel::refresh()
     const auto valid = channel.isValid();
 
     setEnabled (valid);
-    oscSection.setOwner (channel.getChildWithName (ids::INSTRUMENT));
+
+    // The one place the panel decides which face it is showing. resized() reads
+    // the cached answer rather than asking the document again, so the layout
+    // and the visibility can never disagree.
+    showingAudio = valid && ProjectEdits::isAudioChannel (channel);
+
+    oscSection.setOwner (showingAudio ? juce::ValueTree()
+                                      : channel.getChildWithName (ids::INSTRUMENT));
+    sampleSection.setOwner (showingAudio ? channel.getChildWithName (ids::SAMPLE)
+                                         : juce::ValueTree());
+
+    oscSection.setVisible (! showingAudio);
+    sampleSection.setVisible (showingAudio);
+
+    // Base pitch and the amplitude envelope belong to the oscillators. Leaving
+    // them on screen for a recording would offer four controls that do nothing.
+    const std::initializer_list<juce::Component*> synthOnly {
+        &basePitchSlider, &basePitchLabel,
+        &attackSlider, &attackLabel, &decaySlider, &decayLabel,
+        &sustainSlider, &sustainLabel, &releaseSlider, &releaseLabel };
+
+    for (auto* c : synthOnly)
+        c->setVisible (! showingAudio);
+
+    resized();
+
     chainHost.setOwner (channel, channel.isValid() ? channel[ids::name].toString()
                                                    : juce::String());
 
@@ -220,24 +247,15 @@ void InstrumentPanel::resized()
 
     const auto row = [&area] (int height) { auto r = area.removeFromTop (height); area.removeFromTop (6); return r; };
 
-    oscSection.setBounds (row (OscillatorSection::requiredHeight));
+    if (showingAudio)
+        sampleSection.setBounds (row (SampleSection::requiredHeight));
+    else
+        oscSection.setBounds (row (OscillatorSection::requiredHeight));
 
     // Routing and base pitch share a row. The oscillator section costs the panel
     // about 120px more than the single wave combo it replaces, and at the
     // smallest window the app opens at that was the whole effect chain.
     auto routingRow = row (44);
-
-    // The pitch stepper is measured from the right and the combo takes what is
-    // left: an inc/dec pair given "half of whatever remains" is the one control
-    // here that clips rather than shrinking.
-    basePitchSlider.setBounds (routingRow.removeFromRight (96).reduced (0, 10));
-    basePitchLabel.setBounds (routingRow.removeFromRight (38));
-    routingRow.removeFromRight (8);
-    mixerLabel.setBounds (routingRow.removeFromLeft (46));
-    mixerBox.setBounds (routingRow.reduced (0, 10));
-
-    auto adsr = row (86);
-    const auto knobWidth = adsr.getWidth() / 4;
 
     const auto placeKnob = [] (juce::Rectangle<int> bounds, juce::Label& label, juce::Slider& slider)
     {
@@ -245,10 +263,29 @@ void InstrumentPanel::resized()
         slider.setBounds (bounds);
     };
 
-    placeKnob (adsr.removeFromLeft (knobWidth), attackLabel, attackSlider);
-    placeKnob (adsr.removeFromLeft (knobWidth), decayLabel, decaySlider);
-    placeKnob (adsr.removeFromLeft (knobWidth), sustainLabel, sustainSlider);
-    placeKnob (adsr, releaseLabel, releaseSlider);
+    if (! showingAudio)
+    {
+        // The pitch stepper is measured from the right and the combo takes what
+        // is left: an inc/dec pair given "half of whatever remains" is the one
+        // control here that clips rather than shrinking.
+        basePitchSlider.setBounds (routingRow.removeFromRight (96).reduced (0, 10));
+        basePitchLabel.setBounds (routingRow.removeFromRight (38));
+        routingRow.removeFromRight (8);
+    }
+
+    mixerLabel.setBounds (routingRow.removeFromLeft (46));
+    mixerBox.setBounds (routingRow.reduced (0, 10));
+
+    if (! showingAudio)
+    {
+        auto adsr = row (86);
+        const auto knobWidth = adsr.getWidth() / 4;
+
+        placeKnob (adsr.removeFromLeft (knobWidth), attackLabel, attackSlider);
+        placeKnob (adsr.removeFromLeft (knobWidth), decayLabel, decaySlider);
+        placeKnob (adsr.removeFromLeft (knobWidth), sustainLabel, sustainSlider);
+        placeKnob (adsr, releaseLabel, releaseSlider);
+    }
 
     auto levels = row (86);
     placeKnob (levels.removeFromLeft (levels.getWidth() / 2), volumeLabel, volumeSlider);

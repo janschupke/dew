@@ -1,5 +1,7 @@
 #include "OfflineRenderer.h"
 
+#include "SamplePool.h"
+
 #include "MidiExporter.h"
 #include "../model/Ids.h"
 #include "RenderPost.h"
@@ -476,7 +478,7 @@ RenderReport OfflineRenderer::renderToBuffer (const juce::ValueTree& project,
                                               RenderProgress* progress)
 {
     juce::StringArray warnings;
-    auto snapshot = buildSnapshot (project, &warnings);
+    auto snapshot = buildSnapshot (project, &warnings, options.samplePool);
 
     AudioEngine engine;
     auto report = renderSnapshot (std::move (snapshot), engine, destination, options,
@@ -549,7 +551,7 @@ RenderReport OfflineRenderer::renderStems (const juce::ValueTree& project,
         return report;
 
     juce::StringArray warnings;
-    const auto base = buildSnapshot (project, &warnings);
+    const auto base = buildSnapshot (project, &warnings, options.samplePool);
     report.warnings.addArray (warnings);
 
     const auto names = mixerTrackNames (project);

@@ -140,6 +140,10 @@ private:
     void positionToCurve (const juce::ValueTree& clip, int trackIndex, juce::Point<int>,
                           double& step, double& value) const;
 
+    /** An audio clip: its channel's waveform, in its channel's colour. */
+    void paintAudioClip (juce::Graphics&, const juce::ValueTree& clip,
+                         juce::Rectangle<float> bounds, bool audible);
+
     void paintAutomationClip (juce::Graphics&, const juce::ValueTree& clip, int trackIndex,
                               juce::Rectangle<float> bounds, bool audible);
 

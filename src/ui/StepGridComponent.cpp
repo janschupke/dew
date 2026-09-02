@@ -1,5 +1,7 @@
 #include "StepGridComponent.h"
 
+#include "../engine/SamplePool.h"
+
 #include "../model/Ids.h"
 #include "../model/ProjectEdits.h"
 #include "design/Tokens.h"
@@ -166,6 +168,72 @@ void StepGridComponent::timerCallback()
     }
 }
 
+void StepGridComponent::paintWaveformRow (juce::Graphics& g, const juce::ValueTree& channel,
+                                          juce::Rectangle<int> rowBounds,
+                                          juce::Colour channelColour, bool muted)
+{
+    auto* pool = engine.getSamplePool();
+
+    const auto sample = channel.getChildWithName (ids::SAMPLE);
+    const auto path = sample.isValid() ? sample[ids::file].toString() : juce::String();
+
+    if (pool == nullptr || path.isEmpty())
+    {
+        paint::emptyState (g, rowBounds, "No recording - arm this channel and press Record");
+        return;
+    }
+
+    const auto& entry = pool->loadReference (path);
+
+    if (! entry.isValid())
+    {
+        paint::emptyState (g, rowBounds, "Missing audio: " + path);
+        return;
+    }
+
+    // Steps, not seconds: this grid is step-indexed like every other timeline in
+    // the editor, so the sample is laid out over the steps it actually occupies
+    // and lines up with the notes on the rows above it.
+    const auto stepsPerBeat = juce::jmax (1, (int) document.getState()[ids::stepsPerBeat]);
+    const auto bpm = juce::jmax (1.0, (double) document.getState()[ids::tempoBpm]);
+    const auto samplesPerStep = (60.0 / bpm) / (double) stepsPerBeat * entry.sourceSampleRate;
+
+    const auto lengthSteps = samplesPerStep > 0.0
+                                 ? (double) entry.audio->getNumSamples() / samplesPerStep
+                                 : 0.0;
+
+    if (lengthSteps <= 0.0)
+        return;
+
+    const auto startX = timeline.xForStep (0.0);
+    const auto endX = timeline.xForStep (lengthSteps);
+
+    if (endX <= startX)
+        return;
+
+    const auto centre = (float) rowBounds.getCentreY();
+    const auto halfHeight = (float) rowBounds.getHeight() * 0.5f - 3.0f;
+
+    g.setColour (channelColour.withMultipliedAlpha (muted ? 0.35f : 1.0f));
+
+    const auto from = juce::jmax (0, (int) startX);
+    const auto to = juce::jmin (rowBounds.getRight(), (int) endX);
+
+    for (int x = from; x < to; ++x)
+    {
+        const auto a = ((float) x - startX) / (endX - startX);
+        const auto b = ((float) (x + 1) - startX) / (endX - startX);
+
+        const auto bin = entry.peaks.range (a, b);
+
+        const auto top = centre - bin.maximum * halfHeight;
+        const auto bottom = centre - bin.minimum * halfHeight;
+
+        g.fillRect ((float) x, juce::jmin (top, bottom), 1.0f,
+                    juce::jmax (1.0f, std::abs (bottom - top)));
+    }
+}
+
 void StepGridComponent::paint (juce::Graphics& g)
 {
     const auto pattern = currentPattern();
@@ -218,6 +286,17 @@ void StepGridComponent::paint (juce::Graphics& g)
         }
 
         const auto muted = (bool) channel[ids::muted];
+
+        // An audio channel has no steps to toggle: its content is one recording
+        // laid along the same timeline, so the row shows the waveform instead.
+        // Drawn over the WHOLE row rather than only the visible note range,
+        // because a sample is continuous and a gap at the edge would read as
+        // silence in the recording.
+        if (ProjectEdits::isAudioChannel (channel))
+        {
+            paintWaveformRow (g, channel, rowBounds, colourValue, muted);
+            continue;
+        }
 
         for (int step = visible.getStart(); step < visible.getEnd(); ++step)
         {
@@ -319,7 +398,12 @@ void StepGridComponent::paint (juce::Graphics& g)
 void StepGridComponent::mouseMove (const juce::MouseEvent& event)
 {
     const auto cell = juce::Point<int> (stepAtX (event.x), rowAtY (event.y));
-    const auto valid = event.y < getRowsHeight() && channelForRow (cell.y).isValid();
+    const auto channel = channelForRow (cell.y);
+
+    // No cell highlight over a waveform: the hover exists to say "a click lands
+    // here", and on an audio row it does not.
+    const auto valid = event.y < getRowsHeight() && channel.isValid()
+                       && ! ProjectEdits::isAudioChannel (channel);
     const auto wanted = valid ? cell : juce::Point<int> (-1, -1);
 
     if (wanted != hoverCell)
@@ -373,6 +457,12 @@ void StepGridComponent::applyPaint (const juce::MouseEvent& event)
     if (! channel.isValid())
         return;
 
+    // Checked again here, not only in mouseDown: a drag that began on a synth
+    // row can travel across an audio one, and the run-filling below would paint
+    // right through it.
+    if (ProjectEdits::isAudioChannel (channel))
+        return;
+
     // A drag reports a handful of positions per second, so at speed it jumps
     // several cells between samples. Fill the whole run along the row rather
     // than only where the pointer was reported, or a fast sweep leaves
@@ -418,6 +508,16 @@ void StepGridComponent::mouseDown (const juce::MouseEvent& event)
 
     if (! channel.isValid())
         return;
+
+    // An audio row is a waveform, not a sequence of cells. Clicking it selects
+    // the channel - that is what clicking a row means everywhere else - but it
+    // must not write a note onto a channel that has no notes to play.
+    if (ProjectEdits::isAudioChannel (channel))
+    {
+        dragging = false;
+        editorState.setSelectedChannelId ((int) channel[ids::id]);
+        return;
+    }
 
     // Right-drag and alt-drag always erase, whatever the first cell holds. This
     // had no modifier check at all, so a right-click behaved exactly like a

@@ -6,22 +6,33 @@
 #include "EditorState.h"
 #include "EffectChainHost.h"
 #include "OscillatorSection.h"
+#include "SampleSection.h"
 
 namespace dew
 {
 
-/** The selected channel's oscillators and envelope.
+/** The selected channel's sound, whichever kind of channel it is.
 
     Controls write straight into the ValueTree through the UndoManager; the
     engine picks the change up on its next snapshot, so a knob turn is audible
     on the next block without any separate parameter plumbing.
+
+    Two faces, one panel. A synth channel shows its oscillators and envelope; an
+    audio channel shows its waveform, trim, fades and pitch. Everything below
+    that - mixer routing, volume, pan and the effect chain - is shared, because
+    a channel is the same thing downstream of where its samples come from. Two
+    separate panels would have duplicated all of it and then drifted.
 */
 class InstrumentPanel : public juce::Component,
                         private juce::ChangeListener,
                         private juce::ValueTree::Listener
 {
 public:
-    InstrumentPanel (ProjectDocument&, EditorState&);
+    /** @param pool  audio for the waveform display. Null is allowed - the
+                      section draws its empty state - which is what lets a test
+                      or dew_shot build the panel without a sample pool.
+    */
+    InstrumentPanel (ProjectDocument&, EditorState&, SamplePool* pool = nullptr);
     ~InstrumentPanel() override;
 
     void paint (juce::Graphics&) override;
@@ -56,6 +67,11 @@ private:
     */
     OscillatorSection oscSection;
 
+    /** The audio channel's face of the panel. Exactly one of this and
+        oscSection is visible; refresh() is the single place that decides.
+    */
+    SampleSection sampleSection;
+
     juce::Slider basePitchSlider { juce::Slider::IncDecButtons, juce::Slider::TextBoxLeft };
     juce::Label basePitchLabel;
 
@@ -80,6 +96,11 @@ private:
     EffectChainHost chainHost;
 
     bool updating = false;
+
+    /** Whether the panel is showing its audio face. Cached from the document so
+        that resized() and refresh() cannot disagree about the row stack.
+    */
+    bool showingAudio = false;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (InstrumentPanel)
 };

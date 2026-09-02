@@ -199,6 +199,40 @@ juce::ValueTree ProjectEdits::addChannel (juce::ValueTree project, const juce::S
     return channel;
 }
 
+juce::ValueTree ProjectEdits::addAudioChannel (juce::ValueTree project, const juce::String& name,
+                                               juce::UndoManager* undo)
+{
+    auto channel = addChannel (project, name.isNotEmpty() ? name : "Audio", undo);
+
+    // After the insert, so the property change joins the same undo transaction
+    // rather than becoming a second step that leaves a synth channel behind.
+    channel.setProperty (ids::source, "audio", undo);
+    return channel;
+}
+
+bool ProjectEdits::isAudioChannel (const juce::ValueTree& channel)
+{
+    return channel[ids::source].toString() == "audio";
+}
+
+void ProjectEdits::setSampleSource (juce::ValueTree channel, const juce::String& path,
+                                    int sourceSampleRate, int lengthSamples, juce::UndoManager* undo)
+{
+    auto sample = channel.getChildWithName (ids::SAMPLE);
+
+    if (! sample.isValid())
+        return;
+
+    sample.setProperty (ids::file, path, undo);
+    sample.setProperty (ids::sourceSampleRate, juce::jmax (1, sourceSampleRate), undo);
+    sample.setProperty (ids::lengthSamples, juce::jmax (0, lengthSamples), undo);
+
+    // A new source invalidates the old trim, and leaving it would silence a
+    // recording whose predecessor was trimmed to a shorter region.
+    sample.setProperty (ids::startSample, 0, undo);
+    sample.setProperty (ids::endSample, 0, undo);
+}
+
 void ProjectEdits::removeChannel (juce::ValueTree project, juce::ValueTree channel,
                                   juce::UndoManager* undo)
 {
@@ -751,9 +785,35 @@ juce::ValueTree ProjectEdits::addAutomationClip (juce::ValueTree playlistTrack, 
     return clip;
 }
 
+juce::ValueTree ProjectEdits::addAudioClip (juce::ValueTree playlistTrack, int channelId,
+                                            int startBar, int lengthBars, juce::UndoManager* undo)
+{
+    auto clip = defaultTreeFor (clipSpecFor());
+    clip.setProperty (ids::kind, "audio", nullptr);
+    clip.setProperty (ids::channelId, channelId, nullptr);
+    clip.setProperty (ids::startBar, juce::jmax (0, startBar), nullptr);
+    clip.setProperty (ids::lengthBars, juce::jmax (1, lengthBars), nullptr);
+
+    playlistTrack.appendChild (clip, undo);
+    return clip;
+}
+
 bool ProjectEdits::isAutomationClip (const juce::ValueTree& clip)
 {
     return clip[ids::kind].toString() == "automation";
+}
+
+bool ProjectEdits::isAudioClip (const juce::ValueTree& clip)
+{
+    return clip[ids::kind].toString() == "audio";
+}
+
+bool ProjectEdits::isMidiClip (const juce::ValueTree& clip)
+{
+    // By exclusion rather than == "pattern": a version 3 clip has no `kind` at
+    // all, and those are notes. The stored value stays "pattern" - the word the
+    // schema has always used, and the node a clip of this kind points at.
+    return ! isAutomationClip (clip) && ! isAudioClip (clip);
 }
 
 void ProjectEdits::removeClip (juce::ValueTree playlistTrack, juce::ValueTree clip,

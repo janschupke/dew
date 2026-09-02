@@ -42,8 +42,19 @@ struct BarRange
     deliberate and load-bearing: the render tests are the only evidence that
     playback works, and a changed default would move them all at once.
 */
+class SamplePool;
+
 struct RenderOptions
 {
+    /** Where audio channels get their samples.
+
+        Null renders them silent, which is right for a project that has none and
+        wrong for one that does - so every caller that renders a real project
+        passes one. Without it a song containing recordings would export as the
+        synth parts alone, and say nothing about it.
+    */
+    SamplePool* samplePool = nullptr;
+
     double sampleRate = 44100.0;
     int blockSize = 512;
     int bitDepth = 24;

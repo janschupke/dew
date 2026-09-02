@@ -231,6 +231,10 @@ int main (int argc, char* argv[])
                 return fail (loaded.result.getErrorMessage());
 
             document.setState (loaded.tree, true);
+
+            // Relative audio paths resolve against the document's file, so a
+            // project loaded without one draws every recording as missing.
+            document.setFile (juce::File::getCurrentWorkingDirectory().getChildFile (projectPath));
         }
         else
         {
@@ -329,6 +333,10 @@ int main (int argc, char* argv[])
             return fail (loaded.result.getErrorMessage());
 
         component.getDocument().setState (loaded.tree, true);
+
+        // As above: without the file, a relative audio path has nothing to be
+        // relative to and every waveform draws as missing.
+        component.getDocument().setFile (file);
     }
     else
     {

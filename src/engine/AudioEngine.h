@@ -33,6 +33,16 @@ public:
     /** Message thread: hand over a new project state. */
     void setProject (const juce::ValueTree& project, juce::StringArray* warnings = nullptr);
 
+    /** Where setProject gets audio for audio channels.
+
+        A pointer the owner sets rather than a member, because the pool outlives
+        any one project and because the offline renderer and every engine test
+        build snapshots with no audio at all. Null leaves audio channels silent.
+    */
+    void setSamplePool (SamplePool* pool) noexcept  { samplePool = pool; }
+
+    SamplePool* getSamplePool() const noexcept      { return samplePool; }
+
     /** Message thread: hand over a prebuilt snapshot. */
     void publish (EngineSnapshot snapshot);
 
@@ -94,7 +104,11 @@ public:
 
         bool operator== (const LoopRegion& other) const noexcept
         {
-            return startSteps == other.startSteps && endSteps == other.endSteps;
+            // exactlyEqual, not ==: these are stored, compared and never
+            // arithmetic'd, so bit equality is what "the same region" means -
+            // and the CI preset builds with -Werror on -Wfloat-equal.
+            return juce::exactlyEqual (startSteps, other.startSteps)
+                && juce::exactlyEqual (endSteps, other.endSteps);
         }
     };
 
@@ -201,6 +215,8 @@ private:
 
     SnapshotBridge bridge;
     Transport transport;
+
+    SamplePool* samplePool = nullptr;
 
     std::vector<SynthChannel> channels;
 

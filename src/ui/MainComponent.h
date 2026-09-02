@@ -5,6 +5,7 @@
 #include "../engine/AudioEngine.h"
 #include "../engine/LiveAudioHost.h"
 #include "../engine/MidiInputHost.h"
+#include "../engine/SamplePool.h"
 #include "../model/ProjectDocument.h"
 #include "ChannelRackComponent.h"
 #include "DewLookAndFeel.h"
@@ -73,6 +74,22 @@ public:
     LiveAudioHost& getAudioHost() noexcept { return audioHost; }
     MidiInputHost& getMidiHost() noexcept  { return midiHost; }
 
+    // --- recording -----------------------------------------------------------
+    /** Starts or stops a take on the armed channel.
+
+        Returns an empty string, or a reason the take could not start: nothing
+        armed, no audio input, or no device. The caller shows it - this returns
+        the message rather than posting it so that a test can read it.
+    */
+    juce::String toggleRecording();
+
+    bool isRecording() const noexcept;
+
+    /** The audio behind the project's audio channels. Shared with the engine,
+        and with every view that draws a waveform.
+    */
+    SamplePool& getSamplePool() noexcept  { return samplePool; }
+
     /** Applies any pending snapshot rebuild immediately instead of waiting for
         the message loop. Edits are coalesced through an AsyncUpdater, so
         anything that needs the engine to reflect the document right now - a
@@ -105,12 +122,27 @@ private:
     */
     void updateLoopRange();
 
+    /** Turns a finished take into a source on the armed channel and a clip on
+        the playlist, as one undo step.
+    */
+    void finishRecording();
+
     DewLookAndFeel lookAndFeel;
 
     /** Every setTooltip call in the app was dead text until this existed:
         tooltips are drawn by a window, and there was not one anywhere.
     */
     juce::TooltipWindow tooltips { nullptr, 600 };
+
+    /** The audio behind the project's audio channels.
+
+        Declared FIRST, so it is destroyed last. Both the engine and a running
+        render hold a bare pointer to it - the engine reads it on the message
+        thread when it builds a snapshot, and RenderJob reads it on its own
+        thread - and a member declared later would be destroyed while the render
+        thread was still using it.
+    */
+    SamplePool samplePool;
 
     /** The one render running, if any. Owned here rather than by the dialog so
         that closing the dialog does not kill the render, and so its destructor
@@ -119,6 +151,7 @@ private:
     std::unique_ptr<RenderJob> renderJob;
 
     ProjectDocument document;
+
     AudioEngine engine;
     LiveAudioHost audioHost;
 

@@ -40,6 +40,23 @@ public:
             sendChangeMessage();
     }
 
+    // --- recording -----------------------------------------------------------
+    /** Which audio channel a take will be recorded into, or 0 for none.
+
+        Session state like every other selection here: arming is about what the
+        next take does, not about the project, and it must not make a document
+        dirty or land on the undo stack. Only one channel can be armed - dew
+        records one input, and two armed channels would have to mean one of them
+        silently loses.
+    */
+    int getArmedChannelId() const noexcept  { return armedChannelId; }
+
+    void setArmedChannelId (int id)
+    {
+        if (std::exchange (armedChannelId, id) != id)
+            sendChangeMessage();
+    }
+
     // --- effect chain -------------------------------------------------------
     /** Whether an effect's parameters are showing.
 
@@ -154,6 +171,7 @@ private:
     int currentPatternId = 1;
     int selectedMixerTrackId = 1;
     int selectedOscillator = 0;
+    int armedChannelId = 0;
 
     int lastNoteLengthSteps = 1;
     double lastNoteVelocity = 1.0;

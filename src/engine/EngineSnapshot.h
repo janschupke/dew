@@ -3,6 +3,7 @@
 #include <juce_data_structures/juce_data_structures.h>
 
 #include <array>
+#include <memory>
 #include <vector>
 
 #include "../model/AutomationTargets.h"
@@ -92,6 +93,31 @@ struct EffectChainSnapshot
     int numSlots = 0;
 };
 
+/** What a channel gets its samples from. */
+enum class ChannelSource { synth, audio };
+
+/** An audio channel's playback settings, resolved.
+
+    Every field is in the SOURCE file's own frames and its own sample rate, not
+    the engine's. Trim, fades and length are all properties of the recording,
+    and expressing them in output frames would silently move every one of them
+    the first time the project opened on a device running at another rate.
+
+    `pitchRatio` is the semitone transpose already turned into a frequency
+    ratio: the message thread does the std::pow, the render path does not.
+*/
+struct SampleSettings
+{
+    int startSample = 0;
+    int endSample = 0;          ///< exclusive; the buffer length when the document says 0
+    int fadeInSamples = 0;
+    int fadeOutSamples = 0;
+    float pitchRatio = 1.0f;
+    double sourceSampleRate = 44100.0;
+    bool reverse = false;
+    bool loop = false;
+};
+
 struct ChannelSnapshot
 {
     int id = 0;
@@ -104,6 +130,24 @@ struct ChannelSnapshot
     OscBankSnapshot osc;
     AmpSettings amp;
     EffectChainSnapshot effects;
+
+    ChannelSource source = ChannelSource::synth;
+    SampleSettings sample;
+
+    /** The audio an "audio" channel plays, or null.
+
+        The ONE member of any snapshot that is not trivially copyable, and it is
+        safe for a specific reason worth writing down. SnapshotBridge::acquire()
+        hands the audio thread a REFERENCE to a slot; the audio thread never
+        copies a snapshot and never destroys one. Every copy and every release
+        of this pointer therefore happens on the message thread, inside
+        publish(), where an allocation is allowed.
+
+        A future change that copies a snapshot on the audio thread would turn a
+        refcount decrement into a possible deallocation in the render path. That
+        would be a correctness bug, not a style question.
+    */
+    std::shared_ptr<const juce::AudioBuffer<float>> audio;
 };
 
 struct NoteSnapshot
@@ -162,6 +206,7 @@ struct ClipSnapshot
 {
     int patternIndex = -1;     ///< resolved
     int automationIndex = -1;  ///< resolved; >= 0 makes this an automation clip
+    int channelIndex = -1;     ///< resolved; >= 0 makes this an audio clip
     int startBar = 0;
     int lengthBars = 1;
 
@@ -240,9 +285,18 @@ struct EngineSnapshot
     bool anyAutomation = false;
 };
 
+class SamplePool;
+
 /** Builds a snapshot from a project tree. Runs on the message thread.
     Anything beyond the engine limits is dropped, and described in `warnings`.
+
+    `pool` supplies the audio for audio channels. Optional, and null in every
+    caller that has no audio to resolve - the offline renderer's own tests and
+    every snapshot test predate audio entirely. A null pool leaves audio
+    channels silent rather than reading files from the render path.
 */
-EngineSnapshot buildSnapshot (const juce::ValueTree& project, juce::StringArray* warnings = nullptr);
+EngineSnapshot buildSnapshot (const juce::ValueTree& project,
+                              juce::StringArray* warnings = nullptr,
+                              SamplePool* pool = nullptr);
 
 } // namespace dew

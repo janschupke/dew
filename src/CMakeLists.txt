@@ -16,8 +16,11 @@ add_library(dew_core STATIC
   model/ProjectDocument.cpp
   model/ProjectEdits.cpp
   model/NoteTools.cpp
+  model/AssetPaths.cpp
 
   engine/Effects.cpp
+  engine/WaveformPeaks.cpp
+  engine/SamplePool.cpp
   engine/PreviewQueue.cpp
   engine/SignalTap.cpp
   engine/EngineSnapshot.cpp
@@ -26,12 +29,14 @@ add_library(dew_core STATIC
   engine/Sequencer.cpp
   engine/SynthVoice.cpp
   engine/SynthChannel.cpp
+  engine/SamplePlayer.cpp
   engine/MixerBus.cpp
   engine/AudioEngine.cpp
   engine/OfflineRenderer.cpp
   engine/RenderPost.cpp
   engine/MidiExporter.cpp
   engine/RenderJob.cpp
+  engine/AudioRecorder.cpp
   engine/LiveAudioHost.cpp
   engine/MidiRouter.cpp
   engine/MidiInputHost.cpp
@@ -45,6 +50,7 @@ add_library(dew_core STATIC
   ui/DewLookAndFeel.cpp
   ui/EffectChainComponent.cpp
   ui/OscillatorSection.cpp
+  ui/SampleSection.cpp
   ui/EffectChainHost.cpp
   ui/AudioSettingsPanel.cpp
   ui/RenderPanel.cpp
@@ -117,7 +123,8 @@ juce_add_gui_app(dew
   COMPANY_NAME              "dew"
   BUNDLE_ID                 "io.dew.app"
   VERSION                   "${PROJECT_VERSION}"
-  MICROPHONE_PERMISSION_ENABLED FALSE
+  MICROPHONE_PERMISSION_ENABLED TRUE
+  MICROPHONE_PERMISSION_TEXT "dew records audio from the input you choose in Audio Settings."
   NEEDS_MIDI_INPUT          TRUE
   NEEDS_MIDI_OUTPUT         FALSE
   DOCUMENT_EXTENSIONS       "dew"

@@ -33,6 +33,16 @@ TransportBar::TransportBar (ProjectDocument& d, AudioEngine& e, EditorState& s)
     };
     addAndMakeVisible (stopButton);
 
+    // The icon and the colour have existed in the design system since before
+    // anything could record; this is their first call site.
+    recordButton.setOnColour (tokens::colour::recording);
+    recordButton.onClick = [this]
+    {
+        if (onToggleRecord != nullptr)
+            onToggleRecord();
+    };
+    addAndMakeVisible (recordButton);
+
     tempoField.setRange (20.0, 300.0, 0.1);
     tempoField.setNumDecimalPlaces (1);
     tempoField.setSuffix (" bpm");
@@ -243,6 +253,12 @@ void TransportBar::valueTreeChildRemoved (juce::ValueTree&, juce::ValueTree& chi
 void TransportBar::timerCallback()
 {
     updatePositionLabel();
+
+    // Polled with the playhead rather than pushed: a take can also end from the
+    // menu, from the keyboard, or because the device went away, and this is
+    // already the thing running at the rate a transport reads at.
+    if (isRecording != nullptr)
+        recordButton.setToggleState (isRecording(), juce::dontSendNotification);
 }
 
 void TransportBar::updatePositionLabel()
@@ -292,6 +308,7 @@ void TransportBar::resized()
 
     place (playButton, 30);
     place (stopButton, 30);
+    place (recordButton, 30);
     area.removeFromLeft (space::sm);
     place (tempoField, 96);
     area.removeFromLeft (space::sm);

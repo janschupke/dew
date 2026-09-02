@@ -2,6 +2,7 @@
 
 #include "BuildInfo.h"
 #include "engine/OfflineRenderer.h"
+#include "engine/SamplePool.h"
 #include "model/ProjectFactory.h"
 #include "model/ProjectSerializer.h"
 
@@ -256,6 +257,13 @@ int main (int argc, char* argv[])
         std::cerr << "dew_render: warning: " << warning << std::endl;
 
     dew::RenderOptions options;
+
+    // Audio channels read their samples through this, and relative paths are
+    // relative to the project being rendered. Declared here so it outlives
+    // every render below.
+    dew::SamplePool samplePool;
+    samplePool.setProjectFile (projectFile);
+    options.samplePool = &samplePool;
 
     // --- format ---------------------------------------------------------------
     if (args.has ("--format") && ! parseFormat (args.value ("--format"), options.format))

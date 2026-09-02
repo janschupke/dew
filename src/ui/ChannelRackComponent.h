@@ -32,6 +32,11 @@ public:
     void refresh();
 
     void addChannel();
+
+    /** Adds a channel that plays a recording rather than its oscillators, and
+        arms it - the reason to add one is to record into it.
+    */
+    void addAudioChannel();
     void removeChannel (int channelId);
 
     /** Drives a row's context-menu item without opening the menu.
@@ -71,6 +76,7 @@ private:
     // holder - so it is the next empty ROW of the list rather than an action
     // parked in a footer strip at the far end of the panel.
     DewButton addChannelButton { "+ Channel", DewButton::Role::ghost };
+    DewButton addAudioButton { "+ Audio", DewButton::Role::ghost };
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (ChannelRackComponent)
 };

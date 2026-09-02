@@ -1415,9 +1415,11 @@ void PianoRollComponent::paintRuler (juce::Graphics& g)
 
     if (editorState.hasStepSelection())
     {
-        const auto selection = editorState.getSelectedStepRange();
-        style.selectionStartSteps = (double) selection.getStart();
-        style.selectionEndSteps = (double) selection.getEnd();
+        // Not `selection`: this class has a member of that name, and the CI
+        // preset builds with -Werror on -Wshadow.
+        const auto steps = editorState.getSelectedStepRange();
+        style.selectionStartSteps = (double) steps.getStart();
+        style.selectionEndSteps = (double) steps.getEnd();
     }
 
     // The same ruler the playlist and the channel rack draw. Three views used

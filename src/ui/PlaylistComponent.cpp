@@ -1,5 +1,7 @@
 #include "PlaylistComponent.h"
 
+#include "../engine/SamplePool.h"
+
 #include "../model/Ids.h"
 #include "../model/ProjectEdits.h"
 #include "TimelineRuler.h"
@@ -391,6 +393,13 @@ void PlaylistComponent::openPatternOf (const juce::ValueTree& clip)
     if (! clip.isValid())
         return;
 
+    // Only a MIDI clip has a pattern. Every clip carries a patternId - the
+    // schema keeps all three references on one node - so without this an
+    // automation or audio clip would open whatever pattern its unused,
+    // defaulted id happened to name.
+    if (! ProjectEdits::isMidiClip (clip))
+        return;
+
     const auto patternId = (int) clip[ids::patternId];
 
     if (! ProjectEdits::findPattern (document.getState(), patternId).isValid())
@@ -526,9 +535,10 @@ juce::PopupMenu PlaylistComponent::buildClipMenu (const juce::ValueTree& track, 
         return menu;
     }
 
-    // An automation clip has no pattern to open, so offering it would be an item
-    // that does nothing on half the clips in the arrangement.
-    if (! ProjectEdits::isAutomationClip (clip))
+    // Only a MIDI clip has a pattern to open, so offering it anywhere else
+    // would be an item that does nothing on some of the clips in the
+    // arrangement.
+    if (ProjectEdits::isMidiClip (clip))
         menu.addItem ((int) ClipMenuItem::openPattern, "Open pattern");
 
     if (menu.getNumItems() > 0)
@@ -1023,6 +1033,69 @@ void PlaylistComponent::changeListenerCallback (juce::ChangeBroadcaster*) { repa
 
 // --- painting ----------------------------------------------------------------
 
+void PlaylistComponent::paintAudioClip (juce::Graphics& g, const juce::ValueTree& clip,
+                                        juce::Rectangle<float> bounds, bool audible)
+{
+    const auto channel = ProjectEdits::findChannel (document.getState(), (int) clip[ids::channelId]);
+
+    // The channel's own colour rather than the accent, because an audio clip IS
+    // its channel - one recording, one channel - and the arrangement should say
+    // which one at a glance, the way the channel rack's colour tabs do.
+    auto clipColour = channel.isValid()
+                          ? juce::Colour::fromString ("ff" + channel[ids::colour].toString().getLastCharacters (6))
+                          : colour::textDisabled;
+
+    if (! audible)
+        clipColour = clipColour.withSaturation (0.1f).withMultipliedBrightness (0.6f);
+
+    g.setColour (clipColour.withAlpha (audible ? 0.35f : 0.2f));
+    g.fillRoundedRectangle (bounds, radius::sm);
+    g.setColour (clipColour.brighter (0.3f).withAlpha (audible ? 1.0f : 0.5f));
+    g.drawRoundedRectangle (bounds, radius::sm, stroke::regular);
+
+    auto* pool = engine.getSamplePool();
+    const auto sample = channel.getChildWithName (ids::SAMPLE);
+    const auto path = sample.isValid() ? sample[ids::file].toString() : juce::String();
+
+    if (pool != nullptr && path.isNotEmpty())
+    {
+        const auto& entry = pool->loadReference (path);
+
+        if (entry.isValid())
+        {
+            // Clipped to the clip, like the automation curve beside it: a
+            // recording longer than the bars it was given must not draw over
+            // the clip after it.
+            const juce::Graphics::ScopedSaveState clipped (g);
+            g.reduceClipRegion (bounds.toNearestInt());
+
+            const auto centre = bounds.getCentreY();
+            const auto halfHeight = bounds.getHeight() * 0.5f - 2.0f;
+
+            g.setColour (clipColour.brighter (0.4f).withAlpha (audible ? 0.9f : 0.4f));
+
+            for (int x = (int) bounds.getX(); x < (int) bounds.getRight(); ++x)
+            {
+                const auto a = ((float) x - bounds.getX()) / bounds.getWidth();
+                const auto b = ((float) (x + 1) - bounds.getX()) / bounds.getWidth();
+
+                const auto bin = entry.peaks.range (a, b);
+                const auto top = centre - bin.maximum * halfHeight;
+                const auto bottom = centre - bin.minimum * halfHeight;
+
+                g.fillRect ((float) x, juce::jmin (top, bottom), 1.0f,
+                            juce::jmax (1.0f, std::abs (bottom - top)));
+            }
+        }
+    }
+
+    g.setColour (colour::textPrimary.withAlpha (audible ? 0.9f : 0.5f));
+    g.setFont (type::font (type::small, true));
+    g.drawText (channel.isValid() ? channel[ids::name].toString()
+                                  : "channel " + clip[ids::channelId].toString(),
+                bounds.reduced (6.0f, 2.0f).toNearestInt(), juce::Justification::topLeft, false);
+}
+
 void PlaylistComponent::paintAutomationClip (juce::Graphics& g, const juce::ValueTree& clip,
                                              int trackIndex, juce::Rectangle<float> bounds,
                                              bool audible)
@@ -1235,6 +1308,12 @@ void PlaylistComponent::paint (juce::Graphics& g)
             if (ProjectEdits::isAutomationClip (clip))
             {
                 paintAutomationClip (g, clip, trackIndex, bounds, audible);
+                continue;
+            }
+
+            if (ProjectEdits::isAudioClip (clip))
+            {
+                paintAudioClip (g, clip, bounds, audible);
                 continue;
             }
 

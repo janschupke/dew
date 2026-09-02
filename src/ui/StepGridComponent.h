@@ -62,6 +62,17 @@ public:
     std::function<void()> onTimelineChanged;
 
 private:
+    /** Draws an audio channel's recording along the row, in place of its cells.
+
+        Separate from paint() because it is the one row shape that is not a
+        sequence of cells: it is measured in the sample's own frames and mapped
+        onto steps, and folding it into the cell loop would put that conversion
+        inside a loop that runs per step.
+    */
+    void paintWaveformRow (juce::Graphics&, const juce::ValueTree& channel,
+                           juce::Rectangle<int> rowBounds, juce::Colour channelColour,
+                           bool muted);
+
     void timerCallback() override;
     void scrollBarMoved (juce::ScrollBar*, double) override;
 

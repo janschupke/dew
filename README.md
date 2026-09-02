@@ -1,8 +1,8 @@
 # dew
 
 A desktop digital synth DAW — pattern composition in the FL Studio shape: a channel
-rack with a step grid, a piano roll, a playlist of pattern clips, and a mixer, driven
-by a three-oscillator synth per channel.
+rack with a step grid, a piano roll, a playlist of clips, and a mixer, driven by a
+three-oscillator synth per channel — or, on an audio channel, by a recording.
 
 Status: **working prototype**. New, open, edit, save and playback all function end to
 end, with effects and automation on top. It is not a product — but every layer is real
@@ -51,6 +51,18 @@ Start with **Demos → Getting Started** in the menu bar; there are four.
   with its own octave, detune and gain and its own on/off switch, edited a tab at a
   time. Only the first is on by default, so a new channel is a single oscillator until
   you stack one on it. Behind them, one ADSR envelope, and channel volume and pan.
+- **Recording** — **+ Audio** adds a channel that plays a recording instead of its
+  oscillators. Arm it with the **R** on its row, press Record, and the take is captured
+  from the input chosen in Audio Settings and dropped on the playlist at the bar the
+  playhead was on. Its rack row shows the waveform in place of a step grid, and the
+  instrument panel shows the recording instead of the oscillators: trim handles on the
+  waveform itself, fade in and out, pitch, reverse and loop. Everything below that —
+  mixer routing, volume, pan and the effect chain — is shared with a synth channel,
+  because a channel is the same thing downstream of where its samples come from.
+
+  The microphone is asked for when an input is chosen or a channel is armed, never at
+  startup: dew opens the device output-only, and a permission prompt that arrives before
+  you have asked for anything is one people refuse.
 - **Loop** — a span selected on any ruler is the span that plays: the transport wraps
   inside it rather than around the whole pattern or the whole song, so eight bars can be
   worked on without hearing the other fifty-six. A loop drawn ahead of the playhead is
@@ -68,8 +80,9 @@ Start with **Demos → Getting Started** in the menu bar; there are four.
   smaller oscilloscope.
 - **Status bar** — what the editors are pointed at, transient messages that expire
   instead of standing forever, and the DSP load and dropout count.
-- **Audio settings** — driver, output, input, sample rate and buffer size, with the
-  resulting latency in milliseconds and a test tone. Under **Audio**, or ⌘,.
+- **Audio settings** — driver, output, input, which input channels to take, sample rate
+  and buffer size, with the resulting latency in milliseconds, an input level meter and a
+  test tone. Under **Audio**, or ⌘,.
 - **It remembers** — window geometry, the active tab, selections, the piano roll's zoom,
   scroll and snap grid, the panel width and the chosen device all come back next launch.
   The piano roll's *tool* deliberately does not: restoring into paint or slice would mean
@@ -81,8 +94,8 @@ Start with **Demos → Getting Started** in the menu bar; there are four.
 - **File** — New, Open, Save, Save As, with dirty tracking and a save-before-closing
   prompt. Undo/redo covers every edit.
 
-⌘N ⌘O ⌘S ⇧⌘S, ⌘E to render, ⌘Z ⇧⌘Z, Space to play, ⌘L to switch pattern/song, ⌘K to add
-a channel.
+⌘N ⌘O ⌘S ⇧⌘S, ⌘E to render, ⌘Z ⇧⌘Z, Space to play, R to record, ⌘L to switch
+pattern/song, ⌘K to add a channel.
 
 On any ruler: drag to scrub, shift-drag to select a span, ⌘-click to span from the
 playhead to where you clicked, and shift-click or double-click to drop the selection.
@@ -354,9 +367,18 @@ to drift out of step with a hand-written parser.
 Saving writes to a temporary and swaps, so an interrupted save cannot destroy the
 project it was overwriting.
 
+Audio is the one thing the file cannot hold. A project that references recordings gets
+a sidecar folder beside it — `Song.dew` and `Song Assets/` — and stores paths relative
+to itself, so the pair can be copied to another machine or another folder intact.
+Saving gathers: every referenced file not already in the sidecar is copied in and its
+path rewritten, which covers both the first save of a take recorded into an untitled
+project and a Save As that has to bring the audio along. A sample imported from
+elsewhere on the disk keeps its absolute path rather than becoming a chain of `../`,
+which would be portable to nothing.
+
 ## Testing
 
-Catch2 via CTest. `ctest --preset release` runs all 487.
+Catch2 via CTest. `ctest --preset release` runs all 539.
 
 MP3 is the one thing here that needs a tool dew does not ship. JUCE can only decode MP3
 on its own, so encoding drives an installed `lame` binary as a child process - which is

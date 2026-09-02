@@ -1,5 +1,7 @@
 #include "ProjectDocument.h"
 
+#include "AssetPaths.h"
+#include "ProjectEdits.h"
 #include "ProjectFactory.h"
 #include "ProjectSerializer.h"
 
@@ -63,7 +65,67 @@ juce::Result ProjectDocument::loadDocument (const juce::File& file)
 
 juce::Result ProjectDocument::saveDocument (const juce::File& file)
 {
+    // Audio first: a .dew that names files it did not bring with it is the one
+    // way this format can be saved and still be broken afterwards.
+    gatherAssetsInto (file);
+
     return ProjectSerializer::writeToFile (state, file);
+}
+
+void ProjectDocument::gatherAssetsInto (const juce::File& projectFile)
+{
+    const auto sidecar = AssetPaths::sidecarFolderFor (projectFile);
+
+    if (sidecar == juce::File())
+        return;
+
+    for (auto channel : state)
+    {
+        if (! channel.hasType (ids::CHANNEL))
+            continue;
+
+        auto sample = channel.getChildWithName (ids::SAMPLE);
+
+        if (! sample.isValid())
+            continue;
+
+        const auto stored = sample[ids::file].toString();
+
+        if (stored.isEmpty())
+            continue;
+
+        // Resolved against where the document lives NOW, which on a Save As is
+        // still the old location - that is exactly the path we are copying from.
+        const auto source = AssetPaths::resolve (stored, getFile());
+
+        if (! source.existsAsFile())
+            continue;
+
+        if (source.isAChildOf (sidecar))
+        {
+            // Already in the right folder; only the stored form may need fixing,
+            // which is what a Save As of an already-gathered project needs.
+            sample.setProperty (ids::file, AssetPaths::relativise (source, projectFile), nullptr);
+            continue;
+        }
+
+        sidecar.createDirectory();
+
+        auto destination = sidecar.getChildFile (source.getFileName());
+
+        // A name collision between two takes from different folders would
+        // otherwise have one silently overwrite the other.
+        if (destination.existsAsFile() && destination.getSize() != source.getSize())
+            destination = AssetPaths::nextTakeFile (sidecar, channel[ids::name].toString());
+
+        if (! source.copyFileTo (destination))
+            continue;
+
+        // Deliberately not through the UndoManager: gathering is a consequence
+        // of saving, not an edit the user made, and landing it on the undo
+        // stack would let Undo point the project back at the staging folder.
+        sample.setProperty (ids::file, AssetPaths::relativise (destination, projectFile), nullptr);
+    }
 }
 
 juce::File ProjectDocument::getLastDocumentOpened()

@@ -38,16 +38,12 @@ juce::Array<juce::Component*> headersOf (juce::Component& rack)
     juce::Array<juce::Component*> all, headers;
     collectOfType<juce::Component> (rack, all);
 
+    // By id, not by shape. Counting the widgets on a row identified it only for
+    // as long as every row had exactly one label and two buttons, and an audio
+    // channel's arm toggle is a third.
     for (auto* component : all)
-    {
-        juce::Array<juce::Label*> labels;
-        juce::Array<juce::Button*> buttons;
-        collectOfType (*component, labels);
-        collectOfType (*component, buttons);
-
-        if (labels.size() == 1 && buttons.size() == 2)
+        if (component->getComponentID() == "channelHeader")
             headers.add (component);
-    }
 
     return headers;
 }
@@ -221,7 +217,7 @@ TEST_CASE ("the instrument panel's knobs are one undo step too", "[ui][channelra
     for (auto* slider : sliders)
         if (slider->getSliderStyle() == juce::Slider::RotaryHorizontalVerticalDrag
             && slider->getRange() == juce::Range<double> (0.0, 1.0)
-            && slider->getInterval() == 0.001)
+            && juce::exactlyEqual (slider->getInterval(), 0.001))
             volume = slider;
 
     REQUIRE (volume != nullptr);

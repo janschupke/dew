@@ -73,6 +73,24 @@ struct ProjectEdits
     static juce::ValueTree addChannel (juce::ValueTree project, const juce::String& name,
                                        juce::UndoManager*);
 
+    /** A channel that plays a recorded or imported sample instead of its
+        oscillators. Identical to addChannel in every other respect - the id,
+        the mixer routing and the canonical child order are the same problem.
+    */
+    static juce::ValueTree addAudioChannel (juce::ValueTree project, const juce::String& name,
+                                            juce::UndoManager*);
+
+    static bool isAudioChannel (const juce::ValueTree& channel);
+
+    /** Points an audio channel at a file, and records what was found in it.
+
+        The length is stored because the editor has to lay a clip out before the
+        audio has been read, and because a missing file should still draw as the
+        right width rather than collapsing to nothing.
+    */
+    static void setSampleSource (juce::ValueTree channel, const juce::String& relativeOrAbsolutePath,
+                                 int sourceSampleRate, int lengthSamples, juce::UndoManager*);
+
     static void removeChannel (juce::ValueTree project, juce::ValueTree channel, juce::UndoManager*);
 
     // --- patterns ------------------------------------------------------------
@@ -190,7 +208,18 @@ struct ProjectEdits
     static juce::ValueTree addAutomationClip (juce::ValueTree playlistTrack, int automationId,
                                               int startBar, int lengthBars, juce::UndoManager*);
 
+    /** A clip that plays an audio channel's sample. */
+    static juce::ValueTree addAudioClip (juce::ValueTree playlistTrack, int channelId,
+                                         int startBar, int lengthBars, juce::UndoManager*);
+
     static bool isAutomationClip (const juce::ValueTree& clip);
+
+    static bool isAudioClip (const juce::ValueTree& clip);
+
+    /** Neither of the other two. Defined by exclusion on purpose: a version 3
+        file has clips with no `kind` at all, and those are notes.
+    */
+    static bool isMidiClip (const juce::ValueTree& clip);
 
     static void removeClip (juce::ValueTree playlistTrack, juce::ValueTree clip, juce::UndoManager*);
 

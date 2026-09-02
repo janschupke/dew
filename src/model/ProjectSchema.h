@@ -71,8 +71,15 @@ struct NodeSpec
     v6 replaced the single "osc" object with an "oscillators" array of fixed
     slots. That one is a shape change rather than an added property, so it needs
     a real migration; see ProjectSerializer.
+
+    v7 added audio channels: `source` on a channel, a SAMPLE child beside the
+    instrument, and `channelId` on a clip. All three are additive with declared
+    defaults, so treeFromVar materialises them for a v6 file and no migration is
+    needed. The version is bumped anyway because an OLDER build reading a v7
+    file would drop the audio silently rather than refuse it, which is exactly
+    what the version gate is for.
 */
-inline constexpr int kFormatVersion = 6;
+inline constexpr int kFormatVersion = 7;
 
 /** How many effects one channel or mixer track may carry. A document limit
     rather than an engine one: a chain longer than this cannot be saved, so it

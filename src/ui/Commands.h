@@ -15,6 +15,7 @@ enum
     transportPlayStop,
     transportRewind,
     transportToggleMode,
+    transportRecord,
     addChannel,
     addPattern,
     audioSettings,

@@ -59,6 +59,16 @@ private:
 
     void noteChange();
 
+    /** Copies every referenced audio file into the project's sidecar folder and
+        rewrites the stored paths relative to it.
+
+        Called from saveDocument, which makes one rule cover both cases: a first
+        save moves recordings out of the staging folder, and a Save As brings
+        the audio along to the new location instead of leaving the copy
+        pointing back at the original project's folder.
+    */
+    void gatherAssetsInto (const juce::File& projectFile);
+
     juce::ValueTree state;
     juce::UndoManager undoManager;
     juce::StringArray lastLoadWarnings;

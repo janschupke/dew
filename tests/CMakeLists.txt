@@ -46,6 +46,12 @@ add_executable(dew_tests
   RenderRangeTests.cpp
   UiSmokeTests.cpp
   SignalScopeTests.cpp
+  WaveformPeaksTests.cpp
+  AudioClipTests.cpp
+  SamplePlayerTests.cpp
+  AssetPathTests.cpp
+  AudioRecorderTests.cpp
+  AudioUiTests.cpp
 )
 
 target_link_libraries(dew_tests

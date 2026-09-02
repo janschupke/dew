@@ -28,6 +28,16 @@ public:
     /** Called when the document is replaced wholesale. */
     void refresh();
 
+    /** Starts or stops a take. Wired by the parent rather than reached through
+        a back-pointer, like every other cross-component call in the editor -
+        recording needs the document, the device and the playlist at once, and
+        none of those belong to a transport bar.
+    */
+    std::function<void()> onToggleRecord;
+
+    /** Whether a take is running, for the button's lit state. */
+    std::function<bool()> isRecording;
+
 private:
     void timerCallback() override;
     void changeListenerCallback (juce::ChangeBroadcaster*) override;
@@ -46,6 +56,7 @@ private:
 
     DewIconButton playButton { icons::play(), "Play or pause (Space)" };
     DewIconButton stopButton { icons::stop(), "Stop and rewind" };
+    DewIconButton recordButton { icons::record(), "Record into the armed channel (R)" };
     DewNumberField tempoField;
     DewButton modeButton { "Pattern", DewButton::Role::normal };
 

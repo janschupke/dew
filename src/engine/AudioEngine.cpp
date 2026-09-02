@@ -1,5 +1,7 @@
 #include "AudioEngine.h"
 
+#include "SamplePlayer.h"
+
 #include <limits>
 
 namespace dew
@@ -78,7 +80,7 @@ void AudioEngine::releaseResources()
 
 void AudioEngine::setProject (const juce::ValueTree& project, juce::StringArray* warnings)
 {
-    publish (buildSnapshot (project, warnings));
+    publish (buildSnapshot (project, warnings, samplePool));
 }
 
 void AudioEngine::publish (EngineSnapshot snapshot)
@@ -641,12 +643,25 @@ void AudioEngine::processBlock (juce::AudioBuffer<float>& buffer) noexcept
     {
         auto* mono = channelBuffers.getWritePointer (i);
 
-        // One read of each controller per block, like the transport's atomics.
-        channels[(size_t) i].renderAdd (mono, numSamples,
-                                        channelBend[(size_t) i].load (std::memory_order_relaxed),
-                                        channelModulation[(size_t) i].load (std::memory_order_relaxed));
-
         auto channelSnapshot = snapshot.channels[(size_t) i];
+
+        if (channelSnapshot.source == ChannelSource::audio)
+        {
+            // Audio clips live in the arrangement, so they sound in song mode
+            // only - the same rule automation follows, and for the same reason:
+            // pattern mode has no playlist position for a clip to cover.
+            if (isPlayingNow && mode == Transport::Mode::song)
+                SamplePlayer::renderAdd (mono, numSamples, snapshot, i,
+                                         transport.getPositionSamples() / juce::jmax (1.0, transport.samplesPerStep()),
+                                         transport.samplesPerStep(), currentSampleRate);
+        }
+        else
+        {
+            // One read of each controller per block, like the transport's atomics.
+            channels[(size_t) i].renderAdd (mono, numSamples,
+                                            channelBend[(size_t) i].load (std::memory_order_relaxed),
+                                            channelModulation[(size_t) i].load (std::memory_order_relaxed));
+        }
 
         if (! snapshot.isChannelAudible (channelSnapshot))
             continue;

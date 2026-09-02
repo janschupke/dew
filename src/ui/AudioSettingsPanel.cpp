@@ -8,15 +8,46 @@ namespace dew
 using namespace tokens;
 
 AudioSettingsPanel::AudioSettingsPanel (LiveAudioHost& host, AudioEngine& e)
-    : deviceManager (host.getDeviceManager()), engine (e)
+    : audioHost (host), deviceManager (host.getDeviceManager()), engine (e)
 {
     setComponentID ("audioSettings");
     setSize (preferredWidth, preferredHeight);
 
-    labels = { "DRIVER", "OUTPUT", "INPUT", "RATE", "BUFFER" };
+    labels = { "DRIVER", "OUTPUT", "INPUT", "CHANNELS", "RATE", "BUFFER" };
 
-    for (auto* box : { &typeBox, &outputBox, &inputBox, &rateBox, &bufferBox })
+    for (auto* box : { &typeBox, &outputBox, &inputBox, &inputChannelBox, &rateBox, &bufferBox })
         addAndMakeVisible (box);
+
+    inputChannelBox.addItem ("Mono - left", 1);
+    inputChannelBox.addItem ("Mono - right", 2);
+    inputChannelBox.addItem ("Stereo", 3);
+    inputChannelBox.setSelectedId (1, juce::dontSendNotification);
+    inputChannelBox.setEnabled (false);
+
+    inputChannelBox.onChange = [this]
+    {
+        if (updating)
+            return;
+
+        auto setup = deviceManager.getAudioDeviceSetup();
+
+        // Explicit channels, so "mono - right" is the right-hand input rather
+        // than whichever one the device happens to call first.
+        setup.useDefaultInputChannels = false;
+        setup.inputChannels.clear();
+
+        switch (inputChannelBox.getSelectedId())
+        {
+            case 1:  setup.inputChannels.setBit (0); break;
+            case 2:  setup.inputChannels.setBit (1); break;
+            default: setup.inputChannels.setBit (0); setup.inputChannels.setBit (1); break;
+        }
+
+        applySetup (setup);
+    };
+
+    // 30 Hz, the rate the design tokens declare for a UI refresh.
+    startTimerHz (motion::uiRefreshHz);
 
     typeBox.onChange = [this]
     {
@@ -54,6 +85,17 @@ AudioSettingsPanel::AudioSettingsPanel (LiveAudioHost& host, AudioEngine& e)
             setup.inputChannels.clear();
 
         applySetup (setup);
+
+        // The moment the microphone is actually asked for. Doing it here rather
+        // than at startup is the whole reason dew opens output-only; a refusal
+        // comes back as a message rather than as a meter that never moves.
+        if (const auto error = audioHost.setInputEnabled (! none); error.isNotEmpty())
+        {
+            summaryText = error;
+            repaint();
+        }
+
+        inputChannelBox.setEnabled (! none);
     };
 
     rateBox.onChange = [this]
@@ -170,6 +212,11 @@ void AudioSettingsPanel::rebuildLists()
     bufferBox.setEnabled (haveDevice);
     testButton.setEnabled (haveDevice);
 
+    // Which input channels to take is meaningless with no input selected, and
+    // an enabled control that does nothing is worse than a disabled one. Set
+    // here as well as in the input handler, or the panel opens with it live.
+    inputChannelBox.setEnabled (haveDevice && isInputSelected());
+
     updateSummary();
     repaint();
 }
@@ -200,12 +247,37 @@ void AudioSettingsPanel::changeListenerCallback (juce::ChangeBroadcaster*)
     rebuildLists();
 }
 
+juce::Rectangle<int> AudioSettingsPanel::meterBounds() const
+{
+    // Under the last combo and above the summary line, spanning the same column
+    // the boxes occupy so it reads as belonging to the input rows above it.
+    return getLocalBounds().reduced (space::xl)
+               .withTop (space::xl + (size::controlHeight + space::md) * 6 + space::md)
+               .withHeight (10)
+               .withTrimmedLeft (66 + space::md);
+}
+
+void AudioSettingsPanel::timerCallback()
+{
+    const auto peak = audioHost.getRecorder().readAndClearInputPeak();
+
+    // Rise instantly, fall gradually: a meter that tracked the read-and-clear
+    // value exactly would spend most frames at zero and read as broken.
+    inputLevel = peak > inputLevel ? peak : inputLevel * 0.8f;
+
+    if (inputLevel < 0.001f)
+        inputLevel = 0.0f;
+
+    repaint (meterBounds().expanded (2));
+}
+
 void AudioSettingsPanel::resized()
 {
     auto area = getLocalBounds().reduced (space::xl);
     labelBounds.clearQuick();
 
-    juce::ComboBox* boxes[] { &typeBox, &outputBox, &inputBox, &rateBox, &bufferBox };
+    juce::ComboBox* boxes[] { &typeBox, &outputBox, &inputBox, &inputChannelBox,
+                              &rateBox, &bufferBox };
 
     for (auto* box : boxes)
     {
@@ -229,6 +301,34 @@ void AudioSettingsPanel::paint (juce::Graphics& g)
 
     for (int i = 0; i < labelBounds.size() && i < labels.size(); ++i)
         g.drawText (labels[i], labelBounds[i], juce::Justification::centredLeft, false);
+
+    // The input meter. Drawn whether or not an input is open, because an empty
+    // meter beside a chosen input is information - it says the device is there
+    // and silent, which is different from there being no meter at all.
+    const auto meter = meterBounds();
+
+    g.setColour (colour::wellDeep);
+    g.fillRoundedRectangle (meter.toFloat(), radius::sm);
+
+    if (isInputSelected())
+    {
+        const auto filled = meter.toFloat().withWidth (meter.toFloat().getWidth()
+                                                       * juce::jlimit (0.0f, 1.0f, inputLevel));
+
+        // Red at the top of the scale rather than a gradient across it: what a
+        // recording meter has to say is "this is about to clip", and that is a
+        // threshold, not a slope.
+        g.setColour (inputLevel > 0.89f ? colour::danger : colour::success);
+        g.fillRoundedRectangle (filled, radius::sm);
+    }
+
+    g.setColour (colour::outline);
+    g.drawRoundedRectangle (meter.toFloat(), radius::sm, stroke::hairline);
+
+    g.setFont (type::font (type::caption));
+    g.setColour (colour::textSecondary);
+    g.drawText ("INPUT LEVEL", meter.withX (space::xl).withWidth (66),
+                juce::Justification::centredLeft, false);
 
     // The live state, under the controls: what the choices above added up to.
     const auto summary = getLocalBounds().reduced (space::xl)

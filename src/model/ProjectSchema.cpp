@@ -116,6 +116,40 @@ const NodeSpec& effectSpec()
     return spec;
 }
 
+/** The audio source an "audio" channel plays.
+
+    Flat, in the same style as effectSpec(): every parameter lives on the one
+    node with a declared default, rather than a node shape that changes with the
+    channel kind. A synth channel carries this node too, inert - exactly as
+    every channel carries three OSC slots most of which are switched off. That
+    is what lets the editor point at a slot before you have committed to using
+    it, and it keeps the canonical tree one shape.
+
+    `file` is stored relative to the .dew when the audio sits beside it, so a
+    project folder can be copied to another machine intact. See AssetPaths.
+*/
+const NodeSpec& sampleSpec()
+{
+    static const NodeSpec spec {
+        ids::SAMPLE,
+        { { ids::file,             "" },
+          { ids::sourceSampleRate, 44100 },
+          { ids::lengthSamples,    0 },
+          { ids::startSample,      0 },
+          // 0 rather than lengthSamples: the trim end has to mean "the end of
+          // whatever is there" before the file has been read, and a recording
+          // sets its length after the node already exists.
+          { ids::endSample,        0 },
+          { ids::fadeInMs,         0.0 },
+          { ids::fadeOutMs,        0.0 },
+          { ids::transpose,        0.0 },
+          { ids::reverse,          false },
+          { ids::loop,             false } },
+        {}
+    };
+    return spec;
+}
+
 const NodeSpec& channelSpec()
 {
     static const NodeSpec spec {
@@ -128,8 +162,14 @@ const NodeSpec& channelSpec()
           { ids::volume,       0.8 },
           { ids::pan,          0.0 },
           { ids::muted,        false },
-          { ids::solo,         false } },
+          { ids::solo,         false },
+          // "synth" or "audio". A discriminator rather than two node types:
+          // everything downstream of a channel's mono buffer - pan, volume,
+          // the effect chain, mixer routing, metering, automation - is the
+          // same for both, and only the source of the samples differs.
+          { ids::source,       "synth" } },
         { { "instrument", &instrumentSpec(), false },
+          { "sample",     &sampleSpec(),     false },
           { "effects",    &effectSpec(),     true } }
     };
     return spec;
@@ -202,6 +242,9 @@ const NodeSpec& clipSpec()
         { { ids::kind,         "pattern" },
           { ids::patternId,    1 },
           { ids::automationId, 1 },
+          // Which channel an "audio" clip plays, alongside the pattern and
+          // automation references. Only the one matching `kind` is meaningful.
+          { ids::channelId,    1 },
           { ids::startBar,     0 },
           { ids::lengthBars,   1 } },
         {}

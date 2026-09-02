@@ -18,6 +18,11 @@ public:
     ChannelHeader (ProjectDocument& d, EditorState& s, juce::ValueTree c)
         : document (d), editorState (s), channel (std::move (c))
     {
+        // Named, so a test can find a row by asking rather than by counting the
+        // widgets on it. It used to be identified as "one label and two
+        // buttons", which stopped being true the moment a row gained a third.
+        setComponentID ("channelHeader");
+
         nameLabel.setText (channel[ids::name].toString(), juce::dontSendNotification);
         nameLabel.setEditable (false, true, false);
 
@@ -62,6 +67,15 @@ public:
         attachKnob (panKnob, ids::pan, "Change pan", "Pan");
         panKnob.setBipolar (true);
 
+        // Only audio channels can be armed, and only one channel at a time -
+        // clicking an armed row's R disarms it rather than arming a second.
+        armButton.setTooltip ("Arm this channel for recording");
+        armButton.onClick = [this]
+        {
+            editorState.setArmedChannelId (armButton.getToggleState() ? getChannelId() : 0);
+        };
+        addChildComponent (armButton);
+
         // M, S and the knobs must keep their clicks, so they select the row
         // explicitly.
         muteButton.onStateChange = [this] { select(); };
@@ -86,6 +100,13 @@ public:
         soloButton.setToggleState ((bool) channel[ids::solo], juce::dontSendNotification);
         volumeKnob.setValue ((double) channel[ids::volume], juce::dontSendNotification);
         panKnob.setValue ((double) channel[ids::pan], juce::dontSendNotification);
+
+        const auto audio = ProjectEdits::isAudioChannel (channel);
+        armButton.setVisible (audio);
+        armButton.setToggleState (audio && editorState.getArmedChannelId() == getChannelId(),
+                                  juce::dontSendNotification);
+
+        resized();
         repaint();
     }
 
@@ -115,11 +136,16 @@ public:
 
         // The base pitch, so a melodic channel says what it is playing. Its
         // bounds come from resized() rather than being recomputed here, so it
-        // cannot drift into the mute and solo buttons.
-        g.setColour (colour::textDisabled);
-        g.setFont (type::font (type::caption));
-        g.drawText (juce::String ((int) channel[ids::basePitch]), pitchBounds,
-                    juce::Justification::centredRight, false);
+        // cannot drift into the mute and solo buttons. An audio channel has the
+        // arm toggle in this slot instead: a recording has no base pitch, and a
+        // number that means nothing is worse than no number.
+        if (! ProjectEdits::isAudioChannel (channel))
+        {
+            g.setColour (colour::textDisabled);
+            g.setFont (type::font (type::caption));
+            g.drawText (juce::String ((int) channel[ids::basePitch]), pitchBounds,
+                        juce::Justification::centredRight, false);
+        }
     }
 
     void select() { editorState.setSelectedChannelId (getChannelId()); }
@@ -206,6 +232,11 @@ public:
         pitchBounds = area.removeFromRight (26);
         area.removeFromRight (space::xs);
 
+        // The same slot the base pitch occupies, so the row's shape is the same
+        // whichever kind of channel it is and the knobs never shift under the
+        // cursor when a channel changes kind.
+        armButton.setBounds (pitchBounds.withWidth (22).reduced (0, space::xxs));
+
         panKnob.setBounds (area.removeFromRight (size::knobSm));
         area.removeFromRight (space::xs);
         volumeKnob.setBounds (area.removeFromRight (size::knobSm));
@@ -277,6 +308,7 @@ private:
     DewLetterToggle soloButton { "S", colour::success, "Solo this channel" };
     DewKnob volumeKnob { "VOL", 0.0, 1.0, 0.001 };
     DewKnob panKnob { "PAN", -1.0, 1.0, 0.001 };
+    DewLetterToggle armButton { "R", colour::recording, "Arm this channel for recording" };
 };
 
 // -----------------------------------------------------------------------------
@@ -328,11 +360,16 @@ ChannelRackComponent::ChannelRackComponent (ProjectDocument& d, AudioEngine& e, 
     addAndMakeVisible (viewport);
 
     addChannelButton.onClick = [this] { addChannel(); };
+    addAudioButton.onClick = [this] { addAudioChannel(); };
 
     // Into the scrolling holder, not onto the panel: it is the next row of the
     // list, so it belongs to the list and scrolls with it.
     addChannelButton.setComponentID ("addChannelButton");
     contentHolder.addAndMakeVisible (addChannelButton);
+
+    addAudioButton.setComponentID ("addAudioButton");
+    addAudioButton.setTooltip ("Add a channel that plays a recording");
+    contentHolder.addAndMakeVisible (addAudioButton);
 
     document.getState().addListener (this);
     editorState.addChangeListener (this);
@@ -357,6 +394,19 @@ void ChannelRackComponent::addChannel()
     undo.beginNewTransaction ("Add channel");
     const auto channel = ProjectEdits::addChannel (document.getState(), {}, &undo);
     editorState.setSelectedChannelId ((int) channel[ids::id]);
+}
+
+void ChannelRackComponent::addAudioChannel()
+{
+    auto& undo = document.getUndoManager();
+    undo.beginNewTransaction ("Add audio channel");
+    const auto channel = ProjectEdits::addAudioChannel (document.getState(), {}, &undo);
+
+    // Selected AND armed: adding an audio channel is something you do in order
+    // to record into it, and leaving it disarmed makes Record answer with an
+    // error message about a step the user has just taken.
+    editorState.setSelectedChannelId ((int) channel[ids::id]);
+    editorState.setArmedChannelId ((int) channel[ids::id]);
 }
 
 void ChannelRackComponent::removeChannel (int channelId)
@@ -417,6 +467,12 @@ void ChannelRackComponent::rebuildHeaders()
         header->onAddChannel = [this] { addChannel(); };
         header->onRemoveChannel = [this] (int id) { removeChannel (id); };
         contentHolder.addAndMakeVisible (header);
+
+        // A freshly built row has to be brought up to date once, not only on
+        // the next property change: everything a row shows CONDITIONALLY - the
+        // arm toggle on an audio channel - is otherwise invisible until
+        // something unrelated happens to touch the channel.
+        header->refresh();
     }
 
     resized();
@@ -505,10 +561,15 @@ void ChannelRackComponent::resized()
         headers[i]->setBounds (0, i * size::rowHeight, size::headerWidth, size::rowHeight);
 
     // Directly below the last channel, spanning the header column: the next
-    // empty row of the list, where the channel it adds will appear.
-    addChannelButton.setBounds (juce::Rectangle<int> (0, headers.size() * size::rowHeight,
-                                                      size::headerWidth, size::rowHeight)
-                                    .reduced (space::sm, space::xs));
+    // empty row of the list, where the channel it adds will appear. The two
+    // kinds share that row rather than stacking, so the grid still starts one
+    // row after the last channel.
+    auto addRow = juce::Rectangle<int> (0, headers.size() * size::rowHeight,
+                                        size::headerWidth, size::rowHeight)
+                      .reduced (space::sm, space::xs);
+
+    addChannelButton.setBounds (addRow.removeFromLeft (addRow.getWidth() / 2 - space::xxs));
+    addAudioButton.setBounds (addRow.removeFromRight (addRow.getWidth() - space::xs));
 
     grid.setBounds (size::headerWidth, 0,
                     juce::jmax (120, contentHolder.getWidth() - size::headerWidth),

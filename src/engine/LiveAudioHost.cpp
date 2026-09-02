@@ -18,8 +18,9 @@ juce::String LiveAudioHost::start()
     if (started)
         return {};
 
-    // Output only: dew never records, so asking for an input would trigger a
-    // microphone permission prompt for no reason.
+    // Output only at startup. Recording is opt-in, and an input opened here
+    // would prompt for the microphone before the user asked for anything.
+    // setInputEnabled() reopens with inputs when they are actually wanted.
     const auto error = deviceManager.initialiseWithDefaultDevices (0, 2);
 
     if (error.isNotEmpty())
@@ -52,6 +53,8 @@ juce::String LiveAudioHost::restoreState (const juce::XmlElement& state)
     stop();
 
     // Output only, as start() does, and with the saved state as the preference.
+    // A saved setup that named an input is honoured only once setInputEnabled
+    // asks for one, so restoring a session never prompts either.
     // initialise falls back to the default device if the saved one has gone,
     // which is the behaviour worth having: a missing interface should not stop
     // the application making sound.
@@ -68,14 +71,60 @@ juce::String LiveAudioHost::restoreState (const juce::XmlElement& state)
     return {};
 }
 
+juce::String LiveAudioHost::setInputEnabled (bool shouldHaveInput)
+{
+    if (! started)
+        return "The audio device is not running.";
+
+    if (inputEnabled == shouldHaveInput)
+        return {};
+
+    auto setup = deviceManager.getAudioDeviceSetup();
+
+    if (shouldHaveInput)
+    {
+        setup.useDefaultInputChannels = true;
+    }
+    else
+    {
+        setup.useDefaultInputChannels = false;
+        setup.inputChannels.clear();
+        setup.inputDeviceName = {};
+    }
+
+    // treatAsChosenDevice: this is a deliberate user-visible change, and it
+    // should survive into the saved session rather than being forgotten.
+    const auto error = deviceManager.setAudioDeviceSetup (setup, true);
+
+    if (error.isNotEmpty())
+        return error;
+
+    auto* device = deviceManager.getCurrentAudioDevice();
+
+    // Permission refused, or a device with no inputs: the setup call succeeds
+    // and the channels simply are not there. Reporting the request as having
+    // worked would leave the user watching a meter that can never move.
+    if (shouldHaveInput && (device == nullptr || device->getActiveInputChannels().isZero()))
+    {
+        inputEnabled = false;
+        return "No audio input is available. Check the input device, and that dew is "
+               "allowed to use the microphone in System Settings > Privacy & Security.";
+    }
+
+    inputEnabled = shouldHaveInput;
+    return {};
+}
+
 void LiveAudioHost::stop()
 {
     if (! started)
         return;
 
+    recorder.stop();
     deviceManager.removeAudioCallback (this);
     deviceManager.closeAudioDevice();
     started = false;
+    inputEnabled = false;
 }
 
 juce::String LiveAudioHost::describeDevice() const
@@ -101,12 +150,18 @@ void LiveAudioHost::audioDeviceStopped()
     engine.releaseResources();
 }
 
-void LiveAudioHost::audioDeviceIOCallbackWithContext (const float* const*, int,
+void LiveAudioHost::audioDeviceIOCallbackWithContext (const float* const* inputChannelData,
+                                                      int numInputChannels,
                                                       float* const* outputChannelData,
                                                       int numOutputChannels,
                                                       int numSamples,
                                                       const juce::AudioIODeviceCallbackContext&)
 {
+    // Before the render, so a take captures the input that arrived with this
+    // block rather than the one after it. The recorder also keeps the input
+    // meter running when nothing is being recorded.
+    recorder.writeBlock (inputChannelData, numInputChannels, numSamples);
+
     // The engine always renders stereo. A device with a different channel count
     // gets the stereo pair spread across it rather than silence.
     if (scratch.getNumSamples() < numSamples)

@@ -13,6 +13,7 @@
             INSTRUMENT                 -> "instrument": {}
               OSC (x kMaxOscillators)  -> "oscillators": []
               AMP                      -> "amp": {}
+            SAMPLE                     -> "sample": {}
             EFFECT*                    -> "effects": []
           PATTERN*                     -> "patterns": []
             NOTE*                      -> "notes": []
@@ -37,6 +38,7 @@ DEW_DECLARE_ID (CHANNEL)
 DEW_DECLARE_ID (INSTRUMENT)
 DEW_DECLARE_ID (OSC)
 DEW_DECLARE_ID (AMP)
+DEW_DECLARE_ID (SAMPLE)
 DEW_DECLARE_ID (PATTERN)
 DEW_DECLARE_ID (NOTE)
 DEW_DECLARE_ID (PLAYLIST)
@@ -85,6 +87,20 @@ DEW_DECLARE_ID (startBar)
 DEW_DECLARE_ID (lengthBars)
 DEW_DECLARE_ID (kind)
 DEW_DECLARE_ID (automationId)
+DEW_DECLARE_ID (channelId)
+
+// --- audio channels ----------------------------------------------------------
+DEW_DECLARE_ID (source)
+DEW_DECLARE_ID (file)
+DEW_DECLARE_ID (sourceSampleRate)
+DEW_DECLARE_ID (lengthSamples)
+DEW_DECLARE_ID (startSample)
+DEW_DECLARE_ID (endSample)
+DEW_DECLARE_ID (fadeInMs)
+DEW_DECLARE_ID (fadeOutMs)
+DEW_DECLARE_ID (transpose)
+DEW_DECLARE_ID (reverse)
+DEW_DECLARE_ID (loop)
 
 // --- automation --------------------------------------------------------------
 DEW_DECLARE_ID (scope)

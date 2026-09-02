@@ -1,6 +1,11 @@
 #include "EngineSnapshot.h"
 
+#include "../model/AssetPaths.h"
+#include "SamplePool.h"
+
 #include <atomic>
+#include <cmath>
+#include <functional>
 
 #include "../model/Ids.h"
 
@@ -49,11 +54,12 @@ int EngineSnapshot::songLengthSteps() const
 {
     int end = 0;
 
-    // Automation clips count as much as pattern clips: a sweep placed after the
-    // last note is still part of the arrangement, and leaving it out made the
-    // song loop out from underneath it.
+    // Every kind of clip counts. A sweep placed after the last note is still
+    // part of the arrangement, and leaving automation out made the song loop
+    // out from underneath it; an arrangement of nothing but recordings has the
+    // same problem in a starker form - it would have no length at all.
     for (const auto& clip : clips)
-        if (clip.patternIndex >= 0 || clip.automationIndex >= 0)
+        if (clip.patternIndex >= 0 || clip.automationIndex >= 0 || clip.channelIndex >= 0)
             end = juce::jmax (end, (clip.startBar + clip.lengthBars) * stepsPerBar());
 
     return end;
@@ -77,6 +83,14 @@ bool EngineSnapshot::isSilent() const
         for (const auto& note : pattern.notes)
             if (note.channelIndex >= 0)
                 return false;
+
+    // An audio-only project has no notes at all. Without this it reports
+    // "nothing to play", and dew_render exits non-zero on a perfectly good
+    // arrangement of recordings.
+    for (const auto& clip : clips)
+        if (clip.channelIndex >= 0
+            && channels[(size_t) clip.channelIndex].audio != nullptr)
+            return false;
 
     return true;
 }
@@ -300,7 +314,82 @@ float AutomationSnapshot::valueAt (double step) const noexcept
     return (float) mapAutomationValue (spec, (double) normalised);
 }
 
-EngineSnapshot buildSnapshot (const juce::ValueTree& project, juce::StringArray* warnings)
+namespace
+{
+
+/** Fills in an audio channel's sample settings, and fetches its audio.
+
+    Every value is clamped against the audio that was actually found rather than
+    against what the document claims, so a trim left over from a longer take
+    cannot make the render path read off the end of a shorter one.
+*/
+void readSample (ChannelSnapshot& c, const juce::ValueTree& channel, SamplePool* pool,
+                 const std::function<void (const juce::String&)>& warn)
+{
+    const auto node = channel.getChildWithName (ids::SAMPLE);
+
+    if (! node.isValid())
+        return;
+
+    const auto path = node[ids::file].toString();
+
+    if (path.isEmpty())
+        return;
+
+    if (pool == nullptr)
+        return;
+
+    const auto& entry = pool->loadReference (path);
+
+    if (! entry.isValid())
+    {
+        warn ("Channel \"" + channel[ids::name].toString() + "\" refers to audio \"" + path
+              + "\", which could not be read; it will not play.");
+        return;
+    }
+
+    c.audio = entry.audio;
+
+    const auto available = entry.audio->getNumSamples();
+
+    auto& settings = c.sample;
+    settings.sourceSampleRate = entry.sourceSampleRate;
+
+    settings.startSample = juce::jlimit (0, available, (int) node[ids::startSample]);
+
+    // 0 means "to the end", which is what an untrimmed sample and a freshly
+    // recorded one both store.
+    const auto storedEnd = (int) node[ids::endSample];
+    settings.endSample = storedEnd <= 0 ? available
+                                        : juce::jlimit (settings.startSample, available, storedEnd);
+
+    const auto region = juce::jmax (0, settings.endSample - settings.startSample);
+
+    const auto toFrames = [&entry] (double ms)
+    {
+        return (int) juce::jmax (0.0, ms * 0.001 * entry.sourceSampleRate);
+    };
+
+    // Fades are clamped to the region and then to each other: two fades longer
+    // than the audio between them would otherwise multiply into a notch rather
+    // than degrading to a triangle.
+    settings.fadeInSamples = juce::jmin (region, toFrames ((double) node[ids::fadeInMs]));
+    settings.fadeOutSamples = juce::jmin (region - settings.fadeInSamples,
+                                          toFrames ((double) node[ids::fadeOutMs]));
+    settings.fadeOutSamples = juce::jmax (0, settings.fadeOutSamples);
+
+    // The one std::pow, here on the message thread rather than per sample.
+    const auto semitones = juce::jlimit (-48.0, 48.0, (double) node[ids::transpose]);
+    settings.pitchRatio = (float) std::pow (2.0, semitones / 12.0);
+
+    settings.reverse = (bool) node[ids::reverse];
+    settings.loop = (bool) node[ids::loop];
+}
+
+} // namespace
+
+EngineSnapshot buildSnapshot (const juce::ValueTree& project, juce::StringArray* warnings,
+                              SamplePool* pool)
 {
     const auto warn = [warnings] (const juce::String& message)
     {
@@ -402,6 +491,12 @@ EngineSnapshot buildSnapshot (const juce::ValueTree& project, juce::StringArray*
 
         c.effects = readEffectChain (channel, "Channel \"" + channel[ids::name].toString() + "\"",
                                      unitOwners, warn);
+
+        c.source = channel[ids::source].toString() == "audio" ? ChannelSource::audio
+                                                              : ChannelSource::synth;
+
+        if (c.source == ChannelSource::audio)
+            readSample (c, channel, pool, warn);
 
         snapshot.channels.push_back (c);
     }
@@ -629,6 +724,22 @@ EngineSnapshot buildSnapshot (const juce::ValueTree& project, juce::StringArray*
                 // automation does too, or a muted lane still moves the mix.
                 if (trackAudible)
                     snapshot.anyAutomation = true;
+
+                snapshot.clips.push_back (c);
+                continue;
+            }
+
+            if (clip[ids::kind].toString() == "audio")
+            {
+                const auto channelId = (int) clip[ids::channelId];
+                c.channelIndex = snapshot.channelIndexForId (channelId);
+
+                if (c.channelIndex < 0)
+                {
+                    warn ("A clip refers to channel " + juce::String (channelId)
+                          + ", which does not exist; it will not play.");
+                    continue;
+                }
 
                 snapshot.clips.push_back (c);
                 continue;

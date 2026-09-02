@@ -1,5 +1,9 @@
 #include "MainComponent.h"
 
+#include <cmath>
+
+#include "../model/AssetPaths.h"
+
 #include "AudioSettingsPanel.h"
 #include "MidiSettingsPanel.h"
 
@@ -16,10 +20,14 @@ MainComponent::MainComponent (bool openAudioDevice)
       midiHost (audioHost.getDeviceManager(), engine),
       transportBar (document, engine, editorState),
       tabs (document, engine, editorState),
-      instrumentPanel (document, editorState),
+      instrumentPanel (document, editorState, &samplePool),
       statusBar (document, editorState, audioHost)
 {
     juce::Desktop::getInstance().setDefaultLookAndFeel (&lookAndFeel);
+
+    // Before the first projectChanged(), or the opening snapshot would resolve
+    // every audio channel to silence.
+    engine.setSamplePool (&samplePool);
 
     addAndMakeVisible (transportBar);
     addAndMakeVisible (tabs);
@@ -36,6 +44,14 @@ MainComponent::MainComponent (bool openAudioDevice)
 
     addAndMakeVisible (statusBar);
     addAndMakeVisible (divider);
+
+    transportBar.onToggleRecord = [this]
+    {
+        if (const auto error = toggleRecording(); error.isNotEmpty())
+            statusBar.showMessage (error, StatusBar::Severity::warning);
+    };
+
+    transportBar.isRecording = [this] { return isRecording(); };
 
     // Which channel MIDI plays follows the selection, and has to be pushed to
     // the router as an index because the MIDI thread cannot read EditorState.
@@ -82,6 +98,10 @@ void MainComponent::handleAsyncUpdate()
 
 void MainComponent::projectChanged()
 {
+    // Before the snapshot: a relative audio path can only be resolved against
+    // where the document lives, and Save As moves that out from under it.
+    samplePool.setProjectFile (document.getFile());
+
     juce::StringArray warnings;
     engine.setProject (document.getState(), &warnings);
 
@@ -198,6 +218,133 @@ void MainComponent::changeListenerCallback (juce::ChangeBroadcaster*)
     updateLoopRange();
 }
 
+bool MainComponent::isRecording() const noexcept
+{
+    return audioHost.getRecorder().isRecording();
+}
+
+juce::String MainComponent::toggleRecording()
+{
+    auto& recorder = audioHost.getRecorder();
+
+    if (recorder.isRecording())
+    {
+        finishRecording();
+        return {};
+    }
+
+    const auto channel = ProjectEdits::findChannel (document.getState(),
+                                                    editorState.getArmedChannelId());
+
+    if (! channel.isValid() || ! ProjectEdits::isAudioChannel (channel))
+        return "Arm an audio channel first: add one with + Audio, then click its R button.";
+
+    // Asked for here rather than at startup, so the microphone prompt arrives
+    // attached to the thing that needs it.
+    if (const auto error = audioHost.setInputEnabled (true); error.isNotEmpty())
+        return error;
+
+    auto* device = audioHost.getDeviceManager().getCurrentAudioDevice();
+
+    if (device == nullptr)
+        return "No audio device is running.";
+
+    // Staging until the project has a file of its own; saving gathers it into
+    // the sidecar folder. Recording into an unsaved project has to work - it is
+    // how most first takes happen.
+    const auto file = document.getFile() == juce::File()
+                          ? AssetPaths::nextTakeFile (AssetPaths::stagingFolder(),
+                                                      channel[ids::name].toString())
+                          : AssetPaths::nextTakeFile (AssetPaths::sidecarFolderFor (document.getFile()),
+                                                      channel[ids::name].toString());
+
+    const auto numInputs = juce::jlimit (1, 2, device->getActiveInputChannels().countNumberOfSetBits());
+    const auto stepsPerBar = juce::jmax (1, (int) document.getState()[ids::stepsPerBeat] * 4);
+    const auto punchInBar = (int) (engine.getPlayheadSteps() / (double) stepsPerBar);
+
+    if (const auto error = recorder.start (file, device->getCurrentSampleRate(), numInputs, punchInBar);
+        error.isNotEmpty())
+        return error;
+
+    // Rolling is what makes the take land where the playhead is, and what lets
+    // it be played against the rest of the arrangement.
+    engine.setMode (Transport::Mode::song);
+    engine.play();
+    return {};
+}
+
+void MainComponent::finishRecording()
+{
+    auto& recorder = audioHost.getRecorder();
+
+    engine.stop();
+
+    const auto file = recorder.stop();
+
+    if (file == juce::File() || ! file.existsAsFile())
+    {
+        statusBar.showMessage ("Nothing was recorded - check the input in Audio Settings.",
+                               StatusBar::Severity::warning);
+        return;
+    }
+
+    auto channel = ProjectEdits::findChannel (document.getState(), editorState.getArmedChannelId());
+
+    if (! channel.isValid())
+        return;
+
+    // The file was only just written, so anything cached under this path is the
+    // take before it.
+    samplePool.forget (file);
+    const auto& entry = samplePool.load (file);
+
+    if (! entry.isValid())
+    {
+        statusBar.showMessage ("The recording could not be read back.", StatusBar::Severity::warning);
+        return;
+    }
+
+    // Four beats to the bar, as EngineSnapshot::beatsPerBar has it. Measured in
+    // the SOURCE's own frames, because that is what the take was captured in.
+    const auto bpm = juce::jmax (1.0, (double) document.getState()[ids::tempoBpm]);
+    const auto samplesPerBar = juce::jmax (1.0, (240.0 / bpm) * entry.sourceSampleRate);
+
+    // Rounded up: a take that runs a hair past a bar line needs the whole next
+    // bar, or its tail would be cut by the clip that contains it.
+    const auto lengthBars = juce::jmax (1, (int) std::ceil ((double) entry.audio->getNumSamples() / samplesPerBar));
+
+    auto& undo = document.getUndoManager();
+    undo.beginNewTransaction ("Record audio");
+
+    ProjectEdits::setSampleSource (channel,
+                                   AssetPaths::relativise (file, document.getFile()),
+                                   (int) entry.sourceSampleRate,
+                                   entry.audio->getNumSamples(),
+                                   &undo);
+
+    // One clip, on the first playlist track that has room, so a take is visible
+    // in the arrangement rather than only audible from the channel rack.
+    const auto playlist = document.getState().getChildWithName (ids::PLAYLIST);
+    const auto punchInBar = recorder.getPunchInBar();
+
+    for (auto track : playlist)
+    {
+        if (! track.hasType (ids::PLAYLIST_TRACK))
+            continue;
+
+        if (ProjectEdits::findClipAtBar (track, punchInBar).isValid())
+            continue;
+
+        ProjectEdits::addAudioClip (track, (int) channel[ids::id], punchInBar, lengthBars, &undo);
+        ProjectEdits::growSongToFitClips (document.getState(), &undo);
+        break;
+    }
+
+    statusBar.showMessage ("Recorded " + juce::String (entry.audio->getNumSamples() / juce::jmax (1.0, entry.sourceSampleRate), 1)
+                               + " s into " + channel[ids::name].toString() + ".",
+                           StatusBar::Severity::info);
+}
+
 void MainComponent::updateLoopRange()
 {
     // The piano roll selects steps of a pattern; the playlist selects bars of
@@ -310,6 +457,11 @@ void MainComponent::startRender (const RenderPanel::Request& request, Settings* 
         job.destination = destination;
         job.options = request.options;
         job.stems = request.stems;
+
+        // Without this a song containing recordings exports as the synth parts
+        // alone, and says nothing about it. The pool outlives the job - see the
+        // declaration order in the header.
+        job.options.samplePool = &samplePool;
 
         statusBar.showMessage ("Rendering " + destination.getFileName() + "...",
                                StatusBar::Severity::info);
