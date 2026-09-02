@@ -25,17 +25,8 @@ PlaylistToolbar::PlaylistToolbar()
     addTool (selectButton, PlaylistTool::select);
     addTool (paintButton, PlaylistTool::paint);
 
-    const auto addZoom = [this] (DewIconButton& button, double factor)
-    {
-        button.setWantsKeyboardFocus (false);
-        button.onClick = [this, factor] { if (onZoom) onZoom (factor); };
-        addAndMakeVisible (button);
-    };
-
-    // The same factors the +/- keys use, and 0 for "fit the song".
-    addZoom (zoomOutButton, 1.0 / 1.5);
-    addZoom (zoomInButton, 1.5);
-    addZoom (zoomFitButton, 0.0);
+    zoomButtons.onZoom = [this] (double factor) { if (onZoom) onZoom (factor); };
+    addAndMakeVisible (zoomButtons);
 
     updateToolButtons();
 }
@@ -96,9 +87,7 @@ void PlaylistToolbar::resized()
 
     divider();
 
-    place (zoomOutButton, size::iconButton);
-    place (zoomInButton, size::iconButton);
-    place (zoomFitButton, size::iconButton);
+    place (zoomButtons, ZoomButtons::preferredWidth);
 }
 
 } // namespace dew

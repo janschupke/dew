@@ -3,6 +3,7 @@
 #include <juce_gui_basics/juce_gui_basics.h>
 
 #include "model/NoteTools.h"
+#include "ui/ZoomButtons.h"
 #include "ui/primitives/DewControls.h"
 
 namespace dew
@@ -93,9 +94,7 @@ private:
     */
     juce::ComboBox channelBox;
 
-    DewIconButton zoomOutButton { icons::zoomOut(), "Zoom out (-)" };
-    DewIconButton zoomInButton { icons::zoomIn(), "Zoom in (+)" };
-    DewIconButton zoomFitButton { icons::fitToContent(), "Fit the pattern to the window" };
+    ZoomButtons zoomButtons { "Fit the pattern to the window (0)" };
 
     DewIconButton quantizeButton { icons::quantize(), "Quantize to the snap grid (Q)" };
     DewIconButton randomizeButton { icons::dice(), "Randomize velocity and timing (R)" };

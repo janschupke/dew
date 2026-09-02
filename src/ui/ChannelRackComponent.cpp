@@ -339,6 +339,16 @@ ChannelRackComponent::ChannelRackComponent (ProjectDocument& d, AudioEngine& e, 
     ruler.setComponentID ("channelRackRuler");
     addAndMakeVisible (ruler);
 
+    zoomButtons.onZoom = [this] (double factor)
+    {
+        if (juce::exactlyEqual (factor, 0.0))
+            grid.zoomToFit();
+        else
+            grid.zoomBy (factor, (float) grid.getWidth() * 0.5f);
+    };
+
+    addAndMakeVisible (zoomButtons);
+
     contentHolder.addAndMakeVisible (grid);
     viewport.setViewedComponent (&contentHolder, false);
     viewport.setScrollBarsShown (true, false);
@@ -531,7 +541,14 @@ void ChannelRackComponent::resized()
 
     // The ruler spans the step columns only; the header column keeps its own
     // corner, which the shared ruler knows nothing about.
-    ruler.setBounds (area.removeFromTop (size::rulerHeight).withTrimmedLeft (size::gutterChannel));
+    auto rulerStrip = area.removeFromTop (size::rulerHeight);
+
+    // The corner beside the ruler, which the ruler itself does not draw into.
+    zoomButtons.setBounds (rulerStrip.withWidth (ZoomButtons::preferredWidth)
+                                     .withX (size::gutterChannel - ZoomButtons::preferredWidth
+                                             - space::sm));
+
+    ruler.setBounds (rulerStrip.withTrimmedLeft (size::gutterChannel));
 
     viewport.setBounds (area);
 

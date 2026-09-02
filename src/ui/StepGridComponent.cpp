@@ -7,6 +7,7 @@
 #include "model/Meter.h"
 #include "model/ProjectEdits.h"
 #include "ui/Gestures.h"
+#include "ui/ZoomButtons.h"
 #include "ui/TimelinePaint.h"
 #include "ui/design/Tokens.h"
 #include "ui/primitives/DewControls.h"
@@ -54,8 +55,15 @@ void StepGridComponent::updateZoom()
     // Fill the width when the pattern can, and fall back to scrolling when a
     // step would otherwise be too narrow to aim at. A 16-step pattern fits; a
     // 128-step one scrolls at a workable cell size instead of becoming hairlines.
-    timeline.pixelsPerStep = juce::jlimit ((double) minCellWidth, (double) maxCellWidth,
-                                           (double) width / (double) steps);
+    //
+    // Only until someone says otherwise. Auto-fit used to be a law rather than
+    // a default: the grid re-derived its zoom on every layout and on every
+    // pattern-length change, so a zoom you chose was thrown away by the next
+    // thing that happened. The playlist already worked this way.
+    if (! viewIsUsers)
+        timeline.pixelsPerStep = juce::jlimit (TimelineView::minPixelsPerStep,
+                                               TimelineView::maxPixelsPerStep,
+                                               (double) width / (double) steps);
 
     const auto scrollable = isScrollable();
     horizontalScroll.setVisible (scrollable);
@@ -97,14 +105,83 @@ void StepGridComponent::scrollBarMoved (juce::ScrollBar*, double start)
         onTimelineChanged();
 }
 
-void StepGridComponent::mouseWheelMove (const juce::MouseEvent&, const juce::MouseWheelDetails& wheel)
+void StepGridComponent::mouseWheelMove (const juce::MouseEvent& event,
+                                       const juce::MouseWheelDetails& wheel)
 {
+    const auto delta = gesture::deltaOf (wheel);
+
+    if (gesture::isZoom (event.mods))
+    {
+        zoomBy (std::pow (2.0, delta.y * gesture::wheelZoomExponent), (float) event.x);
+        return;
+    }
+
     if (! isScrollable())
         return;
 
-    timeline.scrollOffsetSteps -= gesture::deltaOf (wheel).along() * gesture::wheelStepsPerNotch;
+    timeline.scrollOffsetSteps -= delta.along() * gesture::wheelStepsPerNotch;
     updateZoom();
     repaint();
+}
+
+void StepGridComponent::mouseMagnify (const juce::MouseEvent& event, float scaleFactor)
+{
+    zoomBy ((double) scaleFactor, (float) event.x);
+}
+
+void StepGridComponent::zoomBy (double factor, float anchorX)
+{
+    // Taking the view: from here on the grid keeps the zoom it was given rather
+    // than re-fitting itself on the next layout.
+    viewIsUsers = true;
+    timeline.zoomAround (factor, anchorX);
+    updateZoom();
+    repaint();
+}
+
+void StepGridComponent::zoomToFit()
+{
+    if (getWidth() <= 0)
+        return;
+
+    // Framing on request still counts as taking the view: it is a zoom someone
+    // asked for at a size they can see, not the default one.
+    viewIsUsers = true;
+    timeline.fit (numSteps(), (float) getWidth());
+    updateZoom();
+    repaint();
+}
+
+bool StepGridComponent::keyPressed (const juce::KeyPress& key)
+{
+    switch (gesture::commandFor (key))
+    {
+        case gesture::Command::zoomIn:
+            zoomBy (ZoomButtons::zoomFactor, (float) getWidth() * 0.5f);
+            return true;
+
+        case gesture::Command::zoomOut:
+            zoomBy (1.0 / ZoomButtons::zoomFactor, (float) getWidth() * 0.5f);
+            return true;
+
+        case gesture::Command::zoomToFit:
+            zoomToFit();
+            return true;
+
+        // The sequencer has no tools, no note selection and no select-all: a
+        // step is toggled, not selected. Listed rather than defaulted, so a new
+        // command is a compile error here until this view says what it does.
+        case gesture::Command::selectTool:
+        case gesture::Command::paintTool:
+        case gesture::Command::eraseTool:
+        case gesture::Command::clearSelection:
+        case gesture::Command::deleteSelection:
+        case gesture::Command::selectAll:
+        case gesture::Command::none:
+            break;
+    }
+
+    return false;
 }
 
 int StepGridComponent::stepAtX (int x) const

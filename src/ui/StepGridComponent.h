@@ -46,7 +46,21 @@ public:
     void mouseMove (const juce::MouseEvent&) override;
     void mouseExit (const juce::MouseEvent&) override;
     void mouseWheelMove (const juce::MouseEvent&, const juce::MouseWheelDetails&) override;
+    void mouseMagnify (const juce::MouseEvent&, float scaleFactor) override;
+    bool keyPressed (const juce::KeyPress&) override;
     void resized() override;
+
+    /** Zoom, which the sequencer had none of: it sized itself to its pattern
+        and there was no way to say otherwise, so a 128-step pattern was
+        hairlines and a 4-step one was four enormous cells.
+
+        @param factor   how much to zoom by
+        @param anchorX  the step under here stays put
+    */
+    void zoomBy (double factor, float anchorX);
+
+    /** Frames the whole pattern, and counts as taking the view. */
+    void zoomToFit();
 
     /** Number of channel rows currently drawn. */
     int getNumRows() const;
@@ -121,8 +135,10 @@ private:
     juce::ScrollBar horizontalScroll { false };
     bool updatingScrollBar = false;
 
-    static constexpr float minCellWidth = 18.0f;
-    static constexpr float maxCellWidth = 64.0f;
+    /** Set the first time a zoom is asked for. Until then the grid fits itself
+        to the pattern; after it, the zoom is the user's and survives a layout
+        and a pattern-length change. The playlist already worked this way. */
+    bool viewIsUsers = false;
 
     juce::Point<int> hoverCell { -1, -1 };
     int lastPlayheadStep = -1;

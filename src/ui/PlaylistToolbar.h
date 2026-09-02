@@ -2,6 +2,7 @@
 
 #include <juce_gui_basics/juce_gui_basics.h>
 
+#include "ui/ZoomButtons.h"
 #include "ui/primitives/DewControls.h"
 
 namespace dew
@@ -57,9 +58,7 @@ private:
     DewIconButton selectButton { icons::pointer(), "Select tool (1)" };
     DewIconButton paintButton { icons::pencil(), "Paint tool - drag to lay a run of clips (2)" };
 
-    DewIconButton zoomOutButton { icons::zoomOut(), "Zoom out (-)" };
-    DewIconButton zoomInButton { icons::zoomIn(), "Zoom in (+)" };
-    DewIconButton zoomFitButton { icons::fitToContent(), "Fit the song to the window" };
+    ZoomButtons zoomButtons { "Fit the song to the window (0)" };
 
     /** Where a vertical rule goes between groups. Recorded during layout and
         painted afterwards, the way the piano roll's strip does it, so the two

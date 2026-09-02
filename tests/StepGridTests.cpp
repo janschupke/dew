@@ -529,3 +529,77 @@ TEST_CASE ("the indicator is drawn while stopped, and Stop puts it back", "[step
     REQUIRE (afterStop >= 0);
     REQUIRE (afterStop < (int) h.grid.getTimeline().pixelsPerStep);
 }
+
+TEST_CASE ("the sequencer zooms, and keeps the zoom it is given", "[ui][stepgrid][zoom]")
+{
+    // The sequencer had no zoom at all: it fitted itself to the pattern on
+    // every layout, so a 128-step pattern was hairlines and a 4-step one was
+    // four enormous cells, and there was no way to say otherwise.
+    GridHarness h;
+
+    const auto fitted = h.grid.getTimeline().pixelsPerStep;
+    REQUIRE (fitted > 0.0);
+
+    h.grid.zoomBy (2.0, 0.0f);
+    const auto zoomed = h.grid.getTimeline().pixelsPerStep;
+
+    INFO ("fitted at " << fitted << ", zoomed to " << zoomed);
+    CHECK (zoomed > fitted);
+
+    // And it SURVIVES. Auto-fit used to be a law rather than a default, so the
+    // next layout - or the next pattern-length change - threw the zoom away.
+    h.grid.resized();
+    CHECK (juce::approximatelyEqual (h.grid.getTimeline().pixelsPerStep, zoomed));
+
+    h.setPatternLength (64);
+    CHECK (juce::approximatelyEqual (h.grid.getTimeline().pixelsPerStep, zoomed));
+
+    // Until it is asked to frame the pattern again.
+    h.grid.zoomToFit();
+    CHECK (h.grid.getTimeline().pixelsPerStep < zoomed);
+}
+
+TEST_CASE ("the sequencer's zoom reaches as far as the other views'", "[ui][stepgrid][zoom]")
+{
+    // The step grid clamped itself to 18..64 pixels a step while TimelineView -
+    // which the playlist and the piano roll use - allows 3..120. Two clamps on
+    // one mapping type meant the same pattern could be zoomed further in one
+    // editor than in another.
+    GridHarness h;
+
+    for (int i = 0; i < 40; ++i)
+        h.grid.zoomBy (1.5, 0.0f);
+
+    CHECK (h.grid.getTimeline().pixelsPerStep > 64.0);
+    CHECK (h.grid.getTimeline().pixelsPerStep <= TimelineView::maxPixelsPerStep);
+
+    for (int i = 0; i < 80; ++i)
+        h.grid.zoomBy (1.0 / 1.5, 0.0f);
+
+    CHECK (h.grid.getTimeline().pixelsPerStep < 18.0);
+    CHECK (h.grid.getTimeline().pixelsPerStep >= TimelineView::minPixelsPerStep);
+}
+
+TEST_CASE ("the sequencer answers the same zoom keys as every other view", "[ui][stepgrid][zoom]")
+{
+    // It did not override keyPressed at all, so +, - and 0 did nothing in the
+    // tab where they were most useful.
+    GridHarness h;
+
+    const auto fitted = h.grid.getTimeline().pixelsPerStep;
+
+    CHECK (h.grid.keyPressed (juce::KeyPress ('=')));
+    CHECK (h.grid.getTimeline().pixelsPerStep > fitted);
+
+    CHECK (h.grid.keyPressed (juce::KeyPress ('-')));
+    CHECK (juce::approximatelyEqual (h.grid.getTimeline().pixelsPerStep, fitted));
+
+    h.grid.zoomBy (3.0, 0.0f);
+    CHECK (h.grid.keyPressed (juce::KeyPress ('0')));
+    CHECK (juce::approximatelyEqual (h.grid.getTimeline().pixelsPerStep, fitted));
+
+    // And leaves alone the keys it has nothing to do with, rather than
+    // swallowing them from whatever else is listening.
+    CHECK_FALSE (h.grid.keyPressed (juce::KeyPress ('1')));
+    CHECK_FALSE (h.grid.keyPressed (juce::KeyPress (juce::KeyPress::deleteKey)));
+}

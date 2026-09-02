@@ -7,6 +7,7 @@
 #include "ui/EditorState.h"
 #include "ui/TimelineRuler.h"
 #include "ui/StepGridComponent.h"
+#include "ui/ZoomButtons.h"
 #include "ui/primitives/DewControls.h"
 
 namespace dew
@@ -68,6 +69,11 @@ private:
 
     juce::OwnedArray<ChannelHeader> headers;
     StepGridComponent grid;
+
+    /** The rack's ruler spans the step columns, which leaves its header-column
+        corner empty. That corner is exactly where a zoom control belongs: it is
+        beside the ruler it changes, and it was dead space. */
+    ZoomButtons zoomButtons { "Fit the pattern to the window (0)" };
 
     // Above the viewport, not inside it. The grid scrolls vertically, so a
     // ruler drawn as part of the grid would scroll away with the channels.

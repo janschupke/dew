@@ -51,19 +51,10 @@ PianoRollToolbar::PianoRollToolbar()
     };
     addAndMakeVisible (channelBox);
 
-    const auto addZoom = [this] (DewIconButton& button, double factor)
-    {
-        button.setWantsKeyboardFocus (false);
-        button.onClick = [this, factor] { if (onZoom) onZoom (factor); };
-        addAndMakeVisible (button);
-    };
-
-    // The same factor the +/- keys use, and 0 for "frame the whole pattern".
     // Zoom-to-fit used to be reachable only by double-clicking the piano keys,
     // which is also where a double-click means "audition this twice".
-    addZoom (zoomOutButton, 1.0 / 1.5);
-    addZoom (zoomInButton, 1.5);
-    addZoom (zoomFitButton, 0.0);
+    zoomButtons.onZoom = [this] (double factor) { if (onZoom) onZoom (factor); };
+    addAndMakeVisible (zoomButtons);
 
     const auto addAction = [this] (juce::Button& button, std::function<void()>& callback)
     {
@@ -241,9 +232,7 @@ void PianoRollToolbar::resized()
 
     divider();
 
-    place (zoomOutButton, size::iconButton);
-    place (zoomInButton, size::iconButton);
-    place (zoomFitButton, size::iconButton);
+    place (zoomButtons, ZoomButtons::preferredWidth);
 }
 
 } // namespace dew
