@@ -55,6 +55,7 @@ add_executable(dew_tests
   AudioRecorderTests.cpp
   AudioUiTests.cpp
   CliArgsTests.cpp
+  GestureTests.cpp
   SourceGateTests.cpp
   RealtimeTests.cpp
   CatalogTests.cpp

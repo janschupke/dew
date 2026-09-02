@@ -7,6 +7,7 @@
 #include "ui/DewLookAndFeel.h"
 #include "ui/RandomizePanel.h"
 #include "ui/TimelineRuler.h"
+#include "ui/Gestures.h"
 #include "ui/TimelinePaint.h"
 #include "ui/design/Tokens.h"
 #include "ui/primitives/DewControls.h"
@@ -652,27 +653,23 @@ void PianoRollComponent::zoomToFit()
 void PianoRollComponent::mouseWheelMove (const juce::MouseEvent& event,
                                          const juce::MouseWheelDetails& wheel)
 {
-    // Natural scrolling flips the sign of the deltas, and JUCE reports that
-    // rather than applying it. Ignoring it - which this did - means the roll
-    // scrolls the wrong way for anyone with the system default on.
-    const auto direction = wheel.isReversed ? -1.0 : 1.0;
-    const auto deltaX = (double) wheel.deltaX * direction;
-    const auto deltaY = (double) wheel.deltaY * direction;
+    const auto delta = gesture::deltaOf (wheel);
 
-    if (event.mods.isCommandDown() || event.mods.isCtrlDown())
+    if (gesture::isZoom (event.mods))
     {
-        // Zoom around the pointer. deltaY is small; exaggerate it or a zoom
-        // takes a dozen notches to be noticeable.
-        timeline.zoomAround (std::pow (2.0, deltaY * 3.0), (float) (event.x - size::gutterKeyboard));
+        timeline.zoomAround (std::pow (2.0, delta.y * gesture::wheelZoomExponent),
+                             (float) (event.x - size::gutterKeyboard));
     }
     else if (event.mods.isShiftDown())
     {
-        timeline.scrollOffsetSteps -= (deltaX + deltaY) * 8.0;
+        timeline.scrollOffsetSteps -= delta.along() * gesture::wheelStepsPerNotch;
     }
     else
     {
-        pitchScrollPx -= deltaY * 3.0 * rowHeight;
-        timeline.scrollOffsetSteps -= deltaX * 8.0;
+        // Vertical scrolling walks pitches rather than steps, so a notch is
+        // three rows rather than three steps.
+        pitchScrollPx -= delta.y * 3.0 * rowHeight;
+        timeline.scrollOffsetSteps -= delta.x * gesture::wheelStepsPerNotch;
     }
 
     updateScrollBars();
@@ -694,43 +691,43 @@ void PianoRollComponent::mouseMagnify (const juce::MouseEvent& event, float scal
 
 bool PianoRollComponent::keyPressed (const juce::KeyPress& key)
 {
-    if (key == juce::KeyPress::deleteKey || key == juce::KeyPress::backspaceKey)
-    {
-        deleteSelection();
-        return true;
-    }
+    // The bindings the three timeline views share are read from one map, so a
+    // key means the same thing in whichever tab is in front.
+    const auto command = gesture::commandFor (key);
 
-    // Command OR ctrl, the way every mouse path in this file spells a modifier.
-    // This was command-only, so select-all did nothing on a machine driven with
-    // ctrl even though rubber-band select on the same keys worked.
-    if (key.getTextCharacter() == 'a'
-        && (key.getModifiers().isCommandDown() || key.getModifiers().isCtrlDown()))
+    switch (command)
     {
-        selectAllOnChannel();
-        return true;
-    }
+        case gesture::Command::deleteSelection:
+            deleteSelection();
+            return true;
 
-    if (key.getKeyCode() == juce::KeyPress::escapeKey)
-    {
-        selection.clearQuick();
-        repaint();
-        return true;
-    }
+        case gesture::Command::selectAll:
+            selectAllOnChannel();
+            return true;
 
-    if (key.getTextCharacter() == '+' || key.getTextCharacter() == '=')
-    {
-        timeline.zoomAround (1.5, contentWidth() * 0.5f);
-        updateScrollBars();
-        repaint();
-        return true;
-    }
+        case gesture::Command::clearSelection:
+            selection.clearQuick();
+            repaint();
+            return true;
 
-    if (key.getTextCharacter() == '-' || key.getTextCharacter() == '_')
-    {
-        timeline.zoomAround (1.0 / 1.5, contentWidth() * 0.5f);
-        updateScrollBars();
-        repaint();
-        return true;
+        case gesture::Command::zoomIn:
+        case gesture::Command::zoomOut:
+            timeline.zoomAround (command == gesture::Command::zoomIn ? 1.5 : 1.0 / 1.5,
+                                 contentWidth() * 0.5f);
+            updateScrollBars();
+            repaint();
+            return true;
+
+        case gesture::Command::zoomToFit:
+            zoomToFit();
+            return true;
+
+        case gesture::Command::selectTool: setTool (RollTool::select); return true;
+        case gesture::Command::paintTool:  setTool (RollTool::paint);  return true;
+        case gesture::Command::eraseTool:  setTool (RollTool::slice);  return true;
+
+        case gesture::Command::none:
+            break;
     }
 
     // The arrows and the bare digits are unbound - keyPressed is only reached
@@ -744,10 +741,6 @@ bool PianoRollComponent::keyPressed (const juce::KeyPress& key)
         transposeScope (up ? interval : -interval);
         return true;
     }
-
-    if (key.getTextCharacter() == '1') { setTool (RollTool::select); return true; }
-    if (key.getTextCharacter() == '2') { setTool (RollTool::paint);  return true; }
-    if (key.getTextCharacter() == '3') { setTool (RollTool::slice);  return true; }
 
     if (key.getTextCharacter() == 'q' || key.getTextCharacter() == 'Q')
     {

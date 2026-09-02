@@ -7,6 +7,7 @@
 #include "model/Meter.h"
 #include "model/ProjectEdits.h"
 #include "ui/TimelineRuler.h"
+#include "ui/Gestures.h"
 #include "ui/HeaderRow.h"
 #include "ui/MenuSeam.h"
 #include "ui/TimelinePaint.h"
@@ -437,15 +438,17 @@ void PlaylistComponent::mouseWheelMove (const juce::MouseEvent& event,
     // Mod-wheel zooms around the pointer, exactly as it does over the piano
     // roll. The playlist answered only to scrolling, and only when there was
     // something to scroll.
-    if (event.mods.isCommandDown() || event.mods.isCtrlDown())
+    const auto delta = gesture::deltaOf (wheel);
+
+    if (gesture::isZoom (event.mods))
     {
-        zoomBy (std::pow (2.0, (double) wheel.deltaY * 3.0),
+        zoomBy (std::pow (2.0, delta.y * gesture::wheelZoomExponent),
                 (float) (event.x - size::gutterTrack));
         return;
     }
 
     viewIsUsers = true;
-    timeline.scrollOffsetSteps -= (double) (wheel.deltaX + wheel.deltaY) * 4.0;
+    timeline.scrollOffsetSteps -= delta.along() * gesture::wheelStepsPerNotch;
     updateScrollBar();
     repaint();
 }
@@ -457,28 +460,46 @@ void PlaylistComponent::mouseMagnify (const juce::MouseEvent& event, float scale
 
 bool PlaylistComponent::keyPressed (const juce::KeyPress& key)
 {
-    if (key.getTextCharacter() == '+' || key.getTextCharacter() == '=')
+    // One map across the timeline views. The playlist bound four keys and the
+    // piano roll bound six of the same ones differently; zoom-to-fit and clear
+    // arrive here for the first time because they are in the map, not because
+    // anyone remembered to add them twice.
+    switch (gesture::commandFor (key))
     {
-        zoomBy (1.5, contentWidth() * 0.5f);
-        return true;
-    }
+        case gesture::Command::zoomIn:
+            zoomBy (1.5, contentWidth() * 0.5f);
+            return true;
 
-    if (key.getTextCharacter() == '-' || key.getTextCharacter() == '_')
-    {
-        zoomBy (1.0 / 1.5, contentWidth() * 0.5f);
-        return true;
-    }
+        case gesture::Command::zoomOut:
+            zoomBy (1.0 / 1.5, contentWidth() * 0.5f);
+            return true;
 
-    if (key.getTextCharacter() == '1')
-    {
-        toolbar.setTool (PlaylistTool::select);
-        return true;
-    }
+        case gesture::Command::zoomToFit:
+            zoomToFit();
+            return true;
 
-    if (key.getTextCharacter() == '2')
-    {
-        toolbar.setTool (PlaylistTool::paint);
-        return true;
+        case gesture::Command::selectTool:
+            toolbar.setTool (PlaylistTool::select);
+            return true;
+
+        case gesture::Command::paintTool:
+            toolbar.setTool (PlaylistTool::paint);
+            return true;
+
+        case gesture::Command::clearSelection:
+            editorState.clearBarSelection();
+            repaint();
+            return true;
+
+        // The playlist has no erase tool, no note selection to delete and no
+        // select-all: a clip is deleted through its own menu. Listed rather
+        // than defaulted so adding a command to the map is a compile error
+        // here until this view says what it does about it.
+        case gesture::Command::eraseTool:
+        case gesture::Command::deleteSelection:
+        case gesture::Command::selectAll:
+        case gesture::Command::none:
+            break;
     }
 
     return false;

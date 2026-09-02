@@ -5,6 +5,7 @@
 #include "model/ProjectEdits.h"
 #include "model/ProjectSchema.h"
 #include "ui/design/Icons.h"
+#include "ui/Gestures.h"
 #include "ui/design/Tokens.h"
 #include "ui/primitives/HoverTracker.h"
 
@@ -167,7 +168,14 @@ public:
 
         // A press on the grip starts a reorder; anywhere else on the header
         // toggles the card, which is the behaviour a header invites.
-        draggingFromGrip = gripBounds.contains (event.getEventRelativeTo (this).getPosition());
+        const auto local = event.getEventRelativeTo (this).getPosition();
+
+        draggingFromGrip = gripBounds.contains (local);
+
+        // Its own origin, because Component::getDistanceFromDragStart is fed by
+        // the real pointer and reads zero in a headless harness - which is why
+        // expand-on-click had never been tested.
+        pressedAt = local;
     }
 
     void mouseDrag (const juce::MouseEvent& event) override
@@ -194,7 +202,7 @@ public:
         const auto local = event.getEventRelativeTo (this).getPosition();
 
         if (! owner.isHorizontal() && ! draggingFromGrip && local.y < size::rowHeight
-            && event.getDistanceFromDragStart() < 4)
+            && ! gesture::passedThreshold (pressedAt, local))
             owner.setSlotExpanded (index, ! isExpanded());
 
         draggingFromGrip = false;
@@ -481,6 +489,7 @@ private:
 
     bool selected = false;
     HoverTracker hover { *this };
+    juce::Point<int> pressedAt;
     bool updating = false;
     bool draggingFromGrip = false;
 

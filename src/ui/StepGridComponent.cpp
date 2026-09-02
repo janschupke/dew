@@ -6,6 +6,7 @@
 #include "model/Ids.h"
 #include "model/Meter.h"
 #include "model/ProjectEdits.h"
+#include "ui/Gestures.h"
 #include "ui/TimelinePaint.h"
 #include "ui/design/Tokens.h"
 #include "ui/primitives/DewControls.h"
@@ -101,7 +102,7 @@ void StepGridComponent::mouseWheelMove (const juce::MouseEvent&, const juce::Mou
     if (! isScrollable())
         return;
 
-    timeline.scrollOffsetSteps -= (double) (wheel.deltaX + wheel.deltaY) * 6.0;
+    timeline.scrollOffsetSteps -= gesture::deltaOf (wheel).along() * gesture::wheelStepsPerNotch;
     updateZoom();
     repaint();
 }

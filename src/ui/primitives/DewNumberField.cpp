@@ -1,5 +1,6 @@
 #include "ui/primitives/DewNumberField.h"
 
+#include "ui/Gestures.h"
 #include "ui/design/Tokens.h"
 #include "ui/primitives/DewControls.h"
 
@@ -13,8 +14,6 @@ namespace
 /** Pixels of vertical travel to cross the whole range. Chosen so a full sweep
     is a comfortable forearm movement rather than a mouse-lift.
 */
-constexpr double dragPixelsForFullRange = 260.0;
-constexpr double fineMultiplier = 0.15;
 }
 
 DewNumberField::DewNumberField()
@@ -105,8 +104,8 @@ void DewNumberField::mouseDrag (const juce::MouseEvent& event)
     // Up is more, which is what every DAW does and the opposite of screen
     // coordinates, hence the negation.
     const auto travel = -(double) event.getDistanceFromDragStartY();
-    const auto scale = event.mods.isShiftDown() ? fineMultiplier : 1.0;
-    const auto fraction = travel / dragPixelsForFullRange * scale;
+    const auto scale = gesture::isFine (event.mods) ? gesture::fineMultiplier : 1.0;
+    const auto fraction = travel / gesture::dragPixelsForFullRange * scale;
 
     if (logarithmic && minimum > 0.0 && maximum > minimum)
     {
@@ -128,14 +127,19 @@ void DewNumberField::mouseUp (const juce::MouseEvent&)
 void DewNumberField::mouseWheelMove (const juce::MouseEvent& event,
                                      const juce::MouseWheelDetails& wheel)
 {
-    if (juce::exactlyEqual (wheel.deltaY, 0.0f))
+    // Read through the shared seam, so a field follows natural scrolling like
+    // everything else does: with the Mac default on, a swipe that scrolled a
+    // timeline forwards used to step this field backwards.
+    const auto delta = gesture::deltaOf (wheel);
+
+    if (juce::exactlyEqual (delta.y, 0.0))
         return;
 
     if (onEditStart != nullptr)
         onEditStart();
 
-    const auto scale = event.mods.isShiftDown() ? fineMultiplier : 1.0;
-    const auto up = wheel.deltaY > 0.0f;
+    const auto scale = gesture::isFine (event.mods) ? gesture::fineMultiplier : 1.0;
+    const auto up = delta.y > 0.0;
 
     if (logarithmic && minimum > 0.0 && maximum > minimum)
     {

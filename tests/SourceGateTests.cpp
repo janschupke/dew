@@ -610,3 +610,28 @@ TEST_CASE ("every token the design system declares is one the app uses", "[build
     // And the waiting list can only shrink.
     CHECK (awaitingTheMotionStage.size() <= 2);
 }
+
+TEST_CASE ("no view reads the wheel or the drag scale for itself", "[build][gate][gesture]")
+{
+    // Three wheel speeds - 4, 6 and 8 steps a notch - and one view of three
+    // reading isReversed, which JUCE reports rather than applies. The two that
+    // ignored it scrolled backwards for anyone running the Mac default, and
+    // nobody noticed because each view was right about itself.
+    //
+    // Gestures.cpp is where the reading happens, so it is the one place allowed
+    // to touch the raw fields.
+    const auto found = offenders ([] (const juce::String& line)
+    {
+        const auto trimmed = line.trim();
+
+        if (trimmed.startsWith ("//") || trimmed.startsWith ("*") || trimmed.startsWith ("/*"))
+            return false;
+
+        return line.contains ("wheel.deltaX") || line.contains ("wheel.deltaY")
+               || line.contains ("wheel.isReversed")
+               || line.contains ("setMouseDragSensitivity");
+    }, { "Gestures.h", "Gestures.cpp", "DewControls.cpp" });
+
+    INFO ("views reading the wheel or the drag scale directly:\n" << found.joinIntoString ("\n"));
+    CHECK (found.isEmpty());
+}

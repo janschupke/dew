@@ -119,6 +119,14 @@ public:
     void paint (juce::Graphics&) override;
     void resized() override;
 
+    /** Shift at the moment of PRESS makes the whole drag a fine one.
+
+        Fixed for the gesture rather than live, because JUCE computes a rotary's
+        value from where the drag began and the current sensitivity: changing
+        it mid-drag rescales the travel already made and the knob jumps.
+    */
+    void mouseDown (const juce::MouseEvent&) override;
+
 private:
     juce::String caption;
     juce::Slider slider { juce::Slider::RotaryHorizontalVerticalDrag, juce::Slider::NoTextBox };

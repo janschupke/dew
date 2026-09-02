@@ -1,5 +1,7 @@
 #include "ui/primitives/DewControls.h"
 
+#include "ui/Gestures.h"
+
 #include <cmath>
 
 namespace dew
@@ -179,10 +181,28 @@ DewKnob::DewKnob (const juce::String& c, double minimum, double maximum, double 
 {
     slider.setRange (minimum, maximum, interval);
     slider.setLookAndFeel (&invisibleRotary());
+
+    // Never called anywhere before this, so every knob in dew sat on JUCE's
+    // default of 250 - which is not the same as having chosen 250.
+    slider.setMouseDragSensitivity (gesture::dragPixelsForFullRange);
     slider.onValueChange = [this] { if (onValueChange != nullptr) onValueChange(); repaint(); };
     slider.onDragStart = [this] { if (onEditStart != nullptr) onEditStart(); };
     slider.onDragEnd = [this] { if (onEditEnd != nullptr) onEditEnd(); };
+
+    // The slider is what the pointer is actually over, so the knob listens to
+    // it rather than to itself.
+    slider.addMouseListener (this, false);
+
     addAndMakeVisible (slider);
+}
+
+void DewKnob::mouseDown (const juce::MouseEvent& event)
+{
+    const auto pixels = gesture::isFine (event.mods)
+                            ? (int) ((double) gesture::dragPixelsForFullRange / gesture::fineMultiplier)
+                            : gesture::dragPixelsForFullRange;
+
+    slider.setMouseDragSensitivity (pixels);
 }
 
 void DewKnob::setValue (double v, juce::NotificationType notification)
