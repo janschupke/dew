@@ -64,6 +64,7 @@ add_executable(dew_tests
   ScoreGridTests.cpp
   ScoreDiagnosticTests.cpp
   ScoreMusicTests.cpp
+  ScoreParserTests.cpp
 )
 
 target_link_libraries(dew_tests

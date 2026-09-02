@@ -83,6 +83,7 @@ add_library(dew_lang STATIC
   lang/Lexer.cpp
   lang/Grid.cpp
   lang/Music.cpp
+  lang/Parser.cpp
 )
 
 target_include_directories(dew_lang PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}")
