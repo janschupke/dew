@@ -47,7 +47,7 @@ private:
     juce::OwnedArray<juce::Component> controls;
     juce::Array<Section> sections;
 
-    juce::Rectangle<int> paletteBounds, iconBounds;
+    juce::Rectangle<int> paletteBounds, iconBounds, emphasisBounds;
     int contentBottom = 0;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (DewGallery)

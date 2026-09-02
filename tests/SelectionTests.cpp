@@ -423,7 +423,7 @@ TEST_CASE ("the add-channel button is the row after the last channel", "[ui][rac
 
     // In the header column, and below every channel row.
     REQUIRE (button->getX() >= 0);
-    REQUIRE (button->getRight() <= tokens::size::headerWidth);
+    REQUIRE (button->getRight() <= tokens::size::gutterChannel);
     REQUIRE (button->getY() >= 4 * tokens::size::rowHeight);
     REQUIRE (button->getY() < 5 * tokens::size::rowHeight);
 }
@@ -520,7 +520,7 @@ TEST_CASE ("right-clicking a channel row selects it", "[ui][rack]")
     juce::Component* secondRow = nullptr;
 
     for (auto* child : holder->getChildren())
-        if (child->getY() == tokens::size::rowHeight && child->getWidth() == tokens::size::headerWidth)
+        if (child->getY() == tokens::size::rowHeight && child->getWidth() == tokens::size::gutterChannel)
             secondRow = child;
 
     REQUIRE (secondRow != nullptr);

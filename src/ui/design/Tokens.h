@@ -67,9 +67,52 @@ namespace colour
     }
 }
 
+// --- emphasis ----------------------------------------------------------------
+/** How strongly something is stated.
+
+    dew had a second, undeclared design system: fifteen alpha values and nine
+    brighten factors, each chosen on its own, which between them made a
+    twenty-four rung scale nobody had named. Two panels drawn "faintly" were
+    drawn at 0.07 and 0.10, a week apart, and neither author knew about the
+    other.
+
+    Named for what a value MEANS, so a component asks for a wash rather than for
+    0.20 and the two cannot drift apart again.
+*/
+namespace emphasis
+{
+    // Alphas, faintest to strongest.
+    inline constexpr float tint    = 0.08f;  ///< an accent behind a selected region
+    inline constexpr float wash    = 0.20f;  ///< a rubber band, a playhead's column
+    inline constexpr float hatch   = 0.25f;  ///< the lines of an inert area
+    inline constexpr float subdued = 0.35f;  ///< past the end, another channel, muted
+    inline constexpr float dimmed  = 0.55f;  ///< a stopped playhead, a scrim
+    inline constexpr float strong  = 0.85f;  ///< nearly opaque
+
+    /** How much lighter a surface gets when it is being touched.
+
+        A large surface needs a subtler lift than a small one, or a hovered
+        mixer strip flares while a hovered button barely moves. That distinction
+        is real and is why there were 0.05 and 0.06 for strips and cards and
+        0.10 for buttons; the other six values were not.
+    */
+    inline constexpr float surfaceLift = 0.06f;  ///< a strip, a card, a row
+    inline constexpr float controlLift = 0.10f;  ///< a button under the cursor
+    inline constexpr float pressLift   = 0.22f;  ///< a button being held
+    inline constexpr float edgeLift    = 0.35f;  ///< a note's border against its own fill
+}
+
 // --- spacing -----------------------------------------------------------------
-/** A 4px base scale. Every gap, inset and margin is one of these, so vertical
-    rhythm stays consistent across components nobody wrote at the same time.
+/** A modular spacing scale: 2, 4, 6, 8, 12, 16, 24.
+
+    Not a strict 4px grid, and deliberately not. `sm` and `lg` are half-steps,
+    because a control surface this dense needs a gap between "touching" and
+    "separated" that a 4/8/16 ladder does not have. Renumbering them would move
+    every layout in the application by two pixels to satisfy a rule nothing
+    actually wanted.
+
+    Every gap, inset and margin is one of these seven, and there is a test that
+    says so.
 */
 namespace space
 {
@@ -85,17 +128,42 @@ namespace space
 // --- shape -------------------------------------------------------------------
 namespace radius
 {
+    /** The smallest rounding that still reads as rounded on something four
+        pixels tall - a note, a clip, a meter bar. Seven sites had reached for
+        1.5 or 2.0 by hand because sm was visibly too round at that size. */
+    inline constexpr float xs  = 2.0f;
+
     inline constexpr float sm  = 3.0f;
     inline constexpr float md  = 5.0f;
-    inline constexpr float lg  = 8.0f;
-    inline constexpr float pill = 999.0f;
+    inline constexpr float lg  = 8.0f;   ///< a dialog: a bigger surface rounds more
+
+    // `pill` is retired. Nothing in a DAW is a pill, it had no references, and
+    // an unused token is a claim the code does not back.
 }
 
 namespace stroke
 {
+    /** A hatch line, and the half-pixel inset that puts a one-pixel edge ON a
+        pixel rather than across two. */
+    inline constexpr float whisper  = 0.5f;
+
     inline constexpr float hairline = 1.0f;
     inline constexpr float regular  = 1.5f;
     inline constexpr float bold     = 2.0f;
+}
+
+/** Stroke weights in the icons' own 0..1 space.
+
+    Icons.cpp passed eleven different thicknesses to its stroke helpers, which
+    is why the loop arrow and the undo arrow, drawn a week apart, did not look
+    like the same family.
+*/
+namespace icon
+{
+    inline constexpr float hair    = 0.07f;  ///< a tick or a fine rule
+    inline constexpr float regular = 0.10f;  ///< the default
+    inline constexpr float bold    = 0.13f;  ///< a stem that must read at 16px
+    inline constexpr float ring    = 0.26f;  ///< the loop arrow's ring
 }
 
 // --- type --------------------------------------------------------------------
@@ -120,9 +188,51 @@ namespace size
     inline constexpr int knob            = 44;
     inline constexpr int knobSm          = 26;  ///< a knob on a row, drawn without its caption
     inline constexpr int rowHeight       = 34;  ///< channel rack and playlist rows
-    inline constexpr int headerWidth     = 264; ///< the channel rack's header column
     inline constexpr int rulerHeight     = 22;
     inline constexpr int minTouchTarget  = 20;  ///< nothing clickable smaller than this
+
+    /** Horizontal strips, shortest to tallest.
+
+        Six of these were declared in six files with nothing relating them: the
+        toolbars said 34, the tab bar 30, the transport bar 46, the status bar
+        24, the effect chain's heading 26 and a settings row 28. They are one
+        ladder, and they read as one only if they are declared as one.
+    */
+    inline constexpr int stripStatus    = 24;         ///< the status line
+    inline constexpr int stripHeading   = 26;         ///< a section heading with a button on it
+    inline constexpr int stripFormRow   = 28;         ///< a settings row: a control plus room
+    inline constexpr int stripTabs      = 30;         ///< the editor tab bar
+    inline constexpr int stripToolbar   = rowHeight;  ///< an editor's toolbar IS a row
+    inline constexpr int stripTransport = 46;         ///< the one strip that is loud
+
+    static_assert (stripFormRow >= controlHeight, "a form row must hold a control");
+    static_assert (stripToolbar >= controlHeight, "a toolbar must hold a control");
+    static_assert (stripHeading >= controlHeight, "a heading must hold its button");
+
+    /** Gutters: the fixed column beside a scrolling timeline.
+
+        Three of them, of which one was a token and two were not.
+    */
+    inline constexpr int gutterChannel  = 264;  ///< the channel rack's header column
+    inline constexpr int gutterTrack    = 156;  ///< the playlist's track headers
+    inline constexpr int gutterKeyboard = 54;   ///< the piano roll's key strip
+    inline constexpr int gutterLabel    = 76;   ///< a settings form's label column
+
+    /** Declared identically in three components, none of which knew. */
+    inline constexpr int scrollThickness = 10;
+
+    /** A captioned knob. DewKnob hard-coded 13 and 14 in three places, and six
+        call sites independently spelled 68 for a row holding one. */
+    inline constexpr int knobCaption = 13;
+    inline constexpr int knobValue   = 14;
+    inline constexpr int knobRow     = 68;
+
+    static_assert (knobRow >= knobCaption + knobSm + knobValue,
+                   "a knob row must hold a compact knob and both its labels");
+
+    inline constexpr int letterToggle  = 22;  ///< the M and S on a row
+    inline constexpr int meterHeight   = 10;
+    inline constexpr int waveformInset = 2;   ///< was -2, -2 and -3 in three painters
 }
 
 // --- motion ------------------------------------------------------------------
@@ -134,12 +244,24 @@ namespace motion
     /** Durations, in milliseconds. Short enough that nothing feels laggy, long
         enough that a change reads as movement rather than as a jump cut.
     */
+    inline constexpr int selectMs       = 70;   ///< a selection, a playhead's state
     inline constexpr int quickMs        = 90;   ///< hover and press feedback
+    inline constexpr int valueMs        = 120;  ///< a knob catching up with the document
     inline constexpr int popupMs        = 130;  ///< menus and dropdowns opening
     inline constexpr int panelMs        = 180;  ///< larger surfaces sliding in
 
     /** How far a popup rises as it fades in. */
     inline constexpr int popupRisePx    = 6;
+
+    /** How fast a meter falls, as a TIME constant rather than a per-tick
+        coefficient.
+
+        dew's three meters each multiplied by 0.82 or 0.8 per tick, which locks
+        a widget to the rate it was tuned at - SignalScope says so in a comment
+        rather than fixing it. A time constant reads the same at 30Hz and at
+        60Hz, and at a dropped frame.
+    */
+    inline constexpr int meterReleaseMs = 320;
 }
 
 } // namespace dew::tokens

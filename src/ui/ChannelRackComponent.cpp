@@ -567,10 +567,10 @@ void ChannelRackComponent::paint (juce::Graphics& g)
     // names and steps stays readable down the whole panel. It runs the full
     // height now that the add button is a row of the list rather than a footer.
     g.setColour (colour::surface.withAlpha (0.4f));
-    g.fillRect (0, 0, size::headerWidth, getHeight());
+    g.fillRect (0, 0, size::gutterChannel, getHeight());
 
     g.setColour (colour::dividerStrong);
-    g.drawVerticalLine (size::headerWidth, 0.0f, (float) getHeight());
+    g.drawVerticalLine (size::gutterChannel, 0.0f, (float) getHeight());
 }
 
 void ChannelRackComponent::resized()
@@ -579,7 +579,7 @@ void ChannelRackComponent::resized()
 
     // The ruler spans the step columns only; the header column keeps its own
     // corner, which the shared ruler knows nothing about.
-    ruler.setBounds (area.removeFromTop (size::rulerHeight).withTrimmedLeft (size::headerWidth));
+    ruler.setBounds (area.removeFromTop (size::rulerHeight).withTrimmedLeft (size::gutterChannel));
 
     viewport.setBounds (area);
 
@@ -594,21 +594,21 @@ void ChannelRackComponent::resized()
     contentHolder.setSize (viewport.getMaximumVisibleWidth(), contentHeight);
 
     for (int i = 0; i < headers.size(); ++i)
-        headers[i]->setBounds (0, i * size::rowHeight, size::headerWidth, size::rowHeight);
+        headers[i]->setBounds (0, i * size::rowHeight, size::gutterChannel, size::rowHeight);
 
     // Directly below the last channel, spanning the header column: the next
     // empty row of the list, where the channel it adds will appear. The two
     // kinds share that row rather than stacking, so the grid still starts one
     // row after the last channel.
     auto addRow = juce::Rectangle<int> (0, headers.size() * size::rowHeight,
-                                        size::headerWidth, size::rowHeight)
+                                        size::gutterChannel, size::rowHeight)
                       .reduced (space::sm, space::xs);
 
     addChannelButton.setBounds (addRow.removeFromLeft (addRow.getWidth() / 2 - space::xxs));
     addAudioButton.setBounds (addRow.removeFromRight (addRow.getWidth() - space::xs));
 
-    grid.setBounds (size::headerWidth, 0,
-                    juce::jmax (120, contentHolder.getWidth() - size::headerWidth),
+    grid.setBounds (size::gutterChannel, 0,
+                    juce::jmax (120, contentHolder.getWidth() - size::gutterChannel),
                     contentHeight);
 }
 

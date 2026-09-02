@@ -31,7 +31,37 @@ std::vector<Swatch> palette()
         { "success", colour::success }, { "warning", colour::warning },
         { "danger", colour::danger },
         { "beatShade", colour::beatShade }, { "barShade", colour::barShade },
+        // Both were missing, and the ramp's absence was why nothing outside a
+        // test referred to it - a token the gallery does not show is a token
+        // nobody knows they have.
+        { "textOnAccent", colour::textOnAccent },
+        { "channel 0", colour::channelColour (0) }, { "channel 1", colour::channelColour (1) },
+        { "channel 2", colour::channelColour (2) }, { "channel 3", colour::channelColour (3) },
+        { "channel 4", colour::channelColour (4) }, { "channel 5", colour::channelColour (5) },
+        { "channel 6", colour::channelColour (6) }, { "channel 7", colour::channelColour (7) },
     };
+}
+
+struct Rung { const char* name; float value; };
+
+/** The emphasis scale, which had no name until it had one.
+
+    Alphas over the accent, then the surface lifts over a panel: the two halves
+    are different questions - how faint is this, versus how much brighter does a
+    surface get when touched - and showing them side by side is what stops the
+    next person reaching for 0.07.
+*/
+std::vector<Rung> emphasisAlphas()
+{
+    return { { "tint", emphasis::tint }, { "wash", emphasis::wash },
+             { "hatch", emphasis::hatch }, { "subdued", emphasis::subdued },
+             { "dimmed", emphasis::dimmed }, { "strong", emphasis::strong } };
+}
+
+std::vector<Rung> emphasisLifts()
+{
+    return { { "surfaceLift", emphasis::surfaceLift }, { "controlLift", emphasis::controlLift },
+             { "pressLift", emphasis::pressLift }, { "edgeLift", emphasis::edgeLift } };
 }
 
 } // namespace
@@ -320,7 +350,12 @@ int DewGallery::layOut (juce::Rectangle<int> area, bool apply)
             iconBounds = row;
     }
 
-    auto paletteRow = sectionHeading ("Palette", 150);
+    auto emphasisRow = sectionHeading ("Emphasis", 96);
+
+    if (apply)
+        emphasisBounds = emphasisRow;
+
+    auto paletteRow = sectionHeading ("Palette", 200);
 
     if (apply)
     {
@@ -409,6 +444,38 @@ void DewGallery::paint (juce::Graphics& g)
             g.setFont (type::font (type::caption));
             g.drawText (swatches[(size_t) i].name, cellBounds, juce::Justification::centredTop, false);
         }
+    }
+
+    // --- emphasis ------------------------------------------------------------
+    {
+        auto area = emphasisBounds;
+
+        constexpr int cell = 104;
+        const auto drawRow = [&] (juce::Rectangle<int> row, const std::vector<Rung>& rungs,
+                                  bool overAccent)
+        {
+            for (int i = 0; i < (int) rungs.size(); ++i)
+            {
+                juce::Rectangle<int> cellBounds (row.getX() + i * cell, row.getY(), cell - 6, 40);
+
+                auto chip = cellBounds.removeFromTop (24);
+
+                g.setColour (colour::surface);
+                g.fillRoundedRectangle (chip.toFloat(), radius::sm);
+
+                g.setColour (overAccent ? colour::accent.withAlpha (rungs[(size_t) i].value)
+                                        : colour::surface.brighter (rungs[(size_t) i].value));
+                g.fillRoundedRectangle (chip.toFloat(), radius::sm);
+
+                g.setColour (colour::textSecondary);
+                g.setFont (type::font (type::caption));
+                g.drawText (rungs[(size_t) i].name, cellBounds,
+                            juce::Justification::centredTop, false);
+            }
+        };
+
+        drawRow (area.removeFromTop (44), emphasisAlphas(), true);
+        drawRow (area.removeFromTop (44), emphasisLifts(), false);
     }
 
     // --- inert area sample ---------------------------------------------------

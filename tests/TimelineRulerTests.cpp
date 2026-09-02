@@ -194,7 +194,7 @@ TEST_CASE ("the channel rack ruler starts where the step columns start", "[ruler
 
     // A ruler that does not line up with the grid under it is the classic way
     // to get this wrong, and it is invisible until someone looks closely.
-    CHECK (strip->getX() == tokens::size::headerWidth);
+    CHECK (strip->getX() == tokens::size::gutterChannel);
     CHECK (strip->getRight() == rack.getWidth());
     CHECK (strip->getY() == 0);
 }
