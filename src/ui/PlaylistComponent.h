@@ -6,6 +6,7 @@
 #include "../model/ProjectDocument.h"
 #include "EditorState.h"
 #include "../model/AutomationTargets.h"
+#include "TimelineRuler.h"
 #include "TimelineView.h"
 #include "primitives/DewControls.h"
 
@@ -64,6 +65,15 @@ public:
     const TimelineView& getTimeline() const noexcept { return timeline; }
     int getNumTracks() const;
 
+    /** The ruler strip, in this component's coordinates, so a test can aim at
+        it rather than recomputing the layout and drifting from it - the piano
+        roll already publishes its areas for the same reason.
+    */
+    juce::Rectangle<int> getRulerArea() const
+    {
+        return { headerWidth, 0, (int) contentWidth(), rulerHeight };
+    }
+
     void addTrack();
     void removeTrack (juce::ValueTree track);
 
@@ -89,10 +99,9 @@ public:
 private:
     class TrackHeader;
 
-    enum class Gesture { none, moving, resizing, draggingPoint, scrubbing, selectingRange };
-
-    /** Moves the transport to the position a ruler x means. */
-    void seekToRulerX (int x);
+    // Scrubbing and range-selecting are not here: the ruler's whole gesture
+    // lives in ruler::Gesture, shared with the piano roll and the channel rack.
+    enum class Gesture { none, moving, resizing, draggingPoint };
 
     void timerCallback() override;
     void valueTreePropertyChanged (juce::ValueTree&, const juce::Identifier&) override;
@@ -159,6 +168,13 @@ private:
     EditorState& editorState;
 
     TimelineView timeline;
+
+    /** Scrub, span-select and clear. This timeline counts BARS, so the gesture
+        works in bars here and in steps everywhere else - it never converts, so
+        it cannot get the conversion wrong.
+    */
+    ruler::Gesture rulerGesture;
+
     juce::ScrollBar horizontalScroll { false };
     bool updatingScrollBar = false;
 
@@ -170,10 +186,6 @@ private:
     DewButton addTrackButton { "+ Track", DewButton::Role::ghost };
 
     static constexpr float pointGrabRadius = 7.0f;
-
-    // Where a shift-drag along the ruler started. The selection runs from here
-    // to wherever the pointer is, in either direction.
-    int rangeAnchorBar = 0;
 
     juce::ValueTree draggedClip;
     juce::ValueTree draggedClipTrack;

@@ -349,6 +349,20 @@ ChannelRackComponent::ChannelRackComponent (ProjectDocument& d, AudioEngine& e, 
 
     ruler.onSeek = [this] (double steps) { engine.setPlayheadSteps (steps); };
 
+    // The same span the piano roll writes, so the sequencer's ruler is no
+    // longer the one place in the app where a loop can be seen but not chosen.
+    ruler.onRangeChanged = [this] (juce::Range<int> steps)
+    {
+        editorState.setSelectedStepRange (steps);
+        ruler.repaint();
+    };
+
+    ruler.onRangeCleared = [this]
+    {
+        editorState.clearStepSelection();
+        ruler.repaint();
+    };
+
     grid.onTimelineChanged = [this] { ruler.repaint(); };
 
     ruler.setComponentID ("channelRackRuler");

@@ -21,19 +21,59 @@ using Catch::Matchers::WithinAbs;
 namespace
 {
 
-juce::MouseEvent eventAt (juce::Component& target, juce::Point<int> local)
+juce::MouseEvent eventAt (juce::Component& target, juce::Point<int> local,
+                          juce::ModifierKeys mods = juce::ModifierKeys(),
+                          int clickCount = 1, bool wasDragged = false)
 {
     const auto position = local.toFloat();
 
+    // wasDragged is the LAST constructor argument, and the only way a synthetic
+    // event can report as a drag: mouseWasDraggedSinceMouseDown asks the mouse
+    // source, which nothing in a headless test ever pressed.
     return { juce::Desktop::getInstance().getMainMouseSource(),
-             position, juce::ModifierKeys(),
+             position, mods,
              1.0f, 0.0f, 0.0f, 0.0f, 0.0f,
              &target, &target,
              juce::Time::getCurrentTime(),
              position,
              juce::Time::getCurrentTime(),
-             1, false };
+             clickCount, wasDragged };
 }
+
+const juce::ModifierKeys shift { juce::ModifierKeys::shiftModifier };
+const juce::ModifierKeys mod { juce::ModifierKeys::commandModifier };
+
+/** A piano roll sized, laid out and framed on its whole pattern. */
+struct RollFixture
+{
+    RollFixture()
+    {
+        document.setState (ProjectFactory::createDefault(), true);
+        roll.setSize (1200, 700);
+        roll.setVisible (true);
+        roll.refresh();
+        roll.resized();
+        roll.zoomToFit();
+    }
+
+    int stepsPerBeat() const
+    {
+        return juce::jmax (1, (int) document.getState()[ids::stepsPerBeat]);
+    }
+
+    /** Where a fractional step sits on the ruler. */
+    juce::Point<int> rulerAt (double step) const
+    {
+        const auto strip = roll.getRulerArea();
+
+        return { strip.getX() + (int) roll.getTimeline().xForStep (step), strip.getCentreY() };
+    }
+
+    ProjectDocument document;
+    AudioEngine engine;
+    EditorState editorState;
+    PianoRollComponent roll { document, engine, editorState };
+};
 
 } // namespace
 
@@ -232,4 +272,196 @@ TEST_CASE ("seeking silences what was sounding before the jump", "[ruler]")
 
     INFO ("block before the seek " << before << ", block after " << after);
     REQUIRE (after < before * 0.5f);
+}
+
+// -----------------------------------------------------------------------------
+// The gesture every ruler shares. It was written twice - once in the piano roll
+// and once in the playlist, against two private enums - and the channel rack
+// had none of it at all.
+
+TEST_CASE ("a span dragged on the ruler snaps to a beat, not a bar", "[ruler]")
+{
+    const juce::ScopedJuceInitialiser_GUI juceInit;
+
+    RollFixture f;
+    const auto beat = f.stepsPerBeat();
+
+    // The default pattern is a single bar, which is exactly why bar snapping
+    // was unusable here: the only span it could express was the whole thing.
+    REQUIRE (beat * 4 >= 16);
+
+    f.roll.mouseDown (eventAt (f.roll, f.rulerAt (4.5), shift));
+    f.roll.mouseDrag (eventAt (f.roll, f.rulerAt (6.5), shift, 1, true));
+
+    const auto range = f.editorState.getSelectedStepRange();
+
+    INFO ("selected " << range.getStart() << ".." << range.getEnd());
+    CHECK (range.getStart() == beat);
+    CHECK (range.getEnd() == beat * 2);
+    CHECK (range.getLength() == beat);
+}
+
+TEST_CASE ("a drag shorter than one beat still selects one", "[ruler]")
+{
+    const juce::ScopedJuceInitialiser_GUI juceInit;
+
+    RollFixture f;
+
+    // Otherwise the strip flickers in and out at the start of every gesture.
+    f.roll.mouseDown (eventAt (f.roll, f.rulerAt (4.1), shift));
+    f.roll.mouseDrag (eventAt (f.roll, f.rulerAt (4.3), shift, 1, true));
+
+    CHECK (f.editorState.getSelectedStepRange().getLength() == f.stepsPerBeat());
+}
+
+TEST_CASE ("a mod-click on the ruler loops from the playhead to the click", "[ruler]")
+{
+    const juce::ScopedJuceInitialiser_GUI juceInit;
+
+    RollFixture f;
+    f.engine.setPlayheadSteps (1.0);
+
+    f.roll.mouseDown (eventAt (f.roll, f.rulerAt (10.5), mod));
+
+    const auto range = f.editorState.getSelectedStepRange();
+
+    // Snapped outwards at both ends, so the span is never smaller than what
+    // was asked for.
+    CHECK (range.getStart() == 0);
+    CHECK (range.getEnd() == 12);
+}
+
+TEST_CASE ("a mod-DRAG restarts the span at the press, rather than appending", "[ruler]")
+{
+    const juce::ScopedJuceInitialiser_GUI juceInit;
+
+    RollFixture f;
+    f.engine.setPlayheadSteps (0.0);
+
+    f.roll.mouseDown (eventAt (f.roll, f.rulerAt (8.5), mod));
+
+    // The press alone still means "from the playhead": that is the control
+    // case, and without it this test would pass for the wrong reason.
+    REQUIRE (f.editorState.getSelectedStepRange().getStart() == 0);
+
+    f.roll.mouseDrag (eventAt (f.roll, f.rulerAt (10.5), mod, 1, true));
+
+    const auto range = f.editorState.getSelectedStepRange();
+
+    INFO ("after the drag: " << range.getStart() << ".." << range.getEnd());
+    CHECK (range.getStart() == 8);
+    CHECK (range.getEnd() == 12);
+}
+
+TEST_CASE ("a shift-click that never moves takes the span back", "[ruler]")
+{
+    const juce::ScopedJuceInitialiser_GUI juceInit;
+
+    RollFixture f;
+
+    f.roll.mouseDown (eventAt (f.roll, f.rulerAt (4.5), shift));
+    REQUIRE (f.editorState.hasStepSelection());
+
+    f.roll.mouseUp (eventAt (f.roll, f.rulerAt (4.5), shift));
+    CHECK_FALSE (f.editorState.hasStepSelection());
+}
+
+TEST_CASE ("a mod-click that never moves keeps its span", "[ruler]")
+{
+    const juce::ScopedJuceInitialiser_GUI juceInit;
+
+    RollFixture f;
+    f.engine.setPlayheadSteps (0.0);
+
+    f.roll.mouseDown (eventAt (f.roll, f.rulerAt (10.5), mod));
+    f.roll.mouseUp (eventAt (f.roll, f.rulerAt (10.5), mod));
+
+    // A mod-click has already said what it wants; only a shift-click means
+    // "nothing" when it does not move.
+    CHECK (f.editorState.hasStepSelection());
+}
+
+TEST_CASE ("double-clicking the piano roll ruler clears the span", "[ruler]")
+{
+    const juce::ScopedJuceInitialiser_GUI juceInit;
+
+    RollFixture f;
+    f.editorState.setSelectedStepRange ({ 0, 8 });
+
+    f.roll.mouseDoubleClick (eventAt (f.roll, f.rulerAt (6.0), juce::ModifierKeys(), 2));
+    CHECK_FALSE (f.editorState.hasStepSelection());
+}
+
+TEST_CASE ("the sequencer ruler can select a span and clear it", "[ruler]")
+{
+    const juce::ScopedJuceInitialiser_GUI juceInit;
+
+    ProjectDocument document;
+    document.setState (ProjectFactory::createDefault(), true);
+
+    AudioEngine engine;
+    EditorState editorState;
+    ChannelRackComponent rack { document, engine, editorState };
+
+    rack.setSize (1200, 600);
+    rack.setVisible (true);
+    rack.resized();
+
+    auto* strip = rack.findChildWithID ("channelRackRuler");
+    REQUIRE (strip != nullptr);
+
+    const auto y = strip->getHeight() / 2;
+    const auto beat = juce::jmax (1, (int) document.getState()[ids::stepsPerBeat]);
+
+    // This ruler could only ever seek: it painted the piano roll's span but had
+    // no way to take one out, which is what made the sequencer the odd one.
+    strip->mouseDown (eventAt (*strip, { strip->getWidth() / 4, y }, shift));
+    strip->mouseDrag (eventAt (*strip, { strip->getWidth() / 2, y }, shift, 1, true));
+
+    const auto range = editorState.getSelectedStepRange();
+
+    INFO ("selected " << range.getStart() << ".." << range.getEnd());
+    REQUIRE (editorState.hasStepSelection());
+    CHECK (range.getStart() % beat == 0);
+    CHECK (range.getEnd() % beat == 0);
+
+    strip->mouseDoubleClick (eventAt (*strip, { strip->getWidth() / 2, y },
+                                      juce::ModifierKeys(), 2));
+    CHECK_FALSE (editorState.hasStepSelection());
+}
+
+TEST_CASE ("the playlist ruler selects whole bars, and double-click clears", "[ruler]")
+{
+    const juce::ScopedJuceInitialiser_GUI juceInit;
+
+    ProjectDocument document;
+    document.setState (ProjectFactory::createDefault(), true);
+
+    AudioEngine engine;
+    EditorState editorState;
+    PlaylistComponent playlist { document, engine, editorState };
+
+    playlist.setSize (1200, 600);
+    playlist.setVisible (true);
+    playlist.resized();
+
+    const auto strip = playlist.getRulerArea();
+    const auto y = strip.getCentreY();
+    const auto x = [&] (double bar)
+    {
+        return strip.getX() + (int) playlist.getTimeline().xForStep (bar);
+    };
+
+    playlist.mouseDown (eventAt (playlist, { x (1.5), y }, shift));
+    playlist.mouseDrag (eventAt (playlist, { x (3.5), y }, shift, 1, true));
+
+    const auto range = editorState.getSelectedBarRange();
+
+    // Bars, because this timeline counts bars - the gesture never converts.
+    INFO ("selected bars " << range.getStart() << ".." << range.getEnd());
+    CHECK (range.getStart() == 1);
+    CHECK (range.getEnd() == 4);
+
+    playlist.mouseDoubleClick (eventAt (playlist, { x (2.5), y }, juce::ModifierKeys(), 2));
+    CHECK_FALSE (editorState.hasBarSelection());
 }

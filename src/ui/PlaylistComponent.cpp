@@ -185,6 +185,47 @@ PlaylistComponent::PlaylistComponent (ProjectDocument& d, AudioEngine& e, Editor
     addTrackButton.setComponentID ("addTrackButton");
     addAndMakeVisible (addTrackButton);
 
+    // The ruler works in BARS here, so everything the gesture is handed is in
+    // bars and only the seek converts - one place, rather than a conversion in
+    // each of the three branches this used to have.
+    rulerGesture.unitForX = [this] (int x)
+    {
+        return juce::jlimit (0.0, (double) numBars(),
+                             timeline.stepForX ((float) (x - headerWidth)));
+    };
+
+    rulerGesture.context = [this]
+    {
+        const auto stepsPerBar = juce::jmax (1, (int) document.getState()[ids::stepsPerBeat]) * 4;
+
+        ruler::GestureContext ctx;
+        ctx.snapUnits = 1;
+        ctx.totalUnits = numBars();
+        ctx.playheadUnits = juce::jmax (0.0, engine.getPlayheadSteps() / (double) stepsPerBar);
+
+        return ctx;
+    };
+
+    rulerGesture.onSeek = [this] (double bars)
+    {
+        const auto stepsPerBar = juce::jmax (1, (int) document.getState()[ids::stepsPerBeat]) * 4;
+
+        engine.setPlayheadSteps (bars * (double) stepsPerBar);
+        repaint();
+    };
+
+    rulerGesture.onRangeChanged = [this] (juce::Range<int> bars)
+    {
+        editorState.setSelectedBarRange (bars);
+        repaint();
+    };
+
+    rulerGesture.onRangeCleared = [this]
+    {
+        editorState.clearBarSelection();
+        repaint();
+    };
+
     rebuildHeaders();
     startTimerHz (motion::playheadHz);
 }
@@ -695,13 +736,11 @@ void PlaylistComponent::showAutomationMenu()
 
 void PlaylistComponent::mouseDoubleClick (const juce::MouseEvent& event)
 {
-    // On the ruler, a double-click clears the span - the second way to take one
-    // back, alongside a shift-click that never moved, and the one the piano roll
-    // ruler also answers to.
+    // On the ruler, a double-click clears the span - one rule, shared with the
+    // piano roll and the channel rack rather than repeated in each of them.
     if (event.x >= headerWidth && event.y < rulerHeight)
     {
-        editorState.clearBarSelection();
-        repaint();
+        rulerGesture.mouseDoubleClick (event);
         return;
     }
 
@@ -735,54 +774,15 @@ void PlaylistComponent::mouseDoubleClick (const juce::MouseEvent& event)
     openPatternOf (clip);
 }
 
-void PlaylistComponent::seekToRulerX (int x)
-{
-    // This timeline counts BARS, not steps - so the ruler hit-test gives a bar
-    // and the engine, which counts steps, needs it multiplied back up.
-    const juce::Rectangle<int> strip { headerWidth, 0, juce::jmax (0, getWidth() - headerWidth), rulerHeight };
-    const auto bar = ruler::stepForClick (x, strip, timeline, numBars());
-    const auto stepsPerBar = juce::jmax (1, (int) document.getState()[ids::stepsPerBeat]) * 4;
-
-    engine.setPlayheadSteps (bar * (double) stepsPerBar);
-    repaint();
-}
-
 void PlaylistComponent::mouseDown (const juce::MouseEvent& event)
 {
     // The ruler used to be excluded outright by this guard, so the playlist's
-    // was as inert as the piano roll's.
+    // was as inert as the piano roll's. Everything it does now lives in
+    // ruler::Gesture, which is why this is one line rather than three branches
+    // the piano roll also had a copy of.
     if (event.x >= headerWidth && event.y < rulerHeight)
     {
-        // Shift selects a span, a plain drag scrubs. The ruler is the only place
-        // a time selection could go, and scrubbing was there first, so the two
-        // share it on a modifier rather than one of them moving somewhere less
-        // obvious.
-        if (event.mods.isShiftDown())
-        {
-            gesture = Gesture::selectingRange;
-            rangeAnchorBar = barAtX (event.x);
-            editorState.setSelectedBarRange ({ rangeAnchorBar, rangeAnchorBar + 1 });
-            repaint();
-            return;
-        }
-
-        // Mod-click takes the span from wherever the transport is to where you
-        // clicked, so "loop from here to there" does not need a drag across it.
-        // The piano roll ruler says this the same way.
-        if (event.mods.isCommandDown() || event.mods.isCtrlDown())
-        {
-            const auto stepsPerBar = juce::jmax (1, (int) document.getState()[ids::stepsPerBeat]) * 4;
-            const auto playheadBar = juce::jmax (0, (int) (engine.getPlayheadSteps() / (double) stepsPerBar));
-            const auto clicked = barAtX (event.x);
-
-            editorState.setSelectedBarRange ({ juce::jmin (playheadBar, clicked),
-                                               juce::jmax (playheadBar, clicked) + 1 });
-            repaint();
-            return;
-        }
-
-        gesture = Gesture::scrubbing;
-        seekToRulerX (event.x);
+        rulerGesture.mouseDown (event);
         return;
     }
 
@@ -885,22 +885,8 @@ void PlaylistComponent::mouseDown (const juce::MouseEvent& event)
 
 void PlaylistComponent::mouseDrag (const juce::MouseEvent& event)
 {
-    if (gesture == Gesture::selectingRange)
-    {
-        // Either direction: the anchor is where the drag began, not the lower bar.
-        const auto current = barAtX (event.x);
-
-        editorState.setSelectedBarRange ({ juce::jmin (rangeAnchorBar, current),
-                                           juce::jmax (rangeAnchorBar, current) + 1 });
-        repaint();
+    if (rulerGesture.mouseDrag (event))
         return;
-    }
-
-    if (gesture == Gesture::scrubbing)
-    {
-        seekToRulerX (event.x);
-        return;
-    }
 
     if (! draggedClip.isValid())
         return;
@@ -951,12 +937,9 @@ void PlaylistComponent::mouseDrag (const juce::MouseEvent& event)
 
 void PlaylistComponent::mouseUp (const juce::MouseEvent& event)
 {
-    // A shift-CLICK on the ruler is how a selection is taken back: it selects one
-    // bar on the way down, and letting go without having moved means the user
-    // asked for nothing rather than for that bar.
-    if (gesture == Gesture::selectingRange && barAtX (event.x) == rangeAnchorBar
-        && ! event.mouseWasDraggedSinceMouseDown())
-        editorState.clearBarSelection();
+    // Falls through rather than returning: a ruler gesture leaves none of the
+    // clip-dragging state set, so the reset below is a no-op for it.
+    rulerGesture.mouseUp (event);
 
     draggedClip = {};
     draggedClipTrack = {};

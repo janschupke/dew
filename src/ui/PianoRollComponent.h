@@ -7,6 +7,7 @@
 #include "../model/ProjectDocument.h"
 #include "EditorState.h"
 #include "PianoRollToolbar.h"
+#include "TimelineRuler.h"
 #include "TimelineView.h"
 
 namespace dew
@@ -141,8 +142,10 @@ public:
     void openRandomizeDialog();
 
 private:
+    // Scrubbing and range-selecting are not here: the ruler's whole gesture
+    // lives in ruler::Gesture, which the playlist and the channel rack share.
     enum class Gesture { none, moving, resizing, selecting, velocity, auditioning, erasing,
-                         scrubbing, painting, slicing, selectingRange };
+                         painting, slicing };
 
     void timerCallback() override;
     void valueTreePropertyChanged (juce::ValueTree&, const juce::Identifier&) override;
@@ -162,20 +165,14 @@ private:
     */
     void eraseAlong (juce::Point<int> from, juce::Point<int> to);
 
-    /** Moves the transport to the position a ruler x means. */
-    void seekToRulerX (int x);
-
-    /** The step a ruler x means, snapped to a bar.
-
-        Bars rather than the snap grid: a loop is a musical span, the ruler is
-        numbered in bars, and shift already means "select" up here so it cannot
-        also mean "suspend the grid" the way it does over the notes.
-    */
-    int rulerStepAtX (int x, bool roundUp) const;
-
-    /** Sets the pattern's selected span from the anchor to this x. */
-    void dragRangeTo (int x);
     int numSteps() const;
+
+    /** Steps in one beat, which is what a span on the ruler snaps to. Not the
+        note snap grid: a loop is a musical span, and shift already means
+        "select" up here so it cannot also mean "suspend the grid" the way it
+        does over the notes.
+    */
+    int stepsPerBeat() const;
 
     /** Steps in one cell of the current snap grid. Always at least one, so
         every snapped expression is the identity at the finest division and the
@@ -270,6 +267,12 @@ private:
     EditorState& editorState;
 
     TimelineView timeline;
+
+    /** Scrub, span-select and clear, shared with the playlist and the channel
+        rack rather than written here a second time.
+    */
+    ruler::Gesture rulerGesture;
+
     juce::ScrollBar horizontalScroll { false };
     juce::ScrollBar verticalScroll { true };
     bool updatingScrollBars = false;
@@ -282,11 +285,6 @@ private:
     int dragStepOffset = 0;
     int dragPitchOffset = 0;
     juce::Point<int> dragOrigin;
-
-    // Where a shift-drag along the ruler started. The span runs from here to
-    // wherever the pointer is, in either direction - the same shape, and the
-    // same name, as the playlist's.
-    int rangeAnchorStep = 0;
 
     // Whether the erase sweep actually removed anything, so a right-click that
     // hit nothing can be told from one that did.
