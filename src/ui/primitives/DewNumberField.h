@@ -35,6 +35,18 @@ public:
     /** Small caption drawn above the value. */
     void setCaption (juce::String);
 
+    /** Drags the value exponentially rather than linearly.
+
+        For frequencies and times, a linear drag is unusable: a cutoff over 20 to
+        18000 Hz gives about 70 Hz per pixel, so the entire musically useful low
+        end sits within the first three pixels of travel. With this on, a drag
+        moves by a constant RATIO, which is how these quantities are heard.
+
+        Requires a positive minimum; ignored otherwise, since a range crossing
+        zero has no ratio to move by.
+    */
+    void setLogarithmic (bool shouldBeLogarithmic);
+
     std::function<void()> onValueChange;
 
     /** Called once when a drag or typed edit begins, so callers can open a
@@ -58,6 +70,7 @@ private:
     void commit (double newValue);
 
     double value = 0.0;
+    bool logarithmic = false;
     double minimum = 0.0, maximum = 1.0, interval = 0.01;
     int decimalPlaces = 2;
     juce::String suffix, caption;

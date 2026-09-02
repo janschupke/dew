@@ -242,11 +242,15 @@ private:
 // -----------------------------------------------------------------------------
 
 MixerComponent::MixerComponent (ProjectDocument& d, EditorState& s)
-    : document (d), editorState (s), effectChain (d)
+    : document (d), editorState (s), effectChain (d, s)
 {
     setComponentID ("mixer");
 
-    addAndMakeVisible (effectChain);
+    chainViewport.setViewedComponent (&effectChain, false);
+    chainViewport.setScrollBarsShown (true, false);
+    addAndMakeVisible (chainViewport);
+
+    effectChain.onRequiredHeightChanged = [this] { layOutChain(); };
     editorState.addChangeListener (this);
 
     document.getState().addListener (this);
@@ -322,10 +326,19 @@ void MixerComponent::pointChainAtSelectedTrack()
             selectedTrack = track;
 
     effectChain.setOwner (selectedTrack);
+    effectChain.setOwnerName (selectedTrack.isValid() ? selectedTrack[ids::name].toString()
+                                                      : juce::String());
 
     for (auto* strip : strips)
         strip->setSelected (strip->isMasterStrip() ? selectedId == masterTrackId
                                                    : strip->getTrackId() == selectedId);
+}
+
+void MixerComponent::layOutChain()
+{
+    const auto width = juce::jmax (120, chainViewport.getMaximumVisibleWidth());
+    effectChain.setSize (width, juce::jmax (chainViewport.getHeight(),
+                                            effectChain.getRequiredHeight()));
 }
 
 void MixerComponent::changeListenerCallback (juce::ChangeBroadcaster*)
@@ -343,8 +356,9 @@ void MixerComponent::resized()
 
     // Capped rather than stretched: a number field wider than a hand is not
     // easier to drag, only emptier.
-    effectChain.setBounds (chainArea.withTrimmedTop (tokens::space::md)
-                                    .withWidth (juce::jmin (chainWidth, chainArea.getWidth())));
+    chainViewport.setBounds (chainArea.withTrimmedTop (tokens::space::md)
+                                      .withWidth (juce::jmin (chainWidth, chainArea.getWidth())));
+    layOutChain();
 
     for (auto* strip : strips)
         strip->setBounds (area.removeFromLeft (stripWidth));

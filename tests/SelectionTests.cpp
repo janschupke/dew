@@ -249,9 +249,10 @@ TEST_CASE ("an effect row's buttons select it before acting", "[ui][selection]")
     const juce::ScopedJuceInitialiser_GUI juceInit;
 
     ProjectDocument document;
+    EditorState editorState;
     document.setState (ProjectFactory::createDefault(), true);
 
-    EffectChainComponent chain { document };
+    EffectChainComponent chain { document, editorState };
     chain.setSize (320, 400);
     chain.setVisible (true);
     chain.setOwner (document.getState().getChildWithName (ids::CHANNEL));
@@ -273,13 +274,13 @@ TEST_CASE ("an effect row's buttons select it before acting", "[ui][selection]")
 
     for (auto* component : all)
         if (component->getParentComponent() == &chain
-            && findAll<juce::Button> (*component).size() == 4)
+            && findAll<juce::Button> (*component).size() >= 4)
             rows.add (component);
 
     REQUIRE (rows.size() == 3);
 
     auto lastRowButtons = findAll<juce::Button> (*rows.getLast());
-    REQUIRE (lastRowButtons.size() == 4);
+    REQUIRE (lastRowButtons.size() >= 4);
 
     // Invoked directly rather than through triggerClick, which posts to a
     // message loop a console test does not run.

@@ -574,6 +574,7 @@ TEST_CASE ("reordering a chain does not disturb the instrument beside it", "[eff
 #include <juce_gui_basics/juce_gui_basics.h>
 
 #include "model/ProjectDocument.h"
+#include "ui/EditorState.h"
 #include "ui/EffectChainComponent.h"
 
 namespace
@@ -603,7 +604,8 @@ struct ChainHarness
     }
 
     ProjectDocument document;
-    EffectChainComponent chain { document };
+    EditorState editorState;
+    EffectChainComponent chain { document, editorState };
 };
 
 } // namespace
@@ -722,4 +724,161 @@ TEST_CASE ("an editor pointed at nothing is empty rather than stale", "[effects]
     h.chain.addEffectOfType ("delay");
     REQUIRE (h.chain.getNumSlotRows() == 0);
     REQUIRE (h.typesInOrder() == juce::StringArray { "reverb" });
+}
+
+TEST_CASE ("cards expand and collapse independently", "[effects][ui]")
+{
+    // The old editor showed one slot's parameters at a time, so comparing a
+    // filter's cutoff against a delay's time meant clicking between them.
+    const juce::ScopedJuceInitialiser_GUI juceInit;
+    ChainHarness h;
+
+    h.chain.addEffectOfType ("filter");
+    h.chain.addEffectOfType ("delay");
+    h.chain.addEffectOfType ("reverb");
+
+    REQUIRE (h.chain.getNumSlotRows() == 3);
+
+    // Adding an effect opens it: you added it to set it up.
+    REQUIRE (h.chain.isSlotExpanded (2));
+
+    h.chain.setSlotExpanded (0, true);
+    h.chain.setSlotExpanded (1, true);
+
+    REQUIRE (h.chain.isSlotExpanded (0));
+    REQUIRE (h.chain.isSlotExpanded (1));
+    REQUIRE (h.chain.isSlotExpanded (2));
+
+    const auto allOpen = h.chain.getRequiredHeight();
+
+    h.chain.setSlotExpanded (1, false);
+    REQUIRE (! h.chain.isSlotExpanded (1));
+    REQUIRE (h.chain.isSlotExpanded (0));
+    REQUIRE (h.chain.isSlotExpanded (2));
+
+    // Closing one makes the chain shorter, which is what the host scrolls.
+    REQUIRE (h.chain.getRequiredHeight() < allOpen);
+}
+
+TEST_CASE ("which cards are open survives a rebuild, and follows the effect", "[effects][ui]")
+{
+    // Expansion is keyed on the effect id, not its position, so reordering a
+    // chain does not shuffle which cards are open.
+    const juce::ScopedJuceInitialiser_GUI juceInit;
+    ChainHarness h;
+
+    h.chain.addEffectOfType ("filter");
+    h.chain.addEffectOfType ("delay");
+    h.chain.addEffectOfType ("reverb");
+
+    h.chain.setSlotExpanded (0, true);
+    h.chain.setSlotExpanded (1, false);
+    h.chain.setSlotExpanded (2, false);
+
+    REQUIRE (h.typesInOrder() == juce::StringArray { "filter", "delay", "reverb" });
+    REQUIRE (h.chain.isSlotExpanded (0));
+
+    // Move the open filter to the end.
+    h.chain.moveSlot (0, 2);
+
+    REQUIRE (h.typesInOrder() == juce::StringArray { "delay", "reverb", "filter" });
+    REQUIRE (! h.chain.isSlotExpanded (0));
+    REQUIRE (! h.chain.isSlotExpanded (1));
+    REQUIRE (h.chain.isSlotExpanded (2));      // still the filter
+
+    // And an unrelated document change does not close anything.
+    juce::UndoManager& undo = h.document.getUndoManager();
+    ProjectEdits::addChannel (h.document.getState(), "Extra", &undo);
+    REQUIRE (h.chain.isSlotExpanded (2));
+}
+
+TEST_CASE ("expansion is view state, not document state", "[effects][ui]")
+{
+    // Opening a card must not put anything on the undo stack or make the
+    // project dirty - it is not a change to the music.
+    const juce::ScopedJuceInitialiser_GUI juceInit;
+    ChainHarness h;
+
+    h.chain.addEffectOfType ("filter");
+
+    const auto before = ProjectSerializer::toJsonString (h.document.getState());
+
+    h.document.getUndoManager().clearUndoHistory();
+    h.chain.setSlotExpanded (0, false);
+    h.chain.setSlotExpanded (0, true);
+
+    REQUIRE (! h.document.getUndoManager().canUndo());
+    REQUIRE (ProjectSerializer::toJsonString (h.document.getState()) == before);
+}
+
+TEST_CASE ("dragging a card by its grip reorders the chain", "[effects][ui]")
+{
+    const juce::ScopedJuceInitialiser_GUI juceInit;
+    ChainHarness h;
+
+    h.chain.addEffectOfType ("filter");
+    h.chain.addEffectOfType ("delay");
+    h.chain.addEffectOfType ("reverb");
+
+    REQUIRE (h.typesInOrder() == juce::StringArray { "filter", "delay", "reverb" });
+
+    // moveSlot is what the grip drives, and what the up/down buttons drive too.
+    h.chain.moveSlot (2, 0);
+    REQUIRE (h.typesInOrder() == juce::StringArray { "reverb", "filter", "delay" });
+
+    // Out-of-range targets clamp rather than dropping the effect.
+    h.chain.moveSlot (0, 99);
+    REQUIRE (h.typesInOrder() == juce::StringArray { "filter", "delay", "reverb" });
+
+    h.chain.moveSlot (2, -5);
+    REQUIRE (h.typesInOrder() == juce::StringArray { "reverb", "filter", "delay" });
+}
+
+TEST_CASE ("a frequency field drags by ratio, not by hertz", "[effects][ui]")
+{
+    // A cutoff over 20 to 18000 Hz dragged linearly gives about 70 Hz per
+    // pixel, so the whole musically useful low end is the first three pixels.
+    const juce::ScopedJuceInitialiser_GUI juceInit;
+
+    DewNumberField linear, logarithmic;
+
+    for (auto* field : { &linear, &logarithmic })
+    {
+        field->setRange (20.0, 18000.0, 1.0);
+        field->setValue (1000.0, juce::dontSendNotification);
+        field->setSize (90, 40);
+    }
+
+    logarithmic.setLogarithmic (true);
+
+    const auto dragBy = [] (DewNumberField& field, int pixels)
+    {
+        const juce::Point<float> start { 45.0f, 20.0f };
+        const auto end = start.translated (0.0f, (float) -pixels);
+
+        const auto make = [&field] (juce::Point<float> position, juce::Point<float> down)
+        {
+            return juce::MouseEvent { juce::Desktop::getInstance().getMainMouseSource(),
+                                      position, juce::ModifierKeys(),
+                                      1.0f, 0.0f, 0.0f, 0.0f, 0.0f,
+                                      &field, &field,
+                                      juce::Time::getCurrentTime(), down,
+                                      juce::Time::getCurrentTime(), 1, false };
+        };
+
+        field.mouseDown (make (start, start));
+        field.mouseDrag (make (end, start));
+        field.mouseUp (make (end, start));
+    };
+
+    dragBy (linear, 10);
+    dragBy (logarithmic, 10);
+
+    INFO ("linear " << linear.getValue() << " logarithmic " << logarithmic.getValue());
+
+    // Ten pixels up is a huge jump linearly and a musical interval on a log
+    // taper - which is the whole point.
+    REQUIRE (linear.getValue() > 1600.0);
+    REQUIRE (logarithmic.getValue() < 1400.0);
+    REQUIRE (logarithmic.getValue() > 1000.0);
 }

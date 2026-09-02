@@ -43,6 +43,7 @@ private:
 
     void rebuildStrips();
     void pointChainAtSelectedTrack();
+    void layOutChain();
 
     static constexpr int stripWidth = 78;
     static constexpr int chainHeight = 210;
@@ -52,6 +53,7 @@ private:
     EditorState& editorState;
     juce::OwnedArray<Strip> strips;
     EffectChainComponent effectChain;
+    juce::Viewport chainViewport;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (MixerComponent)
 };

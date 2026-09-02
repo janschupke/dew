@@ -40,6 +40,35 @@ public:
             sendChangeMessage();
     }
 
+    // --- effect chain -------------------------------------------------------
+    /** Whether an effect's parameters are showing.
+
+        View state, not document state: which cards are open is per-session, has
+        no business on the undo stack, and must not make a project dirty. Keyed
+        on the effect's id rather than its position, so reordering a chain does
+        not shuffle which cards are open.
+    */
+    bool isEffectExpanded (int effectId) const
+    {
+        return expandedEffects.contains (effectId);
+    }
+
+    void setEffectExpanded (int effectId, bool shouldBeExpanded)
+    {
+        const auto changed = shouldBeExpanded ? ! expandedEffects.contains (effectId)
+                                              : expandedEffects.contains (effectId);
+
+        if (! changed)
+            return;
+
+        if (shouldBeExpanded)
+            expandedEffects.add (effectId);
+        else
+            expandedEffects.removeAllInstancesOf (effectId);
+
+        sendChangeMessage();
+    }
+
     // --- last placed note ----------------------------------------------------
     int getLastNoteLengthSteps() const noexcept { return lastNoteLengthSteps; }
     double getLastNoteVelocity() const noexcept { return lastNoteVelocity; }
@@ -58,6 +87,8 @@ private:
 
     int lastNoteLengthSteps = 1;
     double lastNoteVelocity = 1.0;
+
+    juce::Array<int> expandedEffects;
 };
 
 } // namespace dew

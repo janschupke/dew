@@ -32,6 +32,11 @@ void DewNumberField::setRange (double newMinimum, double newMaximum, double newI
     setValue (value, juce::dontSendNotification);
 }
 
+void DewNumberField::setLogarithmic (bool shouldBeLogarithmic)
+{
+    logarithmic = shouldBeLogarithmic;
+}
+
 void DewNumberField::setValue (double newValue, juce::NotificationType notification)
 {
     auto clamped = juce::jlimit (minimum, maximum, newValue);
@@ -99,10 +104,19 @@ void DewNumberField::mouseDrag (const juce::MouseEvent& event)
     // Up is more, which is what every DAW does and the opposite of screen
     // coordinates, hence the negation.
     const auto travel = -(double) event.getDistanceFromDragStartY();
-    const auto span = maximum - minimum;
     const auto scale = event.mods.isShiftDown() ? fineMultiplier : 1.0;
+    const auto fraction = travel / dragPixelsForFullRange * scale;
 
-    commit (valueAtDragStart + travel / dragPixelsForFullRange * span * scale);
+    if (logarithmic && minimum > 0.0 && maximum > minimum)
+    {
+        // A constant ratio per pixel, so the low end of a frequency range is
+        // reachable instead of being compressed into the first few pixels.
+        const auto decades = std::log (maximum / minimum);
+        commit (valueAtDragStart * std::exp (fraction * decades));
+        return;
+    }
+
+    commit (valueAtDragStart + fraction * (maximum - minimum));
 }
 
 void DewNumberField::mouseUp (const juce::MouseEvent&)
@@ -119,10 +133,19 @@ void DewNumberField::mouseWheelMove (const juce::MouseEvent& event,
     if (onEditStart != nullptr)
         onEditStart();
 
-    const auto step = interval > 0.0 ? interval : (maximum - minimum) / 100.0;
     const auto scale = event.mods.isShiftDown() ? fineMultiplier : 1.0;
+    const auto up = wheel.deltaY > 0.0f;
 
-    commit (value + (wheel.deltaY > 0.0f ? step : -step) * juce::jmax (1.0, scale * 4.0));
+    if (logarithmic && minimum > 0.0 && maximum > minimum)
+    {
+        // One notch is a fixed proportion of the range, in ratio terms.
+        const auto ratio = std::exp (std::log (maximum / minimum) * 0.02 * juce::jmax (1.0, scale * 4.0));
+        commit (up ? value * ratio : value / ratio);
+        return;
+    }
+
+    const auto step = interval > 0.0 ? interval : (maximum - minimum) / 100.0;
+    commit (value + (up ? step : -step) * juce::jmax (1.0, scale * 4.0));
 }
 
 void DewNumberField::mouseDoubleClick (const juce::MouseEvent&)

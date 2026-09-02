@@ -33,6 +33,7 @@ private:
     void valueTreePropertyChanged (juce::ValueTree&, const juce::Identifier&) override;
 
     juce::ValueTree selectedChannel() const;
+    void layOutChain();
 
     /** Wires a rotary to a property, opening one undo transaction per gesture. */
     void attachRotary (juce::Slider&, juce::Label&, const juce::String& text,
@@ -66,8 +67,12 @@ private:
 
     /** The selected channel's effect chain, edited by the same component the
         mixer uses - a channel and a mixer track carry the same EFFECT children.
+
+        In a Viewport, because a full chain with cards open is taller than the
+        panel. It used to be given "whatever is left" and clipped in silence.
     */
     EffectChainComponent effectChain;
+    juce::Viewport chainViewport;
 
     bool updating = false;
 
