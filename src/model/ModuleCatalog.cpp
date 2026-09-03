@@ -233,9 +233,14 @@ const ParamSpec oscSpecs[] {
     // engine clamps at twelve semitones, but that is what `octave` is for, and
     // a control covering two octaves cannot be nudged by a cent - which is the
     // only thing anyone detunes an oscillator by.
+    //
+    // NOT integral, and the schema is why: `detuneCents` is declared a double
+    // there and every file has carried one, so an int default would flip the
+    // type the schema coerces to and quietly round a stored 12.5 to 12. It
+    // would also make numDiscreteValues report two hundred and one steps for a
+    // parameter that is continuous.
     { &ids::detuneCents, "Detune", "DETUNE", " c", -100.0, 100.0, 0.0, 1.0, 0,
-      ParamCurve::linear, ParamControl::knob, /*bipolar*/ true, /*automatable*/ false,
-      /*integral*/ true },
+      ParamCurve::linear, ParamControl::knob, /*bipolar*/ true, /*automatable*/ false },
 
     { &ids::gain, "Gain", "GAIN", "", 0.0, 1.0, 0.8, 0.01, 2 },
 
@@ -283,9 +288,9 @@ const ParamSpec sampleSpecs[] {
       ParamCurve::linear, ParamControl::knob, /*bipolar*/ false, /*automatable*/ false },
     { &ids::fadeOutMs, "Fade out", "FADE OUT", " ms", 0.0, 2000.0, 0.0, 1.0, 0,
       ParamCurve::linear, ParamControl::knob, /*bipolar*/ false, /*automatable*/ false },
+    // A double in the schema, so not integral here - see detuneCents.
     { &ids::transpose, "Pitch",    "PITCH",    "",   -24.0, 24.0, 0.0, 1.0, 0,
-      ParamCurve::linear, ParamControl::knob, /*bipolar*/ true, /*automatable*/ false,
-      /*integral*/ true },
+      ParamCurve::linear, ParamControl::knob, /*bipolar*/ true, /*automatable*/ false },
 
     toggleSpec (&ids::reverse, "Reverse", "REV",  /*automatable*/ false),
     toggleSpec (&ids::loop,    "Loop",    "LOOP", /*automatable*/ false),

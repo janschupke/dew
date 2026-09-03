@@ -78,6 +78,37 @@ TEST_CASE ("the committed demo files match what the factory builds", "[demos]")
     }
 }
 
+TEST_CASE ("the committed demo files are byte for byte what the factory writes", "[demos]")
+{
+    // The case above compares TREES, and ValueTree::isEquivalentTo does not
+    // compare property order - NamedValueSet falls back to a key lookup the
+    // moment the orders differ. So it passes happily through a schema reshuffle
+    // that leaves every file under examples/ stale, and the drift is invisible
+    // until someone diffs a file they just saved.
+    //
+    // Two comments in ProjectSchema.cpp claim the examples are byte-compared
+    // against the factory. This is the test that makes that true.
+    //
+    // Regenerate with `dew_render --write-demos examples` when it fails.
+    const juce::File examples (DEW_EXAMPLES_DIR);
+
+    for (const auto& demo : ProjectFactory::demos())
+    {
+        const auto file = examples.getChildFile (demo.fileName);
+        INFO ("file: " << file.getFullPathName());
+
+        REQUIRE (file.existsAsFile());
+
+        // Normalised the way writeToFile normalises it. juce::JSON::toString
+        // ends its lines with CRLF and writeToFile rewrites them to LF, so the
+        // two halves of this comparison are the same bytes only once that has
+        // been done to both - and trim() would not do it, because the endings
+        // that differ are in the middle.
+        REQUIRE (ProjectSerializer::toJsonString (demo.build()).replace ("\r\n", "\n").trim()
+                     == file.loadFileAsString().replace ("\r\n", "\n").trim());
+    }
+}
+
 TEST_CASE ("no demo ships two patterns with the same id", "[demos]")
 {
     // Nothing rejects a duplicate: ProjectEdits::findPattern returns the first

@@ -308,13 +308,28 @@ TEST_CASE ("every instrument parameter says the same thing to the file and to th
             REQUIRE (c.node.hasProperty (*spec.property));
             CHECK ((double) c.node[*spec.property] == Catch::Approx ((double) spec.defaultVar()));
 
+            // And the same TYPE, which the comparison above cannot see.
+            //
+            // ProjectSchema drives its coercion off the runtime type of the
+            // declared default, so an int where the schema says double is not a
+            // cosmetic disagreement: it rounds every value the file carries.
+            // `detuneCents` and `transpose` were both declared integral against
+            // a double in the schema, which quietly turned a 12.5-cent detune
+            // into 12 the moment the two tables were asked to be one.
+            CHECK (c.node[*spec.property].hasSameTypeAs (spec.defaultVar()));
+
             // A range that does not contain its own default is a table entry
             // that clamps every fresh document on the first read.
             CHECK ((double) spec.defaultVar() >= spec.minimum);
             CHECK ((double) spec.defaultVar() <= spec.maximum);
 
-            CHECK (spec.maximum > spec.minimum);
-            CHECK (spec.interval > 0.0);
+            // A choice declares its values rather than a range, so it has
+            // neither a span nor a nudge.
+            if (spec.control != ParamControl::choice)
+            {
+                CHECK (spec.maximum > spec.minimum);
+                CHECK (spec.interval > 0.0);
+            }
 
             // Clamping the default must be the default, or a document that
             // stores what the schema wrote comes back changed.
