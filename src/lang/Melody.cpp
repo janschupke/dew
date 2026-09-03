@@ -1,6 +1,7 @@
 #include "lang/Melody.h"
 
 #include <algorithm>
+#include <cmath>
 #include <cstdlib>
 #include <numeric>
 
