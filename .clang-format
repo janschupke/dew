@@ -1,0 +1,72 @@
+# dew's house style, as a machine can state it.
+#
+# The style was already consistent - JUCE's, essentially - and this file is a
+# transcription rather than a decision. Two settings are load-bearing and were
+# established by measuring the tree rather than by taste:
+#
+#   SpaceBeforeParens: only BeforeNonEmptyParentheses and AfterControlStatements.
+#   Turning on AfterFunctionDefinitionName as well rewrites samplesPerStep() to
+#   samplesPerStep (), which is not what any of this codebase does.
+#
+#   ColumnLimit: 100. The tree's own p99 line is 96 characters and its longest
+#   is 130, so 100 is a description rather than a new rule. It is NOT 0: with no
+#   limit clang-format joins every wrapped line, which turned 11 lines over 120
+#   characters into 402, one of them 391 long.
+#
+# Tables that are aligned by hand carry meaning in their alignment. Those are
+# fenced with `// clang-format off` rather than argued with.
+BasedOnStyle: LLVM
+Language: Cpp
+Standard: c++20
+
+ColumnLimit: 100
+IndentWidth: 4
+TabWidth: 4
+UseTab: Never
+AccessModifierOffset: -4
+
+BreakBeforeBraces: Allman
+
+SpaceBeforeParens: Custom
+SpaceBeforeParensOptions:
+  AfterControlStatements: true
+  AfterFunctionDefinitionName: false
+  AfterFunctionDeclarationName: false
+  AfterOverloadedOperator: true
+  BeforeNonEmptyParentheses: true
+SpaceAfterCStyleCast: true
+SpaceAfterLogicalNot: true
+SpaceBeforeCpp11BracedList: true
+Cpp11BracedListStyle: false
+
+AllowShortFunctionsOnASingleLine: Empty
+AllowShortIfStatementsOnASingleLine: false
+AllowShortLoopsOnASingleLine: false
+AllowShortBlocksOnASingleLine: Empty
+AllowShortCaseLabelsOnASingleLine: true
+AllowShortEnumsOnASingleLine: true
+IndentCaseLabels: true
+
+NamespaceIndentation: None
+FixNamespaceComments: true
+PointerAlignment: Left
+ReferenceAlignment: Left
+
+# The include blocks are grouped by hand - JUCE, then dew, then the file's own
+# header first - and sorting them would scramble that grouping.
+SortIncludes: Never
+
+PackConstructorInitializers: Never
+BreakConstructorInitializers: BeforeComma
+AlignAfterOpenBracket: Align
+BreakBeforeBinaryOperators: NonAssignment
+BreakBeforeTernaryOperators: true
+BinPackArguments: true
+BinPackParameters: true
+KeepEmptyLinesAtTheStartOfBlocks: false
+AlignConsecutiveAssignments: None
+
+# Breaking straight after `=` strands an assignment on its own line, which reads
+# worse and also blinds the source gates: several of them ask "does this line use
+# the result?", and an orphaned right-hand side answers no. Expensive, not banned.
+PenaltyBreakAssignment: 1000

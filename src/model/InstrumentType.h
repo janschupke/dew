@@ -11,14 +11,17 @@ namespace dew
     schema, the preset library and the instrument panel all need to name a
     kind of instrument, and none of them should have to link the DSP to do it.
 
+// clang-format off
     It lived in EngineSnapshot until presets needed it, which meant the only
     code that could say whether a stored `source` string was legal was code
     that also had to be able to render it.
 */
 enum class InstrumentType { synth, audio };
 
+// clang-format on
 inline constexpr int kNumInstrumentTypes = 2;
 
+// clang-format off
 /** An oscillator slot's closed string enums, here for the same reason
     FilterMode sits beside EffectType: they are the vocabulary of the file, not
     of the renderer, and something has to be able to reject "sawtooth" without
@@ -36,6 +39,7 @@ enum class OscMode { classic, wavetable };
 /** What drives a wavetable slot's position over the length of a note. */
 enum class PositionSource { envelope, lfo };
 
+// clang-format on
 Waveform waveformFromString (const juce::String&);
 juce::String waveformToString (Waveform);
 

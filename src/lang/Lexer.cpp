@@ -8,6 +8,7 @@ namespace dew::lang
 namespace
 {
 
+// clang-format off
 /** ScanCore's cursor over a std::string_view. The other instantiation lives in
     the UI layer, over a juce::CodeDocument::Iterator.
 */
@@ -18,6 +19,7 @@ public:
 
     char peek() const noexcept { return pos < text.size() ? text[pos] : '\0'; }
 
+// clang-format on
     char peekAt (int ahead) const noexcept
     {
         const auto at = pos + (std::size_t) ahead;
@@ -30,10 +32,12 @@ public:
             ++pos;
     }
 
+// clang-format off
     bool isEOF() const noexcept { return pos >= text.size(); }
 
     std::size_t offset() const noexcept { return pos; }
 
+// clang-format on
 private:
     std::string_view text;
     std::size_t pos = 0;
@@ -41,6 +45,7 @@ private:
 
 } // namespace
 
+// clang-format off
 const char* nameOf (TokenKind kind) noexcept
 {
     switch (kind)
@@ -69,6 +74,7 @@ const char* nameOf (TokenKind kind) noexcept
         case TokenKind::unknown:      return "unknown";
     }
 
+// clang-format on
     return "unknown";
 }
 

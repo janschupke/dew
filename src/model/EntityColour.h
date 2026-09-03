@@ -28,6 +28,7 @@ namespace dew
     colour property is missing or malformed used to come back as transparent
     black from three of them and as something else from the other two.
 
+// clang-format off
     The ramp is the designed one - it is eight long, not four, and its first
     four entries are byte-identical to the factory's, so no example project
     changes. tokens::colour::channelRamp states the same eight values for
@@ -74,4 +75,5 @@ namespace entityColour
     juce::String hexOf (juce::Colour);
 }
 
+// clang-format on
 } // namespace dew

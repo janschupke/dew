@@ -9,6 +9,7 @@ namespace dew
 
 /** Converts between musical time and samples, and holds the playhead.
 
+// clang-format off
     All timing is derived from a sample count, never accumulated in floating
     point per block, so the playhead cannot drift over a long render.
 */
@@ -23,6 +24,7 @@ public:
     double getTempo() const noexcept        { return tempoBpm; }
     int getStepsPerBeat() const noexcept    { return stepsPerBeat; }
 
+// clang-format on
     /** Samples per sequencer step. A step is a 1/stepsPerBeat note.
 
         With a tempo map set this is the INSTANTANEOUS rate at the playhead, so
@@ -33,6 +35,7 @@ public:
 
     /** How steps become time, or null for one constant tempo.
 
+// clang-format off
         NON-OWNING: the snapshot that holds it is latched by processBlock for
         the whole block, which is exactly the lifetime SnapshotBridge::acquire
         guarantees. Re-set every block rather than only when the generation
@@ -41,6 +44,7 @@ public:
     */
     void setTempoMap (const TempoMap* map) noexcept { tempoMap = map; }
 
+// clang-format on
     /** Steps <-> samples. THE conversion: loopStartSamples, getPositionInSteps,
         the sequencer and the offline renderer all go through these, so a tempo
         curve reaches all of them at once or none of them.
@@ -69,10 +73,12 @@ public:
     */
     void setLoopRange (double startSteps, double endSteps) noexcept;
 
+// clang-format off
     double getLoopStartSteps() const noexcept  { return loopStartSteps; }
     double getLoopEndSteps() const noexcept    { return loopEndSteps; }
     bool hasLoop() const noexcept              { return loopEndSteps > loopStartSteps; }
 
+// clang-format on
     /** The window in samples at the current tempo, rounded ONCE, here.
 
         Both ends are rounded from the same tempo in the same place, so advance(),
@@ -92,6 +98,7 @@ public:
 
     /** The same rule as arithmetic, over a window given in samples.
 
+// clang-format off
         Static and pure so the MESSAGE thread can predict it without a
         transport. It has to: a ruler click stores the raw position for instant
         feedback and the next audio block folds it, so a click landing outside
@@ -120,6 +127,7 @@ public:
 
     void rewind() noexcept  { positionSamples = 0; }
 
+// clang-format on
     /** Advances by a block. Wraps into the loop window when one is set. */
     void advance (int numSamples) noexcept;
 

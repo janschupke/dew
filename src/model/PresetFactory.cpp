@@ -37,6 +37,7 @@ Preset effectPreset (const char* typeId, const char* name, const char* descripti
 
 /** A synth preset: up to three oscillator slots and an envelope.
 
+// clang-format off
     Slots the caller does not give are left out, and validateState fills them
     from their defaults - which switches them OFF, because that is what a fresh
     slot is. So a one-oscillator preset really is one oscillator.
@@ -46,6 +47,7 @@ Preset synthPreset (const char* name, const char* description,
 {
     juce::Array<juce::var> slots;
 
+// clang-format on
     for (auto& osc : oscillators)
         slots.add (osc);
 
@@ -56,12 +58,14 @@ Preset synthPreset (const char* name, const char* description,
     return { "instrument", "synth", name, description, juce::var (state) };
 }
 
+// clang-format off
 Preset audioPreset (const char* name, const char* description,
                     std::initializer_list<Value> sample)
 {
     auto* state = new juce::DynamicObject();
     state->setProperty ("sample", objectOf (sample));
 
+// clang-format on
     return { "instrument", "audio", name, description, juce::var (state) };
 }
 
@@ -89,6 +93,7 @@ juce::var oscOff()
 // different ANSWER rather than a different number: three per effect type is the
 // smallest set that shows what a type's parameters actually do.
 
+// clang-format off
 Preset rumbleCut()    { return effectPreset ("filter", "Rumble Cut",
                             "Takes the room out from under a sound.",
                             { { &ids::filterMode, "highpass" }, { &ids::cutoff, 120.0 },
@@ -212,6 +217,7 @@ Preset hollowKeys()   { return synthPreset ("Hollow Keys",
                             { { &ids::attack, 0.006 }, { &ids::decay, 0.6 },
                               { &ids::sustain, 0.35 }, { &ids::release, 0.35 } }); }
 
+// clang-format on
 /** The wavetable half of the instrument, and the only preset that sets unison:
     SynthVoice reads unisonVoices and unisonDetune ONLY in wavetable mode, so a
     classic slot that asked for five voices would silently get one. */
@@ -227,6 +233,7 @@ Preset morphingSweep()
                            { &ids::unisonVoices, 5 },
                            { &ids::unisonDetune, 14.0 } });
 
+// clang-format off
     return synthPreset ("Morphing Sweep",
                         "Five unison voices morphing across the table over the note.",
                         { osc, oscOff(), oscOff() },
@@ -278,6 +285,7 @@ const std::vector<PresetFactory::Entry>& PresetFactory::presets()
         { "reverse-swell.dewpreset",  &reverseSwell },
     };
 
+// clang-format on
     return all;
 }
 

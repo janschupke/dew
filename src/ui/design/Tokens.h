@@ -16,6 +16,7 @@
 namespace dew::tokens
 {
 
+// clang-format off
 // --- surfaces ----------------------------------------------------------------
 namespace colour
 {
@@ -75,6 +76,7 @@ namespace colour
     }
 }
 
+// clang-format on
 // --- emphasis ----------------------------------------------------------------
 /** How strongly something is stated.
 
@@ -84,6 +86,7 @@ namespace colour
     drawn at 0.07 and 0.10, a week apart, and neither author knew about the
     other.
 
+// clang-format off
     Named for what a value MEANS, so a component asks for a wash rather than for
     0.20 and the two cannot drift apart again.
 */
@@ -139,6 +142,7 @@ namespace emphasis
     }
 }
 
+// clang-format on
 // --- spacing -----------------------------------------------------------------
 /** A modular spacing scale: 2, 4, 6, 8, 12, 16, 24.
 
@@ -148,6 +152,7 @@ namespace emphasis
     every layout in the application by two pixels to satisfy a rule nothing
     actually wanted.
 
+// clang-format off
     Every gap, inset and margin is one of these seven, and there is a test that
     says so.
 */
@@ -194,8 +199,10 @@ namespace stroke
     inline constexpr float bold     = 2.0f;
 }
 
+// clang-format on
 /** Stroke weights in the icons' own 0..1 space.
 
+// clang-format off
     Icons.cpp passed eleven different thicknesses to its stroke helpers, which
     is why the loop arrow and the undo arrow, drawn a week apart, did not look
     like the same family.
@@ -378,4 +385,5 @@ namespace motion
     inline constexpr int meterReleaseMs = 320;
 }
 
+// clang-format on
 } // namespace dew::tokens

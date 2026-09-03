@@ -8,6 +8,7 @@ namespace
 
 /** The modifiers a binding is allowed to be picky about.
 
+// clang-format off
     Shift is absent, and that is the rule rather than an omission - see
     matches() in the header.
 */
@@ -15,6 +16,7 @@ constexpr int comparedModifiers = juce::ModifierKeys::commandModifier
                                 | juce::ModifierKeys::ctrlModifier
                                 | juce::ModifierKeys::altModifier;
 
+// clang-format on
 int lowerCase (int character) noexcept
 {
     return (int) juce::CharacterFunctions::toLowerCase ((juce::juce_wchar) character);
@@ -22,6 +24,7 @@ int lowerCase (int character) noexcept
 
 } // namespace
 
+// clang-format off
 const std::vector<Binding<juce::CommandID>>& application()
 {
     // A function-local static rather than a namespace-scope array: the
@@ -114,9 +117,11 @@ const std::vector<Binding<juce::CommandID>>& application()
           "MIDI Settings...", "Choose which MIDI controllers play", "Audio" },
     };
 
+// clang-format on
     return table;
 }
 
+// clang-format off
 const std::vector<Binding<ViewCommand>>& timeline()
 {
     static const std::vector<Binding<ViewCommand>> table
@@ -166,6 +171,7 @@ const std::vector<Binding<ViewCommand>>& timeline()
           "Default Size", "Return this view's rows, or its text, to the default size", "View" },
     };
 
+// clang-format on
     return table;
 }
 

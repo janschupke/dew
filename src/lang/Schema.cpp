@@ -26,11 +26,13 @@ int editDistance (std::string_view a, std::string_view b)
     {
         current[0] = (int) i;
 
+// clang-format off
         for (std::size_t j = 1; j <= b.size(); ++j)
             current[j] = std::min ({ previous[j] + 1,
                                      current[j - 1] + 1,
                                      previous[j - 1] + (a[i - 1] == b[j - 1] ? 0 : 1) });
 
+// clang-format on
         previous = current;
     }
 
@@ -49,12 +51,14 @@ bool closeEnough (std::string_view candidate, std::string_view text, int distanc
     return distance <= budget;
 }
 
+// clang-format off
 std::string_view closestOf (const std::vector<std::string_view>& candidates,
                             std::string_view text)
 {
     std::string_view best;
     auto bestDistance = 0;
 
+// clang-format on
     for (const auto& candidate : candidates)
     {
         const auto distance = editDistance (candidate, text);
@@ -74,6 +78,7 @@ std::string_view closestOf (const std::vector<std::string_view>& candidates,
 
 } // namespace
 
+// clang-format off
 const char* nameOf (ValueKind kind) noexcept
 {
     switch (kind)
@@ -111,9 +116,11 @@ const char* nameOf (ValueKind kind) noexcept
         case ValueKind::scope:        return "how often a choice is re-drawn";
     }
 
+// clang-format on
     return "a value";
 }
 
+// clang-format off
 const std::vector<std::string_view>& membersOf (ValueKind kind)
 {
     static const std::vector<std::string_view> spreads {
@@ -148,6 +155,8 @@ const std::vector<std::string_view>& membersOf (ValueKind kind)
         case ValueKind::alignment:    return alignments;
         case ValueKind::transposeMode: return transposeModes;
 
+// clang-format on
+// clang-format off
         case ValueKind::text:
         case ValueKind::integer:
         case ValueKind::number:
@@ -171,9 +180,11 @@ const std::vector<std::string_view>& membersOf (ValueKind kind)
             break;
     }
 
+// clang-format on
     return empty;
 }
 
+// clang-format off
 BlockKind blockKindFor (std::string_view keyword) noexcept
 {
     if (keyword == "song")        return BlockKind::song;
@@ -191,9 +202,11 @@ BlockKind blockKindFor (std::string_view keyword) noexcept
     if (keyword == "imitate")     return BlockKind::imitate;
     if (keyword == "overrides")   return BlockKind::overrides;
 
+// clang-format on
     return BlockKind::unknown;
 }
 
+// clang-format off
 const char* nameOf (BlockKind kind) noexcept
 {
     switch (kind)
@@ -215,9 +228,11 @@ const char* nameOf (BlockKind kind) noexcept
         case BlockKind::unknown:     return "unknown";
     }
 
+// clang-format on
     return "unknown";
 }
 
+// clang-format off
 const std::vector<BlockSpec>& schema()
 {
     static const std::vector<BlockSpec> table {
@@ -330,6 +345,7 @@ const std::vector<BlockSpec>& schema()
           {},
           "a voice repeating another, later" },
 
+// clang-format on
         { BlockKind::arrangement, {}, {}, "the order the sections play in", true },
 
         { BlockKind::overrides, {}, { BlockKind::part }, "per-instance changes" },

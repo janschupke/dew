@@ -16,6 +16,7 @@ juce::ValueTree ProjectFactory::createDefault()
     project.setProperty (ids::name, "Untitled", nullptr);
     project.setProperty (ids::tempoBpm, 128.0, nullptr);
 
+// clang-format off
     // Kick and bass sit low; snare is noisy-ish via a fast square; lead sings.
     project.appendChild (makeChannel (1, "Kick",  entityColour::defaultHex (0), 36, "sine",     0,
                                       0.001, 0.140, 0.0, 0.060, 0.95), nullptr);
@@ -26,6 +27,7 @@ juce::ValueTree ProjectFactory::createDefault()
     project.appendChild (makeChannel (4, "Lead",  entityColour::defaultHex (3), 72, "triangle", 0,
                                       0.006, 0.150, 0.55, 0.220, 0.60), nullptr);
 
+// clang-format on
     auto pattern = defaultTreeFor (childSpecFor (projectSpec(), "patterns"));
     pattern.setProperty (ids::id, 1, nullptr);
     pattern.setProperty (ids::name, "Pattern 1", nullptr);
@@ -46,6 +48,7 @@ juce::ValueTree ProjectFactory::createDefault()
     return canonicalTree (project, projectSpec());
 }
 
+// clang-format off
 const std::vector<ProjectFactory::Demo>& ProjectFactory::demos()
 {
     static const std::vector<Demo> library {
@@ -72,6 +75,7 @@ const std::vector<ProjectFactory::Demo>& ProjectFactory::demos()
           &ProjectFactory::createScoreDemo },
     };
 
+// clang-format on
     return library;
 }
 
