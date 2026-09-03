@@ -109,15 +109,24 @@ std::vector<Onset> tileRhythm (const RhythmSpec& rhythm, int totalSteps, int ste
         // one. A cycle shorter than a bar simply repeats inside it; a cycle that
         // does not divide the bar is cut off at the next bar line and begins
         // again, which is what makes a written pattern land where it was
-        // written. Without the reset the cycle runs on and phases against the
-        // bar, which is a real effect but never an accident.
-        if (alignBar && position % stepsPerBar == 0)
+        // written. Without it the cycle runs on and phases against the bar,
+        // which is a real effect but never an accident.
+        const auto intoBar = position % stepsPerBar;
+
+        if (alignBar && intoBar == 0)
             index = 0;
 
         const auto& step = rhythm.steps[index];
 
         // Every step carries its own length now, rests and ties included.
         auto length = std::max (1, stepsFor (step.duration, beatUnit, stepsPerBeat));
+
+        // The cutting-off half of the rule, which was missing: resetting only
+        // when an onset LANDED on a bar line meant a cycle of ten steps in a
+        // sixteen-step bar never reset at all, and phased exactly as if nothing
+        // had been aligned. The comment said otherwise for a whole phase.
+        if (alignBar && length > stepsPerBar - intoBar)
+            length = stepsPerBar - intoBar;
 
         // Truncated at the span's end, and dropped if nothing is left: a note
         // running past its section would retrigger on the pattern's next repeat.
@@ -330,11 +339,19 @@ std::vector<MelodyNote> generateMelody (const std::vector<Onset>& onsets,
                 const auto interval = pitch - previousPitch;
                 const auto size = std::abs (interval);
 
+                // A declared limit is a HARD filter, not a cost: "no leap wider
+                // than an octave" is a statement about the line, and charging
+                // for it would let a bad enough alternative buy one anyway.
+                if (melody.maxLeap > 0 && size > melody.maxLeap)
+                    continue;
+
                 // Steps are cheap, leaps cost more the wider they get.
                 cost += size <= 2 ? 0.0f : (float) (size - 2) * 1.5f;
 
-                // A leap wants a step back the other way after it.
-                if (std::abs (previousInterval) > 4)
+                // A leap wants a step back the other way after it - unless the
+                // score says otherwise, which is what a line that means to
+                // arpeggiate needs.
+                if (melody.resolveLeaps && std::abs (previousInterval) > 4)
                 {
                     const auto opposite = (previousInterval > 0) != (interval > 0);
 

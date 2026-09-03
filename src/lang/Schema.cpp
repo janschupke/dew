@@ -105,6 +105,9 @@ const char* nameOf (ValueKind kind) noexcept
         case ValueKind::cadence:      return "a chord tone to end on";
         case ValueKind::rule:         return "`forbid`, or `soft` and a weight";
         case ValueKind::bassRule:     return "which note goes at the bottom";
+        case ValueKind::leapRule:     return "`max <semitones>`, and how a leap is answered";
+        case ValueKind::alignment:    return "whether a rhythm restarts at each bar";
+        case ValueKind::transposeMode: return "`diatonic` or `chromatic`";
         case ValueKind::scope:        return "how often a choice is re-drawn";
     }
 
@@ -128,6 +131,8 @@ const std::vector<std::string_view>& membersOf (ValueKind kind)
         "note", "bar", "instance", "section", "song" };
     static const std::vector<std::string_view> bassRules {
         "from-inversion", "root", "any" };
+    static const std::vector<std::string_view> alignments { "bar", "continuous" };
+    static const std::vector<std::string_view> transposeModes { "diatonic", "chromatic" };
 
     switch (kind)
     {
@@ -140,6 +145,8 @@ const std::vector<std::string_view>& membersOf (ValueKind kind)
         case ValueKind::instrument:   return instruments;
         case ValueKind::scope:        return scopes;
         case ValueKind::bassRule:     return bassRules;
+        case ValueKind::alignment:    return alignments;
+        case ValueKind::transposeMode: return transposeModes;
 
         case ValueKind::text:
         case ValueKind::integer:
@@ -160,6 +167,7 @@ const std::vector<std::string_view>& membersOf (ValueKind kind)
         case ValueKind::channelRef:
         case ValueKind::cadence:
         case ValueKind::rule:
+        case ValueKind::leapRule:
             break;
     }
 
@@ -180,6 +188,7 @@ BlockKind blockKindFor (std::string_view keyword) noexcept
     if (keyword == "chords")      return BlockKind::chords;
     if (keyword == "line")        return BlockKind::line;
     if (keyword == "counterpoint") return BlockKind::counterpoint;
+    if (keyword == "imitate")     return BlockKind::imitate;
     if (keyword == "overrides")   return BlockKind::overrides;
 
     return BlockKind::unknown;
@@ -201,6 +210,7 @@ const char* nameOf (BlockKind kind) noexcept
         case BlockKind::chords:      return "chords";
         case BlockKind::line:        return "line";
         case BlockKind::counterpoint: return "counterpoint";
+        case BlockKind::imitate:     return "imitate";
         case BlockKind::overrides:   return "overrides";
         case BlockKind::unknown:     return "unknown";
     }
@@ -260,7 +270,8 @@ const std::vector<BlockSpec>& schema()
             { "line",   ValueKind::lineSource, false, false, "play a single line" },
             { "rhythm", ValueKind::rhythmRef,  false, true,  "which rhythm to use" },
             { "octave", ValueKind::integer,    false, true,  "octaves to shift by" } },
-          { BlockKind::melody, BlockKind::counterpoint, BlockKind::rhythm },
+          { BlockKind::melody, BlockKind::counterpoint, BlockKind::imitate,
+            BlockKind::rhythm },
           "what one channel plays in this section" },
 
         { BlockKind::melody,
@@ -271,6 +282,10 @@ const std::vector<BlockSpec>& schema()
             { "variance",     ValueKind::number,      false, true,
               "0 is the same every compile; above 0 explores, reproducibly" },
             { "mute",         ValueKind::muteBudget,  false, true,  "how many onsets become rests" },
+            { "leap",         ValueKind::leapRule,    false, true,
+              "the widest jump, and whether one has to be answered by a step" },
+            { "align",        ValueKind::alignment,   false, true,
+              "`bar` restarts the rhythm at each bar line; `continuous` lets it phase" },
             { "cadence",      ValueKind::cadence,     false, true,
               "which tone of the last chord to end on - `1`, or "
               "`choose [1 3 5] per instance`" },
@@ -284,6 +299,8 @@ const std::vector<BlockSpec>& schema()
             { "range",        ValueKind::pitchRange,   false, true,  "the pitches this voice may use" },
             { "variance",     ValueKind::number,       false, true,
               "0 is the same every compile; above 0 explores, reproducibly" },
+            { "align",        ValueKind::alignment,    false, true,
+              "`bar` restarts the rhythm at each bar line; `continuous` lets it phase" },
 
             // The rules, as a closed set. Open-ended ones would be a constraint
             // solver by another name, and completion could not offer them.
@@ -302,6 +319,16 @@ const std::vector<BlockSpec>& schema()
               "how much repeating the same pitch costs" } },
           { BlockKind::rhythm },
           "a voice written against another" },
+
+        { BlockKind::imitate,
+          { { "delay",     ValueKind::bars,          true,  true,
+              "how far behind the voice it copies" },
+            { "transpose", ValueKind::integer,       false, true,
+              "how far up or down, in scale degrees or semitones" },
+            { "mode",      ValueKind::transposeMode, false, true,
+              "`diatonic` stays in the key; `chromatic` moves exactly" } },
+          {},
+          "a voice repeating another, later" },
 
         { BlockKind::arrangement, {}, {}, "the order the sections play in", true },
 

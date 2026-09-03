@@ -402,6 +402,9 @@ private:
         else if (part.kind == PartKind::line)
             renderLine (part, *channel, spans, track, transpose, totalSteps, stepsPerBar,
                         notes, site);
+        else if (part.kind == PartKind::imitation)
+            renderImitation (part, *channel, spans, track, transpose, totalSteps,
+                             stepsPerBar, notes, site);
         else if (part.kind == PartKind::counterpoint)
             renderCounterpoint (part, *channel, spans, track, transpose, totalSteps,
                                 stepsPerBar, notes, site);
@@ -647,7 +650,8 @@ private:
             return;
 
         auto onsets = tileRhythm (*rhythm, totalSteps, stepsPerBar, score.beatUnit,
-                                  score.stepsPerBeat);
+                                  score.stepsPerBeat,
+                                  part.melody.align == Alignment::bar);
 
         if (onsets.empty())
             return;
@@ -710,6 +714,110 @@ private:
         return sounding;
     }
 
+    void renderImitation (const PartSpec& part, const ChannelSpec& channel,
+                          const std::vector<ChordSpan>& spans, int track, int transpose,
+                          int totalSteps, int stepsPerBar, std::vector<Note>& notes,
+                          const DrawSite& site)
+    {
+        const auto source = trackIndexFor (part.imitation.source);
+
+        if (source < 0)
+            return;
+
+        // A COPY, taken before anything is appended: writing into `notes` while
+        // reading it would let the imitation imitate itself, one delay at a
+        // time, until the section filled up.
+        std::vector<Note> copied;
+
+        for (const auto& note : notes)
+            if (note.track == source)
+                copied.push_back (note);
+
+        if (copied.empty())
+        {
+            auto& d = diagnostics.warning ("W605",
+                                           "`" + part.imitation.source
+                                           + "` has nothing to imitate here",
+                                           part.imitation.sourceRange);
+            d.notes.push_back ("parts are written in the order they are declared, so the "
+                               "voice being copied has to come first");
+            return;
+        }
+
+        const auto delay = part.imitation.delaySteps * stepsPerBar;
+        auto ordinal = 0;
+
+        for (const auto& note : copied)
+        {
+            const auto start = note.startStep + delay;
+
+            // Anything past the section's end is DROPPED rather than wrapped: a
+            // canon that wrapped would answer itself from the future.
+            if (start >= totalSteps)
+                continue;
+
+            const auto shifted = transposePitch (note.pitch, spans, start,
+                                                 part.imitation);
+            const auto sounded = shifted + transpose;
+
+            if (sounded < channel.lowPitch || sounded > channel.highPitch)
+                continue;
+
+            if (sounded < lowestPitch || sounded > highestPitch)
+                continue;
+
+            notes.push_back ({ track, start,
+                               std::min (note.lengthSteps, totalSteps - start), sounded,
+                               velocityFor (channel, site, ordinal,
+                                            start / std::max (1, stepsPerBar)) });
+            ++ordinal;
+        }
+    }
+
+    /** Moves one pitch, by semitones or by scale degrees of the key sounding
+        where it lands.
+
+        Diatonic is the default because it is what keeps an answer in the key:
+        a chromatic fifth above a minor line is a line in a different mode.
+    */
+    static int transposePitch (int pitch, const std::vector<ChordSpan>& spans, int step,
+                               const ImitationSpec& spec)
+    {
+        if (spec.transpose == 0)
+            return pitch;
+
+        if (spec.mode == TransposeMode::chromatic)
+            return pitch + spec.transpose;
+
+        const ChordSpan* span = nullptr;
+
+        for (const auto& candidate : spans)
+            if (step >= candidate.startStep && step < candidate.endStep)
+                span = &candidate;
+
+        if (span == nullptr)
+            return pitch + spec.transpose;
+
+        // Walk the local scale by degrees. Wider than the scale is fine: the
+        // walk simply keeps going into the next octave.
+        const auto scale = scalePitchesBetween (span->localKey, 0, 127);
+
+        if (scale.empty())
+            return pitch + spec.transpose;
+
+        // The nearest scale tone at or below the note, so a chromatic passing
+        // note moves with its neighbours rather than being left behind.
+        auto index = 0;
+
+        for (std::size_t i = 0; i < scale.size(); ++i)
+            if (scale[i] <= pitch)
+                index = (int) i;
+
+        const auto wanted = std::clamp (index + spec.transpose, 0, (int) scale.size() - 1);
+
+        return scale[(std::size_t) wanted] + (pitch - scale[(std::size_t) index]);
+    }
+
     void renderCounterpoint (const PartSpec& part, const ChannelSpec& channel,
                              const std::vector<ChordSpan>& spans, int track, int transpose,
                              int totalSteps, int stepsPerBar, std::vector<Note>& notes,
@@ -726,7 +834,8 @@ private:
             return;
 
         const auto onsets = tileRhythm (*rhythm, totalSteps, stepsPerBar, score.beatUnit,
-                                        score.stepsPerBeat);
+                                        score.stepsPerBeat,
+                                        part.counterpoint.align == Alignment::bar);
 
         if (onsets.empty())
             return;

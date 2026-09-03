@@ -55,6 +55,38 @@ enum class Scope
     song       ///< one for the whole song
 };
 
+/** How an imitation moves the line it copies. */
+enum class TransposeMode
+{
+    diatonic,   ///< by scale degrees, so it stays in the key
+    chromatic   ///< by semitones, exactly
+};
+
+/** One voice repeating another, later and possibly higher.
+
+    A TRANSFORMATION, not a search target. A beam search will essentially never
+    discover imitation, because imitation constrains the whole line's identity
+    rather than local transitions - so asking a search to find it is asking for
+    the one thing it cannot do. Written out, it is exact and it is fifteen
+    lines.
+*/
+struct ImitationSpec
+{
+    std::string source;         ///< the channel being imitated
+    SourceRange sourceRange;
+
+    int delaySteps = 0;
+    int transpose = 0;
+    TransposeMode mode = TransposeMode::diatonic;
+};
+
+/** Whether a rhythm restarts at every bar line or runs on. */
+enum class Alignment
+{
+    bar,        ///< restart the cycle on each bar line - the default
+    continuous  ///< let it run on and phase against the bar
+};
+
 /** Which note a voicing puts at the bottom. */
 enum class BassRule
 {
@@ -199,7 +231,7 @@ struct HarmonySpec
     std::vector<ChordSpec> chords;
 };
 
-enum class PartKind { chords, line, melody, counterpoint };
+enum class PartKind { chords, line, melody, counterpoint, imitation };
 
 struct MelodySpec
 {
@@ -213,6 +245,23 @@ struct MelodySpec
     bool hasRange = false;
     int lowPitch = 0;
     int highPitch = 0;
+
+    /** The widest jump the line may make, in semitones. Zero for no limit.
+
+        A hard filter, not a cost: "no leap wider than an octave" is a
+        statement about the line, and charging for it would let a bad enough
+        alternative buy one anyway.
+    */
+    int maxLeap = 0;
+
+    /** Whether a leap has to be answered by a step the other way.
+
+        On by default, and it was hard-coded before it was declarable - which
+        meant a line that WANTED to arpeggiate had to fight the generator.
+    */
+    bool resolveLeaps = true;
+
+    Alignment align = Alignment::bar;
 
     /** Which tone of the last chord the line ends on.
 
@@ -238,6 +287,7 @@ struct CounterpointSpec
     int highPitch = 0;
 
     float variance = 0.0f;
+    Alignment align = Alignment::bar;
 
     RuleSetting rules[numCounterpointRules];
 };
@@ -257,6 +307,7 @@ struct PartSpec
 
     MelodySpec melody;
     CounterpointSpec counterpoint;
+    ImitationSpec imitation;
 };
 
 struct SectionSpec

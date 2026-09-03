@@ -37,6 +37,9 @@ enum class ValueKind
     cadence,        ///< 1, or `choose [1 3 5] per instance`
     rule,           ///< forbid, or `soft 2.5`
     bassRule,       ///< from-inversion | root | any
+    leapRule,       ///< `max 7 resolve step`
+    alignment,      ///< bar | continuous
+    transposeMode,  ///< diatonic | chromatic
     scope,          ///< note | bar | instance | section | song
     instrument,     ///< synth
     rhythmRef,      ///< a declared rhythm's name
@@ -67,6 +70,7 @@ enum class BlockKind
     part,
     melody,
     counterpoint,
+    imitate,
     chords,
     line,
     overrides,

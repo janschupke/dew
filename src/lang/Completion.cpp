@@ -238,6 +238,15 @@ void addForKind (std::vector<Completion>& out, ValueKind kind, int wordsAlready,
         case ValueKind::instrument:
         case ValueKind::scope:       // handled above: membersOf lists them
         case ValueKind::bassRule:
+        case ValueKind::alignment:
+        case ValueKind::transposeMode:
+            break;
+
+        case ValueKind::leapRule:
+            if (wordsAlready == 0)
+                add (out, "max", "and then a number of semitones", CompletionKind::value);
+            else
+                add (out, "resolve", "and then `step` or `free`", CompletionKind::value);
             break;
 
         case ValueKind::rule:

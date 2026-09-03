@@ -1,5 +1,6 @@
 #include <catch2/catch_test_macros.hpp>
 
+#include <algorithm>
 #include <numeric>
 #include <set>
 #include <string>
@@ -729,4 +730,60 @@ TEST_CASE ("an inversion written in the harmony reaches the bass",
     // And a chord with NO inversion mark still leaves the voicer free, which is
     // what lets it find a smooth bass line.
     REQUIRE_FALSE (voice (0, BassRule::fromInversion).empty());
+}
+
+TEST_CASE ("a declared leap limit is a wall, not a cost", "[score][melody]")
+{
+    // A cost lets a bad enough alternative buy a leap anyway. "No jump wider
+    // than a fourth" is a statement about the line, so it filters.
+    const std::string source = "x";
+    DiagnosticBag bag { source };
+
+    const auto spans = layOutHarmony (harmonyOf ({ chordFrom ("I", 1), chordFrom ("V", 1) }),
+                                      Key { 0, Mode::major }, 64, 16, 4, 4, bag);
+    REQUIRE_FALSE (bag.hasErrors());
+
+    const auto onsets = tileRhythm (rhythmOf ({ { 1, 8 } }), 64, 16, 4, 4);
+
+    MelodySpec melody;
+    melody.maxLeap = 4;
+    melody.variance = 0.8f;      // enough jitter to want a leap if it could
+
+    const auto line = generateMelody (onsets, spans, melody, 48, 84, SeedPath { 5 });
+
+    REQUIRE (line.size() > 4);
+
+    for (std::size_t i = 1; i < line.size(); ++i)
+    {
+        const auto jump = std::abs (line[i].pitch - line[i - 1].pitch);
+        INFO ("note " << i << " jumps " << jump);
+        REQUIRE (jump <= 4);
+    }
+}
+
+TEST_CASE ("a rhythm can be told to phase against the bar", "[score][melody]")
+{
+    // `align bar` restarts the cycle at every bar line, which is what makes a
+    // written pattern land where it was written. `continuous` lets it run on -
+    // a real effect, and never an accident.
+    const auto rhythm = rhythmOf ({ { 1, 4 }, { 1, 4 }, { 1, 8 } });
+
+    const auto aligned = tileRhythm (rhythm, 64, 16, 4, 4, true);
+    const auto phasing = tileRhythm (rhythm, 64, 16, 4, 4, false);
+
+    REQUIRE_FALSE (aligned.empty());
+    REQUIRE_FALSE (phasing.empty());
+
+    // Aligned, every bar starts an onset; phasing, the cycle is 10 steps in a
+    // 16-step bar, so it cannot.
+    for (const auto bar : { 0, 16, 32, 48 })
+    {
+        const auto onBarLine = std::any_of (aligned.begin(), aligned.end(),
+                                            [bar] (const Onset& o)
+                                            { return o.startStep == bar; });
+        INFO ("bar line at step " << bar);
+        REQUIRE (onBarLine);
+    }
+
+    REQUIRE (aligned.size() != phasing.size());
 }

@@ -1104,6 +1104,12 @@ private:
                 part.counterpoint = resolveCounterpoint (child, part);
                 sawKind = true;
             }
+            else if (kind == BlockKind::imitate)
+            {
+                part.kind = PartKind::imitation;
+                part.imitation = resolveImitation (child, part);
+                sawKind = true;
+            }
             else
             {
                 diagnostics.error ("E225",
@@ -1115,11 +1121,57 @@ private:
 
         if (! sawKind)
             diagnostics.error ("E232",
-                               "a part needs `chords`, `line`, a `melody` or a "
-                               "`counterpoint` block",
+                               "a part needs `chords`, `line`, a `melody`, a "
+                               "`counterpoint` or an `imitate` block",
                                block.keywordRange, "nothing here says what to play");
 
         return part;
+    }
+
+    /** `leap max 7`, optionally `resolve step` or `resolve free`. */
+    void readLeap (MelodySpec& melody, const Statement& statement, const KeySpec& spec)
+    {
+        const auto& values = statement.values;
+
+        if (values.size() != 2 && values.size() != 4)
+        {
+            wrongValue (statement, spec.kind);
+            return;
+        }
+
+        if (values[0].text != "max")
+        {
+            wrongValue (statement, spec.kind);
+            return;
+        }
+
+        const auto widest = readInteger (values[1].text);
+
+        if (! widest.has_value() || *widest < 1 || *widest > 24)
+        {
+            auto& d = diagnostics.error ("E247", "a leap limit is 1 to 24 semitones",
+                                         values[1].range);
+            d.helps.push_back ("12 is an octave");
+            return;
+        }
+
+        melody.maxLeap = (int) *widest;
+
+        if (values.size() == 2)
+            return;
+
+        if (values[2].text != "resolve")
+        {
+            wrongValue (statement, spec.kind);
+            return;
+        }
+
+        if (values[3].text == "step")
+            melody.resolveLeaps = true;
+        else if (values[3].text == "free")
+            melody.resolveLeaps = false;
+        else
+            wrongValue (statement, spec.kind);
     }
 
     /** `cadence 1`, or `cadence choose [1 3 5] per instance`.
@@ -1216,6 +1268,74 @@ private:
         readScope (statement, i + 2, melody.cadence.scope);
     }
 
+    // --- imitation -----------------------------------------------------------
+    /** `imitate lead { delay 1 bar  transpose 5 }`.
+
+        A transformation, not a search. A beam search will essentially never
+        DISCOVER imitation, because imitation constrains the whole line's
+        identity rather than local transitions - so it is written out, where it
+        is exact.
+    */
+    ImitationSpec resolveImitation (const Block& block, PartSpec& part)
+    {
+        ImitationSpec spec;
+
+        if (block.header.size() == 1)
+        {
+            spec.source = std::string (block.name());
+            spec.sourceRange = block.header.front().range;
+
+            if (! contains (symbols.channels, spec.source))
+                diagnostics.error ("E248",
+                                   std::string ("no channel called `") + spec.source + "`",
+                                   spec.sourceRange);
+            else if (spec.source == part.channel)
+                diagnostics.error ("E249", "a voice cannot imitate itself",
+                                   spec.sourceRange, "name a different channel");
+        }
+        else
+        {
+            auto& d = diagnostics.error ("E250", "imitation needs a voice to copy",
+                                         block.keywordRange);
+            d.helps.push_back ("write `imitate <channel> { delay 1 bar }`");
+        }
+
+        forEachStatement (block, BlockKind::imitate, [&] (const KeySpec& keySpec,
+                                                          const Statement& statement)
+        {
+            if (statement.key == "delay")
+            {
+                const auto bars = asBars (statement);
+
+                if (! bars.has_value() || *bars < 0 || *bars > 64)
+                    wrongValue (statement, keySpec.kind);
+                else
+                    spec.delaySteps = *bars;   // in BARS here; steps once the grid is known
+            }
+            else if (statement.key == "transpose")
+            {
+                if (statement.values.size() == 1)
+                    if (const auto value = readInteger (statement.values.front().text);
+                        value.has_value() && *value >= -24 && *value <= 24)
+                    {
+                        spec.transpose = (int) *value;
+                        return;
+                    }
+
+                wrongValue (statement, keySpec.kind);
+            }
+            else if (statement.key == "mode")
+            {
+                if (const auto index = asMemberIndex (statement, keySpec.kind); index.has_value())
+                    spec.mode = (TransposeMode) *index;
+                else
+                    wrongValue (statement, keySpec.kind);
+            }
+        });
+
+        return spec;
+    }
+
     // --- counterpoint --------------------------------------------------------
     /** `counterpoint against lead { ... }`.
 
@@ -1290,6 +1410,13 @@ private:
                     }
 
                 wrongValue (statement, keySpec.kind);
+            }
+            else if (statement.key == "align")
+            {
+                if (const auto index = asMemberIndex (statement, keySpec.kind); index.has_value())
+                    spec.align = (Alignment) *index;
+                else
+                    wrongValue (statement, keySpec.kind);
             }
             else if (const auto rule = ruleFor (statement.key); rule.has_value())
             {
@@ -1383,6 +1510,17 @@ private:
             else if (statement.key == "cadence")
             {
                 readCadence (melody, statement, spec);
+            }
+            else if (statement.key == "leap")
+            {
+                readLeap (melody, statement, spec);
+            }
+            else if (statement.key == "align")
+            {
+                if (const auto index = asMemberIndex (statement, spec.kind); index.has_value())
+                    melody.align = (Alignment) *index;
+                else
+                    wrongValue (statement, spec.kind);
             }
             else if (statement.key == "range")
             {

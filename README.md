@@ -445,6 +445,12 @@ other section's notes bit-identical, inserting a blank line changes nothing, and
 `choose` at bar 3 cannot rewrite bar 4. `variance 0` is a pure argmin: the same notes
 every compile, from any seed.
 
+A melody can also be told how far it may jump and whether a jump has to be answered
+(`leap max 7 resolve step`), and whether its rhythm restarts at each bar line or runs on
+against it (`align bar` / `align continuous`). A voicing can be told which note goes at
+the bottom — `bass from-inversion` is the default and is what makes writing `i^1` move a
+note rather than decorate the page.
+
 splitmix64 and PCG32 are written out rather than delegated. `std::uniform_int_distribution`
 and `std::shuffle` specify their *statistics*, not their algorithms, so libstdc++ and
 libc++ render different music from one seed; `juce::Random` is an LCG whose exact sequence
@@ -497,6 +503,24 @@ name. When the hard rules leave nothing to sing they are **given up in a declare
 one at a time, and every one is reported by bar**. The line never falls silent without
 saying so. `species` is deliberately absent: Fux's rules are the easy fifth of it, and a
 number in the language would imply a guarantee this cannot make.
+
+**Imitation is an operator, not a search target:**
+
+```
+part echo {
+  imitate lead {
+    delay     1 bar
+    transpose 2
+    mode      diatonic     // stays in the key; `chromatic` moves exactly
+  }
+}
+```
+
+A beam search will essentially never *discover* imitation, because imitation constrains
+the whole line's identity rather than local transitions — so asking a search for it is
+asking for the one thing it cannot do. Written out it is exact, and it is fifteen lines.
+Anything falling past the section's end is dropped rather than wrapped: a canon that
+wrapped would answer itself from the future.
 
 **A value can be chosen rather than set**, and say how often it is re-drawn:
 
