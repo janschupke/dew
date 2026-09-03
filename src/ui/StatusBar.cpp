@@ -164,6 +164,15 @@ juce::Colour StatusBar::colourFor (Severity severity) const
     return colour::textSecondary;
 }
 
+void StatusBar::setHoverHelp (const juce::String& text)
+{
+    if (hoverText == text)
+        return;
+
+    hoverText = text;
+    repaint();
+}
+
 void StatusBar::resized()
 {
     auto area = getLocalBounds().reduced (space::md, 0);
@@ -197,6 +206,14 @@ void StatusBar::paint (juce::Graphics& g)
         g.setColour (colourFor (messageSeverity)
                          .withAlpha (juce::jmin (arrival.get(), leaving)));
         g.drawText (messageText, messageBounds, juce::Justification::centredLeft, true);
+    }
+    else if (hoverText.isNotEmpty())
+    {
+        // Quieter than a message and quieter than the context, because it is
+        // the one line here that changes as the pointer moves: at message
+        // weight it would flicker across the bottom of the window all day.
+        g.setColour (colour::textDisabled);
+        g.drawText (hoverText, messageBounds, juce::Justification::centredLeft, true);
     }
 
     // --- load and dropouts ---------------------------------------------------

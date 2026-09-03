@@ -297,6 +297,14 @@ void DewKnob::mouseDown (const juce::MouseEvent& event)
 DewKnob::DewKnob (const ParamSpec& spec)
     : DewKnob (spec.caption, spec.minimum, spec.maximum, spec.interval)
 {
+    // The catalog's displayName, which has said "the automation picker,
+    // tooltips" in its own comment since it was written and reached only the
+    // first of those. A caption says what a knob is CALLED; the tooltip is what
+    // the status bar shows the moment the pointer arrives, and a compact knob
+    // has no caption at all - its own header says so and it had nothing to say
+    // it with.
+    setTooltip (spec.displayName);
+
     setNumDecimalPlaces (spec.decimals);
     setBipolar (spec.bipolar);
 
@@ -349,6 +357,7 @@ void DewKnob::setCompact (bool shouldBeCompact)
 
 void DewKnob::setTooltip (const juce::String& text)
 {
+    juce::SettableTooltipClient::setTooltip (text);
     slider.setTooltip (text);
 }
 
@@ -427,6 +436,18 @@ void DewKnob::paint (juce::Graphics& g)
 
 
 // --- shared painting ---------------------------------------------------------
+
+void styleCaption (juce::Label& label, const juce::String& text)
+{
+    label.setText (text, juce::dontSendNotification);
+    label.setFont (type::font (type::caption));
+    label.setColour (juce::Label::textColourId, colour::textSecondary);
+    label.setJustificationType (juce::Justification::centred);
+
+    // A caption labels the control beside it; the pointer belongs to that
+    // control, and a Label that ate the press would take its hover help with it.
+    label.setInterceptsMouseClicks (false, false);
+}
 
 void forwardChildMouseEventsTo (juce::Component& parent)
 {

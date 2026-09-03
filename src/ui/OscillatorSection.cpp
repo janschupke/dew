@@ -161,6 +161,7 @@ OscillatorSection::OscillatorSection (ProjectDocument& d, EditorState& s)
     {
         write (ids::wave, valueOf (waveChoices, waveBox.getSelectedId()), "Change waveform");
     };
+    waveBox.setTooltip ("The waveform this oscillator plays");
     addAndMakeVisible (waveBox);
 
     // The table list comes from the engine's bank rather than a second list

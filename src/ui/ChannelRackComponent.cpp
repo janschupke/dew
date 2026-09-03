@@ -384,6 +384,7 @@ ChannelRackComponent::ChannelRackComponent (ProjectDocument& d, AudioEngine& e, 
     // Into the scrolling holder, not onto the panel: it is the next row of the
     // list, so it belongs to the list and scrolls with it.
     addChannelButton.setComponentID ("addChannelButton");
+    addChannelButton.setTooltip ("Add a synth channel");
     contentHolder.addAndMakeVisible (addChannelButton);
 
     addAudioButton.setComponentID ("addAudioButton");

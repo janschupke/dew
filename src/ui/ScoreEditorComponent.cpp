@@ -252,6 +252,7 @@ ScoreEditorComponent::ScoreEditorComponent (ProjectDocument& projectDocument)
     addAndMakeVisible (heading);
 
     compileButton.setComponentID ("scoreCompile");
+    compileButton.setTooltip ("Turn this score into patterns, notes and clips (cmd-R)");
     compileButton.onClick = [this] { compileIntoProject(); };
     addAndMakeVisible (compileButton);
 

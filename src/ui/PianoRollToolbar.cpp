@@ -39,6 +39,9 @@ PianoRollToolbar::PianoRollToolbar()
     };
     addAndMakeVisible (snapBox);
 
+    styleCaption (snapCaption, "SNAP");
+    addAndMakeVisible (snapCaption);
+
     channelBox.setTooltip ("Channel being edited");
     channelBox.setWantsKeyboardFocus (false);
     channelBox.onChange = [this]
@@ -50,6 +53,9 @@ PianoRollToolbar::PianoRollToolbar()
             onChannelChanged (channelBox.getSelectedId());
     };
     addAndMakeVisible (channelBox);
+
+    styleCaption (channelCaption, "CHANNEL");
+    addAndMakeVisible (channelCaption);
 
     // Zoom-to-fit used to be reachable only by double-clicking the piano keys,
     // which is also where a double-click means "audition this twice".
@@ -209,6 +215,10 @@ void PianoRollToolbar::resized()
 
     groupDividers.clear();
 
+    // Wide enough for the longest of them - one width, so the two dropdowns
+    // start at the same offset from their divider rather than at two.
+    const auto captionWidth = size::gutterLabel - space::lg;
+
     StripLayout strip { getLocalBounds(), space::md, space::xs };
 
     const auto place = [&strip] (juce::Component& c, int width) { strip.place (c, width); };
@@ -220,10 +230,12 @@ void PianoRollToolbar::resized()
 
     divider();
 
+    place (channelCaption, captionWidth);
     place (channelBox, 132);
 
     divider();
 
+    place (snapCaption, captionWidth);
     place (snapBox, 78);
 
     divider();

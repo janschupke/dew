@@ -16,6 +16,7 @@
 #include "app/Settings.h"
 #include "io/RenderJob.h"
 #include "ui/RenderPanel.h"
+#include "ui/HoverHelp.h"
 #include "ui/StatusBar.h"
 #include "ui/TransportBar.h"
 #include "ui/design/Animator.h"
@@ -166,6 +167,9 @@ private:
     */
     juce::TooltipWindow tooltips { nullptr, 600 };
 
+    // And HoverHelp puts the same text in the status bar with no delay at all,
+    // so a control answers "what is this?" while the pointer is still moving.
+
     /** The audio behind the project's audio channels.
 
         Declared FIRST, so it is destroyed last. Both the engine and a running
@@ -208,6 +212,14 @@ private:
     EditorTabs tabs;
     InstrumentPanel instrumentPanel;
     StatusBar statusBar;
+
+    /** Puts what the pointer is over into the status bar, at once.
+
+        After statusBar, so it is destroyed BEFORE it - it holds a reference and
+        reports into it from a mouse event. Listening to `*this` reaches every
+        control in the window through one object rather than a hook on each.
+    */
+    HoverHelp hoverHelp { *this, statusBar };
 
     /** Drags the boundary between the editor and the instrument panel.
 

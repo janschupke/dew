@@ -308,9 +308,11 @@ PlaylistComponent::PlaylistComponent (ProjectDocument& d, AudioEngine& e, Editor
     headerHolder.setInterceptsMouseClicks (false, true);
     addAndMakeVisible (headerHolder);
 
+    addAutomationButton.setTooltip ("Add an automation lane for a parameter");
     addAutomationButton.onClick = [this] { showAutomationMenu(); };
     addAndMakeVisible (addAutomationButton);
 
+    addTrackButton.setTooltip ("Add a track to the arrangement");
     addTrackButton.onClick = [this] { addTrack(); };
     addTrackButton.setComponentID ("addTrackButton");
     headerHolder.addAndMakeVisible (addTrackButton);

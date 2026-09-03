@@ -39,6 +39,22 @@ public:
     */
     void showMessage (const juce::String&, Severity = Severity::info);
 
+    /** What the control under the pointer is for.
+
+        Shown at once, where the floating tooltip waits 600ms - so the strip
+        answers "what is this?" while you are still moving, and the tooltip is
+        there for anyone who stops. One help string, two surfaces: both read the
+        control's own TooltipClient text, so a control cannot explain itself in
+        one place and not the other.
+
+        Yields to a transient message. An error and "what that button does" are
+        not comparable in importance, and the message already has a severity
+        rule saying so.
+    */
+    void setHoverHelp (const juce::String&);
+
+    juce::String getHoverHelp() const { return hoverText; }
+
     void refresh();
 
     // --- for tests -----------------------------------------------------------
@@ -73,6 +89,7 @@ private:
 
     juce::String contextText;
     juce::String messageText;
+    juce::String hoverText;
     Severity messageSeverity = Severity::info;
     int messageAgeMs = 0;
 

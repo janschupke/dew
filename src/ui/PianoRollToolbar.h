@@ -88,6 +88,12 @@ private:
     DewIconButton paintButton { icons::pencil(), "Paint tool - drag to write a run of notes (2)" };
     DewIconButton sliceButton { icons::scissors(), "Slice tool - drag across notes to cut them (3)" };
 
+    /** The two dropdowns in this strip said nothing about what they were: one
+        showed a channel name and the other a fraction, and neither is
+        self-describing at a glance. The status bar explains them on hover; a
+        word beside them means you do not have to hover to find out. */
+    juce::Label channelCaption, snapCaption;
+
     juce::ComboBox snapBox;
 
     /** Which channel the roll is editing. The roll used to be a passive

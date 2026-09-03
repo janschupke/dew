@@ -18,14 +18,6 @@ using namespace tokens;
 namespace
 {
 
-void styleCaption (juce::Label& label, const juce::String& text)
-{
-    label.setText (text, juce::dontSendNotification);
-    label.setFont (tokens::type::font (tokens::type::caption));
-    label.setColour (juce::Label::textColourId, tokens::colour::textSecondary);
-    label.setJustificationType (juce::Justification::centred);
-}
-
 } // namespace
 
 InstrumentPanel::InstrumentPanel (ProjectDocument& d, EditorState& s, SamplePool* pool)
@@ -42,6 +34,7 @@ InstrumentPanel::InstrumentPanel (ProjectDocument& d, EditorState& s, SamplePool
     titleLabel.setColour (juce::Label::textColourId, tokens::colour::textPrimary);
     addAndMakeVisible (titleLabel);
 
+    presetButton.setTooltip ("Load a factory sound onto this channel");
     presetButton.onClick = [this] { showPresetMenu(); };
     addAndMakeVisible (presetButton);
 
@@ -65,6 +58,7 @@ InstrumentPanel::InstrumentPanel (ProjectDocument& d, EditorState& s, SamplePool
         ProjectEdits::setProperty (channel, ids::mixerTrackId, mixerBox.getSelectedId(),
                                    &document.getUndoManager(), "Route channel");
     };
+    mixerBox.setTooltip ("Which mixer track this channel plays through");
     addAndMakeVisible (mixerBox);
     styleCaption (mixerLabel, "MIXER");
     addAndMakeVisible (mixerLabel);

@@ -178,7 +178,8 @@ private:
 /** A rotary with its caption and value drawn as one unit, so knobs line up
     without every caller laying out a separate label.
 */
-class DewKnob : public juce::Component
+class DewKnob : public juce::Component,
+                public juce::SettableTooltipClient
 {
 public:
     DewKnob (const juce::String& caption, double minimum, double maximum, double interval);
@@ -207,8 +208,16 @@ public:
     */
     void setCompact (bool);
 
-    /** Forwards to the slider, which is what the pointer is actually over. */
-    void setTooltip (const juce::String&);
+    /** Sets it on BOTH this and the slider inside.
+
+        The slider, because juce::TooltipWindow hit-tests the deepest component
+        under the pointer and that is what the pointer is actually over. And on
+        this, because the status bar's hover help walks UP from wherever the
+        event landed - a knob whose tooltip lived only on its child was a knob
+        that could not be found from outside, which is how six of them reached
+        the window with nothing to say.
+    */
+    void setTooltip (const juce::String&) override;
 
     juce::Slider& getSlider() noexcept { return slider; }
 
@@ -291,6 +300,16 @@ private:
     through its own onDragStart, which a test can verify exists and works.
 */
 void forwardChildMouseEventsTo (juce::Component& parent);
+
+/** The word beside a control that is not a knob, as a Label.
+
+    paint::caption is the same statement DRAWN, for a component that paints its
+    own; this is for the case where the caption has to be laid out beside a
+    juce::ComboBox rather than painted over it. The instrument panel had it as a
+    file-local helper, and the two toolbars that wanted the same word next to
+    the same kind of control would each have grown their own.
+*/
+void styleCaption (juce::Label&, const juce::String& text);
 
 namespace paint
 {

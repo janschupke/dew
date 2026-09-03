@@ -119,6 +119,7 @@ private:
     // Pattern management lives here because the pattern selector does: adding a
     // pattern used to be reachable only from a menu shortcut, which meant it
     // read as "you cannot add more patterns".
+    juce::Label patternCaption;
     juce::ComboBox patternBox;
     DewIconButton addPatternButton { icons::plus(), "Add a pattern" };
     DewIconButton clonePatternButton { icons::duplicate(), "Duplicate this pattern" };

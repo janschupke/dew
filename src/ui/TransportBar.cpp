@@ -32,6 +32,12 @@ TransportBar::TransportBar (ProjectDocument& d, AudioEngine& e, EditorState& s)
 {
     setComponentID ("transportBar");
     patternBox.setComponentID ("patternSelector");
+    patternBox.setTooltip ("Which pattern the rack and the piano roll are editing");
+
+    // A pattern name says nothing about being a pattern - "Groove" beside a
+    // tempo and a time signature reads as one more setting.
+    styleCaption (patternCaption, "PATTERN");
+    addAndMakeVisible (patternCaption);
 
     playButton.onClick = [this]
     {
@@ -97,6 +103,7 @@ TransportBar::TransportBar (ProjectDocument& d, AudioEngine& e, EditorState& s)
     };
     addAndMakeVisible (meterBox);
 
+    modeButton.setTooltip ("Play the whole arrangement, or the pattern on its own (cmd-L)");
     modeButton.setClickingTogglesState (true);
     modeButton.onClick = [this]
     {
@@ -450,6 +457,7 @@ void TransportBar::resized()
 
     groupDividers.add (strip.divider());
 
+    place (patternCaption, tokens::size::gutterLabel - tokens::space::lg);
     place (patternBox, 148);
     place (addPatternButton, size::knobSm);
     place (clonePatternButton, size::knobSm);

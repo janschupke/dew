@@ -319,6 +319,7 @@ add_library(dew_ui STATIC
   ui/AudioSettingsPanel.cpp
   ui/RenderPanel.cpp
   ui/MidiSettingsPanel.cpp
+  ui/HoverHelp.cpp
   ui/StatusBar.cpp
   ui/TransportBar.cpp
   ui/Hotkeys.cpp
