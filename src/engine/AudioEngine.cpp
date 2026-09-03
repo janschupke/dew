@@ -35,7 +35,7 @@ AudioEngine::AudioEngine()
 
     for (auto& events : channelEvents)
         events.reserve ((size_t) maxEventsPerChannel);
-    triggers.reserve (256);
+    triggers.reserve ((size_t) kMaxTriggersPerBlock);
 
     effectUnitTypes.assign (kMaxEffectUnits, -1);
     activeAutomation.reserve (kMaxAutomations);
@@ -75,7 +75,7 @@ void AudioEngine::prepare (double sampleRate, int maximumBlockSize)
 
     effectUnitTypes.assign (kMaxEffectUnits, -1);
 
-    triggers.reserve (256);
+    triggers.reserve ((size_t) kMaxTriggersPerBlock);
 }
 
 void AudioEngine::releaseResources()
@@ -423,6 +423,15 @@ void AudioEngine::collectAutomation (const EngineSnapshot& snapshot, double posi
 
         if (automation.param == AutomationParam::none)
             continue;
+
+        // At the bound rather than growing, for the reason pushNoteEvent gives:
+        // this runs on the audio thread and the vector is reserved once.
+        //
+        // The reserve is kMaxAutomations, but this loop walks CLIPS, and clips
+        // are not capped - several may carry the same curve. So the bound has to
+        // be tested here rather than inferred from the automation count.
+        if ((int) activeAutomation.size() >= kMaxAutomations)
+            return;
 
         // The curve is drawn relative to the clip, so it plays wherever the
         // clip is placed rather than only at bar one.

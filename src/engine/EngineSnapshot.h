@@ -50,6 +50,18 @@ inline constexpr int kMaxEffectUnits       = kMaxChannels * kMaxEffectsPerChain
                                              + kMaxEffectsPerChain;
 inline constexpr int kMaxAutomations       = 32;
 
+/** How many note-ons one block may start, across every channel.
+
+    A bound rather than a hope. `Sequencer::collect` appends one trigger per note
+    starting on a step boundary inside the block, and a project can put a note on
+    the same step of all 64 channels; the vector it fills is reserved once and
+    reused, so a project past this bound would have grown it on the audio thread.
+
+    Same contract as maxEventsPerChannel: refuse at the bound. A block that drops
+    a note is honest; one that allocates to keep it is not realtime.
+*/
+inline constexpr int kMaxTriggersPerBlock  = 512;
+
 /** One oscillator slot, resolved.
 
     Carries both modes' settings, the way EffectSnapshot carries every effect

@@ -2,6 +2,7 @@
 
 #include <array>
 #include <atomic>
+#include <cstddef>
 #include <type_traits>
 #include <vector>
 
@@ -11,7 +12,6 @@
 #include "engine/PreviewQueue.h"
 #include "engine/Sequencer.h"
 #include "engine/SnapshotBridge.h"
-#include "engine/InstrumentModule.h"
 #include "engine/InstrumentModule.h"
 #include "engine/Transport.h"
 #include "model/Constants.h"
@@ -56,6 +56,21 @@ public:
         laziness: sixty-four SynthChannels - a thousand and twenty-four voices -
         used to exist whether a project had a synth in it or not. */
     int getMaterialisedInstrumentCount (InstrumentType) const noexcept;
+
+    /** The reserved size of the two vectors the render path fills each block.
+
+        For the allocation gate: a vector that grew on the audio thread has a
+        different capacity afterwards, which is what turns "something allocated"
+        into "this allocated". Both are reserved in the constructor and again in
+        prepare(), and nothing on the render path may push past the bound. */
+    std::size_t getTriggerCapacity() const noexcept          { return triggers.capacity(); }
+    std::size_t getActiveAutomationCapacity() const noexcept { return activeAutomation.capacity(); }
+
+    /** How many automation entries the last block actually collected.
+
+        The gate's fixture has to prove it loaded this vector past its reserve,
+        or "nothing allocated" only means "nothing was asked to". */
+    std::size_t getActiveAutomationCount() const noexcept    { return activeAutomation.size(); }
 
     /** Message thread: hand over a prebuilt snapshot. */
     void publish (EngineSnapshot snapshot);

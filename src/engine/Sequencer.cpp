@@ -80,6 +80,13 @@ void Sequencer::collect (const EngineSnapshot& snapshot,
         trigger.durationSamples = (int) std::llround (samplesAtStep ((double) currentStep
                                                                         + (double) note.lengthSteps)
                                                       - samplesAtStep ((double) currentStep));
+
+        // At the bound rather than growing: `out` is reserved once and reused by
+        // the audio thread, so push_back on a full vector allocates. Same
+        // contract as AudioEngine::pushNoteEvent one layer up.
+        if ((int) out.size() >= kMaxTriggersPerBlock)
+            return;
+
         out.push_back (trigger);
     };
 

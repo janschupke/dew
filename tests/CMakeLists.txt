@@ -68,6 +68,7 @@ add_executable(dew_tests
   HotkeyTests.cpp
   SourceGateTests.cpp
   RealtimeTests.cpp
+  AllocationGateTests.cpp
   CatalogTests.cpp
   MotionTests.cpp
   ScoreLexerTests.cpp
