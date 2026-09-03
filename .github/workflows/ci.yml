@@ -25,6 +25,13 @@ jobs:
       - name: Check dependency pins
         run: ./scripts/check-deps.sh
 
+      # Also before the build: a formatting failure should not cost eight minutes.
+      # Xcode's clang-format, so there is nothing to install.
+      - name: Check formatting
+        run: |
+          find src tests tools \( -name '*.cpp' -o -name '*.h' \) -print0 \
+            | xargs -0 "$(xcrun -f clang-format)" --dry-run -Werror
+
       # Keyed on the lock, so a dependency bump busts the cache and nothing else does.
       - name: Restore dependency sources
         uses: actions/cache@v4
@@ -50,7 +57,7 @@ jobs:
         run: cmake --build --preset ci
 
       - name: Test
-        run: ctest --preset ci
+        run: ctest --preset ci --parallel 4
 
       # End-to-end without an audio device: load a project, render it, check the
       # result is a real non-silent WAV.

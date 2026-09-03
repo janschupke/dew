@@ -89,15 +89,17 @@ picture and nearly invisible in code.
 ## Test
 
 ```sh
-ctest --preset release        # 1041 tests
+ctest --preset release        # 1046 tests
 ```
 
 The gate, which is what CI runs and what a change has to pass:
 
 ```sh
-cmake --build --preset ci && ctest --preset ci \
-  && ./scripts/check-deps.sh && git diff --exit-code -- THIRD_PARTY.md
+./scripts/check.sh
 ```
+
+which is the dependency pins, the formatting, a warnings-as-errors build, the
+tests and the generated manifest, in the order that fails cheapest first.
 
 `release` is not the gate. Only `ci` builds warnings-as-errors, so it is the only one
 that catches an exact float comparison or a dropped result.
