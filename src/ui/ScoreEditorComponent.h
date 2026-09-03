@@ -131,6 +131,13 @@ public:
     */
     static int characterIndexForByte (const std::string& utf8, std::uint32_t byteOffset);
 
+    /** What the tab shows when a project has no score yet.
+
+        Offered, not stored: it becomes part of the project the moment it is
+        edited or compiled, and not before.
+    */
+    static juce::String starterScore();
+
     std::function<void (const juce::String&, StatusBar::Severity)> onMessage;
 
 private:

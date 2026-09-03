@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <string>
 
+#include "io/OfflineRenderer.h"
 #include "lang/Compile.h"
 #include "lang/Lexer.h"
 #include "lang/ScanCore.h"
@@ -473,4 +474,74 @@ TEST_CASE ("a project with music in it keeps its own grid", "[score][editor][bak
     REQUIRE_FALSE (report.warnings.isEmpty());
     REQUIRE (report.notesWritten == 0);
     REQUIRE ((int) project[ids::stepsPerBeat] == before);
+}
+
+TEST_CASE ("a project with no score offers one that works", "[score][editor]")
+{
+    // A blank rectangle is indistinguishable from a feature that is not there.
+    // The starter has to compile, and it has to make a sound - the first thing
+    // anybody presses Compile on should not be silence.
+    const juce::ScopedJuceInitialiser_GUI juceInit;
+
+    const auto starter = ScoreEditorComponent::starterScore().toStdString();
+
+    const auto result = lang::compile (starter, "starter.score");
+    INFO (result.report (starter, "starter.score"));
+    REQUIRE (result.ok());
+    REQUIRE (result.score->noteCount() > 0);
+
+    BakeReport report;
+    const auto project = ScoreBake::toNewProject (*result.score, report);
+
+    juce::AudioBuffer<float> rendered;
+    const auto rendering = OfflineRenderer::renderToBuffer (project, rendered);
+
+    REQUIRE (rendering.ok());
+
+    // Audible, and NOT clipping: the first sound dew makes from a score should
+    // not be a distorted one. The starter's velocities were cut once already
+    // for exactly this - it peaked at 1.06.
+    INFO ("peak " << rendering.peak << " rms " << rendering.rms);
+    REQUIRE (rendering.peak > 0.05f);
+    REQUIRE (rendering.peak <= 1.0f);
+    REQUIRE (rendering.rms > 0.01f);
+}
+
+TEST_CASE ("the starter is offered, not stored", "[score][editor]")
+{
+    const juce::ScopedJuceInitialiser_GUI juceInit;
+
+    ProjectDocument document;
+    ScoreEditorComponent editor { document };
+    editor.setSize (900, 600);
+
+    // It is on screen...
+    REQUIRE (editor.getSourceDocument().getAllContent() == ScoreEditorComponent::starterScore());
+
+    // ...and the project is untouched, so merely opening the tab does not dirty
+    // a project nobody has edited.
+    editor.flushPendingCheck();
+    REQUIRE (ProjectEdits::scoreSource (document.getState()).isEmpty());
+    REQUIRE_FALSE (document.hasChangedSinceSaved());
+
+    // One character typed makes it a document, and it is stored.
+    editor.getSourceDocument().insertText (0, "// mine\n");
+    editor.flushPendingCheck();
+
+    REQUIRE (ProjectEdits::scoreSource (document.getState()).startsWith ("// mine"));
+}
+
+TEST_CASE ("a project that has a score shows that, not the starter",
+           "[score][editor]")
+{
+    const juce::ScopedJuceInitialiser_GUI juceInit;
+
+    ProjectDocument document;
+    ProjectEdits::setScoreSource (document.getState(), juce::String (workingSource()),
+                                  "t.score", nullptr);
+
+    ScoreEditorComponent editor { document };
+    editor.setSize (900, 600);
+
+    REQUIRE (editor.getSourceDocument().getAllContent().toStdString() == workingSource());
 }

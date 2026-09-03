@@ -14,6 +14,94 @@ namespace dew
 namespace
 {
 
+/** What the Score tab shows when a project has no score in it.
+
+    A blank rectangle is indistinguishable from a feature that is not there, and
+    a language nobody can see the shape of is a language nobody writes. This one
+    compiles, and a test renders it to check it is audible and does not clip -
+    the first thing anybody presses Compile on should make a sound.
+
+    It is NOT written into the project until it is edited or compiled, so
+    opening the tab does not dirty a project nobody has touched.
+*/
+const char* const starterScoreText = R"SCORE(// A score describes a whole song as text: its key, its chords, its sections,
+// and a rule per instrument for what to play over them. Press Compile, or
+// Command-R, and it becomes patterns and clips you can edit like any others.
+//
+// This one plays. Change a chord, change `variance`, compile again.
+
+song {
+  title "Untitled"
+  tempo 110 bpm
+  meter 4/4
+  key   A minor
+  seed  0x5C0DED
+}
+
+channel pad {
+  mixer    1
+  range    C3..C5
+  velocity 54 +- 5
+}
+
+channel bass {
+  mixer    2
+  range    E1..E3
+  velocity 74 +- 4
+}
+
+channel lead {
+  mixer    3
+  range    A3..A5
+  velocity 66 +- 8
+}
+
+voicing warm {
+  size     4 voices
+  spread   drop2
+  register C3..C5
+  motion   smooth
+}
+
+rhythm held  { 1/1 }
+rhythm pulse { 1/4 1/4 1/2 }
+rhythm line  { 1/8 1/8 1/4 }
+
+harmony loop {
+  i | bVI | bIII | bVII
+}
+
+section verse {
+  length 4 bars
+  harmony loop
+
+  part pad {
+    chords with warm
+    rhythm held
+  }
+
+  part bass {
+    line root
+    rhythm pulse
+  }
+
+  part lead {
+    melody {
+      rhythm   line
+      contour  arch
+      strong   chord-tones
+      variance 0.3
+      mute     1 of 4
+    }
+  }
+}
+
+arrangement {
+  verse
+  verse
+}
+)SCORE";
+
 /** How many rows of diagnostics are shown before the list scrolls. */
 constexpr int diagnosticRows = 4;
 
@@ -203,9 +291,34 @@ void ScoreEditorComponent::resized()
     overlay.setBounds (area);
 }
 
+juce::String ScoreEditorComponent::starterScore()
+{
+    return starterScoreText;
+}
+
 void ScoreEditorComponent::refresh()
 {
     const auto stored = ProjectEdits::scoreSource (document.getState());
+
+    if (stored.isEmpty())
+    {
+        // Nothing written for this project yet. Show something readable and
+        // compilable rather than an empty rectangle, which is indistinguishable
+        // from a feature that is not there.
+        //
+        // Only over an empty editor or over the starter itself: once somebody
+        // has typed, this must not reach in and replace it.
+        const auto showing = source.getAllContent();
+
+        if (showing.isEmpty() || showing == starterScore())
+        {
+            mirrored = {};
+            source.replaceAllContent (starterScore());
+            checkNow();
+        }
+
+        return;
+    }
 
     // Only when the project changed underneath. Reloading whenever anything
     // refreshed would take the text out from under somebody typing.
@@ -274,6 +387,12 @@ void ScoreEditorComponent::storeSource()
     const auto text = source.getAllContent();
 
     if (text == mirrored)
+        return;
+
+    // The starter, untouched, is an offer rather than a document. Storing it
+    // would mean opening the tab dirtied a project nobody had edited - and then
+    // every new project would carry a score describing music it does not have.
+    if (mirrored.isEmpty() && text == starterScore())
         return;
 
     auto& undo = document.getUndoManager();
