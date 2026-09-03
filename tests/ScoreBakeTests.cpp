@@ -452,6 +452,41 @@ TEST_CASE ("the example score renders to real audio", "[score][bake]")
     REQUIRE (rms > 0.01);
 }
 
+TEST_CASE ("the language example in the README still compiles", "[score][bake]")
+{
+    // The grammar has to live somewhere authoritative or it drifts within two
+    // commits, and a README example that stopped compiling would be the first
+    // symptom - and the last one anybody noticed. So the documentation is
+    // executed rather than trusted.
+    const juce::File readme { juce::File (DEW_EXAMPLES_DIR).getParentDirectory()
+                                  .getChildFile ("README.md") };
+    REQUIRE (readme.existsAsFile());
+
+    const auto text = readme.loadFileAsString();
+
+    const auto heading = text.indexOf ("## The score language");
+    REQUIRE (heading > 0);
+
+    const auto open = text.indexOf (heading, "```");
+    REQUIRE (open > 0);
+
+    const auto bodyStart = text.indexOfChar (open, '\n') + 1;
+    const auto close = text.indexOf (bodyStart, "```");
+    REQUIRE (close > bodyStart);
+
+    const auto snippet = text.substring (bodyStart, close).toStdString();
+
+    INFO (snippet);
+    REQUIRE (snippet.size() > 200);
+
+    const auto result = lang::compile (snippet, "README.md");
+    INFO (result.report (snippet, "README.md"));
+    REQUIRE (result.ok());
+
+    // And it is a real example, not an empty shell that happens to parse.
+    REQUIRE (result.score->noteCount() > 50);
+}
+
 TEST_CASE ("the committed example still compiles", "[score][bake]")
 {
     // The example is what CI compiles and renders, so a language change that

@@ -68,6 +68,7 @@ add_executable(dew_tests
   ScoreResolverTests.cpp
   ScoreGeneratorTests.cpp
   ScoreBakeTests.cpp
+  ScoreDeterminismTests.cpp
 )
 
 target_link_libraries(dew_tests

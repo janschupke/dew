@@ -331,6 +331,134 @@ never eased**, because a needle trailing the pointer moving it feels broken; and
 up from zero. The wheel is never eased at all — adding lag to the one gesture that must
 feel direct is a regression, not a polish.
 
+## The score language
+
+A song can be written as text and compiled to notes. `examples/amber.score` is the one CI
+compiles and renders; `dew_score` is the tool.
+
+```
+song {
+  title "Amber"
+  tempo 96 bpm
+  meter 4/4
+  grid  auto              // the compiler derives stepsPerBeat from the durations written
+  key   F minor
+  seed  0x5EEDC0FFEE
+}
+
+channel pad {
+  mixer    1
+  range    C3..C5
+  velocity 68 +- 6        // deterministic jitter, not noise
+}
+
+channel lead {
+  mixer 2
+  range F4..A5
+}
+
+voicing warm { size 4 voices }    // one line holds one statement
+rhythm  held  { 1/1 }
+rhythm  pulse { 1/4 1/4 1/2 }
+
+harmony lament {
+  i x2 | bVI | bVII | i^1 x2 | iv | V7/iv
+}
+
+section verse {
+  length 8 bars
+  harmony lament
+  part pad {
+    chords with warm
+    rhythm held
+  }
+  part lead {
+    melody {
+      rhythm   pulse
+      contour  arch
+      strong   chord-tones
+      variance 0.25
+      mute     1 of 4
+    }
+  }
+}
+
+arrangement {
+  verse
+  verse as verse_b        // a pinned instance, immune to renumbering
+  verse x2 identical      // one pattern, two clips
+}
+```
+
+Seven block keywords, and the set is closed: `song`, `channel`, `voicing`, `rhythm`,
+`harmony`, `section`, `arrangement`. **There is no expression language** — no arithmetic,
+no variables, no conditionals. That single restriction is what makes completion a table
+lookup rather than type inference, and what lets the grid be computed statically before
+anything is generated. The moment `length 4 * verses` is legal, both are gone.
+
+`p/q` is always a note value — `1/8t` is an eighth-note triplet, `1/4.` a dotted quarter.
+`xN` is a share of what is left over, anything else is an exact length, and the two are
+different token kinds so they cannot be confused. `|` is a Lilypond-style bar-line
+*assertion*, checked once the shares are known; it is the single highest-value error
+catcher in the syntax, because it turns "the section length changed and everything
+shifted" into one message. In a chord, case carries quality, `^` carries inversion and `/`
+carries tonicisation — using `^` for the inversion is what frees `/` for `V7/iv`. An
+uppercase A–G starts an absolute chord and a `b`, `#` or roman letter starts a numeral,
+which never collide because I and V are not note letters.
+
+Statements are newline-terminated, one per line. Ending one at the next word the schema
+knows would allow several per line, but it puts the schema inside the parser and makes a
+typo vanish: `mixor 1` would be absorbed as two more values of the previous statement and
+reported as "too many values for `instrument`" rather than "unknown key `mixor`". Comments
+are `//` rather than `#`, because `#` is a sharp and a colour prefix, and there are no
+block comments or multi-line strings — the editor may restart tokenising at the beginning
+of any line, so a construct needing cross-line state is either wrong or expensive.
+
+### What the language cannot say, and why
+
+dew stores one tempo and one meter for a whole project, so **a section in 3/4 inside a 4/4
+project is not expressible**. The compiler says so in those words rather than as a grammar
+error. A note's position is a whole number of steps and `stepsPerBeat` runs to 16, so the
+grid is the least common multiple of what the durations need: sixteenths and eighth-note
+triplets meet at twelve, and a thirty-second against any triplet needs twenty-four and is
+refused — naming *both* durations, because either alone would have been fine.
+
+Applying a score to an existing project refuses on a grid or meter mismatch rather than
+performing it. `stepsPerBeat` owns how long a step is, and `ProjectEdits::setMeter`
+rescales every clip and rounds, so either would silently move an arrangement the score did
+not write.
+
+### Determinism
+
+`seed` is the root of a tree of keys, and every random choice draws from a stream derived
+from its own **structural path** — section, instance, channel, site, bar, onset — never
+from a byte offset and never from a shared stream. So editing one section leaves every
+other section's notes bit-identical, inserting a blank line changes nothing, and adding a
+`choose` at bar 3 cannot rewrite bar 4. `variance 0` is a pure argmin: the same notes
+every compile, from any seed.
+
+splitmix64 and PCG32 are written out rather than delegated. `std::uniform_int_distribution`
+and `std::shuffle` specify their *statistics*, not their algorithms, so libstdc++ and
+libc++ render different music from one seed; `juce::Random` is an LCG whose exact sequence
+would become part of the file format. A test pins literal outputs, because those numbers
+are now the format.
+
+### The shape of it
+
+`src/lang/` is `dew_lang`, a static library that links **nothing at all**, JUCE included —
+a compiler that cannot reach into the document is one whose only output is its IR. A source
+gate enforces it, because a header-only include would still link. The parser is hand-written
+recursive descent; a generator would have cost a pinned dependency, a manifest row and a
+Java-at-build-time decision for fifteen productions, and would have made byte-accurate
+diagnostics harder rather than easier. Same argument as "Why not vcpkg or Conan" below.
+
+Output is **baked** into the project as ordinary channels, patterns, notes and
+`kind="pattern"` clips, so playback, the piano roll, the renderer, stems and MIDI export
+all work on it unchanged and no new clip kind exists to be taught to the four places that
+would need it. The language owns notes, patterns and clips; the user owns channels,
+instruments, effects and the mixer — a track adopts a channel by name and reads nothing
+from it but the name, so a sound you dialled in survives a recompile.
+
 ## The project file
 
 One JSON file, `formatVersion`-stamped. The schema is declared once in
