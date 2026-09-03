@@ -172,45 +172,49 @@ void applyMuteBudget (std::vector<Onset>& onsets, int count, int window,
         if (toMute <= 0)
             continue;
 
-        std::vector<std::size_t> order;
-
-        for (auto i = start; i < stop; ++i)
-            if (! onsets[i].isRest && i != 0)      // never the first onset of the line
-                order.push_back (i);
-
-        if (order.empty())
-            continue;
-
         // Weakest first; ties drawn from the window's OWN stream, so adding a
         // section elsewhere cannot change which note here goes quiet.
         auto rng = path.child ("mute", (int) (start / (std::size_t) window)).rng();
 
-        std::vector<std::uint32_t> tiebreak (order.size());
+        /** An onset and everything the ordering needs to know about it.
 
-        for (auto& value : tiebreak)
-            value = rng.nextBits();
+            Each candidate carries its own tiebreak rather than the comparator
+            looking one up. An earlier version searched `order` for the element
+            it was being asked about, to recover the index into a parallel
+            array - which meant the comparator's answer changed as the sort
+            moved things around. An inconsistent comparator is not a slightly
+            wrong sort: it lets the algorithm run past the end of the range, and
+            what it reads there is whatever the process happens to have in that
+            memory. Compiling the same score twice produced different music
+            about one run in four.
+        */
+        struct Candidate
+        {
+            float weight;
+            std::uint32_t tiebreak;
+            std::size_t onset;
+        };
+
+        std::vector<Candidate> order;
+
+        for (auto i = start; i < stop; ++i)
+            if (! onsets[i].isRest && i != 0)      // never the first onset of the line
+                order.push_back ({ weightOf (onsets[i].strength), rng.nextBits(), i });
+
+        if (order.empty())
+            continue;
 
         std::stable_sort (order.begin(), order.end(),
-                          [&] (std::size_t a, std::size_t b)
+                          [] (const Candidate& a, const Candidate& b)
                           {
-                              const auto wa = weightOf (onsets[a].strength);
-                              const auto wb = weightOf (onsets[b].strength);
+                              if (a.weight < b.weight) return true;
+                              if (b.weight < a.weight) return false;
 
-                              if (wa < wb) return true;
-                              if (wb < wa) return false;
-
-                              const auto ia = std::distance (order.begin(),
-                                                             std::find (order.begin(),
-                                                                        order.end(), a));
-                              const auto ib = std::distance (order.begin(),
-                                                             std::find (order.begin(),
-                                                                        order.end(), b));
-
-                              return tiebreak[(std::size_t) ia] < tiebreak[(std::size_t) ib];
+                              return a.tiebreak < b.tiebreak;
                           });
 
         for (auto i = 0; i < toMute && i < (int) order.size(); ++i)
-            onsets[order[(std::size_t) i]].isRest = true;
+            onsets[order[(std::size_t) i].onset].isRest = true;
     }
 
     (void) stepsPerBar;

@@ -1,6 +1,7 @@
 #include <catch2/catch_test_macros.hpp>
 
 #include <string>
+#include <vector>
 
 #include "lang/Compile.h"
 
@@ -277,4 +278,38 @@ TEST_CASE ("variance zero makes the seed irrelevant", "[score][determinism]")
 
     REQUIRE_FALSE (pitchesOf (a, "verse").empty());
     REQUIRE (pitchesOf (a, "verse") == pitchesOf (b, "verse"));
+}
+
+TEST_CASE ("compiling many times over a running process never wavers",
+           "[score][determinism]")
+{
+    // Compiling twice was not enough, and this is the test that says why.
+    //
+    // A mute budget sorted its candidates with a comparator that searched the
+    // very range being sorted, to recover an index into a parallel array of
+    // tiebreaks. That answer changed as the sort moved elements about, so the
+    // comparator was not a consistent ordering - and an inconsistent comparator
+    // does not merely sort wrongly, it lets the algorithm run past the end of
+    // the range. What it read there was whatever the process happened to have
+    // in that memory, so the same score compiled to different music about one
+    // run in four.
+    //
+    // Two compiles in a row read the same rubbish and agreed. Twenty, with a
+    // heap that has moved on between them, do not.
+    const auto source = scoreWith ("0.5", "  intro\n  verse x2\n  outro\n");
+    const auto expected = fingerprint (compileOk (source));
+
+    for (auto i = 0; i < 20; ++i)
+    {
+        INFO ("compile " << i);
+
+        // Something allocated and freed between compiles, so a read of freed
+        // or uninitialised memory has somewhere different to land each time.
+        std::vector<std::string> churn;
+
+        for (auto j = 0; j < 64; ++j)
+            churn.emplace_back ((std::size_t) (32 + j), (char) ('a' + (j % 26)));
+
+        REQUIRE (fingerprint (compileOk (source)) == expected);
+    }
 }

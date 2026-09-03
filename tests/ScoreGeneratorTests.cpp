@@ -468,6 +468,61 @@ TEST_CASE ("a mute budget drops the weakest onsets and never a whole window",
     REQUIRE_FALSE (onsets.front().isRest);
 }
 
+TEST_CASE ("a mute budget takes the weak beats, never the strong ones",
+           "[score][melody]")
+{
+    // "Weakest first" is the whole claim, and until this test nothing checked
+    // WHICH onsets went quiet - only how many. A budget that silenced the
+    // downbeat and kept the offbeat would have passed every test there was.
+    auto onsets = tileRhythm (rhythmOf ({ { 1, 8 } }), 32, 16, 4, 4);
+    REQUIRE (onsets.size() == 16);
+
+    // Eighths in 4/4 alternate beat and offbeat, so a window of one bar has
+    // four weak onsets and four strong ones to choose between.
+    const SeedPath path { 1234 };
+    applyMuteBudget (onsets, 2, 8, path, 16);
+
+    for (const auto& onset : onsets)
+    {
+        INFO ("onset at step " << onset.startStep);
+
+        if (onset.isRest)
+            REQUIRE (onset.strength == MetricStrength::offbeat);
+    }
+}
+
+TEST_CASE ("a mute budget draws the same notes every time it is asked",
+           "[score][melody]")
+{
+    // The same seed and the same onsets, over and over inside one process.
+    // This is what an inconsistent sort comparator failed: it read past the end
+    // of its range, so the answer depended on what was in memory at the time.
+    const SeedPath path { 99 };
+
+    const auto muted = [&path]
+    {
+        auto onsets = tileRhythm (rhythmOf ({ { 1, 8 } }), 64, 16, 4, 4);
+        applyMuteBudget (onsets, 3, 8, path, 16);
+
+        std::vector<int> steps;
+
+        for (const auto& onset : onsets)
+            if (onset.isRest)
+                steps.push_back (onset.startStep);
+
+        return steps;
+    };
+
+    const auto expected = muted();
+    REQUIRE_FALSE (expected.empty());
+
+    for (auto i = 0; i < 32; ++i)
+    {
+        INFO ("attempt " << i);
+        REQUIRE (muted() == expected);
+    }
+}
+
 TEST_CASE ("a budget wider than its window still leaves a note", "[score][melody]")
 {
     auto onsets = tileRhythm (rhythmOf ({ { 1, 4 } }), 32, 16, 4, 4);
