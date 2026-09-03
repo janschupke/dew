@@ -6,6 +6,7 @@
 #include "model/ProjectFactory.h"
 #include "ui/MainComponent.h"
 #include "ui/TransportBar.h"
+#include "FixtureProject.h"
 
 using namespace dew;
 
@@ -97,7 +98,7 @@ TEST_CASE ("a listener registered once keeps working after the document is repla
     REQUIRE (listener.propertyChanges == 1);
 
     // What File > Open does.
-    document.setState (ProjectFactory::createDemo(), true);
+    document.setState (dew::testing::fixtureProject(), true);
 
     document.getState().setProperty (ids::name, "after", nullptr);
     REQUIRE (listener.propertyChanges > 1);
@@ -188,7 +189,7 @@ TEST_CASE ("the transport bar still tracks the project after New and Open", "[do
     REQUIRE (patternCountInBox() == 1);
 
     // Replace the document, as File > Open does, then add a pattern.
-    document.setState (ProjectFactory::createDemo(), true);
+    document.setState (dew::testing::fixtureProject(), true);
     component.documentWasReplaced();
 
     REQUIRE (patternCountInBox() == 1);

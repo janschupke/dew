@@ -6,7 +6,7 @@
 #include "model/Ids.h"
 #include "model/Meter.h"
 #include "model/ProjectEdits.h"
-#include "model/ProjectFactory.h"
+#include "FixtureProject.h"
 
 using namespace dew;
 using Catch::Approx;
@@ -123,7 +123,7 @@ TEST_CASE ("MIDI channel numbering skips the percussion channel", "[midi][export
 
 TEST_CASE ("the exported time signature is the project's", "[midi][export][meter]")
 {
-    auto project = ProjectFactory::createDemo();
+    auto project = dew::testing::fixtureProject();
     ProjectEdits::setMeter (project, 7, 8, nullptr);
 
     juce::StringArray warnings;
@@ -167,7 +167,7 @@ TEST_CASE ("a metre change moves no exported note", "[midi][export][meter]")
     // ratio is a whole number and setMeter's rescale is exact - a metre that
     // has to round loses whole bars off the end of the arrangement, which is a
     // different claim, tested in MeterTests.
-    auto project = ProjectFactory::createDemo();
+    auto project = dew::testing::fixtureProject();
 
     const auto onsetsOf = [] (const juce::ValueTree& tree)
     {
@@ -203,7 +203,7 @@ TEST_CASE ("a metre change moves no exported note", "[midi][export][meter]")
 
 TEST_CASE ("an exported file carries the tempo and time signature", "[midi][export]")
 {
-    const auto project = ProjectFactory::createDemo();
+    const auto project = dew::testing::fixtureProject();
 
     juce::StringArray warnings;
     juce::int64 numNotes = 0;
@@ -254,7 +254,7 @@ TEST_CASE ("an exported file carries the tempo and time signature", "[midi][expo
 
 TEST_CASE ("the exported notes are the notes the sequencer plays", "[midi][export]")
 {
-    const auto project = ProjectFactory::createDemo();
+    const auto project = dew::testing::fixtureProject();
 
     juce::StringArray warnings;
     juce::int64 numNotes = 0;
@@ -273,7 +273,7 @@ TEST_CASE ("every note off is matched to a note on", "[midi][export]")
 {
     juce::StringArray warnings;
     juce::int64 numNotes = 0;
-    const auto file = MidiExporter::build (ProjectFactory::createDemo(), {}, warnings, numNotes);
+    const auto file = MidiExporter::build (dew::testing::fixtureProject(), {}, warnings, numNotes);
 
     const auto readBack = roundTrip (file, 1);
 
@@ -297,7 +297,7 @@ TEST_CASE ("every note off is matched to a note on", "[midi][export]")
 
 TEST_CASE ("a clip longer than its pattern exports the repeats", "[midi][export]")
 {
-    auto project = ProjectFactory::createDemo();
+    auto project = dew::testing::fixtureProject();
 
     auto playlist = project.getChildWithName (ids::PLAYLIST);
     REQUIRE (playlist.isValid());
@@ -329,7 +329,7 @@ TEST_CASE ("a clip longer than its pattern exports the repeats", "[midi][export]
 
 TEST_CASE ("a muted channel exports nothing unless asked for", "[midi][export]")
 {
-    auto project = ProjectFactory::createDemo();
+    auto project = dew::testing::fixtureProject();
 
     juce::ValueTree channel;
 
@@ -361,7 +361,7 @@ TEST_CASE ("a muted channel exports nothing unless asked for", "[midi][export]")
 
 TEST_CASE ("a bar range trims the notes and rebases them to zero", "[midi][export]")
 {
-    const auto project = ProjectFactory::createDemo();
+    const auto project = dew::testing::fixtureProject();
 
     juce::StringArray warnings;
     juce::int64 whole = 0;
@@ -398,7 +398,7 @@ TEST_CASE ("a bar range trims the notes and rebases them to zero", "[midi][expor
 
 TEST_CASE ("velocity never becomes a note off", "[midi][export]")
 {
-    auto project = ProjectFactory::createDemo();
+    auto project = dew::testing::fixtureProject();
 
     // A note at zero velocity is inaudible, not absent - and MIDI velocity 0 is
     // how a note-off is spelled, so it must not round down to one.
@@ -435,7 +435,7 @@ TEST_CASE ("format 0 is exactly one track", "[midi][export]")
 
     juce::StringArray warnings;
     juce::int64 numNotes = 0;
-    const auto file = MidiExporter::build (ProjectFactory::createDemo(), flat, warnings, numNotes);
+    const auto file = MidiExporter::build (dew::testing::fixtureProject(), flat, warnings, numNotes);
 
     // The header records the track count, so more than one here is a malformed file.
     REQUIRE (file.getNumTracks() == 1);
@@ -450,7 +450,7 @@ TEST_CASE ("exporting MIDI writes a readable file", "[midi][export][io]")
     const auto target = juce::File::getSpecialLocation (juce::File::tempDirectory)
                             .getChildFile ("dew-midi-" + juce::Uuid().toString() + ".mid");
 
-    const auto report = MidiExporter::writeToFile (ProjectFactory::createDemo(), target);
+    const auto report = MidiExporter::writeToFile (dew::testing::fixtureProject(), target);
 
     INFO (report.result.getErrorMessage());
     REQUIRE (report.ok());
@@ -475,7 +475,7 @@ TEST_CASE ("a scope with no notes is refused rather than written empty", "[midi]
     MidiExportOptions nowhere;
     nowhere.barRange = { 900, 901 };
 
-    const auto report = MidiExporter::writeToFile (ProjectFactory::createDemo(), target, nowhere);
+    const auto report = MidiExporter::writeToFile (dew::testing::fixtureProject(), target, nowhere);
 
     REQUIRE_FALSE (report.ok());
     REQUIRE_FALSE (target.existsAsFile());
@@ -489,7 +489,7 @@ TEST_CASE ("renderToFile writes MIDI when asked for it", "[engine][render][midi]
     RenderOptions options;
     options.format = RenderFormat::midi;
 
-    const auto report = OfflineRenderer::renderToFile (ProjectFactory::createDemo(), target, options);
+    const auto report = OfflineRenderer::renderToFile (dew::testing::fixtureProject(), target, options);
 
     INFO (report.result.getErrorMessage());
     REQUIRE (report.ok());

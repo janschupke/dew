@@ -11,6 +11,7 @@
 #include "model/ProjectFactory.h"
 #include "model/ProjectSerializer.h"
 #include "model/ScoreBake.h"
+#include "FixtureProject.h"
 
 using namespace dew;
 
@@ -191,7 +192,7 @@ TEST_CASE ("baking is one undo step", "[score][bake]")
 {
     const auto score = compileOrFail (tinyScore());
 
-    auto project = ProjectFactory::createDemo();
+    auto project = dew::testing::fixtureProject();
     project.setProperty (ids::stepsPerBeat, score.stepsPerBeat, nullptr);
 
     const auto before = project.createCopy();
@@ -304,7 +305,7 @@ TEST_CASE ("a grid mismatch changes nothing and says why", "[score][bake]")
     // there is nothing there whose meaning it could change - this test is about
     // the other case, and on a default project it would have been testing a
     // rule that no longer applies.
-    auto project = ProjectFactory::createDemo();
+    auto project = dew::testing::fixtureProject();
     REQUIRE (Meter::of (project).stepsPerBeat == 4);
 
     const auto before = project.createCopy();
@@ -330,7 +331,7 @@ TEST_CASE ("a meter mismatch changes nothing and says why", "[score][bake]")
         "  part pad {\n    chords with warm\n    rhythm held\n  }\n}\n"
         "arrangement { verse }\n");
 
-    auto project = ProjectFactory::createDemo();
+    auto project = dew::testing::fixtureProject();
     project.setProperty (ids::stepsPerBeat, score.stepsPerBeat, nullptr);
 
     const auto before = project.createCopy();

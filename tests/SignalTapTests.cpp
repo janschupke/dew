@@ -10,6 +10,7 @@
 #include "model/Ids.h"
 #include "model/ProjectDocument.h"
 #include "model/ProjectFactory.h"
+#include "FixtureProject.h"
 
 using namespace dew;
 using Catch::Approx;
@@ -211,7 +212,7 @@ TEST_CASE ("the tap sees the finished master output", "[signaltap][engine]")
     // equality with the buffer the host is handed can only be satisfied by a tap
     // on the real one.
     ProjectDocument document;
-    document.setState (ProjectFactory::createDemo(), true);
+    document.setState (dew::testing::fixtureProject(), true);
 
     AudioEngine engine;
     engine.prepare (44100.0, 512);
@@ -251,7 +252,7 @@ TEST_CASE ("the master fader moves what the tap sees", "[signaltap][engine]")
     // sample-for-sample test above cannot tell apart.
     const auto peakAtGain = [] (float gain)
     {
-        auto project = ProjectFactory::createDemo();
+        auto project = dew::testing::fixtureProject();
         project.getChildWithName (ids::MIXER)
                .getChildWithName (ids::MASTER)
                .setProperty (ids::gain, gain, nullptr);

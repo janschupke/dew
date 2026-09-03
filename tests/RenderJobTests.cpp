@@ -2,7 +2,7 @@
 #include <catch2/catch_test_macros.hpp>
 
 #include "io/RenderJob.h"
-#include "model/ProjectFactory.h"
+#include "FixtureProject.h"
 
 using namespace dew;
 using Catch::Approx;
@@ -26,7 +26,7 @@ struct ScratchFile
 RenderJob::Request requestFor (const juce::File& destination)
 {
     RenderJob::Request request;
-    request.project = ProjectFactory::createDemo();
+    request.project = dew::testing::fixtureProject();
     request.destination = destination;
     request.options.seconds = 0.5;
 
@@ -68,7 +68,7 @@ TEST_CASE ("a job renders the same file the synchronous path does", "[engine][jo
 
     RenderOptions options;
     options.seconds = 0.5;
-    const auto synchronous = OfflineRenderer::renderToFile (ProjectFactory::createDemo(),
+    const auto synchronous = OfflineRenderer::renderToFile (dew::testing::fixtureProject(),
                                                              direct.file, options);
 
     INFO (asynchronous.result.getErrorMessage());

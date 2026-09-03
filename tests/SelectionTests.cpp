@@ -13,6 +13,7 @@
 #include "ui/EffectChainComponent.h"
 #include "ui/MixerComponent.h"
 #include "ui/primitives/DewControls.h"
+#include "FixtureProject.h"
 
 using namespace dew;
 
@@ -107,7 +108,7 @@ TEST_CASE ("a channel header has no click-swallowing dead zones", "[ui][selectio
     AudioEngine engine;
     EditorState editorState;
 
-    document.setState (ProjectFactory::createDemo(), true);
+    document.setState (dew::testing::fixtureProject(), true);
 
     ChannelRackComponent rack { document, engine, editorState };
     rack.setSize (1000, 600);
@@ -162,7 +163,7 @@ TEST_CASE ("a channel row's knobs select their channel", "[ui][selection]")
     AudioEngine engine;
     EditorState editorState;
 
-    document.setState (ProjectFactory::createDemo(), true);
+    document.setState (dew::testing::fixtureProject(), true);
 
     ChannelRackComponent rack { document, engine, editorState };
     rack.setSize (1000, 600);
@@ -195,7 +196,7 @@ TEST_CASE ("a mixer strip has no click-swallowing dead zones", "[ui][selection]"
     ProjectDocument document;
     EditorState editorState;
 
-    document.setState (ProjectFactory::createDemo(), true);
+    document.setState (dew::testing::fixtureProject(), true);
 
     MixerComponent mixer { document, editorState };
     mixer.setSize (1000, 600);
@@ -254,7 +255,7 @@ TEST_CASE ("hovering a channel's M or S does not select it", "[ui][selection]")
     AudioEngine engine;
     EditorState editorState;
 
-    document.setState (ProjectFactory::createDemo(), true);
+    document.setState (dew::testing::fixtureProject(), true);
 
     ChannelRackComponent rack { document, engine, editorState };
     rack.setSize (1000, 600);
@@ -289,7 +290,7 @@ TEST_CASE ("controls that keep their own clicks still select their row", "[ui][s
     ProjectDocument document;
     EditorState editorState;
 
-    document.setState (ProjectFactory::createDemo(), true);
+    document.setState (dew::testing::fixtureProject(), true);
 
     MixerComponent mixer { document, editorState };
     mixer.setSize (1000, 600);
@@ -326,7 +327,7 @@ TEST_CASE ("the master strip is selectable, like every other", "[ui][selection]"
     ProjectDocument document;
     EditorState editorState;
 
-    document.setState (ProjectFactory::createDemo(), true);
+    document.setState (dew::testing::fixtureProject(), true);
 
     MixerComponent mixer { document, editorState };
     mixer.setSize (1000, 600);

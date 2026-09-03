@@ -3,7 +3,7 @@
 
 #include "io/OfflineRenderer.h"
 #include "model/Ids.h"
-#include "model/ProjectFactory.h"
+#include "FixtureProject.h"
 
 using namespace dew;
 using Catch::Approx;
@@ -51,7 +51,7 @@ TEST_CASE ("stems produce one file per track that has something in it",
 {
     ScratchFolder scratch;
 
-    const auto project = ProjectFactory::createDemo();
+    const auto project = dew::testing::fixtureProject();
     const auto report = OfflineRenderer::renderStems (project, scratch.folder, shortRender());
 
     INFO (report.result.getErrorMessage());
@@ -72,7 +72,7 @@ TEST_CASE ("every stem is audible on its own", "[engine][render][stems]")
 {
     ScratchFolder scratch;
 
-    const auto report = OfflineRenderer::renderStems (ProjectFactory::createDemo(),
+    const auto report = OfflineRenderer::renderStems (dew::testing::fixtureProject(),
                                                        scratch.folder, shortRender());
 
     REQUIRE (report.ok());
@@ -100,7 +100,7 @@ TEST_CASE ("stem files are named for their tracks, in mixer order",
 {
     ScratchFolder scratch;
 
-    const auto project = ProjectFactory::createDemo();
+    const auto project = dew::testing::fixtureProject();
     const auto report = OfflineRenderer::renderStems (project, scratch.folder, shortRender());
 
     REQUIRE (report.ok());
@@ -134,7 +134,7 @@ TEST_CASE ("stem files are named for their tracks, in mixer order",
 TEST_CASE ("a track nothing is routed to is skipped rather than written empty",
            "[engine][render][stems]")
 {
-    const auto project = ProjectFactory::createDemo();
+    const auto project = dew::testing::fixtureProject();
 
     ScratchFolder kept, skipped;
 
@@ -154,7 +154,7 @@ TEST_CASE ("a track nothing is routed to is skipped rather than written empty",
 TEST_CASE ("soloing one track still yields a stem for every track",
            "[engine][render][stems]")
 {
-    auto project = ProjectFactory::createDemo();
+    auto project = dew::testing::fixtureProject();
 
     auto mixer = project.getChildWithName (ids::MIXER);
     REQUIRE (mixer.isValid());
@@ -185,7 +185,7 @@ TEST_CASE ("soloing one track still yields a stem for every track",
 
 TEST_CASE ("a muted track is still exported as its own stem", "[engine][render][stems]")
 {
-    auto project = ProjectFactory::createDemo();
+    auto project = dew::testing::fixtureProject();
 
     auto mixer = project.getChildWithName (ids::MIXER);
     juce::ValueTree first;
@@ -211,7 +211,7 @@ TEST_CASE ("a muted track is still exported as its own stem", "[engine][render][
 TEST_CASE ("stems warn when the master chain will stop them summing",
            "[engine][render][stems]")
 {
-    auto project = ProjectFactory::createDemo();
+    auto project = dew::testing::fixtureProject();
 
     auto master = project.getChildWithName (ids::MIXER).getChildWithName (ids::MASTER);
     REQUIRE (master.isValid());
@@ -252,7 +252,7 @@ TEST_CASE ("stems can be cancelled part way", "[engine][render][stems]")
     RenderProgress progress;
     progress.cancelled.store (true);
 
-    const auto report = OfflineRenderer::renderStems (ProjectFactory::createDemo(),
+    const auto report = OfflineRenderer::renderStems (dew::testing::fixtureProject(),
                                                        scratch.folder, shortRender(), &progress);
 
     REQUIRE (report.cancelled);
@@ -266,7 +266,7 @@ TEST_CASE ("stems report progress across the whole set, not per file",
 
     RenderProgress progress;
 
-    const auto report = OfflineRenderer::renderStems (ProjectFactory::createDemo(),
+    const auto report = OfflineRenderer::renderStems (dew::testing::fixtureProject(),
                                                        scratch.folder, shortRender(), &progress);
 
     REQUIRE (report.ok());
@@ -280,7 +280,7 @@ TEST_CASE ("stems refuse MIDI, which is one file by nature", "[engine][render][s
     auto options = shortRender();
     options.format = RenderFormat::midi;
 
-    const auto report = OfflineRenderer::renderStems (ProjectFactory::createDemo(),
+    const auto report = OfflineRenderer::renderStems (dew::testing::fixtureProject(),
                                                        scratch.folder, options);
 
     REQUIRE_FALSE (report.ok());

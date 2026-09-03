@@ -7,6 +7,7 @@
 #include "io/OfflineRenderer.h"
 #include "engine/SynthVoice.h"
 #include "model/ProjectFactory.h"
+#include "FixtureProject.h"
 
 using namespace dew;
 using Catch::Approx;
@@ -170,7 +171,7 @@ TEST_CASE ("bend applies to sequencer notes too, not only played ones", "[engine
     {
         AudioEngine engine;
         engine.prepare (sampleRate, blockSize);
-        engine.setProject (ProjectFactory::createDemo());
+        engine.setProject (dew::testing::fixtureProject());
 
         juce::AudioBuffer<float> block (2, blockSize);
         block.clear();
@@ -212,7 +213,7 @@ TEST_CASE ("the offline renderer is untouched by controllers it never sets", "[e
     // Guards every existing render test against silent drift: with the
     // controllers at their defaults, the new code must change nothing.
     juce::AudioBuffer<float> rendered;
-    const auto report = OfflineRenderer::renderToBuffer (ProjectFactory::createDemo(), rendered);
+    const auto report = OfflineRenderer::renderToBuffer (dew::testing::fixtureProject(), rendered);
 
     REQUIRE (report.ok());
     REQUIRE (report.peak > 0.05f);

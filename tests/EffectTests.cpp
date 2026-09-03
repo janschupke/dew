@@ -12,6 +12,7 @@
 #include "model/ProjectFactory.h"
 #include "model/ProjectSerializer.h"
 #include "PaintProbe.h"
+#include "FixtureProject.h"
 
 using namespace dew;
 using Catch::Matchers::WithinAbs;
@@ -390,7 +391,7 @@ TEST_CASE ("mix blends between dry and wet", "[effects][dsp]")
 
 TEST_CASE ("an effect on a channel is heard in a real render", "[effects][render]")
 {
-    auto project = ProjectFactory::createDemo();
+    auto project = dew::testing::fixtureProject();
     juce::UndoManager undo;
 
     RenderOptions options;
@@ -425,7 +426,7 @@ TEST_CASE ("an effect on a channel is heard in a real render", "[effects][render
 
 TEST_CASE ("an effect on a mixer track is heard in a real render", "[effects][render]")
 {
-    auto project = ProjectFactory::createDemo();
+    auto project = dew::testing::fixtureProject();
     juce::UndoManager undo;
 
     RenderOptions options;
@@ -457,7 +458,7 @@ TEST_CASE ("an effect on a mixer track is heard in a real render", "[effects][re
 
 TEST_CASE ("a chain survives save and load, and renders identically", "[effects][render][schema]")
 {
-    auto project = ProjectFactory::createDemo();
+    auto project = dew::testing::fixtureProject();
     juce::UndoManager undo;
 
     auto channel = project.getChildWithName (ids::CHANNEL);
@@ -496,7 +497,7 @@ TEST_CASE ("effects keep their DSP state when unrelated things change", "[effect
     // effect onto a different unit and cut whatever tail it was in the middle
     // of - so the perturbation below has to be earlier, or the test proves
     // nothing. Build order is mixer tracks, then channels.
-    auto project = ProjectFactory::createDemo();
+    auto project = dew::testing::fixtureProject();
     juce::UndoManager undo;
 
     juce::Array<juce::ValueTree> mixerTracks;
@@ -574,7 +575,7 @@ TEST_CASE ("effect ids are unique across the whole project", "[effects][edits]")
 {
     // The engine keys DSP state on the effect id, so two effects sharing one
     // would fight over the same reverb tank.
-    auto project = ProjectFactory::createDemo();
+    auto project = dew::testing::fixtureProject();
     juce::UndoManager undo;
 
     juce::Array<int> ids;
@@ -592,6 +593,34 @@ TEST_CASE ("effect ids are unique across the whole project", "[effects][edits]")
     }
 
     REQUIRE (ids.size() > 4);
+}
+
+TEST_CASE ("the master chain is one of the owners a new id is derived from", "[effects][edits]")
+{
+    // The master carries a chain like any other bus. While it was left out of
+    // effectChainOwners, the scan that picks `highest + 1` could not see what
+    // was already there, so a second master effect took the id the first one
+    // had - and the pool, which keys on the id, handed both the same module.
+    auto project = dew::testing::fixtureProject();
+    juce::UndoManager undo;
+
+    auto master = project.getChildWithName (ids::MIXER).getChildWithName (ids::MASTER);
+    REQUIRE (master.isValid());
+
+    const auto first = ProjectEdits::addEffect (project, master, "eq", &undo);
+    const auto second = ProjectEdits::addEffect (project, master, "reverb", &undo);
+
+    REQUIRE (first.isValid());
+    REQUIRE (second.isValid());
+    REQUIRE ((int) first[ids::id] != (int) second[ids::id]);
+
+    // And an effect added elsewhere afterwards clears both of them, rather than
+    // colliding with a master effect the scan still could not see.
+    const auto elsewhere = ProjectEdits::addEffect (project, project.getChildWithName (ids::CHANNEL),
+                                                    "delay", &undo);
+    REQUIRE (elsewhere.isValid());
+    REQUIRE ((int) elsewhere[ids::id] != (int) first[ids::id]);
+    REQUIRE ((int) elsewhere[ids::id] != (int) second[ids::id]);
 }
 
 TEST_CASE ("reordering a chain does not disturb the instrument beside it", "[effects][edits]")
@@ -1163,7 +1192,7 @@ TEST_CASE ("a chain whose slots are all disabled renders as if it had none", "[e
     // The demo, not createDefault(): a project with no notes renders to nothing
     // and the renderer refuses it outright, which would make this pass on two
     // failures rather than on two identical renders.
-    auto withNone = ProjectFactory::createDemo();
+    auto withNone = dew::testing::fixtureProject();
 
     auto withDisabled = withNone.createCopy();
     auto channel = withDisabled.getChild (0);
@@ -1242,7 +1271,7 @@ TEST_CASE ("a project with more effects than the old pool held keeps all of them
     // each of 64 channels and 32 mixer tracks plus the master. Past 32,
     // buildSnapshot warned and then stopped reading that chain - and the
     // warning went to an argument whose default was nullptr.
-    auto project = ProjectFactory::createDemo();
+    auto project = dew::testing::fixtureProject();
 
     auto added = 0;
 

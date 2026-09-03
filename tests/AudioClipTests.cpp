@@ -6,6 +6,7 @@
 #include "model/ProjectFactory.h"
 #include "model/ProjectSchema.h"
 #include "model/ProjectSerializer.h"
+#include "FixtureProject.h"
 
 using namespace dew;
 
@@ -130,7 +131,7 @@ TEST_CASE ("a file written before audio existed still loads", "[schema][audio]")
     // The v7 additions are all properties and one child with declared defaults,
     // so an older file is simply one that predates them. This is the assertion
     // that keeps the version bump from needing a migration.
-    const auto json = ProjectSerializer::toJsonString (ProjectFactory::createDemo());
+    const auto json = ProjectSerializer::toJsonString (dew::testing::fixtureProject());
 
     auto parsed = juce::JSON::parse (json);
     REQUIRE (parsed.isObject());

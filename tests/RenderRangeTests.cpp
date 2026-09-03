@@ -3,7 +3,7 @@
 
 #include "io/OfflineRenderer.h"
 #include "model/Ids.h"
-#include "model/ProjectFactory.h"
+#include "FixtureProject.h"
 
 using namespace dew;
 using Catch::Approx;
@@ -25,7 +25,7 @@ double samplesPerBar (const juce::ValueTree& project, const RenderOptions& optio
 TEST_CASE ("a bar range is sample-identical to the same window of a full render",
            "[engine][render][range]")
 {
-    const auto project = ProjectFactory::createDemo();
+    const auto project = dew::testing::fixtureProject();
 
     RenderOptions whole;
     juce::AudioBuffer<float> full;
@@ -64,7 +64,7 @@ TEST_CASE ("a bar range is sample-identical to the same window of a full render"
 TEST_CASE ("a bar range that starts mid-material is audible from its first sample",
            "[engine][render][range]")
 {
-    const auto project = ProjectFactory::createDemo();
+    const auto project = dew::testing::fixtureProject();
 
     RenderOptions options;
     options.barRange = { 2, 3 };
@@ -82,7 +82,7 @@ TEST_CASE ("a bar range that starts mid-material is audible from its first sampl
 
 TEST_CASE ("an empty bar range renders the whole material", "[engine][render][range]")
 {
-    const auto project = ProjectFactory::createDemo();
+    const auto project = dew::testing::fixtureProject();
 
     juce::AudioBuffer<float> byDefault;
     const auto a = OfflineRenderer::renderToBuffer (project, byDefault, {});
@@ -102,7 +102,7 @@ TEST_CASE ("an empty bar range renders the whole material", "[engine][render][ra
 TEST_CASE ("a bar range past the end of the material is silence, not the song again",
            "[engine][render][range]")
 {
-    const auto project = ProjectFactory::createDemo();
+    const auto project = dew::testing::fixtureProject();
 
     RenderOptions options;
     options.barRange = { 16, 18 };
@@ -123,7 +123,7 @@ TEST_CASE ("a render reports progress and finishes at one", "[engine][render][pr
     RenderProgress progress;
 
     juce::AudioBuffer<float> rendered;
-    const auto report = OfflineRenderer::renderToBuffer (ProjectFactory::createDemo(),
+    const auto report = OfflineRenderer::renderToBuffer (dew::testing::fixtureProject(),
                                                          rendered, {}, &progress);
 
     REQUIRE (report.ok());
@@ -137,7 +137,7 @@ TEST_CASE ("a cancelled render stops, and is not an error", "[engine][render][pr
     progress.cancelled.store (true);
 
     juce::AudioBuffer<float> rendered;
-    const auto report = OfflineRenderer::renderToBuffer (ProjectFactory::createDemo(),
+    const auto report = OfflineRenderer::renderToBuffer (dew::testing::fixtureProject(),
                                                          rendered, {}, &progress);
 
     // Cancelling is something the user asked for. Reporting it as a failure
@@ -157,7 +157,7 @@ TEST_CASE ("a cancelled render leaves an existing file alone", "[engine][render]
     RenderProgress progress;
     progress.cancelled.store (true);
 
-    const auto report = OfflineRenderer::renderToFile (ProjectFactory::createDemo(),
+    const auto report = OfflineRenderer::renderToFile (dew::testing::fixtureProject(),
                                                         target, {}, &progress);
 
     REQUIRE (report.cancelled);
@@ -177,7 +177,7 @@ TEST_CASE ("a completed render replaces the file at its destination", "[engine][
     RenderOptions options;
     options.seconds = 0.25;
 
-    const auto report = OfflineRenderer::renderToFile (ProjectFactory::createDemo(), target, options);
+    const auto report = OfflineRenderer::renderToFile (dew::testing::fixtureProject(), target, options);
 
     REQUIRE (report.ok());
     REQUIRE (report.files.size() == 1);

@@ -5,9 +5,9 @@
 
 #include "engine/AudioEngine.h"
 #include "model/ProjectDocument.h"
-#include "model/ProjectFactory.h"
 #include "ui/EditorState.h"
 #include "ui/RenderPanel.h"
+#include "FixtureProject.h"
 
 using namespace dew;
 using Catch::Approx;
@@ -19,7 +19,7 @@ struct PanelHarness
 {
     PanelHarness()
     {
-        document.setState (ProjectFactory::createDemo(), true);
+        document.setState (dew::testing::fixtureProject(), true);
         panel.setSize (RenderPanel::preferredWidth, panel.getRequiredHeight());
         panel.setVisible (true);
         panel.resized();

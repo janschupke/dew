@@ -7,11 +7,11 @@
 #include "model/Ids.h"
 #include "model/ProjectDocument.h"
 #include "model/ProjectEdits.h"
-#include "model/ProjectFactory.h"
 #include "ui/ChannelRackComponent.h"
 #include "ui/EditorState.h"
 #include "ui/InstrumentPanel.h"
 #include "ui/design/Tokens.h"
+#include "FixtureProject.h"
 
 using namespace dew;
 
@@ -67,7 +67,7 @@ struct Harness
 {
     Harness()
     {
-        document.setState (ProjectFactory::createDemo(), true);
+        document.setState (dew::testing::fixtureProject(), true);
         rack.setSize (1000, 600);
         rack.setVisible (true);
         rack.refresh();
@@ -199,7 +199,7 @@ TEST_CASE ("the instrument panel's knobs are one undo step too", "[ui][channelra
     ProjectDocument document;
     EditorState editorState;
 
-    document.setState (ProjectFactory::createDemo(), true);
+    document.setState (dew::testing::fixtureProject(), true);
     editorState.setSelectedChannelId (1);
 
     InstrumentPanel panel { document, editorState };

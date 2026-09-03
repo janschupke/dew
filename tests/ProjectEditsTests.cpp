@@ -7,6 +7,7 @@
 #include "model/ProjectSchema.h"
 #include "engine/EngineSnapshot.h"
 #include "model/ProjectSerializer.h"
+#include "FixtureProject.h"
 
 using namespace dew;
 
@@ -102,7 +103,7 @@ TEST_CASE ("removing a channel removes the notes that referred to it", "[edits]"
     // A note pointing at a channel that no longer exists would be dropped by
     // the next snapshot with a warning. Removing them together keeps the
     // document consistent, and keeps it to one undo step.
-    auto project = ProjectFactory::createDemo();
+    auto project = dew::testing::fixtureProject();
     auto pattern = ProjectEdits::findPattern (project, 1);
     auto channel = ProjectEdits::findChannel (project, 3);
     juce::UndoManager undo;

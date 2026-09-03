@@ -9,11 +9,11 @@
 #include "lang/ScanCore.h"
 #include "model/Ids.h"
 #include "model/ProjectEdits.h"
-#include "model/ProjectFactory.h"
 #include "model/ScoreBake.h"
 #include "ui/ScoreEditorComponent.h"
 #include "ui/ScoreTokeniser.h"
 #include "PaintProbe.h"
+#include "FixtureProject.h"
 
 using namespace dew;
 using namespace dew::testing;
@@ -462,7 +462,7 @@ TEST_CASE ("a project with music in it keeps its own grid", "[score][editor][bak
     // everything already there plays.
     const juce::ScopedJuceInitialiser_GUI juceInit;
 
-    auto project = ProjectFactory::createDemo();
+    auto project = dew::testing::fixtureProject();
     const auto before = (int) project[ids::stepsPerBeat];
 
     const auto result = lang::compile (finerGridSource(), "t.score");

@@ -6,7 +6,7 @@
 #include "model/ProjectDocument.h"
 #include "model/Ids.h"
 #include "model/ProjectEdits.h"
-#include "model/ProjectFactory.h"
+#include "FixtureProject.h"
 
 using namespace dew;
 
@@ -23,7 +23,7 @@ struct LoopHarness
 {
     explicit LoopHarness (Transport::Mode mode = Transport::Mode::song)
     {
-        document.setState (ProjectFactory::createDemo(), true);
+        document.setState (dew::testing::fixtureProject(), true);
         engine.prepare (44100.0, 512);
         engine.setProject (document.getState());
         engine.setMode (mode);

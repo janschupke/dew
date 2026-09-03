@@ -8,10 +8,10 @@
 #include "model/Ids.h"
 #include "model/ProjectDocument.h"
 #include "model/ProjectEdits.h"
-#include "model/ProjectFactory.h"
 #include "model/ProjectSchema.h"
 #include "model/ProjectSerializer.h"
 #include "ui/OscillatorSection.h"
+#include "FixtureProject.h"
 
 using namespace dew;
 using Catch::Approx;
@@ -83,7 +83,7 @@ TEST_CASE ("a channel always carries every oscillator slot, however it was built
 
     SECTION ("from the factory")
     {
-        requireThreeSlotsWithOnlyTheFirstOn (firstChannel (ProjectFactory::createDemo()));
+        requireThreeSlotsWithOnlyTheFirstOn (firstChannel (dew::testing::fixtureProject()));
     }
 
     SECTION ("assembled by hand, with an instrument carrying no oscillator at all")
@@ -100,7 +100,7 @@ TEST_CASE ("a channel always carries every oscillator slot, however it was built
     SECTION ("through a save and a load")
     {
         const auto loaded = ProjectSerializer::fromJsonString (
-            ProjectSerializer::toJsonString (ProjectFactory::createDemo()));
+            ProjectSerializer::toJsonString (dew::testing::fixtureProject()));
 
         REQUIRE (loaded.ok());
         requireThreeSlotsWithOnlyTheFirstOn (firstChannel (loaded.tree));
@@ -110,7 +110,7 @@ TEST_CASE ("a channel always carries every oscillator slot, however it was built
 TEST_CASE ("every oscillator keeps its own settings across a round trip",
            "[schema][oscillator]")
 {
-    auto project = ProjectFactory::createDemo();
+    auto project = dew::testing::fixtureProject();
     auto channel = firstChannel (project);
 
     auto second = ProjectEdits::oscillatorAt (channel, 1);
@@ -204,7 +204,7 @@ TEST_CASE ("a v5 project's one oscillator becomes the first slot", "[schema][com
 TEST_CASE ("a file with more oscillators than the format allows is truncated and reported",
            "[schema][oscillator]")
 {
-    auto json = ProjectSerializer::toJsonString (ProjectFactory::createDemo());
+    auto json = ProjectSerializer::toJsonString (dew::testing::fixtureProject());
 
     // Splice a fourth slot into the first channel's array. No newline in the
     // marker: JSON::toString writes CRLF, and only writeToFile narrows it.
@@ -394,7 +394,7 @@ TEST_CASE ("each oscillator carries its own settings into the render", "[engine]
 TEST_CASE ("a channel with every oscillator switched off is silent in a real render",
            "[engine][render][oscillator]")
 {
-    auto project = ProjectFactory::createDemo();
+    auto project = dew::testing::fixtureProject();
 
     juce::AudioBuffer<float> sounding;
     REQUIRE (OfflineRenderer::renderToBuffer (project, sounding).ok());
@@ -421,7 +421,7 @@ struct OscHarness
 {
     OscHarness()
     {
-        document.setState (ProjectFactory::createDemo(), true);
+        document.setState (dew::testing::fixtureProject(), true);
         section.setSize (300, OscillatorSection::heightFor (false));
         section.setVisible (true);
         section.setOwner (channel().getChildWithName (ids::INSTRUMENT));

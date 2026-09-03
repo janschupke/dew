@@ -11,6 +11,7 @@
 #include "ui/EditorState.h"
 #include "ui/StatusBar.h"
 #include "ui/design/Tokens.h"
+#include "FixtureProject.h"
 
 using namespace dew;
 
@@ -21,7 +22,7 @@ struct StatusHarness
 {
     StatusHarness()
     {
-        document.setState (ProjectFactory::createDemo(), true);
+        document.setState (dew::testing::fixtureProject(), true);
         bar.setSize (1200, dew::tokens::size::stripStatus);
         bar.setVisible (true);
         bar.refresh();
@@ -160,7 +161,7 @@ TEST_CASE ("the status bar follows a replaced document", "[statusbar]")
 
     REQUIRE (bar.getContextText().contains ("Pattern 1"));
 
-    document.setState (ProjectFactory::createDemo(), true);
+    document.setState (dew::testing::fixtureProject(), true);
     bar.refresh();
 
     INFO ("context: " << bar.getContextText());

@@ -5,6 +5,7 @@
 #include "model/ProjectFactory.h"
 #include "model/ProjectSchema.h"
 #include "model/ProjectSerializer.h"
+#include "FixtureProject.h"
 
 using namespace dew;
 
@@ -36,7 +37,7 @@ juce::String jsonWithout (const juce::String& json, const juce::String& keyLine)
 
 TEST_CASE ("a project round-trips through JSON unchanged", "[schema]")
 {
-    const auto original = ProjectFactory::createDemo();
+    const auto original = dew::testing::fixtureProject();
 
     const auto json = ProjectSerializer::toJsonString (original);
     const auto loaded = ProjectSerializer::fromJsonString (json);
@@ -49,7 +50,7 @@ TEST_CASE ("a project round-trips through JSON unchanged", "[schema]")
 
 TEST_CASE ("round-tripping twice is stable", "[schema]")
 {
-    const auto once  = ProjectSerializer::toJsonString (ProjectFactory::createDemo());
+    const auto once  = ProjectSerializer::toJsonString (dew::testing::fixtureProject());
     const auto twice = ProjectSerializer::toJsonString (ProjectSerializer::fromJsonString (once).tree);
 
     REQUIRE (once == twice);
@@ -57,7 +58,7 @@ TEST_CASE ("round-tripping twice is stable", "[schema]")
 
 TEST_CASE ("the demo project actually contains notes to play", "[schema][demo]")
 {
-    const auto demo = ProjectFactory::createDemo();
+    const auto demo = dew::testing::fixtureProject();
     const auto pattern = demo.getChildWithName (ids::PATTERN);
 
     REQUIRE (pattern.isValid());
@@ -213,7 +214,7 @@ TEST_CASE ("a file that is not a dew project is refused", "[schema][compat]")
 
 TEST_CASE ("nested structure survives the round trip", "[schema]")
 {
-    const auto original = ProjectFactory::createDemo();
+    const auto original = dew::testing::fixtureProject();
     const auto loaded = ProjectSerializer::fromJsonString (
         ProjectSerializer::toJsonString (original)).tree;
 
@@ -264,7 +265,7 @@ TEST_CASE ("children are ordered by the schema, however the tree was assembled",
 TEST_CASE ("a project survives a real save and load through a file", "[schema][io]")
 {
     juce::TemporaryFile temp (".dew");
-    const auto original = ProjectFactory::createDemo();
+    const auto original = dew::testing::fixtureProject();
 
     REQUIRE (ProjectSerializer::writeToFile (original, temp.getFile()).wasOk());
     REQUIRE (temp.getFile().existsAsFile());
@@ -299,7 +300,7 @@ TEST_CASE ("loading a document replaces its contents and clears undo", "[documen
     const juce::ScopedJuceInitialiser_GUI juceInit;
 
     juce::TemporaryFile temp (".dew");
-    REQUIRE (ProjectSerializer::writeToFile (ProjectFactory::createDemo(), temp.getFile()).wasOk());
+    REQUIRE (ProjectSerializer::writeToFile (dew::testing::fixtureProject(), temp.getFile()).wasOk());
 
     ProjectDocument document;
     auto& undo = document.getUndoManager();
@@ -308,7 +309,7 @@ TEST_CASE ("loading a document replaces its contents and clears undo", "[documen
 
     REQUIRE (document.loadDocument (temp.getFile()).wasOk());
 
-    REQUIRE (document.getDocumentTitle() == "dew demo");
+    REQUIRE (document.getDocumentTitle() == "dew fixture");
     REQUIRE (! document.hasChangedSinceSaved());
     REQUIRE (! undo.canUndo());
 }

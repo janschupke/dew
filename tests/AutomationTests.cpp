@@ -10,6 +10,7 @@
 #include "model/ProjectEdits.h"
 #include "model/ProjectFactory.h"
 #include "model/ProjectSerializer.h"
+#include "FixtureProject.h"
 
 using namespace dew;
 using Catch::Matchers::WithinAbs;
@@ -204,7 +205,7 @@ TEST_CASE ("an automation sweep is audible as a rising envelope", "[automation][
 {
     // The whole point of automation, measured through the real engine rather
     // than by inspecting the snapshot.
-    auto project = ProjectFactory::createDemo();
+    auto project = dew::testing::fixtureProject();
     juce::UndoManager undo;
 
     auto automation = ProjectEdits::addAutomation (project, targetNamed (project, "Master > Gain"), &undo);
@@ -239,7 +240,7 @@ TEST_CASE ("an automation sweep is audible as a rising envelope", "[automation][
 
 TEST_CASE ("an automation clip only acts where it is placed", "[automation][render]")
 {
-    auto project = ProjectFactory::createDemo();
+    auto project = dew::testing::fixtureProject();
     juce::UndoManager undo;
 
     auto automation = ProjectEdits::addAutomation (project, targetNamed (project, "Master > Gain"), &undo);
@@ -271,7 +272,7 @@ TEST_CASE ("an automation clip only acts where it is placed", "[automation][rend
 
 TEST_CASE ("automating an effect parameter changes what the effect does", "[automation][render]")
 {
-    auto project = ProjectFactory::createDemo();
+    auto project = dew::testing::fixtureProject();
     juce::UndoManager undo;
 
     // Only the first channel routes to Insert 1, so silence the others and the
@@ -385,7 +386,7 @@ TEST_CASE ("a mute curve silences a channel and lets it back in", "[automation][
 {
     // Compared against the SAME project without the clip, not against its own
     // second half: a demo that happened to get louder would pass that on its own.
-    auto project = ProjectFactory::createDemo();
+    auto project = dew::testing::fixtureProject();
     juce::UndoManager undo;
 
     juce::ValueTree first;
@@ -476,7 +477,7 @@ TEST_CASE ("a muted playlist track's automation does nothing", "[automation][ren
 {
     // A muted lane silences its notes; it has to silence what its automation
     // does too, or a muted track still moves the mix.
-    auto project = ProjectFactory::createDemo();
+    auto project = dew::testing::fixtureProject();
     juce::UndoManager undo;
 
     auto automation = ProjectEdits::addAutomation (project, targetNamed (project, "Master > Gain"), &undo);
@@ -501,7 +502,7 @@ TEST_CASE ("a muted playlist track's automation does nothing", "[automation][ren
 
 TEST_CASE ("an automation pointing at something deleted is dropped with a warning", "[automation]")
 {
-    auto project = ProjectFactory::createDemo();
+    auto project = dew::testing::fixtureProject();
     juce::UndoManager undo;
 
     auto channel = project.getChildWithName (ids::CHANNEL);
@@ -527,7 +528,7 @@ TEST_CASE ("an automation pointing at something deleted is dropped with a warnin
 
 TEST_CASE ("removing an automation removes the clips that used it", "[automation]")
 {
-    auto project = ProjectFactory::createDemo();
+    auto project = dew::testing::fixtureProject();
     juce::UndoManager undo;
 
     auto automation = ProjectEdits::addAutomation (project, targetNamed (project, "Master > Gain"), &undo);
@@ -560,7 +561,7 @@ TEST_CASE ("removing an automation removes the clips that used it", "[automation
 
 TEST_CASE ("automation survives save and load", "[automation][schema]")
 {
-    auto project = ProjectFactory::createDemo();
+    auto project = dew::testing::fixtureProject();
     juce::UndoManager undo;
 
     auto automation = ProjectEdits::addAutomation (project, targetNamed (project, "Master > Gain"), &undo);
@@ -753,7 +754,7 @@ TEST_CASE ("every target the picker offers is one a control could ask for", "[au
     // nowhere to ask what it drove - which is why automation was reachable from
     // one button and not from the control itself. The picker is now a walk over
     // automationTargetFor, and this is what keeps the claim honest.
-    auto project = ProjectFactory::createDemo();
+    auto project = dew::testing::fixtureProject();
 
     const auto offered = availableAutomationTargets (project);
     REQUIRE (offered.size() > 10);
@@ -885,7 +886,7 @@ TEST_CASE ("a classic oscillator slot offers nothing to automate", "[automation]
 
 TEST_CASE ("the target list covers channels, effects, tracks and master", "[automation]")
 {
-    auto project = ProjectFactory::createDemo();
+    auto project = dew::testing::fixtureProject();
     juce::UndoManager undo;
 
     auto channel = project.getChildWithName (ids::CHANNEL);

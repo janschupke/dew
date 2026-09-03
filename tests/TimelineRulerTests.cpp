@@ -14,6 +14,7 @@
 #include "ui/PlaylistComponent.h"
 #include "ui/TimelineRuler.h"
 #include "ui/design/Tokens.h"
+#include "FixtureProject.h"
 
 using namespace dew;
 using Catch::Matchers::WithinAbs;
@@ -235,7 +236,7 @@ TEST_CASE ("clicking the playlist ruler moves the transport, in bars", "[ruler]"
 TEST_CASE ("seeking silences what was sounding before the jump", "[ruler]")
 {
     ProjectDocument document;
-    document.setState (ProjectFactory::createDemo(), true);
+    document.setState (dew::testing::fixtureProject(), true);
 
     AudioEngine engine;
     engine.prepare (44100.0, 512);

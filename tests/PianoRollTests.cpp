@@ -5,6 +5,7 @@
 #include "RollHarness.h"
 #include "model/ChannelColour.h"
 #include "ui/ChannelRackComponent.h"
+#include "FixtureProject.h"
 
 using namespace dew;
 using namespace dew::testing;
@@ -426,7 +427,7 @@ TEST_CASE ("the roll scrolls to the notes rather than opening on empty keys", "[
     AudioEngine engine;
     EditorState editorState;
 
-    document.setState (ProjectFactory::createDemo(), true);
+    document.setState (dew::testing::fixtureProject(), true);
 
     PianoRollComponent roll { document, engine, editorState };
     roll.setSize (1200, 600);

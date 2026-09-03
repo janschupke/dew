@@ -1,7 +1,7 @@
 #include <catch2/catch_test_macros.hpp>
 
 #include "engine/Sequencer.h"
-#include "model/ProjectFactory.h"
+#include "FixtureProject.h"
 
 using namespace dew;
 
@@ -211,7 +211,7 @@ TEST_CASE ("the material length matches the mode", "[sequencer]")
 
 TEST_CASE ("the demo project schedules notes on every channel", "[sequencer][demo]")
 {
-    const auto snapshot = buildSnapshot (ProjectFactory::createDemo());
+    const auto snapshot = buildSnapshot (dew::testing::fixtureProject());
 
     REQUIRE (! snapshot.isSilent());
     REQUIRE (snapshot.channels.size() == 4);

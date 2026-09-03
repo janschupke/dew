@@ -5,6 +5,7 @@
 #include "model/Ids.h"
 #include "model/ProjectFactory.h"
 #include "model/ProjectSerializer.h"
+#include "FixtureProject.h"
 
 using namespace dew;
 using Catch::Approx;
@@ -32,7 +33,7 @@ float peakBetween (const juce::AudioBuffer<float>& buffer, double fromSeconds, d
 TEST_CASE ("rendering the demo project produces audio", "[engine][render]")
 {
     juce::AudioBuffer<float> rendered;
-    const auto report = OfflineRenderer::renderToBuffer (ProjectFactory::createDemo(), rendered);
+    const auto report = OfflineRenderer::renderToBuffer (dew::testing::fixtureProject(), rendered);
 
     INFO ("warnings: " << report.warnings.joinIntoString ("; "));
     REQUIRE (report.ok());
@@ -62,7 +63,7 @@ TEST_CASE ("the render is as long as the music", "[engine][render]")
     options.tailSeconds = 1.0;
 
     juce::AudioBuffer<float> rendered;
-    const auto report = OfflineRenderer::renderToBuffer (ProjectFactory::createDemo(), rendered, options);
+    const auto report = OfflineRenderer::renderToBuffer (dew::testing::fixtureProject(), rendered, options);
 
     REQUIRE (report.ok());
 
@@ -79,7 +80,7 @@ TEST_CASE ("the tail after the music is a decay, not the song starting again", "
     options.tailSeconds = 1.0;
 
     juce::AudioBuffer<float> rendered;
-    const auto report = OfflineRenderer::renderToBuffer (ProjectFactory::createDemo(), rendered, options);
+    const auto report = OfflineRenderer::renderToBuffer (dew::testing::fixtureProject(), rendered, options);
     REQUIRE (report.ok());
 
     const auto musicEnds = 16.0 * 60.0 / 124.0;
@@ -99,7 +100,7 @@ TEST_CASE ("an explicit length renders exactly that long and keeps looping", "[e
     options.patternId = 1;
 
     juce::AudioBuffer<float> rendered;
-    const auto report = OfflineRenderer::renderToBuffer (ProjectFactory::createDemo(), rendered, options);
+    const auto report = OfflineRenderer::renderToBuffer (dew::testing::fixtureProject(), rendered, options);
 
     REQUIRE (report.ok());
     REQUIRE (report.seconds == Approx (4.0));
@@ -122,7 +123,7 @@ TEST_CASE ("a project with nothing to play is refused rather than rendered silen
 
 TEST_CASE ("muting a channel removes it from the mix", "[engine][render]")
 {
-    auto project = ProjectFactory::createDemo();
+    auto project = dew::testing::fixtureProject();
 
     juce::AudioBuffer<float> full;
     const auto before = OfflineRenderer::renderToBuffer (project, full);
@@ -143,7 +144,7 @@ TEST_CASE ("muting a channel removes it from the mix", "[engine][render]")
 
 TEST_CASE ("soloing one mixer track silences the others", "[engine][render]")
 {
-    auto project = ProjectFactory::createDemo();
+    auto project = dew::testing::fixtureProject();
 
     auto mixer = project.getChildWithName (ids::MIXER);
 
@@ -160,7 +161,7 @@ TEST_CASE ("soloing one mixer track silences the others", "[engine][render]")
     REQUIRE (peakOf (soloed) > 0.01f);
 
     juce::AudioBuffer<float> everything;
-    OfflineRenderer::renderToBuffer (ProjectFactory::createDemo(), everything);
+    OfflineRenderer::renderToBuffer (dew::testing::fixtureProject(), everything);
 
     // Quieter than the full mix, because three channels are gone.
     REQUIRE (report.rms < 0.9f * 0.5f * (everything.getRMSLevel (0, 0, everything.getNumSamples())
@@ -171,7 +172,7 @@ TEST_CASE ("a project saved and reloaded renders identically", "[engine][render]
 {
     // The end-to-end claim: new -> edit -> save -> open loses nothing that
     // affects what you hear.
-    const auto original = ProjectFactory::createDemo();
+    const auto original = dew::testing::fixtureProject();
 
     juce::TemporaryFile temp (".dew");
     REQUIRE (ProjectSerializer::writeToFile (original, temp.getFile()).wasOk());
@@ -216,6 +217,9 @@ TEST_CASE ("the committed example project is loadable and audible", "[engine][re
     REQUIRE (loaded.ok());
     REQUIRE (loaded.warnings.isEmpty());
 
+    // The FACTORY here, deliberately, not the test fixture: this test is about
+    // the committed file staying in step with what ships, and the fixture is
+    // now a different project that no file corresponds to.
     REQUIRE (loaded.tree.isEquivalentTo (ProjectFactory::createDemo()));
 
     juce::AudioBuffer<float> rendered;
@@ -235,7 +239,7 @@ TEST_CASE ("a render is the same audio at any block size", "[engine][render][tim
     //
     // This is the assertion that could not have held before: identical samples
     // from two renders whose only difference is the block size.
-    const auto project = ProjectFactory::createDemo();
+    const auto project = dew::testing::fixtureProject();
 
     RenderOptions small;
     small.blockSize = 64;

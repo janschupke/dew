@@ -9,10 +9,10 @@
 #include "model/AutomationTargets.h"
 #include "model/Ids.h"
 #include "model/ProjectEdits.h"
-#include "model/ProjectFactory.h"
 #include "model/ProjectSerializer.h"
 #include "ui/OscillatorSection.h"
 #include "engine/Wavetable.h"
+#include "FixtureProject.h"
 
 using namespace dew;
 using Catch::Approx;
@@ -570,7 +570,7 @@ TEST_CASE ("a position change reaches a note that is already sounding", "[engine
 TEST_CASE ("only a wavetable slot offers its position to automation",
            "[automation][wavetable]")
 {
-    auto project = ProjectFactory::createDemo();
+    auto project = dew::testing::fixtureProject();
 
     const auto named = [&project] (const juce::String& name)
     {
@@ -601,7 +601,7 @@ TEST_CASE ("only a wavetable slot offers its position to automation",
 TEST_CASE ("an automated position survives a snapshot, and a classic slot drops it",
            "[automation][wavetable][schema]")
 {
-    auto project = ProjectFactory::createDemo();
+    auto project = dew::testing::fixtureProject();
     juce::UndoManager undo;
 
     auto channel = project.getChildWithName (ids::CHANNEL);
@@ -651,7 +651,7 @@ TEST_CASE ("an automated position survives a snapshot, and a classic slot drops 
 TEST_CASE ("a wavetable slot keeps every setting across a round trip",
            "[schema][wavetable]")
 {
-    auto project = ProjectFactory::createDemo();
+    auto project = dew::testing::fixtureProject();
     auto channel = project.getChildWithName (ids::CHANNEL);
 
     auto slot = ProjectEdits::oscillatorAt (channel, 1);
@@ -744,7 +744,7 @@ TEST_CASE ("a v7 project loads as classic oscillators", "[schema][compat][waveta
 TEST_CASE ("a table name this build does not have is reported, not silently swapped",
            "[schema][wavetable]")
 {
-    auto project = ProjectFactory::createDemo();
+    auto project = dew::testing::fixtureProject();
     auto slot = ProjectEdits::oscillatorAt (project.getChildWithName (ids::CHANNEL), 0);
 
     slot.setProperty (ids::mode, "wavetable", nullptr);
@@ -798,7 +798,7 @@ struct PanelHarness
 {
     PanelHarness()
     {
-        document.setState (ProjectFactory::createDemo(), true);
+        document.setState (dew::testing::fixtureProject(), true);
         section.onHeightChanged = [this] { ++heightChanges; layOut(); };
         section.setVisible (true);
         section.setOwner (channel().getChildWithName (ids::INSTRUMENT));

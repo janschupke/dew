@@ -4,8 +4,8 @@
 
 #include "engine/AudioEngine.h"
 #include "io/LiveAudioHost.h"
-#include "model/ProjectFactory.h"
 #include "ui/AudioSettingsPanel.h"
+#include "FixtureProject.h"
 
 using namespace dew;
 
@@ -80,7 +80,7 @@ TEST_CASE ("the test tone goes through the engine's own preview path", "[audio][
 
     AudioEngine engine;
     engine.prepare (44100.0, 256);
-    engine.setProject (ProjectFactory::createDemo());
+    engine.setProject (dew::testing::fixtureProject());
 
     REQUIRE (engine.previewNoteOn (0, 69, 0.6f));
 

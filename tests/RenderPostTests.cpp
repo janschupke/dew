@@ -3,7 +3,7 @@
 
 #include "io/OfflineRenderer.h"
 #include "engine/RenderPost.h"
-#include "model/ProjectFactory.h"
+#include "FixtureProject.h"
 
 using namespace dew;
 using Catch::Approx;
@@ -186,7 +186,7 @@ TEST_CASE ("dither cannot push a normalized peak over full scale", "[render][pos
 TEST_CASE ("normalizing a render lifts its peak to the asked-for level",
            "[engine][render][post]")
 {
-    const auto project = ProjectFactory::createDemo();
+    const auto project = dew::testing::fixtureProject();
 
     juce::AudioBuffer<float> plain;
     const auto before = OfflineRenderer::renderToBuffer (project, plain, {});
@@ -210,7 +210,7 @@ TEST_CASE ("a render fades from silence when asked", "[engine][render][post]")
     options.fadeInSeconds = 0.05;
 
     juce::AudioBuffer<float> rendered;
-    const auto report = OfflineRenderer::renderToBuffer (ProjectFactory::createDemo(),
+    const auto report = OfflineRenderer::renderToBuffer (dew::testing::fixtureProject(),
                                                          rendered, options);
 
     REQUIRE (report.ok());
@@ -223,8 +223,8 @@ TEST_CASE ("renderToBuffer never dithers", "[engine][render][post]")
     // against, so two renders must still be identical.
     juce::AudioBuffer<float> a, b;
 
-    REQUIRE (OfflineRenderer::renderToBuffer (ProjectFactory::createDemo(), a, {}).ok());
-    REQUIRE (OfflineRenderer::renderToBuffer (ProjectFactory::createDemo(), b, {}).ok());
+    REQUIRE (OfflineRenderer::renderToBuffer (dew::testing::fixtureProject(), a, {}).ok());
+    REQUIRE (OfflineRenderer::renderToBuffer (dew::testing::fixtureProject(), b, {}).ok());
 
     REQUIRE (a.getNumSamples() == b.getNumSamples());
 

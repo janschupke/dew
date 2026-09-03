@@ -9,6 +9,7 @@
 #include "app/Settings.h"
 #include "ui/MainComponent.h"
 #include "PaintProbe.h"
+#include "FixtureProject.h"
 
 using namespace dew::testing;
 
@@ -117,7 +118,7 @@ TEST_CASE ("every editor tab paints something", "[ui][smoke]")
     const juce::ScopedJuceInitialiser_GUI juceInit;
 
     dew::MainComponent component;
-    component.getDocument().setState (dew::ProjectFactory::createDemo(), true);
+    component.getDocument().setState (dew::testing::fixtureProject(), true);
     component.documentWasReplaced();
     component.setSize (1280, 800);
 
@@ -150,7 +151,7 @@ TEST_CASE ("the editor's own engine renders audio for the loaded project", "[ui]
     const juce::ScopedJuceInitialiser_GUI juceInit;
 
     dew::MainComponent component;
-    component.getDocument().setState (dew::ProjectFactory::createDemo(), true);
+    component.getDocument().setState (dew::testing::fixtureProject(), true);
     component.documentWasReplaced();
 
     auto& engine = component.getEngine();
@@ -332,7 +333,7 @@ TEST_CASE ("a span selected in the editor loops the editor's own engine", "[ui][
     const juce::ScopedJuceInitialiser_GUI juceInit;
 
     dew::MainComponent component;
-    component.getDocument().setState (dew::ProjectFactory::createDemo(), true);
+    component.getDocument().setState (dew::testing::fixtureProject(), true);
     component.documentWasReplaced();
 
     auto& engine = component.getEngine();

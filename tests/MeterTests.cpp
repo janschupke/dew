@@ -21,6 +21,7 @@
 #include "ui/TimelineView.h"
 #include "ui/TransportBar.h"
 #include "model/ProjectDocument.h"
+#include "FixtureProject.h"
 
 using namespace dew;
 
@@ -148,7 +149,7 @@ TEST_CASE ("changing the meter holds the arrangement's position in steps", "[met
     // A clip is stored in BARS, so redefining a bar would move every clip
     // boundary and silence whatever fell outside the new window. setMeter
     // rescales instead, and 16 -> 8 divides evenly so nothing has to round.
-    auto project = ProjectFactory::createDemo();
+    auto project = dew::testing::fixtureProject();
 
     auto clip = clipAt (project, 0);
     REQUIRE (clip.isValid());
@@ -173,7 +174,7 @@ TEST_CASE ("changing the meter holds the arrangement's position in steps", "[met
 
 TEST_CASE ("a meter that cannot divide evenly rounds, and says so", "[meter][edits]")
 {
-    auto project = ProjectFactory::createDemo();
+    auto project = dew::testing::fixtureProject();
 
     auto clip = clipAt (project, 0);
     REQUIRE (clip.isValid());
@@ -191,7 +192,7 @@ TEST_CASE ("a meter that cannot divide evenly rounds, and says so", "[meter][edi
 
 TEST_CASE ("the notational denominator moves no bar line", "[meter][edits]")
 {
-    auto project = ProjectFactory::createDemo();
+    auto project = dew::testing::fixtureProject();
 
     auto clip = clipAt (project, 0);
     REQUIRE (clip.isValid());
@@ -210,7 +211,7 @@ TEST_CASE ("the notational denominator moves no bar line", "[meter][edits]")
 
 TEST_CASE ("setting the meter it already has changes nothing", "[meter][edits]")
 {
-    auto project = ProjectFactory::createDemo();
+    auto project = dew::testing::fixtureProject();
     const auto before = project.createCopy();
 
     ProjectEdits::setMeter (project, 4, 4, nullptr);
@@ -220,7 +221,7 @@ TEST_CASE ("setting the meter it already has changes nothing", "[meter][edits]")
 
 TEST_CASE ("the snapshot carries the meter to the engine", "[meter][engine]")
 {
-    auto project = ProjectFactory::createDemo();
+    auto project = dew::testing::fixtureProject();
     ProjectEdits::setMeter (project, 3, 8, nullptr);
 
     const auto snapshot = buildSnapshot (project, nullptr);
@@ -292,7 +293,7 @@ TEST_CASE ("a pattern renders identically whatever the meter says", "[meter][ren
     // renames the counting, and a pattern - whose material is measured in steps
     // rather than bars - must come out of the engine sample for sample the
     // same. Anything that folded the meter into a duration would fail here.
-    auto project = ProjectFactory::createDemo();
+    auto project = dew::testing::fixtureProject();
 
     RenderOptions options;
     options.mode = Transport::Mode::pattern;
@@ -328,7 +329,7 @@ TEST_CASE ("rescaling holds a song render's length across a meter change", "[met
     // bars, so without the rescale in setMeter a 3/4 song would be a quarter
     // shorter and every clip would start earlier. With it, the arrangement
     // keeps its length in steps - and 16 to 8 divides evenly, so exactly.
-    auto project = ProjectFactory::createDemo();
+    auto project = dew::testing::fixtureProject();
 
     const auto stepsBefore = buildSnapshot (project, nullptr).songLengthSteps();
     const auto stepsPerBarBefore = Meter::of (project).stepsPerBar();

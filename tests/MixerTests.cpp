@@ -2,6 +2,7 @@
 #include <catch2/catch_test_macros.hpp>
 
 #include "engine/MixerBus.h"
+#include "FixtureProject.h"
 
 using namespace dew;
 using Catch::Approx;
@@ -107,7 +108,7 @@ TEST_CASE ("the master carries an effect chain like any other bus", "[mixer][eff
 {
     // Every insert could hold a chain and the master could not, which read as
     // an omission rather than as a rule.
-    auto project = ProjectFactory::createDemo();
+    auto project = dew::testing::fixtureProject();
     juce::UndoManager undo;
 
     auto master = project.getChildWithName (ids::MIXER).getChildWithName (ids::MASTER);
@@ -134,7 +135,7 @@ TEST_CASE ("the master carries an effect chain like any other bus", "[mixer][eff
 
     // A steep lowpass on the master takes the whole mix down, because it is on
     // the summed signal rather than on one track.
-    auto plainProject = ProjectFactory::createDemo();
+    auto plainProject = dew::testing::fixtureProject();
     juce::AudioBuffer<float> plain;
     const auto plainReport = OfflineRenderer::renderToBuffer (plainProject, plain, options);
 
@@ -179,7 +180,7 @@ TEST_CASE ("each strip lists the channels routed into it", "[mixer][ui]")
 
     ProjectDocument document;
     EditorState editorState;
-    document.setState (ProjectFactory::createDemo(), true);
+    document.setState (dew::testing::fixtureProject(), true);
 
     MixerComponent mixer { document, editorState };
     mixer.setSize (1000, 700);
@@ -372,7 +373,7 @@ TEST_CASE ("dragging a mixer fader is one undo step", "[ui][mixer]")
     ProjectDocument document;
     EditorState editorState;
 
-    document.setState (ProjectFactory::createDemo(), true);
+    document.setState (dew::testing::fixtureProject(), true);
 
     MixerComponent mixer { document, editorState };
     mixer.setSize (1000, 600);
