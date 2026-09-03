@@ -349,6 +349,13 @@ private:
     {
         float volume = 0.0f;
         float pan = 0.0f;
+
+        /** Mute, because a curve over it is a curve over a VALUE on this
+            channel. Solo is deliberately not here: it is a relation between
+            channels, and anyChannelSolo is a snapshot-wide precomputation the
+            audio thread cannot redo every block. */
+        bool muted = false;
+
         OscBankSnapshot osc;
         EffectChainSnapshot effects;
     };
@@ -357,6 +364,7 @@ private:
     {
         float gain = 0.0f;
         float pan = 0.0f;
+        bool mute = false;
         EffectChainSnapshot effects;
     };
 

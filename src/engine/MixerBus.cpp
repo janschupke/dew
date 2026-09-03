@@ -7,7 +7,13 @@ namespace dew
 
 bool MixerBus::isAudible (const EngineSnapshot& snapshot, const MixerTrackSnapshot& track) noexcept
 {
-    if (track.mute)
+    return isAudible (snapshot, track, track.mute);
+}
+
+bool MixerBus::isAudible (const EngineSnapshot& snapshot, const MixerTrackSnapshot& track,
+                          bool muteOverride) noexcept
+{
+    if (muteOverride)
         return false;
 
     // Solo anywhere in the mixer means only soloed tracks are heard.

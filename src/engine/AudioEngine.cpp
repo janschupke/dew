@@ -445,6 +445,7 @@ AudioEngine::overridesFor (const ChannelSnapshot& channel, int channelIndex) noe
 
     overrides.volume = channel.volume;
     overrides.pan = channel.pan;
+    overrides.muted = channel.muted;
     overrides.osc = channel.osc;
     overrides.effects = channel.effects;
 
@@ -459,18 +460,26 @@ AudioEngine::overridesFor (const ChannelSnapshot& channel, int channelIndex) noe
                 overrides.volume = active.value;
             else if (active.param == AutomationParam::pan)
                 overrides.pan = active.value;
+            else if (active.param == AutomationParam::muted)
+                // > 0.5f rather than != 0.0f: automationValueFor has already
+                // snapped this to exactly 0 or 1, and -Wfloat-equal is an error
+                // under the CI preset.
+                overrides.muted = active.value > 0.5f;
         }
         else if (active.scope == AutomationScope::channelOsc
-                 && active.param == AutomationParam::position
                  && active.slotIndex >= 0 && active.slotIndex < overrides.osc.numSlots)
         {
-            overrides.osc.slots[(size_t) active.slotIndex].position = active.value;
+            if (active.param == AutomationParam::position)
+                overrides.osc.slots[(size_t) active.slotIndex].position = active.value;
         }
         else if (active.scope == AutomationScope::channelEffect
                  && active.slotIndex >= 0 && active.slotIndex < overrides.effects.numSlots)
         {
-            writeEffectParam (overrides.effects.slots[(size_t) active.slotIndex],
-                              active.paramIndex, active.value);
+            if (active.param == AutomationParam::enabled)
+                overrides.effects.slots[(size_t) active.slotIndex].enabled = active.value > 0.5f;
+            else
+                writeEffectParam (overrides.effects.slots[(size_t) active.slotIndex],
+                                  active.paramIndex, active.value);
         }
     }
 
@@ -498,6 +507,7 @@ AudioEngine::overridesFor (const MixerTrackSnapshot& track, int trackIndex) noex
 
     overrides.gain = track.gain;
     overrides.pan = track.pan;
+    overrides.mute = track.mute;
     overrides.effects = track.effects;
 
     for (const auto& active : activeAutomation)
@@ -511,12 +521,17 @@ AudioEngine::overridesFor (const MixerTrackSnapshot& track, int trackIndex) noex
                 overrides.gain = active.value;
             else if (active.param == AutomationParam::pan)
                 overrides.pan = active.value;
+            else if (active.param == AutomationParam::muted)
+                overrides.mute = active.value > 0.5f;
         }
         else if (active.scope == AutomationScope::mixerEffect
                  && active.slotIndex >= 0 && active.slotIndex < overrides.effects.numSlots)
         {
-            writeEffectParam (overrides.effects.slots[(size_t) active.slotIndex],
-                              active.paramIndex, active.value);
+            if (active.param == AutomationParam::enabled)
+                overrides.effects.slots[(size_t) active.slotIndex].enabled = active.value > 0.5f;
+            else
+                writeEffectParam (overrides.effects.slots[(size_t) active.slotIndex],
+                                  active.paramIndex, active.value);
         }
     }
 
@@ -872,7 +887,10 @@ void AudioEngine::processBlock (juce::AudioBuffer<float>& buffer) noexcept
             instrument->processAdd (blockContext, mono, numSamples);
         }
 
-        if (! snapshot.isChannelAudible (channel))
+        // The override, not the snapshot: a curve over mute has to silence the
+        // channel this block, and `automated` is already in hand.
+        if (! snapshot.isChannelAudible (channel,
+                                         automated != nullptr ? automated->muted : channel.muted))
             continue;
 
         const auto mixerIndex = channel.mixerTrackIndex;
@@ -918,10 +936,11 @@ void AudioEngine::processBlock (juce::AudioBuffer<float>& buffer) noexcept
     {
         const auto& track = snapshot.mixerTracks[(size_t) i];
 
-        if (! MixerBus::isAudible (snapshot, track))
-            continue;
-
         const auto* automated = overridesFor (track, i);
+
+        if (! MixerBus::isAudible (snapshot, track,
+                                   automated != nullptr ? automated->mute : track.mute))
+            continue;
 
         const auto trackGain = automated != nullptr ? automated->gain    : track.gain;
         const auto trackPan  = automated != nullptr ? automated->pan     : track.pan;

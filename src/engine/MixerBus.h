@@ -18,6 +18,10 @@ struct MixerBus
     /** True if a track should be heard, given the solo state of the whole mixer. */
     static bool isAudible (const EngineSnapshot&, const MixerTrackSnapshot&) noexcept;
 
+    /** The same, with mute taken from an automation override. */
+    static bool isAudible (const EngineSnapshot&, const MixerTrackSnapshot&,
+                           bool muteOverride) noexcept;
+
     /** Constant-power pan: -1 hard left, 0 centre, +1 hard right. Equal power
         rather than linear, so panning does not dip in level at the centre.
     */

@@ -258,6 +258,14 @@ TEST_CASE ("no source spells an automatable parameter as a string literal", "[bu
     // table the gate silently did not cover.
     auto names = dew::automatableParameterNames();
 
+    // Two whole files are exempt for the same reason the effect ids below are.
+    // Icons.cpp is a registry of ICON names, and "mute" is one of them; src/lang
+    // is the score language, whose keywords are its own vocabulary and address
+    // its own tree, not the project's. Both became offenders the moment mute
+    // turned into an automatable parameter, and neither is the defect this gate
+    // exists to catch - which is a property name written by hand where a
+    // property is being RESOLVED.
+    //
     // An effect's id and one of its parameters share a spelling in one case -
     // "drive" is both - and the id is a value a file legitimately contains.
     for (const auto& descriptor : dew::effectDescriptors())
@@ -281,7 +289,7 @@ TEST_CASE ("no source spells an automatable parameter as a string literal", "[bu
                 return true;
 
         return false;
-    }, { "Ids.h" });
+    }, { "Ids.h", "Icons.cpp", "lang" });
 
     INFO ("automatable parameters written as string literals:\n" << found.joinIntoString ("\n"));
     CHECK (found.isEmpty());

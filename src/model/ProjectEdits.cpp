@@ -564,11 +564,21 @@ juce::ValueTree ProjectEdits::addAutomation (juce::ValueTree project, const Auto
 
     // Two points, so a new clip is a line you can grab rather than an empty
     // rectangle that does nothing until you guess how to start it.
+    //
+    // Stepped when the target is discrete: a ramp between two states of a toggle
+    // is a shape nobody meant to draw, and a bypass lane should look like a
+    // bypass lane the moment it exists rather than after a trip to the menu.
+    const auto discrete = target.spec != nullptr && target.spec->isDiscrete();
+
     for (const auto step : { 0.0, 16.0 })
     {
         auto point = defaultTreeFor (pointSpecFor());
         point.setProperty (ids::step, step, nullptr);
         point.setProperty (ids::value, 0.5, nullptr);
+
+        if (discrete)
+            point.setProperty (ids::shape, segmentShapeToString (SegmentShape::step), nullptr);
+
         automation.appendChild (point, nullptr);
     }
 

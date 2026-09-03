@@ -25,9 +25,18 @@ const ParamSpec commonParams[] {
     { &ids::mix, "Mix", "MIX", "", 0.0, 1.0, 1.0, 0.01, 2 },
 };
 
+/** The last mode's index, so the automation range is derived from the table
+    rather than being a 2 that has to be remembered when a mode is added. */
+constexpr double lastFilterMode = (double) (std::size (filterModes) - 1);
+
 const ParamSpec filterParams[] {
-    { &ids::filterMode, "Mode", "MODE", "", 0.0, 0.0, 0.0, 0.0, 0,
-      ParamCurve::linear, ParamControl::choice, false, /*automatable*/ false, false,
+    // A range of 0..lastFilterMode and integral, so an automation curve over it
+    // is a curve over the choice INDEX - which is what a choice already is in the
+    // slot's parameter block, and what every plugin API makes a discrete
+    // parameter. Automatable now: it needed no engine plumbing at all, and it is
+    // the proof that a stepped curve and a continuous one are one model.
+    { &ids::filterMode, "Mode", "MODE", "", 0.0, lastFilterMode, 0.0, 1.0, 0,
+      ParamCurve::linear, ParamControl::choice, false, /*automatable*/ true, /*integral*/ true,
       filterModes, (int) std::size (filterModes), "lowpass" },
     { &ids::cutoff, "Cutoff", "CUTOFF", " Hz", 20.0, 20000.0, 1200.0, 1.0, 0,
       ParamCurve::logarithmic, ParamControl::field },
@@ -155,6 +164,25 @@ std::vector<ParamSpec> effectParamsFor (EffectType type)
 namespace
 {
 
+/** A toggle, declared the way every other parameter is.
+
+    ParamControl::toggle existed in the enum and NOTHING used it: every binary
+    state in dew - mute, solo, bypass, an oscillator's on/off - lived outside the
+    catalog as a raw schema property written directly by a button. That is why
+    none of them could be automated, and why a control had no spec to build a
+    right-click menu from.
+
+    0..1 and integral, so numDiscreteValues reports two and automationValueFor
+    snaps a curve over it to exactly off or on.
+*/
+constexpr ParamSpec toggleSpec (const juce::Identifier* property, const char* displayName,
+                                const char* caption, bool automatable, bool defaultOn = false)
+{
+    return { property, displayName, caption, "", 0.0, 1.0, defaultOn ? 1.0 : 0.0, 1.0, 0,
+             ParamCurve::linear, ParamControl::toggle, /*bipolar*/ false, automatable,
+             /*integral*/ true };
+}
+
 const ParamSpec channelSpecs[] {
     { &ids::volume, "Volume", "VOLUME", "", 0.0, 1.0, 0.8, 0.001, 3 },
     { &ids::pan,    "Pan",    "PAN",    "", -1.0, 1.0, 0.0, 0.001, 3,
@@ -165,6 +193,16 @@ const ParamSpec channelSpecs[] {
     { &ids::basePitch, "Base pitch", "PITCH", "", 0.0, 127.0, 60.0, 1.0, 0,
       ParamCurve::linear, ParamControl::stepper, false, /*automatable*/ false,
       /*integral*/ true },
+
+    // Mute is automatable and solo is NOT, and that asymmetry is the point.
+    //
+    // Mute is a value on one channel: the engine reads it per channel and a
+    // curve over it means "silence this, here". Solo is a RELATION between
+    // channels - anyChannelSolo is a snapshot-wide precomputation, and honouring
+    // a curve over it would mean re-deciding every channel's audibility every
+    // block. Mute already expresses everything a curve wants from either.
+    toggleSpec (&ids::muted, "Mute", "MUTE", /*automatable*/ true),
+    toggleSpec (&ids::solo,  "Solo", "SOLO", /*automatable*/ false),
 };
 
 const ParamSpec ampSpecs[] {
@@ -222,6 +260,11 @@ const ParamSpec mixerTrackSpecs[] {
     { &ids::gain, "Gain", "GAIN", "", 0.0, 1.5, 0.8, 0.001, 3 },
     { &ids::pan,  "Pan",  "PAN",  "", -1.0, 1.0, 0.0, 0.001, 3,
       ParamCurve::linear, ParamControl::knob, /*bipolar*/ true },
+
+    // A track says `mute` where a channel says `muted`. Two spellings of one
+    // idea, kept because both are already in every saved file.
+    toggleSpec (&ids::mute, "Mute", "MUTE", /*automatable*/ true),
+    toggleSpec (&ids::solo, "Solo", "SOLO", /*automatable*/ false),
 };
 
 template <size_t N>

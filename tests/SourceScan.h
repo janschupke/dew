@@ -49,8 +49,14 @@ inline juce::StringArray offenders (const std::function<bool (const juce::String
     {
         auto skip = false;
 
+        // A name matches a FILE or a DIRECTORY. The directory form exists
+        // because src/lang is a different language with its own vocabulary: its
+        // keywords coinciding with dew's property names is a coincidence, and
+        // exempting five of its files by name would be a list that the sixth
+        // silently escaped.
         for (const auto* name : exempt)
-            if (file.getFileName() == name)
+            if (file.getFileName() == name
+                || file.getParentDirectory().getFileName() == name)
                 skip = true;
 
         if (skip)

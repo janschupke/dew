@@ -254,7 +254,16 @@ enum class AutomationParam
     position,
     cutoff, resonance, mix, roomSize, damping, width,
     delayMs, feedback, drive, outputGain, rate, depth,
-    lowGainDb, midGainDb, midFreq, highGainDb
+    lowGainDb, midGainDb, midFreq, highGainDb,
+
+    /** Discrete ones. filterMode needs an enumerator even though it travels
+        through paramIndex like any other block parameter, because buildSnapshot
+        DROPS an automation whose param is `none` - so without a row here a
+        filter-mode curve would be silently ignored. */
+    filterMode,
+    enabled,        ///< an effect slot's bypass
+    oscEnabled,     ///< an oscillator slot's on/off
+    muted           ///< a channel's or a mixer track's mute
 };
 
 /** One automation definition, with its target resolved to indices. */
@@ -372,6 +381,16 @@ struct EngineSnapshot
 
     /** Whether a channel should sound, given mute and the mixer-wide solo state. */
     bool isChannelAudible (const ChannelSnapshot&) const noexcept;
+
+    /** The same, with mute taken from an automation override rather than from
+        the snapshot.
+
+        An overload rather than a mutable field, because the snapshot is shared
+        and read by several passes: a stem render and a live block look at the
+        same one, and one of them writing a per-block mute into it would be a
+        data race with the other.
+    */
+    bool isChannelAudible (const ChannelSnapshot&, bool mutedOverride) const noexcept;
 
     /** True if any chain anywhere has an enabled slot - lets the engine skip the
         whole stereo effect stage on a project that uses none.

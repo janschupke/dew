@@ -100,8 +100,14 @@ int EngineSnapshot::songLengthSteps() const
 
 bool EngineSnapshot::isChannelAudible (const ChannelSnapshot& channel) const noexcept
 {
+    return isChannelAudible (channel, channel.muted);
+}
+
+bool EngineSnapshot::isChannelAudible (const ChannelSnapshot& channel,
+                                       bool mutedOverride) const noexcept
+{
     // Mute wins over solo on the same channel: mute is the explicit "off".
-    if (channel.muted)
+    if (mutedOverride)
         return false;
 
     return anyChannelSolo ? channel.solo : true;
@@ -280,6 +286,14 @@ AutomationParam automationParamFromIdentifier (const juce::Identifier& property)
         { &ids::depth, AutomationParam::depth }, { &ids::lowGainDb, AutomationParam::lowGainDb },
         { &ids::midGainDb, AutomationParam::midGainDb }, { &ids::midFreq, AutomationParam::midFreq },
         { &ids::highGainDb, AutomationParam::highGainDb },
+
+        // The discrete ones. `mute` and `muted` are two spellings of one idea -
+        // a mixer track says mute and a channel says muted - and both resolve
+        // here, because the scope already says which node is being addressed.
+        { &ids::filterMode, AutomationParam::filterMode },
+        { &ids::enabled, AutomationParam::enabled },
+        { &ids::mute, AutomationParam::muted },
+        { &ids::muted, AutomationParam::muted },
     };
 
     for (const auto& [id, value] : table)

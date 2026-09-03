@@ -1,3 +1,5 @@
+#include <utility>
+
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/matchers/catch_matchers_floating_point.hpp>
 
@@ -317,6 +319,130 @@ TEST_CASE ("automating an effect parameter changes what the effect does", "[auto
     INFO ("open " << open << " closed " << closed);
     REQUIRE (open > 0.005f);
     REQUIRE (closed < open * 0.2f);
+}
+
+TEST_CASE ("a discrete curve never lands between two states", "[automation]")
+{
+    // What makes a stepped target one model with a continuous one rather than a
+    // special case: the SNAP is in the mapping every consumer already calls, so
+    // a curve over a filter mode is a curve over the mode index and cannot ask
+    // for a mode that does not exist.
+    auto project = ProjectFactory::createDefault();
+    juce::UndoManager undo;
+
+    auto channel = project.getChildWithName (ids::CHANNEL);
+    auto filter = ProjectEdits::addEffect (project, channel, "filter", &undo);
+    REQUIRE (filter.isValid());
+
+    const auto* spec = findParamSpec (AutomationScope::channelEffect, "filter", ids::filterMode);
+    REQUIRE (spec != nullptr);
+    REQUIRE (spec->automatable);
+    REQUIRE (spec->numDiscreteValues() == 3);
+
+    for (int i = 0; i <= 200; ++i)
+    {
+        const auto normalised = (double) i / 200.0;
+        const auto value = automationValueFor (*spec, normalised);
+
+        INFO ("at " << normalised << " the mode index is " << value);
+        REQUIRE ((juce::approximatelyEqual (value, 0.0)
+                  || juce::approximatelyEqual (value, 1.0)
+                  || juce::approximatelyEqual (value, 2.0)));
+    }
+
+    // Equal-width buckets, so the ends and the middle are the three modes.
+    REQUIRE_THAT (automationValueFor (*spec, 0.0),  WithinAbs (0.0, 1e-9));
+    REQUIRE_THAT (automationValueFor (*spec, 0.5),  WithinAbs (1.0, 1e-9));
+    REQUIRE_THAT (automationValueFor (*spec, 1.0),  WithinAbs (2.0, 1e-9));
+
+    // And a continuous neighbour in the same table is untouched by the snap.
+    const auto* cutoff = findParamSpec (AutomationScope::channelEffect, "filter", ids::cutoff);
+    REQUIRE (cutoff != nullptr);
+    REQUIRE (automationValueFor (*cutoff, 0.5) > cutoff->minimum);
+    REQUIRE (automationValueFor (*cutoff, 0.5) < cutoff->maximum);
+}
+
+TEST_CASE ("a fresh curve over a discrete target is stepped", "[automation]")
+{
+    // A ramp between two states of a toggle is a shape nobody meant to draw, so
+    // a bypass lane looks like one the moment it exists rather than after a trip
+    // to the shape menu.
+    auto project = ProjectFactory::createDefault();
+    juce::UndoManager undo;
+
+    auto continuous = ProjectEdits::addAutomation (project, targetNamed (project, "Kick > Volume"), &undo);
+
+    for (const auto& point : ProjectEdits::sortedAutomationPoints (continuous))
+        REQUIRE (point[ids::shape].toString() == "curve");
+
+    auto stepped = ProjectEdits::addAutomation (project, targetNamed (project, "Kick > Mute"), &undo);
+
+    for (const auto& point : ProjectEdits::sortedAutomationPoints (stepped))
+        REQUIRE (point[ids::shape].toString() == "step");
+}
+
+TEST_CASE ("a mute curve silences a channel and lets it back in", "[automation][render]")
+{
+    // Compared against the SAME project without the clip, not against its own
+    // second half: a demo that happened to get louder would pass that on its own.
+    auto project = ProjectFactory::createDemo();
+    juce::UndoManager undo;
+
+    juce::ValueTree first;
+
+    for (auto channel : project)
+        if (channel.hasType (ids::CHANNEL) && ! first.isValid())
+            first = channel;
+
+    REQUIRE (first.isValid());
+
+    const auto render = [] (const juce::ValueTree& tree)
+    {
+        RenderOptions options;
+        options.mode = Transport::Mode::song;
+        options.seconds = 6.0;
+
+        juce::AudioBuffer<float> buffer;
+        const auto report = OfflineRenderer::renderToBuffer (tree, buffer, options);
+        REQUIRE (report.ok());
+
+        return buffer;
+    };
+
+    const auto without = render (project);
+
+    // Muted for the first two bars, then heard. Stepped, so it is a jump at bar
+    // three rather than a fade across the clip.
+    auto automation = ProjectEdits::addAutomation (project,
+                                                   targetNamed (project,
+                                                                first[ids::name].toString() + " > Mute"),
+                                                   &undo);
+    setCurve (automation, { { 0.0, 1.0 }, { 32.0, 0.0 } }, &undo);
+
+    auto track = project.getChildWithName (ids::PLAYLIST).getChild (0);
+    ProjectEdits::addAutomationClip (track, (int) automation[ids::id], 0, 4, &undo);
+
+    const auto with = render (project);
+
+    // Quieter than the unautomated render while the curve says muted...
+    const auto mutedWindow = std::make_pair (0.05, 1.5);
+    const auto heardWindow = std::make_pair (4.2, 5.5);
+
+    const auto quietBefore = rmsOfWindow (without, mutedWindow.first, mutedWindow.second);
+    const auto quietAfter = rmsOfWindow (with, mutedWindow.first, mutedWindow.second);
+
+    INFO ("in the muted window: " << quietBefore << " -> " << quietAfter);
+    REQUIRE (quietBefore > 0.0005f);
+    REQUIRE (quietAfter < quietBefore * 0.9f);
+
+    // ...and the same again once it says heard, which is what says the curve
+    // let the channel back in rather than silencing it for good.
+    const auto loudBefore = rmsOfWindow (without, heardWindow.first, heardWindow.second);
+    const auto loudAfter = rmsOfWindow (with, heardWindow.first, heardWindow.second);
+
+    INFO ("in the heard window: " << loudBefore << " -> " << loudAfter);
+    REQUIRE (loudBefore > 0.0005f);
+    REQUIRE_THAT ((double) loudAfter, WithinAbs ((double) loudBefore, (double) loudBefore * 0.05));
 }
 
 TEST_CASE ("frequency parameters sweep by ear, not by hertz", "[automation]")
