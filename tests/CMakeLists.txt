@@ -68,13 +68,14 @@ add_executable(dew_tests
   ScoreResolverTests.cpp
   ScoreGeneratorTests.cpp
   ScoreBakeTests.cpp
+  ScoreSchemaTests.cpp
   ScoreDeterminismTests.cpp
 )
 
 target_link_libraries(dew_tests
   PRIVATE
-    dew_ui
-    dew_lang
+    dew_ui   # and dew_lang with it: dew_model links it PUBLIC, and naming it
+             # again here made every link warn about a duplicate library
     Catch2::Catch2WithMain
     juce::juce_recommended_config_flags
     juce::juce_recommended_warning_flags

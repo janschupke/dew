@@ -92,8 +92,16 @@ struct NodeSpec
     constant. Bumped because an older build would read a 7/8 project and play
     it in 4/4 without saying so, which puts every bar line and every clip
     boundary somewhere else.
+
+    v10 added the score: a SCORE node holding the arrangement language's source
+    text one LINE at a time, plus `genId` on the four node types a compile
+    writes and `genHash` on a pattern. Additive with declared defaults - an
+    empty score and empty provenance strings - so every earlier file loads as
+    what it was: a project nobody compiled. Bumped for the reason v7 and v8
+    were: an older build would open a project, drop its score text on the next
+    save, and say nothing about it.
 */
-inline constexpr int kFormatVersion = 9;
+inline constexpr int kFormatVersion = 10;
 
 /** How many effects one channel or mixer track may carry. A document limit
     rather than an engine one: a chain longer than this cannot be saved, so it

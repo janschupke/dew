@@ -247,7 +247,11 @@ TEST_CASE ("children are ordered by the schema, however the tree was assembled",
         scrambled.setProperty (key, canonical[key], nullptr);
     }
 
-    for (const auto& type : { ids::PLAYLIST, ids::MIXER, ids::CHANNEL, ids::PATTERN })
+    // The score comes LAST in the spec, so putting it first is the strongest
+    // scramble available - and this list has to name every grouping the schema
+    // has, or a new one goes unchecked.
+    for (const auto& type : { ids::SCORE, ids::PLAYLIST, ids::MIXER,
+                              ids::CHANNEL, ids::PATTERN })
         for (const auto& child : canonical)
             if (child.hasType (type))
                 scrambled.appendChild (child.createCopy(), nullptr);

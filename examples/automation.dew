@@ -1,5 +1,5 @@
 {
-    "formatVersion": 9,
+    "formatVersion": 10,
     "name": "Automation",
     "tempoBpm": 126.0,
     "stepsPerBeat": 4,
@@ -18,6 +18,7 @@
         "muted": false,
         "solo": false,
         "source": "synth",
+        "genId": "",
         "instrument": {
           "oscillators": [
             {
@@ -121,6 +122,7 @@
         "muted": false,
         "solo": false,
         "source": "synth",
+        "genId": "",
         "instrument": {
           "oscillators": [
             {
@@ -201,6 +203,7 @@
         "muted": true,
         "solo": false,
         "source": "synth",
+        "genId": "",
         "instrument": {
           "oscillators": [
             {
@@ -281,6 +284,7 @@
         "muted": true,
         "solo": false,
         "source": "synth",
+        "genId": "",
         "instrument": {
           "oscillators": [
             {
@@ -356,6 +360,8 @@
         "id": 1,
         "name": "Arp",
         "lengthSteps": 16,
+        "genId": "",
+        "genHash": "",
         "notes": [
           {
             "ch": 1,
@@ -558,6 +564,7 @@
           "name": "Track 1",
           "mute": false,
           "solo": false,
+          "genId": "",
           "clips": [
             {
               "kind": "pattern",
@@ -565,7 +572,8 @@
               "automationId": 1,
               "channelId": 1,
               "startBar": 0,
-              "lengthBars": 8
+              "lengthBars": 8,
+              "genId": ""
             }
           ]
         },
@@ -573,6 +581,7 @@
           "name": "Track 2",
           "mute": false,
           "solo": false,
+          "genId": "",
           "clips": [
             {
               "kind": "automation",
@@ -580,7 +589,8 @@
               "automationId": 1,
               "channelId": 1,
               "startBar": 0,
-              "lengthBars": 4
+              "lengthBars": 4,
+              "genId": ""
             }
           ]
         },
@@ -588,6 +598,7 @@
           "name": "Track 3",
           "mute": false,
           "solo": false,
+          "genId": "",
           "clips": [
             {
               "kind": "automation",
@@ -595,7 +606,8 @@
               "automationId": 2,
               "channelId": 1,
               "startBar": 4,
-              "lengthBars": 4
+              "lengthBars": 4,
+              "genId": ""
             }
           ]
         },
@@ -603,6 +615,7 @@
           "name": "Track 4",
           "mute": false,
           "solo": false,
+          "genId": "",
           "clips": []
         }
       ]
@@ -650,6 +663,10 @@
           "effects": []
         }
       ]
+    },
+    "score": {
+      "name": "",
+      "lines": []
     },
     "format": "dew-project"
   }

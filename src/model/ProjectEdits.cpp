@@ -1024,4 +1024,73 @@ void ProjectEdits::setMeter (juce::ValueTree project, int beatsPerBar, int beatU
         *wasExact = exact;
 }
 
+// --- the score ---------------------------------------------------------------
+
+void ProjectEdits::setScoreSource (juce::ValueTree project, const juce::String& text,
+                                   const juce::String& sourceName, juce::UndoManager* undo)
+{
+    auto score = project.getChildWithName (ids::SCORE);
+
+    if (! score.isValid())
+    {
+        score = juce::ValueTree (ids::SCORE);
+        project.appendChild (score, undo);
+    }
+
+    score.setProperty (ids::name, sourceName, undo);
+
+    while (score.getNumChildren() > 0)
+        score.removeChild (score.getNumChildren() - 1, undo);
+
+    // Split by hand rather than with StringArray::addLines, which drops the
+    // empty string after a trailing newline. That empty line is real - it is
+    // the difference between a file that ends in a newline and one that does
+    // not - and losing it would make saving a score silently rewrite it.
+    const auto normalised = text.replace ("\r\n", "\n").replace ("\r", "\n");
+
+    // No text is no lines, not one empty one - so a project nobody has written
+    // a score for is byte-identical to one whose score was cleared.
+    if (normalised.isEmpty())
+        return;
+
+    auto start = 0;
+
+    for (;;)
+    {
+        const auto end = normalised.indexOfChar (start, '\n');
+        const auto line = end < 0 ? normalised.substring (start)
+                                  : normalised.substring (start, end);
+
+        juce::ValueTree node (ids::LINE);
+        node.setProperty (ids::text, line, nullptr);
+        score.appendChild (node, undo);
+
+        if (end < 0)
+            break;
+
+        start = end + 1;
+    }
+}
+
+juce::String ProjectEdits::scoreSource (const juce::ValueTree& project)
+{
+    const auto score = project.getChildWithName (ids::SCORE);
+
+    if (! score.isValid())
+        return {};
+
+    juce::StringArray lines;
+
+    for (const auto& line : score)
+        if (line.hasType (ids::LINE))
+            lines.add (line[ids::text].toString());
+
+    return lines.joinIntoString ("\n");
+}
+
+juce::String ProjectEdits::scoreSourceName (const juce::ValueTree& project)
+{
+    return project.getChildWithName (ids::SCORE)[ids::name].toString();
+}
+
 } // namespace dew

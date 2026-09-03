@@ -26,6 +26,8 @@
             MASTER                     -> "master": {}
             MIXER_TRACK*               -> "tracks": []
               EFFECT*                  -> "effects": []
+          SCORE                        -> "score": {}
+            LINE*                      -> "lines": []
 */
 namespace dew::ids
 {
@@ -58,6 +60,8 @@ DEW_DECLARE_ID (MIXER_TRACK)
 DEW_DECLARE_ID (EFFECT)
 DEW_DECLARE_ID (AUTOMATION)
 DEW_DECLARE_ID (POINT)
+DEW_DECLARE_ID (SCORE)
+DEW_DECLARE_ID (LINE)
 
 // --- properties --------------------------------------------------------------
 DEW_DECLARE_ID (formatVersion)
@@ -134,6 +138,18 @@ DEW_DECLARE_ID (curve)
 
 DEW_DECLARE_ID (mute)
 DEW_DECLARE_ID (solo)
+
+// --- the score language ------------------------------------------------------
+// One property per line of source, rather than one blob: juce::JSON escapes a
+// newline as \n, so a score stored as a single string turns every edit into one
+// enormous changed line in a file that tests and people both read as a diff.
+DEW_DECLARE_ID (text)
+
+// Which compiled node this is, and what it held when it was written. Empty on
+// everything a person made - that emptiness IS the ownership line, and it is
+// what lets a recompile replace its own work without touching anyone else's.
+DEW_DECLARE_ID (genId)
+DEW_DECLARE_ID (genHash)
 
 // --- effects -----------------------------------------------------------------
 DEW_DECLARE_ID (type)

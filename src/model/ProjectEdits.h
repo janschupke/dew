@@ -311,6 +311,25 @@ struct ProjectEdits
     */
     static void setMeter (juce::ValueTree project, int beatsPerBar, int beatUnit,
                           juce::UndoManager*, bool* wasExact = nullptr);
+
+    // --- the score -----------------------------------------------------------
+    /** Stores the arrangement language's source text in the project.
+
+        Splits into one LINE per line, which is what makes a score readable in
+        a diff. Writing this does NOT compile anything: the editor saves as you
+        type and compiles when you ask, because a compile writes notes and
+        nobody wants a pause in their typing to become an undo step full of
+        them.
+    */
+    static void setScoreSource (juce::ValueTree project, const juce::String& text,
+                                const juce::String& sourceName, juce::UndoManager*);
+
+    /** The stored source, rejoined. Round-trips setScoreSource exactly,
+        trailing newline included.
+    */
+    static juce::String scoreSource (const juce::ValueTree& project);
+
+    static juce::String scoreSourceName (const juce::ValueTree& project);
 };
 
 } // namespace dew

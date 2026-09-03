@@ -1,5 +1,5 @@
 {
-    "formatVersion": 9,
+    "formatVersion": 10,
     "name": "Effect Chain",
     "tempoBpm": 110.0,
     "stepsPerBeat": 4,
@@ -18,6 +18,7 @@
         "muted": false,
         "solo": false,
         "source": "synth",
+        "genId": "",
         "instrument": {
           "oscillators": [
             {
@@ -143,6 +144,7 @@
         "muted": false,
         "solo": false,
         "source": "synth",
+        "genId": "",
         "instrument": {
           "oscillators": [
             {
@@ -223,6 +225,7 @@
         "muted": false,
         "solo": false,
         "source": "synth",
+        "genId": "",
         "instrument": {
           "oscillators": [
             {
@@ -326,6 +329,7 @@
         "muted": false,
         "solo": false,
         "source": "synth",
+        "genId": "",
         "instrument": {
           "oscillators": [
             {
@@ -401,6 +405,8 @@
         "id": 1,
         "name": "Wash",
         "lengthSteps": 32,
+        "genId": "",
+        "genHash": "",
         "notes": [
           {
             "ch": 1,
@@ -573,6 +579,7 @@
           "name": "Track 1",
           "mute": false,
           "solo": false,
+          "genId": "",
           "clips": [
             {
               "kind": "pattern",
@@ -580,7 +587,8 @@
               "automationId": 1,
               "channelId": 1,
               "startBar": 0,
-              "lengthBars": 4
+              "lengthBars": 4,
+              "genId": ""
             }
           ]
         },
@@ -588,18 +596,21 @@
           "name": "Track 2",
           "mute": false,
           "solo": false,
+          "genId": "",
           "clips": []
         },
         {
           "name": "Track 3",
           "mute": false,
           "solo": false,
+          "genId": "",
           "clips": []
         },
         {
           "name": "Track 4",
           "mute": false,
           "solo": false,
+          "genId": "",
           "clips": []
         }
       ]
@@ -716,6 +727,10 @@
           "effects": []
         }
       ]
+    },
+    "score": {
+      "name": "",
+      "lines": []
     },
     "format": "dew-project"
   }

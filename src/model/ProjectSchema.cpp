@@ -191,7 +191,11 @@ const NodeSpec& channelSpec()
           // everything downstream of a channel's mono buffer - pan, volume,
           // the effect chain, mixer routing, metering, automation - is the
           // same for both, and only the source of the samples differs.
-          { ids::source,       "synth" } },
+          { ids::source,       "synth" },
+          // Set when a score compile created this channel, so a later compile
+          // finds it again even after it has been renamed. Nothing else about
+          // a channel is ever written by a compile.
+          { ids::genId,        "" } },
         { { "instrument", &instrumentSpec(), false },
           { "sample",     &sampleSpec(),     false },
           { "effects",    &effectSpec(),     true } }
@@ -219,7 +223,14 @@ const NodeSpec& patternSpec()
         ids::PATTERN,
         { { ids::id,          1 },
           { ids::name,        "Pattern 1" },
-          { ids::lengthSteps, 16 } },
+          { ids::lengthSteps, 16 },
+          { ids::genId,       "" },
+          // What the notes hashed to when the compiler wrote them. Recompiling
+          // hashes them again: equal means nobody has touched this pattern and
+          // it can be replaced, different means somebody has and it must not
+          // be. Without it a recompile is a choice between losing hand edits
+          // and never updating anything.
+          { ids::genHash,     "" } },
         { { "notes", &noteSpec(), true } }
     };
     return spec;
@@ -274,7 +285,8 @@ const NodeSpec& clipSpec()
           // automation references. Only the one matching `kind` is meaningful.
           { ids::channelId,    1 },
           { ids::startBar,     0 },
-          { ids::lengthBars,   1 } },
+          { ids::lengthBars,   1 },
+          { ids::genId,        "" } },
         {}
     };
     return spec;
@@ -284,9 +296,10 @@ const NodeSpec& playlistTrackSpec()
 {
     static const NodeSpec spec {
         ids::PLAYLIST_TRACK,
-        { { ids::name, "Track" },
-          { ids::mute, false },
-          { ids::solo, false } },
+        { { ids::name,  "Track" },
+          { ids::mute,  false },
+          { ids::solo,  false },
+          { ids::genId, "" } },
         { { "clips", &clipSpec(), true } }
     };
     return spec;
@@ -325,6 +338,43 @@ const NodeSpec& mixerTrackSpec()
           { ids::mute, false },
           { ids::solo, false } },
         { { "effects", &effectSpec(), true } }
+    };
+    return spec;
+}
+
+/** One line of score source.
+
+    A node per line rather than one string property holding the lot. The
+    committed examples are diffed by tests and read by people, and juce::JSON
+    writes a newline as \n - so a whole score in one property is a single
+    four-kilobyte line that changes entirely whenever a comma moves.
+*/
+const NodeSpec& lineSpec()
+{
+    static const NodeSpec spec {
+        ids::LINE,
+        { { ids::text, "" } },
+        {}
+    };
+    return spec;
+}
+
+/** The arrangement language's source, kept with the project it describes.
+
+    Inside the .dew rather than beside it because the two are one document: a
+    score and the notes it compiled to disagree the moment either can travel
+    without the other, and "which of these two files is current" is not a
+    question a musician should ever have to answer.
+*/
+const NodeSpec& scoreSpec()
+{
+    static const NodeSpec spec {
+        ids::SCORE,
+        // The source's own file name, when it came from one. Diagnostics are
+        // reported against a name, and "untitled.score:12" is worse than the
+        // name the user knows it by.
+        { { ids::name, "" } },
+        { { "lines", &lineSpec(), true } }
     };
     return spec;
 }
@@ -419,7 +469,11 @@ const NodeSpec& projectSpec()
           { "patterns",    &patternSpec(),    true },
           { "automations", &automationSpec(), true },
           { "playlist",    &playlistSpec(),   false },
-          { "mixer",       &mixerSpec(),      false } }
+          { "mixer",       &mixerSpec(),      false },
+          // Last, and permanently so: canonicalTree materialises children in
+          // this order and isEquivalentTo compares them in order, so moving
+          // this entry would make every committed project unequal to itself.
+          { "score",       &scoreSpec(),      false } }
     };
     return spec;
 }
