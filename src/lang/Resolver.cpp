@@ -740,31 +740,25 @@ private:
         {
             RhythmStep step;
             step.range = entry.range;
+            step.isRest = entry.kind == RhythmEntry::Kind::rest;
+            step.isTie = entry.kind == RhythmEntry::Kind::tie;
 
-            if (entry.kind == RhythmEntry::Kind::rest)
-            {
-                step.isRest = true;
-            }
-            else if (entry.kind == RhythmEntry::Kind::tie)
-            {
-                step.isTie = true;
-            }
-            else
-            {
-                const auto duration = parseDuration (entry.text);
+            // Every entry carries a length, rests and ties included, so the
+            // grid sees them too - a score whose only triplet is a rest still
+            // needs a grid that can place it.
+            const auto duration = parseDuration (entry.text);
 
-                if (! duration.has_value())
-                {
-                    diagnostics.error ("E216",
-                                       std::string ("`") + std::string (entry.text)
-                                       + "` is not a duration",
-                                       entry.range);
-                    continue;
-                }
-
-                step.duration = *duration;
-                noteDuration (*duration, entry.range);
+            if (! duration.has_value())
+            {
+                diagnostics.error ("E216",
+                                   std::string ("`") + std::string (entry.text)
+                                   + "` is not a duration",
+                                   entry.range);
+                continue;
             }
+
+            step.duration = *duration;
+            noteDuration (*duration, entry.range);
 
             if (entry.repeat > 256)
             {

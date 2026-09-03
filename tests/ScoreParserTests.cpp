@@ -183,13 +183,17 @@ TEST_CASE ("a rhythm body reads durations, rests, ties and repeats",
     REQUIRE (pulse->rhythm[0].text == "1/4");
     REQUIRE (pulse->rhythm[2].text == "1/2");
 
+    // `-` and `~` carry their own length, so `1/8 x4 - 1/8t ~ 1/2` is three
+    // entries: four eighths, an eighth-triplet REST, and a half-note tie.
     const auto* running = findBlock (document, "rhythm", "running");
     REQUIRE (running != nullptr);
-    REQUIRE (running->rhythm.size() == 5);
+    REQUIRE (running->rhythm.size() == 3);
     REQUIRE (running->rhythm[0].repeat == 4);
+    REQUIRE (running->rhythm[0].text == "1/8");
     REQUIRE (running->rhythm[1].kind == RhythmEntry::Kind::rest);
-    REQUIRE (running->rhythm[2].text == "1/8t");
-    REQUIRE (running->rhythm[3].kind == RhythmEntry::Kind::tie);
+    REQUIRE (running->rhythm[1].text == "1/8t");
+    REQUIRE (running->rhythm[2].kind == RhythmEntry::Kind::tie);
+    REQUIRE (running->rhythm[2].text == "1/2");
 }
 
 TEST_CASE ("an arrangement entry carries its repeat, label and overrides",

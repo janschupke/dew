@@ -429,14 +429,32 @@ private:
                 entry.text = textOf (peek());
                 advance();
             }
-            else if (peek().kind == TokenKind::rest)
+            else if (peek().kind == TokenKind::rest || peek().kind == TokenKind::tie)
             {
-                entry.kind = RhythmEntry::Kind::rest;
+                // `-` and `~` are PREFIXES carrying their own length: `- 1/4` is
+                // a quarter rest, `~ 1/2` holds the previous note a half longer.
+                // A bare `-` would need a length from somewhere, and every
+                // candidate - the previous entry's, a fixed default - is a rule
+                // you have to remember rather than read.
+                entry.kind = peek().kind == TokenKind::rest ? RhythmEntry::Kind::rest
+                                                            : RhythmEntry::Kind::tie;
+                const auto markRange = peek().range;
                 advance();
-            }
-            else if (peek().kind == TokenKind::tie)
-            {
-                entry.kind = RhythmEntry::Kind::tie;
+
+                if (peek().kind != TokenKind::ratio)
+                {
+                    diagnostics.error ("E114",
+                                       entry.kind == RhythmEntry::Kind::rest
+                                           ? "a rest needs a length"
+                                           : "a tie needs a length",
+                                       markRange,
+                                       entry.kind == RhythmEntry::Kind::rest
+                                           ? "try `- 1/4`" : "try `~ 1/2`");
+                    continue;
+                }
+
+                entry.text = textOf (peek());
+                entry.range.end = peek().range.end;
                 advance();
             }
             else

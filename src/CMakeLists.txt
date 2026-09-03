@@ -86,6 +86,9 @@ add_library(dew_lang STATIC
   lang/Parser.cpp
   lang/Schema.cpp
   lang/Resolver.cpp
+  lang/Harmony.cpp
+  lang/Voicing.cpp
+  lang/Melody.cpp
 )
 
 target_include_directories(dew_lang PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}")

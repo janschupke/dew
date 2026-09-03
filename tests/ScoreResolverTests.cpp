@@ -396,11 +396,12 @@ TEST_CASE ("a rhythm repeat becomes that many steps", "[score][resolver]")
 
     REQUIRE (r->model.rhythms.size() == 1);
 
-    // Four eighths, a rest, a quarter - each repeat its own step, so a mute
-    // budget can land on any one of them.
-    REQUIRE (r->model.rhythms.front().steps.size() == 6);
+    // Four eighths and a quarter rest. Each repeat is its OWN step, so a mute
+    // budget can land on any one of them rather than on "the group".
+    REQUIRE (r->model.rhythms.front().steps.size() == 5);
     REQUIRE (r->model.rhythms.front().steps[3].duration == Duration { 1, 8 });
     REQUIRE (r->model.rhythms.front().steps[4].isRest);
+    REQUIRE (r->model.rhythms.front().steps[4].duration == Duration { 1, 4 });
 }
 
 TEST_CASE ("a section with nothing to play is refused", "[score][resolver]")
