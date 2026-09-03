@@ -1,6 +1,8 @@
 #include <catch2/catch_test_macros.hpp>
 
 #include <algorithm>
+#include <map>
+#include <set>
 
 #include "SourceScan.h"
 #include "model/AutomationTargets.h"
@@ -58,8 +60,12 @@ TEST_CASE ("every compiled source is one the gates can see", "[build][gate]")
     juce::StringArray missing;
     auto ours = 0;
 
-    for (const auto& source : compiled)
+    for (const auto& line : compiled)
     {
+        // Every line is "<layer> <source>"; the layering gate below needs the
+        // label, and this one only needs what follows it.
+        const auto source = line.fromFirstOccurrenceOf (" ", false, false);
+
         // JUCE puts its own module sources into every target that links a
         // module, and juce_add_binary_data generates into the build tree. Both
         // arrive here as ABSOLUTE paths; dew's own sources are listed relative
@@ -233,6 +239,191 @@ TEST_CASE ("the engine layer opens no files and no devices", "[build][layering]"
 
     INFO ("engine sources reaching for a device or a file:\n" << fromEngine.joinIntoString ("\n"));
     CHECK (fromEngine.isEmpty());
+}
+
+TEST_CASE ("no source includes the same header twice", "[build][gate]")
+{
+    // AudioEngine.h included engine/InstrumentModule.h on two consecutive
+    // lines. Harmless - the include guard makes the second a no-op - which is
+    // exactly why it survived: nothing warns, nothing breaks, and it is
+    // invisible unless you are reading the include block itself.
+    juce::StringArray repeated;
+
+    for (const auto& file : sourceFiles())
+    {
+        juce::StringArray lines;
+        lines.addLines (file.loadFileAsString());
+
+        juce::StringArray seen;
+
+        for (int i = 0; i < lines.size(); ++i)
+        {
+            const auto trimmed = lines[i].trim();
+
+            if (! trimmed.startsWith ("#include"))
+                continue;
+
+            if (seen.contains (trimmed))
+                repeated.add (file.getFileName() + ":" + juce::String (i + 1) + "  " + trimmed);
+            else
+                seen.add (trimmed);
+        }
+    }
+
+    INFO ("headers included more than once in one file:\n" << repeated.joinIntoString ("\n"));
+    CHECK (repeated.isEmpty());
+}
+
+TEST_CASE ("no layer includes a header a layer above it owns", "[build][layering]")
+{
+    // The general form of the two gates above, and the one that catches what
+    // they cannot.
+    //
+    // The libraries exist so "a layering mistake is a link error". That is true
+    // only of a mistake that needs a SYMBOL: two files in dew_design included
+    // ui/Gestures.h - a dew_ui header - and linked cleanly, because Gestures.h
+    // is header-only and there was nothing to resolve. A rule that fires only
+    // when the linker fires does not cover the header-only case.
+    //
+    // Which library owns a file is not something the directory knows and not
+    // something this test should guess. CMake knows, so CMake says: every line
+    // of compiled-sources.txt is "<layer> <source>".
+    const juce::File list { DEW_COMPILED_SOURCES_FILE };
+    REQUIRE (list.existsAsFile());
+
+    juce::StringArray lines;
+    lines.addLines (list.loadFileAsString());
+    lines.removeEmptyStrings();
+
+    // What each layer may reach, transcribed from src/CMakeLists.txt. Direct
+    // dependencies only; the closure below does the rest. A DAG rather than a
+    // ladder, because dew_design and dew_app are siblings that know nothing of
+    // each other - a rank would let one include the other and say nothing.
+    const std::map<juce::String, juce::StringArray> directDeps {
+        { "dew_lang",   {} },
+        { "dew_model",  { "dew_lang" } },
+        { "dew_engine", { "dew_model" } },
+        { "dew_io",     { "dew_engine" } },
+        { "dew_design", { "dew_engine" } },
+        { "dew_app",    { "dew_model" } },
+        { "dew_ui",     { "dew_design", "dew_app", "dew_io" } },
+    };
+
+    std::map<juce::String, std::set<juce::String>> mayReach;
+
+    for (const auto& entry : directDeps)
+    {
+        std::set<juce::String> reached;
+        juce::StringArray pending { entry.second };
+
+        while (! pending.isEmpty())
+        {
+            const auto next = pending[0];
+            pending.remove (0);
+
+            if (! reached.insert (next).second)
+                continue;
+
+            pending.addArray (directDeps.at (next));
+        }
+
+        reached.insert (entry.first);   // its own headers, always
+        mayReach[entry.first] = reached;
+    }
+
+    // Directory -> owning layer, built from what CMake compiled. A directory
+    // holding sources of two libraries is itself the defect: it means the tree
+    // stopped saying which library a header beside them belongs to.
+    std::map<juce::String, juce::String> layerOfDirectory;
+    juce::StringArray ambiguous;
+
+    for (const auto& line : lines)
+    {
+        const auto layer = line.upToFirstOccurrenceOf (" ", false, false);
+        const auto source = line.fromFirstOccurrenceOf (" ", false, false);
+
+        // JUCE's own module sources arrive absolute, in every target that links
+        // a module. dew's are relative to src/.
+        if (juce::File::isAbsolutePath (source))
+            continue;
+
+        const auto directory = source.contains ("/")
+                                 ? source.upToLastOccurrenceOf ("/", false, false)
+                                 : juce::String ("");
+
+        const auto existing = layerOfDirectory.find (directory);
+
+        if (existing == layerOfDirectory.end())
+            layerOfDirectory[directory] = layer;
+        else if (existing->second != layer)
+            ambiguous.add ("src/" + directory + " holds sources of both "
+                           + existing->second + " and " + layer);
+    }
+
+    ambiguous.removeDuplicates (false);
+    INFO ("directories owned by more than one library:\n" << ambiguous.joinIntoString ("\n"));
+    CHECK (ambiguous.isEmpty());
+
+    REQUIRE (layerOfDirectory.size() > 5);
+
+    juce::StringArray climbing;
+
+    for (const auto& file : sourceFiles())
+    {
+        // main.cpp and DewApplication belong to the `dew` application target,
+        // which sits above every library and is not in the foreach that writes
+        // the list. They share src/ with dew_model's BuildInfo.cpp, so the
+        // directory cannot speak for them.
+        const auto name = file.getFileName();
+
+        if (name == "main.cpp" || name.startsWith ("DewApplication."))
+            continue;
+
+        const auto relative = file.getRelativePathFrom (juce::File { DEW_SOURCE_DIR })
+                                  .replaceCharacter ('\\', '/');
+
+        const auto directory = relative.contains ("/")
+                                 ? relative.upToLastOccurrenceOf ("/", false, false)
+                                 : juce::String ("");
+
+        const auto owner = layerOfDirectory.find (directory);
+
+        if (owner == layerOfDirectory.end())
+            continue;
+
+        const auto& reachable = mayReach.at (owner->second);
+
+        juce::StringArray fileLines;
+        fileLines.addLines (file.loadFileAsString());
+
+        for (int i = 0; i < fileLines.size(); ++i)
+        {
+            const auto trimmed = fileLines[i].trim();
+
+            if (! trimmed.startsWith ("#include \""))
+                continue;
+
+            const auto included = trimmed.fromFirstOccurrenceOf ("\"", false, false)
+                                         .upToFirstOccurrenceOf ("\"", false, false);
+
+            if (! included.contains ("/"))
+                continue;
+
+            const auto includedDirectory = included.upToLastOccurrenceOf ("/", false, false);
+            const auto includedOwner = layerOfDirectory.find (includedDirectory);
+
+            if (includedOwner == layerOfDirectory.end())
+                continue;
+
+            if (reachable.count (includedOwner->second) == 0)
+                climbing.add (name + ":" + juce::String (i + 1) + "  " + owner->second
+                              + " includes " + included + ", which "
+                              + includedOwner->second + " owns");
+        }
+    }
+
+    INFO ("includes that climb the layering:\n" << climbing.joinIntoString ("\n"));
+    CHECK (climbing.isEmpty());
 }
 
 TEST_CASE ("no source spells an automatable parameter as a string literal", "[build][gate]")

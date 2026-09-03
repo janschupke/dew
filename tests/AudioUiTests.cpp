@@ -6,7 +6,7 @@
 #include "engine/AudioEngine.h"
 #include "io/SamplePool.h"
 #include "model/Ids.h"
-#include "model/ProjectDocument.h"
+#include "app/ProjectDocument.h"
 #include "model/ProjectEdits.h"
 #include "model/ProjectFactory.h"
 #include "ui/EditorState.h"

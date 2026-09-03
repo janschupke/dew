@@ -3,7 +3,7 @@
 #include <juce_gui_basics/juce_gui_basics.h>
 
 #include "io/SamplePool.h"
-#include "model/ProjectDocument.h"
+#include "app/ProjectDocument.h"
 #include "model/ModuleCatalog.h"
 #include "model/Ids.h"
 #include "ui/ParamContextMenu.h"

@@ -5,7 +5,7 @@
 #include "app/Settings.h"
 #include "engine/AudioEngine.h"
 #include "io/LiveAudioHost.h"
-#include "model/ProjectDocument.h"
+#include "app/ProjectDocument.h"
 #include "model/ProjectFactory.h"
 #include "ui/EditorState.h"
 #include "ui/HoverHelp.h"

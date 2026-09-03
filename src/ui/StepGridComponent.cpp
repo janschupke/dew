@@ -6,7 +6,7 @@
 #include "model/Ids.h"
 #include "model/Meter.h"
 #include "model/ProjectEdits.h"
-#include "ui/Gestures.h"
+#include "ui/design/Gestures.h"
 #include "ui/Hotkeys.h"
 #include "ui/ZoomButtons.h"
 #include "ui/TimelinePaint.h"

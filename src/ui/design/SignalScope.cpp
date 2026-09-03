@@ -1,4 +1,4 @@
-#include "ui/SignalScope.h"
+#include "ui/design/SignalScope.h"
 
 #include "ui/primitives/DewMeter.h"
 

@@ -6,7 +6,7 @@
 #include "io/OfflineRenderer.h"
 #include "engine/SynthChannel.h"
 #include "model/Ids.h"
-#include "model/ProjectDocument.h"
+#include "app/ProjectDocument.h"
 #include "model/ProjectEdits.h"
 #include "model/ProjectSchema.h"
 #include "model/ProjectSerializer.h"

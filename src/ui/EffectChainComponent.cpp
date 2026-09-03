@@ -7,7 +7,7 @@
 #include "model/ProjectEdits.h"
 #include "model/ProjectSchema.h"
 #include "ui/design/Icons.h"
-#include "ui/Gestures.h"
+#include "ui/design/Gestures.h"
 #include "ui/Hotkeys.h"
 #include "ui/design/Tokens.h"
 #include "ui/primitives/HoverTracker.h"

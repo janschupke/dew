@@ -6,7 +6,7 @@
 #include <vector>
 
 #include "lang/Compile.h"
-#include "model/ProjectDocument.h"
+#include "app/ProjectDocument.h"
 #include "ui/ScoreCompletionList.h"
 #include "ui/ScoreTokeniser.h"
 #include "ui/StatusBar.h"

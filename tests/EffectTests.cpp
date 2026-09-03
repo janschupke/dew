@@ -662,11 +662,11 @@ TEST_CASE ("reordering a chain does not disturb the instrument beside it", "[eff
 
 #include <juce_gui_basics/juce_gui_basics.h>
 
-#include "model/ProjectDocument.h"
+#include "app/ProjectDocument.h"
 #include "ui/EditorState.h"
 #include "ui/design/Animator.h"
 #include "ui/EffectChainComponent.h"
-#include "ui/Gestures.h"
+#include "ui/design/Gestures.h"
 
 namespace
 {

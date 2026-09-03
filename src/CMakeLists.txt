@@ -182,7 +182,6 @@ add_library(dew_model STATIC
   model/DemoBuilders.cpp
   model/ProjectFactory.cpp
   model/Demos.cpp
-  model/ProjectDocument.cpp
   model/ProjectEdits.cpp
   model/NoteTools.cpp
   model/Meter.cpp
@@ -194,7 +193,7 @@ target_link_libraries(dew_model
   PUBLIC
     dew_lang
     juce::juce_data_structures  # ValueTree, UndoManager
-    juce::juce_gui_extra        # FileBasedDocument
+    juce::juce_graphics         # juce::Colour, for a channel's identity colour
     dew_demo_data
     dew_preset_data
     dew_juce_config
@@ -276,8 +275,8 @@ add_library(dew_design STATIC
   ui/primitives/DewControls.cpp
   ui/primitives/DewMeter.cpp
   ui/primitives/DewNumberField.cpp
-  ui/DewLookAndFeel.cpp
-  ui/SignalScope.cpp
+  ui/design/DewLookAndFeel.cpp
+  ui/design/SignalScope.cpp
 )
 
 target_link_libraries(dew_design
@@ -297,11 +296,13 @@ target_link_libraries(dew_design
 # ------------------------------------------------------------------------------
 add_library(dew_app STATIC
   app/Settings.cpp
+  app/ProjectDocument.cpp
 )
 
 target_link_libraries(dew_app
   PUBLIC
     dew_model
+    juce::juce_gui_extra        # FileBasedDocument, for ProjectDocument
     juce::juce_gui_basics
   PRIVATE
     juce::juce_recommended_config_flags

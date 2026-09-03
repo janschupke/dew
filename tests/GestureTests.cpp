@@ -2,7 +2,7 @@
 
 #include <juce_gui_basics/juce_gui_basics.h>
 
-#include "ui/Gestures.h"
+#include "ui/design/Gestures.h"
 
 using namespace dew;
 

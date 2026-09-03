@@ -5,7 +5,7 @@
 #include <juce_gui_basics/juce_gui_basics.h>
 
 #include "model/AutomationTargets.h"
-#include "model/ProjectDocument.h"
+#include "app/ProjectDocument.h"
 
 namespace dew::paramMenu
 {

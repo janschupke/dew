@@ -115,9 +115,19 @@ target_compile_definitions(dew_tests PRIVATE
 # Written to a file rather than squeezed through a -D: the list is sixty-odd
 # paths and its natural separator is the semicolon, which is also CMake's list
 # separator, so passing it as a definition turns each path into its own -D flag.
+#
+# Each line is "<layer> <source>", not just the source. The layering gate needs
+# to know which library a file belongs to, and CMake is the only thing that
+# does: a directory is a convention, but target SOURCES is the truth. Without
+# the label the gate would have to infer the layer from the path, which is the
+# very assumption that stopped holding when dew_design took four files that
+# still live under src/ui.
 set(DEW_GATE_SOURCES "")
 foreach(dew_layer dew_lang dew_model dew_engine dew_io dew_design dew_app dew_ui)
-  list(APPEND DEW_GATE_SOURCES "$<TARGET_PROPERTY:${dew_layer},SOURCES>")
+  # The layer name leads every line: once before the JOIN for the first source,
+  # and once inside the separator for each of the rest.
+  list(APPEND DEW_GATE_SOURCES
+       "${dew_layer} $<JOIN:$<TARGET_PROPERTY:${dew_layer},SOURCES>,\n${dew_layer} >")
 endforeach()
 
 file(GENERATE

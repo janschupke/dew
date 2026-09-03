@@ -1,6 +1,6 @@
 #include "ui/primitives/DewNumberField.h"
 
-#include "ui/Gestures.h"
+#include "ui/design/Gestures.h"
 #include "ui/design/Tokens.h"
 #include "ui/primitives/DewControls.h"
 

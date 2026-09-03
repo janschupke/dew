@@ -3,12 +3,12 @@
 #include <juce_gui_basics/juce_gui_basics.h>
 
 #include "engine/AudioEngine.h"
-#include "model/ProjectDocument.h"
+#include "app/ProjectDocument.h"
 #include "model/ProjectEdits.h"
 #include "model/ProjectFactory.h"
 #include "ui/ChannelRackComponent.h"
 #include "ui/EditorState.h"
-#include "ui/Gestures.h"
+#include "ui/design/Gestures.h"
 #include "ui/PianoRollComponent.h"
 #include "ui/PlaylistComponent.h"
 #include "ui/ScoreEditorComponent.h"

@@ -1,6 +1,6 @@
 #include "ui/primitives/DewControls.h"
 
-#include "ui/Gestures.h"
+#include "ui/design/Gestures.h"
 
 #include <cmath>
 

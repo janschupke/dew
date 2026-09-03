@@ -7,7 +7,7 @@
 #include "model/Ids.h"
 #include "model/Meter.h"
 #include "model/ProjectEdits.h"
-#include "ui/DewLookAndFeel.h"
+#include "ui/design/DewLookAndFeel.h"
 #include "ui/StripLayout.h"
 #include "ui/design/Tokens.h"
 

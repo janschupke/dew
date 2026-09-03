@@ -3,7 +3,7 @@
 #include <juce_gui_basics/juce_gui_basics.h>
 
 #include "engine/AudioEngine.h"
-#include "model/ProjectDocument.h"
+#include "app/ProjectDocument.h"
 #include "ui/EditorState.h"
 #include "ui/ParamContextMenu.h"
 #include "ui/TimelineRuler.h"

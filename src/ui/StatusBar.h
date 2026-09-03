@@ -5,7 +5,7 @@
 #include "ui/design/Animator.h"
 
 #include "io/LiveAudioHost.h"
-#include "model/ProjectDocument.h"
+#include "app/ProjectDocument.h"
 #include "ui/EditorState.h"
 
 namespace dew

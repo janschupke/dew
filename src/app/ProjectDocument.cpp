@@ -1,4 +1,4 @@
-#include "model/ProjectDocument.h"
+#include "app/ProjectDocument.h"
 
 #include "model/AssetPaths.h"
 #include "model/ProjectEdits.h"

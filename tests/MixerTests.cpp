@@ -97,7 +97,7 @@ TEST_CASE ("out-of-range pan is clamped rather than wrapped", "[mixer]")
 
 #include "io/OfflineRenderer.h"
 #include "model/Ids.h"
-#include "model/ProjectDocument.h"
+#include "app/ProjectDocument.h"
 #include "model/ProjectEdits.h"
 #include "model/ProjectFactory.h"
 #include "model/ProjectSerializer.h"

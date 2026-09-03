@@ -2,7 +2,7 @@
 
 #include <juce_gui_basics/juce_gui_basics.h>
 
-#include "ui/DewLookAndFeel.h"
+#include "ui/design/DewLookAndFeel.h"
 #include "ui/design/Tokens.h"
 #include "ui/primitives/DewControls.h"
 #include "PaintProbe.h"

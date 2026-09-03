@@ -4,7 +4,7 @@
 
 #include "app/Settings.h"
 #include "io/OfflineRenderer.h"
-#include "model/ProjectDocument.h"
+#include "app/ProjectDocument.h"
 #include "ui/EditorState.h"
 #include "ui/primitives/DewControls.h"
 #include "ui/primitives/DewNumberField.h"

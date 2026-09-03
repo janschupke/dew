@@ -6,7 +6,7 @@
 #include "model/Ids.h"
 #include "model/ModuleCatalog.h"
 #include "ui/ParamContextMenu.h"
-#include "model/ProjectDocument.h"
+#include "app/ProjectDocument.h"
 #include "ui/EditorState.h"
 #include "ui/primitives/DewControls.h"
 

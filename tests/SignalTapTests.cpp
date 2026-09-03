@@ -8,7 +8,7 @@
 #include "engine/AudioEngine.h"
 #include "engine/SignalTap.h"
 #include "model/Ids.h"
-#include "model/ProjectDocument.h"
+#include "app/ProjectDocument.h"
 #include "model/ProjectFactory.h"
 #include "FixtureProject.h"
 

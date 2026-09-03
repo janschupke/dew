@@ -8,7 +8,7 @@
 #include "model/Ids.h"
 #include "model/ModuleCatalog.h"
 #include "model/ProjectEdits.h"
-#include "ui/DewLookAndFeel.h"
+#include "ui/design/DewLookAndFeel.h"
 
 namespace dew
 {

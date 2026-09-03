@@ -1,6 +1,6 @@
 #include "ui/EditorTabs.h"
 
-#include "ui/DewLookAndFeel.h"
+#include "ui/design/DewLookAndFeel.h"
 
 namespace dew
 {

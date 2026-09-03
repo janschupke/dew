@@ -4,7 +4,7 @@
 #include <cmath>
 
 #include "PaintProbe.h"
-#include "ui/DewLookAndFeel.h"
+#include "ui/design/DewLookAndFeel.h"
 #include "ui/MainComponent.h"
 #include "ui/design/Animator.h"
 #include "ui/design/Tokens.h"

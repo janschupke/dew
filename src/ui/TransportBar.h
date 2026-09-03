@@ -4,9 +4,9 @@
 
 #include "engine/AudioEngine.h"
 #include "model/Meter.h"
-#include "model/ProjectDocument.h"
+#include "app/ProjectDocument.h"
 #include "ui/EditorState.h"
-#include "ui/SignalScope.h"
+#include "ui/design/SignalScope.h"
 #include "ui/primitives/DewControls.h"
 #include "ui/ParamContextMenu.h"
 #include "ui/primitives/DewNumberField.h"

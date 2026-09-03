@@ -8,11 +8,11 @@
 #include <juce_gui_basics/juce_gui_basics.h>
 
 #include "engine/AudioEngine.h"
-#include "model/ProjectDocument.h"
+#include "app/ProjectDocument.h"
 #include "model/ProjectFactory.h"
-#include "ui/DewLookAndFeel.h"
+#include "ui/design/DewLookAndFeel.h"
 #include "ui/EditorState.h"
-#include "ui/SignalScope.h"
+#include "ui/design/SignalScope.h"
 #include "ui/TransportBar.h"
 #include "ui/design/Tokens.h"
 #include "PaintProbe.h"

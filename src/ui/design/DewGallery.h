@@ -2,7 +2,7 @@
 
 #include <juce_gui_basics/juce_gui_basics.h>
 
-#include "ui/SignalScope.h"
+#include "ui/design/SignalScope.h"
 #include "ui/primitives/DewControls.h"
 #include "ui/primitives/DewNumberField.h"
 

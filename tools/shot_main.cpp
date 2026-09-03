@@ -9,7 +9,7 @@
 #include "ui/MainComponent.h"
 #include "ui/ScoreEditorComponent.h"
 #include "ui/RandomizePanel.h"
-#include "ui/DewLookAndFeel.h"
+#include "ui/design/DewLookAndFeel.h"
 #include "ui/design/DewGallery.h"
 #include "CliArgs.h"
 

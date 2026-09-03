@@ -15,7 +15,7 @@
 #include "ui/ColourMenu.h"
 #include "model/Ids.h"
 #include "model/ModuleCatalog.h"
-#include "ui/DewLookAndFeel.h"
+#include "ui/design/DewLookAndFeel.h"
 
 namespace dew
 {

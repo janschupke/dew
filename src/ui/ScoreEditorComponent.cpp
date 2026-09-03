@@ -8,7 +8,7 @@
 #include "model/Ids.h"
 #include "model/ProjectEdits.h"
 #include "model/ScoreBake.h"
-#include "ui/Gestures.h"
+#include "ui/design/Gestures.h"
 #include "ui/Hotkeys.h"
 #include "ui/design/Tokens.h"
 

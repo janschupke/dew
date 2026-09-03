@@ -7,7 +7,7 @@
 
 #include "engine/AudioEngine.h"
 #include "model/Ids.h"
-#include "model/ProjectDocument.h"
+#include "app/ProjectDocument.h"
 #include "model/ProjectEdits.h"
 #include "engine/EngineSnapshot.h"
 #include "model/ProjectFactory.h"
@@ -15,7 +15,7 @@
 #include "ui/design/Tokens.h"
 #include "model/AutomationCurve.h"
 #include "ui/AutomationLane.h"
-#include "ui/Gestures.h"
+#include "ui/design/Gestures.h"
 #include "ui/PlaylistComponent.h"
 
 #include "PaintProbe.h"

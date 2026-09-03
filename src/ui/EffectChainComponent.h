@@ -2,7 +2,7 @@
 
 #include <juce_gui_basics/juce_gui_basics.h>
 
-#include "model/ProjectDocument.h"
+#include "app/ProjectDocument.h"
 #include "ui/ParamContextMenu.h"
 #include "ui/design/Animator.h"
 #include "ui/EditorState.h"

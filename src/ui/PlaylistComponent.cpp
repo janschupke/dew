@@ -14,7 +14,7 @@
 #include "model/Meter.h"
 #include "model/ProjectEdits.h"
 #include "ui/TimelineRuler.h"
-#include "ui/Gestures.h"
+#include "ui/design/Gestures.h"
 #include "ui/Hotkeys.h"
 #include "ui/ColourMenu.h"
 #include "ui/HeaderRow.h"

@@ -2,9 +2,9 @@
 
 #include <juce_gui_basics/juce_gui_basics.h>
 
-#include "ui/DewLookAndFeel.h"
+#include "ui/design/DewLookAndFeel.h"
 #include "ui/design/DewGallery.h"
-#include "ui/SignalScope.h"
+#include "ui/design/SignalScope.h"
 #include "ui/design/Icons.h"
 #include "model/EntityColour.h"
 #include "model/Ids.h"

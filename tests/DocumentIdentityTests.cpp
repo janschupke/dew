@@ -1,7 +1,7 @@
 #include <catch2/catch_test_macros.hpp>
 
 #include "model/Ids.h"
-#include "model/ProjectDocument.h"
+#include "app/ProjectDocument.h"
 #include "model/ProjectEdits.h"
 #include "model/ProjectFactory.h"
 #include "ui/MainComponent.h"

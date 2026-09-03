@@ -4,7 +4,7 @@
 
 #include "engine/AudioEngine.h"
 #include "model/NoteTools.h"
-#include "model/ProjectDocument.h"
+#include "app/ProjectDocument.h"
 #include "ui/EditorState.h"
 #include "ui/PianoRollToolbar.h"
 #include "ui/TimelineRuler.h"

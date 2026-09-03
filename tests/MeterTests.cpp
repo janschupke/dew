@@ -20,7 +20,7 @@
 #include "ui/TimelineRuler.h"
 #include "ui/TimelineView.h"
 #include "ui/TransportBar.h"
-#include "model/ProjectDocument.h"
+#include "app/ProjectDocument.h"
 #include "FixtureProject.h"
 
 using namespace dew;
