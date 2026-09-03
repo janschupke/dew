@@ -2,6 +2,7 @@
 
 #include <juce_data_structures/juce_data_structures.h>
 
+#include "model/AutomationCurve.h"
 #include "model/AutomationTargets.h"
 
 namespace dew
@@ -206,6 +207,40 @@ struct ProjectEdits
 
     static void removeAutomationPoint (juce::ValueTree automation, juce::ValueTree point,
                                        juce::UndoManager*);
+
+    /** An automation's POINT children in step order.
+
+        Public because the editor needs the same order the evaluator does, and
+        was building its own array to get it - two walks of the same children
+        with two chances to disagree about which of them count.
+    */
+    static juce::Array<juce::ValueTree> sortedAutomationPoints (const juce::ValueTree& automation);
+
+    /** Sets the shape of the segment to this point's RIGHT, and nothing else.
+
+        A stepped segment IGNORES the bend rather than losing it, so switching to
+        step and back returns the curve you had. That is what makes the editor's
+        three shape items reversible.
+    */
+    static void setPointShape (juce::ValueTree point, SegmentShape, juce::UndoManager*);
+
+    /** What the editor's "Line" means: shape `curve`, bend zero, one undo step.
+
+        Two shapes are stored and three are offered, because a line IS a curve
+        with no bend - storing "line" as well would be a second place holding the
+        same fact as `curve == 0`, free to disagree with the bend beside it. The
+        menu ticks Line when the shape is curve and the bend is zero, which is
+        derived rather than duplicated.
+    */
+    static void setPointStraight (juce::ValueTree point, juce::UndoManager*);
+
+    /** Sets the bend of that same segment, clamped to -1..1.
+
+        Named rather than a raw setProperty because every other automation
+        mutation here is named and clamps, and because a source gate forbids an
+        editor writing an undoable property by hand.
+    */
+    static void setPointCurve (juce::ValueTree point, double bend, juce::UndoManager*);
 
     /** Value of the curve at a step, 0..1. Linear between points, held flat
         before the first and after the last.

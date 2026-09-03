@@ -135,6 +135,10 @@ DEW_DECLARE_ID (slot)
 DEW_DECLARE_ID (param)
 DEW_DECLARE_ID (value)
 DEW_DECLARE_ID (curve)
+// What the segment to a point's RIGHT does: "curve" or "step". Beside `curve`
+// rather than replacing it, because the two say different things - the shape is
+// what kind of segment it is, the curve is how far it bends.
+DEW_DECLARE_ID (shape)
 
 DEW_DECLARE_ID (mute)
 DEW_DECLARE_ID (solo)

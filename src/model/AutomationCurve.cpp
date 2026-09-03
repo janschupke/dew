@@ -79,7 +79,7 @@ std::vector<CurvePoint> curvePointsOf (const juce::ValueTree& automation)
             points.push_back ({ (double) child[ids::step],
                                 juce::jlimit (0.0, 1.0, (double) child[ids::value]),
                                 juce::jlimit (-1.0, 1.0, (double) child[ids::curve]),
-                                SegmentShape::curve });
+                                segmentShapeFromString (child[ids::shape].toString()) });
 
     return points;
 }

@@ -641,6 +641,17 @@ juce::ValueTree ProjectEdits::addAutomationPoint (juce::ValueTree automation, do
     point.setProperty (ids::step, clampedStep, nullptr);
     point.setProperty (ids::value, clampedValue, nullptr);
 
+    // Inherit the shape of the segment being split, rather than taking the
+    // default. A curve drawn as steps stays steps when a point is added to it;
+    // otherwise adding one silently puts a ramp in the middle of a staircase.
+    for (const auto& existing : sortedPoints (automation))
+    {
+        if ((double) existing[ids::step] > clampedStep)
+            break;
+
+        point.setProperty (ids::shape, existing[ids::shape], nullptr);
+    }
+
     int insertAt = automation.getNumChildren();
 
     for (int i = 0; i < automation.getNumChildren(); ++i)
@@ -688,6 +699,43 @@ void ProjectEdits::removeAutomationPoint (juce::ValueTree automation, juce::Valu
 
     if (index >= 0)
         automation.removeChild (index, undo);
+}
+
+juce::Array<juce::ValueTree> ProjectEdits::sortedAutomationPoints (const juce::ValueTree& automation)
+{
+    return sortedPoints (automation);
+}
+
+void ProjectEdits::setPointShape (juce::ValueTree point, SegmentShape shape, juce::UndoManager* undo)
+{
+    if (! point.isValid())
+        return;
+
+    // The shape ONLY. A stepped segment ignores the bend rather than losing it,
+    // so switching to step and back returns the curve you had - which is what
+    // makes the three menu items reversible.
+    point.setProperty (ids::shape, segmentShapeToString (shape), undo);
+}
+
+void ProjectEdits::setPointStraight (juce::ValueTree point, juce::UndoManager* undo)
+{
+    if (! point.isValid())
+        return;
+
+    // What the editor's "Line" means, in one place and one undo step. A line is
+    // a curve with no bend, so it is these two writes and not a third stored
+    // shape - which would be a second place holding the same fact as
+    // `curve == 0`, free to disagree with the bend beside it.
+    point.setProperty (ids::shape, segmentShapeToString (SegmentShape::curve), undo);
+    point.setProperty (ids::curve, 0.0, undo);
+}
+
+void ProjectEdits::setPointCurve (juce::ValueTree point, double bend, juce::UndoManager* undo)
+{
+    if (! point.isValid())
+        return;
+
+    point.setProperty (ids::curve, juce::jlimit (-1.0, 1.0, bend), undo);
 }
 
 double ProjectEdits::automationValueAt (const juce::ValueTree& automation, double step)

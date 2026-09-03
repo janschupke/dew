@@ -438,6 +438,94 @@ TEST_CASE ("automation survives save and load", "[automation][schema]")
                   WithinAbs (ProjectEdits::automationValueAt (automation, 12.0), 1e-9));
 }
 
+TEST_CASE ("a stepped segment holds its left value until the next point", "[automation]")
+{
+    auto project = ProjectFactory::createDefault();
+    juce::UndoManager undo;
+
+    auto automation = ProjectEdits::addAutomation (project, targetNamed (project, "Kick > Volume"), &undo);
+    setCurve (automation, { { 0.0, 0.2 }, { 16.0, 0.8 } }, &undo);
+
+    auto first = ProjectEdits::sortedAutomationPoints (automation).getFirst();
+    REQUIRE (first.isValid());
+
+    // As a curve with no bend it is a ramp: halfway across is halfway between.
+    REQUIRE_THAT (ProjectEdits::automationValueAt (automation, 8.0), WithinAbs (0.5, 1e-9));
+
+    ProjectEdits::setPointShape (first, SegmentShape::step, &undo);
+
+    // Stepped, every step of the segment reads the LEFT value - right up to but
+    // not including the next point, where it jumps.
+    REQUIRE_THAT (ProjectEdits::automationValueAt (automation, 0.0),  WithinAbs (0.2, 1e-9));
+    REQUIRE_THAT (ProjectEdits::automationValueAt (automation, 8.0),  WithinAbs (0.2, 1e-9));
+    REQUIRE_THAT (ProjectEdits::automationValueAt (automation, 15.9), WithinAbs (0.2, 1e-9));
+    REQUIRE_THAT (ProjectEdits::automationValueAt (automation, 16.0), WithinAbs (0.8, 1e-9));
+
+    // A step IGNORES the bend rather than losing it, so the shape is reversible.
+    ProjectEdits::setPointCurve (first, 0.6, &undo);
+    REQUIRE_THAT (ProjectEdits::automationValueAt (automation, 8.0), WithinAbs (0.2, 1e-9));
+
+    ProjectEdits::setPointShape (first, SegmentShape::curve, &undo);
+    REQUIRE_THAT ((double) first[ids::curve], WithinAbs (0.6, 1e-9));
+
+    // And "Line" is that same shape with the bend flattened, in one write.
+    ProjectEdits::setPointStraight (first, &undo);
+    REQUIRE_THAT ((double) first[ids::curve], WithinAbs (0.0, 1e-9));
+    REQUIRE_THAT (ProjectEdits::automationValueAt (automation, 8.0), WithinAbs (0.5, 1e-9));
+}
+
+TEST_CASE ("a point added to a staircase does not put a ramp in it", "[automation]")
+{
+    auto project = ProjectFactory::createDefault();
+    juce::UndoManager undo;
+
+    auto automation = ProjectEdits::addAutomation (project, targetNamed (project, "Kick > Volume"), &undo);
+    setCurve (automation, { { 0.0, 0.0 }, { 16.0, 1.0 } }, &undo);
+
+    ProjectEdits::setPointShape (ProjectEdits::sortedAutomationPoints (automation).getFirst(),
+                                 SegmentShape::step, &undo);
+
+    auto added = ProjectEdits::addAutomationPoint (automation, 8.0, 0.5, &undo);
+    REQUIRE (added.isValid());
+    REQUIRE (added[ids::shape].toString() == "step");
+}
+
+TEST_CASE ("a file from before shapes loads as the line it drew", "[automation][schema]")
+{
+    // The additive-default claim, asserted rather than argued: a point with no
+    // `shape` key is a curve with whatever bend it had, which for every file
+    // written before shapes existed is a bend of zero - a straight line.
+    const juce::String older = R"({
+      "format": "dew-project",
+      "formatVersion": 10,
+      "name": "Older project",
+      "tempoBpm": 120.0, "stepsPerBeat": 4, "beatsPerBar": 4, "beatUnit": 4, "barsInSong": 4,
+      "channels": [ { "id": 1, "name": "Kick", "mixerTrackId": 1 } ],
+      "patterns": [ { "id": 1, "name": "Pattern 1", "lengthSteps": 16 } ],
+      "automations": [ { "id": 1, "name": "Kick > Volume", "scope": "channel",
+                         "targetId": 1, "slot": -1, "param": "volume",
+                         "points": [ { "step": 0.0, "value": 0.0 },
+                                     { "step": 16.0, "value": 1.0 } ] } ],
+      "playlist": { "tracks": [ { "name": "Track 1" } ] },
+      "mixer": { "master": { "gain": 1.0 }, "tracks": [ { "id": 1, "name": "Insert 1" } ] }
+    })";
+
+    const auto loaded = ProjectSerializer::fromJsonString (older);
+
+    REQUIRE (loaded.ok());
+    INFO ("warnings: " << loaded.warnings.joinIntoString ("; "));
+    REQUIRE (loaded.warnings.isEmpty());
+
+    const auto automation = ProjectEdits::findAutomation (loaded.tree, 1);
+    REQUIRE (automation.isValid());
+
+    for (const auto& point : automation)
+        if (point.hasType (ids::POINT))
+            REQUIRE (point[ids::shape].toString() == "curve");
+
+    REQUIRE_THAT (ProjectEdits::automationValueAt (automation, 8.0), WithinAbs (0.5, 1e-9));
+}
+
 TEST_CASE ("the editor and the engine agree about every point of a curve", "[automation]")
 {
     // The two evaluators were hand-copied bodies of the same arithmetic in two

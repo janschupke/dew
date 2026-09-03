@@ -251,7 +251,11 @@ const NodeSpec& pointSpec()
           { ids::value, 0.5 },
           // Bend between this point and the next: 0 is a straight line,
           // positive holds high longer, negative holds low longer.
-          { ids::curve, 0.0 } },
+          { ids::curve, 0.0 },
+          // What that same segment IS. "curve" by default, which with a bend of
+          // zero is the straight line every file written before shapes existed
+          // already drew - so this is additive and needs no migration.
+          { ids::shape, "curve" } },
         {}
     };
     return spec;

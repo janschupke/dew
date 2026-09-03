@@ -518,17 +518,20 @@
           {
             "step": 0.0,
             "value": 0.15,
-            "curve": 0.0
+            "curve": 0.0,
+            "shape": "curve"
           },
           {
             "step": 32.0,
             "value": 0.55,
-            "curve": 0.0
+            "curve": 0.0,
+            "shape": "curve"
           },
           {
             "step": 64.0,
             "value": 1.0,
-            "curve": 0.0
+            "curve": 0.0,
+            "shape": "curve"
           }
         ]
       },
@@ -543,17 +546,20 @@
           {
             "step": 0.0,
             "value": 0.9,
-            "curve": 0.0
+            "curve": 0.0,
+            "shape": "curve"
           },
           {
             "step": 48.0,
             "value": 0.9,
-            "curve": 0.0
+            "curve": 0.0,
+            "shape": "curve"
           },
           {
             "step": 64.0,
             "value": 0.0,
-            "curve": 0.0
+            "curve": 0.0,
+            "shape": "curve"
           }
         ]
       }
