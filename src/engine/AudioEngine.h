@@ -12,7 +12,7 @@
 #include "engine/Sequencer.h"
 #include "engine/SnapshotBridge.h"
 #include "engine/InstrumentModule.h"
-#include "engine/modules/Instruments.h"
+#include "engine/InstrumentModule.h"
 #include "engine/Transport.h"
 #include "model/Constants.h"
 
@@ -241,8 +241,11 @@ private:
     */
     struct ChannelInstruments
     {
-        std::unique_ptr<SynthInstrument> synth;
-        std::unique_ptr<SampleInstrument> sampler;
+        /** Indexed by InstrumentType rather than one member per kind, so a
+            third kind is a wider array and one row in ModuleFactory's switch
+            rather than a third member and the five places that named the other
+            two. Nothing here is ever destroyed - see above. */
+        std::array<std::unique_ptr<InstrumentModule>, (size_t) kNumInstrumentTypes> byType;
     };
 
     std::vector<ChannelInstruments> instruments;

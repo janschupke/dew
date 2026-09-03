@@ -565,8 +565,20 @@ EngineSnapshot buildSnapshot (const juce::ValueTree& project, juce::StringArray*
         c.effects = readEffectChain (channel, "Channel \"" + channel[ids::name].toString() + "\"",
                                      unitOwners, warn);
 
-        c.source = channel[ids::source].toString() == "audio" ? InstrumentType::audio
-                                                              : InstrumentType::synth;
+        // Through the catalog, and REPORTED when it is not one dew knows. This
+        // was a ternary against "audio", so every other string - a kind added
+        // by a newer build, a typo in a hand-edited file - became a synth with
+        // nothing said, and the project simply played back wrong. It is the
+        // defect effectTypeFor returning an optional was written to close, in
+        // the half of the app that had not had it done yet.
+        const auto sourceId = channel[ids::source].toString();
+        const auto source = instrumentTypeFor (sourceId);
+
+        if (! source.has_value())
+            warn ("Channel \"" + channel[ids::name].toString() + "\" plays \"" + sourceId
+                  + "\", which this build does not know; playing it as a synth.");
+
+        c.source = source.value_or (InstrumentType::synth);
 
         if (c.source == InstrumentType::audio)
             readSample (c, channel, samples, warn);

@@ -56,8 +56,9 @@ void AudioEngine::prepare (double sampleRate, int maximumBlockSize)
 
     for (auto& channel : instruments)
     {
-        if (channel.synth != nullptr)   channel.synth->prepare (currentSampleRate, currentBlockSize);
-        if (channel.sampler != nullptr) channel.sampler->prepare (currentSampleRate, currentBlockSize);
+        for (auto& module : channel.byType)
+            if (module != nullptr)
+                module->prepare (currentSampleRate, currentBlockSize);
     }
 
     // Everything the audio thread might need, allocated once.
@@ -608,7 +609,7 @@ int AudioEngine::getMaterialisedInstrumentCount (InstrumentType type) const noex
     auto count = 0;
 
     for (const auto& channel : instruments)
-        if (type == InstrumentType::synth ? channel.synth != nullptr : channel.sampler != nullptr)
+        if (channel.byType[(size_t) type] != nullptr)
             ++count;
 
     return count;
@@ -637,22 +638,18 @@ InstrumentModule* AudioEngine::instrumentFor (int channelIndex, InstrumentType t
     auto& channel = instruments[(size_t) channelIndex];
 
     // Never made here - only read. Making one allocates, and this runs on the
-    // audio thread; resolveModules does the making, on the message thread.
-    switch (type)
-    {
-        case InstrumentType::synth: return channel.synth.get();
-        case InstrumentType::audio: return channel.sampler.get();
-    }
-
-    return nullptr;
+    // audio thread; resolveModules does the making, on the message thread. With
+    // the array there is no longer anything here that COULD make one.
+    return channel.byType[(size_t) type].get();
 }
 
 void AudioEngine::resetAllInstruments() noexcept
 {
     for (auto& channel : instruments)
     {
-        if (channel.synth != nullptr)   channel.synth->reset();
-        if (channel.sampler != nullptr) channel.sampler->reset();
+        for (auto& module : channel.byType)
+            if (module != nullptr)
+                module->reset();
     }
 }
 
@@ -666,23 +663,15 @@ void AudioEngine::resolveModules (EngineSnapshot& snapshot)
     {
         auto& channel = instruments[i];
 
-        switch (snapshot.channels[i].source)
-        {
-            case InstrumentType::synth:
-                if (channel.synth == nullptr)
-                {
-                    channel.synth = std::make_unique<SynthInstrument>();
-                    channel.synth->prepare (currentSampleRate, currentBlockSize);
-                }
-                break;
+        const auto source = snapshot.channels[i].source;
+        auto& module = channel.byType[(size_t) source];
 
-            case InstrumentType::audio:
-                if (channel.sampler == nullptr)
-                {
-                    channel.sampler = std::make_unique<SampleInstrument>();
-                    channel.sampler->prepare (currentSampleRate, currentBlockSize);
-                }
-                break;
+        if (module == nullptr)
+        {
+            module = createInstrumentModule (source);
+
+            if (module != nullptr)
+                module->prepare (currentSampleRate, currentBlockSize);
         }
     }
 

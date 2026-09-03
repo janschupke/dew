@@ -1,6 +1,7 @@
 #include "engine/ModuleFactory.h"
 
 #include "engine/modules/EffectModules.h"
+#include "engine/modules/Instruments.h"
 
 namespace dew
 {
@@ -15,6 +16,17 @@ std::unique_ptr<EffectModule> createEffectModule (EffectType type)
         case EffectType::drive:  return std::make_unique<DriveModule>();
         case EffectType::chorus: return std::make_unique<ChorusModule>();
         case EffectType::eq:     return std::make_unique<EqModule>();
+    }
+
+    return {};
+}
+
+std::unique_ptr<InstrumentModule> createInstrumentModule (InstrumentType type)
+{
+    switch (type)
+    {
+        case InstrumentType::synth: return std::make_unique<SynthInstrument>();
+        case InstrumentType::audio: return std::make_unique<SampleInstrument>();
     }
 
     return {};

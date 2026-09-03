@@ -3,6 +3,7 @@
 #include <memory>
 
 #include "engine/Effects.h"
+#include "engine/InstrumentModule.h"
 #include "engine/Module.h"
 #include "model/EffectType.h"
 
@@ -22,6 +23,17 @@ namespace dew
     Message thread - it allocates.
 */
 std::unique_ptr<EffectModule> createEffectModule (EffectType);
+
+/** Makes the module for an instrument kind.
+
+    The same explicit switch createEffectModule is, and for the same reason.
+    Before this the two concrete instruments were named in AudioEngine, which
+    meant adding a third kind was a new member on ChannelInstruments and an edit
+    to each of the five places that mentioned the other two.
+
+    Message thread - it allocates.
+*/
+std::unique_ptr<InstrumentModule> createInstrumentModule (InstrumentType);
 
 /** Runs one slot: dry/wet, then the module, fully wet.
 
