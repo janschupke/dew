@@ -89,6 +89,8 @@ add_library(dew_lang STATIC
   lang/Harmony.cpp
   lang/Voicing.cpp
   lang/Melody.cpp
+  lang/Generator.cpp
+  lang/Compile.cpp
 )
 
 target_include_directories(dew_lang PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}")
@@ -119,10 +121,12 @@ add_library(dew_model STATIC
   model/NoteTools.cpp
   model/Meter.cpp
   model/AssetPaths.cpp
+  model/ScoreBake.cpp
 )
 
 target_link_libraries(dew_model
   PUBLIC
+    dew_lang
     juce::juce_data_structures  # ValueTree, UndoManager
     juce::juce_gui_extra        # FileBasedDocument
     dew_demo_data

@@ -573,9 +573,15 @@ private:
             }
             else if (statement.key == "mixer")
             {
+                // The two failures are told apart on purpose. `mixer 1 range
+                // C4..C6` on one line is a SHAPE mistake - statements are
+                // newline-terminated - and reporting it as "a mixer track is
+                // 1 to 32" sends you looking at the number, which is fine.
                 const auto value = asInteger (statement);
 
-                if (! value.has_value() || *value < 1 || *value > 32)
+                if (! value.has_value())
+                    wrongValue (statement, spec.kind);
+                else if (*value < 1 || *value > 32)
                     diagnostics.error ("E240", "a mixer track is 1 to 32", statement.range);
                 else
                     channel.mixerTrack = *value;

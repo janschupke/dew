@@ -1,0 +1,115 @@
+// amber.score - the example the tests and CI compile.
+//
+// Deliberately audible: pads holding the harmony, a bass on the roots, and a
+// lead line over the top. A compile that produces silence is obviously wrong.
+
+song {
+  title "Amber"
+  tempo 96 bpm
+  meter 4/4
+  grid  auto
+  key   F minor
+  seed  0x5EEDC0FFEE
+}
+
+channel pad {
+  mixer    1
+  range    C3..C5
+  velocity 68 +- 6
+}
+
+channel bass {
+  mixer    2
+  range    E1..E3
+  velocity 100 +- 4
+}
+
+channel lead {
+  mixer    3
+  range    F4..A5
+  velocity 88 +- 10
+}
+
+voicing warm {
+  size     4 voices
+  spread   drop2
+  register C3..C5
+  motion   smooth
+  maxLeap  7
+}
+
+rhythm held    { 1/1 }
+rhythm pulse   { 1/4 1/4 1/2 }
+rhythm running { 1/8 x6 - 1/8 1/8 }
+
+harmony lament {
+  i x2 | bVI | bVII | i^1 x2 | iv | V7/iv
+}
+
+harmony lift {
+  bVI | bVII | i x2 | bVI | bVII | V7 | i
+}
+
+section intro {
+  length 4 bars
+  harmony {
+    i 2 bars | bVI 1 bar | V7 1 bar
+  }
+  part pad {
+    chords with warm
+    rhythm held
+  }
+}
+
+section verse {
+  length 8 bars
+  harmony lament
+  part pad {
+    chords with warm
+    rhythm held
+  }
+  part bass {
+    line root-fifth
+    rhythm pulse
+  }
+  part lead {
+    melody {
+      rhythm       pulse
+      articulation legato
+      contour      arch
+      strong       chord-tones
+      variance     0.25
+      mute         1 of 4
+    }
+  }
+}
+
+section chorus {
+  length 8 bars
+  harmony lift
+  part pad {
+    chords with warm
+    rhythm pulse
+  }
+  part bass {
+    line root
+    rhythm running
+  }
+  part lead {
+    melody {
+      rhythm   running
+      contour  rise
+      strong   chord-tones
+      variance 0.4
+    }
+  }
+}
+
+arrangement {
+  intro
+  verse
+  verse as verse_b
+  chorus
+  verse
+  chorus x2 identical
+}

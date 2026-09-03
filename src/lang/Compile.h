@@ -1,0 +1,40 @@
+#pragma once
+
+#include <optional>
+#include <string>
+#include <string_view>
+#include <vector>
+
+#include "lang/Diagnostics.h"
+#include "lang/Model.h"
+#include "lang/Score.h"
+
+namespace dew::lang
+{
+
+struct CompileResult
+{
+    /** Absent whenever anything was an error. A partial score is worse than
+        none: it would render, sound wrong, and give no reason.
+    */
+    std::optional<Score> score;
+
+    std::vector<Diagnostic> diagnostics;
+
+    /** Always populated, even when the compile failed - completion in a file
+        that does not yet compile is the only file anyone is ever editing.
+    */
+    SymbolTable symbols;
+
+    bool ok() const noexcept { return score.has_value(); }
+
+    int errorCount() const noexcept;
+
+    /** The diagnostics, rendered the way a compiler prints them. */
+    std::string report (std::string_view source, std::string_view fileName) const;
+};
+
+/** Lex, parse, resolve, generate. The one entry point, and it never throws. */
+CompileResult compile (std::string_view source, std::string_view fileName = "score");
+
+} // namespace dew::lang

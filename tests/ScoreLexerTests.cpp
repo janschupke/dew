@@ -188,6 +188,9 @@ TEST_CASE ("the shapes the language actually needs each lex as one token", "[sco
         { "bVII",         TokenKind::word },
         { "F#dim7",       TokenKind::word },      // '#' is a sharp inside a word
         { "verse_b",      TokenKind::word },
+        { "root-fifth",   TokenKind::word },      // a hyphen between letters
+        { "harmonic-minor", TokenKind::word },
+        { "root-third-fifth", TokenKind::word },
         { "// a comment", TokenKind::comment },
         { "..",           TokenKind::range },
         { "+-",           TokenKind::plusMinus },
@@ -230,6 +233,27 @@ TEST_CASE ("a range is not a decimal point and a sharp is not a comment", "[scor
         const auto tokens = tokenizeWithoutTrivia (source);
         REQUIRE (tokens[0].kind == TokenKind::word);
         REQUIRE (tokens[0].textIn (source) == "#iv");
+    }
+
+    // A hyphen between letters joins a word; anywhere else it is a rest.
+    {
+        const std::string_view source = "1/4 - 1/8";
+        const auto tokens = tokenizeWithoutTrivia (source);
+        REQUIRE (tokens.size() == 4);
+        REQUIRE (tokens[0].kind == TokenKind::ratio);
+        REQUIRE (tokens[1].kind == TokenKind::rest);
+        REQUIRE (tokens[2].kind == TokenKind::ratio);
+    }
+
+    // A hyphen followed by a DIGIT never joins the word before it: the word
+    // ends, and the hyphen goes to the number - `-1/4` is one ratio.
+    {
+        const std::string_view source = "chord-tones -1/4";
+        const auto tokens = tokenizeWithoutTrivia (source);
+        REQUIRE (tokens.size() == 3);
+        REQUIRE (tokens[0].textIn (source) == "chord-tones");
+        REQUIRE (tokens[1].kind == TokenKind::ratio);
+        REQUIRE (tokens[1].textIn (source) == "-1/4");
     }
 
     // A tonicisation slash is not a ratio, because no digit follows it.

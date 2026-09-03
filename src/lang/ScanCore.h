@@ -135,8 +135,28 @@ TokenKind scanOne (Cursor& c)
     // --- word ---------------------------------------------------------------
     if (isLetter (first) || first == '_' || first == '#')
     {
-        while (! c.isEOF() && isWordByte (c.peek()))
-            c.skip();
+        for (;;)
+        {
+            if (! c.isEOF() && isWordByte (c.peek()))
+            {
+                c.skip();
+                continue;
+            }
+
+            // A hyphen BETWEEN LETTERS is part of the word: `root-fifth`,
+            // `chord-tones`, `harmonic-minor`. Anywhere else it is a rest, so
+            // `1/4 - 1/8` still reads as a duration, a rest and a duration.
+            // Deciding by what surrounds it needs one character of lookahead
+            // and no context at all.
+            if (! c.isEOF() && c.peek() == '-' && isLetter (c.peekAt (1)))
+            {
+                c.skip();
+                c.skip();
+                continue;
+            }
+
+            break;
+        }
 
         return TokenKind::word;
     }

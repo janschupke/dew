@@ -40,3 +40,22 @@ target_link_libraries(dew_shot
     juce::juce_recommended_config_flags
     juce::juce_recommended_warning_flags
 )
+
+# ==============================================================================
+# dew_score - compiles a .score file into a .dew project. The language's
+# headless verification path: text -> project -> dew_render -> WAV, all in CI.
+# ==============================================================================
+
+juce_add_console_app(dew_score
+  PRODUCT_NAME "dew_score"
+  VERSION      "${PROJECT_VERSION}"
+)
+
+target_sources(dew_score PRIVATE score_main.cpp)
+
+target_link_libraries(dew_score
+  PRIVATE
+    dew_model
+    juce::juce_recommended_config_flags
+    juce::juce_recommended_warning_flags
+)

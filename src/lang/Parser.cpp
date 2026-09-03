@@ -509,7 +509,11 @@ private:
             const auto line = lineAt (position);
             advance();
 
-            while (! atEnd() && lineAt (position) == line)
+            // Stops at the closing brace as well as at the line end, so
+            // `arrangement { verse }` reads as one entry rather than as an
+            // entry followed by something unexpected.
+            while (! atEnd() && lineAt (position) == line
+                   && peek().kind != TokenKind::braceClose)
             {
                 if (peek().kind == TokenKind::repeat)
                 {

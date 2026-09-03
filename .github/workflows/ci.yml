@@ -59,6 +59,18 @@ jobs:
           ./build/ci/tools/dew_render_artefacts/RelWithDebInfo/dew_render \
             examples/demo.dew "${RUNNER_TEMP}/out.wav" --seconds 4
 
+      # Text -> project -> audible WAV, with no display and no audio device.
+      # This fails if the language regresses, if the bake regresses, OR if the
+      # result is silent - dew_score exits non-zero on a score that compiles to
+      # no notes, the same way dew_render does on a silent render.
+      - name: Score compiles and renders end to end
+        run: |
+          SCORE=./build/ci/tools/dew_score_artefacts/RelWithDebInfo/dew_score
+          "${SCORE}" examples/amber.score --check
+          "${SCORE}" examples/amber.score "${RUNNER_TEMP}/amber.dew"
+          ./build/ci/tools/dew_render_artefacts/RelWithDebInfo/dew_render \
+            "${RUNNER_TEMP}/amber.dew" "${RUNNER_TEMP}/amber.wav" --seconds 4
+
       # The manifest is generated at configure time; if it differs from what is
       # committed, the two have drifted.
       - name: Dependency manifest is up to date
