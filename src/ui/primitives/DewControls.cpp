@@ -139,10 +139,23 @@ void DewIconButton::paintButton (juce::Graphics& g, bool highlighted, bool down)
 
     const auto off = highlighted || down ? colour::surfaceHover : colour::surfaceRaised;
 
-    g.setColour (lift.apply (off, onColour));
+    // Disabled drains the WHOLE button, not only its glyph.
+    //
+    // It used to dim the icon and leave the fill and the outline at full
+    // strength, which reads as an ordinary button whose icon happens to be
+    // faint - so a disabled one looked usable, and every small-glyph button
+    // that was perfectly usable looked disabled. emphasis::disabled is the
+    // system's word for "cannot be used", and it is deliberately weaker than
+    // silenced: a disabled button must still read as a button.
+    const auto drain = [this] (juce::Colour c)
+    {
+        return isEnabled() ? c : emphasis::disabled (c);
+    };
+
+    g.setColour (drain (lift.apply (off, onColour)));
     g.fillRoundedRectangle (bounds, radius::sm);
 
-    g.setColour (lift.cross (colour::outline, onColour));
+    g.setColour (drain (lift.cross (colour::outline, onColour)));
     g.drawRoundedRectangle (bounds, radius::sm, stroke::hairline);
 
     const auto tint = ! isEnabled() ? colour::textDisabled

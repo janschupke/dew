@@ -352,17 +352,19 @@ private:
 
         gripBounds = header.removeFromLeft (14);
         header.removeFromLeft (space::xxs);
-        bypassButton.setBounds (header.removeFromLeft (size::minTouchTarget + 4));
+        bypassButton.setBounds (header.removeFromLeft (size::iconButton));
         header.removeFromLeft (space::xs);
         iconBounds = header.removeFromLeft (16).withSizeKeepingCentre (16, 16);
         header.removeFromLeft (space::xs);
 
-        // Right to left, at the documented minimum touch target - the old row
-        // packed four 18px buttons into 24px of height.
-        removeButton.setBounds (header.removeFromRight (size::minTouchTarget + 4));
-        presetButton.setBounds (header.removeFromRight (size::minTouchTarget));
-        downButton.setBounds (header.removeFromRight (size::minTouchTarget));
-        upButton.setBounds (header.removeFromRight (size::minTouchTarget));
+        // Right to left, all at the icon-button rung. Preset, up and down used
+        // to be four pixels narrower than bypass and remove beside them, which
+        // is not a difference anyone reads as deliberate - it reads as the
+        // preset button being somehow lesser than the ones it sits between.
+        removeButton.setBounds (header.removeFromRight (size::iconButton));
+        presetButton.setBounds (header.removeFromRight (size::iconButton));
+        downButton.setBounds (header.removeFromRight (size::iconButton));
+        upButton.setBounds (header.removeFromRight (size::iconButton));
         header.removeFromRight (space::xs);
 
         expandButton.setVisible (! owner.isHorizontal());

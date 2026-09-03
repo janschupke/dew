@@ -67,24 +67,23 @@ public:
 
         if (! isMaster)
         {
-            panSlider.setSliderStyle (juce::Slider::RotaryHorizontalVerticalDrag);
-            panSlider.setTextBoxStyle (juce::Slider::NoTextBox, false, 0, 0);
-            const auto& panSpec = requireMixerTrackParamSpec (ids::pan);
-            panSlider.setRange (panSpec.minimum, panSpec.maximum, panSpec.interval);
-            panSlider.setValue ((double) track[ids::pan], juce::dontSendNotification);
-            panSlider.onDragStart = [this] { select(); inDrag = true; gestureActive = false; };
-            panSlider.onDragEnd = [this] { inDrag = false; gestureActive = false; };
-            panSlider.onValueChange = [this]
+            // Compact, like the channel rack's - it is a knob on a row, and its
+            // caption lives in its tooltip. The two views name the same
+            // parameter and now draw it the same size, in the same painter.
+            panKnob.setCompact (true);
+            panKnob.setTooltip ("Pan");
+            panKnob.setValue ((double) track[ids::pan], juce::dontSendNotification);
+            panKnob.onEditStart = [this] { select(); inDrag = true; gestureActive = false; };
+            panKnob.onEditEnd = [this] { inDrag = false; gestureActive = false; };
+            panKnob.onValueChange = [this]
             {
-                ProjectEdits::setProperty (track, ids::pan, panSlider.getValue(),
+                ProjectEdits::setProperty (track, ids::pan, panKnob.getValue(),
                                            &document.getUndoManager(), "Change pan", gestureActive);
 
                 gestureActive = inDrag;
             };
-            addAndMakeVisible (panSlider);
+            addAndMakeVisible (panKnob);
 
-            muteButton.setButtonText ("M");
-            muteButton.setClickingTogglesState (true);
             muteButton.setToggleState ((bool) track[ids::mute], juce::dontSendNotification);
             muteButton.onClick = [this]
             {
@@ -94,8 +93,6 @@ public:
             };
             addAndMakeVisible (muteButton);
 
-            soloButton.setButtonText ("S");
-            soloButton.setClickingTogglesState (true);
             soloButton.setToggleState ((bool) track[ids::solo], juce::dontSendNotification);
             soloButton.onClick = [this]
             {
@@ -316,7 +313,10 @@ public:
 
         if (! isMaster)
         {
-            panSlider.setBounds (area.removeFromTop (38).reduced (space::lg, 0));
+            // knobSm, the rung for a knob on a row - it was 38, a third size in
+            // an application with two.
+            panKnob.setBounds (area.removeFromTop (size::knobSm)
+                                   .withSizeKeepingCentre (size::knobSm, size::knobSm));
             area.removeFromTop (space::xs);
 
             auto buttons = area.removeFromTop (size::minTouchTarget);
@@ -357,10 +357,9 @@ public:
                 std::make_unique<paramMenu::Trigger> (control, host->contextFor (self, spec)));
         };
 
-        // A Trigger rather than the hook the Dew controls carry: a mixer strip
-        // is a juce::Slider and two juce::TextButtons used directly, and making
-        // all three into Dew controls to give them a menu would be a much
-        // larger change than the menu is worth.
+        // The fader is still a juce::Slider - a vertical fader is not a knob and
+        // there is no Dew primitive for one - so it still needs a Trigger
+        // listening to it rather than a hook of its own.
         watch (gainSlider, requireMixerTrackParamSpec (ids::gain));
 
         // The master strip is a fader and nothing else - its pan and its
@@ -368,9 +367,12 @@ public:
         if (isMaster)
             return;
 
-        watch (panSlider, requireMixerTrackParamSpec (ids::pan));
-        watch (muteButton, requireMixerTrackParamSpec (ids::mute));
-        watch (soloButton, requireMixerTrackParamSpec (ids::solo));
+        // These three carry their own hook now that they are Dew controls, and
+        // it has to be the hook rather than a Trigger: the coverage gate asks
+        // every knob in the window whether it has one.
+        paramMenu::attachTo (host, panKnob, self, requireMixerTrackParamSpec (ids::pan));
+        paramMenu::attachTo (host, muteButton, self, requireMixerTrackParamSpec (ids::mute));
+        paramMenu::attachTo (host, soloButton, self, requireMixerTrackParamSpec (ids::solo));
     }
 
 private:
@@ -379,7 +381,7 @@ private:
         if (property == ids::gain)
             gainSlider.setValue ((double) track[ids::gain], juce::dontSendNotification);
         else if (property == ids::pan)
-            panSlider.setValue ((double) track[ids::pan], juce::dontSendNotification);
+            panKnob.setValue ((double) track[ids::pan], juce::dontSendNotification);
         else if (property == ids::mute)
             muteButton.setToggleState ((bool) track[ids::mute], juce::dontSendNotification);
         else if (property == ids::solo)
@@ -477,8 +479,20 @@ private:
 
     juce::Label nameLabel;
     juce::Slider gainSlider;
-    juce::Slider panSlider;
-    juce::TextButton muteButton, soloButton;
+
+    /** The same two controls the channel rack's rows carry, at the same size and
+        in the same painter.
+
+        These were a bare rotary juce::Slider at 38px and two juce::TextButtons,
+        which is a third knob size and a second idea of what a mute letter looks
+        like - in the one view whose whole job is to sit beside the others and
+        agree with them. They also had no right-click menu of their own, which
+        the comment beside attachParamMenus used to state as a cost worth
+        paying; carrying it is what pays it back.
+    */
+    DewKnob panKnob { requireMixerTrackParamSpec (ids::pan) };
+    DewLetterToggle muteButton { "M", tokens::colour::warning, "Mute this track" };
+    DewLetterToggle soloButton { "S", tokens::colour::accent, "Solo this track" };
 
     /** Owned here, and destroyed before the controls they watch. */
     std::vector<std::unique_ptr<paramMenu::Trigger>> paramMenuTriggers;

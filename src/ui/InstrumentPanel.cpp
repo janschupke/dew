@@ -74,15 +74,16 @@ InstrumentPanel::InstrumentPanel (ProjectDocument& d, EditorState& s, SamplePool
     const auto channelOf = [this] { return selectedChannel(); };
 
     basePitchSlider.setSliderStyle (juce::Slider::IncDecButtons);
-    attachRotary (basePitchSlider, basePitchLabel, "PITCH", channelOf, ids::basePitch, "Change base pitch");
+    attachStepper (basePitchSlider, basePitchLabel, "PITCH", channelOf, ids::basePitch,
+                   "Change base pitch");
 
-    attachRotary (attackSlider,  attackLabel,  "ATTACK",  ampOf, ids::attack, "Change attack");
-    attachRotary (decaySlider,   decayLabel,   "DECAY",   ampOf, ids::decay, "Change decay");
-    attachRotary (sustainSlider, sustainLabel, "SUSTAIN", ampOf, ids::sustain, "Change sustain");
-    attachRotary (releaseSlider, releaseLabel, "RELEASE", ampOf, ids::release, "Change release");
+    attachKnob (attackKnob,  ampOf, ids::attack, "Change attack");
+    attachKnob (decayKnob,   ampOf, ids::decay, "Change decay");
+    attachKnob (sustainKnob, ampOf, ids::sustain, "Change sustain");
+    attachKnob (releaseKnob, ampOf, ids::release, "Change release");
 
-    attachRotary (volumeSlider, volumeLabel, "VOLUME", channelOf, ids::volume, "Change volume");
-    attachRotary (panSlider,    panLabel,    "PAN",    channelOf, ids::pan, "Change pan");
+    attachKnob (volumeKnob, channelOf, ids::volume, "Change volume");
+    attachKnob (panKnob,    channelOf, ids::pan, "Change pan");
 
     editorState.addChangeListener (this);
     document.getState().addListener (this);
@@ -96,20 +97,9 @@ InstrumentPanel::~InstrumentPanel()
     document.getState().removeListener (this);
 }
 
-namespace
-{
-
-/** The skew that makes the geometric midpoint of a range sit at the middle of a
-    control's travel. juce::NormalisableRange takes a skew rather than a curve
-    kind, and this is what "logarithmic" means in its terms.
-*/
-double skewForRange (double minimum, double maximum)
-{
-    return std::log (0.5) / std::log ((std::sqrt (minimum * maximum) - minimum)
-                                      / (maximum - minimum));
-}
-
-} // namespace
+// The log-skew helper that used to live here has gone with the sliders it
+// served: DewKnob works it out from the ParamSpec's curve, once, for every knob
+// in the application rather than for these six.
 
 void InstrumentPanel::setParamMenuHost (const paramMenu::Host* host)
 {
@@ -130,37 +120,27 @@ void InstrumentPanel::setParamMenuHost (const paramMenu::Host* host)
     // The rotaries are attached in the constructor, before the host arrives, so
     // this goes back over them rather than only recording the pointer.
     for (const auto& bound : boundRotaries)
-        paramMenuTriggers.push_back (
-            std::make_unique<paramMenu::Trigger> (
-                *bound.slider,
-                host->contextFor (bound.owner, requireInstrumentParamSpec (bound.property))));
+    {
+        const auto& spec = requireInstrumentParamSpec (bound.property);
+
+        // A DewKnob has its own hook, and it has to be the thing that gets it:
+        // the coverage gate asks every knob in the window whether it carries
+        // one, and a Trigger listening to the slider inside would answer no.
+        if (bound.knob != nullptr)
+            paramMenu::attachTo (host, *bound.knob, bound.owner, spec);
+        else
+            paramMenuTriggers.push_back (
+                std::make_unique<paramMenu::Trigger> (
+                    *bound.slider, host->contextFor (bound.owner, spec)));
+    }
 }
 
-void InstrumentPanel::attachRotary (juce::Slider& slider, juce::Label& label, const juce::String& text,
-                                    std::function<juce::ValueTree()> owner,
-                                    const juce::Identifier& property,
-                                    const juce::String& transactionName)
+void InstrumentPanel::bindRotary (juce::Slider& slider, DewKnob* knob,
+                                  std::function<juce::ValueTree()> owner,
+                                  const juce::Identifier& property,
+                                  const juce::String& transactionName)
 {
     const auto& spec = requireInstrumentParamSpec (property);
-
-    if (slider.getSliderStyle() != juce::Slider::IncDecButtons)
-    {
-        slider.setSliderStyle (juce::Slider::RotaryHorizontalVerticalDrag);
-        slider.setTextBoxStyle (juce::Slider::TextBoxBelow, false, 58, tokens::size::controlHeightSm);
-    }
-    else
-    {
-        slider.setTextBoxStyle (juce::Slider::TextBoxLeft, false, 44, tokens::size::controlHeightSm);
-    }
-
-    // A logarithmic parameter gets a NormalisableRange, not a plain one. Half a
-    // millisecond to ten seconds is four and a half decades; linearly, every
-    // usable attack lives in the first one per cent of the travel.
-    if (spec.curve == ParamCurve::logarithmic && spec.minimum > 0.0)
-        slider.setNormalisableRange ({ spec.minimum, spec.maximum, spec.interval,
-                                       skewForRange (spec.minimum, spec.maximum) });
-    else
-        slider.setRange (spec.minimum, spec.maximum, spec.interval);
 
     // One transaction per gesture, so dragging a knob is a single undo step
     // rather than several hundred.
@@ -189,11 +169,37 @@ void InstrumentPanel::attachRotary (juce::Slider& slider, juce::Label& label, co
         gestureActive = inDrag;
     };
 
-    boundRotaries.push_back ({ &slider, owner, property });
+    boundRotaries.push_back ({ &slider, knob, owner, property });
+}
+
+void InstrumentPanel::attachStepper (juce::Slider& slider, juce::Label& label,
+                                     const juce::String& text,
+                                     std::function<juce::ValueTree()> owner,
+                                     const juce::Identifier& property,
+                                     const juce::String& transactionName)
+{
+    const auto& spec = requireInstrumentParamSpec (property);
+
+    slider.setTextBoxStyle (juce::Slider::TextBoxLeft, false, 44, tokens::size::controlHeightSm);
+    slider.setRange (spec.minimum, spec.maximum, spec.interval);
+
+    bindRotary (slider, nullptr, std::move (owner), property, transactionName);
 
     styleCaption (label, text);
     addAndMakeVisible (slider);
     addAndMakeVisible (label);
+}
+
+void InstrumentPanel::attachKnob (DewKnob& knob, std::function<juce::ValueTree()> owner,
+                                  const juce::Identifier& property,
+                                  const juce::String& transactionName)
+{
+    // The caption, the range, the step, the decimals, whether it is bipolar and
+    // whether it sweeps logarithmically all came from the ParamSpec when the
+    // knob was constructed. Only the WRITE is left, and it is the same write a
+    // stepper does - hence one bindRotary under both.
+    bindRotary (knob.getSlider(), &knob, std::move (owner), property, transactionName);
+    addAndMakeVisible (knob);
 }
 
 juce::ValueTree InstrumentPanel::selectedChannel() const
@@ -241,8 +247,7 @@ void InstrumentPanel::refresh()
     // them on screen for a recording would offer four controls that do nothing.
     const std::initializer_list<juce::Component*> synthOnly {
         &basePitchSlider, &basePitchLabel,
-        &attackSlider, &attackLabel, &decaySlider, &decayLabel,
-        &sustainSlider, &sustainLabel, &releaseSlider, &releaseLabel };
+        &attackKnob, &decayKnob, &sustainKnob, &releaseKnob };
 
     for (auto* c : synthOnly)
         c->setVisible (! showingAudio);
@@ -272,13 +277,13 @@ void InstrumentPanel::refresh()
 
     basePitchSlider.setValue ((double) channel[ids::basePitch], juce::dontSendNotification);
 
-    attackSlider.setValue ((double) amp[ids::attack], juce::dontSendNotification);
-    decaySlider.setValue ((double) amp[ids::decay], juce::dontSendNotification);
-    sustainSlider.setValue ((double) amp[ids::sustain], juce::dontSendNotification);
-    releaseSlider.setValue ((double) amp[ids::release], juce::dontSendNotification);
+    attackKnob.setValue ((double) amp[ids::attack], juce::dontSendNotification);
+    decayKnob.setValue ((double) amp[ids::decay], juce::dontSendNotification);
+    sustainKnob.setValue ((double) amp[ids::sustain], juce::dontSendNotification);
+    releaseKnob.setValue ((double) amp[ids::release], juce::dontSendNotification);
 
-    volumeSlider.setValue ((double) channel[ids::volume], juce::dontSendNotification);
-    panSlider.setValue ((double) channel[ids::pan], juce::dontSendNotification);
+    volumeKnob.setValue ((double) channel[ids::volume], juce::dontSendNotification);
+    panKnob.setValue ((double) channel[ids::pan], juce::dontSendNotification);
 }
 
 void InstrumentPanel::paint (juce::Graphics& g)
@@ -369,11 +374,6 @@ void InstrumentPanel::resized()
     // smallest window the app opens at that was the whole effect chain.
     auto routingRow = row (size::knob);
 
-    const auto placeKnob = [] (juce::Rectangle<int> bounds, juce::Label& label, juce::Slider& slider)
-    {
-        label.setBounds (bounds.removeFromTop (size::knobValue));
-        slider.setBounds (bounds);
-    };
 
     if (! showingAudio)
     {
@@ -388,20 +388,22 @@ void InstrumentPanel::resized()
     mixerLabel.setBounds (routingRow.removeFromLeft (46));
     mixerBox.setBounds (routingRow.reduced (0, space::md));
 
-    if (! showingAudio)
+    // knobRow, like every other row of knobs in the application. It was 86,
+    // which is the height the JUCE text box under each one needed - a fifth
+    // dimension, in the panel that sits beside the four that use the rung.
+    const auto placeKnobs = [] (juce::Rectangle<int> bounds,
+                                std::initializer_list<DewKnob*> knobs)
     {
-        auto adsr = row (86);
-        const auto knobWidth = adsr.getWidth() / 4;
+        const auto cell = bounds.getWidth() / (int) knobs.size();
 
-        placeKnob (adsr.removeFromLeft (knobWidth), attackLabel, attackSlider);
-        placeKnob (adsr.removeFromLeft (knobWidth), decayLabel, decaySlider);
-        placeKnob (adsr.removeFromLeft (knobWidth), sustainLabel, sustainSlider);
-        placeKnob (adsr, releaseLabel, releaseSlider);
-    }
+        for (auto* knob : knobs)
+            knob->setBounds (bounds.removeFromLeft (cell).reduced (space::xxs, 0));
+    };
 
-    auto levels = row (86);
-    placeKnob (levels.removeFromLeft (levels.getWidth() / 2), volumeLabel, volumeSlider);
-    placeKnob (levels, panLabel, panSlider);
+    if (! showingAudio)
+        placeKnobs (row (size::knobRow), { &attackKnob, &decayKnob, &sustainKnob, &releaseKnob });
+
+    placeKnobs (row (size::knobRow), { &volumeKnob, &panKnob });
 
     chainHost.setBounds (area);
 }

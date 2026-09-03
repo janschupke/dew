@@ -18,6 +18,16 @@ namespace
     into it, and they used to say 44 and 34 independently. */
 constexpr int titleHeight = size::rowHeight;
 
+/** One icon's cell on the icon grid, and the glyph inside it.
+
+    Stated once for the same reason titleHeight is: layOut() has to know how
+    many rows the icons need and paint() has to draw them into the same grid.
+    The height used to be a hard-coded 132 in one and a 62 in the other, so
+    adding an icon that wrapped to a third row drew it over the next section.
+*/
+constexpr int iconCell  = 62;
+constexpr int iconGlyph = 26;
+
 struct Swatch { const char* name; juce::Colour value; };
 
 std::vector<Swatch> palette()
@@ -115,6 +125,14 @@ DewGallery::DewGallery()
     add (muted);
 
     add (new DewLetterToggle ("S", colour::success, "Solo"));
+
+    // A disabled one, because that is a state this page had no sample of - and
+    // the state that was wrong: a disabled icon button used to dim only its
+    // glyph and keep its fill and border at full strength, so it read as an
+    // ordinary button with a faint icon.
+    auto* noPresets = new DewIconButton (icons::preset(), "No presets for this effect");
+    noPresets->setEnabled (false);
+    add (noPresets);
 
     // --- knobs ---------------------------------------------------------------
     auto* cutoff = new DewKnob ("CUTOFF", 20.0, 20000.0, 1.0);
@@ -278,7 +296,7 @@ int DewGallery::layOut (juce::Rectangle<int> area, bool apply)
     {
         auto row = sectionHeading ("Icon buttons and toggles", size::iconButton + 6);
 
-        for (int i = 0; i < 7; ++i)
+        for (int i = 0; i < 8; ++i)
         {
             place (controls[index++], row.removeFromLeft (size::iconButton + 6)
                                           .withHeight (size::iconButton + 6));
@@ -350,7 +368,14 @@ int DewGallery::layOut (juce::Rectangle<int> area, bool apply)
 
     // Icons and palette get painted rather than laid out as components.
     {
-        auto row = sectionHeading ("Icons", 132);
+        // Derived from how many icons there ARE. It was a hard-coded 132, which
+        // is two rows of them - so the three icons that took the grid to a third
+        // row drew it straight over the section below, on the one page whose
+        // whole job is to show what the design system looks like.
+        const auto perRow = juce::jmax (1, area.getWidth() / iconCell);
+        const auto rows = ((int) icons::all().size() + perRow - 1) / perRow;
+
+        auto row = sectionHeading ("Icons", rows * iconCell);
 
         if (apply)
             iconBounds = row;
@@ -400,19 +425,18 @@ void DewGallery::paint (juce::Graphics& g)
         const auto all = icons::all();
         auto area = iconBounds;
 
-        constexpr int cell = 62;
-        constexpr int iconSize = 26;
-        const auto perRow = juce::jmax (1, area.getWidth() / cell);
+        const auto perRow = juce::jmax (1, area.getWidth() / iconCell);
 
         for (int i = 0; i < (int) all.size(); ++i)
         {
             const auto column = i % perRow;
             const auto row = i / perRow;
 
-            const juce::Rectangle<int> cellBounds (area.getX() + column * cell,
-                                                   area.getY() + row * 62, cell - 4, 58);
+            const juce::Rectangle<int> cellBounds (area.getX() + column * iconCell,
+                                                   area.getY() + row * iconCell,
+                                                   iconCell - 4, iconCell - 4);
 
-            auto glyph = cellBounds.withSizeKeepingCentre (iconSize, iconSize)
+            auto glyph = cellBounds.withSizeKeepingCentre (iconGlyph, iconGlyph)
                              .withY (cellBounds.getY() + 6);
 
             icons::draw (g, all[(size_t) i].make(), glyph.toFloat(), colour::textPrimary);

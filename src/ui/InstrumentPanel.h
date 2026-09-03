@@ -78,6 +78,13 @@ private:
     struct BoundRotary
     {
         juce::Slider* slider = nullptr;
+
+        /** Set when the slider is a DewKnob's own, which is every one of these
+            but the base-pitch stepper. A knob carries its own onContextMenu
+            hook, so it wants paramMenu::attachTo; a bare slider has no hook and
+            needs a Trigger listening to it instead. */
+        DewKnob* knob = nullptr;
+
         std::function<juce::ValueTree()> owner;
         juce::Identifier property;
     };
@@ -87,10 +94,23 @@ private:
     /** Owned here, and destroyed before the sliders they watch. */
     std::vector<std::unique_ptr<paramMenu::Trigger>> paramMenuTriggers;
 
-    void attachRotary (juce::Slider&, juce::Label&, const juce::String& text,
-                       std::function<juce::ValueTree()> owner,
-                       const juce::Identifier& property,
-                       const juce::String& transactionName);
+    /** The base pitch stepper, which is an IncDecButtons slider and not a knob:
+        a semitone is a number you nudge, not a sweep. */
+    void attachStepper (juce::Slider&, juce::Label&, const juce::String& text,
+                        std::function<juce::ValueTree()> owner,
+                        const juce::Identifier& property,
+                        const juce::String& transactionName);
+
+    /** The same binding for a DewKnob, which carries its own caption and its own
+        readout, so there is no label to pass and no text box to configure. */
+    void attachKnob (DewKnob&, std::function<juce::ValueTree()> owner,
+                     const juce::Identifier& property,
+                     const juce::String& transactionName);
+
+    /** Shared by both: the write, the undo transaction and the param menu. */
+    void bindRotary (juce::Slider&, DewKnob*, std::function<juce::ValueTree()> owner,
+                     const juce::Identifier& property,
+                     const juce::String& transactionName);
 
     ProjectDocument& document;
     EditorState& editorState;
@@ -124,11 +144,22 @@ private:
     juce::Slider basePitchSlider { juce::Slider::IncDecButtons, juce::Slider::TextBoxLeft };
     juce::Label basePitchLabel;
 
-    juce::Slider attackSlider, decaySlider, sustainSlider, releaseSlider;
-    juce::Label attackLabel, decayLabel, sustainLabel, releaseLabel;
+    /** The envelope and the levels, as the same control the oscillator section
+        and every effect card already use.
 
-    juce::Slider volumeSlider, panSlider;
-    juce::Label volumeLabel, panLabel;
+        These were six bare juce::Sliders with six juce::Labels and a JUCE text
+        box, in an 86px row - so the panel drew two sizes of knob, one of them
+        in a different painter, one above the other. Built from the catalog's
+        ParamSpec like every other DewKnob, which is what stops a range being
+        stated here a second time and drifting from the engine's own clamp.
+    */
+    DewKnob attackKnob  { requireInstrumentParamSpec (ids::attack) };
+    DewKnob decayKnob   { requireInstrumentParamSpec (ids::decay) };
+    DewKnob sustainKnob { requireInstrumentParamSpec (ids::sustain) };
+    DewKnob releaseKnob { requireInstrumentParamSpec (ids::release) };
+
+    DewKnob volumeKnob { requireInstrumentParamSpec (ids::volume) };
+    DewKnob panKnob    { requireInstrumentParamSpec (ids::pan) };
 
     juce::ComboBox mixerBox;
     juce::Label mixerLabel;
