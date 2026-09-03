@@ -83,6 +83,21 @@ inline bool isZoom (const juce::ModifierKeys& mods) noexcept
     return mods.isCommandDown() || mods.isCtrlDown();
 }
 
+/** The zoom modifier plus shift: the OTHER axis.
+
+    A timeline zooms in time, and time is horizontal in all three views, so the
+    axis a lane is measured on had no wheel gesture at all. Shift is the axis
+    switch on the plain wheel already - it scrolls time where a bare wheel
+    scrolls rows - so shift-plus-zoom meaning "zoom the rows" is the same
+    distinction applied to the same modifier rather than a sixth meaning for it.
+
+    Must be tested BEFORE isZoom, which it also satisfies.
+*/
+inline bool isCrossZoom (const juce::ModifierKeys& mods) noexcept
+{
+    return isZoom (mods) && mods.isShiftDown();
+}
+
 /** Finer, for a drag that changes a value. */
 inline bool isFine (const juce::ModifierKeys& mods) noexcept
 {

@@ -2,7 +2,7 @@
 
 #include <juce_gui_basics/juce_gui_basics.h>
 
-#include "ui/TrackHeightButtons.h"
+#include "ui/VerticalZoomButtons.h"
 #include "ui/ZoomButtons.h"
 #include "ui/primitives/DewControls.h"
 
@@ -66,7 +66,8 @@ private:
     DewIconButton paintButton { icons::pencil(), "Paint tool - drag to lay a run of clips (2)" };
 
     ZoomButtons zoomButtons { "Fit the song to the window (0)" };
-    TrackHeightButtons heightButtons;
+    VerticalZoomButtons heightButtons { "Shorter tracks (alt--)", "Taller tracks (alt-+)",
+                                        "Fit the tracks to the window" };
 
     /** Where a vertical rule goes between groups. Recorded during layout and
         painted afterwards, the way the piano roll's strip does it, so the two

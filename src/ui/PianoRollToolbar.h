@@ -3,6 +3,7 @@
 #include <juce_gui_basics/juce_gui_basics.h>
 
 #include "model/NoteTools.h"
+#include "ui/VerticalZoomButtons.h"
 #include "ui/ZoomButtons.h"
 #include "ui/primitives/DewControls.h"
 
@@ -68,6 +69,7 @@ public:
     std::function<void()>    onSnapChanged;
     std::function<void (int)> onChannelChanged;   ///< channel id
     std::function<void (double)> onZoom;          ///< factor, or 0 to fit
+    std::function<void (double)> onRowHeight;     ///< the other axis; same shape
     std::function<void (int)> onTranspose;   ///< semitones, positive for up
     std::function<void()>    onQuantize;
     std::function<void()>    onRandomize;
@@ -95,6 +97,9 @@ private:
     juce::ComboBox channelBox;
 
     ZoomButtons zoomButtons { "Fit the pattern to the window (0)" };
+
+    VerticalZoomButtons rowHeightButtons { "Shorter rows (alt--)", "Taller rows (alt-+)",
+                                           "Fit the notes to the window (alt-0)" };
 
     DewIconButton quantizeButton { icons::quantize(), "Quantize to the snap grid (Q)" };
     DewIconButton randomizeButton { icons::dice(), "Randomize velocity and timing (R)" };

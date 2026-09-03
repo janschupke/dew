@@ -96,7 +96,7 @@ void PlaylistToolbar::resized()
     // them together would read as one six-button zoom.
     divider();
 
-    place (heightButtons, TrackHeightButtons::preferredWidth);
+    place (heightButtons, VerticalZoomButtons::preferredWidth);
 }
 
 } // namespace dew

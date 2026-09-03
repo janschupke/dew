@@ -80,6 +80,8 @@ PianoRollComponent::PianoRollComponent (ProjectDocument& d, AudioEngine& e, Edit
         editorState.setSelectedChannelId (channelId);
     };
 
+    toolbar.onRowHeight = [this] (double factor) { zoomRowsBy (factor); };
+
     toolbar.onZoom = [this] (double factor)
     {
         // Zero means "frame the pattern". It used to be reachable only by
@@ -741,7 +743,12 @@ void PianoRollComponent::mouseWheelMove (const juce::MouseEvent& event,
 {
     const auto delta = gesture::deltaOf (wheel);
 
-    if (gesture::isZoom (event.mods))
+    // Before isZoom, which a cross-zoom also satisfies.
+    if (gesture::isCrossZoom (event.mods))
+    {
+        zoomRowsBy (std::pow (2.0, delta.y * gesture::wheelZoomExponent));
+    }
+    else if (gesture::isZoom (event.mods))
     {
         timeline.zoomAround (std::pow (2.0, delta.y * gesture::wheelZoomExponent),
                              (float) (event.x - size::gutterKeyboard));

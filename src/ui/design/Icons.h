@@ -66,6 +66,16 @@ juce::Path effectEq();
 juce::Path zoomIn();
 juce::Path zoomOut();
 juce::Path fitToContent();
+
+/** The vertical axis of the same idea: how tall a row is, drawn as how many
+    rows fit. Not chevrons - the piano roll's toolbar already spends a chevron
+    pair on transposing a semitone, and two identical pairs meaning different
+    things in one 34px strip is the drift the design system exists to stop.
+*/
+juce::Path rowsShorter();     ///< three rules: denser rows
+juce::Path rowsTaller();      ///< two rules: roomier rows
+juce::Path fitRows();         ///< fitToContent, turned through a right angle
+
 juce::Path automation();      ///< a curve with points
 juce::Path preset();          ///< a saved sound to load
 

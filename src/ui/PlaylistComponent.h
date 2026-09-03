@@ -170,6 +170,24 @@ public:
     void zoomTracksBy (double factor);
     void fitTracksToWindow();
 
+    // --- the resize grip -----------------------------------------------------
+    /** A drag on a track header's bottom edge, which sets the height of EVERY
+        lane - there is one height, and the edge you grabbed is just the one
+        the pointer is nearest.
+
+        Three calls rather than one because the middle of a drag is a different
+        state from either end: the scroll offset is held still between the
+        first and the last, so the grabbed edge stays under the hand instead of
+        being re-centred out from under it.
+
+        `deltaY` is measured from where the press landed, in SCREEN pixels - the
+        header's own frame is what the drag is moving, so a delta read in it
+        would be measured against a ruler that is changing length.
+    */
+    void beginRowHeightDrag();
+    void dragRowHeightBy (int laneIndex, int deltaY);
+    void endRowHeightDrag();
+
     /** The strip the lanes are drawn in, so a test can aim at a lane rather than
         recomputing the layout and drifting from it - the same reason
         getRulerArea exists.
@@ -356,6 +374,11 @@ private:
     double trackScrollPx = 0.0;
 
     int trackHeight = tokens::size::trackHeightDefault;
+
+    /** Latched for the length of a resize drag. See beginRowHeightDrag. */
+    bool resizingRows = false;
+    int heightAtDragStart = tokens::size::trackHeightDefault;
+    double heightDragScrollPx = 0.0;
 
     bool updatingScrollBar = false;
 

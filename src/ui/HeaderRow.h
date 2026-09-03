@@ -39,6 +39,14 @@ public:
     virtual void applyMenuChoice (int choice) = 0;
 
 protected:
+    /** A press this row handles ITSELF, before anything below happens.
+
+        Returning true stops the press selecting the row and stops it opening
+        the menu. One row needs it: a playlist header's bottom edge is a resize
+        grip, and a grab there is a drag rather than a click on the track.
+    */
+    virtual bool consumePress (const juce::MouseEvent&) { return false; }
+
     /** Called on every press, before the menu opens. The rack selects its row
         here, so a menu always acts on the row that was clicked rather than on
         whatever happened to be selected before it. */
@@ -52,6 +60,9 @@ protected:
 private:
     void mouseDown (const juce::MouseEvent& event) override
     {
+        if (consumePress (event))
+            return;
+
         headerPressed();
 
         if (! event.mods.isPopupMenu())

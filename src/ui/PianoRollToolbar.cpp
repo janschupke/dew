@@ -56,6 +56,14 @@ PianoRollToolbar::PianoRollToolbar()
     zoomButtons.onZoom = [this] (double factor) { if (onZoom) onZoom (factor); };
     addAndMakeVisible (zoomButtons);
 
+    rowHeightButtons.onHeightChange = [this] (double factor)
+    {
+        if (onRowHeight)
+            onRowHeight (factor);
+    };
+
+    addAndMakeVisible (rowHeightButtons);
+
     const auto addAction = [this] (juce::Button& button, std::function<void()>& callback)
     {
         button.setWantsKeyboardFocus (false);
@@ -233,6 +241,12 @@ void PianoRollToolbar::resized()
     divider();
 
     place (zoomButtons, ZoomButtons::preferredWidth);
+
+    // Its own group, as in the playlist: the two are the same gesture on
+    // different axes, and running them together reads as one six-button zoom.
+    divider();
+
+    place (rowHeightButtons, VerticalZoomButtons::preferredWidth);
 }
 
 } // namespace dew

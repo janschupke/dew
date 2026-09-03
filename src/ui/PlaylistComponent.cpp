@@ -107,6 +107,51 @@ public:
 
     juce::ValueTree getTrack() const { return track; }
 
+    // --- the resize grip -----------------------------------------------------
+    /** How deep the grab band along the bottom edge is.
+
+        A row of its own would be a control; this is an edge, and an edge has to
+        be thin enough that the rest of the header is still a header. Four
+        pixels is the smallest thing dew's spacing scale names, and it is what
+        the pointer shape is for.
+    */
+    static constexpr int resizeBandHeight = space::xs;
+
+    bool isOnResizeEdge (juce::Point<int> p) const
+    {
+        return p.y >= getHeight() - resizeBandHeight;
+    }
+
+    /** Latched, dragged, released. The playlist owns the height - every lane
+        shares one - so all three of these are reports rather than edits. */
+    std::function<void()> onResizeBegin;
+    std::function<void (int laneIndex, int deltaY)> onResizeDrag;
+    std::function<void()> onResizeEnd;
+
+    void mouseMove (const juce::MouseEvent& event) override
+    {
+        setMouseCursor (isOnResizeEdge (event.getPosition())
+                            ? juce::MouseCursor::UpDownResizeCursor
+                            : juce::MouseCursor::NormalCursor);
+    }
+
+    void mouseDrag (const juce::MouseEvent& event) override
+    {
+        // SCREEN coordinates, and a delta rather than a position. This header's
+        // own height is what the drag is changing, so its local frame moves
+        // under the pointer while the pointer is being read in it - and
+        // getDistanceFromDragStart asks the mouse SOURCE, which no synthetic
+        // event ever pressed, so it is always zero in a test.
+        if (resizing && onResizeDrag)
+            onResizeDrag (index, event.getScreenPosition().y - resizeOriginY);
+    }
+
+    void mouseUp (const juce::MouseEvent&) override
+    {
+        if (std::exchange (resizing, false) && onResizeEnd)
+            onResizeEnd();
+    }
+
     /** The band's width. Named rather than a bare 4 in a fillRect, and matched
         to the tab the channel rack's own rows draw. */
     static constexpr int colourTabWidth = 4;
@@ -192,9 +237,26 @@ private:
     juce::ValueTree track;
     int index = 0;
 
+    bool consumePress (const juce::MouseEvent& event) override
+    {
+        if (event.mods.isPopupMenu() || ! isOnResizeEdge (event.getPosition()))
+            return false;
+
+        resizing = true;
+        resizeOriginY = event.getScreenPosition().y;
+
+        if (onResizeBegin)
+            onResizeBegin();
+
+        return true;
+    }
+
     juce::Label nameLabel;
     DewLetterToggle muteButton { "M", colour::warning, "Mute this track" };
     DewLetterToggle soloButton { "S", colour::accent, "Solo this track" };
+
+    bool resizing = false;
+    int resizeOriginY = 0;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (TrackHeader)
 };
@@ -365,16 +427,25 @@ void PlaylistComponent::setTrackHeight (int wanted)
     // then a lane that does not exist - four tracks in a window six rows tall
     // put the anchor on lane six, and growing the rows scrolled the whole
     // arrangement off the top.
+    //
+    // And NOT during a resize drag, where the anchor is the edge under the
+    // pointer rather than the middle of the view. Re-centring between drag
+    // samples moves the grabbed edge away from the hand holding it, which is
+    // the one thing a drag must not do.
     const auto contentHeight = (double) ((getNumTracks() + 1) * trackHeight);
     const auto wasScrollable = contentHeight > (double) laneViewHeight();
 
     const auto anchorLane = (trackScrollPx + (double) laneViewHeight() * 0.5) / (double) trackHeight;
 
     trackHeight = clamped;
-    trackScrollPx = wasScrollable
-                      ? juce::jmax (0.0, anchorLane * (double) trackHeight
-                                             - (double) laneViewHeight() * 0.5)
-                      : 0.0;
+
+    if (resizingRows)
+        trackScrollPx = heightDragScrollPx;
+    else
+        trackScrollPx = wasScrollable
+                          ? juce::jmax (0.0, anchorLane * (double) trackHeight
+                                                 - (double) laneViewHeight() * 0.5)
+                          : 0.0;
 
     // A height change is the user taking the view, exactly as a zoom is -
     // otherwise the next resize would re-fit and undo it.
@@ -382,6 +453,41 @@ void PlaylistComponent::setTrackHeight (int wanted)
 
     updateScrollBar();
     resized();
+    repaint();
+}
+
+void PlaylistComponent::beginRowHeightDrag()
+{
+    heightAtDragStart = trackHeight;
+    heightDragScrollPx = trackScrollPx;
+    resizingRows = true;
+}
+
+void PlaylistComponent::dragRowHeightBy (int laneIndex, int deltaY)
+{
+    if (! resizingRows)
+        return;
+
+    // Absolute, from where the press was, rather than accumulated between
+    // samples: the same reason the effect chain's reorder hit-tests against
+    // frozen bounds. A path-dependent drag drifts, and cannot be asserted by
+    // sampling the same interaction two ways.
+    //
+    // Divided by the lanes ABOVE the grabbed edge as well as the grabbed one,
+    // because they all grow together - so the edge under the pointer is the one
+    // that follows it, whichever lane it belongs to.
+    const auto lanes = juce::jmax (1, laneIndex + 1);
+
+    setTrackHeight (heightAtDragStart + deltaY / lanes);
+}
+
+void PlaylistComponent::endRowHeightDrag()
+{
+    resizingRows = false;
+
+    // The scroll was held through the drag; let it settle against the height it
+    // ended on, which is what every other path already does.
+    updateScrollBar();
     repaint();
 }
 
@@ -549,6 +655,9 @@ void PlaylistComponent::rebuildHeaders()
             auto* header = headers.add (new TrackHeader (document, track));
             header->onAddTrack = [this] { addTrack(); };
             header->onRemoveTrack = [this] (juce::ValueTree t) { removeTrack (t); };
+            header->onResizeBegin = [this] { beginRowHeightDrag(); };
+            header->onResizeDrag = [this] (int lane, int dy) { dragRowHeightBy (lane, dy); };
+            header->onResizeEnd = [this] { endRowHeightDrag(); };
             header->setIndex (headers.size() - 1);
             headerHolder.addAndMakeVisible (header);
         }
@@ -584,9 +693,16 @@ void PlaylistComponent::resized()
     // window ran out - it is reachable by scrolling, and an add button that
     // disappears once you have enough tracks is the bug the channel rack already
     // had and fixed.
-    addTrackButton.setBounds (juce::Rectangle<int> (0, rowTop (headers.size()),
-                                                    size::gutterTrack, trackHeight)
-                                  .reduced (space::sm, space::xs));
+    //
+    // At the TOP of that row and never taller than one rung, because a lane
+    // height is a property of the arrangement and this is a button. It used to
+    // take the whole row, so at the tallest lane height "+ Track" was a
+    // two-hundred-pixel rectangle.
+    const auto addRow = juce::Rectangle<int> (0, rowTop (headers.size()),
+                                              size::gutterTrack, trackHeight);
+
+    addTrackButton.setBounds (addRow.withHeight (juce::jmin (trackHeight, size::rowHeight))
+                                    .reduced (space::sm, space::xs));
 
     // Until someone has zoomed or scrolled, a layout frames the whole song.
     // Latching after the FIRST layout instead would hand the zoom to whatever
@@ -624,6 +740,13 @@ void PlaylistComponent::mouseWheelMove (const juce::MouseEvent& event,
     // roll. The playlist answered only to scrolling, and only when there was
     // something to scroll.
     const auto delta = gesture::deltaOf (wheel);
+
+    // Before isZoom, which a cross-zoom also satisfies.
+    if (gesture::isCrossZoom (event.mods))
+    {
+        zoomTracksBy (std::pow (2.0, delta.y * gesture::wheelZoomExponent));
+        return;
+    }
 
     if (gesture::isZoom (event.mods))
     {
@@ -695,11 +818,11 @@ bool PlaylistComponent::keyPressed (const juce::KeyPress& key)
         // The other axis: here a row is a track. The same three keys the piano
         // roll uses for a pitch row, and the toolbar's own height buttons.
         case hotkeys::ViewCommand::sizeBigger:
-            zoomTracksBy (TrackHeightButtons::heightFactor);
+            zoomTracksBy (VerticalZoomButtons::heightFactor);
             return true;
 
         case hotkeys::ViewCommand::sizeSmaller:
-            zoomTracksBy (1.0 / TrackHeightButtons::heightFactor);
+            zoomTracksBy (1.0 / VerticalZoomButtons::heightFactor);
             return true;
 
         case hotkeys::ViewCommand::sizeDefault:

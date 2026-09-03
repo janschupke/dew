@@ -538,6 +538,42 @@ juce::Path fitToContent()
     return p;
 }
 
+juce::Path rowsShorter()
+{
+    // Three rules: more rows fit, so each is shorter. The metaphor is the
+    // content rather than an arrow, because an arrow here would be a fourth
+    // thing in this toolbar pointing up and down.
+    juce::Path p;
+
+    for (const auto y : { 0.22f, 0.46f, 0.70f })
+        p.addRoundedRectangle (0.16f, y, 0.68f, 0.08f, 0.03f);
+
+    return p;
+}
+
+juce::Path rowsTaller()
+{
+    juce::Path p;
+
+    for (const auto y : { 0.26f, 0.62f })
+        p.addRoundedRectangle (0.16f, y, 0.68f, 0.08f, 0.03f);
+
+    return p;
+}
+
+juce::Path fitRows()
+{
+    // fitToContent turned through a right angle, deliberately: it is the same
+    // command on the other axis, and it should be the same picture.
+    juce::Path p;
+    p.addRoundedRectangle (0.18f, 0.10f, 0.64f, 0.08f, 0.03f);
+    p.addRoundedRectangle (0.18f, 0.82f, 0.64f, 0.08f, 0.03f);
+    p.addPath (strokedLine (0.5f, 0.26f, 0.5f, 0.74f, tokens::icon::regular));
+    p.addTriangle (0.5f, 0.26f, 0.36f, 0.40f, 0.64f, 0.40f);
+    p.addTriangle (0.5f, 0.74f, 0.36f, 0.60f, 0.64f, 0.60f);
+    return p;
+}
+
 juce::Path automation()
 {
     juce::Path line;
@@ -608,6 +644,7 @@ std::vector<NamedIcon> all()
         { "effectChorus", effectChorus }, { "effectEq", effectEq },
 
         { "zoomIn", zoomIn }, { "zoomOut", zoomOut }, { "fitToContent", fitToContent },
+        { "rowsShorter", rowsShorter }, { "rowsTaller", rowsTaller }, { "fitRows", fitRows },
         { "automation", automation }, { "preset", preset },
     };
 }

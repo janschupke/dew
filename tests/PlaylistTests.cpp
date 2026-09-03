@@ -1525,3 +1525,177 @@ TEST_CASE ("right-clicking empty lane space offers to add a clip there", "[ui][p
     REQUIRE (h.countClips (0) == 1);
     REQUIRE (ProjectEdits::findClipAtBar (h.track (0), 2).isValid());
 }
+
+namespace
+{
+
+/** Every track header, in lane order. findChildWithID is not recursive and the
+    headers live two levels down, inside the clipping holder.
+*/
+juce::Array<juce::Component*> trackHeaders (juce::Component& root)
+{
+    juce::Array<juce::Component*> found;
+
+    for (auto* child : root.getChildren())
+    {
+        if (child->getComponentID() == "playlistTrackHeader")
+            found.add (child);
+
+        found.addArray (trackHeaders (*child));
+    }
+
+    return found;
+}
+
+/** A point on a header's bottom edge, asked of the header rather than
+    recomputed from the lane height. */
+juce::Point<int> onResizeEdge (juce::Component& header)
+{
+    return { header.getWidth() / 2, header.getHeight() - 1 };
+}
+
+} // namespace
+
+TEST_CASE ("the add-track button is a button at every lane height", "[ui][playlist][height]")
+{
+    const juce::ScopedJuceInitialiser_GUI juceInit;
+    PlaylistHarness h;
+
+    auto* addButton = findDescendantWithID (h.playlist, "addTrackButton");
+    REQUIRE (addButton != nullptr);
+
+    const auto atDefault = addButton->getHeight();
+
+    // It used to take the whole row, so at the tallest lane height "+ Track" was
+    // a two-hundred-pixel rectangle with a word in the middle of it.
+    h.playlist.setTrackHeight (tokens::size::trackHeightMax);
+    REQUIRE (h.playlist.getTrackHeight() == tokens::size::trackHeightMax);
+
+    CHECK (addButton->getHeight() == atDefault);
+    CHECK (addButton->getHeight() <= tokens::size::rowHeight);
+
+    // And it is still the row after the last track, which is where the track it
+    // adds will appear - that is the part that must not change.
+    const auto headers = trackHeaders (h.playlist);
+    REQUIRE (! headers.isEmpty());
+
+    CHECK (addButton->getY() == headers.getLast()->getBottom() + tokens::space::xs);
+}
+
+TEST_CASE ("dragging a header's bottom edge resizes every lane", "[ui][playlist][height]")
+{
+    const juce::ScopedJuceInitialiser_GUI juceInit;
+    PlaylistHarness h;
+
+    const auto headers = trackHeaders (h.playlist);
+    REQUIRE (headers.size() >= 2);
+
+    const auto before = h.playlist.getTrackHeight();
+    auto& first = *headers[0];
+
+    // The pointer shape is the whole affordance: nothing on screen says the
+    // edge is grabbable until the cursor is over it.
+    first.mouseMove (eventAt (first, onResizeEdge (first)));
+    CHECK (first.getMouseCursor() == juce::MouseCursor::UpDownResizeCursor);
+
+    first.mouseMove (eventAt (first, { first.getWidth() / 2, 0 }));
+    CHECK (first.getMouseCursor() == juce::MouseCursor::NormalCursor);
+
+    const auto grab = onResizeEdge (first);
+    first.mouseDown (eventAt (first, grab));
+    first.mouseDrag (eventAt (first, grab.translated (0, 40), 1, {}, true));
+    first.mouseUp (eventAt (first, grab.translated (0, 40), 1, {}, true));
+
+    // The FIRST lane's edge moved by 40, and one lane sits above it, so every
+    // lane is 40 taller.
+    CHECK (h.playlist.getTrackHeight() == before + 40);
+}
+
+TEST_CASE ("a resize drag is path-independent", "[ui][playlist][height]")
+{
+    const juce::ScopedJuceInitialiser_GUI juceInit;
+
+    // The same bug the effect chain's reorder has: a drag that accumulates
+    // between samples drifts, so where you END UP depends on how you got there.
+    // Sampled two ways to the same point, it must land on the same height.
+    const auto heightAfter = [] (const juce::Array<int>& path)
+    {
+        PlaylistHarness h;
+        const auto headers = trackHeaders (h.playlist);
+        REQUIRE (headers.size() >= 1);
+
+        auto& first = *headers[0];
+        const auto grab = onResizeEdge (first);
+
+        first.mouseDown (eventAt (first, grab));
+
+        for (const auto dy : path)
+            first.mouseDrag (eventAt (first, grab.translated (0, dy), 1, {}, true));
+
+        first.mouseUp (eventAt (first, grab.translated (0, path.getLast()), 1, {}, true));
+
+        return h.playlist.getTrackHeight();
+    };
+
+    CHECK (heightAfter ({ 60 }) == heightAfter ({ 10, 20, 40, 60 }));
+    CHECK (heightAfter ({ 60 }) == heightAfter ({ 90, 5, 120, 60 }));
+}
+
+TEST_CASE ("a grab away from the edge is still a press on the track", "[ui][playlist][height]")
+{
+    const juce::ScopedJuceInitialiser_GUI juceInit;
+    PlaylistHarness h;
+
+    const auto headers = trackHeaders (h.playlist);
+    REQUIRE (headers.size() >= 1);
+
+    auto& first = *headers[0];
+    const auto before = h.playlist.getTrackHeight();
+
+    // Consuming every press would have taken the row's own gestures away.
+    first.mouseDown (eventAt (first, { first.getWidth() / 2, 0 }));
+    first.mouseDrag (eventAt (first, { first.getWidth() / 2, 40 }, 1, {}, true));
+    first.mouseUp (eventAt (first, { first.getWidth() / 2, 40 }, 1, {}, true));
+
+    CHECK (h.playlist.getTrackHeight() == before);
+}
+
+TEST_CASE ("each wheel modifier moves a different axis", "[ui][playlist][height]")
+{
+    const juce::ScopedJuceInitialiser_GUI juceInit;
+    PlaylistHarness h;
+
+    const auto wheel = [] (float deltaY)
+    {
+        juce::MouseWheelDetails w {};
+        w.deltaX = 0.0f;
+        w.deltaY = deltaY;
+        w.isReversed = false;
+        w.isSmooth = false;
+        w.isInertial = false;
+        return w;
+    };
+
+    const auto at = pointFor (h, 1, 0);
+    const auto heightBefore = h.playlist.getTrackHeight();
+    const auto zoomBefore = h.playlist.getTimeline().pixelsPerStep;
+
+    // Zoom plus shift is the OTHER axis, and it has to be checked before zoom -
+    // which it also satisfies.
+    h.playlist.mouseWheelMove (eventAt (h.playlist, at, 1,
+                                        juce::ModifierKeys::commandModifier
+                                            | juce::ModifierKeys::shiftModifier),
+                               wheel (0.5f));
+
+    CHECK (h.playlist.getTrackHeight() > heightBefore);
+    CHECK (juce::exactlyEqual (h.playlist.getTimeline().pixelsPerStep, zoomBefore));
+
+    // And plain zoom still zooms time and leaves the lanes alone.
+    const auto heightNow = h.playlist.getTrackHeight();
+
+    h.playlist.mouseWheelMove (eventAt (h.playlist, at, 1, juce::ModifierKeys::commandModifier),
+                               wheel (0.5f));
+
+    CHECK (h.playlist.getTimeline().pixelsPerStep > zoomBefore);
+    CHECK (h.playlist.getTrackHeight() == heightNow);
+}
