@@ -26,6 +26,7 @@ add_executable(dew_tests
   MidiRouterTests.cpp
   MidiInputTests.cpp
   PitchBendTests.cpp
+  AutomationLaneTests.cpp
   AutomationTests.cpp
   EffectTests.cpp
   EngineTests.cpp

@@ -5,6 +5,8 @@
 
 #include "model/AutomationCurve.h"
 
+#include "ui/AutomationLane.h"
+
 #include "io/SamplePool.h"
 
 #include "model/ChannelColour.h"
@@ -357,11 +359,22 @@ void PlaylistComponent::setTrackHeight (int wanted)
     // Anchor on the middle of the lane view, for the same reason
     // TimelineView::zoomAround anchors on the pointer: growing the rows from the
     // top walks the arrangement out from under whatever you were looking at.
+    //
+    // Only when there is something to anchor TO. With the tracks already fitting
+    // there is no scroll position to preserve, and the centre of the view is
+    // then a lane that does not exist - four tracks in a window six rows tall
+    // put the anchor on lane six, and growing the rows scrolled the whole
+    // arrangement off the top.
+    const auto contentHeight = (double) ((getNumTracks() + 1) * trackHeight);
+    const auto wasScrollable = contentHeight > (double) laneViewHeight();
+
     const auto anchorLane = (trackScrollPx + (double) laneViewHeight() * 0.5) / (double) trackHeight;
 
     trackHeight = clamped;
-    trackScrollPx = juce::jmax (0.0, anchorLane * (double) trackHeight
-                                         - (double) laneViewHeight() * 0.5);
+    trackScrollPx = wasScrollable
+                      ? juce::jmax (0.0, anchorLane * (double) trackHeight
+                                             - (double) laneViewHeight() * 0.5)
+                      : 0.0;
 
     // A height change is the user taking the view, exactly as a zoom is -
     // otherwise the next resize would re-fit and undo it.
@@ -702,6 +715,36 @@ void PlaylistComponent::mouseMove (const juce::MouseEvent& event)
     const auto clip = track.isValid() ? ProjectEdits::findClipAtBar (track, barAtX (event.x))
                                       : juce::ValueTree();
 
+    // Driven by the SAME hit test the press uses. Two of them would let the
+    // cursor promise something the press then does not do.
+    const auto hit = clip.isValid() ? laneHit (clip, trackIndex, event.getPosition())
+                                    : automationLane::Hit();
+
+    const auto wasHovered = hoveredSegment;
+    hoveredSegment = hit.kind == automationLane::Hit::Kind::segment ? hit.index : -1;
+    hoveredSegmentClip = hoveredSegment >= 0 ? clip : juce::ValueTree();
+
+    // Only a CHANGE repaints. Without the guard the whole arrangement repaints
+    // on every mouse move, which is the trap lastPaintedCell already guards
+    // against for the paint tool.
+    if (hoveredSegment != wasHovered)
+        repaint();
+
+    if (hit.kind == automationLane::Hit::Kind::point)
+    {
+        setMouseCursor (juce::MouseCursor::PointingHandCursor);
+        return;
+    }
+
+    if (hit.kind == automationLane::Hit::Kind::segment && automationLane::isBendable (hit.point))
+    {
+        // The cursor DewNumberField already uses for "drag vertically to change
+        // a value" - the same gesture, so the same cursor. A stepped segment
+        // keeps the normal cursor, because it does not answer to the drag.
+        setMouseCursor (juce::MouseCursor::UpDownResizeCursor);
+        return;
+    }
+
     setMouseCursor (clip.isValid() && isOnRightEdge (clip, trackIndex, event.getPosition())
                         ? juce::MouseCursor::LeftRightResizeCursor
                         : juce::MouseCursor::NormalCursor);
@@ -739,63 +782,51 @@ juce::ValueTree PlaylistComponent::automationOf (const juce::ValueTree& clip) co
     return ProjectEdits::findAutomation (document.getState(), (int) clip[ids::automationId]);
 }
 
+automationLane::Geometry PlaylistComponent::laneGeometry (const juce::ValueTree& clip,
+                                                          int trackIndex) const
+{
+    return automationLane::geometryFor (boundsForClip (clip, trackIndex),
+                                        juce::jmax (1, (int) clip[ids::lengthBars]),
+                                        Meter::of (document.getState()).stepsPerBar());
+}
+
 juce::Point<float> PlaylistComponent::pointPosition (const juce::ValueTree& clip, int trackIndex,
                                                      const juce::ValueTree& point) const
 {
-    const auto bounds = boundsForClip (clip, trackIndex).reduced (2.0f, 3.0f);
-    const auto stepsPerBar = Meter::of (document.getState()).stepsPerBar();
-    const auto clipSteps = juce::jmax (1, (int) clip[ids::lengthBars] * stepsPerBar);
-
-    const auto t = juce::jlimit (0.0, 1.0, (double) point[ids::step] / (double) clipSteps);
-    const auto value = juce::jlimit (0.0, 1.0, (double) point[ids::value]);
-
-    return { bounds.getX() + (float) t * bounds.getWidth(),
-             bounds.getBottom() - (float) value * bounds.getHeight() };
+    // Kept as a forwarder: it is public, documented as a test seam, and the
+    // tests aim at points through it.
+    return laneGeometry (clip, trackIndex).positionOf ((double) point[ids::step],
+                                                       (double) point[ids::value]);
 }
 
 void PlaylistComponent::positionToCurve (const juce::ValueTree& clip, int trackIndex,
                                          juce::Point<int> position, double& step, double& value) const
 {
-    const auto bounds = boundsForClip (clip, trackIndex).reduced (2.0f, 3.0f);
-    const auto stepsPerBar = Meter::of (document.getState()).stepsPerBar();
-    const auto clipSteps = juce::jmax (1, (int) clip[ids::lengthBars] * stepsPerBar);
+    const auto geometry = laneGeometry (clip, trackIndex);
 
-    const auto t = bounds.getWidth() > 0.0f
-                     ? juce::jlimit (0.0, 1.0, (double) (position.x - bounds.getX()) / bounds.getWidth())
-                     : 0.0;
-
-    step = t * clipSteps;
-    value = bounds.getHeight() > 0.0f
-              ? juce::jlimit (0.0, 1.0, (double) (bounds.getBottom() - position.y) / bounds.getHeight())
-              : 0.0;
+    step = geometry.stepAt ((float) position.x);
+    value = geometry.valueAt ((float) position.y);
 }
 
-juce::ValueTree PlaylistComponent::pointAt (const juce::ValueTree& clip, int trackIndex,
-                                            juce::Point<int> position) const
+automationLane::Hit PlaylistComponent::laneHit (const juce::ValueTree& clip, int trackIndex,
+                                                juce::Point<int> position) const
 {
     const auto automation = automationOf (clip);
 
     if (! automation.isValid())
         return {};
 
-    juce::ValueTree closest;
-    auto closestDistance = pointGrabRadius;
+    return automationLane::hitTest (laneGeometry (clip, trackIndex),
+                                    ProjectEdits::sortedAutomationPoints (automation),
+                                    position.toFloat());
+}
 
-    for (const auto& point : automation)
-    {
-        if (! point.hasType (ids::POINT))
-            continue;
+juce::ValueTree PlaylistComponent::pointAt (const juce::ValueTree& clip, int trackIndex,
+                                            juce::Point<int> position) const
+{
+    const auto hit = laneHit (clip, trackIndex, position);
 
-        const auto distance = pointPosition (clip, trackIndex, point).getDistanceFrom (position.toFloat());
-
-        if (distance <= closestDistance)
-        {
-            closestDistance = distance;
-            closest = point;
-        }
-    }
-
-    return closest;
+    return hit.kind == automationLane::Hit::Kind::point ? hit.point : juce::ValueTree();
 }
 
 juce::ValueTree PlaylistComponent::createAutomationClip (const AutomationTarget& target,
@@ -843,8 +874,35 @@ namespace
         deleteClip       = 2,
         deletePoint      = 3,
         addClip          = 4,
-        duplicatePattern = 5
+        duplicatePattern = 5,
+
+        // APPENDED, never inserted. These ids are what applyClipMenuChoice
+        // takes, so a test names an item by its number and inserting one in the
+        // middle would silently re-aim every one of them.
+        shapeLine        = 6,
+        shapeCurve       = 7,
+        shapeStep        = 8
     };
+}
+
+void PlaylistComponent::latchMenuContext (const juce::ValueTree& clip, int trackIndex,
+                                          juce::Point<int> position) const
+{
+    // ONE latch, called by the press and by the test seam alike, so the menu a
+    // test reads and the menu the pointer opens cannot be built from different
+    // things under the pointer.
+    menuPoint = {};
+    menuSegment = {};
+
+    if (! clip.isValid())
+        return;
+
+    const auto hit = laneHit (clip, trackIndex, position);
+
+    if (hit.kind == automationLane::Hit::Kind::point)
+        menuPoint = hit.point;
+    else if (hit.kind == automationLane::Hit::Kind::segment)
+        menuSegment = hit.point;
 }
 
 juce::PopupMenu PlaylistComponent::buildClipMenu (const juce::ValueTree& track, int bar) const
@@ -852,9 +910,42 @@ juce::PopupMenu PlaylistComponent::buildClipMenu (const juce::ValueTree& track, 
     juce::PopupMenu menu;
     const auto clip = ProjectEdits::findClipAtBar (track, bar);
 
+    // The three shapes, flat and ticked - not a submenu. MenuSeam's reader uses
+    // MenuItemIterator, which does NOT recurse, so a submenu's children never
+    // reach the array a test asserts against. Flat keeps the seam honest and is
+    // one click fewer.
+    //
+    // "Line" is a curve with no bend rather than a third stored shape, so it is
+    // ticked when the shape is curve and the bend is zero. Two facts in the file,
+    // three choices in the hand.
+    const auto addShapeItems = [&menu] (const juce::ValueTree& owner)
+    {
+        const auto shape = segmentShapeFromString (owner[ids::shape].toString());
+        const auto bend = (double) owner[ids::curve];
+        const auto straight = shape == SegmentShape::curve && juce::approximatelyEqual (bend, 0.0);
+
+        menu.addItem ((int) ClipMenuItem::shapeLine, "Line", true, straight);
+        menu.addItem ((int) ClipMenuItem::shapeCurve, "Curve", true,
+                      shape == SegmentShape::curve && ! straight);
+        menu.addItem ((int) ClipMenuItem::shapeStep, "Step", true, shape == SegmentShape::step);
+    };
+
     if (menuPoint.isValid())
     {
         menu.addItem ((int) ClipMenuItem::deletePoint, "Delete point");
+        menu.addSeparator();
+
+        // The shapes of the segment this point OWNS - the one to its right,
+        // which is the same segment its bend has always described.
+        addShapeItems (menuPoint);
+        return menu;
+    }
+
+    if (menuSegment.isValid())
+    {
+        // No "Delete point" here: there is no point under the pointer, and an
+        // item that deleted an adjacent one would do something nobody aimed at.
+        addShapeItems (menuSegment);
         return menu;
     }
 
@@ -934,6 +1025,23 @@ void PlaylistComponent::applyClipChoice (juce::ValueTree track, int bar, int cho
             }
             break;
 
+        case ClipMenuItem::shapeLine:
+        case ClipMenuItem::shapeCurve:
+        case ClipMenuItem::shapeStep:
+            if (auto owner = menuPoint.isValid() ? menuPoint : menuSegment; owner.isValid())
+            {
+                undo.beginNewTransaction ("Change segment shape");
+
+                if ((ClipMenuItem) choice == ClipMenuItem::shapeLine)
+                    ProjectEdits::setPointStraight (owner, &undo);
+                else
+                    ProjectEdits::setPointShape (owner,
+                                                 (ClipMenuItem) choice == ClipMenuItem::shapeStep
+                                                     ? SegmentShape::step : SegmentShape::curve,
+                                                 &undo);
+            }
+            break;
+
         case ClipMenuItem::addClip:
             undo.beginNewTransaction ("Add clip");
             ProjectEdits::addClip (track, editorState.getCurrentPatternId(), bar, 1, &undo);
@@ -946,6 +1054,7 @@ void PlaylistComponent::applyClipChoice (juce::ValueTree track, int bar, int cho
     }
 
     menuPoint = {};
+    menuSegment = {};
     repaint();
 }
 
@@ -985,11 +1094,46 @@ juce::StringArray PlaylistComponent::trackMenuItems (int trackIndex) const
     return menuItems (menu);
 }
 
-juce::StringArray PlaylistComponent::clipMenuItems (int trackIndex, int bar) const
+juce::StringArray PlaylistComponent::clipMenuItemsAt (juce::Point<int> position) const
 {
-    const auto menu = buildClipMenu (trackAt (trackIndex), bar);
+    const auto trackIndex = trackAtY (position.y);
+    const auto track = trackAt (trackIndex);
+    const auto bar = barAtX (position.x);
+    const auto clip = track.isValid() ? ProjectEdits::findClipAtBar (track, bar) : juce::ValueTree();
+
+    latchMenuContext (clip, trackIndex, position);
+
+    const auto menu = buildClipMenu (track, bar);
 
     return menuItems (menu);
+}
+
+juce::StringArray PlaylistComponent::clipMenuItems (int trackIndex, int bar) const
+{
+    // Reimplemented ON the position pair rather than kept as a second builder: a
+    // bar has no y, and which segment of a curve you are on IS a y. Aiming at
+    // the middle of the row is what asking about a bar has always meant.
+    juce::UndoManager scratch;
+    auto probe = ProjectEdits::addClip (trackAt (trackIndex), 1, bar, 1, &scratch);
+    const auto bounds = boundsForClip (probe, trackIndex);
+    ProjectEdits::removeClip (trackAt (trackIndex), probe, &scratch);
+
+    return clipMenuItemsAt (bounds.getCentre().toInt());
+}
+
+bool PlaylistComponent::applyClipMenuChoiceAt (juce::Point<int> position, int choice)
+{
+    const auto trackIndex = trackAtY (position.y);
+    auto track = trackAt (trackIndex);
+
+    if (! track.isValid())
+        return false;
+
+    const auto bar = barAtX (position.x);
+
+    latchMenuContext (ProjectEdits::findClipAtBar (track, bar), trackIndex, position);
+    applyClipChoice (track, bar, choice);
+    return true;
 }
 
 bool PlaylistComponent::applyClipMenuChoice (int trackIndex, int bar, int choice)
@@ -999,8 +1143,12 @@ bool PlaylistComponent::applyClipMenuChoice (int trackIndex, int bar, int choice
     if (! track.isValid())
         return false;
 
-    applyClipChoice (track, bar, choice);
-    return true;
+    juce::UndoManager scratch;
+    auto probe = ProjectEdits::addClip (track, 1, bar, 1, &scratch);
+    const auto bounds = boundsForClip (probe, trackIndex);
+    ProjectEdits::removeClip (track, probe, &scratch);
+
+    return applyClipMenuChoiceAt (bounds.getCentre().toInt(), choice);
 }
 
 void PlaylistComponent::showAutomationMenu()
@@ -1138,7 +1286,7 @@ void PlaylistComponent::mouseDown (const juce::MouseEvent& event)
     // rather than a thing that happens on the way past.
     if (event.mods.isPopupMenu())
     {
-        menuPoint = pointAt (clip, trackIndex, event.getPosition());
+        latchMenuContext (clip, trackIndex, event.getPosition());
 
         auto menu = buildClipMenu (track, bar);
         menu.setLookAndFeel (&getLookAndFeel());
@@ -1152,14 +1300,36 @@ void PlaylistComponent::mouseDown (const juce::MouseEvent& event)
         return;
     }
 
-    if (auto point = pointAt (clip, trackIndex, event.getPosition()); point.isValid())
+    // A point, then the curve, then the clip.
+    //
+    // The point is first because it is the smaller, more precise target and it
+    // sits inside the band its own segments occupy. The curve is before the clip
+    // because a press within a few pixels of it is a press ON it - and only
+    // within a few pixels, so a press anywhere else in the clip still moves the
+    // clip and no gesture is taken away.
+    const auto hit = laneHit (clip, trackIndex, event.getPosition());
+
+    if (hit.kind == automationLane::Hit::Kind::point)
     {
         draggedClip = clip;
         draggedClipTrack = track;
-        draggedPoint = point;
+        draggedPoint = hit.point;
         dropTrackIndex = trackIndex;
         gesture = Gesture::draggingPoint;
         undo.beginNewTransaction ("Move automation point");
+        return;
+    }
+
+    if (hit.kind == automationLane::Hit::Kind::segment && automationLane::isBendable (hit.point))
+    {
+        draggedClip = clip;
+        draggedClipTrack = track;
+        draggedPoint = hit.point;         // the segment's LEFT point owns its bend
+        dropTrackIndex = trackIndex;
+        gesture = Gesture::bendingSegment;
+        bendOrigin = event.getPosition();
+        bendAtDragStart = (double) hit.point[ids::curve];
+        undo.beginNewTransaction ("Bend automation curve");
         return;
     }
 
@@ -1312,10 +1482,51 @@ void PlaylistComponent::mouseDrag (const juce::MouseEvent& event)
 
     auto& undo = document.getUndoManager();
 
+    if (gesture == Gesture::bendingSegment)
+    {
+        // Absolute from where the drag began, not accumulated: that is what
+        // makes the gesture path-independent, so dragging out and back returns
+        // the bend it started with.
+        //
+        // Shift is FINER here, and suspends the snap in the point drag below.
+        // The two look like a contradiction and are not: this drag changes a
+        // VALUE and that one changes a POSITION, which is the line Gestures.h
+        // already draws.
+        const auto travel = (double) (bendOrigin.y - event.y);
+        const auto scale = gesture::isFine (event.mods) ? gesture::fineMultiplier : 1.0;
+
+        auto bend = bendAtDragStart
+                      + travel / (double) gesture::dragPixelsForFullRange * scale * 2.0;
+
+        // Up bulges the curve UP whichever way the segment runs. Without this the
+        // same hand movement bulges up on a rising segment and down on a falling
+        // one.
+        const auto points = ProjectEdits::sortedAutomationPoints (automationOf (draggedClip));
+        const auto index = points.indexOf (draggedPoint);
+
+        if (index >= 0 && index + 1 < points.size()
+            && (double) points[index + 1][ids::value] < (double) draggedPoint[ids::value])
+            bend = -bend;
+
+        ProjectEdits::setPointCurve (draggedPoint, bend, &undo);
+        repaint();
+        return;
+    }
+
     if (gesture == Gesture::draggingPoint)
     {
         double step = 0.0, value = 0.0;
         positionToCurve (draggedClip, dropTrackIndex, event.getPosition(), step, value);
+
+        // Snapped to the BEAT, and shift suspends it - the piano roll's rule. A
+        // bar is far too coarse for a curve on a four-bar clip, which is what
+        // the playlist's own timeline counts in.
+        if (! gesture::isFine (event.mods))
+        {
+            const auto beat = (double) juce::jmax (1, Meter::of (document.getState()).stepsPerBeat);
+            step = std::round (step / beat) * beat;
+        }
+
         ProjectEdits::moveAutomationPoint (automationOf (draggedClip), draggedPoint, step, value, &undo);
         repaint();
         return;
@@ -1534,66 +1745,22 @@ void PlaylistComponent::paintAutomationClip (juce::Graphics& g, const juce::Valu
     g.drawText (automation[ids::name].toString(), bounds.toNearestInt().reduced (space::xs, space::xxs),
                 juce::Justification::topLeft, true);
 
-    juce::Array<juce::ValueTree> points;
-
-    for (const auto& point : automation)
-        if (point.hasType (ids::POINT))
-            points.add (point);
-
     const juce::Graphics::ScopedSaveState clipped (g);
     g.reduceClipRegion (bounds.toNearestInt());
 
-    // SAMPLED from the same evaluator the audio thread uses, one point per pixel
-    // column, rather than a straight lineTo between the points.
+    // The lane draws itself. Its painter samples the same evaluator the audio
+    // thread reads, so a bend and a step are drawn as they are heard rather than
+    // as the chord this used to draw.
     //
-    // This painter used to draw every segment as a chord, so a bend - which both
-    // evaluators have always honoured - was heard and not seen. Approximating
-    // the shape with a quadraticTo instead would be a second, different curve:
-    // close, visibly wrong at a full bend, and wrong in a way nobody would
-    // notice for a year. Sampling has one formula by construction, and a stepped
-    // segment gets its square edge for free.
-    juce::Path curve;
-
-    if (points.size() > 1)
-    {
-        const auto model = curvePointsOf (automation);
-        const auto stepsPerBar = Meter::of (document.getState()).stepsPerBar();
-        const auto clipSteps = (double) juce::jmax (1, (int) clip[ids::lengthBars] * stepsPerBar);
-
-        const auto left = pointPosition (clip, trackIndex, points.getFirst());
-        const auto right = pointPosition (clip, trackIndex, points.getLast());
-        const auto columns = juce::jmax (2, (int) std::ceil (right.x - left.x));
-
-        curve.startNewSubPath (left);
-
-        // Deliberately NOT reaching t == 1 in the loop: the final lineTo below
-        // puts the last point exactly where its handle is drawn, for every
-        // shape, which a loop running to the end only approximately does - and
-        // it is what makes a stepped segment jump rather than lean.
-        for (int i = 1; i < columns; ++i)
-        {
-            const auto x = left.x + (right.x - left.x) * (float) i / (float) columns;
-            const auto step = (double) ((x - bounds.getX()) / bounds.getWidth()) * clipSteps;
-            const auto value = curveValueAt (model, step);
-
-            curve.lineTo (x, bounds.getBottom() - (float) value * bounds.getHeight());
-        }
-
-        curve.lineTo (right);
-
-        g.setColour (clipColour);
-        g.strokePath (curve, juce::PathStrokeType (stroke::regular));
-    }
-
-    for (const auto& point : points)
-    {
-        const auto position = pointPosition (clip, trackIndex, point);
-        g.setColour (colour::wellDeep);
-        g.fillEllipse (juce::Rectangle<float> (7.0f, 7.0f).withCentre (position));
-        g.setColour (clipColour);
-        g.fillEllipse (juce::Rectangle<float> (5.0f, 5.0f).withCentre (position));
-    }
-
+    // `bipolar` is still false: telling whether a target is pan-like means
+    // resolving its (scope, targetId, slot) back to a ParamSpec, and the one
+    // function that will do that does not exist yet. Wiring it from here would
+    // be a second copy of the resolution the picker already does.
+    automationLane::paintCurve (g, laneGeometry (clip, trackIndex),
+                                ProjectEdits::sortedAutomationPoints (automation),
+                                { clipColour,
+                                  false,
+                                  clip == hoveredSegmentClip ? hoveredSegment : -1 });
 }
 
 /** The lanes and the clips on them. Its own function because it is the only

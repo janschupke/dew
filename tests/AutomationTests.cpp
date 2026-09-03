@@ -100,8 +100,13 @@ TEST_CASE ("a curve reads back the shape it was drawn as", "[automation]")
     REQUIRE_THAT (ProjectEdits::automationValueAt (automation, 500.0), WithinAbs (1.0, 1e-9));
 }
 
-TEST_CASE ("points stay in step order however they are dragged", "[automation]")
+TEST_CASE ("a point cannot be dragged past its neighbours", "[automation]")
 {
+    // The old name said "points stay in step order HOWEVER they are dragged",
+    // which described the mechanism: the point went wherever it was dragged and
+    // the tree was re-sorted behind it. That shuffled the children under the
+    // point being dragged and put a moveChild on the undo stack for every frame.
+    // The rule now is that the drag stops.
     auto project = ProjectFactory::createDefault();
     juce::UndoManager undo;
 
@@ -110,8 +115,18 @@ TEST_CASE ("points stay in step order however they are dragged", "[automation]")
     auto a = ProjectEdits::addAutomationPoint (automation, 4.0, 0.2, &undo);
     ProjectEdits::addAutomationPoint (automation, 8.0, 0.8, &undo);
 
-    // Drag the earlier point past the later one.
+    const auto indexBefore = automation.indexOf (a);
+
+    // Drag the earlier point far past the later one.
     ProjectEdits::moveAutomationPoint (automation, a, 20.0, 0.2, &undo);
+
+    // It moved as far as it was allowed and no further.
+    REQUIRE ((double) a[ids::step] > 4.0);
+    REQUIRE_THAT ((double) a[ids::step], WithinAbs (8.0 - ProjectEdits::minPointGap, 1e-9));
+
+    // And nothing was reordered - which is what removing the re-sort buys, and
+    // what nothing else asserts.
+    REQUIRE (automation.indexOf (a) == indexBefore);
 
     double previous = -1.0;
 
@@ -122,8 +137,10 @@ TEST_CASE ("points stay in step order however they are dragged", "[automation]")
             previous = (double) point[ids::step];
         }
 
-    // An unsorted curve would evaluate to a shape nobody drew.
-    REQUIRE (ProjectEdits::automationValueAt (automation, 8.0) > 0.2);
+    // Backwards too, and the first point still stops at zero rather than going
+    // negative.
+    ProjectEdits::moveAutomationPoint (automation, a, -50.0, 0.2, &undo);
+    REQUIRE_THAT ((double) a[ids::step], WithinAbs (ProjectEdits::minPointGap, 1e-9));
 }
 
 TEST_CASE ("two points cannot share a step", "[automation]")

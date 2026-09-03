@@ -1,5 +1,8 @@
 #include "model/ProjectEdits.h"
 
+#include <cmath>
+#include <limits>
+
 #include "model/AutomationCurve.h"
 
 #include "model/ChannelColour.h"
@@ -630,8 +633,11 @@ juce::ValueTree ProjectEdits::addAutomationPoint (juce::ValueTree automation, do
 
     // Two points on one step is a curve with no defined value there, so an
     // existing one moves instead of being joined.
+    // The same gap moveAutomationPoint clamps to. Anything closer than that is
+    // the same point: a pair inside the gap could never be separated again,
+    // because the drag rule would not let either of them move past the other.
     for (auto existing : sortedPoints (automation))
-        if (juce::approximatelyEqual ((double) existing[ids::step], clampedStep))
+        if (std::abs ((double) existing[ids::step] - clampedStep) < minPointGap)
         {
             existing.setProperty (ids::value, clampedValue, undo);
             return existing;
@@ -672,20 +678,32 @@ void ProjectEdits::moveAutomationPoint (juce::ValueTree automation, juce::ValueT
     if (! point.isValid())
         return;
 
-    point.setProperty (ids::step, juce::jmax (0.0, step), undo);
-    point.setProperty (ids::value, juce::jlimit (0.0, 1.0, value), undo);
+    // Clamped between the neighbours rather than let past them and re-sorted.
+    //
+    // Re-sorting worked, but it shuffled the tree under the point being dragged
+    // - so a drag was a sequence of moveChild calls on the undo stack, and
+    // anything holding the point's index had it change mid-gesture. Stopping the
+    // point is also what the hand expects: a curve's points are in an order, and
+    // a drag should meet that order rather than silently rewrite it.
+    auto lower = 0.0;
+    auto upper = std::numeric_limits<double>::max();
 
-    // Dragging one point past another would otherwise leave the list out of
-    // order, and an unsorted curve evaluates to a shape nobody drew.
     const auto sorted = sortedPoints (automation);
+    const auto index = sorted.indexOf (point);
 
-    for (int i = 0; i < sorted.size(); ++i)
-    {
-        const auto from = automation.indexOf (sorted[i]);
+    if (index > 0)
+        lower = (double) sorted[index - 1][ids::step] + minPointGap;
 
-        if (from >= 0 && from != i)
-            automation.moveChild (from, i, undo);
-    }
+    if (index >= 0 && index + 1 < sorted.size())
+        upper = (double) sorted[index + 1][ids::step] - minPointGap;
+
+    // A curve squeezed until its neighbours cross would otherwise invert the
+    // range and jump the point to the far side of them.
+    const auto clamped = upper > lower ? juce::jlimit (lower, upper, juce::jmax (0.0, step))
+                                       : juce::jmax (0.0, lower);
+
+    point.setProperty (ids::step, clamped, undo);
+    point.setProperty (ids::value, juce::jlimit (0.0, 1.0, value), undo);
 }
 
 void ProjectEdits::removeAutomationPoint (juce::ValueTree automation, juce::ValueTree point,

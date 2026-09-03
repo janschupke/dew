@@ -9,6 +9,7 @@
 #include "ui/PlaylistToolbar.h"
 #include "ui/TimelineRuler.h"
 #include "ui/TimelinePaint.h"
+#include "ui/AutomationLane.h"
 #include "ui/TimelineView.h"
 #include "ui/primitives/DewControls.h"
 
@@ -113,13 +114,31 @@ public:
     /** The items a track header's menu offers, for a test to assert against. */
     juce::StringArray trackMenuItems (int trackIndex) const;
 
-    /** The same, for the menu a clip's right-click opens. */
+    /** The same, for the menu a clip's right-click opens.
+
+        A bar has no y, and which segment of a curve you are on IS a y - so the
+        POSITION pair is the real seam and the bar pair is written on top of it,
+        aiming at the middle of the row. Two builders would be two chances to
+        disagree about what is under the pointer.
+    */
+    juce::StringArray clipMenuItemsAt (juce::Point<int>) const;
+    bool applyClipMenuChoiceAt (juce::Point<int>, int choice);
+
     juce::StringArray clipMenuItems (int trackIndex, int bar) const;
     bool applyClipMenuChoice (int trackIndex, int bar, int choice);
 
     /** Where an automation point sits, for tests and for hit-testing. */
     juce::Point<float> pointPosition (const juce::ValueTree& clip, int trackIndex,
                                       const juce::ValueTree& point) const;
+
+    /** Where a clip's curve is drawn, so a test can aim at a segment rather than
+        recomputing the layout and drifting from it - the same reason
+        getBoundsForClip and getRulerArea are public.
+    */
+    automationLane::Geometry laneGeometryFor (const juce::ValueTree& clip, int trackIndex) const
+    {
+        return laneGeometry (clip, trackIndex);
+    }
 
     // --- the height of a lane -------------------------------------------------
     /** The height of EVERY lane.
@@ -170,7 +189,7 @@ private:
 
     // Scrubbing and range-selecting are not here: the ruler's whole gesture
     // lives in ruler::Gesture, shared with the piano roll and the channel rack.
-    enum class Gesture { none, moving, resizing, draggingPoint, painting };
+    enum class Gesture { none, moving, resizing, draggingPoint, bendingSegment, painting };
 
     void timerCallback() override;
     void valueTreePropertyChanged (juce::ValueTree&, const juce::Identifier&) override;
@@ -258,9 +277,26 @@ private:
     /** Set while a clip menu is open, so its items act on the point that was
         actually under the pointer rather than re-hit-testing from a bar.
     */
-    juce::ValueTree menuPoint;
+    mutable juce::ValueTree menuPoint;
+
+    /** And the segment, when the pointer is on the curve but not on a point.
+        Mutable for the same reason menuPoint is: the seam a test reads is const,
+        and it has to latch what it is about to describe. */
+    mutable juce::ValueTree menuSegment;
+
+    /** Latches what is under a position, for both the press and the seam. */
+    void latchMenuContext (const juce::ValueTree& clip, int trackIndex, juce::Point<int>) const;
 
     juce::ValueTree automationOf (const juce::ValueTree& clip) const;
+
+    /** Where this clip's curve is drawn, and what its horizontal axis means. */
+    automationLane::Geometry laneGeometry (const juce::ValueTree& clip, int trackIndex) const;
+
+    /** A point, a segment, or nothing. The ONE hit test: the press, the cursor
+        and the menu all go through it, or the cursor promises something the
+        press will not do.
+    */
+    automationLane::Hit laneHit (const juce::ValueTree& clip, int trackIndex, juce::Point<int>) const;
 
     /** The automation point under this position, within grabbing distance. */
     juce::ValueTree pointAt (const juce::ValueTree& clip, int trackIndex, juce::Point<int>) const;
@@ -341,11 +377,24 @@ private:
     // where the track it adds will appear.
     DewButton addTrackButton { "+ Track", DewButton::Role::ghost };
 
-    static constexpr float pointGrabRadius = 7.0f;
 
     juce::ValueTree draggedClip;
     juce::ValueTree draggedClipTrack;
     juce::ValueTree draggedPoint;
+
+    /** The bend gesture's own origin and starting value, latched at the press.
+
+        Its own, because Component::getDistanceFromDragStart is always zero in a
+        headless harness - and ABSOLUTE from where the drag began, which is what
+        makes the gesture path-independent: out and back returns to exactly where
+        it started rather than to wherever the accumulated deltas landed.
+    */
+    juce::Point<int> bendOrigin;
+    double bendAtDragStart = 0.0;
+
+    /** Which segment the pointer is over, so only a change of it repaints. */
+    int hoveredSegment = -1;
+    juce::ValueTree hoveredSegmentClip;
     Gesture gesture = Gesture::none;
     int dragBarOffset = 0;
     int dropTrackIndex = -1;

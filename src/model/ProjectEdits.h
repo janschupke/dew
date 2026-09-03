@@ -202,8 +202,31 @@ struct ProjectEdits
     static juce::ValueTree addAutomationPoint (juce::ValueTree automation, double step,
                                                double value, juce::UndoManager*);
 
+    /** Moves a point, CLAMPED between its neighbours.
+
+        A drag cannot carry a point past the one before or after it. The old
+        behaviour was to let it through and then re-sort the tree, which meant a
+        drag silently reordered the children under the point being dragged and
+        put a moveChild on the undo stack for every frame of it.
+
+        The clamp leaves a gap rather than stopping exactly ON the neighbour:
+        addAutomationPoint treats two approximately-equal steps as one point, so
+        landing on a neighbour would make a pair the rest of the model regards as
+        single, and a zero-width segment whose bend means nothing.
+    */
     static void moveAutomationPoint (juce::ValueTree automation, juce::ValueTree point,
                                      double step, double value, juce::UndoManager*);
+
+    /** The smallest gap between two automation points, in steps.
+
+        Not zero, for the reason above. Small enough to be invisible - a bar is
+        120px at the maximum zoom, so a sixty-fourth of a step is a tenth of a
+        pixel - and far larger than the epsilon approximatelyEqual uses.
+
+        Here rather than in Tokens.h: it is a rule about what a document may
+        contain, not a design value.
+    */
+    static constexpr double minPointGap = 1.0 / 64.0;
 
     static void removeAutomationPoint (juce::ValueTree automation, juce::ValueTree point,
                                        juce::UndoManager*);

@@ -262,6 +262,7 @@ add_library(dew_ui STATIC
   ui/StatusBar.cpp
   ui/TransportBar.cpp
   ui/Hotkeys.cpp
+  ui/AutomationLane.cpp
   ui/TimelinePaint.cpp
   ui/TimelineRuler.cpp
   ui/StepGridComponent.cpp
