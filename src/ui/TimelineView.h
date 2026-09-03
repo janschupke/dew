@@ -45,6 +45,18 @@ struct TimelineView
         return (double) contentWidth / pixelsPerStep;
     }
 
+    /** A distance in pixels, as a distance along this timeline.
+
+        The wheel measures in pixels, because that is the only unit the piano
+        roll, the playlist, the channel rack and the score tab share. Here is
+        where it becomes steps - or bars, in the playlist's instance, which
+        counts those instead and never says so anywhere else either.
+    */
+    double stepsForPixels (double pixels) const noexcept
+    {
+        return pixels / pixelsPerStep;
+    }
+
     /** First and last step touching the content area, clamped to [0, totalSteps).
         Painting walks this rather than every step, so zooming out over a long
         pattern does not cost anything.

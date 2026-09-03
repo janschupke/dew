@@ -755,14 +755,17 @@ void PianoRollComponent::mouseWheelMove (const juce::MouseEvent& event,
     }
     else if (event.mods.isShiftDown())
     {
-        timeline.scrollOffsetSteps -= delta.along() * gesture::wheelStepsPerNotch;
+        timeline.scrollOffsetSteps -= timeline.stepsForPixels (delta.along()
+                                                                   * gesture::wheelPixelsPerNotch);
     }
     else
     {
-        // Vertical scrolling walks pitches rather than steps, so a notch is
-        // three rows rather than three steps.
-        pitchScrollPx -= delta.y * 3.0 * rowHeight;
-        timeline.scrollOffsetSteps -= delta.x * gesture::wheelStepsPerNotch;
+        // Pixels, not rows. A notch used to be three rows, which was 42px here
+        // and one lane - 34px to 204px - in the playlist, for the same flick of
+        // the same wheel.
+        pitchScrollPx -= delta.y * gesture::wheelPixelsPerNotch;
+        timeline.scrollOffsetSteps -= timeline.stepsForPixels (delta.x
+                                                                   * gesture::wheelPixelsPerNotch);
     }
 
     updateScrollBars();

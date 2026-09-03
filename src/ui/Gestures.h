@@ -47,8 +47,33 @@ inline constexpr double fineMultiplier = 0.15;
     still. */
 inline constexpr int dragThresholdPx = 4;
 
-/** Steps of the timeline per wheel notch. */
-inline constexpr double wheelStepsPerNotch = 6.0;
+/** How far one wheel notch scrolls, in PIXELS.
+
+    A notch has to mean the same distance on every axis of every view, and it
+    meant six different things:
+
+      - six STEPS horizontally, which is 18px zoomed out and 720px zoomed in -
+        a fortyfold range on the axis people scroll most
+      - one LANE down the playlist, which is 34px or 204px depending on a height
+        the same wheel can change
+      - three ROWS down the piano roll, which is 42px
+      - whatever juce::Viewport does, in the channel rack
+      - whatever juce::CodeEditorComponent does, in the score tab
+      - and in a number field, nothing at all: it read the SIGN and threw the
+        magnitude away
+
+    Each was defensible about itself and none of them agreed. Pixels is the only
+    unit all six share, so pixels is the unit, and each handler divides into its
+    own at the point of use.
+
+    The value is what a juce::Viewport already does - fourteen times its 16px
+    single step - because that is the speed the channel rack scrolls at, and the
+    speed everything else on the machine scrolls at. The timelines were about
+    five times slower than that, which is the whole of "scrolling feels slow".
+    Nothing here depends on JUCE's two numbers; a test asserts the rack still
+    agrees, the way the colour ramp is held by a test rather than a dependency.
+*/
+inline constexpr double wheelPixelsPerNotch = 224.0;
 
 /** How hard a wheel notch zooms. deltaY is small, and a zoom that moved by it
     directly would take a dozen notches to be noticeable. */

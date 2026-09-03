@@ -1,12 +1,14 @@
 #include "ui/ScoreEditorComponent.h"
 
 #include <algorithm>
+#include <cmath>
 
 #include "lang/Completion.h"
 #include "lang/SourceRange.h"
 #include "model/Ids.h"
 #include "model/ProjectEdits.h"
 #include "model/ScoreBake.h"
+#include "ui/Gestures.h"
 #include "ui/Hotkeys.h"
 #include "ui/design/Tokens.h"
 
@@ -287,6 +289,30 @@ ScoreEditorComponent::ScoreEditorComponent (ProjectDocument& projectDocument)
     setFontStep (bodyStep);
 
     refresh();
+}
+
+void ScoreTextEditor::mouseWheelMove (const juce::MouseEvent& event,
+                                      const juce::MouseWheelDetails& wheel)
+{
+    const auto delta = gesture::deltaOf (wheel);
+
+    // A sideways gesture is the base class's business; see the class comment.
+    if (std::abs (delta.y) < std::abs (delta.x))
+    {
+        juce::CodeEditorComponent::mouseWheelMove (event, wheel);
+        return;
+    }
+
+    lineRemainder += delta.y * gesture::wheelPixelsPerNotch
+                         / (double) juce::jmax (1, getLineHeight());
+
+    const auto lines = (int) std::trunc (lineRemainder);
+
+    if (lines == 0)
+        return;
+
+    lineRemainder -= (double) lines;
+    scrollBy (-lines);
 }
 
 int ScoreEditorComponent::numFontSteps() noexcept    { return numSteps; }

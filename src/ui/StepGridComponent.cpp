@@ -126,7 +126,8 @@ void StepGridComponent::mouseWheelMove (const juce::MouseEvent& event,
     if (! isScrollable())
         return;
 
-    timeline.scrollOffsetSteps -= delta.along() * gesture::wheelStepsPerNotch;
+    timeline.scrollOffsetSteps -= timeline.stepsForPixels (delta.along()
+                                                               * gesture::wheelPixelsPerNotch);
     updateZoom();
     repaint();
 }

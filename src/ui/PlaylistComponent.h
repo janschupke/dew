@@ -158,6 +158,11 @@ public:
     */
     int getTrackHeight() const noexcept { return trackHeight; }
 
+    /** How far the lanes are scrolled, in pixels. Public so a test can ask how
+        far one wheel notch travelled without recomputing laneY and drifting
+        from it. */
+    double getTrackScrollPx() const noexcept { return trackScrollPx; }
+
     /** The one mutator. Clamps to the ladder, keeps the lane under the middle of
         the view where it is, and re-lays everything that depends on the height.
     */

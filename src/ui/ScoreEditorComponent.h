@@ -71,6 +71,31 @@ private:
     through ProjectEdits, so a score survives a save without anybody pressing
     anything - one transaction per typing run, not one per keystroke.
 */
+/** The score's text, scrolling at the speed everything else scrolls at.
+
+    juce::CodeEditorComponent forwards the wheel to its own scrollbars, which
+    move in LINES at a rate JUCE picks - a sixth speed in an application that
+    now has one. This subclass is that one change and nothing else: the layout,
+    the painting, the caret and the keyboard are all still the base class's.
+
+    Horizontal scrolling is left to it. A score has short lines and the axis is
+    rarely used, and matching one gesture is not worth reimplementing the other.
+*/
+class ScoreTextEditor : public juce::CodeEditorComponent
+{
+public:
+    using juce::CodeEditorComponent::CodeEditorComponent;
+
+    void mouseWheelMove (const juce::MouseEvent&, const juce::MouseWheelDetails&) override;
+
+private:
+    /** Whole lines are what scrollBy takes, and a trackpad sends fractions of
+        one. Rounding each event on its own means a slow drag scrolls nothing at
+        all, so the remainder is carried to the next.
+    */
+    double lineRemainder = 0.0;
+};
+
 class ScoreEditorComponent : public juce::Component,
                              private juce::CodeDocument::Listener,
                              private juce::Timer,
@@ -220,7 +245,7 @@ private:
 
     juce::CodeDocument source;
     ScoreTokeniser tokeniser;
-    juce::CodeEditorComponent editor { source, &tokeniser };
+    ScoreTextEditor editor { source, &tokeniser };
 
     DiagnosticsOverlay overlay { *this };
     juce::ListBox list { "scoreDiagnostics", this };

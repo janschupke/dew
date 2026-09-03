@@ -767,14 +767,19 @@ void PlaylistComponent::mouseWheelMove (const juce::MouseEvent& event,
     // wheel naturally maps to is the one that now moves.
     if (event.mods.isShiftDown())
     {
-        timeline.scrollOffsetSteps -= delta.along() * gesture::wheelStepsPerNotch;
+        timeline.scrollOffsetSteps -= timeline.stepsForPixels (delta.along()
+                                                                   * gesture::wheelPixelsPerNotch);
         updateScrollBar();
         repaint();
         return;
     }
 
-    timeline.scrollOffsetSteps -= delta.x * gesture::wheelStepsPerNotch;
-    scrollTracksTo (trackScrollPx - delta.y * (double) trackHeight);
+    timeline.scrollOffsetSteps -= timeline.stepsForPixels (delta.x * gesture::wheelPixelsPerNotch);
+
+    // Pixels, not lanes. A notch used to move exactly one lane, so the same
+    // gesture travelled 34px or 204px depending on a height this very wheel
+    // can change.
+    scrollTracksTo (trackScrollPx - delta.y * gesture::wheelPixelsPerNotch);
 }
 
 void PlaylistComponent::mouseMagnify (const juce::MouseEvent& event, float scaleFactor)
