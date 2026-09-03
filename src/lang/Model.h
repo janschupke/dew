@@ -39,6 +39,37 @@ struct SongSpec
     SourceRange gridRange;
 };
 
+/** How often a random choice is re-drawn.
+
+    Written `per <scope>` after the value it applies to. The scope IS the
+    identity of the draw: a choice `per instance` is one draw for the whole
+    instance, so it cannot change halfway through and cannot be moved by an edit
+    somewhere else in the file.
+*/
+enum class Scope
+{
+    note,      ///< a fresh draw at every onset
+    bar,       ///< one per bar
+    instance,  ///< one per rendered section instance - the default for a choice
+    section,   ///< one per section, shared by all of its instances
+    song       ///< one for the whole song
+};
+
+/** A value that is chosen from a list rather than set.
+
+    Deliberately narrow: a list of chord-tone degrees, not an expression. The
+    moment a value can be computed, completion stops being a table lookup and
+    the grid stops being statically knowable - which is the constraint the whole
+    language rests on.
+*/
+struct DegreeChoice
+{
+    std::vector<int> degrees;          ///< 1, 3, 5, 7 - which tone of the chord
+    Scope scope = Scope::instance;
+
+    bool declared() const noexcept { return ! degrees.empty(); }
+};
+
 struct ChannelSpec
 {
     std::string name;
@@ -49,6 +80,11 @@ struct ChannelSpec
     int highPitch = 96;
     int velocity = 96;
     int velocityJitter = 0;
+
+    /** How often the jitter is re-drawn. Per note by default, which is what
+        makes a held chord sound played rather than typed.
+    */
+    Scope velocityScope = Scope::note;
     int octave = 0;
 };
 
@@ -126,6 +162,15 @@ struct MelodySpec
     bool hasRange = false;
     int lowPitch = 0;
     int highPitch = 0;
+
+    /** Which tone of the last chord the line ends on.
+
+        `cadence 1` always ends on the root; `cadence choose [1 3 5] per
+        instance` ends on one of the three, the same one every compile, a
+        different one in each instance. This is the "ending note" a seed is
+        supposed to be able to vary.
+    */
+    DegreeChoice cadence;
 };
 
 struct PartSpec

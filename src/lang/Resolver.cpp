@@ -616,17 +616,63 @@ private:
         model.channels.push_back (channel);
     }
 
+    /** Reads a trailing `per <scope>`, and says whether it was there.
+
+        Returns false only when `per` is present and what follows it is not a
+        scope, which is the case worth a diagnostic - `per verse` is a typo, not
+        a scope nobody has implemented yet.
+    */
+    bool readScope (const Statement& statement, std::size_t at, Scope& out)
+    {
+        const auto& members = membersOf (ValueKind::scope);
+
+        for (std::size_t i = 0; i < members.size(); ++i)
+            if (statement.values[at].text == members[i])
+            {
+                out = (Scope) i;
+                return true;
+            }
+
+        auto& d = diagnostics.error ("E240",
+                                     std::string ("`") + std::string (statement.values[at].text)
+                                     + "` is not a scope", statement.values[at].range);
+
+        std::string list;
+
+        for (const auto& member : members)
+            list += (list.empty() ? "" : ", ") + std::string (member);
+
+        d.helps.push_back ("one of: " + list);
+        return false;
+    }
+
     void readVelocity (ChannelSpec& channel, const Statement& statement,
                        const KeySpec& spec)
     {
-        // `72` or `72 +- 6`.
-        if (statement.values.size() != 1 && statement.values.size() != 3)
+        // `72`, `72 +- 6`, or `72 +- 6 per bar`.
+        auto values = statement.values;
+
+        if (values.size() == 5)
+        {
+            if (values[3].text != "per")
+            {
+                wrongValue (statement, spec.kind);
+                return;
+            }
+
+            if (! readScope (statement, 4, channel.velocityScope))
+                return;
+
+            values.resize (3);
+        }
+
+        if (values.size() != 1 && values.size() != 3)
         {
             wrongValue (statement, spec.kind);
             return;
         }
 
-        const auto base = readInteger (statement.values.front().text);
+        const auto base = readInteger (values.front().text);
 
         if (! base.has_value() || *base < 1 || *base > 127)
         {
@@ -638,15 +684,15 @@ private:
 
         channel.velocity = (int) *base;
 
-        if (statement.values.size() == 3)
+        if (values.size() == 3)
         {
-            if (statement.values[1].kind != TokenKind::plusMinus)
+            if (values[1].kind != TokenKind::plusMinus)
             {
                 wrongValue (statement, spec.kind);
                 return;
             }
 
-            const auto spread = readInteger (statement.values[2].text);
+            const auto spread = readInteger (values[2].text);
 
             if (! spread.has_value() || *spread < 0 || *spread > 63)
             {
@@ -1059,6 +1105,100 @@ private:
         return part;
     }
 
+    /** `cadence 1`, or `cadence choose [1 3 5] per instance`.
+
+        A closed shape rather than an expression: a list of chord-tone degrees
+        and a scope. The moment a value can be COMPUTED, completion stops being
+        a table lookup and the grid stops being statically knowable, and those
+        two properties are what the whole language is built on.
+    */
+    void readCadence (MelodySpec& melody, const Statement& statement, const KeySpec& spec)
+    {
+        const auto& values = statement.values;
+
+        const auto readDegree = [this, &statement] (const Value& value) -> std::optional<int>
+        {
+            const auto degree = readInteger (value.text);
+
+            // The tones a chord actually has, counted the way musicians count
+            // them. `2` is not a chord tone and saying so is better than
+            // rounding it to one.
+            if (! degree.has_value() || (*degree != 1 && *degree != 3
+                                         && *degree != 5 && *degree != 7))
+            {
+                auto& d = diagnostics.error ("E241", "a cadence ends on a chord tone",
+                                             value.range);
+                d.helps.push_back ("1 is the root, 3 the third, 5 the fifth, 7 the seventh");
+                (void) statement;
+                return std::nullopt;
+            }
+
+            return degree;
+        };
+
+        if (values.size() == 1)
+        {
+            if (const auto degree = readDegree (values.front()))
+            {
+                melody.cadence.degrees = { *degree };
+                melody.cadence.scope = Scope::song;   // never re-drawn: it is set
+            }
+
+            return;
+        }
+
+        // `choose [ a b c ] per <scope>`, and the brackets are real tokens.
+        if (values.size() < 5 || values.front().text != "choose"
+            || values[1].kind != TokenKind::bracketOpen)
+        {
+            wrongValue (statement, spec.kind);
+            return;
+        }
+
+        std::size_t i = 2;
+        std::vector<int> degrees;
+
+        for (; i < values.size() && values[i].kind != TokenKind::bracketClose; ++i)
+        {
+            if (const auto degree = readDegree (values[i]))
+                degrees.push_back (*degree);
+            else
+                return;
+        }
+
+        if (i >= values.size() || values[i].kind != TokenKind::bracketClose)
+        {
+            diagnostics.error ("E242", "this list is never closed", statement.range,
+                               "a `[` needs a `]`");
+            return;
+        }
+
+        if (degrees.empty())
+        {
+            diagnostics.error ("E243", "a choice needs something to choose from",
+                               statement.range);
+            return;
+        }
+
+        melody.cadence.degrees = degrees;
+        melody.cadence.scope = Scope::instance;
+
+        // `per <scope>` is optional; without it a choice is per instance, which
+        // is what makes two verses end differently and one verse end once.
+        const auto rest = values.size() - (i + 1);
+
+        if (rest == 0)
+            return;
+
+        if (rest != 2 || values[i + 1].text != "per")
+        {
+            wrongValue (statement, spec.kind);
+            return;
+        }
+
+        readScope (statement, i + 2, melody.cadence.scope);
+    }
+
     // --- melody -------------------------------------------------------------
     MelodySpec resolveMelody (const Block& block, PartSpec& part)
     {
@@ -1104,6 +1244,10 @@ private:
             else if (statement.key == "mute")
             {
                 readMuteBudget (melody, statement, spec);
+            }
+            else if (statement.key == "cadence")
+            {
+                readCadence (melody, statement, spec);
             }
             else if (statement.key == "range")
             {

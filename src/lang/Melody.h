@@ -68,12 +68,18 @@ struct MelodyNote
     zero the generator is a pure argmin and the output is identical every
     compile; above zero it perturbs the scores, exploring more without ever
     becoming irreproducible.
+
+    `cadenceDegree` is which tone of the last chord the line has to end on -
+    1 the root, 3 the third, 5 the fifth, 7 the seventh, 0 for no rule. It
+    arrives already CHOSEN: the caller draws it at whatever scope the score
+    declared, so nothing in here has to know about seeds or scopes.
 */
 std::vector<MelodyNote> generateMelody (const std::vector<Onset>&,
                                         const std::vector<ChordSpan>&,
                                         const MelodySpec&,
                                         int lowPitch, int highPitch,
-                                        const SeedPath&);
+                                        const SeedPath&,
+                                        int cadenceDegree = 0);
 
 /** Applies a mute budget, in place.
 

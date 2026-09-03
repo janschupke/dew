@@ -224,7 +224,8 @@ std::vector<MelodyNote> generateMelody (const std::vector<Onset>& onsets,
                                         const std::vector<ChordSpan>& spans,
                                         const MelodySpec& melody,
                                         int lowPitch, int highPitch,
-                                        const SeedPath& path)
+                                        const SeedPath& path,
+                                        int cadenceDegree)
 {
     std::vector<MelodyNote> notes;
 
@@ -232,6 +233,16 @@ std::vector<MelodyNote> generateMelody (const std::vector<Onset>& onsets,
         return notes;
 
     const auto totalSteps = onsets.back().startStep + onsets.back().lengthSteps;
+
+    // Which onset the line ENDS on, found before generating rather than after:
+    // the cadence has to constrain the choice, not correct it afterwards, or a
+    // line that leapt into its last note would keep the leap and change the
+    // landing.
+    auto lastSounding = -1;
+
+    for (std::size_t i = 0; i < onsets.size(); ++i)
+        if (! onsets[i].isRest)
+            lastSounding = (int) i;
 
     auto previousPitch = -1;
     auto previousInterval = 0;
@@ -259,6 +270,31 @@ std::vector<MelodyNote> generateMelody (const std::vector<Onset>& onsets,
 
         const auto strong = onset.strength == MetricStrength::barStart
                          || onset.strength == MetricStrength::strongBeat;
+
+        // The cadence, applied by NARROWING the candidates rather than by
+        // overwriting the result: the note it picks is still the best one of
+        // those allowed, so it arrives by step where a step is available.
+        if (cadenceDegree > 0 && onsetIndex - 1 == lastSounding)
+        {
+            const auto index = (std::size_t) ((cadenceDegree - 1) / 2);
+
+            if (index < span->chord.intervals.size())
+            {
+                const auto wanted = ((span->chord.rootPc
+                                      + span->chord.intervals[index]) % 12 + 12) % 12;
+
+                std::vector<int> ending;
+
+                for (const auto pitch : candidates)
+                    if (((pitch % 12) + 12) % 12 == wanted)
+                        ending.push_back (pitch);
+
+                // Only if the tone is reachable in range: forcing an empty
+                // candidate set would end the line on silence.
+                if (! ending.empty())
+                    candidates = ending;
+            }
+        }
 
         if (strong && melody.strong == StrongRule::chordTones)
         {

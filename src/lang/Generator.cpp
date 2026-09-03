@@ -52,6 +52,36 @@ void sortNotes (std::vector<Note>& notes)
                       });
 }
 
+/** Where a draw sits in the song, so a `per <scope>` value can be keyed on the
+    right one of them.
+
+    The scope IS the identity of the draw. `per instance` derives one key for a
+    whole rendered instance, so the value cannot change halfway through it and
+    cannot be moved by an edit anywhere else in the file; `per note` derives one
+    per onset. Same tree, different depth.
+*/
+struct DrawSite
+{
+    std::uint64_t songSeed = 0;
+    std::string section;
+    SeedPath instance { 0 };   ///< song -> section -> instance -> channel
+
+    SeedPath pathFor (Scope scope, std::string_view label, int ordinal, int bar) const
+    {
+        switch (scope)
+        {
+            case Scope::song:     return SeedPath { songSeed }.child (label);
+            case Scope::section:  return SeedPath { songSeed }.child ("section:" + section)
+                                                              .child (label);
+            case Scope::instance: return instance.child (label);
+            case Scope::bar:      return instance.child (label, bar);
+            case Scope::note:     break;
+        }
+
+        return instance.child (label, ordinal);
+    }
+};
+
 class Generator
 {
 public:
@@ -320,7 +350,8 @@ private:
                 if (override.channel == part.channel)
                     effective = &override;
 
-            renderPart (*effective, spans, instancePath, totalSteps, stepsPerBar, notes);
+            renderPart (*effective, spans, instancePath, section.name, totalSteps,
+                        stepsPerBar, notes);
         }
 
         return notes;
@@ -343,8 +374,8 @@ private:
     }
 
     void renderPart (const PartSpec& part, const std::vector<ChordSpan>& spans,
-                     const SeedPath& instancePath, int totalSteps, int stepsPerBar,
-                     std::vector<Note>& notes)
+                     const SeedPath& instancePath, const std::string& sectionName,
+                     int totalSteps, int stepsPerBar, std::vector<Note>& notes)
     {
         const auto track = trackIndexFor (part.channel);
 
@@ -356,17 +387,21 @@ private:
         if (channel == nullptr)
             return;
 
-        const auto partPath = instancePath.child ("channel:" + part.channel);
         const auto transpose = 12 * (part.octave + channel->octave);
 
+        DrawSite site;
+        site.songSeed = model.song.seed;
+        site.section = sectionName;
+        site.instance = instancePath.child ("channel:" + part.channel);
+
         if (part.kind == PartKind::chords)
-            renderChords (part, *channel, spans, track, transpose, notes, partPath);
+            renderChords (part, *channel, spans, track, transpose, notes, site, stepsPerBar);
         else if (part.kind == PartKind::line)
             renderLine (part, *channel, spans, track, transpose, totalSteps, stepsPerBar,
-                        notes, partPath);
+                        notes, site);
         else
             renderMelody (part, *channel, spans, track, transpose, totalSteps, stepsPerBar,
-                          notes, partPath);
+                          notes, site);
     }
 
     const RhythmSpec* rhythmFor (const PartSpec& part) const
@@ -383,13 +418,32 @@ private:
         return nullptr;
     }
 
-    float velocityFor (const ChannelSpec& channel, const SeedPath& path, int ordinal) const
+    /** Resolves a choice to one value, at the scope it declares.
+
+        Zero when nothing was declared, which is what "no cadence rule" means
+        downstream - a single sentinel rather than an optional threaded through
+        the generator.
+    */
+    static int chooseDegree (const DegreeChoice& choice, const DrawSite& site)
+    {
+        if (! choice.declared())
+            return 0;
+
+        if (choice.degrees.size() == 1)
+            return choice.degrees.front();
+
+        auto rng = site.pathFor (choice.scope, "cadence", 0, 0).rng();
+        return choice.degrees[rng.below ((std::uint32_t) choice.degrees.size())];
+    }
+
+    float velocityFor (const ChannelSpec& channel, const DrawSite& site, int ordinal,
+                       int bar) const
     {
         auto value = (float) channel.velocity;
 
         if (channel.velocityJitter > 0)
         {
-            auto rng = path.child ("velocity", ordinal).rng();
+            auto rng = site.pathFor (channel.velocityScope, "velocity", ordinal, bar).rng();
             value += rng.jitter ((float) channel.velocityJitter);
         }
 
@@ -407,7 +461,7 @@ private:
 
     void renderChords (const PartSpec& part, const ChannelSpec& channel,
                        const std::vector<ChordSpan>& spans, int track, int transpose,
-                       std::vector<Note>& notes, const SeedPath& path)
+                       std::vector<Note>& notes, const DrawSite& site, int stepsPerBar)
     {
         const auto* voicingSpec = model.voicing (part.voicing);
 
@@ -466,7 +520,9 @@ private:
 
                     notes.push_back ({ track, span.startStep + onset.startStep,
                                        onset.lengthSteps, sounded,
-                                       velocityFor (channel, path, ordinal) });
+                                       velocityFor (channel, site, ordinal,
+                                                    (span.startStep + onset.startStep)
+                                                        / std::max (1, stepsPerBar)) });
                 }
 
                 ++ordinal;
@@ -477,7 +533,7 @@ private:
     void renderLine (const PartSpec& part, const ChannelSpec& channel,
                      const std::vector<ChordSpan>& spans, int track, int transpose,
                      int totalSteps, int stepsPerBar, std::vector<Note>& notes,
-                     const SeedPath& path)
+                     const DrawSite& site)
     {
         const auto* rhythm = rhythmFor (part);
 
@@ -527,7 +583,9 @@ private:
 
             if (sounded >= lowestPitch && sounded <= highestPitch)
                 notes.push_back ({ track, onset.startStep, onset.lengthSteps, sounded,
-                                   velocityFor (channel, path, ordinal) });
+                                   velocityFor (channel, site, ordinal,
+                                                onset.startStep
+                                                    / std::max (1, stepsPerBar)) });
 
             ++ordinal;
         }
@@ -558,7 +616,7 @@ private:
     void renderMelody (const PartSpec& part, const ChannelSpec& channel,
                        const std::vector<ChordSpan>& spans, int track, int transpose,
                        int totalSteps, int stepsPerBar, std::vector<Note>& notes,
-                       const SeedPath& path)
+                       const DrawSite& site)
     {
         const auto* rhythm = rhythmFor (part);
 
@@ -573,13 +631,18 @@ private:
 
         if (part.melody.muteCount > 0)
             applyMuteBudget (onsets, part.melody.muteCount, part.melody.muteWindow,
-                             path.child ("mute"), stepsPerBar);
+                             site.instance.child ("mute"), stepsPerBar);
 
         const auto low = part.melody.hasRange ? part.melody.lowPitch : channel.lowPitch;
         const auto high = part.melody.hasRange ? part.melody.highPitch : channel.highPitch;
 
+        // The cadence is drawn ONCE, here, at whatever scope it declares - the
+        // melody generator is handed a degree, not a choice, so it needs to
+        // know nothing about scopes or seeds.
+        const auto cadence = chooseDegree (part.melody.cadence, site);
+
         const auto line = generateMelody (onsets, spans, part.melody, low, high,
-                                          path.child ("melody"));
+                                          site.instance.child ("melody"), cadence);
 
         auto ordinal = 0;
 
@@ -589,7 +652,9 @@ private:
 
             if (sounded >= lowestPitch && sounded <= highestPitch)
                 notes.push_back ({ track, note.startStep, note.lengthSteps, sounded,
-                                   velocityFor (channel, path, ordinal) });
+                                   velocityFor (channel, site, ordinal,
+                                                note.startStep
+                                                    / std::max (1, stepsPerBar)) });
 
             ++ordinal;
         }

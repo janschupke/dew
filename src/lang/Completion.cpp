@@ -197,6 +197,27 @@ void addForKind (std::vector<Completion>& out, ValueKind kind, int wordsAlready,
                 add (out, r, "a range of pitches", CompletionKind::value);
             break;
 
+        case ValueKind::cadence:
+            if (wordsAlready == 0)
+            {
+                add (out, "1", "end on the root", CompletionKind::value);
+                add (out, "3", "end on the third", CompletionKind::value);
+                add (out, "5", "end on the fifth", CompletionKind::value);
+                add (out, "7", "end on the seventh", CompletionKind::value);
+                add (out, "choose [1 3 5] per instance",
+                     "a different ending in each instance, the same one every compile",
+                     CompletionKind::value);
+            }
+            else
+            {
+                // Past `choose [...] `, the only thing left to write is a scope.
+                add (out, "per", "how often to re-draw it", CompletionKind::value);
+
+                for (const auto& member : membersOf (ValueKind::scope))
+                    add (out, std::string (member), "a scope", CompletionKind::value);
+            }
+            break;
+
         // Everything else is a number the user has to choose, and offering
         // "0" or "1" would be noise pretending to be help.
         case ValueKind::text:
@@ -215,6 +236,7 @@ void addForKind (std::vector<Completion>& out, ValueKind kind, int wordsAlready,
         case ValueKind::articulation:
         case ValueKind::lineSource:
         case ValueKind::instrument:
+        case ValueKind::scope:      // handled above: membersOf lists them
             break;
     }
 }

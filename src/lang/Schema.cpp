@@ -102,6 +102,8 @@ const char* nameOf (ValueKind kind) noexcept
         case ValueKind::voicingRef:   return "the name of a declared voicing";
         case ValueKind::harmonyRef:   return "the name of a declared harmony";
         case ValueKind::channelRef:   return "the name of a declared channel";
+        case ValueKind::cadence:      return "a chord tone to end on";
+        case ValueKind::scope:        return "how often a choice is re-drawn";
     }
 
     return "a value";
@@ -120,6 +122,8 @@ const std::vector<std::string_view>& membersOf (ValueKind kind)
     static const std::vector<std::string_view> lineSources {
         "root", "root-fifth", "root-third-fifth" };
     static const std::vector<std::string_view> instruments { "synth" };
+    static const std::vector<std::string_view> scopes {
+        "note", "bar", "instance", "section", "song" };
 
     switch (kind)
     {
@@ -130,6 +134,7 @@ const std::vector<std::string_view>& membersOf (ValueKind kind)
         case ValueKind::articulation: return articulations;
         case ValueKind::lineSource:   return lineSources;
         case ValueKind::instrument:   return instruments;
+        case ValueKind::scope:        return scopes;
 
         case ValueKind::text:
         case ValueKind::integer:
@@ -148,6 +153,7 @@ const std::vector<std::string_view>& membersOf (ValueKind kind)
         case ValueKind::voicingRef:
         case ValueKind::harmonyRef:
         case ValueKind::channelRef:
+        case ValueKind::cadence:
             break;
     }
 
@@ -255,6 +261,9 @@ const std::vector<BlockSpec>& schema()
             { "variance",     ValueKind::number,      false, true,
               "0 is the same every compile; above 0 explores, reproducibly" },
             { "mute",         ValueKind::muteBudget,  false, true,  "how many onsets become rests" },
+            { "cadence",      ValueKind::cadence,     false, true,
+              "which tone of the last chord to end on - `1`, or "
+              "`choose [1 3 5] per instance`" },
             { "range",        ValueKind::pitchRange,  false, true,  "the pitches this melody may use" } },
           { BlockKind::rhythm },
           "a generated single-voice line" },

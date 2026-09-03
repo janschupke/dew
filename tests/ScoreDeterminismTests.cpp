@@ -1,5 +1,6 @@
 #include <catch2/catch_test_macros.hpp>
 
+#include <set>
 #include <string>
 #include <vector>
 
@@ -312,4 +313,153 @@ TEST_CASE ("compiling many times over a running process never wavers",
 
         REQUIRE (fingerprint (compileOk (source)) == expected);
     }
+}
+
+namespace
+{
+
+/** A score whose line ends on a chosen chord tone. */
+std::string withCadence (const std::string& cadence,
+                         const std::string& arrangement = "  verse\n",
+                         const std::string& seed = "0x51A9")
+{
+    return
+        "song {\n"
+        "  title \"T\"\n"
+        "  tempo 120\n"
+        "  meter 4/4\n"
+        "  key   C major\n"
+        "  seed  " + seed + "\n"
+        "}\n"
+        "channel lead {\n  mixer 1\n  range C4..C6\n}\n"
+        "rhythm pulse { 1/4 }\n"
+        "harmony h { I | vi | IV | V }\n"
+        "section verse {\n"
+        "  length 4 bars\n"
+        "  harmony h\n"
+        "  part lead {\n"
+        "    melody {\n"
+        "      rhythm   pulse\n"
+        "      variance 0.5\n"
+        + cadence +
+        "    }\n"
+        "  }\n"
+        "}\n"
+        "arrangement {\n" + arrangement + "}\n";
+}
+
+/** The pitch class the last note of a pattern lands on. */
+int endsOn (const Score& score, const std::string& pattern)
+{
+    for (const auto& p : score.patterns)
+        if (p.name == pattern && ! p.notes.empty())
+            return ((p.notes.back().pitch % 12) + 12) % 12;
+
+    return -1;
+}
+
+} // namespace
+
+TEST_CASE ("a cadence lands the line on the chord tone it names",
+           "[score][determinism][cadence]")
+{
+    // The progression ends on V, which in C major is G: root 7, third 11,
+    // fifth 2. Naming the tone has to be enough to land on it.
+    REQUIRE (endsOn (compileOk (withCadence ("      cadence 1\n")), "verse") == 7);
+    REQUIRE (endsOn (compileOk (withCadence ("      cadence 3\n")), "verse") == 11);
+    REQUIRE (endsOn (compileOk (withCadence ("      cadence 5\n")), "verse") == 2);
+
+    // And without one the line ends wherever the scoring put it, which is the
+    // point of the knob existing at all.
+    REQUIRE (endsOn (compileOk (withCadence ("")), "verse") >= 0);
+}
+
+TEST_CASE ("a chosen cadence is one draw per instance", "[score][determinism][cadence]")
+{
+    // "changing the ending note, based on the seed" - the same score, the same
+    // seed, twice, and then a different seed.
+    const auto choice = "      cadence choose [1 3 5] per instance\n";
+
+    const auto once = compileOk (withCadence (choice));
+    REQUIRE (endsOn (once, "verse") == endsOn (compileOk (withCadence (choice)), "verse"));
+
+    // Three instances, and each gets its OWN draw - the repeats differ.
+    const auto thrice = compileOk (withCadence (choice, "  verse x3\n"));
+    REQUIRE (thrice.patterns.size() == 3);
+
+    std::set<int> endings;
+
+    for (const auto& pattern : thrice.patterns)
+        if (! pattern.notes.empty())
+            endings.insert (((pattern.notes.back().pitch % 12) + 12) % 12);
+
+    INFO ("endings: " << endings.size());
+    REQUIRE (endings.size() > 1);
+
+    // Every one of them is one of the three that was offered - C major's V is
+    // G, so root 7, third 11, fifth 2.
+    for (const auto ending : endings)
+    {
+        INFO ("ending pitch class " << ending);
+        REQUIRE ((ending == 7 || ending == 11 || ending == 2));
+    }
+}
+
+TEST_CASE ("`per song` draws once for the whole song", "[score][determinism][cadence]")
+{
+    // The scope IS the identity of the draw: at song scope three instances of
+    // the same section end the same way, which is what makes the scope worth
+    // writing rather than a synonym for "random".
+    const auto score = compileOk (withCadence ("      cadence choose [1 3 5] per song\n",
+                                               "  verse x3\n"));
+
+    REQUIRE (score.patterns.size() == 3);
+
+    std::set<int> endings;
+
+    for (const auto& pattern : score.patterns)
+        if (! pattern.notes.empty())
+            endings.insert (((pattern.notes.back().pitch % 12) + 12) % 12);
+
+    REQUIRE (endings.size() == 1);
+}
+
+TEST_CASE ("a velocity scope changes how often the jitter is re-drawn",
+           "[score][determinism]")
+{
+    const auto scoreWithScope = [] (const std::string& scope)
+    {
+        return compileOk (
+            "song {\n  tempo 120\n  meter 4/4\n  key C major\n  seed 7\n}\n"
+            "channel pad {\n  mixer 1\n  range C3..C5\n  velocity 80 +- 20" + scope + "\n}\n"
+            "voicing warm { size 3 voices }\n"
+            "rhythm pulse { 1/4 }\n"
+            "harmony h { I | V }\n"
+            "section verse {\n  length 2 bars\n  harmony h\n"
+            "  part pad {\n    chords with warm\n    rhythm pulse\n  }\n}\n"
+            "arrangement {\n  verse\n}\n");
+    };
+
+    const auto velocitiesOf = [] (const Score& score)
+    {
+        std::set<int> values;
+
+        for (const auto& pattern : score.patterns)
+            for (const auto& note : pattern.notes)
+                values.insert ((int) (note.velocity * 1000.0f));
+
+        return values;
+    };
+
+    // Per note is the default and gives many different values...
+    REQUIRE (velocitiesOf (scoreWithScope ("")).size() > 2);
+
+    // ...and per instance gives exactly one, for the whole instance.
+    REQUIRE (velocitiesOf (scoreWithScope (" per instance")).size() == 1);
+
+    // Per bar sits between them: two bars, so at most two values.
+    const auto perBar = velocitiesOf (scoreWithScope (" per bar"));
+    INFO ("distinct velocities per bar: " << perBar.size());
+    REQUIRE (perBar.size() <= 2);
+    REQUIRE_FALSE (perBar.empty());
 }

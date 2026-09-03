@@ -34,6 +34,8 @@ enum class ValueKind
     strongRule,     ///< chord-tones | scale-tones | free
     articulation,   ///< legato | detached
     lineSource,     ///< root | root-fifth | root-third-fifth
+    cadence,        ///< 1, or `choose [1 3 5] per instance`
+    scope,          ///< note | bar | instance | section | song
     instrument,     ///< synth
     rhythmRef,      ///< a declared rhythm's name
     voicingRef,     ///< a declared voicing's name, after `with`
