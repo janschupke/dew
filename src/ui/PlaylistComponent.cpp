@@ -8,6 +8,7 @@
 #include "model/ProjectEdits.h"
 #include "ui/TimelineRuler.h"
 #include "ui/Gestures.h"
+#include "ui/Hotkeys.h"
 #include "ui/HeaderRow.h"
 #include "ui/MenuSeam.h"
 #include "ui/TimelinePaint.h"
@@ -461,29 +462,29 @@ bool PlaylistComponent::keyPressed (const juce::KeyPress& key)
     // piano roll bound six of the same ones differently; zoom-to-fit and clear
     // arrive here for the first time because they are in the map, not because
     // anyone remembered to add them twice.
-    switch (gesture::commandFor (key))
+    switch (hotkeys::viewCommandFor (key))
     {
-        case gesture::Command::zoomIn:
+        case hotkeys::ViewCommand::zoomIn:
             zoomBy (1.5, contentWidth() * 0.5f);
             return true;
 
-        case gesture::Command::zoomOut:
+        case hotkeys::ViewCommand::zoomOut:
             zoomBy (1.0 / 1.5, contentWidth() * 0.5f);
             return true;
 
-        case gesture::Command::zoomToFit:
+        case hotkeys::ViewCommand::zoomToFit:
             zoomToFit();
             return true;
 
-        case gesture::Command::selectTool:
+        case hotkeys::ViewCommand::selectTool:
             toolbar.setTool (PlaylistTool::select);
             return true;
 
-        case gesture::Command::paintTool:
+        case hotkeys::ViewCommand::paintTool:
             toolbar.setTool (PlaylistTool::paint);
             return true;
 
-        case gesture::Command::clearSelection:
+        case hotkeys::ViewCommand::clearSelection:
             editorState.clearBarSelection();
             repaint();
             return true;
@@ -492,10 +493,10 @@ bool PlaylistComponent::keyPressed (const juce::KeyPress& key)
         // select-all: a clip is deleted through its own menu. Listed rather
         // than defaulted so adding a command to the map is a compile error
         // here until this view says what it does about it.
-        case gesture::Command::eraseTool:
-        case gesture::Command::deleteSelection:
-        case gesture::Command::selectAll:
-        case gesture::Command::none:
+        case hotkeys::ViewCommand::eraseTool:
+        case hotkeys::ViewCommand::deleteSelection:
+        case hotkeys::ViewCommand::selectAll:
+        case hotkeys::ViewCommand::none:
             break;
     }
 
@@ -892,6 +893,10 @@ void PlaylistComponent::mouseDoubleClick (const juce::MouseEvent& event)
 
 void PlaylistComponent::mouseDown (const juce::MouseEvent& event)
 {
+    // It asks for focus in its constructor but never took it, so its keys only
+    // worked if something else had happened to hand it over.
+    grabKeyboardFocus();
+
     // The ruler used to be excluded outright by this guard, so the playlist's
     // was as inert as the piano roll's. Everything it does now lives in
     // ruler::Gesture, which is why this is one line rather than three branches

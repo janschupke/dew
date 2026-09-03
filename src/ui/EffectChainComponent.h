@@ -3,6 +3,7 @@
 #include <juce_gui_basics/juce_gui_basics.h>
 
 #include "model/ProjectDocument.h"
+#include "ui/design/Animator.h"
 #include "ui/EditorState.h"
 #include "ui/primitives/DewControls.h"
 #include "ui/primitives/DewNumberField.h"
@@ -55,6 +56,10 @@ public:
     void paint (juce::Graphics&) override;
     void resized() override;
 
+    /** Escape abandons a reorder. Read through the hotkey registry rather than
+        spelled here, so there is still exactly one place a key is named. */
+    bool keyPressed (const juce::KeyPress&) override;
+
     void setOrientation (Orientation);
     bool isHorizontal() const noexcept { return orientation == Orientation::horizontal; }
 
@@ -101,8 +106,95 @@ public:
     /** Moves a card by dragging its grip, in the same terms the grip uses. */
     void moveSlot (int from, int to);
 
+    // --- reordering ----------------------------------------------------------
+    /** Starts a reorder from a card's grip, in the chain's own coordinates.
+
+        The gesture's state lives HERE rather than on the card, and that is the
+        whole point of it. Committing a move rebuilds the chain, so a card that
+        owned its own drag was deleted in the middle of its own mouseDrag - and
+        the line after the commit then wrote a flag into freed memory.
+
+        Nothing happens until the pointer has travelled gesture::dragThresholdPx.
+        Before this, a drag committed the moment the cursor crossed into a
+        neighbouring card and then cancelled itself, so a card could only ever
+        move one slot per press and a twitch on the grip reordered the chain.
+    */
+    void beginReorder (int slot, juce::Point<int> positionInChain);
+    void updateReorder (juce::Point<int> positionInChain);
+
+    /** Ends the gesture. `false` cancels it: the cards go back to where they
+        were and nothing reaches the document at all.
+
+        A commit is ONE undo transaction for the whole drag, however many cards
+        the pointer crossed on the way.
+    */
+    void endReorder (bool commit);
+
+    bool isReordering() const noexcept { return reorder.active; }
+
+    /** Where the dragged card would land, or -1 when nothing is being dragged.
+        A FINAL index - what moveSlot would be given. */
+    int getReorderInsertion() const noexcept { return reorder.active ? reorder.insertAt : -1; }
+
+    /** The gap the other cards have opened for it, in the chain's coordinates.
+        Empty unless a drag is in progress. */
+    juce::Rectangle<int> getDropArea() const noexcept { return dropArea; }
+
+    /** Where one card is, by its position in the chain.
+
+        By SLOT, deliberately: a card being dragged is brought to the front, so
+        the chain's child order is a paint order during a drag and not the
+        order of the chain.
+    */
+    juce::Rectangle<int> getSlotBounds (int index) const;
+
 private:
     class Card;
+
+    /** A reorder in progress.
+
+        `frozen` is the load-bearing part. Every hit test runs against where the
+        cards were when the drag STARTED, never against where they are now: the
+        gap this drag opens moves every card after it, so a hit test reading
+        live bounds would answer a question the drag itself had just changed,
+        and the insertion point would flip back and forth across a boundary the
+        pointer was not crossing.
+    */
+    struct Reorder
+    {
+        bool active = false;         ///< past the threshold
+        int source = -1;             ///< the slot pressed, or -1 for no gesture
+        int insertAt = -1;           ///< the final index it would land at
+        juce::Point<int> pressedAt, cursor, grabOffset;
+        juce::Array<juce::Rectangle<int>> frozen;
+    };
+
+    /** Where the pointer would drop the card, as a final index. Monotonic in
+        the pointer's position along the chain, which is what makes it
+        independent of the path taken to get there. */
+    int insertionFor (juce::Point<int>) const;
+
+    /** Works out where every card belongs and aims it there. */
+    void layOutCards();
+
+    /** Moves the cards to wherever their eased positions have got to. Called
+        from the animator as well as from layOutCards, so it recomputes
+        nothing. */
+    void applyCardPositions();
+
+    Reorder reorder;
+    juce::Rectangle<int> dropArea;
+
+    /** One per card, holding its position ALONG the chain. A card's size does
+        not change during a drag, so its offset is the only thing that moves,
+        and one eased scalar each is the whole animation.
+    */
+    juce::OwnedArray<ComponentMotion> slide;
+
+    /** Whether the next layout arrives rather than sweeps. True after a
+        rebuild, because a card being given its position for the first time has
+        nowhere to have come from. */
+    bool snapNextLayout = true;
 
     void valueTreeChildAdded (juce::ValueTree&, juce::ValueTree&) override;
     void valueTreeChildRemoved (juce::ValueTree&, juce::ValueTree&, int) override;
@@ -134,6 +226,16 @@ public:
         setSize(), which calls resized(), and that would not terminate.
     */
     std::function<void()> onRequiredSizeChanged;
+
+    /** Called while a card is being dragged, with the pointer in the chain's
+        own coordinates, so a host that SCROLLS the chain can follow it.
+
+        The mixer's chain is a row wider than its viewport, and without this a
+        card cannot be dragged past the edge of what is on screen. Set by
+        whoever owns the Viewport, exactly like onRequiredSizeChanged: the
+        chain is the scrolled component and cannot reach the thing scrolling it.
+    */
+    std::function<void (juce::Point<int>)> onDragNearEdge;
 
 private:
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (EffectChainComponent)

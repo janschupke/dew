@@ -7,6 +7,7 @@
 #include "model/Meter.h"
 #include "model/ProjectEdits.h"
 #include "ui/Gestures.h"
+#include "ui/Hotkeys.h"
 #include "ui/ZoomButtons.h"
 #include "ui/TimelinePaint.h"
 #include "ui/design/Tokens.h"
@@ -21,6 +22,12 @@ StepGridComponent::StepGridComponent (ProjectDocument& d, AudioEngine& e, Editor
     : document (d), engine (e), editorState (s), samplePool (p)
 {
     setComponentID ("stepGrid");
+
+    // The grid has overridden keyPressed since it was written, and nothing ever
+    // asked for focus - so its zoom keys were live in the tests and nowhere
+    // else, and the channel rack was the one tab with no key handling at all.
+    setWantsKeyboardFocus (true);
+
     horizontalScroll.addListener (this);
     addChildComponent (horizontalScroll);
     startTimerHz (motion::playheadHz);
@@ -154,30 +161,30 @@ void StepGridComponent::zoomToFit()
 
 bool StepGridComponent::keyPressed (const juce::KeyPress& key)
 {
-    switch (gesture::commandFor (key))
+    switch (hotkeys::viewCommandFor (key))
     {
-        case gesture::Command::zoomIn:
+        case hotkeys::ViewCommand::zoomIn:
             zoomBy (ZoomButtons::zoomFactor, (float) getWidth() * 0.5f);
             return true;
 
-        case gesture::Command::zoomOut:
+        case hotkeys::ViewCommand::zoomOut:
             zoomBy (1.0 / ZoomButtons::zoomFactor, (float) getWidth() * 0.5f);
             return true;
 
-        case gesture::Command::zoomToFit:
+        case hotkeys::ViewCommand::zoomToFit:
             zoomToFit();
             return true;
 
         // The sequencer has no tools, no note selection and no select-all: a
         // step is toggled, not selected. Listed rather than defaulted, so a new
         // command is a compile error here until this view says what it does.
-        case gesture::Command::selectTool:
-        case gesture::Command::paintTool:
-        case gesture::Command::eraseTool:
-        case gesture::Command::clearSelection:
-        case gesture::Command::deleteSelection:
-        case gesture::Command::selectAll:
-        case gesture::Command::none:
+        case hotkeys::ViewCommand::selectTool:
+        case hotkeys::ViewCommand::paintTool:
+        case hotkeys::ViewCommand::eraseTool:
+        case hotkeys::ViewCommand::clearSelection:
+        case hotkeys::ViewCommand::deleteSelection:
+        case hotkeys::ViewCommand::selectAll:
+        case hotkeys::ViewCommand::none:
             break;
     }
 
@@ -563,6 +570,10 @@ void StepGridComponent::applyPaint (const juce::MouseEvent& event)
 
 void StepGridComponent::mouseDown (const juce::MouseEvent& event)
 {
+    // Same as the piano roll: wanting focus is not the same as having it, and
+    // a click on the thing you are about to type at is when you meant to.
+    grabKeyboardFocus();
+
     auto pattern = currentPattern();
 
     if (! pattern.isValid() || event.y >= getRowsHeight())

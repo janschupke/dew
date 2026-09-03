@@ -5,7 +5,7 @@
 #include "model/Ids.h"
 #include "model/ProjectEdits.h"
 #include "model/ProjectFactory.h"
-#include "ui/Commands.h"
+#include "ui/Hotkeys.h"
 #include "ui/design/Animator.h"
 
 namespace dew
@@ -187,129 +187,54 @@ void DewApplication::systemRequestedQuit()
 
 void DewApplication::getAllCommands (juce::Array<juce::CommandID>& commands)
 {
-    commands.addArray ({ CommandIDs::fileNew, CommandIDs::fileOpen, CommandIDs::fileSave,
-                         CommandIDs::fileSaveAs, CommandIDs::fileRender,
-                         CommandIDs::editUndo, CommandIDs::editRedo,
-                         CommandIDs::transportPlayStop, CommandIDs::transportRewind,
-                         CommandIDs::transportToggleMode, CommandIDs::transportRecord,
-                         CommandIDs::addChannel, CommandIDs::addPattern,
-                         CommandIDs::compileScore,
-                     CommandIDs::audioSettings, CommandIDs::midiSettings });
+    for (const auto& binding : hotkeys::application())
+        commands.add (binding.action);
 }
 
 void DewApplication::getCommandInfo (juce::CommandID id, juce::ApplicationCommandInfo& info)
 {
+    if (! hotkeys::describe (id, info))
+        return;
+
+    // What is left is the only part of a command that is not a constant: what
+    // it needs in order to be available at all. Everything else - the name, the
+    // menu it sits under, the key that reaches it - is a row in the registry,
+    // and used to be ninety lines of switch here that no test could see.
     auto* document = getDocument();
     auto* main = getMainComponent();
 
     switch (id)
     {
-        case CommandIDs::fileNew:
-            info.setInfo ("New", "Start an empty project", "File", 0);
-            info.addDefaultKeypress ('n', juce::ModifierKeys::commandModifier);
-            break;
-
-        case CommandIDs::fileOpen:
-            info.setInfo ("Open...", "Open a dew project", "File", 0);
-            info.addDefaultKeypress ('o', juce::ModifierKeys::commandModifier);
-            break;
-
-        case CommandIDs::fileSave:
-            info.setInfo ("Save", "Save this project", "File", 0);
-            info.addDefaultKeypress ('s', juce::ModifierKeys::commandModifier);
-            info.setActive (document != nullptr);
-            break;
-
-        case CommandIDs::fileSaveAs:
-            info.setInfo ("Save As...", "Save this project to a new file", "File", 0);
-            info.addDefaultKeypress ('s', juce::ModifierKeys::commandModifier
-                                              | juce::ModifierKeys::shiftModifier);
-            info.setActive (document != nullptr);
-            break;
-
         case CommandIDs::editUndo:
-            info.setInfo ("Undo", "Undo the last edit", "Edit", 0);
-            info.addDefaultKeypress ('z', juce::ModifierKeys::commandModifier);
             info.setActive (document != nullptr && document->getUndoManager().canUndo());
             break;
 
         case CommandIDs::editRedo:
-            info.setInfo ("Redo", "Redo the last undone edit", "Edit", 0);
-            info.addDefaultKeypress ('z', juce::ModifierKeys::commandModifier
-                                              | juce::ModifierKeys::shiftModifier);
             info.setActive (document != nullptr && document->getUndoManager().canRedo());
             break;
 
-        case CommandIDs::transportPlayStop:
-            info.setInfo ("Play / Stop", "Start or stop playback", "Transport", 0);
-            info.addDefaultKeypress (juce::KeyPress::spaceKey, 0);
-            info.setActive (main != nullptr);
-            break;
-
-        case CommandIDs::transportRewind:
-            info.setInfo ("Rewind", "Return the playhead to the start", "Transport", 0);
-            info.addDefaultKeypress (juce::KeyPress::homeKey, 0);
-            info.setActive (main != nullptr);
-            break;
-
-        case CommandIDs::transportToggleMode:
-            info.setInfo ("Toggle Pattern / Song", "Switch between pattern and song playback",
-                          "Transport", 0);
-            info.addDefaultKeypress ('l', juce::ModifierKeys::commandModifier);
-            info.setActive (main != nullptr);
-            break;
-
-        case CommandIDs::transportRecord:
-            info.setInfo ("Record", "Record audio into the armed channel", "Transport", 0);
-            info.addDefaultKeypress ('r', 0);
-            info.setActive (main != nullptr);
-            break;
-
-        case CommandIDs::addChannel:
-            info.setInfo ("Add Channel", "Add a new instrument channel", "Project", 0);
-            info.addDefaultKeypress ('k', juce::ModifierKeys::commandModifier);
-            info.setActive (document != nullptr);
-            break;
-
-        case CommandIDs::addPattern:
-            info.setInfo ("Add Pattern", "Add a new pattern", "Project", 0);
-            info.addDefaultKeypress ('p', juce::ModifierKeys::commandModifier
-                                              | juce::ModifierKeys::shiftModifier);
-            info.setActive (document != nullptr);
-            break;
-
-        case CommandIDs::compileScore:
-            info.setInfo ("Compile Score", "Turn the score into notes in this project",
-                          "Project", 0);
-            info.addDefaultKeypress ('r', juce::ModifierKeys::commandModifier);
-            info.setActive (main != nullptr);
-            break;
-
-        case CommandIDs::midiSettings:
-            info.setInfo ("MIDI Settings...", "Choose which MIDI controllers play",
-                          "Audio", 0);
-            info.addDefaultKeypress (',', juce::ModifierKeys::commandModifier
-                                            | juce::ModifierKeys::shiftModifier);
-            info.setActive (main != nullptr);
-            break;
-
         case CommandIDs::fileRender:
-            info.setInfo ("Render...", "Write this project out as audio or MIDI", "File", 0);
-            info.addDefaultKeypress ('e', juce::ModifierKeys::commandModifier);
             info.setActive (document != nullptr && main != nullptr);
             break;
 
-        case CommandIDs::audioSettings:
-            info.setInfo ("Audio Settings...", "Choose the audio device, sample rate and buffer size",
-                          "Audio", 0);
-            info.addDefaultKeypress (',', juce::ModifierKeys::commandModifier);
-            info.setActive (main != nullptr);
+        case CommandIDs::fileSave:
+        case CommandIDs::fileSaveAs:
+        case CommandIDs::addChannel:
+        case CommandIDs::addPattern:
+            info.setActive (document != nullptr);
+            break;
+
+        case CommandIDs::fileNew:
+        case CommandIDs::fileOpen:
             break;
 
         default:
+            // Everything else needs the editor, and nothing more.
+            info.setActive (main != nullptr);
             break;
     }
 }
+
 
 bool DewApplication::perform (const InvocationInfo& info)
 {
@@ -443,6 +368,22 @@ bool DewApplication::perform (const InvocationInfo& info)
             main->compileScore();
             return true;
 
+        // The editors, by number. These reach here at all only because the
+        // timeline map now compares modifiers: it used to match a bare digit
+        // and swallow cmd-1 in whichever view had focus.
+        case CommandIDs::viewChannelRack: main->showTab (0); return true;
+        case CommandIDs::viewPianoRoll:   main->showTab (1); return true;
+        case CommandIDs::viewPlaylist:    main->showTab (2); return true;
+        case CommandIDs::viewMixer:       main->showTab (3); return true;
+        case CommandIDs::viewScore:       main->showTab (4); return true;
+
+        case CommandIDs::viewNextTab:     main->showAdjacentTab (1);  return true;
+        case CommandIDs::viewPreviousTab: main->showAdjacentTab (-1); return true;
+
+        case CommandIDs::viewToggleInstrumentPanel:
+            main->toggleInstrumentPanel();
+            return true;
+
         case CommandIDs::addPattern:
         {
             auto& undo = document->getUndoManager();
@@ -465,63 +406,72 @@ bool DewApplication::perform (const InvocationInfo& info)
 
 juce::StringArray DewApplication::getMenuBarNames()
 {
-    return { "File", "Edit", "Transport", "Project", "Audio", "Demos" };
+    return { "File", "Edit", "View", "Transport", "Project", "Audio", "Demos" };
 }
 
-juce::PopupMenu DewApplication::getMenuForIndex (int index, const juce::String&)
+juce::PopupMenu DewApplication::getMenuForIndex (int, const juce::String& name)
 {
+    // Switched on the NAME rather than the index it arrives with. Inserting the
+    // View menu moved every menu after Edit along by one, and the Demos handler
+    // below compared a hard-coded 5 - so the whole menu bar was one insertion
+    // away from opening a demo when you asked for an audio device.
     juce::PopupMenu menu;
 
-    switch (index)
+    if (name == "File")
     {
-        case 0:
-            menu.addCommandItem (&commandManager, CommandIDs::fileNew);
-            menu.addCommandItem (&commandManager, CommandIDs::fileOpen);
-            menu.addSeparator();
-            menu.addCommandItem (&commandManager, CommandIDs::fileSave);
-            menu.addCommandItem (&commandManager, CommandIDs::fileSaveAs);
-            menu.addSeparator();
-            menu.addCommandItem (&commandManager, CommandIDs::fileRender);
-            break;
+        menu.addCommandItem (&commandManager, CommandIDs::fileNew);
+        menu.addCommandItem (&commandManager, CommandIDs::fileOpen);
+        menu.addSeparator();
+        menu.addCommandItem (&commandManager, CommandIDs::fileSave);
+        menu.addCommandItem (&commandManager, CommandIDs::fileSaveAs);
+        menu.addSeparator();
+        menu.addCommandItem (&commandManager, CommandIDs::fileRender);
+    }
+    else if (name == "Edit")
+    {
+        menu.addCommandItem (&commandManager, CommandIDs::editUndo);
+        menu.addCommandItem (&commandManager, CommandIDs::editRedo);
+    }
+    else if (name == "View")
+    {
+        menu.addCommandItem (&commandManager, CommandIDs::viewChannelRack);
+        menu.addCommandItem (&commandManager, CommandIDs::viewPianoRoll);
+        menu.addCommandItem (&commandManager, CommandIDs::viewPlaylist);
+        menu.addCommandItem (&commandManager, CommandIDs::viewMixer);
+        menu.addCommandItem (&commandManager, CommandIDs::viewScore);
+        menu.addSeparator();
+        menu.addCommandItem (&commandManager, CommandIDs::viewNextTab);
+        menu.addCommandItem (&commandManager, CommandIDs::viewPreviousTab);
+        menu.addSeparator();
+        menu.addCommandItem (&commandManager, CommandIDs::viewToggleInstrumentPanel);
+    }
+    else if (name == "Transport")
+    {
+        menu.addCommandItem (&commandManager, CommandIDs::transportPlayStop);
+        menu.addCommandItem (&commandManager, CommandIDs::transportRewind);
+        menu.addSeparator();
+        menu.addCommandItem (&commandManager, CommandIDs::transportRecord);
+        menu.addSeparator();
+        menu.addCommandItem (&commandManager, CommandIDs::transportToggleMode);
+    }
+    else if (name == "Project")
+    {
+        menu.addCommandItem (&commandManager, CommandIDs::addChannel);
+        menu.addCommandItem (&commandManager, CommandIDs::addPattern);
+        menu.addSeparator();
+        menu.addCommandItem (&commandManager, CommandIDs::compileScore);
+    }
+    else if (name == "Audio")
+    {
+        menu.addCommandItem (&commandManager, CommandIDs::audioSettings);
+        menu.addCommandItem (&commandManager, CommandIDs::midiSettings);
+    }
+    else if (name == "Demos")
+    {
+        const auto& demos = ProjectFactory::demos();
 
-        case 1:
-            menu.addCommandItem (&commandManager, CommandIDs::editUndo);
-            menu.addCommandItem (&commandManager, CommandIDs::editRedo);
-            break;
-
-        case 2:
-            menu.addCommandItem (&commandManager, CommandIDs::transportPlayStop);
-            menu.addCommandItem (&commandManager, CommandIDs::transportRewind);
-            menu.addSeparator();
-            menu.addCommandItem (&commandManager, CommandIDs::transportRecord);
-            menu.addSeparator();
-            menu.addCommandItem (&commandManager, CommandIDs::transportToggleMode);
-            break;
-
-        case 3:
-            menu.addCommandItem (&commandManager, CommandIDs::addChannel);
-            menu.addCommandItem (&commandManager, CommandIDs::addPattern);
-            menu.addSeparator();
-            menu.addCommandItem (&commandManager, CommandIDs::compileScore);
-            break;
-
-        case 4:
-            menu.addCommandItem (&commandManager, CommandIDs::audioSettings);
-            menu.addCommandItem (&commandManager, CommandIDs::midiSettings);
-            break;
-
-        case 5:
-        {
-            const auto& demos = ProjectFactory::demos();
-
-            for (int i = 0; i < (int) demos.size(); ++i)
-                menu.addItem (demoMenuBaseId + i, demos[(size_t) i].menuName);
-
-            break;
-        }
-
-        default:
-            break;
+        for (int i = 0; i < (int) demos.size(); ++i)
+            menu.addItem (demoMenuBaseId + i, demos[(size_t) i].menuName);
     }
 
     return menu;
@@ -529,9 +479,10 @@ juce::PopupMenu DewApplication::getMenuForIndex (int index, const juce::String&)
 
 void DewApplication::menuItemSelected (int menuItemID, int topLevelMenuIndex)
 {
-    if (topLevelMenuIndex == 5)
+    if (topLevelMenuIndex == getMenuBarNames().indexOf ("Demos"))
         openDemo (menuItemID - demoMenuBaseId);
 }
+
 
 void DewApplication::openDemo (int index)
 {

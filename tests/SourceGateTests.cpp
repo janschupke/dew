@@ -700,7 +700,7 @@ TEST_CASE ("no view reads the wheel or the drag scale for itself", "[build][gate
     // ignored it scrolled backwards for anyone running the Mac default, and
     // nobody noticed because each view was right about itself.
     //
-    // Gestures.cpp is where the reading happens, so it is the one place allowed
+    // Gestures.h is where the reading happens, so it is the one place allowed
     // to touch the raw fields.
     const auto found = offenders ([] (const juce::String& line)
     {
@@ -712,7 +712,7 @@ TEST_CASE ("no view reads the wheel or the drag scale for itself", "[build][gate
         return line.contains ("wheel.deltaX") || line.contains ("wheel.deltaY")
                || line.contains ("wheel.isReversed")
                || line.contains ("setMouseDragSensitivity");
-    }, { "Gestures.h", "Gestures.cpp", "DewControls.cpp" });
+    }, { "Gestures.h", "DewControls.cpp" });
 
     INFO ("views reading the wheel or the drag scale directly:\n" << found.joinIntoString ("\n"));
     CHECK (found.isEmpty());
@@ -744,5 +744,34 @@ TEST_CASE ("no editor writes an undoable property by hand", "[build][gate][undo]
     }, { "ProjectEdits.cpp", "ProjectFactory.cpp", "ProjectSchema.cpp" });
 
     INFO ("undoable property writes outside ProjectEdits:\n" << found.joinIntoString ("\n"));
+    CHECK (found.isEmpty());
+}
+
+TEST_CASE ("no source binds a key outside the hotkey registry", "[build][gate][hotkeys]")
+{
+    // There used to be two key tables that could not see each other: fifteen
+    // addDefaultKeypress calls written inline in DewApplication::getCommandInfo,
+    // and an if-chain in Gestures.cpp for the timeline views. Neither was wrong
+    // about itself, and between them cmd-1 was swallowed by whichever view had
+    // focus and bare `r` meant two different things.
+    //
+    // Hotkeys.cpp is where a binding is spelled. ScoreEditorComponent.cpp is
+    // the one exemption: while its completion popup is open it owns Up, Down,
+    // Return, Tab and Escape, and that is a modal handler rather than a
+    // binding - nothing outside that popup can reach those keys, so putting
+    // them in a table shared with the menu bar would say something untrue.
+    const auto found = offenders ([] (const juce::String& line)
+    {
+        const auto trimmed = line.trim();
+
+        if (trimmed.startsWith ("//") || trimmed.startsWith ("*") || trimmed.startsWith ("/*"))
+            return false;
+
+        return line.contains ("addDefaultKeypress (")
+               || line.contains ("juce::KeyPress (")
+               || line.contains ("KeyPress::createFromDescription");
+    }, { "Hotkeys.h", "Hotkeys.cpp", "ScoreEditorComponent.cpp" });
+
+    INFO ("keys bound outside the registry:\n" << found.joinIntoString ("\n"));
     CHECK (found.isEmpty());
 }

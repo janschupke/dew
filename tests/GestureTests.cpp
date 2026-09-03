@@ -45,40 +45,6 @@ TEST_CASE ("a wheel notch is read the way the system reports it", "[ui][gesture]
     CHECK (juce::approximatelyEqual (gesture::deltaOf (wheelOf (0.25f, 0.5f, false)).along(), 0.75));
 }
 
-TEST_CASE ("a key means the same thing in every timeline view", "[ui][gesture]")
-{
-    // The playlist bound four keys, the piano roll bound six, and the sequencer
-    // and mixer did not override keyPressed at all - so the same key did three
-    // different things depending on which tab was in front.
-    CHECK (gesture::commandFor (juce::KeyPress ('=')) == gesture::Command::zoomIn);
-    CHECK (gesture::commandFor (juce::KeyPress ('-')) == gesture::Command::zoomOut);
-    CHECK (gesture::commandFor (juce::KeyPress ('0')) == gesture::Command::zoomToFit);
-
-    CHECK (gesture::commandFor (juce::KeyPress ('1')) == gesture::Command::selectTool);
-    CHECK (gesture::commandFor (juce::KeyPress ('2')) == gesture::Command::paintTool);
-    CHECK (gesture::commandFor (juce::KeyPress ('3')) == gesture::Command::eraseTool);
-
-    CHECK (gesture::commandFor (juce::KeyPress (juce::KeyPress::escapeKey))
-           == gesture::Command::clearSelection);
-    CHECK (gesture::commandFor (juce::KeyPress (juce::KeyPress::deleteKey))
-           == gesture::Command::deleteSelection);
-    CHECK (gesture::commandFor (juce::KeyPress (juce::KeyPress::backspaceKey))
-           == gesture::Command::deleteSelection);
-
-    // Select-all takes command OR ctrl. It was command-only in the piano roll,
-    // so it did nothing on a machine driven with ctrl even though rubber-band
-    // select on the same modifier worked.
-    CHECK (gesture::commandFor (juce::KeyPress ('a', juce::ModifierKeys::commandModifier, 0))
-           == gesture::Command::selectAll);
-    CHECK (gesture::commandFor (juce::KeyPress ('a', juce::ModifierKeys::ctrlModifier, 0))
-           == gesture::Command::selectAll);
-
-    // A bare letter is not a command: the editors bind q and r themselves, and
-    // a map that swallowed them would take them away.
-    CHECK (gesture::commandFor (juce::KeyPress ('a')) == gesture::Command::none);
-    CHECK (gesture::commandFor (juce::KeyPress ('q')) == gesture::Command::none);
-}
-
 TEST_CASE ("shift is finer wherever a drag changes a value", "[ui][gesture]")
 {
     // Shift already means five other things in dew - suspend snap, extend a

@@ -5,7 +5,7 @@
 namespace dew::gesture
 {
 
-/** How dew reads the mouse and the keyboard.
+/** How dew reads the mouse.
 
     Not vocabulary - behaviour. A knob, a fader, a number field and three
     timelines all answer to a drag, a wheel and a modifier, and each had its own
@@ -13,6 +13,10 @@ namespace dew::gesture
     speeds (4, 6 and 8 steps a notch), one view of three honouring the system's
     natural-scrolling flag, and nobody calling setMouseDragSensitivity at all,
     so every knob silently sat on JUCE's default.
+
+    The keyboard half of this used to live here too. It moved to ui/Hotkeys.h
+    once the application's own key table had to join it: a map that knew about
+    the digits but not about cmd-digit was exactly how cmd-1 got swallowed.
 
     Two rules live here as much as the numbers do:
 
@@ -104,27 +108,5 @@ inline bool passedThreshold (juce::Point<int> origin, juce::Point<int> now) noex
 {
     return origin.getDistanceFrom (now) >= dragThresholdPx;
 }
-
-/** What a key means in a timeline view.
-
-    The playlist bound four keys, and the sequencer and the mixer did not
-    override keyPressed at all, so the same key did three different things
-    depending on which tab was in front.
-*/
-enum class Command
-{
-    none,
-    zoomIn,
-    zoomOut,
-    zoomToFit,
-    selectTool,
-    paintTool,
-    eraseTool,
-    clearSelection,
-    deleteSelection,
-    selectAll,
-};
-
-Command commandFor (const juce::KeyPress&) noexcept;
 
 } // namespace dew::gesture

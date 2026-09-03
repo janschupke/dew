@@ -260,7 +260,7 @@ add_library(dew_ui STATIC
   ui/MidiSettingsPanel.cpp
   ui/StatusBar.cpp
   ui/TransportBar.cpp
-  ui/Gestures.cpp
+  ui/Hotkeys.cpp
   ui/TimelinePaint.cpp
   ui/TimelineRuler.cpp
   ui/StepGridComponent.cpp

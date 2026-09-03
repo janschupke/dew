@@ -31,6 +31,17 @@ EffectChainHost::EffectChainHost (ProjectDocument& d, EditorState& s, Orientatio
         layOutChain();
     };
 
+    // The mixer's chain is a row wider than the band it sits in, so a card
+    // cannot be dragged past the edge of what is on screen without this. The
+    // chain is the SCROLLED component, so a point in its coordinates is a point
+    // in content space and has to be brought back into the viewport's.
+    chain.onDragNearEdge = [this] (juce::Point<int> positionInChain)
+    {
+        const auto inViewport = positionInChain - viewport.getViewPosition();
+
+        viewport.autoScroll (inViewport.x, inViewport.y, autoScrollMargin, autoScrollSpeed);
+    };
+
     addButton.setEnabled (chain.canAddEffect());
 }
 

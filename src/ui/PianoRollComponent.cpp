@@ -8,6 +8,7 @@
 #include "ui/RandomizePanel.h"
 #include "ui/TimelineRuler.h"
 #include "ui/Gestures.h"
+#include "ui/Hotkeys.h"
 #include "ui/TimelinePaint.h"
 #include "ui/design/Tokens.h"
 #include "ui/primitives/DewControls.h"
@@ -693,40 +694,40 @@ bool PianoRollComponent::keyPressed (const juce::KeyPress& key)
 {
     // The bindings the three timeline views share are read from one map, so a
     // key means the same thing in whichever tab is in front.
-    const auto command = gesture::commandFor (key);
+    const auto command = hotkeys::viewCommandFor (key);
 
     switch (command)
     {
-        case gesture::Command::deleteSelection:
+        case hotkeys::ViewCommand::deleteSelection:
             deleteSelection();
             return true;
 
-        case gesture::Command::selectAll:
+        case hotkeys::ViewCommand::selectAll:
             selectAllOnChannel();
             return true;
 
-        case gesture::Command::clearSelection:
+        case hotkeys::ViewCommand::clearSelection:
             selection.clearQuick();
             repaint();
             return true;
 
-        case gesture::Command::zoomIn:
-        case gesture::Command::zoomOut:
-            timeline.zoomAround (command == gesture::Command::zoomIn ? 1.5 : 1.0 / 1.5,
+        case hotkeys::ViewCommand::zoomIn:
+        case hotkeys::ViewCommand::zoomOut:
+            timeline.zoomAround (command == hotkeys::ViewCommand::zoomIn ? 1.5 : 1.0 / 1.5,
                                  contentWidth() * 0.5f);
             updateScrollBars();
             repaint();
             return true;
 
-        case gesture::Command::zoomToFit:
+        case hotkeys::ViewCommand::zoomToFit:
             zoomToFit();
             return true;
 
-        case gesture::Command::selectTool: setTool (RollTool::select); return true;
-        case gesture::Command::paintTool:  setTool (RollTool::paint);  return true;
-        case gesture::Command::eraseTool:  setTool (RollTool::slice);  return true;
+        case hotkeys::ViewCommand::selectTool: setTool (RollTool::select); return true;
+        case hotkeys::ViewCommand::paintTool:  setTool (RollTool::paint);  return true;
+        case hotkeys::ViewCommand::eraseTool:  setTool (RollTool::slice);  return true;
 
-        case gesture::Command::none:
+        case hotkeys::ViewCommand::none:
             break;
     }
 
@@ -748,7 +749,12 @@ bool PianoRollComponent::keyPressed (const juce::KeyPress& key)
         return true;
     }
 
-    if (key.getTextCharacter() == 'r' || key.getTextCharacter() == 'R')
+    // SHIFT-r, not bare r. Bare r is Record, which the application binds and
+    // which has to work from wherever you happen to be looking - and this
+    // shadowed it for as long as the roll had focus, silently, because the two
+    // key tables could not see each other.
+    if ((key.getTextCharacter() == 'r' || key.getTextCharacter() == 'R')
+        && key.getModifiers().isShiftDown())
     {
         openRandomizeDialog();
         return true;

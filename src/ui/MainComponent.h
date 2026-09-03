@@ -59,6 +59,24 @@ public:
     /** Shows the score tab and compiles what is in it into the project. */
     void compileScore()                      { tabs.compileScore(); }
 
+    // --- navigation ----------------------------------------------------------
+    /** Brings one editor to the front, by index, clamped to the tabs there are.
+
+        The tabs are a private member because nothing outside had any business
+        reaching into them; the keyboard now has, so this is the seam rather
+        than an accessor that would hand out the whole TabbedComponent.
+    */
+    void showTab (int index);
+
+    /** The next editor along, wrapping. Negative goes back. */
+    void showAdjacentTab (int delta);
+
+    int getActiveTab() const;
+    int getNumEditorTabs() const;
+
+    /** Folds the instrument panel away, or brings it back. */
+    void toggleInstrumentPanel();
+
     /** Rebuilds every view after the document is replaced by New or Open. */
     void documentWasReplaced();
 

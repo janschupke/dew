@@ -5,6 +5,7 @@
 #include "model/ProjectDocument.h"
 #include "ui/EditorState.h"
 #include "ui/EffectChainComponent.h"
+#include "ui/design/Tokens.h"
 #include "ui/primitives/DewControls.h"
 
 namespace dew
@@ -47,6 +48,11 @@ public:
 
 
 private:
+    /** How near the edge a dragged card has to get before the view follows it,
+        and how fast it then moves. */
+    static constexpr int autoScrollMargin = tokens::space::xxl;
+    static constexpr int autoScrollSpeed = tokens::space::lg;
+
     void layOutChain();
 
     juce::String ownerName;

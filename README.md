@@ -109,7 +109,10 @@ licence question. Without it the format reports itself unavailable and the rest 
 - **Effects** — reverb, filter, delay, drive, chorus and a 3-band EQ, chained up to four
   deep on any channel, mixer track or the master. One editor pointed either way round: an
   accordion down the instrument panel, a row of open cards across the mixer. Drag a card
-  by its grip to reorder.
+  by its grip to reorder: it lifts and follows the pointer, the rest of the chain parts to
+  open a gap where it would land, and the move happens when you let go — one undo step for
+  the whole drag, however far it travelled. Escape abandons it, and so does letting go
+  outside the chain.
 - **Instrument** — three band-limited oscillators (sine/saw/square/triangle) or
   wavetables with unison, each with its own octave, detune, gain and on/off switch. One
   ADSR envelope behind them, and channel volume and pan.
@@ -159,10 +162,23 @@ licence question. Without it the format reports itself unavailable and the rest 
 ⌘N ⌘O ⌘S ⇧⌘S · ⌘E render · ⌘R compile score · ⌘Z ⇧⌘Z · Space play · R record · ⌘L
 pattern/song · ⌘K add channel.
 
+⌘1 – ⌘5 go to the channel rack, piano roll, playlist, mixer and score; ⌃⇥ and ⌃⇧⇥ cycle
+them, and ⌘\ folds the instrument panel away. They are in the **View** menu, which is
+where the rest of them are too.
+
+Every one of those is a row in `src/ui/Hotkeys.h`, and so is every key the timeline
+editors read. There used to be two key tables that could not see each other — the menu
+bar's and the editors' — and between them ⌘1 was swallowed by whichever editor had focus
+and `R` meant two different things. A source-scanning test now refuses a key spelled
+anywhere else.
+
 In a timeline editor — the step grid, the piano roll, the playlist — `+` `-` `0` zoom in,
 out and to fit. They read one keyboard map, so a key that means something in two of them
 means the same thing in both; each implements the commands it has, and the map is not a
 promise that every view has every command.
+
+The step grid takes keyboard focus when you click it, which it never used to: its zoom
+keys were live in the tests and nowhere else.
 
 | | step grid | piano roll | playlist |
 |---|---|---|---|
@@ -194,8 +210,8 @@ playhead, shift-click or double-click to drop it. **The span is what plays.**
 Right-click a rack row or a track header to rename, add or remove it. **+ Channel** and
 **+ Track** sit under the last one, where the next will appear.
 
-In the piano roll: ↑ ↓ transpose a semitone and ⇧↑ ⇧↓ an octave; Q quantizes, R opens
-randomize. Holding shift suspends the snap grid for a drag, which is the only way to
+In the piano roll: ↑ ↓ transpose a semitone and ⇧↑ ⇧↓ an octave; Q quantizes, ⇧R opens
+randomize — bare `R` is Record, which has to work from wherever you happen to be looking. Holding shift suspends the snap grid for a drag, which is the only way to
 reach an off-grid position without changing the dropdown.
 
 ## Architecture

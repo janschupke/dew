@@ -259,6 +259,33 @@ void MainComponent::setPanelCollapsed (bool collapsed)
     resized();
 }
 
+void MainComponent::showTab (int index)
+{
+    // `true` so the arrival fade runs: a tab reached from the keyboard has to
+    // look like a tab reached from the bar, and sendChangeMessage is what
+    // drives EditorTabs::currentTabChanged.
+    tabs.setCurrentTabIndex (juce::jlimit (0, juce::jmax (0, tabs.getNumTabs() - 1), index), true);
+}
+
+void MainComponent::showAdjacentTab (int delta)
+{
+    const auto count = tabs.getNumTabs();
+
+    if (count <= 0)
+        return;
+
+    // Wraps, because a cycle that stops at the ends is a cycle you have to
+    // look at to use.
+    const auto next = ((tabs.getCurrentTabIndex() + delta) % count + count) % count;
+
+    showTab (next);
+}
+
+int MainComponent::getActiveTab() const      { return tabs.getCurrentTabIndex(); }
+int MainComponent::getNumEditorTabs() const  { return tabs.getNumTabs(); }
+
+void MainComponent::toggleInstrumentPanel()  { setPanelCollapsed (! panelCollapsed); }
+
 void MainComponent::applySettings (const Settings& settings)
 {
     panelWidth = settings.getPanelWidth();
