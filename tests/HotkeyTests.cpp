@@ -17,10 +17,16 @@ namespace
     a registry.
 */
 constexpr int firstCommand = CommandIDs::fileNew;
-constexpr int lastCommand  = CommandIDs::viewToggleInstrumentPanel;
+constexpr int lastCommand  = CommandIDs::viewUiScale175;
 
 bool sameStroke (const hotkeys::Stroke& a, const hotkeys::Stroke& b) noexcept
 {
+    // A row with no key code is a menu item and nothing more - the UI scales are
+    // four of them. Two of those "share" a stroke only in the sense that neither
+    // has one, so comparing them is not a collision.
+    if (a.keyCode == 0 || b.keyCode == 0)
+        return false;
+
     return a.keyCode == b.keyCode && a.modifiers == b.modifiers;
 }
 

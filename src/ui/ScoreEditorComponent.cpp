@@ -7,6 +7,7 @@
 #include "model/Ids.h"
 #include "model/ProjectEdits.h"
 #include "model/ScoreBake.h"
+#include "ui/Hotkeys.h"
 #include "ui/design/Tokens.h"
 
 namespace dew
@@ -14,6 +15,30 @@ namespace dew
 
 namespace
 {
+
+/** The sizes the score's text steps through, smallest first.
+
+    Here rather than in Tokens.h as an array, because a table inside the token
+    file would satisfy the unused-token gate for all four rungs without the
+    application ever quoting one - the gate reads every file EXCEPT Tokens.h
+    for exactly that reason.
+*/
+constexpr float fontSteps[] = { tokens::type::codeSmall, tokens::type::codeBody,
+                                tokens::type::codeLarge, tokens::type::codeHuge };
+
+constexpr int numSteps = (int) (sizeof (fontSteps) / sizeof (fontSteps[0]));
+
+/** codeBody: the rung the tab opens at, named once rather than spelled as 1. */
+constexpr int bodyStep = 1;
+
+static_assert (fontSteps[0] < fontSteps[1] && fontSteps[1] < fontSteps[2]
+                   && fontSteps[2] < fontSteps[3],
+               "the steps have to increase, or bigger and smaller swap over");
+
+// exactlyEqual, not ==: the ci preset builds -Wfloat-equal, and these two are
+// the same constant reached two ways rather than two computed numbers.
+static_assert (juce::exactlyEqual (fontSteps[bodyStep], tokens::type::codeBody),
+               "the default step has to be the rung it is named after");
 
 /** What the Score tab shows when a project has no score in it.
 
@@ -229,7 +254,6 @@ ScoreEditorComponent::ScoreEditorComponent (ProjectDocument& projectDocument)
     addAndMakeVisible (compileButton);
 
     editor.setComponentID ("scoreText");
-    editor.setFont (tokens::type::monospaced (tokens::type::body));
     editor.setColourScheme (ScoreTokeniser::scheme());
     editor.setColour (juce::CodeEditorComponent::backgroundColourId, tokens::colour::wellDeep);
     editor.setColour (juce::CodeEditorComponent::lineNumberBackgroundId, tokens::colour::well);
@@ -258,7 +282,30 @@ ScoreEditorComponent::ScoreEditorComponent (ProjectDocument& projectDocument)
     // CodeEditorComponent to intercept them would mean owning its layout too.
     editor.addKeyListener (this);
 
+    // After every colour and before the first paint, so the editor is never
+    // laid out at a size it does not keep.
+    setFontStep (bodyStep);
+
     refresh();
+}
+
+int ScoreEditorComponent::numFontSteps() noexcept    { return numSteps; }
+int ScoreEditorComponent::defaultFontStep() noexcept { return bodyStep; }
+
+void ScoreEditorComponent::setFontStep (int step)
+{
+    fontStep = juce::jlimit (0, numSteps - 1, step);
+    applyFontStep();
+}
+
+void ScoreEditorComponent::applyFontStep()
+{
+    editor.setFont (tokens::type::monospaced (fontSteps[fontStep]));
+
+    // The overlay draws its squiggles from the editor's own metrics, so it is
+    // stale the moment those change.
+    overlay.repaint();
+    resized();
 }
 
 ScoreEditorComponent::~ScoreEditorComponent()
@@ -389,6 +436,31 @@ bool ScoreEditorComponent::keyPressed (const juce::KeyPress& key, juce::Componen
     {
         showCompletions();
         return true;
+    }
+
+    // The size trio, read from the one key table rather than spelled here. Alt
+    // rather than command, so a bare `=` still arrives in the document as an
+    // `=` - and so the same three keys mean "the other size" in the timelines
+    // too, where the other size is a row height.
+    switch (hotkeys::viewCommandFor (key))
+    {
+        case hotkeys::ViewCommand::sizeBigger:  setFontStep (fontStep + 1); return true;
+        case hotkeys::ViewCommand::sizeSmaller: setFontStep (fontStep - 1); return true;
+        case hotkeys::ViewCommand::sizeDefault: setFontStep (bodyStep);     return true;
+
+        // Everything else the timeline map knows is a key this editor must let
+        // through: `1` is a digit somebody is typing, not the select tool.
+        case hotkeys::ViewCommand::none:
+        case hotkeys::ViewCommand::zoomIn:
+        case hotkeys::ViewCommand::zoomOut:
+        case hotkeys::ViewCommand::zoomToFit:
+        case hotkeys::ViewCommand::selectTool:
+        case hotkeys::ViewCommand::paintTool:
+        case hotkeys::ViewCommand::eraseTool:
+        case hotkeys::ViewCommand::clearSelection:
+        case hotkeys::ViewCommand::deleteSelection:
+        case hotkeys::ViewCommand::selectAll:
+            break;
     }
 
     if (! isCompletionVisible())

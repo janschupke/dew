@@ -692,6 +692,20 @@ bool PlaylistComponent::keyPressed (const juce::KeyPress& key)
             repaint();
             return true;
 
+        // The other axis: here a row is a track. The same three keys the piano
+        // roll uses for a pitch row, and the toolbar's own height buttons.
+        case hotkeys::ViewCommand::sizeBigger:
+            zoomTracksBy (TrackHeightButtons::heightFactor);
+            return true;
+
+        case hotkeys::ViewCommand::sizeSmaller:
+            zoomTracksBy (1.0 / TrackHeightButtons::heightFactor);
+            return true;
+
+        case hotkeys::ViewCommand::sizeDefault:
+            setTrackHeight (size::trackHeightDefault);
+            return true;
+
         // The playlist has no erase tool, no note selection to delete and no
         // select-all: a clip is deleted through its own menu. Listed rather
         // than defaulted so adding a command to the map is a compile error

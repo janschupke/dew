@@ -22,7 +22,8 @@ bool isOnTheScale (float height)
 {
     using namespace tokens;
 
-    for (auto token : { type::caption, type::small, type::body, type::title, type::display })
+    for (auto token : { type::caption, type::small, type::body, type::title, type::display,
+                        type::codeSmall, type::codeBody, type::codeLarge, type::codeHuge })
         if (juce::approximatelyEqual (height, token))
             return true;
 

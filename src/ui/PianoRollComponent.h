@@ -10,6 +10,7 @@
 #include "ui/TimelineRuler.h"
 #include "ui/TimelinePaint.h"
 #include "ui/TimelineView.h"
+#include "ui/design/Tokens.h"
 
 namespace dew
 {
@@ -108,6 +109,11 @@ public:
     juce::Rectangle<float> getBoundsForNote (const juce::ValueTree& note) const { return boundsForNote (note); }
 
     juce::Rectangle<int> getNoteArea() const     { return noteArea(); }
+
+    /** Which pitch a y coordinate lands on. Public for the same reason the
+        areas are: a test asserting the view did not walk has to ask what is
+        under a point, not recompute the mapping and drift from it. */
+    int getPitchAtY (int y) const { return pitchAtY (y); }
     juce::Rectangle<int> getKeyboardArea() const { return keyboardArea(); }
     juce::Rectangle<int> getVelocityArea() const { return velocityArea(); }
     juce::Rectangle<int> getRulerArea() const    { return rulerArea(); }
@@ -122,6 +128,27 @@ public:
     /** Where the view is, so a session can be restored to it. */
     void captureView (double& zoom, double& scroll, double& pitchScroll) const;
     void applyView (double zoom, double scroll, double pitchScroll);
+
+    // --- vertical size -------------------------------------------------------
+    /** How tall one pitch row is.
+
+        The roll's vertical axis is the only one in dew that carries MATERIAL
+        rather than a list: a lane is a track and a rack row is a channel, but
+        a row here is a semitone, and how many of them you want on screen
+        depends on whether you are writing a melody or reading a voicing.
+
+        One height for every row, for the reason the playlist gives for lanes:
+        a view where the same gesture works or does not depending on which
+        octave you aim at is worse than one that is uniformly too dense.
+    */
+    int getRowHeight() const noexcept { return rowHeight; }
+    void setRowHeight (int);
+
+    /** Multiplies the row height, or fits every pitch that has a note in it
+        when `factor` is 0 - the shape ZoomButtons reports. */
+    void zoomRowsBy (double factor);
+
+    void fitRowsToWindow();
 
     /** The snap grid, persisted between launches. The tool deliberately is not:
         opening into Paint or Slice means the first click of a session writes or
@@ -255,12 +282,18 @@ private:
     void paintVelocityLane (juce::Graphics&);
     juce::Colour channelColour() const;
 
-    /** How finely an erase sweep is sampled between two drag positions. Half a
-        row, so nothing that can be drawn can be skipped over.
+    /** How finely an erase sweep is sampled between two drag positions.
+
+        A fixed distance in pixels, and it stays fixed now that a row is not:
+        it is how often the POINTER is looked at, and a sweep across a taller
+        row is not a sweep anyone makes more slowly. Small enough that nothing
+        can be skipped at the densest row height.
     */
     static constexpr int eraseStridePx = 6;
 
-    static constexpr int rowHeight       = 14;
+    static_assert (eraseStridePx < tokens::size::pianoRowMin,
+                   "an erase sweep must sample more often than once a row");
+
     static constexpr int lowestPitch     = 12;   ///< C0
     static constexpr int highestPitch    = 108;  ///< C8
     static constexpr int numRows         = highestPitch - lowestPitch + 1;
@@ -291,6 +324,9 @@ private:
     bool updatingScrollBars = false;
 
     double pitchScrollPx = 0.0;
+
+    /** Not static any more, and not const. See getRowHeight. */
+    int rowHeight = tokens::size::pianoRowDefault;
 
     juce::Array<juce::ValueTree> selection;
     juce::ValueTree draggedNote;

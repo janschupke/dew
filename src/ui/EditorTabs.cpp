@@ -110,4 +110,25 @@ void EditorTabs::setPlaylistTrackHeight (int height)
         playlist.setTrackHeight (height);
 }
 
+int EditorTabs::getPianoRollRowHeight() const
+{
+    return pianoRoll.getRowHeight();
+}
+
+void EditorTabs::setPianoRollRowHeight (int height)
+{
+    if (height > 0)
+        pianoRoll.setRowHeight (height);
+}
+
+int EditorTabs::getScoreFontStep() const
+{
+    return scoreEditor.getFontStep();
+}
+
+void EditorTabs::setScoreFontStep (int step)
+{
+    scoreEditor.setFontStep (step);
+}
+
 } // namespace dew

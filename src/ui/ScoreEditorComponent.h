@@ -159,20 +159,30 @@ public:
 
     ScoreCompletionList& getCompletionList() { return completions; }
 
-    std::function<void (const juce::String&, StatusBar::Severity)> onMessage;
+    // --- text size -----------------------------------------------------------
+    /** Which rung of the code scale the editor draws at.
 
-private:
-    void codeDocumentTextInserted (const juce::String&, int) override;
-    void codeDocumentTextDeleted (int, int) override;
-    void timerCallback() override;
+        The score is the one place in dew whose text size the reader chooses,
+        and the reason is that it is the one place there is a DOCUMENT: it is
+        read for minutes at a time, where a panel is glanced at. Everything
+        else answers to the interface scale in the View menu.
 
-    int getNumRows() override;
-    void paintListBoxItem (int row, juce::Graphics&, int width, int height, bool selected) override;
-    void listBoxItemClicked (int row, const juce::MouseEvent&) override;
+        Clamped here rather than in Settings, which stores it: the rungs are a
+        design-system fact and dew_app cannot see dew_design.
+    */
+    void setFontStep (int);
+    int getFontStep() const noexcept { return fontStep; }
+
+    static int numFontSteps() noexcept;
+    static int defaultFontStep() noexcept;
 
     /** Keys reach here BEFORE the editor sees them, which is the only way a
         popup can own Up, Down, Return and Escape while it is open without
         subclassing CodeEditorComponent and owning its layout too.
+
+        Public, unlike the other overrides, because it is the seam: a test
+        asserting that alt-`=` sizes the text and a bare `=` does not has to
+        take the path a real press takes, and there is no second door onto it.
     */
     bool keyPressed (const juce::KeyPress&, juce::Component*) override;
 
@@ -181,6 +191,25 @@ private:
     // -Woverloaded-virtual rejects and which would silently stop this component
     // ever receiving a key of its own.
     using juce::Component::keyPressed;
+
+    std::function<void (const juce::String&, StatusBar::Severity)> onMessage;
+
+private:
+    /** Applies fontStep to the editor.
+
+        The diagnostics list is deliberately not scaled with it: its rows are
+        controlHeightSm tall, so text that grew with the document would be
+        clipped by a list that did not.
+    */
+    void applyFontStep();
+    void codeDocumentTextInserted (const juce::String&, int) override;
+    void codeDocumentTextDeleted (int, int) override;
+    void timerCallback() override;
+
+    int getNumRows() override;
+    void paintListBoxItem (int row, juce::Graphics&, int width, int height, bool selected) override;
+    void listBoxItemClicked (int row, const juce::MouseEvent&) override;
+
 
     /** Writes the text into the project. One transaction per typing run. */
     void storeSource();
@@ -209,6 +238,7 @@ private:
     juce::String mirrored;
 
     int checkCount = 0;
+    int fontStep = 0;   ///< seeded by applyFontStep in the constructor
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (ScoreEditorComponent)
 };

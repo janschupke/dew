@@ -229,6 +229,40 @@ void Settings::setReduceMotion (bool reduce)
     file().setValue ("reduceMotion", reduce);
 }
 
+double Settings::getUiScale() const
+{
+    return juce::jlimit (minUiScale, maxUiScale,
+                         file().getDoubleValue ("uiScale", defaultUiScale));
+}
+
+void Settings::setUiScale (double scale)
+{
+    file().setValue ("uiScale", juce::jlimit (minUiScale, maxUiScale, scale));
+}
+
+int Settings::getPianoRollRowHeight() const
+{
+    return juce::jmax (0, file().getIntValue ("pianoRollRowHeight", 0));
+}
+
+void Settings::setPianoRollRowHeight (int height)
+{
+    file().setValue ("pianoRollRowHeight", height);
+}
+
+int Settings::getScoreFontStep() const
+{
+    // Raw, and clamped by the reader: which rungs exist is a design-system fact
+    // this layer cannot see. Negative is the one thing worth refusing here,
+    // because it is never an index however many rungs there turn out to be.
+    return juce::jmax (0, file().getIntValue ("scoreFontStep", 0));
+}
+
+void Settings::setScoreFontStep (int step)
+{
+    file().setValue ("scoreFontStep", juce::jmax (0, step));
+}
+
 void Settings::setPanelCollapsed (bool collapsed)
 {
     file().setValue ("panelCollapsed", collapsed);

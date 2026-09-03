@@ -21,6 +21,12 @@ using namespace tokens;
 namespace
 {
 
+/** Twelve, once. It was already spelled four times in this file - two of them
+    inside a `% 12` that is a pitch class and two of them a transpose limit -
+    and fitting the used range to the window needed a fifth.
+*/
+constexpr int semitonesPerOctave = 12;
+
 bool isBlackKey (int pitch)
 {
     switch (((pitch % 12) + 12) % 12)
@@ -346,7 +352,8 @@ void PianoRollComponent::transposeScope (int semitones)
     // Opened only once the group is known to be able to move, so a chord held
     // against the top of the keyboard does not fill the undo stack with edits
     // that changed nothing.
-    undo.beginNewTransaction (std::abs (semitones) >= 12 ? "Transpose octave" : "Transpose");
+    undo.beginNewTransaction (std::abs (semitones) >= semitonesPerOctave ? "Transpose octave"
+                                                                        : "Transpose");
 
     if (NoteTools::transpose (scope, semitones, lowestPitch, highestPitch, &undo) != 0)
         repaint();
@@ -651,6 +658,84 @@ void PianoRollComponent::zoomToFit()
     repaint();
 }
 
+void PianoRollComponent::setRowHeight (int wanted)
+{
+    const auto clamped = juce::jlimit (size::pianoRowMin, size::pianoRowMax, wanted);
+
+    if (clamped == rowHeight)
+        return;
+
+    // Anchor on the pitch in the middle of the note area, for the same reason
+    // TimelineView::zoomAround anchors on the pointer: growing the rows from
+    // the top walks the music out from under whatever you were looking at.
+    //
+    // Only when there is something to anchor TO. Ninety-seven rows at the
+    // densest height still overflow any window dew will open, so unlike the
+    // playlist there is no "it already fits" case - but the guard is written
+    // rather than assumed, because a future minimum could make one.
+    const auto viewHeight = (double) noteArea().getHeight();
+    const auto scrollable = (double) (numRows * rowHeight) > viewHeight;
+    const auto anchorRow = (pitchScrollPx + viewHeight * 0.5) / (double) rowHeight;
+
+    rowHeight = clamped;
+    pitchScrollPx = scrollable
+                      ? juce::jmax (0.0, anchorRow * (double) rowHeight - viewHeight * 0.5)
+                      : 0.0;
+
+    // A height change is the user taking the view, exactly as a zoom is -
+    // otherwise the next channel change would reframe over it.
+    didFitOnce = true;
+
+    updateScrollBars();
+    repaint();
+}
+
+void PianoRollComponent::zoomRowsBy (double factor)
+{
+    if (factor <= 0.0)
+    {
+        fitRowsToWindow();
+        return;
+    }
+
+    setRowHeight ((int) std::lround ((double) rowHeight * factor));
+}
+
+void PianoRollComponent::fitRowsToWindow()
+{
+    // The pitches that are USED, not all ninety-seven: fitting C0 to C8 into a
+    // window is a row three pixels tall showing eight octaves of nothing. An
+    // empty channel falls back to an octave around where writing would start,
+    // which is what scrollToNotesIfOffscreen already picks.
+    const auto channelId = editorState.getSelectedChannelId();
+
+    int lowest = highestPitch + 1;
+    int highest = lowestPitch - 1;
+
+    for (const auto& note : currentPattern())
+        if (note.hasType (ids::NOTE) && (int) note[ids::ch] == channelId)
+        {
+            const auto pitch = (int) note[ids::pitch];
+            lowest = juce::jmin (lowest, pitch);
+            highest = juce::jmax (highest, pitch);
+        }
+
+    if (highest < lowest)
+    {
+        const auto channel = ProjectEdits::findChannel (document.getState(), channelId);
+        const auto base = channel.isValid() ? (int) channel[ids::basePitch] : 72;
+
+        lowest = base - semitonesPerOctave / 2;
+        highest = base + semitonesPerOctave / 2;
+    }
+
+    const auto rows = juce::jmax (1, highest - lowest + 1);
+    const auto viewHeight = noteArea().getHeight();
+
+    setRowHeight (viewHeight > 0 ? viewHeight / rows : size::pianoRowDefault);
+    centreOnPitch ((lowest + highest) / 2);
+}
+
 void PianoRollComponent::mouseWheelMove (const juce::MouseEvent& event,
                                          const juce::MouseWheelDetails& wheel)
 {
@@ -726,6 +811,19 @@ bool PianoRollComponent::keyPressed (const juce::KeyPress& key)
         case hotkeys::ViewCommand::selectTool: setTool (RollTool::select); return true;
         case hotkeys::ViewCommand::paintTool:  setTool (RollTool::paint);  return true;
         case hotkeys::ViewCommand::eraseTool:  setTool (RollTool::slice);  return true;
+
+        // The other axis: here a row is a semitone.
+        case hotkeys::ViewCommand::sizeBigger:
+            zoomRowsBy (ZoomButtons::zoomFactor);
+            return true;
+
+        case hotkeys::ViewCommand::sizeSmaller:
+            zoomRowsBy (1.0 / ZoomButtons::zoomFactor);
+            return true;
+
+        case hotkeys::ViewCommand::sizeDefault:
+            setRowHeight (size::pianoRowDefault);
+            return true;
 
         case hotkeys::ViewCommand::none:
             break;
@@ -1428,9 +1526,18 @@ void PianoRollComponent::paintKeyboard (juce::Graphics& g)
         g.setColour (colourValue);
         g.fillRect ((float) keys.getX(), y, (float) (keys.getWidth() - 1), (float) (rowHeight - 1));
 
-        if (pitch % 12 == 0)
+        // Every C always, and every key once the rows are tall enough to hold a
+        // name without the letters touching. That threshold is what makes a
+        // taller row worth having here: at fourteen pixels the strip can only
+        // say which octave you are in, and reading a voicing means counting
+        // upwards from a C.
+        const auto isC = pitch % semitonesPerOctave == 0;
+
+        if (isC || rowHeight >= size::pianoRowRoomy)
         {
-            g.setColour (colour::textOnAccent);
+            // Dark on a white key, light on a black one. One colour was fine
+            // while only C was named, because C is never a black key.
+            g.setColour (black ? colour::keyWhite : colour::textOnAccent);
             g.setFont (type::font (type::caption));
             g.drawText (noteName (pitch), keys.getX() + 3, (int) y, keys.getWidth() - 6, rowHeight,
                         juce::Justification::centredLeft, false);

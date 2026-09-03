@@ -211,11 +211,30 @@ namespace icon
 // --- type --------------------------------------------------------------------
 namespace type
 {
-    inline constexpr float caption = 10.0f;   ///< knob labels, ruler numbers
-    inline constexpr float small   = 11.0f;   ///< strip names, secondary text
+    /** The floor of this ladder used to be 10 and 11, which is a size you read
+        by leaning in. A control surface is dense, but nothing here is so dense
+        that a caption had to be smaller than the smallest comfortable size -
+        and the two smallest rungs are the ones almost every label in the
+        application lands on.
+    */
+    inline constexpr float caption = 11.0f;   ///< knob labels, ruler numbers
+    inline constexpr float small   = 12.0f;   ///< strip names, secondary text
     inline constexpr float body    = 13.0f;   ///< default
     inline constexpr float title   = 15.0f;   ///< panel headings
     inline constexpr float display = 20.0f;
+
+    /** The score tab's own rungs.
+
+        A document is READ, for minutes at a time; the rest of the application
+        is glanced at. That is a different job from the one the scale above
+        does, and it is the only text in dew whose size the reader chooses -
+        so it gets four rungs of its own rather than borrowing four that were
+        picked to make a dense panel legible.
+    */
+    inline constexpr float codeSmall = 12.0f;
+    inline constexpr float codeBody  = 14.0f;   ///< what the score tab opens at
+    inline constexpr float codeLarge = 17.0f;
+    inline constexpr float codeHuge  = 21.0f;
 
     juce::Font font (float height, bool bold = false);
     juce::Font monospaced (float height);
@@ -265,8 +284,8 @@ namespace size
 
     /** A captioned knob. DewKnob hard-coded 13 and 14 in three places, and six
         call sites independently spelled 68 for a row holding one. */
-    inline constexpr int knobCaption = 13;
-    inline constexpr int knobValue   = 14;
+    inline constexpr int knobCaption = 15;
+    inline constexpr int knobValue   = 16;
     inline constexpr int knobRow     = 68;
 
     static_assert (knobRow >= knobCaption + knobSm + knobValue,
@@ -289,6 +308,27 @@ namespace size
     inline constexpr int trackHeightDefault = rowHeight;      ///< so nothing re-flows on upgrade
     inline constexpr int trackHeightRoomy   = rowHeight * 2;  ///< past here a header has room for a second line
     inline constexpr int trackHeightMax     = rowHeight * 6;  ///< an arrangement, not one lane
+
+    /** How tall ONE piano-roll pitch row is: a range, like a lane's.
+
+        The roll had a fixed 14, which is a good density for writing a melody
+        and a bad one for reading a chord voicing across four octaves - and
+        there was no way to change it, in the one view whose vertical axis is
+        the material rather than a list.
+
+        Not multiples of a rung: a pitch row is not a list row, and the numbers
+        that make a note readable have nothing to do with the ones that make a
+        channel header hold a knob.
+    */
+    inline constexpr int pianoRowMin     = 8;   ///< the densest a note still reads at
+    inline constexpr int pianoRowDefault = 14;  ///< so nothing re-flows on upgrade
+    inline constexpr int pianoRowRoomy   = 20;  ///< past here a key strip fits its note names
+    inline constexpr int pianoRowMax     = 40;
+
+    static_assert (pianoRowMin < pianoRowRoomy && pianoRowRoomy < pianoRowMax,
+                   "the roomy threshold has to sit inside the range");
+    static_assert (pianoRowMin <= pianoRowDefault && pianoRowDefault <= pianoRowMax,
+                   "the default has to be reachable");
 
     inline constexpr int letterToggle  = 22;  ///< the M and S on a row
     inline constexpr int meterHeight   = 10;

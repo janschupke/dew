@@ -12,6 +12,7 @@
 #include "model/ScoreBake.h"
 #include "ui/ScoreEditorComponent.h"
 #include "ui/ScoreTokeniser.h"
+#include "ui/design/Tokens.h"
 #include "PaintProbe.h"
 #include "FixtureProject.h"
 
@@ -693,4 +694,72 @@ TEST_CASE ("a caret after a multi-byte character still completes the right thing
                                                               (std::uint32_t) bytes)
                  == character);
     }
+}
+
+TEST_CASE ("the score's text size steps, and stops at both ends", "[score][editor][type]")
+{
+    const juce::ScopedJuceInitialiser_GUI juceInit;
+
+    ProjectDocument document;
+    ScoreEditorComponent editor { document };
+    editor.setSize (900, 600);
+
+    const auto opensAt = ScoreEditorComponent::defaultFontStep();
+    REQUIRE (editor.getFontStep() == opensAt);
+
+    // The tab opens on the rung the ladder names for a document, and the
+    // editor is actually drawing at it - a step nothing applied would pass a
+    // round-trip test and change nothing on screen.
+    CHECK (juce::exactlyEqual (editor.getEditor().getFont().getHeight(),
+                               tokens::type::codeBody));
+
+    editor.setFontStep (opensAt + 1);
+    CHECK (editor.getFontStep() == opensAt + 1);
+    CHECK (editor.getEditor().getFont().getHeight() > tokens::type::codeBody);
+
+    // Clamped rather than wrapped, at both ends. dew_app stores this number and
+    // cannot check it, so this is the only place that can.
+    editor.setFontStep (100);
+    CHECK (editor.getFontStep() == ScoreEditorComponent::numFontSteps() - 1);
+    CHECK (juce::exactlyEqual (editor.getEditor().getFont().getHeight(),
+                               tokens::type::codeHuge));
+
+    editor.setFontStep (-100);
+    CHECK (editor.getFontStep() == 0);
+    CHECK (juce::exactlyEqual (editor.getEditor().getFont().getHeight(),
+                               tokens::type::codeSmall));
+}
+
+TEST_CASE ("alt and the zoom keys size the score's text", "[score][editor][type]")
+{
+    const juce::ScopedJuceInitialiser_GUI juceInit;
+
+    ProjectDocument document;
+    ScoreEditorComponent editor { document };
+    editor.setSize (900, 600);
+
+    const auto opensAt = editor.getFontStep();
+
+    // Reached as a KeyListener on the CodeEditorComponent, which is how the
+    // completion popup already owns its keys - so this is the path a real
+    // press takes, not a back door.
+    CHECK (editor.keyPressed (juce::KeyPress ('=', juce::ModifierKeys::altModifier, 0),
+                              &editor.getEditor()));
+    CHECK (editor.getFontStep() == opensAt + 1);
+
+    CHECK (editor.keyPressed (juce::KeyPress ('-', juce::ModifierKeys::altModifier, 0),
+                              &editor.getEditor()));
+    CHECK (editor.getFontStep() == opensAt);
+
+    CHECK (editor.keyPressed (juce::KeyPress ('0', juce::ModifierKeys::altModifier, 0),
+                              &editor.getEditor()));
+    CHECK (editor.getFontStep() == ScoreEditorComponent::defaultFontStep());
+
+    // THE thing that must not happen: a bare `=` or `0` is a character somebody
+    // is typing into the document, not a command. The timeline map binds both
+    // bare, which is exactly why these are on alt.
+    CHECK_FALSE (editor.keyPressed (juce::KeyPress ('='), &editor.getEditor()));
+    CHECK_FALSE (editor.keyPressed (juce::KeyPress ('0'), &editor.getEditor()));
+    CHECK_FALSE (editor.keyPressed (juce::KeyPress ('1'), &editor.getEditor()));
+    CHECK (editor.getFontStep() == ScoreEditorComponent::defaultFontStep());
 }

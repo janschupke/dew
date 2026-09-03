@@ -5,6 +5,8 @@
 #include "RollHarness.h"
 #include "model/ChannelColour.h"
 #include "ui/ChannelRackComponent.h"
+#include "ui/ZoomButtons.h"
+#include "ui/design/Tokens.h"
 #include "FixtureProject.h"
 
 using namespace dew;
@@ -1227,4 +1229,80 @@ TEST_CASE ("the channel rack ruler shows the same span as the piano roll",
 
     INFO ("changed ruler pixels: " << changed);
     REQUIRE (changed > 200);
+}
+
+TEST_CASE ("the piano roll's rows can be made taller, and come back to the default",
+           "[ui][pianoroll][height]")
+{
+    const juce::ScopedJuceInitialiser_GUI juceInit;
+    RollHarness h;
+
+    REQUIRE (h.roll.getRowHeight() == tokens::size::pianoRowDefault);
+
+    h.roll.zoomRowsBy (ZoomButtons::zoomFactor);
+    CHECK (h.roll.getRowHeight() > tokens::size::pianoRowDefault);
+
+    h.roll.zoomRowsBy (1.0 / ZoomButtons::zoomFactor);
+    CHECK (h.roll.getRowHeight() == tokens::size::pianoRowDefault);
+
+    // The range is the ladder's, and it is the only clamp: a factor applied
+    // enough times lands on the end rather than walking past it.
+    for (int i = 0; i < 20; ++i)
+        h.roll.zoomRowsBy (ZoomButtons::zoomFactor);
+
+    CHECK (h.roll.getRowHeight() == tokens::size::pianoRowMax);
+
+    for (int i = 0; i < 40; ++i)
+        h.roll.zoomRowsBy (1.0 / ZoomButtons::zoomFactor);
+
+    CHECK (h.roll.getRowHeight() == tokens::size::pianoRowMin);
+
+    h.roll.setRowHeight (tokens::size::pianoRowDefault);
+    CHECK (h.roll.getRowHeight() == tokens::size::pianoRowDefault);
+}
+
+TEST_CASE ("a taller row keeps the pitch you were looking at", "[ui][pianoroll][height]")
+{
+    const juce::ScopedJuceInitialiser_GUI juceInit;
+    RollHarness h;
+
+    // The bug this guards: growing the rows from the top walks the music out
+    // from under whatever was in the middle of the view. The playlist's lane
+    // height had exactly this, and the curve tests caught it there.
+    const auto area = h.roll.getNoteArea();
+    const auto pitchInTheMiddle = [&h, &area]
+    {
+        return h.roll.getPitchAtY (area.getCentreY());
+    };
+
+    const auto before = pitchInTheMiddle();
+
+    h.roll.setRowHeight (tokens::size::pianoRowRoomy);
+    CHECK (pitchInTheMiddle() == before);
+
+    h.roll.setRowHeight (tokens::size::pianoRowMin);
+    CHECK (pitchInTheMiddle() == before);
+}
+
+TEST_CASE ("alt and the zoom keys change the OTHER axis", "[ui][pianoroll][height]")
+{
+    const juce::ScopedJuceInitialiser_GUI juceInit;
+    RollHarness h;
+
+    const auto zoomBefore = h.roll.getTimeline().pixelsPerStep;
+
+    h.roll.keyPressed (juce::KeyPress ('=', juce::ModifierKeys::altModifier, 0));
+    CHECK (h.roll.getRowHeight() > tokens::size::pianoRowDefault);
+
+    // And the horizontal zoom is untouched, which is the whole point of the
+    // modifier: bare `=` is time, alt-`=` is pitch.
+    CHECK (juce::exactlyEqual (h.roll.getTimeline().pixelsPerStep, zoomBefore));
+
+    h.roll.keyPressed (juce::KeyPress ('0', juce::ModifierKeys::altModifier, 0));
+    CHECK (h.roll.getRowHeight() == tokens::size::pianoRowDefault);
+
+    // Bare `=` still zooms time and leaves the rows alone.
+    h.roll.keyPressed (juce::KeyPress ('='));
+    CHECK (h.roll.getTimeline().pixelsPerStep > zoomBefore);
+    CHECK (h.roll.getRowHeight() == tokens::size::pianoRowDefault);
 }

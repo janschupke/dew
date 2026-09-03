@@ -42,6 +42,13 @@ enum
     viewNextTab,
     viewPreviousTab,
     viewToggleInstrumentPanel,
+
+    /** One per Settings::uiScaleSteps, contiguous and in the same order, so the
+        menu can loop over the steps rather than name each id twice. */
+    viewUiScaleFirst,
+    viewUiScale125 = viewUiScaleFirst + 1,
+    viewUiScale150,
+    viewUiScale175,
 };
 
 } // namespace CommandIDs
@@ -117,6 +124,25 @@ enum class ViewCommand
     clearSelection,
     deleteSelection,
     selectAll,
+
+    /** The view's OTHER size: the one zoom does not reach.
+
+        Zoom is horizontal in all three timelines, so nothing bound the axis a
+        lane is measured on. In the playlist that is lane height, in the piano
+        roll the height of a pitch row, and in the score tab - which has no
+        second axis because it has no timeline - the size of the text.
+
+        One trio rather than two, because it is one idea. A key that means
+        something in two views means the same thing in both; the map is not a
+        promise that every view has every command, and the step grid has no
+        second size to give.
+
+        Alt-modified, where zoom is bare: `=` typed into the score document has
+        to arrive as an `=`, and matches() compares alt exactly.
+    */
+    sizeBigger,
+    sizeSmaller,
+    sizeDefault,
 };
 
 /** The menu-bar commands, in the order the menus present them. */

@@ -55,6 +55,15 @@ public:
     int getPlaylistTrackHeight() const;
     void setPlaylistTrackHeight (int height);
 
+    /** The piano roll's pitch-row height, on the same "0 means leave it"
+        contract as the lane height above. */
+    int getPianoRollRowHeight() const;
+    void setPianoRollRowHeight (int height);
+
+    /** The score tab's text size, as a rung index. */
+    int getScoreFontStep() const;
+    void setScoreFontStep (int step);
+
 private:
     /** The incoming editor's alpha, 0 to 1 over panelMs.
 

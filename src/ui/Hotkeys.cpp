@@ -73,6 +73,19 @@ const std::vector<Binding<juce::CommandID>>& application()
           "Show / Hide Instrument Panel", "Fold the instrument panel away, or bring it back",
           "View" },
 
+        // The first rows with no key. A scale is set once and then left alone,
+        // and a shortcut for it would be four more keys spent on something
+        // nobody presses twice. An empty Stroke is how a row says so, and
+        // describe() adds no default keypress for one.
+        { CommandIDs::viewUiScaleFirst, {},
+          "100%", "Draw the interface at its original size", "View" },
+        { CommandIDs::viewUiScale125, {},
+          "125%", "Draw the interface a quarter larger", "View" },
+        { CommandIDs::viewUiScale150, {},
+          "150%", "Draw the interface half again as large", "View" },
+        { CommandIDs::viewUiScale175, {},
+          "175%", "Draw the interface three quarters larger", "View" },
+
         { CommandIDs::transportPlayStop, { juce::KeyPress::spaceKey, 0 },
           "Play / Stop", "Start or stop playback", "Transport" },
         { CommandIDs::transportRewind, { juce::KeyPress::homeKey, 0 },
@@ -136,6 +149,21 @@ const std::vector<Binding<ViewCommand>>& timeline()
           "Select All", "Select everything on the channel", "Edit" },
         { ViewCommand::selectAll, { 'a', juce::ModifierKeys::ctrlModifier },
           "Select All", "Select everything on the channel", "Edit" },
+
+        // The same three keys as zoom, on alt: the other axis, reached the same
+        // way. Alt rather than command because command-digit belongs to the tab
+        // switcher, and a modified digit reaching a timeline view is the exact
+        // bug the two tables were merged to fix.
+        { ViewCommand::sizeBigger, { '=', juce::ModifierKeys::altModifier },
+          "Taller", "Make this view's rows, or its text, one size larger", "View" },
+        { ViewCommand::sizeBigger, { '+', juce::ModifierKeys::altModifier },
+          "Taller", "Make this view's rows, or its text, one size larger", "View" },
+        { ViewCommand::sizeSmaller, { '-', juce::ModifierKeys::altModifier },
+          "Shorter", "Make this view's rows, or its text, one size smaller", "View" },
+        { ViewCommand::sizeSmaller, { '_', juce::ModifierKeys::altModifier },
+          "Shorter", "Make this view's rows, or its text, one size smaller", "View" },
+        { ViewCommand::sizeDefault, { '0', juce::ModifierKeys::altModifier },
+          "Default Size", "Return this view's rows, or its text, to the default size", "View" },
     };
 
     return table;
@@ -158,8 +186,14 @@ bool describe (juce::CommandID id, juce::ApplicationCommandInfo& info)
         return false;
 
     info.setInfo (binding->name, binding->description, binding->category, 0);
-    info.addDefaultKeypress (binding->stroke.keyCode,
-                             juce::ModifierKeys (binding->stroke.modifiers));
+
+    // A row with no key code is a menu item and nothing more. Passing 0 through
+    // would register a KeyPress for key code zero, which every unhandled key
+    // event compares equal to.
+    if (binding->stroke.keyCode != 0)
+        info.addDefaultKeypress (binding->stroke.keyCode,
+                                 juce::ModifierKeys (binding->stroke.modifiers));
+
     return true;
 }
 

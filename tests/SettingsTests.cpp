@@ -387,3 +387,84 @@ TEST_CASE ("a render directory that still exists comes back", "[settings][render
 
     REQUIRE (reopened->getLastRenderDirectory() == kept);
 }
+
+TEST_CASE ("the interface scale survives a relaunch, and a broken one does not",
+           "[settings]")
+{
+    const juce::ScopedJuceInitialiser_GUI juceInit;
+    TempSettings temp;
+
+    {
+        auto settings = temp.open();
+
+        // 1.0 is the size dew was drawn at, so a settings file that predates
+        // the control has to read as "leave it alone".
+        CHECK (juce::exactlyEqual (settings->getUiScale(), Settings::defaultUiScale));
+
+        settings->setUiScale (1.5);
+        settings->flush();
+    }
+
+    {
+        auto settings = temp.open();
+        CHECK (juce::exactlyEqual (settings->getUiScale(), 1.5));
+
+        // Out of range in either direction is clamped rather than restored: a
+        // scale of twelve is a window nobody can reach the menu bar of to
+        // undo it.
+        settings->setUiScale (12.0);
+        CHECK (juce::exactlyEqual (settings->getUiScale(), Settings::maxUiScale));
+
+        settings->setUiScale (0.1);
+        CHECK (juce::exactlyEqual (settings->getUiScale(), Settings::minUiScale));
+    }
+}
+
+TEST_CASE ("every offered interface scale is one the file will keep", "[settings]")
+{
+    const juce::ScopedJuceInitialiser_GUI juceInit;
+    TempSettings temp;
+    auto settings = temp.open();
+
+    // The View menu offers these four. A step outside the clamp would be an
+    // item that silently does something else when you pick it.
+    for (int step = 0; step < Settings::numUiScaleSteps; ++step)
+    {
+        INFO ("step " << step);
+        settings->setUiScale (Settings::uiScaleSteps[step]);
+        CHECK (juce::exactlyEqual (settings->getUiScale(), Settings::uiScaleSteps[step]));
+    }
+}
+
+TEST_CASE ("the piano roll's row height and the score's text size are remembered",
+           "[settings]")
+{
+    const juce::ScopedJuceInitialiser_GUI juceInit;
+    TempSettings temp;
+
+    {
+        auto settings = temp.open();
+
+        // 0 is "never set", which the roll reads as "keep the default" - the
+        // same contract the playlist's lane height already has.
+        CHECK (settings->getPianoRollRowHeight() == 0);
+        CHECK (settings->getScoreFontStep() == 0);
+
+        settings->setPianoRollRowHeight (28);
+        settings->setScoreFontStep (2);
+        settings->flush();
+    }
+
+    {
+        auto settings = temp.open();
+        CHECK (settings->getPianoRollRowHeight() == 28);
+        CHECK (settings->getScoreFontStep() == 2);
+
+        // Negative is the one thing refused here. What the upper bound is
+        // belongs to the ladder, which this layer cannot see.
+        settings->setPianoRollRowHeight (-40);
+        settings->setScoreFontStep (-1);
+        CHECK (settings->getPianoRollRowHeight() == 0);
+        CHECK (settings->getScoreFontStep() == 0);
+    }
+}

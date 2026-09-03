@@ -78,6 +78,18 @@ private:
 
     void updateWindowTitle();
 
+    /** Draws the whole interface `scale` times larger.
+
+        A multiplier on the PEER rather than on the type scale. dew's layout is
+        a ladder of pixel sizes that a font has to fit inside, so scaling only
+        the text is how a caption ends up clipped by the box it was measured
+        for. This scales both, and the ladder keeps meaning what it says.
+
+        It reaches nothing offscreen: dew_shot paints into an Image with no
+        peer, so every render and every headless test stays at 1:1.
+    */
+    void applyUiScale (double scale);
+
     /** Opens a demo as an untitled document, so saving cannot overwrite it and
         the user is asked where it should go.
     */

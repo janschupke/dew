@@ -106,6 +106,38 @@ public:
     bool getReduceMotion() const;
     void setReduceMotion (bool);
 
+    /** How much bigger the whole interface is drawn.
+
+        A multiplier on the window rather than on the type scale. dew's layout
+        is a ladder of pixel sizes that a font size has to fit inside - a
+        26px control holding 13pt text - so scaling only the text is how a
+        caption ends up clipped by the box it was measured for. Scaling the
+        PEER scales both, and the ladder keeps meaning what it says.
+
+        Lives here rather than in the document for the same reason panel width
+        does: it is a property of this person's screen, not of the music.
+    */
+    double getUiScale() const;
+    void setUiScale (double);
+
+    /** How tall one piano-roll pitch row is, or 0 for "never set".
+
+        Stored the same way the playlist's lane height is, and for the same
+        reason: the clamp lives with the ladder that declares the range, and
+        dew_app cannot see it.
+    */
+    int getPianoRollRowHeight() const;
+    void setPianoRollRowHeight (int);
+
+    /** Which rung of tokens::type's code scale the score tab draws at.
+
+        Stored RAW, and clamped where it is read - the rungs are a design-system
+        fact and dew_app cannot see dew_design. getPlaylistTrackHeight stores a
+        number it cannot check for exactly the same reason.
+    */
+    int getScoreFontStep() const;
+    void setScoreFontStep (int);
+
     // --- rendering -----------------------------------------------------------
     /** Where the last render was written, so the next chooser opens there
         rather than wherever the system last felt like.
@@ -166,6 +198,20 @@ public:
     */
     static constexpr int numTabs = 5;
     static constexpr int maxMidiTranspose = 24;
+
+    /** The range of the interface scale. 1.0 is the size dew was drawn at; the
+        top is where a 46px transport strip stops fitting on a laptop display.
+    */
+    static constexpr double minUiScale = 1.0;
+    static constexpr double maxUiScale = 2.0;
+    static constexpr double defaultUiScale = 1.0;
+
+    /** The scales the View menu offers. A short list of round numbers rather
+        than a continuous slider: this is a thing you set once and forget, and
+        every value in between is one more way to end up on a half-pixel grid.
+    */
+    static constexpr double uiScaleSteps[] = { 1.0, 1.25, 1.5, 1.75 };
+    static constexpr int numUiScaleSteps = (int) (sizeof (uiScaleSteps) / sizeof (uiScaleSteps[0]));
 
 private:
     juce::PropertiesFile& file() const { return *properties; }

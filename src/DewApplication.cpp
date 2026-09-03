@@ -61,6 +61,10 @@ void DewApplication::initialise (const juce::String&)
 {
     settings = std::make_unique<Settings>();
 
+    // Before the window exists, so it is built at the size it will be seen at
+    // rather than laid out once and rescaled.
+    applyUiScale (settings->getUiScale());
+
     // The one place motion is turned on. Everywhere else - every test, every
     // dew_shot render - leaves it off, so a widget built outside a running
     // application snaps exactly as it did before there was an animator.
@@ -228,11 +232,40 @@ void DewApplication::getCommandInfo (juce::CommandID id, juce::ApplicationComman
         case CommandIDs::fileOpen:
             break;
 
+        case CommandIDs::viewUiScaleFirst:
+        case CommandIDs::viewUiScale125:
+        case CommandIDs::viewUiScale150:
+        case CommandIDs::viewUiScale175:
+        {
+            // Ticked rather than merely listed: four items that all read as
+            // available say nothing about which one you are looking at.
+            const auto step = (int) (id - CommandIDs::viewUiScaleFirst);
+
+            info.setActive (settings != nullptr);
+            info.setTicked (settings != nullptr
+                            && step >= 0 && step < Settings::numUiScaleSteps
+                            && juce::approximatelyEqual (settings->getUiScale(),
+                                                         Settings::uiScaleSteps[step]));
+            break;
+        }
+
         default:
             // Everything else needs the editor, and nothing more.
             info.setActive (main != nullptr);
             break;
     }
+}
+
+void DewApplication::applyUiScale (double scale)
+{
+    juce::Desktop::getInstance().setGlobalScaleFactor ((float) scale);
+
+    // setGlobalScaleFactor refreshes the displays, which is what tells the peer
+    // its transform changed - but the content component is laid out in its own
+    // coordinates and has no reason to know. Ask it directly, or a scale change
+    // shows at the next resize and not before.
+    if (auto* main = getMainComponent())
+        main->resized();
 }
 
 
@@ -384,6 +417,22 @@ bool DewApplication::perform (const InvocationInfo& info)
             main->toggleInstrumentPanel();
             return true;
 
+        case CommandIDs::viewUiScaleFirst:
+        case CommandIDs::viewUiScale125:
+        case CommandIDs::viewUiScale150:
+        case CommandIDs::viewUiScale175:
+        {
+            const auto step = (int) (info.commandID - CommandIDs::viewUiScaleFirst);
+
+            if (settings == nullptr || step < 0 || step >= Settings::numUiScaleSteps)
+                return false;
+
+            settings->setUiScale (Settings::uiScaleSteps[step]);
+            applyUiScale (Settings::uiScaleSteps[step]);
+            commandManager.commandStatusChanged();
+            return true;
+        }
+
         case CommandIDs::addPattern:
         {
             auto& undo = document->getUndoManager();
@@ -444,6 +493,17 @@ juce::PopupMenu DewApplication::getMenuForIndex (int, const juce::String& name)
         menu.addCommandItem (&commandManager, CommandIDs::viewPreviousTab);
         menu.addSeparator();
         menu.addCommandItem (&commandManager, CommandIDs::viewToggleInstrumentPanel);
+        menu.addSeparator();
+
+        // A submenu built by walking the ids, which are contiguous and in the
+        // same order as the steps - so adding a scale is one row in the enum
+        // and one in the registry, and nothing here.
+        juce::PopupMenu scales;
+
+        for (int step = 0; step < Settings::numUiScaleSteps; ++step)
+            scales.addCommandItem (&commandManager, CommandIDs::viewUiScaleFirst + step);
+
+        menu.addSubMenu ("UI Scale", scales);
     }
     else if (name == "Transport")
     {

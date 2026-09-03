@@ -176,8 +176,13 @@ bool StepGridComponent::keyPressed (const juce::KeyPress& key)
             return true;
 
         // The sequencer has no tools, no note selection and no select-all: a
-        // step is toggled, not selected. Listed rather than defaulted, so a new
+        // step is toggled, not selected. Nor a second size: a row here is a
+        // CHANNEL, and how tall one is belongs to the rack that lists them, not
+        // to the grid painted beside it. Listed rather than defaulted, so a new
         // command is a compile error here until this view says what it does.
+        case hotkeys::ViewCommand::sizeBigger:
+        case hotkeys::ViewCommand::sizeSmaller:
+        case hotkeys::ViewCommand::sizeDefault:
         case hotkeys::ViewCommand::selectTool:
         case hotkeys::ViewCommand::paintTool:
         case hotkeys::ViewCommand::eraseTool:
