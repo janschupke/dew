@@ -55,6 +55,14 @@ enum class Scope
     song       ///< one for the whole song
 };
 
+/** Which note a voicing puts at the bottom. */
+enum class BassRule
+{
+    fromInversion,  ///< honour `^N`; choose freely when the chord has none
+    root,           ///< always the root
+    any             ///< whatever voices most smoothly, ignoring `^N`
+};
+
 /** The counterpoint rules, as a CLOSED set.
 
     Closed because completion depends on it, and because an open-ended rule
@@ -139,6 +147,16 @@ struct VoicingSpec
     int highPitch = 72;
     Motion motion = Motion::smooth;
     int maxLeap = 7;
+
+    /** Which note goes at the bottom.
+
+        `from-inversion` is the default and honours what the chord said:
+        `i^1` puts the third in the bass, and a chord with no inversion mark
+        leaves the voicer free to choose one for smoothness. Before this
+        existed, `^1` parsed, resolved, and then changed nothing at all - the
+        voicer enumerated every inversion and picked on cost alone.
+    */
+    BassRule bass = BassRule::fromInversion;
 };
 
 struct RhythmStep

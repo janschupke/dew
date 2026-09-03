@@ -236,7 +236,8 @@ void addForKind (std::vector<Completion>& out, ValueKind kind, int wordsAlready,
         case ValueKind::articulation:
         case ValueKind::lineSource:
         case ValueKind::instrument:
-        case ValueKind::scope:      // handled above: membersOf lists them
+        case ValueKind::scope:       // handled above: membersOf lists them
+        case ValueKind::bassRule:
             break;
 
         case ValueKind::rule:

@@ -61,6 +61,11 @@ juce_add_binary_data(dew_demo_data
     "${CMAKE_SOURCE_DIR}/examples/melody.dew"
     "${CMAKE_SOURCE_DIR}/examples/effects.dew"
     "${CMAKE_SOURCE_DIR}/examples/automation.dew"
+    "${CMAKE_SOURCE_DIR}/examples/amber.dew"
+
+    # The SOURCE of the last one, because the demo that opens it is the score
+    # compiled - so the .dew beside it cannot drift from the text that made it.
+    "${CMAKE_SOURCE_DIR}/examples/amber.score"
 )
 
 # ------------------------------------------------------------------------------

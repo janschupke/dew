@@ -200,9 +200,28 @@ std::vector<int> voiceChord (const Chord& chord, const VoicingSpec& voicing,
     auto bestCost = 0;
     auto considered = 0;
 
+    // Which inversions may be tried at all.
+    //
+    // `from-inversion` is what makes `i^1` mean something. Before it, the
+    // voicer enumerated every inversion and chose on cost, so an inversion
+    // written in the harmony parsed, resolved, and then changed nothing that
+    // could be heard. A chord with no mark still leaves the choice open, which
+    // is what lets the voicer find a smooth bass line.
+    auto firstInversion = 0;
+    auto lastInversion = inversionCount - 1;
+
+    if (voicing.bass == BassRule::root
+        || (voicing.bass == BassRule::fromInversion && chord.inversion > 0))
+    {
+        const auto wanted = voicing.bass == BassRule::root ? 0 : chord.inversion;
+
+        if (wanted < inversionCount)
+            firstInversion = lastInversion = wanted;
+    }
+
     // A fixed enumeration order: inversion, then octave, ascending. Ties break
     // to the first candidate, so the result is a pure function of the inputs.
-    for (auto inversion = 0; inversion < inversionCount; ++inversion)
+    for (auto inversion = firstInversion; inversion <= lastInversion; ++inversion)
     {
         const auto bassPc = pitchClassOf (shaped.rootPc
                                           + shaped.intervals[(std::size_t) inversion]);

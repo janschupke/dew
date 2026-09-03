@@ -5,6 +5,7 @@
 #include <string>
 
 #include "lang/Harmony.h"
+#include "lang/Music.h"
 #include "lang/Melody.h"
 #include "lang/Voicing.h"
 
@@ -684,4 +685,48 @@ TEST_CASE ("variance above zero explores, and still reproduces", "[score][melody
             ++seedDifferences;
 
     REQUIRE (seedDifferences > 0);
+}
+
+TEST_CASE ("an inversion written in the harmony reaches the bass",
+           "[score][voicing]")
+{
+    // `i^1` parsed, resolved and then changed nothing that could be heard: the
+    // voicer enumerated every inversion and chose on cost alone. Writing an
+    // inversion has to move the bass or the notation is decoration.
+    const Key cMajor { 0, Mode::major };
+
+    const auto voice = [&cMajor] (int inversion, BassRule bass)
+    {
+        const auto resolved = resolveChord ({ "I", inversion, {} }, cMajor);
+        REQUIRE (resolved.has_value());
+
+        VoicingSpec spec;
+        spec.voices = 3;
+        spec.lowPitch = 48;
+        spec.highPitch = 72;
+        spec.bass = bass;
+
+        return voiceChord (resolved->chord, spec, {});
+    };
+
+    const auto pitchClassOfBass = [] (const std::vector<int>& pitches)
+    {
+        REQUIRE_FALSE (pitches.empty());
+        return ((pitches.front() % 12) + 12) % 12;
+    };
+
+    // C major in first inversion puts E at the bottom - pitch class 4.
+    REQUIRE (pitchClassOfBass (voice (1, BassRule::fromInversion)) == 4);
+
+    // The second inversion puts G there.
+    REQUIRE (pitchClassOfBass (voice (2, BassRule::fromInversion)) == 7);
+
+    // `root` overrides what was written, and `any` ignores it - which is what
+    // the voicer did for every chord before this rule existed.
+    REQUIRE (pitchClassOfBass (voice (1, BassRule::root)) == 0);
+    REQUIRE_FALSE (voice (1, BassRule::any).empty());
+
+    // And a chord with NO inversion mark still leaves the voicer free, which is
+    // what lets it find a smooth bass line.
+    REQUIRE_FALSE (voice (0, BassRule::fromInversion).empty());
 }

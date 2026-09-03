@@ -45,6 +45,15 @@ struct ProjectFactory
 
     /** An arpeggio under a filter sweep and a fade, both as automation clips. */
     static juce::ValueTree createAutomationDemo();
+
+    /** The score example, COMPILED rather than loaded.
+
+        Opening it puts real text in the Score tab, so pressing Compile
+        reproduces exactly what is already playing - and regenerating the demo
+        library rebuilds the .dew from the .score, which is what stops the two
+        drifting apart.
+    */
+    static juce::ValueTree createScoreDemo();
 };
 
 } // namespace dew

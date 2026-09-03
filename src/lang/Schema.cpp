@@ -104,6 +104,7 @@ const char* nameOf (ValueKind kind) noexcept
         case ValueKind::channelRef:   return "the name of a declared channel";
         case ValueKind::cadence:      return "a chord tone to end on";
         case ValueKind::rule:         return "`forbid`, or `soft` and a weight";
+        case ValueKind::bassRule:     return "which note goes at the bottom";
         case ValueKind::scope:        return "how often a choice is re-drawn";
     }
 
@@ -125,6 +126,8 @@ const std::vector<std::string_view>& membersOf (ValueKind kind)
     static const std::vector<std::string_view> instruments { "synth" };
     static const std::vector<std::string_view> scopes {
         "note", "bar", "instance", "section", "song" };
+    static const std::vector<std::string_view> bassRules {
+        "from-inversion", "root", "any" };
 
     switch (kind)
     {
@@ -136,6 +139,7 @@ const std::vector<std::string_view>& membersOf (ValueKind kind)
         case ValueKind::lineSource:   return lineSources;
         case ValueKind::instrument:   return instruments;
         case ValueKind::scope:        return scopes;
+        case ValueKind::bassRule:     return bassRules;
 
         case ValueKind::text:
         case ValueKind::integer:
@@ -232,7 +236,9 @@ const std::vector<BlockSpec>& schema()
             { "spread",   ValueKind::spread,     false, false, "how the voices are laid out" },
             { "register", ValueKind::pitchRange, false, false, "where the voicing sits" },
             { "motion",   ValueKind::motion,     false, false, "how it moves from the chord before" },
-            { "maxLeap",  ValueKind::integer,    false, false, "the largest jump one voice may make" } },
+            { "maxLeap",  ValueKind::integer,    false, false, "the largest jump one voice may make" },
+            { "bass",     ValueKind::bassRule,   false, false,
+              "which note goes at the bottom - `from-inversion` honours `^N`" } },
           {},
           "how a chord is laid out", true },
 

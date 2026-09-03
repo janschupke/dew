@@ -769,6 +769,13 @@ private:
                     wrongValue (statement, spec.kind);
                 }
             }
+            else if (statement.key == "bass")
+            {
+                if (const auto index = asMemberIndex (statement, spec.kind); index.has_value())
+                    voicing.bass = (BassRule) *index;
+                else
+                    wrongValue (statement, spec.kind);
+            }
             else if (statement.key == "maxLeap")
             {
                 const auto value = asInteger (statement);

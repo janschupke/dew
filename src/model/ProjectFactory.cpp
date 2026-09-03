@@ -1,10 +1,14 @@
 #include "model/ProjectFactory.h"
 
+#include "lang/Compile.h"
+
 #include "model/ChannelColour.h"
+#include "model/DemoLibrary.h"
 
 #include "model/Ids.h"
 #include "model/ProjectEdits.h"
 #include "model/ProjectSchema.h"
+#include "model/ScoreBake.h"
 
 namespace dew
 {
@@ -487,6 +491,27 @@ juce::ValueTree ProjectFactory::createAutomationDemo()
     return canonicalTree (project, projectSpec());
 }
 
+juce::ValueTree ProjectFactory::createScoreDemo()
+{
+    // Compiled, not loaded. The demo IS the score, so opening it puts real text
+    // in the Score tab and pressing Compile reproduces exactly what is playing -
+    // and `dew_render --write-demos` regenerates the .dew from the .score, which
+    // is what stops the two drifting.
+    const auto source = DemoLibrary::jsonFor ("amber.score");
+
+    const auto result = lang::compile (source.toStdString(), "amber.score");
+
+    if (! result.ok())
+        return createDefault();
+
+    BakeReport report;
+    auto project = ScoreBake::toNewProject (*result.score, report);
+
+    ProjectEdits::setScoreSource (project, source, "amber.score", nullptr);
+
+    return canonicalTree (project, projectSpec());
+}
+
 const std::vector<ProjectFactory::Demo>& ProjectFactory::demos()
 {
     static const std::vector<Demo> library {
@@ -499,6 +524,9 @@ const std::vector<ProjectFactory::Demo>& ProjectFactory::demos()
           &ProjectFactory::createEffectsDemo },
         { "automation.dew", "Automation",
           "A filter sweep over four bars, then a fade.", &ProjectFactory::createAutomationDemo },
+        { "amber.dew",      "Compiled from a Score",
+          "Fifty-two bars written as text: pads, a bass, a lead and a voice answering it.",
+          &ProjectFactory::createScoreDemo },
     };
 
     return library;

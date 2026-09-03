@@ -145,9 +145,10 @@ licence question. Without it the format reports itself unavailable and the rest 
   does not: restoring into paint or slice would mean the first click of a session cuts
   something nobody asked for.
 - **Score** — a fifth tab holding a text description of the whole song: key, meter, chord
-  progression, sections, voicing and melody rules per channel. It is checked as you type -
-  squiggles where it is wrong, a clickable list of what is wrong - and compiled into real
-  patterns, notes and clips on ⌘R. The source is stored in the `.dew`, so recompiling
+  progression, sections, and per channel a voicing, a melody or a counterpoint answering
+  another voice. It is checked as you type - squiggles where it is wrong, a clickable list
+  of what is wrong, Control-Space to complete - and compiled into real patterns, notes and
+  clips on ⌘R. The source is stored in the `.dew`, so recompiling
   updates what it wrote last time and leaves anything you have since edited by hand alone.
   See **The score language** below.
 - **File** — New, Open, Save, Save As, dirty tracking, a save-before-closing prompt, and
@@ -466,6 +467,50 @@ would need it. The language owns notes, patterns and clips; the user owns channe
 instruments, effects and the mixer — a track adopts a channel by name and reads nothing
 from it but the name, so a sound you dialled in survives a recompile.
 
+### Counterpoint, and choices a seed makes
+
+A part may answer another rather than being written on its own:
+
+```
+part answer {
+  counterpoint against lead {
+    rhythm               pulse
+    parallel-fifths      forbid
+    parallel-octaves     forbid
+    voice-crossing       forbid
+    dissonance-on-strong soft 3
+    leaps                soft 1.5
+  }
+}
+```
+
+A **beam search of width 8** over the onsets, scored against the voices already
+written — not a constraint solver. A solver's failure modes are "unsatisfiable" and
+"twenty seconds", both fatal in an editor that recompiles as you type; the cases a beam
+loses are close to inaudible next to the machinery; and a beam's choice can be explained
+in a diagnostic. Cost is additive along the timeline, so the beam is an exact dynamic
+program over the states it keeps.
+
+The seven rules are a closed set, each `forbid` or `soft <weight>` — closed because
+completion depends on it, and because an open-ended rule language is a solver by another
+name. When the hard rules leave nothing to sing they are **given up in a declared order,
+one at a time, and every one is reported by bar**. The line never falls silent without
+saying so. `species` is deliberately absent: Fux's rules are the easy fifth of it, and a
+number in the language would imply a guarantee this cannot make.
+
+**A value can be chosen rather than set**, and say how often it is re-drawn:
+
+```
+cadence  choose [1 3 5] per instance   // a different ending in each verse
+velocity 80 +- 20 per bar
+```
+
+The scope *is* the identity of the draw, not a knob on how random it is: `per song`
+derives one key for the whole song, `per instance` one for each rendered instance, `per
+bar` and `per note` go deeper. Same seed tree, different depth. `choose` takes a list and
+nothing computable — the moment a value can be *computed*, completion stops being a table
+lookup and the grid stops being statically knowable.
+
 ### The editor
 
 Two things happen in the Score tab and they are deliberately not the same thing.
@@ -479,6 +524,13 @@ source text itself *is* saved on the debounce, one transaction per typing run.
 Errors surface in three places doing three jobs: the squiggle says **where**, the list
 under the editor says **what** and scrolls the editor to it when clicked, and the status
 bar says whether the project was written to at all.
+
+Control-Space completes. Keys and block keywords come from the same schema table the
+resolver validates against, names from the same resolve the compiler runs, and chords
+through the same `resolveChord` that writes the notes — so nothing can be offered that the
+compiler would then reject, and a key cannot be added without being completable. Chords are
+ranked by the key that is written and **spelled beside the numeral**: in A minor `bVI`
+reads `F`.
 
 The highlighter is not a second grammar. `lang::scanOne` is a template over a minimal
 cursor concept, and the editor's tokeniser is its second instantiation - the first walks a

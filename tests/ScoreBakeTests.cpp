@@ -450,6 +450,28 @@ TEST_CASE ("every note the bake writes is inside its pattern", "[score][bake]")
     REQUIRE (checked > 100);
 }
 
+TEST_CASE ("the committed example does not clip", "[score][bake]")
+{
+    // The WHOLE song, not the first four seconds CI renders. amber.score peaked
+    // at 1.14 for as long as it had existed and nothing looked: the CI step
+    // checks it is not silent, and the demo library's no-clipping gate covers
+    // the demos, which this is not one of.
+    const auto score = compileOrFail (exampleSource());
+
+    BakeReport report;
+    const auto project = ScoreBake::toNewProject (score, report);
+
+    juce::AudioBuffer<float> rendered;
+    const auto rendering = OfflineRenderer::renderToBuffer (project, rendered);
+
+    REQUIRE (rendering.ok());
+
+    INFO ("peak " << rendering.peak << " rms " << rendering.rms);
+    REQUIRE (rendering.peak > 0.05f);
+    REQUIRE (rendering.peak <= 1.0f);
+    REQUIRE (rendering.rms > 0.01f);
+}
+
 TEST_CASE ("the example score renders to real audio", "[score][bake]")
 {
     // The claim that matters: text in, sound out. The same three assertions the
@@ -541,8 +563,25 @@ TEST_CASE ("the committed example still compiles", "[score][bake]")
 
     const auto& score = *result.score;
     REQUIRE (score.noteCount() > 100);
-    REQUIRE (score.tracks.size() == 3);
     REQUIRE (score.barsInSong > 0);
+    REQUIRE (score.tracks.size() == 4);
+
+    // EVERY track has notes. The example is what CI renders, so it is the one
+    // place the whole language has to keep working end to end - and a voice
+    // that silently produced nothing is exactly the failure that looks like
+    // success. The counterpoint answering `lead` vanished that way once.
+    for (std::size_t track = 0; track < score.tracks.size(); ++track)
+    {
+        auto notes = 0;
+
+        for (const auto& pattern : score.patterns)
+            for (const auto& note : pattern.notes)
+                if (note.track == (int) track)
+                    ++notes;
+
+        INFO ("track " << track << " (" << score.tracks[track].name << ")");
+        REQUIRE (notes > 0);
+    }
 }
 
 TEST_CASE ("compiling the same score twice leaves the same document",

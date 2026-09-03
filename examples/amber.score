@@ -1,7 +1,8 @@
 // amber.score - the example the tests and CI compile.
 //
-// Deliberately audible: pads holding the harmony, a bass on the roots, and a
-// lead line over the top. A compile that produces silence is obviously wrong.
+// Deliberately audible: pads holding the harmony, a bass on the roots, a lead
+// line over the top and a second voice answering it. A compile that produces
+// silence is obviously wrong.
 
 song {
   title "Amber"
@@ -15,19 +16,25 @@ song {
 channel pad {
   mixer    1
   range    C3..C5
-  velocity 68 +- 6
+  velocity 52 +- 6
 }
 
 channel bass {
   mixer    2
   range    E1..E3
-  velocity 100 +- 4
+  velocity 76 +- 4
 }
 
 channel lead {
   mixer    3
   range    F4..A5
-  velocity 88 +- 10
+  velocity 66 +- 8
+}
+
+channel answer {
+  mixer    4
+  range    F3..F5
+  velocity 54 +- 6 per bar
 }
 
 voicing warm {
@@ -36,6 +43,7 @@ voicing warm {
   register C3..C5
   motion   smooth
   maxLeap  7
+  bass     from-inversion
 }
 
 rhythm held    { 1/1 }
@@ -80,6 +88,18 @@ section verse {
       strong       chord-tones
       variance     0.25
       mute         1 of 4
+      cadence      choose [1 3 5] per instance
+    }
+  }
+  part answer {
+    counterpoint against lead {
+      rhythm               pulse
+      parallel-fifths      forbid
+      parallel-octaves     forbid
+      voice-crossing       forbid
+      dissonance-on-strong soft 3
+      leaps                soft 1.5
+      repeats              soft 1
     }
   }
 }

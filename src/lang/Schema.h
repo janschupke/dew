@@ -36,6 +36,7 @@ enum class ValueKind
     lineSource,     ///< root | root-fifth | root-third-fifth
     cadence,        ///< 1, or `choose [1 3 5] per instance`
     rule,           ///< forbid, or `soft 2.5`
+    bassRule,       ///< from-inversion | root | any
     scope,          ///< note | bar | instance | section | song
     instrument,     ///< synth
     rhythmRef,      ///< a declared rhythm's name
