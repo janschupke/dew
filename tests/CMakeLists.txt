@@ -39,6 +39,7 @@ add_executable(dew_tests
   WavetableTests.cpp
   TimelineViewTests.cpp
   ScrollSpeedTests.cpp
+  EntityColourTests.cpp
   TimelineRulerTests.cpp
   TypographyTests.cpp
   PianoRollTests.cpp

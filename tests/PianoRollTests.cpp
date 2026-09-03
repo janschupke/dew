@@ -3,7 +3,7 @@
 #include <juce_gui_basics/juce_gui_basics.h>
 
 #include "RollHarness.h"
-#include "model/ChannelColour.h"
+#include "model/EntityColour.h"
 #include "ui/ChannelRackComponent.h"
 #include "ui/ZoomButtons.h"
 #include "ui/design/Tokens.h"
@@ -525,7 +525,7 @@ TEST_CASE ("notes never paint over the keyboard", "[ui][pianoroll]")
     // The first ramp entry, read from where it is declared: hard-coding the
     // hex made this test fail for a reason that had nothing to do with the
     // piano roll the day the palette changed.
-    const auto rampColour = juce::Colour::fromString (dew::channelColour::defaultHex (0));
+    const auto rampColour = juce::Colour::fromString (dew::entityColour::defaultHex (0));
 
     int bleeding = 0;
 

@@ -9,13 +9,14 @@
 
 #include "io/SamplePool.h"
 
-#include "model/ChannelColour.h"
+#include "model/EntityColour.h"
 #include "model/Ids.h"
 #include "model/Meter.h"
 #include "model/ProjectEdits.h"
 #include "ui/TimelineRuler.h"
 #include "ui/Gestures.h"
 #include "ui/Hotkeys.h"
+#include "ui/ColourMenu.h"
 #include "ui/HeaderRow.h"
 #include "ui/MenuSeam.h"
 #include "ui/TimelinePaint.h"
@@ -76,13 +77,23 @@ public:
         addAndMakeVisible (soloButton);
     }
 
-    enum class MenuItem { rename = 1, addTrack, removeTrack };
+    enum class MenuItem { rename = 1, addTrack, removeTrack, resetHeight };
+
+    /** Where the colour submenu's ids start: after this row's own, so the two
+        numberings cannot collide. */
+    static constexpr int colourBaseId = (int) MenuItem::resetHeight + 1;
 
     juce::PopupMenu buildMenu() const override
     {
         juce::PopupMenu menu;
         menu.addItem ((int) MenuItem::rename, "Rename");
+        colourMenu::addTo (menu, track, colourBaseId);
         menu.addItem ((int) MenuItem::addTrack, "Add track");
+        menu.addSeparator();
+
+        // Here as well as on the toolbar and on alt-0, because this is the menu
+        // you are already in when a drag on the edge above went too far.
+        menu.addItem ((int) MenuItem::resetHeight, "Reset track height");
         menu.addSeparator();
         menu.addItem ((int) MenuItem::removeTrack, "Remove track");
         return menu;
@@ -90,11 +101,15 @@ public:
 
     void applyMenuChoice (int choice) override
     {
+        if (colourMenu::apply (choice, track, colourBaseId, document))
+            return;
+
         switch ((MenuItem) choice)
         {
             case MenuItem::rename:      nameLabel.showEditor(); break;
             case MenuItem::addTrack:    if (onAddTrack) onAddTrack(); break;
             case MenuItem::removeTrack: if (onRemoveTrack) onRemoveTrack (track); break;
+            case MenuItem::resetHeight: if (onResetHeight) onResetHeight(); break;
             default: break;
         }
     }
@@ -102,6 +117,9 @@ public:
     /** Add and remove belong to the playlist, which owns the list of tracks. */
     std::function<void()> onAddTrack;
     std::function<void (juce::ValueTree)> onRemoveTrack;
+
+    /** So does the height: every lane shares one. */
+    std::function<void()> onResetHeight;
 
     juce::Label* editableLabel() override { return &nameLabel; }
 
@@ -183,15 +201,24 @@ public:
         // A band down the whole left edge, not a tab beside the name.
         //
         // It is what stops a tall header being a short row with a hole under it,
-        // and it costs nothing: a band scales to any height by construction. The
-        // colour is taken from the track's POSITION - channelColour exists for
-        // painting things with no stored colour of their own - so this needs no
-        // schema change, and the channel rack already draws the same edge.
-        g.setColour (tokens::colour::channelColour (index));
+        // and it costs nothing: a band scales to any height by construction.
+        //
+        // The track's own colour if it has chosen one, and otherwise its
+        // POSITION in the list - which is what every lane did before a lane
+        // could carry one, so a project that has never set one looks exactly as
+        // it did, and moving a lane still recolours it.
+        g.setColour (laneColour());
         g.fillRect (0, 0, colourTabWidth, getHeight());
 
         g.setColour (colour::divider);
         g.drawHorizontalLine (getHeight() - 1, 0.0f, (float) getWidth());
+    }
+
+    /** What this lane is painted in: its own colour, or the ramp entry for its
+        position when it has not been given one. */
+    juce::Colour laneColour() const
+    {
+        return entityColour::stored (track).value_or (tokens::colour::channelColour (index));
     }
 
     /** Which row this is, for the colour band. Re-set by rebuildHeaders, which
@@ -655,6 +682,7 @@ void PlaylistComponent::rebuildHeaders()
             auto* header = headers.add (new TrackHeader (document, track));
             header->onAddTrack = [this] { addTrack(); };
             header->onRemoveTrack = [this] (juce::ValueTree t) { removeTrack (t); };
+            header->onResetHeight = [this] { setTrackHeight (size::trackHeightDefault); };
             header->onResizeBegin = [this] { beginRowHeightDrag(); };
             header->onResizeDrag = [this] (int lane, int dy) { dragRowHeightBy (lane, dy); };
             header->onResizeEnd = [this] { endRowHeightDrag(); };
@@ -1795,7 +1823,7 @@ void PlaylistComponent::paintAudioClip (juce::Graphics& g, const juce::ValueTree
     // its channel - one recording, one channel - and the arrangement should say
     // which one at a glance, the way the channel rack's colour tabs do.
     auto clipColour = channel.isValid()
-                          ? channelColour::of (channel)
+                          ? entityColour::of (channel)
                           : colour::textDisabled;
 
     if (! audible)
@@ -1963,7 +1991,17 @@ int PlaylistComponent::paintLanes (juce::Graphics& g, int bottom, bool anySolo)
                                                             (int) clip[ids::patternId]);
 
             const auto isCurrent = (int) clip[ids::patternId] == editorState.getCurrentPatternId();
-            auto clipColour = isCurrent ? colour::accent : emphasis::secondary (colour::accent);
+
+            // The lane's colour if it has been given one, and the accent
+            // otherwise - which is what every clip was before a lane could
+            // carry a colour, so an untouched project is unchanged. Whether
+            // this is the CURRENT pattern stays the saturation rather than the
+            // hue, so choosing a colour costs nothing that was already being
+            // said here.
+            const auto base = entityColour::stored (trackAt (trackIndex))
+                                  .value_or (colour::accent);
+
+            auto clipColour = isCurrent ? base : emphasis::secondary (base);
 
             // A clip on a silenced track is drawn as silenced, so mute and solo
             // are visible in the arrangement and not only in the headers.

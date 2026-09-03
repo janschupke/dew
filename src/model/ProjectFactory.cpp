@@ -1,6 +1,6 @@
 #include "model/ProjectFactory.h"
 
-#include "model/ChannelColour.h"
+#include "model/EntityColour.h"
 #include "model/DemoBuilders.h"
 #include "model/Ids.h"
 #include "model/ProjectSchema.h"
@@ -17,13 +17,13 @@ juce::ValueTree ProjectFactory::createDefault()
     project.setProperty (ids::tempoBpm, 128.0, nullptr);
 
     // Kick and bass sit low; snare is noisy-ish via a fast square; lead sings.
-    project.appendChild (makeChannel (1, "Kick",  channelColour::defaultHex (0), 36, "sine",     0,
+    project.appendChild (makeChannel (1, "Kick",  entityColour::defaultHex (0), 36, "sine",     0,
                                       0.001, 0.140, 0.0, 0.060, 0.95), nullptr);
-    project.appendChild (makeChannel (2, "Snare", channelColour::defaultHex (1), 60, "square",  -1,
+    project.appendChild (makeChannel (2, "Snare", entityColour::defaultHex (1), 60, "square",  -1,
                                       0.001, 0.090, 0.0, 0.060, 0.55), nullptr);
-    project.appendChild (makeChannel (3, "Bass",  channelColour::defaultHex (2), 40, "saw",      0,
+    project.appendChild (makeChannel (3, "Bass",  entityColour::defaultHex (2), 40, "saw",      0,
                                       0.004, 0.180, 0.35, 0.090, 0.75), nullptr);
-    project.appendChild (makeChannel (4, "Lead",  channelColour::defaultHex (3), 72, "triangle", 0,
+    project.appendChild (makeChannel (4, "Lead",  entityColour::defaultHex (3), 72, "triangle", 0,
                                       0.006, 0.150, 0.55, 0.220, 0.60), nullptr);
 
     auto pattern = defaultTreeFor (childSpecFor (projectSpec(), "patterns"));

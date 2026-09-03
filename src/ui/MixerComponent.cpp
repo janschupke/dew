@@ -9,7 +9,10 @@
 #include "ui/design/Tokens.h"
 #include "ui/primitives/HoverTracker.h"
 
-#include "model/ChannelColour.h"
+#include <optional>
+
+#include "model/EntityColour.h"
+#include "ui/ColourMenu.h"
 #include "model/Ids.h"
 #include "model/ModuleCatalog.h"
 #include "ui/DewLookAndFeel.h"
@@ -170,7 +173,16 @@ public:
 
     void mouseDown (const juce::MouseEvent& event) override
     {
+        // Selected first, so a menu always acts on the strip that was clicked
+        // rather than on whatever was selected before it - the same rule
+        // HeaderRow states for the rack and the playlist.
         select();
+
+        if (event.mods.isPopupMenu())
+        {
+            showMenu (event);
+            return;
+        }
 
         // A routing row names a channel; clicking it should go there.
         if (routingBounds.contains (event.getPosition()) && onChannelClicked != nullptr)
@@ -181,6 +193,62 @@ public:
                 onChannelClicked (routedIds[row]);
         }
     }
+
+    // --- the menu ------------------------------------------------------------
+    // Built and applied by named methods rather than by a lambda inside
+    // showMenuAsync, for the reason MenuSeam.h gives: showMenuAsync cannot be
+    // driven headlessly, so a test reads the built menu instead. A strip is not
+    // a HeaderRow - it holds a fader rather than a name and two toggles - so it
+    // states the three lines rather than inheriting them.
+    enum class MenuItem { rename = 1 };
+
+    static constexpr int colourBaseId = (int) MenuItem::rename + 1;
+
+    juce::PopupMenu buildMenu() const
+    {
+        juce::PopupMenu menu;
+
+        // Master has no name to change and no colour to be: it is the one strip
+        // there is only ever one of, and nothing identifies it by colour.
+        if (isMaster)
+            return menu;
+
+        menu.addItem ((int) MenuItem::rename, "Rename");
+        colourMenu::addTo (menu, track, colourBaseId);
+        return menu;
+    }
+
+    void applyMenuChoice (int choice)
+    {
+        if (colourMenu::apply (choice, track, colourBaseId, document))
+            return;
+
+        if ((MenuItem) choice == MenuItem::rename)
+            nameLabel.showEditor();
+    }
+
+private:
+    void showMenu (const juce::MouseEvent& event)
+    {
+        auto menu = buildMenu();
+
+        if (menu.getNumItems() == 0)
+            return;
+
+        // The look and feel has to be set explicitly or DewLookAndFeel's popup
+        // overrides do not apply, and a SafePointer because a menu outlives a
+        // rebuild of the strips.
+        menu.setLookAndFeel (&getLookAndFeel());
+        menu.showMenuAsync (juce::PopupMenu::Options()
+                                .withTargetScreenArea ({ event.getScreenX(), event.getScreenY(), 1, 1 }),
+                            [safe = juce::Component::SafePointer<Strip> (this)] (int choice)
+                            {
+                                if (safe != nullptr && choice > 0)
+                                    safe->applyMenuChoice (choice);
+                            });
+    }
+
+public:
 
     void paint (juce::Graphics& g) override
     {
@@ -201,9 +269,17 @@ public:
 
         // A cap along the top edge, so which strip is selected is readable from
         // across the mixer rather than from a few percent of brightness.
-        if (selected)
+        //
+        // The same cap carries the strip's own colour when it has one and is not
+        // selected. One band rather than two: selection is the louder fact and
+        // has to win, and two stripes across a 60px strip is a pattern rather
+        // than a signal.
+        const auto cap = selected ? std::optional<juce::Colour> (tokens::colour::accent)
+                                  : entityColour::stored (track);
+
+        if (cap.has_value())
         {
-            g.setColour (tokens::colour::accent);
+            g.setColour (*cap);
             g.fillRoundedRectangle (body.withHeight (3.0f), tokens::radius::xs);
         }
 
@@ -568,7 +644,7 @@ void MixerComponent::updateRouting()
                     continue;
 
                 names.add (channel[ids::name].toString());
-                colours.add (channelColour::of (channel));
+                colours.add (entityColour::of (channel));
                 channelIds.add ((int) channel[ids::id]);
             }
         }

@@ -1,12 +1,13 @@
 #include "ui/ChannelRackComponent.h"
 
-#include "model/ChannelColour.h"
+#include "model/EntityColour.h"
 #include "model/Ids.h"
 #include "model/ModuleCatalog.h"
 #include "model/Meter.h"
 #include "model/ProjectEdits.h"
 #include "ui/design/Icons.h"
 #include "ui/design/Tokens.h"
+#include "ui/ColourMenu.h"
 #include "ui/HeaderRow.h"
 #include "ui/MenuSeam.h"
 #include "ui/primitives/DewControls.h"
@@ -134,7 +135,7 @@ public:
                                     hover.lift() / tokens::emphasis::surfaceLift));
         g.fillAll();
 
-        const auto colourValue = channelColour::of (channel);
+        const auto colourValue = entityColour::of (channel);
 
         g.setColour (colourValue);
         g.fillRect (0, 0, 4, getHeight());
@@ -167,10 +168,15 @@ public:
 
     enum class MenuItem { rename = 1, addChannel, removeChannel };
 
+    /** Where the colour submenu's ids start: after this row's own, so the two
+        numberings cannot collide. */
+    static constexpr int colourBaseId = (int) MenuItem::removeChannel + 1;
+
     juce::PopupMenu buildMenu() const override
     {
         juce::PopupMenu menu;
         menu.addItem ((int) MenuItem::rename, "Rename");
+        colourMenu::addTo (menu, channel, colourBaseId);
         menu.addItem ((int) MenuItem::addChannel, "Add channel");
         menu.addSeparator();
         menu.addItem ((int) MenuItem::removeChannel, "Remove channel");
@@ -179,6 +185,9 @@ public:
 
     void applyMenuChoice (int choice) override
     {
+        if (colourMenu::apply (choice, channel, colourBaseId, document))
+            return;
+
         switch ((MenuItem) choice)
         {
             case MenuItem::rename:         nameLabel.showEditor(); break;

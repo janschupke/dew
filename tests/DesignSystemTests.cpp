@@ -6,7 +6,7 @@
 #include "ui/design/DewGallery.h"
 #include "ui/SignalScope.h"
 #include "ui/design/Icons.h"
-#include "model/ChannelColour.h"
+#include "model/EntityColour.h"
 #include "model/Ids.h"
 #include "ui/design/Tokens.h"
 #include "ui/primitives/HoverTracker.h"
@@ -530,20 +530,20 @@ TEST_CASE ("the channel ramp says the same thing in both layers", "[design][mode
     // half of it that has to be paid: they are compared here, so a palette
     // change that touches one and not the other is a failing test rather than a
     // rack whose rows disagree with its grid.
-    REQUIRE (dew::channelColour::rampSize()
+    REQUIRE (dew::entityColour::rampSize()
              == (int) (sizeof (tokens::colour::channelRamp) / sizeof (tokens::colour::channelRamp[0])));
 
-    for (int i = 0; i < dew::channelColour::rampSize(); ++i)
+    for (int i = 0; i < dew::entityColour::rampSize(); ++i)
     {
         INFO ("ramp entry " << i);
-        REQUIRE (juce::Colour::fromString (dew::channelColour::defaultHex (i))
+        REQUIRE (juce::Colour::fromString (dew::entityColour::defaultHex (i))
                  == tokens::colour::channelColour (i));
     }
 
     // Both wrap, and both wrap the same way, so channel 9 and channel 1 are one
     // colour in the document and one colour on screen.
-    REQUIRE (dew::channelColour::defaultHex (8) == dew::channelColour::defaultHex (0));
-    REQUIRE (dew::channelColour::defaultHex (-1) == dew::channelColour::defaultHex (7));
+    REQUIRE (dew::entityColour::defaultHex (8) == dew::entityColour::defaultHex (0));
+    REQUIRE (dew::entityColour::defaultHex (-1) == dew::entityColour::defaultHex (7));
 }
 
 TEST_CASE ("a channel with no colour still has one", "[design][model]")
@@ -552,18 +552,18 @@ TEST_CASE ("a channel with no colour still has one", "[design][model]")
     // a missing property, which paints as nothing at all - a channel with no
     // stripe, no clip fill and no note colour, and no clue why.
     juce::ValueTree channel { dew::ids::CHANNEL };
-    CHECK (dew::channelColour::of (channel).isOpaque());
+    CHECK (dew::entityColour::of (channel).isOpaque());
 
     // Length is not validity - "not a colour" also ends in six characters, and
     // juce reads a non-hex digit as a zero, so this used to come back as an
     // almost-black that looked like a deliberate choice.
     channel.setProperty (dew::ids::colour, "not a colour", nullptr);
-    CHECK (dew::channelColour::of (channel) == tokens::colour::channelColour (0));
+    CHECK (dew::entityColour::of (channel) == tokens::colour::channelColour (0));
 
     // And a real value reads back exactly, in either stored spelling.
     channel.setProperty (dew::ids::colour, "ff29a19c", nullptr);
-    CHECK (dew::channelColour::of (channel) == tokens::colour::channelColour (1));
+    CHECK (dew::entityColour::of (channel) == tokens::colour::channelColour (1));
 
     channel.setProperty (dew::ids::colour, "29a19c", nullptr);
-    CHECK (dew::channelColour::of (channel) == tokens::colour::channelColour (1));
+    CHECK (dew::entityColour::of (channel) == tokens::colour::channelColour (1));
 }

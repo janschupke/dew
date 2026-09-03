@@ -1411,9 +1411,16 @@ TEST_CASE ("a track row's context menu offers rename, add and remove", "[ui][pla
 
     INFO ("items: " << items.joinIntoString (", "));
     REQUIRE (items.contains ("Rename"));
+    REQUIRE (items.contains ("Colour"));
     REQUIRE (items.contains ("Add track"));
+    REQUIRE (items.contains ("Reset track height"));
     REQUIRE (items.contains ("Remove track"));
-    REQUIRE (items.indexOf ("-") == items.indexOf ("Remove track") - 1);
+
+    // Remove is fenced off by a separator, because it is the destructive one.
+    // The ITEM BEFORE it rather than the first separator in the menu: there are
+    // two now, and asking for the first was asking where the menu happened to
+    // be divided rather than what it is that has to be divided off.
+    REQUIRE (items[items.indexOf ("Remove track") - 1] == "-");
 
     REQUIRE_FALSE (h.playlist.applyTrackMenuChoice (99, 1));
 }

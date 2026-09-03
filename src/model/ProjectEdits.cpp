@@ -7,7 +7,7 @@
 
 #include "model/AutomationCurve.h"
 
-#include "model/ChannelColour.h"
+#include "model/EntityColour.h"
 #include "model/Ids.h"
 #include "model/Meter.h"
 #include "model/ProjectSchema.h"
@@ -205,7 +205,7 @@ juce::ValueTree ProjectEdits::addChannel (juce::ValueTree project, const juce::S
     // every channel a user added came out the same colour as the last, in an
     // application whose channel rack, step grid, piano roll, playlist and mixer
     // all identify a channel BY its colour.
-    channel.setProperty (ids::colour, channelColour::defaultHex (id - 1), nullptr);
+    channel.setProperty (ids::colour, entityColour::defaultHex (id - 1), nullptr);
 
     // Route to a mixer track if one with a matching number exists, else insert 1.
     const auto mixer = project.getChildWithName (ids::MIXER);
@@ -794,6 +794,15 @@ void ProjectEdits::setPointShape (juce::ValueTree point, SegmentShape shape, juc
     // so switching to step and back returns the curve you had - which is what
     // makes the three menu items reversible.
     point.setProperty (ids::shape, segmentShapeToString (shape), undo);
+}
+
+void ProjectEdits::setColour (juce::ValueTree node, const juce::String& hex,
+                              juce::UndoManager* undo)
+{
+    if (! node.isValid())
+        return;
+
+    setProperty (node, ids::colour, hex, undo, "Change colour");
 }
 
 void ProjectEdits::setPointStraight (juce::ValueTree point, juce::UndoManager* undo)

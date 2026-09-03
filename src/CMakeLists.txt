@@ -178,7 +178,7 @@ add_library(dew_model STATIC
   model/PresetLibrary.cpp
   model/ProjectSerializer.cpp
   model/DemoLibrary.cpp
-  model/ChannelColour.cpp
+  model/EntityColour.cpp
   model/DemoBuilders.cpp
   model/ProjectFactory.cpp
   model/Demos.cpp

@@ -1,6 +1,6 @@
 #include "model/DemoBuilders.h"
 
-#include "model/ChannelColour.h"
+#include "model/EntityColour.h"
 #include "model/ProjectEdits.h"
 #include "model/ProjectSchema.h"
 
@@ -174,7 +174,7 @@ juce::ValueTree scaffold (int numChannels)
 
     for (int i = 1; i <= count; ++i)
         project.appendChild (makeChannel (i, "Channel " + juce::String (i),
-                                          channelColour::defaultHex (i - 1),
+                                          entityColour::defaultHex (i - 1),
                                           60, "saw", 0, 0.005, 0.120, 0.700, 0.150), nullptr);
 
     project.appendChild (makePattern (1, "Pattern 1", 16), nullptr);

@@ -353,10 +353,13 @@ const NodeSpec& playlistTrackSpec()
 {
     static const NodeSpec spec {
         ids::PLAYLIST_TRACK,
-        { { ids::name,  "Track" },
-          { ids::mute,  false },
-          { ids::solo,  false },
-          { ids::genId, "" } },
+        { { ids::name,   "Track" },
+          { ids::mute,   false },
+          { ids::solo,   false },
+          // Empty means inherit: the lane takes the colour of its POSITION,
+          // which is what it did before it could carry one of its own.
+          { ids::colour, "" },
+          { ids::genId,  "" } },
         { { "clips", &clipSpec(), true } }
     };
     return spec;
@@ -388,12 +391,15 @@ const NodeSpec& mixerTrackSpec()
 {
     static const NodeSpec spec {
         ids::MIXER_TRACK,
-        { { ids::id,   1 },
-          { ids::name, "Insert" },
-          { ids::gain, 0.8 },
-          { ids::pan,  0.0 },
-          { ids::mute, false },
-          { ids::solo, false } },
+        { { ids::id,     1 },
+          { ids::name,   "Insert" },
+          { ids::gain,   0.8 },
+          { ids::pan,    0.0 },
+          { ids::mute,   false },
+          { ids::solo,   false },
+          // Empty means inherit: the strip takes the colours of the channels
+          // routed into it, which is what it did before.
+          { ids::colour, "" } },
         { { "effects", &effectSpec(), true } }
     };
     return spec;

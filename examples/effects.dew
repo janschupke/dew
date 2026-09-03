@@ -1,5 +1,5 @@
 {
-    "formatVersion": 11,
+    "formatVersion": 12,
     "name": "Effect Chain",
     "tempoBpm": 110.0,
     "stepsPerBeat": 4,
@@ -1676,6 +1676,7 @@
           "name": "Arrangement",
           "mute": false,
           "solo": false,
+          "colour": "",
           "genId": "",
           "clips": [
             {
@@ -1738,6 +1739,7 @@
           "name": "Track 2",
           "mute": false,
           "solo": false,
+          "colour": "",
           "genId": "",
           "clips": []
         },
@@ -1745,6 +1747,7 @@
           "name": "Track 3",
           "mute": false,
           "solo": false,
+          "colour": "",
           "genId": "",
           "clips": []
         },
@@ -1752,6 +1755,7 @@
           "name": "Track 4",
           "mute": false,
           "solo": false,
+          "colour": "",
           "genId": "",
           "clips": []
         }
@@ -1815,6 +1819,7 @@
           "pan": 0.0,
           "mute": false,
           "solo": false,
+          "colour": "",
           "effects": [
             {
               "id": 9,
@@ -1847,6 +1852,7 @@
           "pan": 0.0,
           "mute": false,
           "solo": false,
+          "colour": "",
           "effects": [
             {
               "id": 10,
@@ -1879,6 +1885,7 @@
           "pan": 0.0,
           "mute": false,
           "solo": false,
+          "colour": "",
           "effects": [
             {
               "id": 11,
@@ -1911,6 +1918,7 @@
           "pan": 0.0,
           "mute": false,
           "solo": false,
+          "colour": "",
           "effects": []
         }
       ]

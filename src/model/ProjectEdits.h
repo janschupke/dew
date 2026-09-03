@@ -285,6 +285,21 @@ struct ProjectEdits
     */
     static void setPointShape (juce::ValueTree point, SegmentShape, juce::UndoManager*);
 
+    /** Paints a channel, a playlist track or a mixer strip.
+
+        ONE function over the three, because it is one edit: the property has
+        the same name and the same meaning on each, and three named setters
+        would be three places for the transaction name and the inherit rule to
+        drift apart.
+
+        An empty `hex` clears it, which means INHERIT - a lane goes back to the
+        colour of its position and a strip to the colours routed into it. That
+        is what makes "Default" a real menu item rather than a fifth colour that
+        happens to look like the fourth.
+    */
+    static void setColour (juce::ValueTree node, const juce::String& hex,
+                           juce::UndoManager*);
+
     /** What the editor's "Line" means: shape `curve`, bend zero, one undo step.
 
         Two shapes are stored and three are offered, because a line IS a curve

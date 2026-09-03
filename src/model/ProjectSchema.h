@@ -108,8 +108,17 @@ struct NodeSpec
     written with a point at step 6.5 loads into an older build as step 6, which
     moves it. That is the one thing the version gate is for, and it is why this
     bump is not optional.
+
+    v12 gave a playlist track and a mixer track a `colour`, which only a channel
+    had. Additive, and the declared default is the EMPTY string rather than a
+    hex value: empty means "inherit", which is what both of them did before -
+    a lane took its colour from its position in the list and a strip took it
+    from the channels routed into it. So an earlier file loads looking exactly
+    as it did, and a v12 file opened in an older build loses a colour somebody
+    chose rather than being misread. Bumped for that: losing it silently on the
+    next save is what the version gate is for.
 */
-inline constexpr int kFormatVersion = 11;
+inline constexpr int kFormatVersion = 12;
 
 /** How many effects one channel or mixer track may carry. A document limit
     rather than an engine one: a chain longer than this cannot be saved, so it
