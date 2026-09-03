@@ -1,0 +1,35 @@
+{
+    "format": "dew-preset",
+    "formatVersion": 1,
+    "kind": "instrument",
+    "type": "synth",
+    "name": "Morphing Sweep",
+    "description": "Five unison voices morphing across the table over the note.",
+    "state": {
+      "oscillators": [
+        {
+          "enabled": true,
+          "mode": "wavetable",
+          "wavetable": "harmonics",
+          "gain": 0.7,
+          "wavePosition": 0.0,
+          "wavePositionMod": 0.85,
+          "wavePositionSource": "envelope",
+          "unisonVoices": 5,
+          "unisonDetune": 14.0
+        },
+        {
+          "enabled": false
+        },
+        {
+          "enabled": false
+        }
+      ],
+      "amp": {
+        "attack": 0.02,
+        "decay": 1.5,
+        "sustain": 0.5,
+        "release": 0.8
+      }
+    }
+  }

@@ -1,0 +1,15 @@
+{
+    "format": "dew-preset",
+    "formatVersion": 1,
+    "kind": "effect",
+    "type": "eq",
+    "name": "Air",
+    "description": "A lift above the top of the mix.",
+    "state": {
+      "lowGainDb": 0.0,
+      "midGainDb": 0.0,
+      "midFreq": 900.0,
+      "highGainDb": 4.5,
+      "mix": 1.0
+    }
+  }

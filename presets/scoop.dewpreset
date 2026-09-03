@@ -1,0 +1,15 @@
+{
+    "format": "dew-preset",
+    "formatVersion": 1,
+    "kind": "effect",
+    "type": "eq",
+    "name": "Scoop",
+    "description": "Out of the way of a vocal.",
+    "state": {
+      "lowGainDb": 2.0,
+      "midGainDb": -6.0,
+      "midFreq": 700.0,
+      "highGainDb": 3.0,
+      "mix": 1.0
+    }
+  }

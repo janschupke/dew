@@ -1,0 +1,13 @@
+{
+    "format": "dew-preset",
+    "formatVersion": 1,
+    "kind": "effect",
+    "type": "delay",
+    "name": "Dub Echo",
+    "description": "Repeats that outlast the note.",
+    "state": {
+      "delayMs": 375.0,
+      "feedback": 0.78,
+      "mix": 0.35
+    }
+  }

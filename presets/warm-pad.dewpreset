@@ -1,0 +1,39 @@
+{
+    "format": "dew-preset",
+    "formatVersion": 1,
+    "kind": "instrument",
+    "type": "synth",
+    "name": "Warm Pad",
+    "description": "Three detuned voices under a slow attack.",
+    "state": {
+      "oscillators": [
+        {
+          "enabled": true,
+          "wave": "saw",
+          "octave": 0,
+          "detuneCents": -7.0,
+          "gain": 0.5
+        },
+        {
+          "enabled": true,
+          "wave": "saw",
+          "octave": 0,
+          "detuneCents": 7.0,
+          "gain": 0.5
+        },
+        {
+          "enabled": true,
+          "wave": "sine",
+          "octave": -1,
+          "detuneCents": 0.0,
+          "gain": 0.35
+        }
+      ],
+      "amp": {
+        "attack": 0.9,
+        "decay": 1.2,
+        "sustain": 0.75,
+        "release": 1.6
+      }
+    }
+  }

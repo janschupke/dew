@@ -1,0 +1,14 @@
+{
+    "format": "dew-preset",
+    "formatVersion": 1,
+    "kind": "effect",
+    "type": "filter",
+    "name": "Warm Low Pass",
+    "description": "Rolls the top off without dulling it.",
+    "state": {
+      "filterMode": "lowpass",
+      "cutoff": 900.0,
+      "resonance": 0.8,
+      "mix": 1.0
+    }
+  }

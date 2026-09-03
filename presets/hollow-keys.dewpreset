@@ -1,0 +1,35 @@
+{
+    "format": "dew-preset",
+    "formatVersion": 1,
+    "kind": "instrument",
+    "type": "synth",
+    "name": "Hollow Keys",
+    "description": "A square under a triangle an octave up.",
+    "state": {
+      "oscillators": [
+        {
+          "enabled": true,
+          "wave": "square",
+          "octave": 0,
+          "detuneCents": 0.0,
+          "gain": 0.55
+        },
+        {
+          "enabled": true,
+          "wave": "triangle",
+          "octave": 1,
+          "detuneCents": -5.0,
+          "gain": 0.3
+        },
+        {
+          "enabled": false
+        }
+      ],
+      "amp": {
+        "attack": 0.006,
+        "decay": 0.6,
+        "sustain": 0.35,
+        "release": 0.35
+      }
+    }
+  }

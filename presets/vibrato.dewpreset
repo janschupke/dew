@@ -1,0 +1,13 @@
+{
+    "format": "dew-preset",
+    "formatVersion": 1,
+    "kind": "effect",
+    "type": "chorus",
+    "name": "Vibrato",
+    "description": "Fully wet, which is what makes it vibrato and not chorus.",
+    "state": {
+      "rate": 5.5,
+      "depth": 0.5,
+      "mix": 1.0
+    }
+  }

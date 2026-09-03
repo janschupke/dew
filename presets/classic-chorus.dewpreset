@@ -1,0 +1,13 @@
+{
+    "format": "dew-preset",
+    "formatVersion": 1,
+    "kind": "effect",
+    "type": "chorus",
+    "name": "Classic Chorus",
+    "description": "The one everybody means.",
+    "state": {
+      "rate": 1.2,
+      "depth": 0.4,
+      "mix": 0.5
+    }
+  }

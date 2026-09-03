@@ -1,0 +1,14 @@
+{
+    "format": "dew-preset",
+    "formatVersion": 1,
+    "kind": "effect",
+    "type": "reverb",
+    "name": "Ambience",
+    "description": "Glue rather than an effect you can hear.",
+    "state": {
+      "roomSize": 0.12,
+      "damping": 0.5,
+      "width": 1.0,
+      "mix": 0.12
+    }
+  }

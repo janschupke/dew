@@ -1,0 +1,14 @@
+{
+    "format": "dew-preset",
+    "formatVersion": 1,
+    "kind": "effect",
+    "type": "filter",
+    "name": "Rumble Cut",
+    "description": "Takes the room out from under a sound.",
+    "state": {
+      "filterMode": "highpass",
+      "cutoff": 120.0,
+      "resonance": 0.3,
+      "mix": 1.0
+    }
+  }

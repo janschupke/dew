@@ -98,6 +98,7 @@ target_link_libraries(dew_tests
 # so they need to know where the sources are. Same idiom as examples above.
 target_compile_definitions(dew_tests PRIVATE
   DEW_EXAMPLES_DIR="${CMAKE_SOURCE_DIR}/examples"
+    DEW_PRESETS_DIR="${CMAKE_SOURCE_DIR}/presets"
   DEW_SOURCE_DIR="${CMAKE_SOURCE_DIR}/src")
 
 # What is actually COMPILED, as opposed to what happens to sit under src/.

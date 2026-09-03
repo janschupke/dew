@@ -1,0 +1,35 @@
+{
+    "format": "dew-preset",
+    "formatVersion": 1,
+    "kind": "instrument",
+    "type": "synth",
+    "name": "Pluck",
+    "description": "No sustain: the decay is the whole sound.",
+    "state": {
+      "oscillators": [
+        {
+          "enabled": true,
+          "wave": "saw",
+          "octave": 0,
+          "detuneCents": 0.0,
+          "gain": 0.7
+        },
+        {
+          "enabled": true,
+          "wave": "square",
+          "octave": 0,
+          "detuneCents": 9.0,
+          "gain": 0.35
+        },
+        {
+          "enabled": false
+        }
+      ],
+      "amp": {
+        "attack": 0.001,
+        "decay": 0.28,
+        "sustain": 0.0,
+        "release": 0.12
+      }
+    }
+  }

@@ -1,0 +1,15 @@
+{
+    "format": "dew-preset",
+    "formatVersion": 1,
+    "kind": "effect",
+    "type": "eq",
+    "name": "Telephone",
+    "description": "Everything but the middle.",
+    "state": {
+      "lowGainDb": -18.0,
+      "midGainDb": 6.0,
+      "midFreq": 1600.0,
+      "highGainDb": -14.0,
+      "mix": 1.0
+    }
+  }

@@ -1,0 +1,13 @@
+{
+    "format": "dew-preset",
+    "formatVersion": 1,
+    "kind": "effect",
+    "type": "chorus",
+    "name": "Subtle Widen",
+    "description": "Slow and shallow: stereo, rather than an effect.",
+    "state": {
+      "rate": 0.35,
+      "depth": 0.18,
+      "mix": 0.4
+    }
+  }

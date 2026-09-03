@@ -1,0 +1,14 @@
+{
+    "format": "dew-preset",
+    "formatVersion": 1,
+    "kind": "effect",
+    "type": "filter",
+    "name": "Squelch",
+    "description": "Close to self-oscillation, at the resonance the engine reaches.",
+    "state": {
+      "filterMode": "lowpass",
+      "cutoff": 400.0,
+      "resonance": 3.6,
+      "mix": 1.0
+    }
+  }

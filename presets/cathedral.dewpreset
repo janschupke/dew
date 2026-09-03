@@ -1,0 +1,14 @@
+{
+    "format": "dew-preset",
+    "formatVersion": 1,
+    "kind": "effect",
+    "type": "reverb",
+    "name": "Cathedral",
+    "description": "A long dark tail.",
+    "state": {
+      "roomSize": 0.92,
+      "damping": 0.25,
+      "width": 1.0,
+      "mix": 0.4
+    }
+  }

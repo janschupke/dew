@@ -1,0 +1,13 @@
+{
+    "format": "dew-preset",
+    "formatVersion": 1,
+    "kind": "effect",
+    "type": "drive",
+    "name": "Parallel Grit",
+    "description": "Heavy distortion blended under the dry signal.",
+    "state": {
+      "drive": 16.0,
+      "outputGain": 0.6,
+      "mix": 0.35
+    }
+  }

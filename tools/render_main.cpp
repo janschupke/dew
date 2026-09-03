@@ -3,6 +3,8 @@
 #include "BuildInfo.h"
 #include "io/OfflineRenderer.h"
 #include "io/SamplePool.h"
+#include "model/PresetFactory.h"
+#include "model/PresetSerializer.h"
 #include "model/ProjectFactory.h"
 #include "model/ProjectSerializer.h"
 #include "CliArgs.h"
@@ -50,6 +52,8 @@ Other:
                      regenerate examples/demo.dew.
   --write-demos <d>  Write the whole demo library into directory d and exit.
                      Used to regenerate examples/, which the app embeds.
+  --write-presets <d> Write the factory presets into directory d and exit. Used
+                     to regenerate presets/, which the app embeds.
 )";
 
 int fail (const juce::String& message)
@@ -152,6 +156,32 @@ int main (int argc, char* argv[])
         {
             const auto target = directory.getChildFile (demo.fileName);
             const auto result = dew::ProjectSerializer::writeToFile (demo.build(), target);
+
+            if (result.failed())
+                return fail (result.getErrorMessage());
+
+            std::cout << "wrote " << target.getFullPathName() << std::endl;
+        }
+
+        return 0;
+    }
+
+    if (args.has ("--write-presets"))
+    {
+        const auto path = args.value ("--write-presets");
+
+        if (path.isEmpty())
+            return fail ("--write-presets needs a directory to write to");
+
+        const auto directory = juce::File::getCurrentWorkingDirectory().getChildFile (path);
+
+        if (! directory.createDirectory())
+            return fail ("could not create " + directory.getFullPathName());
+
+        for (const auto& entry : dew::PresetFactory::presets())
+        {
+            const auto target = directory.getChildFile (entry.fileName);
+            const auto result = dew::PresetSerializer::writeToFile (entry.build(), target);
 
             if (result.failed())
                 return fail (result.getErrorMessage());
