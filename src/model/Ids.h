@@ -24,6 +24,7 @@
               CLIP*                    -> "clips": []
           MIXER                        -> "mixer": {}
             MASTER                     -> "master": {}
+              EFFECT*                  -> "effects": []
             MIXER_TRACK*               -> "tracks": []
               EFFECT*                  -> "effects": []
           SCORE                        -> "score": {}

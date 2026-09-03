@@ -425,9 +425,19 @@ juce::Array<juce::ValueTree> ProjectEdits::effectChainOwners (const juce::ValueT
         if (child.hasType (ids::CHANNEL))
             owners.add (child);
 
-    for (const auto& track : project.getChildWithName (ids::MIXER))
+    const auto mixer = project.getChildWithName (ids::MIXER);
+
+    for (const auto& track : mixer)
         if (track.hasType (ids::MIXER_TRACK))
             owners.add (track);
+
+    // The master carries a chain like any other bus, so it has to be counted
+    // among the owners a new id is derived from. Left out, two effects added to
+    // the master both took `highest + 1` and got the SAME id - and the engine
+    // keys DSP state on the id, so they shared one module and fought over the
+    // same reverb tank, which is exactly what unique ids exist to prevent.
+    if (const auto master = mixer.getChildWithName (ids::MASTER); master.isValid())
+        owners.add (master);
 
     return owners;
 }
