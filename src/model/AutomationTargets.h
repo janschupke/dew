@@ -2,19 +2,26 @@
 
 #include <juce_data_structures/juce_data_structures.h>
 
+#include <optional>
 #include <vector>
+
+#include "model/ParamSpec.h"
 
 namespace dew
 {
 
 /** What an automation clip can be pointed at.
 
-    Deliberately a curated list rather than an arbitrary property path. A path
+    Deliberately a declared set rather than an arbitrary property path. A path
     would automate anything, including a channel's name or a pattern's length,
-    and would silently break the moment a property was renamed. This is a
-    declared table: everything in it is a continuous quantity that means
-    something to move over time, and the engine resolves each entry to a direct
-    index so the audio thread does no lookup.
+    and would silently break the moment a property was renamed. Every entry
+    resolves to a ParamSpec that says what the parameter is, and the engine
+    resolves the target to a direct index so the audio thread does no lookup.
+
+    WHICH parameters are worth a curve is still a judgement - it is just made
+    once, beside the parameter, as ParamSpec::automatable, rather than in a
+    second list of names far away from it. Those lists had already drifted from
+    what the catalog declared.
 */
 enum class AutomationScope
 {
@@ -29,61 +36,54 @@ enum class AutomationScope
 AutomationScope automationScopeFromString (const juce::String&);
 juce::String automationScopeToString (AutomationScope);
 
-/** One automatable parameter.
+/** Maps a 0..1 automation value onto a parameter's own units.
 
-    `property` is the ValueTree identifier on the target node. `minimum` and
-    `maximum` are the range an automation point's 0..1 value maps onto, so the
-    point editor is uniform whatever it is driving.
+    NOT ParamSpec::fromNormalised, which is what a knob reads and is continuous
+    on purpose. This one SNAPS a discrete parameter, because half-on is not a
+    state a bool has and a filter mode between two modes is not a mode. Doing it
+    here - in the one function the picker, the point editor, the painter and the
+    engine all call - is what keeps "what you draw is what you hear" true for a
+    toggle as well as for a cutoff.
 */
-struct AutomationParamSpec
-{
-    const juce::Identifier* property;
-    const char* displayName;
-    double minimum;
-    double maximum;
-
-    /** True for pan-like parameters, which a point editor should centre. */
-    bool bipolar;
-
-    /** True for frequency-like quantities, which map exponentially.
-
-        A cutoff swept linearly from 20Hz to 18kHz spends four fifths of its
-        travel above 3kHz, where almost nothing audible happens, and the last
-        fifth crossing the entire musical range. Mapping it as min*(max/min)^v
-        makes the middle of a drawn curve the middle of what you hear.
-    */
-    bool logarithmic = false;
-};
-
-/** Maps a 0..1 automation value onto a parameter's own range. */
-double mapAutomationValue (const AutomationParamSpec&, double normalised);
+double automationValueFor (const ParamSpec&, double normalised);
 
 /** Parameters automatable on a channel itself. */
-const std::vector<AutomationParamSpec>& channelParams();
+const std::vector<ParamSpec>& channelParams();
 
 /** Parameters automatable on a mixer track itself. */
-const std::vector<AutomationParamSpec>& mixerTrackParams();
+const std::vector<ParamSpec>& mixerTrackParams();
 
 /** Parameters automatable on the master. */
-const std::vector<AutomationParamSpec>& masterParams();
+const std::vector<ParamSpec>& masterParams();
 
 /** Parameters automatable on one oscillator slot.
 
     Only offered for a slot in wavetable mode - see availableAutomationTargets.
-    A classic oscillator has nothing here that means anything to move over time,
-    and offering position for one would be a control that silently did nothing.
+    A classic oscillator's wave position means nothing, and offering it would be
+    a control that silently did nothing.
 */
-const std::vector<AutomationParamSpec>& oscParams();
+const std::vector<ParamSpec>& oscParams();
 
 /** Parameters automatable on an effect of this type. */
-const std::vector<AutomationParamSpec>& effectParams (const juce::String& effectType);
+const std::vector<ParamSpec>& effectParams (const juce::String& effectType);
+
+/** Every automatable parameter's spelling, for the source gate.
+
+    One call, so a table added beside the others cannot be forgotten by the gate
+    that stops these names being written as string literals.
+*/
+juce::StringArray automatableParameterNames();
 
 /** The spec for one property within a scope, or nullptr if it is not
     automatable - which is how a clip pointing at a parameter that no longer
     applies (an effect slot changed type) is dropped rather than misapplied.
+
+    The returned pointer is into a table with static storage duration, so it is
+    safe to hold: the engine's snapshot keeps one and reads it on the audio
+    thread.
 */
-const AutomationParamSpec* findParamSpec (AutomationScope, const juce::String& effectType,
-                                          const juce::Identifier& property);
+const ParamSpec* findParamSpec (AutomationScope, const juce::String& effectType,
+                                const juce::Identifier& property);
 
 /** Every target a project currently offers, as the picker shows them. */
 struct AutomationTarget
@@ -93,10 +93,33 @@ struct AutomationTarget
     int slot = -1;          ///< effect or oscillator slot index, -1 when the scope has none
     juce::Identifier property;
     juce::String displayName;   ///< "Kick > Filter > Cutoff"
-    double minimum = 0.0;
-    double maximum = 1.0;
-    bool logarithmic = false;
+
+    /** What the parameter IS, rather than four fields copied out of it.
+
+        The range, the curve, whether it is bipolar and how many values it has
+        used to be restated here and in three other tables, and they had drifted:
+        a mixer fader offered 0..1.5, the engine clamped at 2.0 and automation
+        mapped onto 0..1, so a curve drawn to the top reached two thirds of the
+        travel and stopped with nothing saying why.
+    */
+    const ParamSpec* spec = nullptr;
 };
+
+/** The automation target a property on a node names, or nothing.
+
+    The INVERSE of the picker, and deliberately the same function underneath:
+    availableAutomationTargets is a WALK over this, so a target the picker offers
+    and a target a control's right-click creates cannot be two different things.
+    Before this, the owner-node -> (scope, targetId, slot) mapping existed only
+    inside the picker's own loop, and a knob had nowhere to ask what it drove.
+
+    `project` is taken because a node cannot always classify itself: an EFFECT
+    under a CHANNEL is a channelEffect and the same node under a MIXER_TRACK is
+    a mixerEffect, and its slot is its position among its EFFECT siblings.
+*/
+std::optional<AutomationTarget> automationTargetFor (const juce::ValueTree& project,
+                                                     const juce::ValueTree& node,
+                                                     const juce::Identifier& property);
 
 std::vector<AutomationTarget> availableAutomationTargets (const juce::ValueTree& project);
 

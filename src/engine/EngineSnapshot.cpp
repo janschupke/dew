@@ -395,11 +395,12 @@ float AutomationSnapshot::valueAt (double step) const noexcept
     const auto normalised = curveValueAt (points, step);
 
     // Same mapping the picker and the point editor use, so what is drawn is
-    // what is heard.
-    const AutomationParamSpec spec { nullptr, "", (double) minimum, (double) maximum,
-                                     false, logarithmic };
+    // what is heard - and the same SNAP, so a curve over a toggle or a filter
+    // mode never lands between two states.
+    if (spec == nullptr)
+        return 0.0f;
 
-    return (float) mapAutomationValue (spec, normalised);
+    return (float) automationValueFor (*spec, normalised);
 }
 
 namespace
@@ -768,9 +769,7 @@ EngineSnapshot buildSnapshot (const juce::ValueTree& project, juce::StringArray*
             continue;
         }
 
-        a.minimum = (float) spec->minimum;
-        a.maximum = (float) spec->maximum;
-        a.logarithmic = spec->logarithmic;
+        a.spec = spec;
 
         if (a.scope == AutomationScope::channelEffect || a.scope == AutomationScope::mixerEffect)
             if (const auto type = effectTypeFor (effectType))

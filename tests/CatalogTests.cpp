@@ -337,14 +337,18 @@ TEST_CASE ("automation reaches everything a control does", "[catalog][params]")
 
         REQUIRE (declared != nullptr);
 
+        // The range is no longer COMPARED, it is the same object: findParamSpec
+        // returns a pointer into a table filtered from this one, so there is
+        // nothing left to drift. Asserting identity is what is left to say.
+        CHECK (automation->property == declared->property);
         CHECK (automation->minimum == Catch::Approx (declared->minimum));
         CHECK (automation->maximum == Catch::Approx (declared->maximum));
-        CHECK (automation->bipolar == declared->bipolar);
-        CHECK (automation->logarithmic == (declared->curve == ParamCurve::logarithmic));
 
-        // The value a curve at full height asks for must survive the clamp the
-        // engine puts it through - the assertion the mixer's gain failed.
-        const auto atFullHeight = mapAutomationValue (*automation, 1.0);
+        // What is still a real assertion: the value a curve at full height asks
+        // for has to survive the clamp the engine puts it through. That is the
+        // one the mixer's gain failed, and it would fail again for any parameter
+        // whose automation range reached past what the engine loads.
+        const auto atFullHeight = automationValueFor (*automation, 1.0);
 
         CHECK (declared->clamp (atFullHeight) == Catch::Approx (atFullHeight));
         CHECK (atFullHeight == Catch::Approx (declared->maximum));

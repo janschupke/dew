@@ -273,9 +273,15 @@ struct AutomationSnapshot
         into a single indexed write.
     */
     int paramIndex = -1;
-    float minimum = 0.0f;
-    float maximum = 1.0f;
-    bool logarithmic = false;
+
+    /** What the parameter IS, resolved on the message thread.
+
+        A pointer into a table with static storage duration, so it is trivially
+        copyable and safe to read on the audio thread. This used to be the
+        range and the curve copied out into three fields here, which was a
+        fourth declaration of numbers that had already drifted once.
+    */
+    const ParamSpec* spec = nullptr;
     /** The curve itself, in the model's own point type.
 
         Not an engine copy of it. The two evaluators were a hand-copied pair and

@@ -1,5 +1,7 @@
 #include "model/AutomationTargets.h"
 
+#include <cmath>
+
 #include "model/Ids.h"
 #include "model/ModuleCatalog.h"
 #include <array>
@@ -7,37 +9,65 @@
 namespace dew
 {
 
+namespace
+{
+
+/** The scopes and their file spellings, as ONE table.
+
+    It was a chain of ifs falling back to `channel` and a switch beside it, so
+    adding a scope was a compile error in one direction and a silent
+    misreading in the other.
+*/
+struct ScopeName { AutomationScope scope; const char* id; };
+
+constexpr ScopeName scopeNames[] {
+    { AutomationScope::channel,       "channel" },
+    { AutomationScope::channelOsc,    "channelOsc" },
+    { AutomationScope::channelEffect, "channelEffect" },
+    { AutomationScope::mixerTrack,    "mixerTrack" },
+    { AutomationScope::mixerEffect,   "mixerEffect" },
+    { AutomationScope::master,        "master" }
+};
+
+} // namespace
+
 AutomationScope automationScopeFromString (const juce::String& s)
 {
-    if (s == "channelOsc")    return AutomationScope::channelOsc;
-    if (s == "channelEffect") return AutomationScope::channelEffect;
-    if (s == "mixerTrack")    return AutomationScope::mixerTrack;
-    if (s == "mixerEffect")   return AutomationScope::mixerEffect;
-    if (s == "master")        return AutomationScope::master;
+    for (const auto& row : scopeNames)
+        if (s == row.id)
+            return row.scope;
 
     return AutomationScope::channel;
 }
 
 juce::String automationScopeToString (AutomationScope scope)
 {
-    switch (scope)
-    {
-        case AutomationScope::channelOsc:    return "channelOsc";
-        case AutomationScope::channelEffect: return "channelEffect";
-        case AutomationScope::mixerTrack:    return "mixerTrack";
-        case AutomationScope::mixerEffect:   return "mixerEffect";
-        case AutomationScope::master:        return "master";
-        case AutomationScope::channel:       break;
-    }
+    for (const auto& row : scopeNames)
+        if (row.scope == scope)
+            return row.id;
 
     return "channel";
 }
 
-double mapAutomationValue (const AutomationParamSpec& spec, double normalised)
+double automationValueFor (const ParamSpec& spec, double normalised)
 {
     const auto t = juce::jlimit (0.0, 1.0, normalised);
 
-    if (spec.logarithmic && spec.minimum > 0.0 && spec.maximum > spec.minimum)
+    // A discrete parameter has no in-between value. Snapping HERE, in the one
+    // function the picker, the point editor, the painter and the engine all
+    // call, is what keeps a toggle honest: half on is not a state a bool has,
+    // and a filter mode between two modes is not a mode.
+    //
+    // Equal-width buckets, so a curve at 0.49 is off and one at 0.51 is on.
+    if (const auto steps = spec.numDiscreteValues(); steps > 1)
+    {
+        const auto index = juce::jlimit (0, steps - 1, (int) std::floor (t * (double) steps));
+
+        return spec.minimum + (spec.maximum - spec.minimum)
+                                  * (double) index / (double) (steps - 1);
+    }
+
+    if (spec.curve == ParamCurve::logarithmic && spec.minimum > 0.0 && spec.maximum > spec.minimum)
         return spec.minimum * std::pow (spec.maximum / spec.minimum, t);
 
     return spec.minimum + (spec.maximum - spec.minimum) * t;
@@ -46,94 +76,76 @@ double mapAutomationValue (const AutomationParamSpec& spec, double normalised)
 namespace
 {
 
-/** An automation row is a PROJECTION of a declared parameter, not a second
-    statement of it.
+/** Everything in `specs` that declares itself automatable.
 
-    These four tables used to restate the range themselves, and the mixer's had
-    drifted the worst of anything in the codebase: a fader offered 0..1.5, the
-    engine clamped at 2.0, and automation mapped a curve onto 0..1 - so
-    automating a fader reached two thirds of its travel and stopped, with
-    nothing anywhere saying why.
+    Named parameters used to be picked out by hand here, and the comment said
+    which ones were worth a curve was an editorial decision. It is - it just
+    belongs beside the parameter, where the range and the curve already are,
+    rather than in a second list that had already drifted from them.
 */
-AutomationParamSpec projectionOf (const ParamSpec& spec)
+std::vector<ParamSpec> automatableIn (const std::vector<ParamSpec>& specs)
 {
-    return { spec.property, spec.displayName, spec.minimum, spec.maximum,
-             spec.bipolar, spec.curve == ParamCurve::logarithmic };
-}
+    std::vector<ParamSpec> out;
 
-std::vector<AutomationParamSpec> project (const std::vector<ParamSpec>& specs,
-                                          std::initializer_list<const juce::Identifier*> wanted)
-{
-    std::vector<AutomationParamSpec> out;
-
-    // Named rather than "everything automatable", because which parameters are
-    // worth drawing a curve for is an editorial decision and not a property of
-    // the parameter: an oscillator's octave is a step, and its detune is set
-    // once for a sound rather than moved through it.
-    for (const auto* property : wanted)
-        for (const auto& spec : specs)
-            if (*spec.property == *property)
-                out.push_back (projectionOf (spec));
+    for (const auto& spec : specs)
+        if (spec.automatable)
+            out.push_back (spec);
 
     return out;
 }
 
 } // namespace
 
-const std::vector<AutomationParamSpec>& channelParams()
+const std::vector<ParamSpec>& channelParams()
 {
-    static const auto specs = project (channelParamSpecs(), { &ids::volume, &ids::pan });
+    static const auto specs = automatableIn (channelParamSpecs());
     return specs;
 }
 
-const std::vector<AutomationParamSpec>& mixerTrackParams()
+const std::vector<ParamSpec>& mixerTrackParams()
 {
-    static const auto specs = project (mixerTrackParamSpecs(), { &ids::gain, &ids::pan });
+    static const auto specs = automatableIn (mixerTrackParamSpecs());
     return specs;
 }
 
-const std::vector<AutomationParamSpec>& masterParams()
+const std::vector<ParamSpec>& masterParams()
 {
-    static const auto specs = project (mixerTrackParamSpecs(), { &ids::gain });
+    // The master has a fader and nothing else: no pan, and none of the state a
+    // track carries. A projection of the track's table rather than a table of
+    // its own, so the fader's range is stated once.
+    static const auto specs = []
+    {
+        std::vector<ParamSpec> out;
+
+        for (const auto& spec : mixerTrackParams())
+            if (*spec.property == ids::gain)
+                out.push_back (spec);
+
+        return out;
+    }();
+
     return specs;
 }
 
-const std::vector<AutomationParamSpec>& oscParams()
+const std::vector<ParamSpec>& oscParams()
 {
-    // One row. Position is the only thing on an oscillator worth drawing a
-    // curve for: octave and the mode are steps, and detune and gain are set
-    // once for a sound rather than moved through it.
-    static const auto specs = project (oscParamSpecs(), { &ids::wavePosition });
+    static const auto specs = automatableIn (oscParamSpecs());
     return specs;
 }
 
-const std::vector<AutomationParamSpec>& effectParams (const juce::String& effectType)
+const std::vector<ParamSpec>& effectParams (const juce::String& effectType)
 {
-    // A projection of the catalog, not a sixth copy of the same numbers. This
-    // table used to restate every effect parameter's range and curve, and had
-    // already drifted: it stopped `cutoff` at 18kHz while the engine loaded it
-    // to 20kHz, so the top octave of the filter was reachable by hand and not
-    // by a curve. The EQ's rows were also in a different order here than in the
-    // editor, which is the sort of thing only independent maintenance produces.
     static const auto byType = []
     {
-        std::array<std::vector<AutomationParamSpec>, (size_t) kNumEffectTypes> built;
+        std::array<std::vector<ParamSpec>, (size_t) kNumEffectTypes> built;
 
         for (const auto& descriptor : effectDescriptors())
-        {
-            auto& out = built[(size_t) descriptor.type];
-
-            for (const auto& param : effectParamsFor (descriptor.type))
-                if (param.automatable)
-                    out.push_back ({ param.property, param.displayName,
-                                     param.minimum, param.maximum, param.bipolar,
-                                     param.curve == ParamCurve::logarithmic });
-        }
+            built[(size_t) descriptor.type] = automatableIn (effectParamsFor (descriptor.type));
 
         return built;
     }();
 
-    static const std::vector<AutomationParamSpec> none {};
+    static const std::vector<ParamSpec> none {};
 
     if (const auto type = effectTypeFor (effectType))
         return byType[(size_t) *type];
@@ -141,11 +153,32 @@ const std::vector<AutomationParamSpec>& effectParams (const juce::String& effect
     return none;
 }
 
+juce::StringArray automatableParameterNames()
+{
+    juce::StringArray names;
+
+    const auto collect = [&names] (const std::vector<ParamSpec>& specs)
+    {
+        for (const auto& spec : specs)
+            if (spec.property != nullptr)
+                names.addIfNotAlreadyThere (spec.property->toString());
+    };
+
+    collect (channelParams());
+    collect (mixerTrackParams());
+    collect (masterParams());
+    collect (oscParams());
+
+    for (const auto& descriptor : effectDescriptors())
+        collect (effectParams (descriptor.id));
+
+    return names;
+}
+
 namespace
 {
 
-const AutomationParamSpec* findIn (const std::vector<AutomationParamSpec>& specs,
-                                   const juce::Identifier& property)
+const ParamSpec* findIn (const std::vector<ParamSpec>& specs, const juce::Identifier& property)
 {
     for (const auto& spec : specs)
         if (*spec.property == property)
@@ -156,8 +189,8 @@ const AutomationParamSpec* findIn (const std::vector<AutomationParamSpec>& specs
 
 } // namespace
 
-const AutomationParamSpec* findParamSpec (AutomationScope scope, const juce::String& effectType,
-                                          const juce::Identifier& property)
+const ParamSpec* findParamSpec (AutomationScope scope, const juce::String& effectType,
+                                const juce::Identifier& property)
 {
     switch (scope)
     {
@@ -172,30 +205,165 @@ const AutomationParamSpec* findParamSpec (AutomationScope scope, const juce::Str
     return nullptr;
 }
 
+namespace
+{
+
+/** "filter" -> "Filter". An effect's stored id is lower case and its display
+    name is not; the descriptor knows both, so ask it rather than capitalising
+    the id by hand the way this used to. */
+juce::String effectLabel (const juce::ValueTree& effect)
+{
+    if (const auto type = effectTypeFor (effect[ids::type].toString()))
+        return effectTypeDisplayName (*type);
+
+    return effect[ids::type].toString();
+}
+
+/** Which of its EFFECT siblings this node is. Position, because that is what a
+    chain slot IS - an effect carries an id, but the engine addresses the slot. */
+int slotOf (const juce::ValueTree& parent, const juce::ValueTree& child,
+            const juce::Identifier& type)
+{
+    int slot = 0;
+
+    for (const auto& sibling : parent)
+    {
+        if (! sibling.hasType (type))
+            continue;
+
+        if (sibling == child)
+            return slot;
+
+        ++slot;
+    }
+
+    return -1;
+}
+
+} // namespace
+
+std::optional<AutomationTarget> automationTargetFor (const juce::ValueTree& project,
+                                                     const juce::ValueTree& node,
+                                                     const juce::Identifier& property)
+{
+    juce::ignoreUnused (project);
+
+    if (! node.isValid())
+        return {};
+
+    const auto parent = node.getParent();
+
+    AutomationTarget target;
+    target.property = property;
+
+    juce::String effectType;
+    juce::String ownerName;
+
+    if (node.hasType (ids::CHANNEL))
+    {
+        target.scope = AutomationScope::channel;
+        target.targetId = (int) node[ids::id];
+        ownerName = node[ids::name].toString();
+        target.displayName = ownerName;
+    }
+    else if (node.hasType (ids::MIXER_TRACK))
+    {
+        target.scope = AutomationScope::mixerTrack;
+        target.targetId = (int) node[ids::id];
+        target.displayName = node[ids::name].toString();
+    }
+    else if (node.hasType (ids::MASTER))
+    {
+        target.scope = AutomationScope::master;
+        target.targetId = 0;
+        target.displayName = "Master";
+    }
+    else if (node.hasType (ids::OSC))
+    {
+        // A wave position on a CLASSIC slot means nothing, so a slot switched
+        // back drops out of the picker and leaves any clip pointing at it inert
+        // - which is what an effect slot that changes type already does.
+        if (node[ids::mode].toString() != "wavetable")
+            return {};
+
+        const auto channel = parent.getParent();
+
+        if (! channel.hasType (ids::CHANNEL))
+            return {};
+
+        target.scope = AutomationScope::channelOsc;
+        target.targetId = (int) channel[ids::id];
+        target.slot = slotOf (parent, node, ids::OSC);
+        target.displayName = channel[ids::name].toString()
+                                 + " > Osc " + juce::String (target.slot + 1);
+    }
+    else if (node.hasType (ids::EFFECT))
+    {
+        effectType = node[ids::type].toString();
+        target.slot = slotOf (parent, node, ids::EFFECT);
+
+        if (parent.hasType (ids::CHANNEL))
+        {
+            target.scope = AutomationScope::channelEffect;
+            target.targetId = (int) parent[ids::id];
+            target.displayName = parent[ids::name].toString() + " > " + effectLabel (node);
+        }
+        else if (parent.hasType (ids::MIXER_TRACK))
+        {
+            target.scope = AutomationScope::mixerEffect;
+            target.targetId = (int) parent[ids::id];
+            target.displayName = parent[ids::name].toString() + " > " + effectLabel (node);
+        }
+        else
+        {
+            // A MASTER insert. Not automatable, and a NAMED gap rather than an
+            // oversight: the picker has never offered one either, because there
+            // is no masterEffect scope and no third override struct in the
+            // engine to write it into. Saying so here is what stops the next
+            // reader assuming it fell through by accident.
+            return {};
+        }
+    }
+    else
+    {
+        // AMP, SAMPLE, PATTERN, PLAYLIST_TRACK and the rest. An envelope stage
+        // is not a quantity you move THROUGH a note, and a playlist track has
+        // no id to point an automation at.
+        return {};
+    }
+
+    target.spec = findParamSpec (target.scope, effectType, property);
+
+    if (target.spec == nullptr)
+        return {};
+
+    target.displayName += " > " + juce::String (target.spec->displayName);
+    return target;
+}
+
 std::vector<AutomationTarget> availableAutomationTargets (const juce::ValueTree& project)
 {
+    // A WALK over automationTargetFor rather than a second implementation of it.
+    //
+    // The owner-node -> (scope, targetId, slot) mapping used to live only inside
+    // this loop, so a control had nowhere to ask what it drove - which is why
+    // automation was reachable from one button and not from the knob itself.
+    // Both directions of one fact now, and a test asserts they agree.
     std::vector<AutomationTarget> targets;
 
-    const auto addChain = [&targets] (const juce::ValueTree& owner, const juce::String& ownerName,
-                                      AutomationScope effectScope, int ownerId)
+    const auto offer = [&targets, &project] (const juce::ValueTree& node,
+                                             const std::vector<ParamSpec>& specs)
     {
-        int slot = 0;
+        for (const auto& spec : specs)
+            if (auto target = automationTargetFor (project, node, *spec.property))
+                targets.push_back (*target);
+    };
 
+    const auto offerChain = [&offer] (const juce::ValueTree& owner)
+    {
         for (const auto& effect : owner)
-        {
-            if (! effect.hasType (ids::EFFECT))
-                continue;
-
-            const auto effectType = effect[ids::type].toString();
-
-            for (const auto& spec : effectParams (effectType))
-                targets.push_back ({ effectScope, ownerId, slot, *spec.property,
-                                     ownerName + " > " + effectType.substring (0, 1).toUpperCase()
-                                         + effectType.substring (1) + " > " + spec.displayName,
-                                     spec.minimum, spec.maximum, spec.logarithmic });
-
-            ++slot;
-        }
+            if (effect.hasType (ids::EFFECT))
+                offer (effect, effectParams (effect[ids::type].toString()));
     };
 
     for (const auto& channel : project)
@@ -203,39 +371,13 @@ std::vector<AutomationTarget> availableAutomationTargets (const juce::ValueTree&
         if (! channel.hasType (ids::CHANNEL))
             continue;
 
-        const auto name = channel[ids::name].toString();
-        const auto id = (int) channel[ids::id];
+        offer (channel, channelParams());
 
-        for (const auto& spec : channelParams())
-            targets.push_back ({ AutomationScope::channel, id, -1, *spec.property,
-                                 name + " > " + spec.displayName,
-                                 spec.minimum, spec.maximum, spec.logarithmic });
+        for (const auto& osc : channel.getChildWithName (ids::INSTRUMENT))
+            if (osc.hasType (ids::OSC))
+                offer (osc, oscParams());
 
-        // Oscillator slots, but only the ones actually running a wavetable. A
-        // slot switched back to classic drops out of the picker and leaves any
-        // clip pointing at it inert, which is what an effect slot that changes
-        // type already does.
-        const auto instrument = channel.getChildWithName (ids::INSTRUMENT);
-        int oscSlot = 0;
-
-        for (const auto& osc : instrument)
-        {
-            if (! osc.hasType (ids::OSC))
-                continue;
-
-            const auto slot = oscSlot++;
-
-            if (osc[ids::mode].toString() != "wavetable")
-                continue;
-
-            for (const auto& spec : oscParams())
-                targets.push_back ({ AutomationScope::channelOsc, id, slot, *spec.property,
-                                     name + " > Osc " + juce::String (slot + 1) + " > "
-                                         + spec.displayName,
-                                     spec.minimum, spec.maximum, spec.logarithmic });
-        }
-
-        addChain (channel, name, AutomationScope::channelEffect, id);
+        offerChain (channel);
     }
 
     const auto mixer = project.getChildWithName (ids::MIXER);
@@ -245,21 +387,11 @@ std::vector<AutomationTarget> availableAutomationTargets (const juce::ValueTree&
         if (! track.hasType (ids::MIXER_TRACK))
             continue;
 
-        const auto name = track[ids::name].toString();
-        const auto id = (int) track[ids::id];
-
-        for (const auto& spec : mixerTrackParams())
-            targets.push_back ({ AutomationScope::mixerTrack, id, -1, *spec.property,
-                                 name + " > " + spec.displayName,
-                                 spec.minimum, spec.maximum, spec.logarithmic });
-
-        addChain (track, name, AutomationScope::mixerEffect, id);
+        offer (track, mixerTrackParams());
+        offerChain (track);
     }
 
-    for (const auto& spec : masterParams())
-        targets.push_back ({ AutomationScope::master, 0, -1, *spec.property,
-                             juce::String ("Master > ") + spec.displayName,
-                             spec.minimum, spec.maximum, spec.logarithmic });
+    offer (mixer.getChildWithName (ids::MASTER), masterParams());
 
     return targets;
 }

@@ -253,22 +253,10 @@ TEST_CASE ("no source spells an automatable parameter as a string literal", "[bu
     // property names that are also legitimate VALUES - "loop", "record",
     // "wavetable", "drive". Widening this beyond the parameters would be a gate
     // that cries wolf, which is a gate people turn off.
-    juce::StringArray names;
-
-    const auto collect = [&names] (const std::vector<dew::AutomationParamSpec>& specs)
-    {
-        for (const auto& spec : specs)
-            if (spec.property != nullptr)
-                names.addIfNotAlreadyThere (spec.property->toString());
-    };
-
-    collect (dew::channelParams());
-    collect (dew::mixerTrackParams());
-    collect (dew::masterParams());
-    collect (dew::oscParams());
-
-    for (const auto& descriptor : dew::effectDescriptors())
-        collect (dew::effectParams (descriptor.id));
+    // ONE call rather than five table lookups written out here. The gate used to
+    // walk each per-scope table by hand, so a table added beside them was a
+    // table the gate silently did not cover.
+    auto names = dew::automatableParameterNames();
 
     // An effect's id and one of its parameters share a spelling in one case -
     // "drive" is both - and the id is a value a file legitimately contains.

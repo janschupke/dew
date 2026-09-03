@@ -61,4 +61,21 @@ double ParamSpec::toNormalised (double value) const noexcept
     return (clamped - minimum) / (maximum - minimum);
 }
 
+int ParamSpec::numDiscreteValues() const noexcept
+{
+    if (control == ParamControl::toggle)
+        return 2;
+
+    if (control == ParamControl::choice)
+        return juce::jmax (0, numChoices);
+
+    // An integral parameter with a unit step: octave, unison voices. A
+    // non-integral one is continuous however coarse its editing interval is -
+    // an interval is how far one nudge goes, not what values exist.
+    if (integral && juce::approximatelyEqual (interval, 1.0) && maximum > minimum)
+        return (int) std::llround (maximum - minimum) + 1;
+
+    return 0;
+}
+
 } // namespace dew

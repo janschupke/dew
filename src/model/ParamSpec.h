@@ -95,7 +95,25 @@ struct ParamSpec
     float clamp (float value) const noexcept;
     double clamp (double value) const noexcept;
 
-    /** 0..1 onto the parameter's own units, honouring the curve. */
+    /** How many distinct values this parameter has, or 0 when it is continuous.
+
+        A toggle has two; a choice has as many as it names; an integral
+        parameter with a unit interval has (max - min + 1). ONE function rather
+        than three call sites each deciding what "discrete" means - the
+        automation snap, the shape a fresh curve is seeded with, and the control
+        a panel builds all ask this.
+    */
+    int numDiscreteValues() const noexcept;
+
+    bool isDiscrete() const noexcept { return numDiscreteValues() > 1; }
+
+    /** 0..1 onto the parameter's own units, honouring the curve.
+
+        Continuous even for a discrete parameter: this is what a KNOB reads, and
+        a knob that jumped between two values would be a knob that could not be
+        dragged. The snap belongs to automation, where half-on is not a state a
+        bool has - see automationValueFor.
+    */
     double fromNormalised (double normalised) const noexcept;
 
     /** The inverse, so a control can show where it sits. */
