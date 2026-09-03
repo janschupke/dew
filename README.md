@@ -137,6 +137,14 @@ licence question. Without it the format reports itself unavailable and the rest 
 - **Instrument** — three band-limited oscillators (sine/saw/square/triangle) or
   wavetables with unison, each with its own octave, detune, gain and on/off switch. One
   ADSR envelope behind them, and channel volume and pan.
+- **Presets** — twenty-five factory sounds: three for each effect type, five for the synth
+  and two for an audio channel. **Preset** beside the instrument panel's title loads one
+  onto the selected channel; each effect card has its own button, and offers only its own
+  type. Loading one is a single undo step. A preset carries the *sound* and nothing else —
+  not a channel's name, colour, routing, level or base pitch, and not its effect chain — so
+  loading one in the middle of a mix cannot move a fader or retune a part that is already
+  written. They ship as files under `presets/`, embedded in the binary the way the demos
+  are; there is no user save yet.
 - **Recording** — **+ Audio** adds a channel that plays a recording instead of its
   oscillators. Arm with **R**, press Record, and the take lands on the playlist at the
   bar the playhead was on. Its rack row shows the waveform; the instrument panel shows
@@ -288,7 +296,20 @@ plugin hosting; the boundary is drawn so that adding them does not mean starting
 
 Deliberately no `get/setStateInformation`: a dew module owns no state the document owns.
 Every parameter lives in the `ValueTree`, and DSP state is not persisted — so
-serialisation is a property of the *descriptor*, generic over every type.
+serialisation is a property of the *descriptor*, generic over every type. That is
+`stateFor` and `validateState` in `ModuleState`, written once over both descriptors, and a
+preset is one call to each.
+
+Both kinds of module have a descriptor now. An `EffectDescriptor` joins a type to its id,
+its display name and its parameters; an `InstrumentDescriptor` does the same through
+`ParamGroup`, which says which *node* a run of parameters lives on — because an effect is
+one node with a flat list and an instrument is a channel, three oscillator slots and an
+envelope. That asymmetry is named rather than flattened, and `effectGroup` presents an
+effect as the degenerate case, so one walk covers both. The schema's `oscSpec`, `ampSpec`,
+`channelSpec` and `sampleSpec` are generated from those tables, and a test compares the
+committed `examples/` byte for byte against what the factory writes — `isEquivalentTo`
+does not compare property order, so without it a reshuffle would leave every example stale
+and fail nothing.
 
 A parameter is declared once, as a `ParamSpec` in `ModuleCatalog`. The schema's defaults,
 the engine's clamps, the automation ranges and the UI's controls are all views of that
