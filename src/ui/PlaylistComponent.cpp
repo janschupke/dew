@@ -1,5 +1,7 @@
 #include "ui/PlaylistComponent.h"
 
+#include "model/AutomationCurve.h"
+
 #include "io/SamplePool.h"
 
 #include "model/ChannelColour.h"
@@ -1353,20 +1355,44 @@ void PlaylistComponent::paintAutomationClip (juce::Graphics& g, const juce::Valu
     const juce::Graphics::ScopedSaveState clipped (g);
     g.reduceClipRegion (bounds.toNearestInt());
 
+    // SAMPLED from the same evaluator the audio thread uses, one point per pixel
+    // column, rather than a straight lineTo between the points.
+    //
+    // This painter used to draw every segment as a chord, so a bend - which both
+    // evaluators have always honoured - was heard and not seen. Approximating
+    // the shape with a quadraticTo instead would be a second, different curve:
+    // close, visibly wrong at a full bend, and wrong in a way nobody would
+    // notice for a year. Sampling has one formula by construction, and a stepped
+    // segment gets its square edge for free.
     juce::Path curve;
-
-    for (int i = 0; i < points.size(); ++i)
-    {
-        const auto position = pointPosition (clip, trackIndex, points[i]);
-
-        if (i == 0)
-            curve.startNewSubPath (position);
-        else
-            curve.lineTo (position);
-    }
 
     if (points.size() > 1)
     {
+        const auto model = curvePointsOf (automation);
+        const auto stepsPerBar = Meter::of (document.getState()).stepsPerBar();
+        const auto clipSteps = (double) juce::jmax (1, (int) clip[ids::lengthBars] * stepsPerBar);
+
+        const auto left = pointPosition (clip, trackIndex, points.getFirst());
+        const auto right = pointPosition (clip, trackIndex, points.getLast());
+        const auto columns = juce::jmax (2, (int) std::ceil (right.x - left.x));
+
+        curve.startNewSubPath (left);
+
+        // Deliberately NOT reaching t == 1 in the loop: the final lineTo below
+        // puts the last point exactly where its handle is drawn, for every
+        // shape, which a loop running to the end only approximately does - and
+        // it is what makes a stepped segment jump rather than lean.
+        for (int i = 1; i < columns; ++i)
+        {
+            const auto x = left.x + (right.x - left.x) * (float) i / (float) columns;
+            const auto step = (double) ((x - bounds.getX()) / bounds.getWidth()) * clipSteps;
+            const auto value = curveValueAt (model, step);
+
+            curve.lineTo (x, bounds.getBottom() - (float) value * bounds.getHeight());
+        }
+
+        curve.lineTo (right);
+
         g.setColour (clipColour);
         g.strokePath (curve, juce::PathStrokeType (stroke::regular));
     }

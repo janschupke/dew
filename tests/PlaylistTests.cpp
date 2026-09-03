@@ -11,6 +11,8 @@
 #include "ui/EditorState.h"
 #include "ui/PlaylistComponent.h"
 
+#include "PaintProbe.h"
+
 using namespace dew;
 
 namespace
@@ -322,6 +324,65 @@ TEST_CASE ("choosing a target creates an automation and a clip for it", "[ui][pl
 
     // On a free lane, not stacked invisibly under the clip that is already there.
     REQUIRE (h.countClips (0) == 1);
+}
+
+TEST_CASE ("a bend is drawn, not straightened", "[ui][playlist][automation]")
+{
+    // The painter drew a chord between every pair of points, so the bend both
+    // evaluators have always honoured was HEARD and not SEEN. Two renders of the
+    // same curve, bent opposite ways, used to be pixel-identical.
+    const juce::ScopedJuceInitialiser_GUI juceInit;
+    PlaylistHarness h;
+
+    const auto target = targetNamed (h.document.getState(), firstChannelVolumeTarget (h.document.getState()));
+    const auto clip = h.playlist.createAutomationClip (target, 0, 4);
+    REQUIRE (clip.isValid());
+
+    auto automation = ProjectEdits::findAutomation (h.document.getState(), (int) clip[ids::automationId]);
+    REQUIRE (automation.isValid());
+
+    // A rising line across the clip, so a bend has somewhere to bulge.
+    juce::Array<juce::ValueTree> points;
+
+    for (auto point : automation)
+        if (point.hasType (ids::POINT))
+            points.add (point);
+
+    REQUIRE (points.size() == 2);
+    points.getFirst().setProperty (ids::value, 0.0, nullptr);
+    points.getLast().setProperty (ids::value, 1.0, nullptr);
+
+    const auto renderWithBend = [&h, &points] (double bend)
+    {
+        points.getFirst().setProperty (ids::curve, bend, nullptr);
+        return dew::testing::render (h.playlist);
+    };
+
+    const auto bentUp = renderWithBend (0.9);
+    const auto bentDown = renderWithBend (-0.9);
+
+    int changed = 0;
+
+    for (int y = 0; y < bentUp.getHeight(); ++y)
+        for (int x = 0; x < bentUp.getWidth(); ++x)
+            if (bentUp.getPixelAt (x, y) != bentDown.getPixelAt (x, y))
+                ++changed;
+
+    INFO ("pixels differing between a curve bent up and the same one bent down: " << changed);
+    REQUIRE (changed > 100);
+
+    // And a control case, or the above would also pass if the painter had simply
+    // become nondeterministic: the same bend twice is the same picture.
+    const auto again = renderWithBend (-0.9);
+
+    int unstable = 0;
+
+    for (int y = 0; y < again.getHeight(); ++y)
+        for (int x = 0; x < again.getWidth(); ++x)
+            if (again.getPixelAt (x, y) != bentDown.getPixelAt (x, y))
+                ++unstable;
+
+    REQUIRE (unstable == 0);
 }
 
 TEST_CASE ("an automation point can be dragged, added and removed", "[ui][playlist][automation]")

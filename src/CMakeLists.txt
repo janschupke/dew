@@ -114,6 +114,7 @@ target_link_libraries(dew_lang
 add_library(dew_model STATIC
   BuildInfo.cpp
 
+  model/AutomationCurve.cpp
   model/AutomationTargets.cpp
   model/ParamSpec.cpp
   model/EffectType.cpp

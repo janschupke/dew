@@ -6,6 +6,7 @@
 #include <memory>
 #include <vector>
 
+#include "model/AutomationCurve.h"
 #include "model/AutomationTargets.h"
 #include "model/ProjectSchema.h"
 #include "engine/Effects.h"
@@ -256,13 +257,6 @@ enum class AutomationParam
     lowGainDb, midGainDb, midFreq, highGainDb
 };
 
-struct AutomationPointSnapshot
-{
-    double step = 0.0;
-    float value = 0.0f;    ///< 0..1
-    float curve = 0.0f;
-};
-
 /** One automation definition, with its target resolved to indices. */
 struct AutomationSnapshot
 {
@@ -282,7 +276,15 @@ struct AutomationSnapshot
     float minimum = 0.0f;
     float maximum = 1.0f;
     bool logarithmic = false;
-    std::vector<AutomationPointSnapshot> points;
+    /** The curve itself, in the model's own point type.
+
+        Not an engine copy of it. The two evaluators were a hand-copied pair and
+        this struct's own point type was the reason they could not simply share
+        one: a `float` value here and a `double` there is a second declaration of
+        the same number. CurvePoint is trivially copyable and model-layer, so
+        holding it costs the snapshot nothing.
+    */
+    std::vector<CurvePoint> points;
 
     /** Value at a step, in the parameter's own units. */
     float valueAt (double step) const noexcept;

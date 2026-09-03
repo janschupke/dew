@@ -438,6 +438,50 @@ TEST_CASE ("automation survives save and load", "[automation][schema]")
                   WithinAbs (ProjectEdits::automationValueAt (automation, 12.0), 1e-9));
 }
 
+TEST_CASE ("the editor and the engine agree about every point of a curve", "[automation]")
+{
+    // The two evaluators were hand-copied bodies of the same arithmetic in two
+    // layers - ProjectEdits for the editor and the tests, AutomationSnapshot for
+    // the audio thread - and nothing compared them. This is what would have
+    // caught them drifting, and it is what keeps a segment shape from being
+    // added to one and not the other.
+    auto project = ProjectFactory::createDefault();
+    juce::UndoManager undo;
+
+    auto automation = ProjectEdits::addAutomation (project, targetNamed (project, "Master > Gain"), &undo);
+    setCurve (automation, { { 0.0, 0.1 }, { 9.0, 0.85 }, { 20.0, 0.4 }, { 33.0, 1.0 } }, &undo);
+
+    // A bend on the second segment, so the comparison covers the branch a
+    // straight line does not reach.
+    for (auto point : automation)
+        if (point.hasType (ids::POINT) && juce::approximatelyEqual ((double) point[ids::step], 9.0))
+            point.setProperty (ids::curve, 0.7, &undo);
+
+    juce::StringArray warnings;
+    const auto snapshot = buildSnapshot (project, &warnings);
+
+    REQUIRE (snapshot.automations.size() == 1);
+
+    const auto& engine = snapshot.automations.front();
+
+    // The engine reports the parameter's own units, so the editor's 0..1 goes
+    // through the same mapping before they are compared - that mapping is not
+    // what is under test here, the interpolation is.
+    const AutomationParamSpec spec { nullptr, "", (double) engine.minimum,
+                                     (double) engine.maximum, false, engine.logarithmic };
+
+    for (int i = 0; i <= 200; ++i)
+    {
+        const auto step = -5.0 + 45.0 * (double) i / 200.0;
+
+        INFO ("step " << step);
+        REQUIRE_THAT ((double) engine.valueAt (step),
+                      WithinAbs (mapAutomationValue (spec,
+                                                     ProjectEdits::automationValueAt (automation, step)),
+                                 1e-5));
+    }
+}
+
 TEST_CASE ("a point dragged between two steps survives save and load", "[automation][schema]")
 {
     // The test above round-trips a curve whose points sit on whole steps, which

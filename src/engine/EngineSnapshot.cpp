@@ -388,45 +388,18 @@ EffectChainSnapshot readEffectChain (const juce::ValueTree& owner, const juce::S
 
 float AutomationSnapshot::valueAt (double step) const noexcept
 {
-    const auto normalised = [this, step]() -> float
-    {
-        if (points.empty())
-            return 0.0f;
-
-        if (step <= points.front().step)
-            return points.front().value;
-
-        if (step >= points.back().step)
-            return points.back().value;
-
-        for (size_t i = 1; i < points.size(); ++i)
-        {
-            if (step > points[i].step)
-                continue;
-
-            const auto span = points[i].step - points[i - 1].step;
-
-            if (span <= 0.0)
-                return points[i].value;
-
-            auto t = (float) ((step - points[i - 1].step) / span);
-            const auto curve = points[i - 1].curve;
-
-            if (! juce::approximatelyEqual (curve, 0.0f))
-                t = std::pow (t, std::pow (2.0f, -curve * 2.0f));
-
-            return points[i - 1].value + (points[i].value - points[i - 1].value) * t;
-        }
-
-        return points.back().value;
-    }();
+    // curveValueAt, not a copy of it. This function and
+    // ProjectEdits::automationValueAt were the same arithmetic written twice in
+    // two layers; the editor drew one of them and the audio thread played the
+    // other, and nothing made them agree.
+    const auto normalised = curveValueAt (points, step);
 
     // Same mapping the picker and the point editor use, so what is drawn is
     // what is heard.
     const AutomationParamSpec spec { nullptr, "", (double) minimum, (double) maximum,
                                      false, logarithmic };
 
-    return (float) mapAutomationValue (spec, (double) normalised);
+    return (float) mapAutomationValue (spec, normalised);
 }
 
 namespace
@@ -803,12 +776,13 @@ EngineSnapshot buildSnapshot (const juce::ValueTree& project, juce::StringArray*
             if (const auto type = effectTypeFor (effectType))
                 a.paramIndex = effectParamIndex (*type, property);
 
-        for (const auto& point : automation)
-            if (point.hasType (ids::POINT))
-                a.points.push_back ({ (double) point[ids::step],
-                                      juce::jlimit (0.0f, 1.0f, (float) (double) point[ids::value]),
-                                      juce::jlimit (-1.0f, 1.0f, (float) (double) point[ids::curve]) });
+        // Read by the same function the editor reads them with, so a property
+        // added to a point cannot reach one of the two and not the other.
+        a.points = curvePointsOf (automation);
 
+        // The tree is kept sorted by ProjectEdits, but a hand-edited file is
+        // not, and curveValueAt requires sorted input rather than sorting a
+        // third time on every block.
         std::stable_sort (a.points.begin(), a.points.end(),
                           [] (const auto& x, const auto& y) { return x.step < y.step; });
 

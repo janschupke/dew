@@ -1,5 +1,7 @@
 #include "model/ProjectEdits.h"
 
+#include "model/AutomationCurve.h"
+
 #include "model/ChannelColour.h"
 #include "model/Ids.h"
 #include "model/Meter.h"
@@ -690,46 +692,14 @@ void ProjectEdits::removeAutomationPoint (juce::ValueTree automation, juce::Valu
 
 double ProjectEdits::automationValueAt (const juce::ValueTree& automation, double step)
 {
-    const auto points = sortedPoints (automation);
+    // Delegates rather than evaluating. This body and AutomationSnapshot::valueAt
+    // were the same arithmetic written twice, in two layers, and the playlist's
+    // painter was a third place that implemented neither - so a bend was heard
+    // and drawn straight, and a segment shape would have had to be added to
+    // three places already free to disagree.
+    const auto points = curvePointsOf (automation);
 
-    if (points.isEmpty())
-        return 0.0;
-
-    if (step <= (double) points.getFirst()[ids::step])
-        return (double) points.getFirst()[ids::value];
-
-    if (step >= (double) points.getLast()[ids::step])
-        return (double) points.getLast()[ids::value];
-
-    for (int i = 1; i < points.size(); ++i)
-    {
-        const auto rightStep = (double) points[i][ids::step];
-
-        if (step > rightStep)
-            continue;
-
-        const auto leftStep = (double) points[i - 1][ids::step];
-        const auto span = rightStep - leftStep;
-
-        if (span <= 0.0)
-            return (double) points[i][ids::value];
-
-        auto t = (step - leftStep) / span;
-
-        // Curve bends the interpolation without moving either endpoint, so a
-        // shape can be eased without adding points to fake it.
-        const auto curve = juce::jlimit (-1.0, 1.0, (double) points[i - 1][ids::curve]);
-
-        if (! juce::approximatelyEqual (curve, 0.0))
-            t = std::pow (t, std::pow (2.0, -curve * 2.0));
-
-        const auto leftValue = (double) points[i - 1][ids::value];
-        const auto rightValue = (double) points[i][ids::value];
-
-        return leftValue + (rightValue - leftValue) * t;
-    }
-
-    return (double) points.getLast()[ids::value];
+    return curveValueAt (points, step);
 }
 
 namespace
