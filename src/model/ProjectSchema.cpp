@@ -13,6 +13,45 @@ namespace
 // All of these are function-local statics with static storage duration, so the
 // pointers stay valid for the life of the process.
 
+/** The declared parameters of one catalog group, as schema properties.
+
+    The same argument effectSpec() makes, applied to the other kind of module:
+    every one of these used to be a second copy of a default that also lived in
+    the catalog, a clamp in the snapshot builder, a range in the automation
+    table and a range in a knob.
+
+    The ORDER is the group's, and is load-bearing in both directions - the
+    catalog's tables carry a comment saying so. ValueTree property order follows
+    this, and a demo test compares the committed examples byte for byte against
+    what the factory writes, so a reshuffle of a catalog table is a rewrite of
+    every .dew in the repository and fails there.
+*/
+void appendGroup (std::vector<PropSpec>& props, const ParamGroup& group)
+{
+    for (int i = 0; i < group.numParams; ++i)
+        props.push_back ({ *group.params[i].property, group.params[i].defaultVar() });
+}
+
+/** The group a descriptor declares for one node type. */
+const ParamGroup& groupFor (const InstrumentDescriptor& descriptor, const juce::Identifier& node)
+{
+    for (int i = 0; i < descriptor.numGroups; ++i)
+        if (*descriptor.groups[i].node == node)
+            return descriptor.groups[i];
+
+    // A node the descriptor does not declare is a table error, not a document
+    // one, and returning an empty group would generate a node with no
+    // properties rather than saying so.
+    jassertfalse;
+    static const ParamGroup empty { &node, "", "", nullptr, 0 };
+    return empty;
+}
+
+const ParamGroup& synthGroup (const juce::Identifier& node)
+{
+    return groupFor (instrumentDescriptor (InstrumentType::synth), node);
+}
+
 /** One oscillator slot.
 
     `enabled` defaults to true because a file written before there were slots
@@ -22,31 +61,23 @@ namespace
 */
 const NodeSpec& oscSpec()
 {
-    static const NodeSpec spec {
-        ids::OSC,
-        { { ids::enabled,     true },
-          { ids::wave,        "saw" },
-          { ids::octave,      0 },
-          { ids::detuneCents, 0.0 },
-          { ids::gain,        0.8 },
+    // Generated from the catalog, which declares all thirteen: the classic half
+    // (`enabled`, `wave`, octave, detune, gain) and the wavetable half beside
+    // it. Flat rather than a child node of its own, for the reason effectSpec()
+    // gives - one declared table stays one walk in the reader, and a mode is a
+    // row rather than a new node type and a new branch.
+    //
+    // `enabled` defaults to true because a file written before there were slots
+    // had exactly one oscillator and it was playing. The slots the schema
+    // materialises alongside it are switched off by makeOscillatorSlot.
+    static const NodeSpec spec = []
+    {
+        std::vector<PropSpec> props;
+        appendGroup (props, synthGroup (ids::OSC));
 
-          // The wavetable half of the slot. Flat beside the classic half rather
-          // than a child node of its own, for the reason effectSpec() gives:
-          // one declared table stays one walk in the reader, and a mode is a
-          // row here instead of a new node type and a new branch.
-          //
-          // Every one of these has a declared default, so a file written before
-          // they existed loads as a classic oscillator with no migration.
-          { ids::mode,               "classic" },
-          { ids::wavetable,          "basic" },
-          { ids::wavePosition,       0.0 },
-          { ids::wavePositionMod,    0.0 },
-          { ids::wavePositionSource, "envelope" },
-          { ids::wavePositionRate,   1.0 },
-          { ids::unisonVoices,       1 },
-          { ids::unisonDetune,       0.0 } },
-        {}
-    };
+        return NodeSpec { ids::OSC, std::move (props), {} };
+    }();
+
     return spec;
 }
 
@@ -69,14 +100,14 @@ juce::ValueTree makeOscillatorSlot (const NodeSpec& spec, int index)
 
 const NodeSpec& ampSpec()
 {
-    static const NodeSpec spec {
-        ids::AMP,
-        { { ids::attack,  0.005 },
-          { ids::decay,   0.120 },
-          { ids::sustain, 0.700 },
-          { ids::release, 0.150 } },
-        {}
-    };
+    static const NodeSpec spec = []
+    {
+        std::vector<PropSpec> props;
+        appendGroup (props, synthGroup (ids::AMP));
+
+        return NodeSpec { ids::AMP, std::move (props), {} };
+    }();
+
     return spec;
 }
 
@@ -154,52 +185,69 @@ const NodeSpec& effectSpec()
 */
 const NodeSpec& sampleSpec()
 {
-    static const NodeSpec spec {
-        ids::SAMPLE,
-        { { ids::file,             "" },
-          { ids::sourceSampleRate, 44100 },
-          { ids::lengthSamples,    0 },
-          { ids::startSample,      0 },
-          // 0 rather than lengthSamples: the trim end has to mean "the end of
-          // whatever is there" before the file has been read, and a recording
-          // sets its length after the node already exists.
-          { ids::endSample,        0 },
-          { ids::fadeInMs,         0.0 },
-          { ids::fadeOutMs,        0.0 },
-          { ids::transpose,        0.0 },
-          { ids::reverse,          false },
-          { ids::loop,             false } },
-        {}
-    };
+    // Spliced rather than wholly generated: the first five are what was FOUND
+    // in the recording - where it lives, its rate, its length and its trim -
+    // and the catalog declares only the parameters somebody sets. A frame count
+    // has no range, no default worth a knob and no meaning on another take.
+    static const NodeSpec spec = []
+    {
+        std::vector<PropSpec> props {
+            { ids::file,             "" },
+            { ids::sourceSampleRate, 44100 },
+            { ids::lengthSamples,    0 },
+            { ids::startSample,      0 },
+            // 0 rather than lengthSamples: the trim end has to mean "the end of
+            // whatever is there" before the file has been read, and a recording
+            // sets its length after the node already exists.
+            { ids::endSample,        0 },
+        };
+
+        appendGroup (props, groupFor (instrumentDescriptor (InstrumentType::audio), ids::SAMPLE));
+
+        return NodeSpec { ids::SAMPLE, std::move (props), {} };
+    }();
+
     return spec;
 }
 
 const NodeSpec& channelSpec()
 {
-    static const NodeSpec spec {
-        ids::CHANNEL,
-        { { ids::id,           1 },
-          { ids::name,         "Channel" },
-          { ids::colour,       "ff4fa3ff" },
-          { ids::mixerTrackId, 1 },
-          { ids::basePitch,    60 },
-          { ids::volume,       0.8 },
-          { ids::pan,          0.0 },
-          { ids::muted,        false },
-          { ids::solo,         false },
-          // "synth" or "audio". A discriminator rather than two node types:
-          // everything downstream of a channel's mono buffer - pan, volume,
-          // the effect chain, mixer routing, metering, automation - is the
-          // same for both, and only the source of the samples differs.
-          { ids::source,       "synth" },
-          // Set when a score compile created this channel, so a later compile
-          // finds it again even after it has been renamed. Nothing else about
-          // a channel is ever written by a compile.
-          { ids::genId,        "" } },
-        { { "instrument", &instrumentSpec(), false },
-          { "sample",     &sampleSpec(),     false },
-          { "effects",    &effectSpec(),     true } }
-    };
+    static const NodeSpec spec = []
+    {
+        std::vector<PropSpec> props {
+            { ids::id,           1 },
+            { ids::name,         "Channel" },
+            { ids::colour,       "ff4fa3ff" },
+            { ids::mixerTrackId, 1 },
+        };
+
+        // The channel's own parameters - base pitch, level, pan, mute, solo.
+        // Declared by the instrument descriptor, which marks them as NOT a
+        // preset's: they are the instrument's parameters but they are not its
+        // sound.
+        appendGroup (props, synthGroup (ids::CHANNEL));
+
+        // "synth" or "audio". A discriminator rather than two node types:
+        // everything downstream of a channel's mono buffer - pan, volume,
+        // the effect chain, mixer routing, metering, automation - is the
+        // same for both, and only the source of the samples differs.
+        props.push_back ({ ids::source, "synth" });
+
+        // Set when a score compile created this channel, so a later compile
+        // finds it again even after it has been renamed. Nothing else about
+        // a channel is ever written by a compile.
+        //
+        // Hand-written rather than a catalog row, like `id` and `name` above:
+        // it identifies the channel rather than describing its sound, so it has
+        // no range, nothing turns it, and a preset must never carry it.
+        props.push_back ({ ids::genId, "" });
+
+        return NodeSpec { ids::CHANNEL, std::move (props),
+                          { { "instrument", &instrumentSpec(), false },
+                            { "sample",     &sampleSpec(),     false },
+                            { "effects",    &effectSpec(),     true } } };
+    }();
+
     return spec;
 }
 

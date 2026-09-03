@@ -4,6 +4,7 @@
 #include <vector>
 
 #include "model/EffectType.h"
+#include "model/InstrumentType.h"
 #include "model/ParamSpec.h"
 
 namespace dew
@@ -81,6 +82,68 @@ const std::vector<ParamSpec>& commonEffectParams();
     same list.
 */
 std::vector<ParamSpec> effectParamsFor (EffectType);
+
+/** One node's worth of an instrument's parameters.
+
+    An effect is a single node with a flat list; an instrument is a channel,
+    three oscillator slots and an envelope. Naming that rather than flattening
+    it keeps the AudioProcessor-shaped question - "enumerate every parameter of
+    this type" - answerable in one walk, while leaving the tree the schema
+    builds and the editor points at.
+*/
+struct ParamGroup
+{
+    const juce::Identifier* node;   ///< ids::CHANNEL, ids::OSC, ids::AMP, ids::SAMPLE
+    const char* jsonKey;            ///< "oscillators", "amp"; empty for the channel itself
+    const char* displayName;
+    const ParamSpec* params;
+    int numParams;
+
+    /** 1, or kMaxOscillators for a fixed array of slots. */
+    int count = 1;
+
+    /** Whether a preset carries this group. False for the channel's own
+        parameters: they are the instrument's, but they are not its SOUND. */
+    bool inPreset = true;
+};
+
+/** What one instrument is, in the same terms an effect is.
+
+    The accessors below are named for their effect twins deliberately. That
+    symmetry is the point: given either descriptor, one walk can enumerate every
+    parameter of a type, read the whole state and write it back - which is what
+    a preset is, and what an AudioProcessor wrapper would need.
+*/
+struct InstrumentDescriptor
+{
+    InstrumentType type;
+    const char* id;            ///< "synth" - what a .dew stores in a channel's `source`
+    const char* displayName;
+    const ParamGroup* groups;
+    int numGroups;
+};
+
+/** Every instrument, indexed by InstrumentType. */
+const std::vector<InstrumentDescriptor>& instrumentDescriptors();
+
+const InstrumentDescriptor& instrumentDescriptor (InstrumentType) noexcept;
+
+/** The type a stored `source` names, or nothing.
+
+    An optional rather than a fallback, for the reason effectTypeFor is one:
+    buildSnapshot used to read this with a ternary, so any unrecognised source
+    became a synth with nothing said and a project written by a newer dew
+    played back wrong and silently.
+*/
+std::optional<InstrumentType> instrumentTypeFor (juce::StringRef id);
+
+juce::String instrumentTypeToString (InstrumentType);
+juce::String instrumentTypeDisplayName (InstrumentType);
+
+/** An effect's one group, so a caller that walks parameters walks both kinds of
+    module the same way. An effect is the degenerate case of an instrument: one
+    node, every parameter on it. */
+ParamGroup effectGroup (EffectType) noexcept;
 
 // --- the instrument's own parameters -----------------------------------------
 

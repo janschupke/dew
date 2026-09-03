@@ -183,16 +183,66 @@ constexpr ParamSpec toggleSpec (const juce::Identifier* property, const char* di
              /*integral*/ true };
 }
 
-const ParamSpec channelSpecs[] {
-    { &ids::volume, "Volume", "VOLUME", "", 0.0, 1.0, 0.8, 0.001, 3 },
-    { &ids::pan,    "Pan",    "PAN",    "", -1.0, 1.0, 0.0, 0.001, 3,
-      ParamCurve::linear, ParamControl::knob, /*bipolar*/ true },
+/** One of a named set, declared the way every other parameter is.
 
+    `defaultIndex` is stated rather than derived from `defaultText` because the
+    two answer different questions: the text is what the FILE carries and what
+    ParamSpec::defaultVar hands the schema, and the index is where a curve over
+    the choice sits. Deriving one from the other would make a typo in either a
+    silent disagreement rather than a compile error.
+*/
+constexpr ParamSpec choiceSpec (const juce::Identifier* property, const char* displayName,
+                                const char* caption, const ParamChoice* choices, int numChoices,
+                                const char* defaultText, double defaultIndex,
+                                bool automatable = false)
+{
+    return { property, displayName, caption, "", 0.0, (double) (numChoices - 1), defaultIndex,
+             1.0, 0, ParamCurve::linear, ParamControl::choice, /*bipolar*/ false, automatable,
+             /*integral*/ true, choices, numChoices, defaultText };
+}
+
+// The oscillator's own named sets. Their ORDER is their index order, so it
+// matches the enums in InstrumentType.h - a curve over `wave` is a curve over
+// the same number waveformFromString would produce.
+
+constexpr ParamChoice waveforms[] {
+    { "sine", "Sine" }, { "saw", "Saw" }, { "square", "Square" }, { "triangle", "Triangle" },
+};
+
+constexpr ParamChoice oscModes[] {
+    { "classic", "Classic" }, { "wavetable", "Wavetable" },
+};
+
+/** The wavetable bank, by name.
+
+    A second statement of the engine's bank, and unavoidably so: the tables are
+    GENERATED in dew_engine and the catalog is in dew_model, which cannot see
+    it. A test cross-checks the two, so the duplication is a pair that must
+    agree rather than a pair that will quietly drift.
+*/
+constexpr ParamChoice wavetables[] {
+    { "basic", "Basic Shapes" }, { "pulse", "Pulse" }, { "harmonics", "Harmonics" },
+    { "formant", "Formant" }, { "fold", "Fold" },
+};
+
+constexpr ParamChoice positionSources[] {
+    { "envelope", "Envelope" }, { "lfo", "LFO" },
+};
+
+const ParamSpec channelSpecs[] {
+    // The ORDER is the schema's, for the reason oscSpecs' is: ProjectSchema
+    // splices this block straight into the CHANNEL node between the channel's
+    // identity and its `source`.
+    //
     // A MIDI note number, so the range is the whole of MIDI and the value is
     // an integer in the file.
     { &ids::basePitch, "Base pitch", "PITCH", "", 0.0, 127.0, 60.0, 1.0, 0,
       ParamCurve::linear, ParamControl::stepper, false, /*automatable*/ false,
       /*integral*/ true },
+
+    { &ids::volume, "Volume", "VOLUME", "", 0.0, 1.0, 0.8, 0.001, 3 },
+    { &ids::pan,    "Pan",    "PAN",    "", -1.0, 1.0, 0.0, 0.001, 3,
+      ParamCurve::linear, ParamControl::knob, /*bipolar*/ true },
 
     // Mute is automatable and solo is NOT, and that asymmetry is the point.
     //
@@ -223,6 +273,19 @@ const ParamSpec ampSpecs[] {
 };
 
 const ParamSpec oscSpecs[] {
+    // The ORDER is the schema's, and load-bearing: ProjectSchema generates the
+    // OSC node from this table, ValueTree property order follows it, and the
+    // committed examples are byte-compared against what the factory writes. A
+    // reshuffle here is a rewrite of every .dew in the repository.
+    //
+    // `enabled` is a parameter rather than a hand-written schema property, and
+    // that is the opposite of an EFFECT's `enabled`: a slot being on is part of
+    // the PATCH - a pad is three oscillators and a sub bass is one - where an
+    // effect's is a bypass somebody flicks while mixing.
+    toggleSpec (&ids::enabled, "Enabled", "ON", /*automatable*/ false, /*defaultOn*/ true),
+
+    choiceSpec (&ids::wave, "Wave", "WAVE", waveforms, (int) std::size (waveforms), "saw", 1.0),
+
     // Four octaves either way, which is what the engine renders; the stepper
     // offered three.
     { &ids::octave, "Octave", "OCT", "", -4.0, 4.0, 0.0, 1.0, 0,
@@ -244,9 +307,17 @@ const ParamSpec oscSpecs[] {
 
     { &ids::gain, "Gain", "GAIN", "", 0.0, 1.0, 0.8, 0.01, 2 },
 
+    choiceSpec (&ids::mode, "Mode", "MODE", oscModes, (int) std::size (oscModes), "classic", 0.0),
+    choiceSpec (&ids::wavetable, "Table", "TABLE", wavetables, (int) std::size (wavetables),
+                "basic", 0.0),
+
     { &ids::wavePosition,     "Position", "POSITION", "",    0.0,  1.0,  0.0, 0.01, 2 },
     { &ids::wavePositionMod,  "Mod",      "MOD",      "",   -1.0,  1.0,  0.0, 0.01, 2,
       ParamCurve::linear, ParamControl::knob, /*bipolar*/ true },
+
+    choiceSpec (&ids::wavePositionSource, "Source", "SOURCE", positionSources,
+                (int) std::size (positionSources), "envelope", 0.0),
+
     { &ids::wavePositionRate, "Rate",     "RATE",     " Hz", 0.01, 20.0, 1.0, 0.01, 2,
       ParamCurve::logarithmic },
 
@@ -312,6 +383,39 @@ const ParamSpec projectSpecs[] {
       ParamCurve::logarithmic, ParamControl::field },
 };
 
+/** An instrument's parameters, as the nodes they actually live on.
+
+    An effect is one node with a flat list and does not have to say so; an
+    instrument is a channel, three oscillator slots and an envelope. That is the
+    whole of the asymmetry between the two descriptors, and naming it beats
+    flattening: the tree here is the tree the schema builds and the editor
+    points at.
+
+    The CHANNEL group is NOT a preset's. Volume, pan and base pitch are the
+    instrument's parameters - the engine reads them, automation drives them, and
+    a plugin wrapper would expose them - but they are not the SOUND. A preset
+    that set the volume would be a level jump in the middle of a mix, and one
+    that set base pitch would retune a part that is already written.
+*/
+const ParamGroup synthGroups[] {
+    { &ids::CHANNEL, "",            "Channel",    channelSpecs, (int) std::size (channelSpecs),
+      1, /*inPreset*/ false },
+    { &ids::OSC,     "oscillators", "Oscillator", oscSpecs,     (int) std::size (oscSpecs),
+      kMaxOscillators },
+    { &ids::AMP,     "amp",         "Envelope",   ampSpecs,     (int) std::size (ampSpecs) },
+};
+
+/** The audio channel's. Thin, and honestly so: everything that makes one
+    recording differ from another is the recording, and the parameters are the
+    handful of things done TO it. The file itself is deliberately not among
+    them - a preset carrying a path points at somebody else's disk, and a trim
+    measured in frames means nothing against another take. */
+const ParamGroup audioGroups[] {
+    { &ids::CHANNEL, "",       "Channel", channelSpecs, (int) std::size (channelSpecs),
+      1, /*inPreset*/ false },
+    { &ids::SAMPLE,  "sample", "Sample",  sampleSpecs,  (int) std::size (sampleSpecs) },
+};
+
 /** One declared table, as the vector the accessors hand out.
 
     Returns BY VALUE, and the static that caches it belongs to the accessor
@@ -355,6 +459,60 @@ DEW_PARAM_TABLE (sampleParamSpecs,     sampleSpecs)
 DEW_PARAM_TABLE (projectParamSpecs,    projectSpecs)
 
 #undef DEW_PARAM_TABLE
+
+const std::vector<InstrumentDescriptor>& instrumentDescriptors()
+{
+    static const std::vector<InstrumentDescriptor> all {
+        { InstrumentType::synth, "synth", "Synth", synthGroups, (int) std::size (synthGroups) },
+        { InstrumentType::audio, "audio", "Audio", audioGroups, (int) std::size (audioGroups) },
+    };
+
+    // The same assertion effectDescriptors() makes, and for the same reason:
+    // adding an enumerator without a row here stops the program before it
+    // starts rather than leaving a kind of channel with no parameters.
+    jassert ((int) all.size() == kNumInstrumentTypes);
+
+    return all;
+}
+
+const InstrumentDescriptor& instrumentDescriptor (InstrumentType type) noexcept
+{
+    const auto& all = instrumentDescriptors();
+    const auto index = (size_t) type;
+
+    jassert (index < all.size());
+    return all[juce::jmin (index, all.size() - 1)];
+}
+
+std::optional<InstrumentType> instrumentTypeFor (juce::StringRef id)
+{
+    for (const auto& descriptor : instrumentDescriptors())
+        if (juce::String (descriptor.id) == id)
+            return descriptor.type;
+
+    return {};
+}
+
+juce::String instrumentTypeToString (InstrumentType type)
+{
+    return instrumentDescriptor (type).id;
+}
+
+juce::String instrumentTypeDisplayName (InstrumentType type)
+{
+    return instrumentDescriptor (type).displayName;
+}
+
+ParamGroup effectGroup (EffectType type) noexcept
+{
+    // An effect is the degenerate instrument: one node, every parameter on it.
+    // Saying so here is what lets the state functions walk both descriptors
+    // with one loop body rather than two that must agree.
+    const auto& descriptor = effectDescriptor (type);
+
+    return { &ids::EFFECT, "effects", descriptor.displayName,
+             descriptor.params, descriptor.numParams };
+}
 
 const ParamSpec* instrumentParamSpec (const juce::Identifier& property) noexcept
 {

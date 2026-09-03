@@ -5,6 +5,7 @@
 
 #include "model/Ids.h"
 #include "model/AutomationTargets.h"
+#include "engine/Wavetable.h"
 #include "model/ModuleCatalog.h"
 #include "model/ProjectEdits.h"
 #include "model/ProjectFactory.h"
@@ -213,6 +214,107 @@ TEST_CASE ("every parameter has a place in its block, and mix is first", "[catal
     // A property this type does not have is refused rather than aliased onto
     // something it does have.
     REQUIRE (effectParamIndex (EffectType::reverb, ids::cutoff) == -1);
+}
+
+namespace
+{
+
+const juce::Array<InstrumentType> allInstruments { InstrumentType::synth, InstrumentType::audio };
+
+} // namespace
+
+TEST_CASE ("every instrument type has a descriptor", "[catalog][instrument]")
+{
+    // The twin of the effect case, and it buys the same thing: an enumerator
+    // with no row here would be a kind of channel with no parameters, no
+    // preset list and nothing to enumerate.
+    REQUIRE ((int) instrumentDescriptors().size() == kNumInstrumentTypes);
+    REQUIRE (allInstruments.size() == kNumInstrumentTypes);
+
+    for (const auto type : allInstruments)
+    {
+        const auto& descriptor = instrumentDescriptor (type);
+
+        INFO ("instrument type " << (int) type);
+        REQUIRE (descriptor.type == type);
+        REQUIRE (juce::String (descriptor.id).isNotEmpty());
+        REQUIRE (juce::String (descriptor.displayName).isNotEmpty());
+        REQUIRE (descriptor.numGroups > 0);
+
+        for (int i = 0; i < descriptor.numGroups; ++i)
+        {
+            const auto& group = descriptor.groups[i];
+
+            INFO ("group " << group.displayName);
+            REQUIRE (group.node != nullptr);
+            REQUIRE (group.numParams > 0);
+            REQUIRE (group.count >= 1);
+        }
+
+        // Every kind of channel carries the channel's own parameters, and no
+        // kind puts them in a preset.
+        const auto& channelGroup = descriptor.groups[0];
+        REQUIRE (*channelGroup.node == ids::CHANNEL);
+        REQUIRE_FALSE (channelGroup.inPreset);
+    }
+}
+
+TEST_CASE ("an instrument type round-trips through its stored source", "[catalog][instrument]")
+{
+    for (const auto type : allInstruments)
+    {
+        const auto id = instrumentTypeToString (type);
+        INFO ("id: " << id);
+
+        const auto back = instrumentTypeFor (id);
+        REQUIRE (back.has_value());
+        REQUIRE (*back == type);
+    }
+}
+
+TEST_CASE ("an unknown instrument source is refused rather than guessed", "[catalog][instrument]")
+{
+    // buildSnapshot used to read `source` with a ternary against "audio", so
+    // every other string became a synth with nothing said - the same defect
+    // effectTypeFor returning an optional was written to close.
+    REQUIRE_FALSE (instrumentTypeFor ("sampler").has_value());
+    REQUIRE_FALSE (instrumentTypeFor ("").has_value());
+    REQUIRE_FALSE (instrumentTypeFor ("Synth").has_value());   // ids are exact
+}
+
+TEST_CASE ("instrument ids are unique", "[catalog][instrument]")
+{
+    juce::StringArray ids;
+
+    for (const auto& descriptor : instrumentDescriptors())
+        ids.add (descriptor.id);
+
+    const auto before = ids.size();
+    ids.removeDuplicates (false);
+
+    REQUIRE (ids.size() == before);
+}
+
+TEST_CASE ("the catalog's wavetables are the ones the engine builds", "[catalog][instrument]")
+{
+    // The one unavoidable duplication in the catalog: the tables are GENERATED
+    // in dew_engine and the catalog is in dew_model, which cannot see it. A
+    // pair that must agree rather than a pair that will quietly drift - a name
+    // here that the bank does not have is a preset that loads the wrong sound.
+    const auto& spec = requireInstrumentParamSpec (ids::wavetable);
+
+    REQUIRE (spec.control == ParamControl::choice);
+    REQUIRE (spec.numChoices > 0);
+
+    for (int i = 0; i < spec.numChoices; ++i)
+    {
+        const juce::String name (spec.choices[i].id);
+        INFO ("wavetable \"" << name << "\"");
+
+        // wavetableIndexFor returns the bank's own index for a name it knows,
+        // and the catalog's order IS that index order.
+        CHECK (wavetableIndexFor (name) == i);
+    }
 }
 
 TEST_CASE ("each parameter table is its own, whatever its length", "[catalog][params]")
