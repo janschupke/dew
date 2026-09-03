@@ -1,0 +1,8 @@
+# Revisions that changed formatting and nothing else. Blame skips them with:
+#
+#     git config blame.ignoreRevsFile .git-blame-ignore-revs
+#
+# GitHub reads this file by name and needs no configuration.
+
+# Run the formatter over everything, once
+68666eb07c8c4198d83c153b28d521dc052be0e0
