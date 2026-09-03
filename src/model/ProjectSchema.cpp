@@ -447,6 +447,18 @@ const NodeSpec& mixerSpec()
     return spec;
 }
 
+
+/** Slot `index` of a fixed-length array child. One helper rather than three
+    copies, so the three walkers cannot drift over what an unused slot is.
+*/
+juce::ValueTree makeArraySlot (const ChildSpec& child, int index)
+{
+    return child.makeSlot != nullptr ? child.makeSlot (*child.spec, index)
+                                     : defaultTreeFor (*child.spec);
+}
+
+} // namespace
+
 // --- type-directed coercion --------------------------------------------------
 
 /** Reads `value` as the type of `fallback`. Returns false if the value is
@@ -499,17 +511,6 @@ bool coerceToTypeOf (const juce::var& fallback, const juce::var& value, juce::va
     out = value;
     return true;
 }
-
-/** Slot `index` of a fixed-length array child. One helper rather than three
-    copies, so the three walkers cannot drift over what an unused slot is.
-*/
-juce::ValueTree makeArraySlot (const ChildSpec& child, int index)
-{
-    return child.makeSlot != nullptr ? child.makeSlot (*child.spec, index)
-                                     : defaultTreeFor (*child.spec);
-}
-
-} // namespace
 
 const NodeSpec& projectSpec()
 {

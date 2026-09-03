@@ -140,6 +140,16 @@ inline constexpr int kMaxUnisonVoices = 7;
 */
 inline constexpr const char* kFormatTag = "dew-project";
 
+/** Reads `value` as the type of `fallback`. Returns false if the value is
+    present but unusable, so the caller can warn and fall back.
+
+    Exposed because it is THE answer to "read this var as the type of that
+    default", and a preset needs the same one. The type of a declared default
+    is what decides whether a stored number is rounded, so a second copy of
+    this rule would be a second answer to that.
+*/
+bool coerceToTypeOf (const juce::var& fallback, const juce::var& value, juce::var& out);
+
 /** The root of the schema table. */
 const NodeSpec& projectSpec();
 

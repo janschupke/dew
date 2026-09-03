@@ -4,6 +4,7 @@
 
 #include "model/AutomationCurve.h"
 #include "model/AutomationTargets.h"
+#include "model/Preset.h"
 
 namespace dew
 {
@@ -181,6 +182,28 @@ struct ProjectEdits
 
     /** Every node in the project that can carry an effect chain. */
     static juce::Array<juce::ValueTree> effectChainOwners (const juce::ValueTree& project);
+
+    // --- presets -------------------------------------------------------------
+    /** Writes a preset's parameters onto one effect slot, as ONE undo step.
+
+        Refuses a preset whose type is not the slot's, and returns false: a
+        reverb's roomSize applied to a filter is not a filter with a room size,
+        it is nothing, and coercing it would be the same silent wrongness
+        effectTypeFor was written to stop.
+
+        Leaves the slot's `id` and `enabled` alone. The id keys its DSP unit in
+        the pool, and a bypass is a mixing decision rather than part of a sound.
+    */
+    static bool applyEffectPreset (juce::ValueTree effect, const Preset&, juce::UndoManager*);
+
+    /** The same for a channel's instrument, and likewise one undo step.
+
+        Touches only the groups the descriptor marks as a preset's, so the
+        channel's name, colour, routing, level, base pitch and effect chain are
+        untouched by construction. Refuses a preset whose kind is not the
+        channel's `source`.
+    */
+    static bool applyInstrumentPreset (juce::ValueTree channel, const Preset&, juce::UndoManager*);
 
     // --- automation ----------------------------------------------------------
     /** Creates an automation definition pointed at a curated target, with two

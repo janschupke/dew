@@ -128,6 +128,7 @@ add_library(dew_model STATIC
   model/InstrumentType.cpp
   model/ModuleCatalog.cpp
   model/ProjectSchema.cpp
+  model/ModuleState.cpp
   model/ProjectSerializer.cpp
   model/DemoLibrary.cpp
   model/ChannelColour.cpp

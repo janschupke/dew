@@ -1,5 +1,7 @@
 #include "model/ProjectEdits.h"
 
+#include "model/ModuleState.h"
+
 #include <cmath>
 #include <limits>
 
@@ -1186,6 +1188,135 @@ juce::String ProjectEdits::scoreSource (const juce::ValueTree& project)
 juce::String ProjectEdits::scoreSourceName (const juce::ValueTree& project)
 {
     return project.getChildWithName (ids::SCORE)[ids::name].toString();
+}
+
+} // namespace dew
+
+namespace dew
+{
+
+namespace
+{
+
+/** Writes one validated object onto one node, joining the open transaction.
+
+    Every write after the first must join rather than open, or a preset would be
+    a hundred undo steps. The transaction is opened by the caller and NOT by
+    passing continuingTransaction=false for the first parameter: setProperty
+    returns early when the value is already what it should be, before it opens
+    anything, so a preset whose first parameter already matched would fold
+    silently into whatever step was open.
+*/
+void writeParams (juce::ValueTree node, const juce::var& values, const ParamSpec* params,
+                  int numParams, juce::UndoManager* undo, const juce::String& transactionName)
+{
+    auto* object = values.getDynamicObject();
+
+    if (object == nullptr || ! node.isValid())
+        return;
+
+    for (int i = 0; i < numParams; ++i)
+        ProjectEdits::setProperty (node, *params[i].property,
+                                   object->getProperty (*params[i].property), undo,
+                                   transactionName, /*continuingTransaction*/ true);
+}
+
+} // namespace
+
+bool ProjectEdits::applyEffectPreset (juce::ValueTree effect, const Preset& preset,
+                                      juce::UndoManager* undo)
+{
+    if (! effect.isValid() || ! effect.hasType (ids::EFFECT) || ! preset.isEffect())
+        return false;
+
+    const auto slotType = effectTypeFor (effect[ids::type].toString());
+    const auto presetType = effectTypeFor (preset.typeId);
+
+    if (! slotType.has_value() || ! presetType.has_value() || *slotType != *presetType)
+        return false;
+
+    juce::StringArray warnings;
+    const auto& descriptor = effectDescriptor (*slotType);
+    const auto values = validateState (descriptor, preset.state, warnings);
+
+    const auto transactionName = "Load preset \"" + preset.name + "\"";
+
+    if (undo != nullptr)
+        undo->beginNewTransaction (transactionName);
+
+    const auto params = effectParamsFor (*slotType);
+    writeParams (effect, values, params.data(), (int) params.size(), undo, transactionName);
+
+    return true;
+}
+
+bool ProjectEdits::applyInstrumentPreset (juce::ValueTree channel, const Preset& preset,
+                                          juce::UndoManager* undo)
+{
+    if (! channel.isValid() || ! channel.hasType (ids::CHANNEL) || ! preset.isInstrument())
+        return false;
+
+    const auto channelType = instrumentTypeFor (channel[ids::source].toString());
+    const auto presetType = instrumentTypeFor (preset.typeId);
+
+    if (! channelType.has_value() || ! presetType.has_value() || *channelType != *presetType)
+        return false;
+
+    juce::StringArray warnings;
+    const auto& descriptor = instrumentDescriptor (*channelType);
+    const auto values = validateState (descriptor, preset.state, warnings);
+
+    auto* object = values.getDynamicObject();
+
+    if (object == nullptr)
+        return false;
+
+    const auto transactionName = "Load preset \"" + preset.name + "\"";
+
+    if (undo != nullptr)
+        undo->beginNewTransaction (transactionName);
+
+    const auto instrument = channel.getChildWithName (ids::INSTRUMENT);
+
+    for (int g = 0; g < descriptor.numGroups; ++g)
+    {
+        const auto& group = descriptor.groups[g];
+
+        if (! group.inPreset)
+            continue;
+
+        const auto value = object->getProperty (juce::Identifier (group.jsonKey));
+        const auto parent = (*group.node == ids::SAMPLE) ? channel : instrument;
+
+        if (group.count <= 1)
+        {
+            writeParams (parent.getChildWithName (*group.node), value, group.params,
+                         group.numParams, undo, transactionName);
+            continue;
+        }
+
+        const auto* slots = value.getArray();
+
+        if (slots == nullptr)
+            continue;
+
+        auto index = 0;
+
+        for (const auto& child : parent)
+        {
+            if (! child.hasType (*group.node))
+                continue;
+
+            if (index >= slots->size())
+                break;
+
+            writeParams (child, (*slots)[index], group.params, group.numParams, undo,
+                         transactionName);
+            ++index;
+        }
+    }
+
+    return true;
 }
 
 } // namespace dew
