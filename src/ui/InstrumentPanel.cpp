@@ -1,5 +1,7 @@
 #include "ui/InstrumentPanel.h"
 
+#include "model/PresetLibrary.h"
+
 #include <cmath>
 
 #include "engine/EngineSnapshot.h"
@@ -39,6 +41,9 @@ InstrumentPanel::InstrumentPanel (ProjectDocument& d, EditorState& s, SamplePool
     titleLabel.setFont (tokens::type::font (tokens::type::title, true));
     titleLabel.setColour (juce::Label::textColourId, tokens::colour::textPrimary);
     addAndMakeVisible (titleLabel);
+
+    presetButton.onClick = [this] { showPresetMenu(); };
+    addAndMakeVisible (presetButton);
 
     // The oscillator section's height depends on the mode of the slot it is
     // showing, and that mode lives on an OSC node this panel does not listen to
@@ -283,11 +288,73 @@ void InstrumentPanel::paint (juce::Graphics& g)
     g.drawVerticalLine (0, 0.0f, (float) getHeight());
 }
 
+namespace
+{
+
+/** The presets for a channel, which kind it is decides. An unknown `source`
+    offers nothing rather than guessing - buildSnapshot has already warned. */
+std::vector<Preset> presetsForChannel (const juce::ValueTree& channel)
+{
+    if (const auto type = instrumentTypeFor (channel[ids::source].toString()))
+        return PresetLibrary::presetsFor (*type);
+
+    return {};
+}
+
+} // namespace
+
+juce::StringArray InstrumentPanel::presetMenuItems() const
+{
+    juce::StringArray items;
+
+    for (const auto& preset : presetsForChannel (selectedChannel()))
+        items.add (preset.name);
+
+    return items;
+}
+
+bool InstrumentPanel::applyPresetChoice (int choice)
+{
+    const auto channel = selectedChannel();
+    const auto presets = presetsForChannel (channel);
+
+    if (choice < 1 || choice > (int) presets.size())
+        return false;
+
+    return ProjectEdits::applyInstrumentPreset (channel, presets[(size_t) (choice - 1)],
+                                                &document.getUndoManager());
+}
+
+void InstrumentPanel::showPresetMenu()
+{
+    const auto presets = presetsForChannel (selectedChannel());
+
+    if (presets.empty())
+        return;
+
+    juce::PopupMenu menu;
+
+    for (int i = 0; i < (int) presets.size(); ++i)
+        menu.addItem (i + 1, presets[(size_t) i].name);
+
+    menu.setLookAndFeel (&getLookAndFeel());
+    menu.showMenuAsync (juce::PopupMenu::Options().withTargetComponent (presetButton),
+                        [this] (int choice) { applyPresetChoice (choice); });
+}
+
 void InstrumentPanel::resized()
 {
     auto area = getLocalBounds().reduced (space::md);
 
-    titleLabel.setBounds (area.removeFromTop (size::iconButton));
+    auto titleRow = area.removeFromTop (size::iconButton);
+
+    // The button on the right of the title, at the width the design system
+    // gives a labelled control - the title takes whatever is left, which is
+    // what it did before there was anything beside it.
+    presetButton.setBounds (titleRow.removeFromRight (size::gutterLabel));
+    titleRow.removeFromRight (space::sm);
+    titleLabel.setBounds (titleRow);
+
     area.removeFromTop (space::sm);
 
     const auto row = [&area] (int height) { auto r = area.removeFromTop (height); area.removeFromTop (space::sm); return r; };

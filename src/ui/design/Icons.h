@@ -67,6 +67,7 @@ juce::Path zoomIn();
 juce::Path zoomOut();
 juce::Path fitToContent();
 juce::Path automation();      ///< a curve with points
+juce::Path preset();          ///< a saved sound to load
 
 /** Scales `path` to fit `bounds` while keeping its proportions and centring it. */
 juce::Path fitted (juce::Path path, juce::Rectangle<float> bounds);

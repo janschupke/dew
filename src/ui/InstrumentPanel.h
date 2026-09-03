@@ -47,11 +47,18 @@ public:
 
     void refresh();
 
+    /** What the preset button would offer, and what choosing item `choice`
+        does. A menu cannot be driven headlessly - see MenuSeam.h. */
+    juce::StringArray presetMenuItems() const;
+    bool applyPresetChoice (int choice);
+
 private:
     void changeListenerCallback (juce::ChangeBroadcaster*) override;
     void valueTreePropertyChanged (juce::ValueTree&, const juce::Identifier&) override;
 
     juce::ValueTree selectedChannel() const;
+
+    void showPresetMenu();
 
     /** Wires a rotary to a property, opening one undo transaction per gesture.
 
@@ -93,6 +100,15 @@ private:
     bool gestureActive = false;
 
     juce::Label titleLabel;
+
+    /** Loads a factory preset onto the selected channel.
+
+        A button opening a menu rather than a ComboBox, and deliberately: a
+        combo shows a CURRENT selection, and with no user save there is no
+        honest "modified" state to show once a knob has been touched. A button
+        promises only what it does - load one.
+    */
+    DewButton presetButton { "Preset" };
 
     /** The channel's oscillator slots. Its own component: it carries its own
         selection, its own listener scoped to one instrument's nodes and its own

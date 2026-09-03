@@ -567,6 +567,25 @@ void draw (juce::Graphics& g, const juce::Path& path, juce::Rectangle<float> bou
     g.fillPath (fitted (path, bounds));
 }
 
+/** A stack of saved sounds: three sheets, the front one lifted.
+
+    Not a floppy disk and not a folder. Nothing here saves - the presets ship
+    with the build - so an icon that says "write" would promise a thing the
+    button does not do.
+*/
+juce::Path preset()
+{
+    juce::Path lines;
+    lines.startNewSubPath (0.22f, 0.34f);
+    lines.lineTo (0.78f, 0.34f);
+    lines.startNewSubPath (0.22f, 0.52f);
+    lines.lineTo (0.78f, 0.52f);
+    lines.startNewSubPath (0.22f, 0.70f);
+    lines.lineTo (0.56f, 0.70f);
+
+    return strokeOf (lines, tokens::icon::regular);
+}
+
 std::vector<NamedIcon> all()
 {
     return {
@@ -589,7 +608,7 @@ std::vector<NamedIcon> all()
         { "effectChorus", effectChorus }, { "effectEq", effectEq },
 
         { "zoomIn", zoomIn }, { "zoomOut", zoomOut }, { "fitToContent", fitToContent },
-        { "automation", automation },
+        { "automation", automation }, { "preset", preset },
     };
 }
 

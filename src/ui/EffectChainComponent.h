@@ -86,6 +86,14 @@ public:
     /** Offers the effect types. Public because the add button is the host's. */
     void showAddMenu (juce::Component& target);
 
+    /** Offers the presets for the effect in `slot`, and loads the chosen one.
+
+        Only that slot's own type is offered, so a mismatch is never presented;
+        ProjectEdits refuses one anyway, which is the second half of the same
+        rule rather than a duplicate of it.
+    */
+    void showPresetMenu (int slot, juce::Component& target);
+
     /** The size the whole chain needs along its own axis. Its host puts it in a
         Viewport, so a full chain scrolls rather than being silently clipped.
 
@@ -107,6 +115,11 @@ public:
     int getSelectedSlot() const noexcept { return selectedSlot; }
     void selectSlot (int index);
     void addEffectOfType (const juce::String& type);
+
+    /** What showPresetMenu would offer, and what choosing item `choice` does.
+        A menu cannot be driven headlessly - see MenuSeam.h. */
+    juce::StringArray presetMenuItems (int slot) const;
+    bool applyPresetChoice (int slot, int choice);
 
     /** Opens or closes one card, by position in the chain. */
     void setSlotExpanded (int index, bool expanded);

@@ -1,5 +1,7 @@
 #include "ui/EffectChainComponent.h"
 
+#include "model/PresetLibrary.h"
+
 #include "engine/Effects.h"
 #include "model/Ids.h"
 #include "model/ProjectEdits.h"
@@ -60,7 +62,9 @@ public:
     // (72 wide) and a number field (86) with room for the cell inset.
     static constexpr int paramColumnWidth = 88;
     static constexpr int modeColumnWidth = 120;  ///< fits "Low pass" and the chevron
-    static constexpr int cardMinWidth = 276;     ///< what the header packs
+    /** What the header packs: grip, bypass, icon, name, preset, reorder,
+        remove and - vertically - the expand chevron. */
+    static constexpr int cardMinWidth = 276 + size::minTouchTarget;
 
     /** Every card in a row is this tall. The chain quotes it to size the band. */
     static constexpr int cardHeight = size::rowHeight + tokens::size::knobRow + space::sm;
@@ -93,6 +97,10 @@ public:
 
         downButton.onClick = [this] { owner.moveSlot (index, index + 1); };
         addAndMakeVisible (downButton);
+
+        presetButton.onClick = [this] { owner.showPresetMenu (index, presetButton); };
+        presetButton.setEnabled (! PresetLibrary::presetsFor (type).empty());
+        addAndMakeVisible (presetButton);
 
         removeButton.onClick = [this]
         {
@@ -352,6 +360,7 @@ private:
         // Right to left, at the documented minimum touch target - the old row
         // packed four 18px buttons into 24px of height.
         removeButton.setBounds (header.removeFromRight (size::minTouchTarget + 4));
+        presetButton.setBounds (header.removeFromRight (size::minTouchTarget));
         downButton.setBounds (header.removeFromRight (size::minTouchTarget));
         upButton.setBounds (header.removeFromRight (size::minTouchTarget));
         header.removeFromRight (space::xs);
@@ -536,6 +545,7 @@ private:
     DewIconButton expandButton { icons::chevronDown(), "Show or hide this effect's controls" };
     DewIconButton upButton { icons::chevronUp(), "Move earlier in the chain" };
     DewIconButton downButton { icons::chevronDown(), "Move later in the chain" };
+    DewIconButton presetButton { icons::preset(), "Load a preset for this effect" };
     DewIconButton removeButton { icons::trash(), "Remove this effect" };
 
     juce::OwnedArray<ParamWidget> params;
@@ -691,6 +701,65 @@ void EffectChainComponent::showAddMenu (juce::Component& target)
                             if (choice > 0 && choice <= (int) types.size())
                                 addEffectOfType (types[(size_t) (choice - 1)].id);
                         });
+}
+
+namespace
+{
+
+/** The presets a slot can be given: its own type's, and nothing else. */
+std::vector<Preset> presetsForSlot (const juce::ValueTree& effect)
+{
+    if (const auto type = effectTypeFor (effect[ids::type].toString()))
+        return PresetLibrary::presetsFor (*type);
+
+    return {};
+}
+
+} // namespace
+
+juce::StringArray EffectChainComponent::presetMenuItems (int slot) const
+{
+    juce::StringArray items;
+
+    for (const auto& preset : presetsForSlot (effectAt (slot)))
+        items.add (preset.name);
+
+    return items;
+}
+
+bool EffectChainComponent::applyPresetChoice (int slot, int choice)
+{
+    const auto effect = effectAt (slot);
+    const auto presets = presetsForSlot (effect);
+
+    if (choice < 1 || choice > (int) presets.size())
+        return false;
+
+    return ProjectEdits::applyEffectPreset (effect, presets[(size_t) (choice - 1)],
+                                            &document.getUndoManager());
+}
+
+void EffectChainComponent::showPresetMenu (int slot, juce::Component& target)
+{
+    const auto presets = presetsForSlot (effectAt (slot));
+
+    // Nothing to show rather than an empty menu, which reads as broken. The
+    // button is disabled for the same reason; this is the guard behind it.
+    if (presets.empty())
+        return;
+
+    juce::PopupMenu menu;
+
+    for (int i = 0; i < (int) presets.size(); ++i)
+    {
+        juce::PopupMenu::Item item (presets[(size_t) i].name);
+        item.itemID = i + 1;
+        menu.addItem (item);
+    }
+
+    menu.setLookAndFeel (&getLookAndFeel());
+    menu.showMenuAsync (juce::PopupMenu::Options().withTargetComponent (target),
+                        [this, slot] (int choice) { applyPresetChoice (slot, choice); });
 }
 
 void EffectChainComponent::rebuild()
