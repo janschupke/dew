@@ -4,12 +4,30 @@
 #include "engine/EngineSnapshot.h"
 #include "engine/TempoMap.h"
 #include "engine/Transport.h"
+#include "io/MidiExporter.h"
 #include "model/DemoLibrary.h"
+#include "model/Ids.h"
+#include "model/ProjectEdits.h"
 #include "model/ProjectFactory.h"
 #include "model/ProjectSerializer.h"
 
 using namespace dew;
 using Catch::Matchers::WithinAbs;
+
+namespace
+{
+
+/** A ramp from the bottom of the tempo range to the top, so the curve is
+    unmistakably not constant. */
+void setTempoCurve (juce::ValueTree automation, juce::UndoManager* undo)
+{
+    const auto points = ProjectEdits::sortedAutomationPoints (automation);
+
+    points.getFirst().setProperty (ids::value, 0.0, undo);
+    points.getLast().setProperty (ids::value, 1.0, undo);
+}
+
+} // namespace
 
 TEST_CASE ("with no tempo automation the map is the arithmetic it replaces", "[tempo]")
 {
@@ -124,4 +142,159 @@ TEST_CASE ("a snapshot always has a map, even an empty one", "[tempo]")
 
     REQUIRE (empty.tempoMap != nullptr);
     REQUIRE (empty.tempoMap->isConstant());
+}
+
+TEST_CASE ("tempo is a target the picker offers", "[tempo][automation]")
+{
+    auto project = ProjectFactory::createDefault();
+
+    juce::StringArray names;
+
+    for (const auto& target : availableAutomationTargets (project))
+        names.add (target.displayName);
+
+    INFO ("first few: " << names.joinIntoString (", ").substring (0, 200));
+    REQUIRE (names.contains ("Song > Tempo"));
+
+    // FIRST, because the picker groups by the first word of a display name and
+    // a global parameter buried after thirty channels is one nobody finds.
+    REQUIRE (names[0] == "Song > Tempo");
+}
+
+TEST_CASE ("a tempo curve makes the arrangement longer", "[tempo][render]")
+{
+    auto project = ProjectFactory::createDefault();
+    juce::UndoManager undo;
+
+    AutomationTarget tempo;
+
+    for (const auto& target : availableAutomationTargets (project))
+        if (target.displayName == "Song > Tempo")
+            tempo = target;
+
+    REQUIRE (tempo.spec != nullptr);
+
+    const auto before = buildSnapshot (project, nullptr);
+    REQUIRE (before.tempoMap->isConstant());
+
+    auto automation = ProjectEdits::addAutomation (project, tempo, &undo);
+    REQUIRE (automation.isValid());
+
+    // Held at the bottom of the range for the whole clip, which is far slower
+    // than the project's own 128.
+    for (auto point : ProjectEdits::sortedAutomationPoints (automation))
+        point.setProperty (ids::value, 0.0, &undo);
+
+    auto track = project.getChildWithName (ids::PLAYLIST).getChild (0);
+    ProjectEdits::addAutomationClip (track, (int) automation[ids::id], 0, 4, &undo);
+
+    const auto after = buildSnapshot (project, nullptr);
+
+    REQUIRE_FALSE (after.tempoMap->isConstant());
+
+    const auto steps = (double) after.songLengthSteps();
+
+    INFO ("without " << before.tempoMap->secondsForSteps (steps)
+          << "s, with " << after.tempoMap->secondsForSteps (steps) << "s");
+
+    // Slower over the bars the clip covers, so the arrangement takes longer.
+    REQUIRE (after.tempoMap->secondsForSteps (steps) > before.tempoMap->secondsForSteps (steps));
+
+    // And still exactly invertible, which a hand-built table easily is not.
+    for (int step = 0; step <= (int) steps; ++step)
+        REQUIRE_THAT (after.tempoMap->stepsForSeconds (after.tempoMap->secondsForSteps ((double) step)),
+                      WithinAbs ((double) step, 1e-9));
+}
+
+TEST_CASE ("a tempo clip only affects the bars it covers", "[tempo]")
+{
+    auto project = ProjectFactory::createDefault();
+    juce::UndoManager undo;
+
+    AutomationTarget tempo;
+
+    for (const auto& target : availableAutomationTargets (project))
+        if (target.displayName == "Song > Tempo")
+            tempo = target;
+
+    REQUIRE (tempo.spec != nullptr);
+
+    auto automation = ProjectEdits::addAutomation (project, tempo, &undo);
+
+    for (auto point : ProjectEdits::sortedAutomationPoints (automation))
+        point.setProperty (ids::value, 0.0, &undo);
+
+    // Bars four to eight, so the first four are untouched.
+    auto track = project.getChildWithName (ids::PLAYLIST).getChild (0);
+    ProjectEdits::addAutomationClip (track, (int) automation[ids::id], 4, 4, &undo);
+
+    const auto snapshot = buildSnapshot (project, nullptr);
+    const auto& map = *snapshot.tempoMap;
+
+    const auto stepsPerBar = (double) snapshot.stepsPerBar();
+    const auto plain = TempoMap::constant (snapshot.tempoBpm, snapshot.stepsPerBeat);
+
+    // Identical up to bar four...
+    for (const auto bar : { 0.0, 1.0, 2.0, 3.0, 4.0 })
+    {
+        INFO ("bar " << bar);
+        REQUIRE_THAT (map.secondsForSteps (bar * stepsPerBar),
+                      WithinAbs (plain.secondsForSteps (bar * stepsPerBar), 1e-9));
+    }
+
+    // ...and slower after it, which is what says the clip's bounds are honoured
+    // rather than the curve being applied to the whole song.
+    REQUIRE (map.secondsForSteps (8.0 * stepsPerBar) > plain.secondsForSteps (8.0 * stepsPerBar));
+}
+
+TEST_CASE ("an exported ramp moves no note", "[tempo][midi]")
+{
+    // The claim a tempo meta event makes: a tick is MUSICAL time, and the tempo
+    // map is precisely the tick-to-seconds function. So a ramp changes how long
+    // the file takes to play and not where a single note sits in it.
+    auto project = ProjectFactory::createDemo();
+    juce::UndoManager undo;
+
+    const auto ticksOf = [] (const juce::ValueTree& tree)
+    {
+        juce::StringArray warnings;
+        juce::int64 numNotes = 0;
+
+        const auto file = MidiExporter::build (tree, {}, warnings, numNotes);
+
+        juce::Array<double> ticks;
+
+        for (int t = 0; t < file.getNumTracks(); ++t)
+            for (const auto* event : *file.getTrack (t))
+                if (event->message.isNoteOn())
+                    ticks.add (event->message.getTimeStamp());
+
+        ticks.sort();
+        return ticks;
+    };
+
+    const auto before = ticksOf (project);
+    REQUIRE (before.size() > 8);
+
+    AutomationTarget tempo;
+
+    for (const auto& target : availableAutomationTargets (project))
+        if (target.displayName == "Song > Tempo")
+            tempo = target;
+
+    auto automation = ProjectEdits::addAutomation (project, tempo, &undo);
+    setTempoCurve (automation, &undo);
+
+    auto track = project.getChildWithName (ids::PLAYLIST).getChild (0);
+    ProjectEdits::addAutomationClip (track, (int) automation[ids::id], 0, 4, &undo);
+
+    const auto after = ticksOf (project);
+
+    REQUIRE (after.size() == before.size());
+
+    for (int i = 0; i < before.size(); ++i)
+    {
+        INFO ("note " << i);
+        REQUIRE_THAT (after[i], WithinAbs (before[i], 1e-9));
+    }
 }

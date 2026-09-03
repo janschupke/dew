@@ -83,6 +83,14 @@ int EngineSnapshot::channelIndexForId (int channelId) const
     return -1;
 }
 
+const std::shared_ptr<const TempoMap>& defaultTempoMap()
+{
+    static const std::shared_ptr<const TempoMap> map
+        = std::make_shared<const TempoMap> (TempoMap::constant (128.0, 4));
+
+    return map;
+}
+
 int EngineSnapshot::songLengthSteps() const
 {
     int end = 0;
@@ -294,6 +302,7 @@ AutomationParam automationParamFromIdentifier (const juce::Identifier& property)
         { &ids::enabled, AutomationParam::enabled },
         { &ids::mute, AutomationParam::muted },
         { &ids::muted, AutomationParam::muted },
+        { &ids::tempoBpm, AutomationParam::tempoBpm },
     };
 
     for (const auto& [id, value] : table)
@@ -504,12 +513,9 @@ EngineSnapshot buildSnapshot (const juce::ValueTree& project, juce::StringArray*
     EngineSnapshot snapshot;
     snapshot.generation = nextGeneration.fetch_add (1, std::memory_order_relaxed);
 
-    // Never null, including on the early return: everything that converts a step
-    // into time reads it, and a null check on that path would be a branch in the
-    // render loop guarding against a state that should not exist.
-    snapshot.tempoMap = std::make_shared<const TempoMap> (
-        TempoMap::constant (snapshot.tempoBpm, snapshot.stepsPerBeat));
-
+    // Never null, including on the early return below: the field defaults to a
+    // shared constant map, so everything that converts a step into time can read
+    // it without a null check on the render path.
     if (! project.isValid())
         return snapshot;
 

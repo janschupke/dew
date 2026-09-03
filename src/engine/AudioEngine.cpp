@@ -868,8 +868,9 @@ void AudioEngine::processBlock (juce::AudioBuffer<float>& buffer) noexcept
     // --- render channels into their mixer tracks -----------------------------
     // Everything an instrument needs that does not vary by channel.
     InstrumentContext blockContext;
-    blockContext.transport = { transport.getPositionSamples() / juce::jmax (1.0, transport.samplesPerStep()),
+    blockContext.transport = { transport.getPositionInSteps(),
                                transport.samplesPerStep(), currentSampleRate,
+                               transport.getPositionSamples(), snapshot.tempoMap.get(),
                                isPlayingNow, mode == Transport::Mode::song };
     blockContext.clips = { snapshot.clips.data(), snapshot.clips.size() };
     blockContext.stepsPerBar = snapshot.stepsPerBar();

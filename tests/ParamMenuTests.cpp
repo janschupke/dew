@@ -221,21 +221,23 @@ TEST_CASE ("every spec-built control in the window has a right-click", "[ui][par
     INFO ("without one:\n" << missing.joinIntoString ("\n"));
     REQUIRE (knobs > 0);
 
-    // The transport bar's two number fields are the exception, and a NAMED one
-    // so it has to shrink rather than being forgotten. Neither is built from a
-    // ParamSpec yet: the tempo field states its own range by hand and gets a
-    // spec when tempo becomes an automatable target, and steps-per-beat is a
-    // property of the grid rather than a parameter of anything.
+    // One exception, and a NAMED one so it cannot quietly grow back.
     //
-    // An exact count rather than a floor: when the tempo field is migrated this
-    // must be edited, which is the point.
+    // The transport bar's pattern-length field is not a parameter of anything:
+    // it is how long the pattern in front of you is, which is a property of the
+    // material rather than a quantity that could be swept - there is nothing for
+    // a curve over it to mean, and nothing to reset it TO.
+    //
+    // The tempo field beside it WAS the other exception, until tempo became a
+    // target; this count is exact so that migrating it had to come back here,
+    // which is exactly what happened.
     for (const auto& one : missing)
     {
         INFO ("unexpected control with no menu: " << one);
         REQUIRE (one.startsWith ("transportBar"));
     }
 
-    REQUIRE (missing.size() == 2);
+    REQUIRE (missing.size() == 1);
     REQUIRE (withMenu == knobs - missing.size());
 }
 

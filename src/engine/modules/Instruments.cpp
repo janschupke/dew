@@ -55,7 +55,7 @@ void SampleInstrument::processAdd (const InstrumentContext& ctx, float* out, int
 
     SamplePlayer::renderAdd (out, numSamples, *ctx.sample, *ctx.audio, ctx.clips,
                              ctx.channelIndex, ctx.stepsPerBar,
-                             ctx.transport.positionSteps, ctx.transport.samplesPerStep,
+                             ctx.transport.positionSamples, *ctx.transport.tempoMap,
                              ctx.transport.sampleRate);
 }
 

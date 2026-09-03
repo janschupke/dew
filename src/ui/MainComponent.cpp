@@ -48,6 +48,7 @@ MainComponent::MainComponent (bool openAudioDevice)
     };
 
     tabs.setParamMenuHost (&paramMenuHost);
+    transportBar.setParamMenuHost (&paramMenuHost);
     instrumentPanel.setParamMenuHost (&paramMenuHost);
 
     // A layout, not a paint.

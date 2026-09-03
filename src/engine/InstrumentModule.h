@@ -14,6 +14,17 @@ struct TransportView
     double positionSteps = 0.0;
     double samplesPerStep = 0.0;
     double sampleRate = kDefaultSampleRate;
+
+    /** The playhead in SAMPLES, and how steps become time.
+
+        Both, because an audio clip needs each for a different thing: its
+        PLACEMENT is musical and follows the tempo map, but its PLAYBACK RATE is
+        not - you do not time-stretch a recording because a tempo curve moved.
+        Deriving one from the other would tie them together and do exactly that.
+    */
+    juce::int64 positionSamples = 0;
+    const TempoMap* tempoMap = nullptr;
+
     bool playing = false;
     bool arrangement = false;   ///< song mode, not pattern
 };

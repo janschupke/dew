@@ -254,10 +254,43 @@ juce::MidiFile MidiExporter::build (const juce::ValueTree& project,
                                                                                       : juce::String ("dew")),
                         0.0);
 
+    // ONE event per run of equal tempo, from the same map the audio path uses,
+    // so a MIDI export of a tempo curve lands where the WAV of it does.
+    //
+    // The note ticks do not move at all, and that is the point: a tick is
+    // musical time, and the tempo map is precisely the tick-to-seconds function
+    // a tempo meta event expresses. A ramp therefore exports without shifting a
+    // single note.
+    //
     // Microseconds per quarter note, not BPM.
-    conductor.addEvent (juce::MidiMessage::tempoMetaEvent (
-                            juce::roundToInt (60'000'000.0 / juce::jmax (1.0, snapshot.tempoBpm))),
-                        0.0);
+    const auto tempoEvent = [] (double bpm)
+    {
+        return juce::MidiMessage::tempoMetaEvent (
+            juce::roundToInt (60'000'000.0 / juce::jmax (1.0, bpm)));
+    };
+
+    const auto segments = snapshot.tempoMap->segments();
+
+    // The PREVAILING tempo at tick 0, whatever it is. A range that begins
+    // mid-ramp would otherwise start at the project's default and catch up at
+    // the next entry, which is a tempo nobody wrote.
+    auto prevailing = snapshot.tempoBpm;
+
+    for (const auto& segment : segments)
+        if (segment.startStep <= (double) firstStep)
+            prevailing = segment.bpm;
+
+    conductor.addEvent (tempoEvent (prevailing), 0.0);
+
+    for (const auto& segment : segments)
+    {
+        if (segment.startStep <= (double) firstStep || segment.startStep >= (double) lastStep)
+            continue;
+
+        conductor.addEvent (tempoEvent (segment.bpm),
+                            (double) std::llround ((segment.startStep - (double) firstStep)
+                                                       * (double) ticksPerStep));
+    }
 
     // The denominator is NOTATIONAL. dew's beat is a quarter note's worth of
     // ticks whatever beatUnit says - ticksPerQuarterNoteFor and the tempo event

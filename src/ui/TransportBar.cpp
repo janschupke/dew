@@ -1,5 +1,9 @@
 #include "ui/TransportBar.h"
 
+#include <memory>
+
+#include "model/ModuleCatalog.h"
+
 #include "model/Ids.h"
 #include "model/Meter.h"
 #include "model/ProjectEdits.h"
@@ -58,9 +62,16 @@ TransportBar::TransportBar (ProjectDocument& d, AudioEngine& e, EditorState& s)
     };
     addAndMakeVisible (recordButton);
 
-    tempoField.setRange (20.0, 300.0, 0.1);
-    tempoField.setNumDecimalPlaces (1);
-    tempoField.setSuffix (" bpm");
+    // From the catalog, not by hand. This field stated 20..300 while the engine
+    // clamped at 20..999 - a fourth disagreement of exactly the kind the spec
+    // tables exist to end, and one that made the top two thirds of what dew can
+    // actually render impossible to type in.
+    const auto& tempoSpec = projectParamSpecs().front();
+
+    tempoField.setRange (tempoSpec.minimum, tempoSpec.maximum, tempoSpec.interval);
+    tempoField.setNumDecimalPlaces (tempoSpec.decimals);
+    tempoField.setSuffix (tempoSpec.suffix);
+    tempoField.setLogarithmic (tempoSpec.curve == ParamCurve::logarithmic);
     tempoField.setTooltip ("Tempo - drag up and down, or double-click to type");
     tempoField.onEditStart = [this] { tempoGestureActive = false; };
     tempoField.onValueChange = [this]
@@ -185,6 +196,18 @@ TransportBar::~TransportBar()
 {
     document.getState().removeListener (this);
     editorState.removeChangeListener (this);
+}
+
+void TransportBar::setParamMenuHost (const paramMenu::Host* host)
+{
+    paramMenuHost = host;
+
+    // Through the field's own hook rather than a Trigger: a DewNumberField has
+    // one, and only the raw juce::Sliders in the mixer and the instrument panel
+    // need the listener form.
+    paramMenu::attachTo (host, tempoField,
+                         [this] { return document.getState(); },
+                         projectParamSpecs().front());
 }
 
 void TransportBar::refresh()

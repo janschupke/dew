@@ -1,4 +1,7 @@
 #include <catch2/catch_approx.hpp>
+#include <cmath>
+#include <memory>
+
 #include <catch2/catch_test_macros.hpp>
 
 #include "engine/EngineSnapshot.h"
@@ -18,6 +21,14 @@ EngineSnapshot snapshotWith (std::shared_ptr<juce::AudioBuffer<float>> audio,
     EngineSnapshot snapshot;
     snapshot.tempoBpm = 120.0;
     snapshot.stepsPerBeat = 4;
+
+    // The map has to AGREE with the tempo beside it. A hand-built snapshot gets
+    // the shared default - which is 128bpm - and a clip's placement is read from
+    // the map while these tests compute their positions from the tempo, so
+    // leaving them disagreeing would put every clip after the first bar in the
+    // wrong place and only show up in the tests that render one.
+    snapshot.tempoMap = std::make_shared<const TempoMap> (
+        TempoMap::constant (snapshot.tempoBpm, snapshot.stepsPerBeat));
 
     ChannelSnapshot channel;
     channel.id = 1;
@@ -91,10 +102,14 @@ void renderChannel (float* out, int numSamples, const EngineSnapshot& snapshot, 
     if (channel.source != InstrumentType::audio || channel.audio == nullptr)
         return;
 
+    // The tests speak in steps and a samples-per-step; the player now speaks in
+    // samples and a map. Converting here keeps every existing expectation about
+    // where a clip starts and what it plays exactly where it was.
     SamplePlayer::renderAdd (out, numSamples, channel.sample, *channel.audio,
                              { snapshot.clips.data(), snapshot.clips.size() },
                              channelIndex, snapshot.stepsPerBar(),
-                             positionSteps, sps, engineRate);
+                             (juce::int64) std::llround (positionSteps * sps),
+                             *snapshot.tempoMap, engineRate);
 }
 
 } // namespace

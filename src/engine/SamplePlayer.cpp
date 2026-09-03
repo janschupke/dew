@@ -84,11 +84,11 @@ void SamplePlayer::renderAdd (float* mono, int numSamples,
                               juce::Span<const ClipSnapshot> clips,
                               int channelIndex,
                               int stepsPerBarIn,
-                              double positionSteps,
-                              double samplesPerStep,
+                              juce::int64 positionSamples,
+                              const TempoMap& tempoMap,
                               double engineSampleRate) noexcept
 {
-    if (mono == nullptr || numSamples <= 0 || samplesPerStep <= 0.0)
+    if (mono == nullptr || numSamples <= 0 || engineSampleRate <= 0.0)
         return;
 
     const auto region = settings.endSample - settings.startSample;
@@ -97,7 +97,21 @@ void SamplePlayer::renderAdd (float* mono, int numSamples,
         return;
 
     const auto stepsPerBar = (double) stepsPerBarIn;
-    const auto blockSteps = (double) numSamples / samplesPerStep;
+
+    // Placement in the MAP's terms, playback rate in the engine's.
+    //
+    // A clip sits where its bar sits, so finding it has to follow the tempo
+    // curve; but the audio inside it is a recording, and a recording does not
+    // time-stretch because somebody drew a ramp. Keeping the two apart is the
+    // whole reason this function now takes both a sample position and a map
+    // rather than deriving one from a single samples-per-step.
+    const auto samplesAtStep = [&tempoMap, engineSampleRate] (double step)
+    {
+        return tempoMap.secondsForSteps (step) * engineSampleRate;
+    };
+
+    const auto blockStart = (double) positionSamples;
+    const auto blockEnd = blockStart + (double) numSamples;
 
     // The clips are the snapshot's own vector, in its own order - filtered
     // here rather than pre-grouped, because Sequencer walks the same vector and
@@ -110,28 +124,33 @@ void SamplePlayer::renderAdd (float* mono, int numSamples,
         const auto clipStartSteps = (double) clip.startBar * stepsPerBar;
         const auto clipEndSteps = clipStartSteps + (double) clip.lengthBars * stepsPerBar;
 
+        const auto clipStart = samplesAtStep (clipStartSteps);
+        const auto clipEnd = samplesAtStep (clipEndSteps);
+
         // Half-open on both sides, so a clip ending where the next begins does
         // not render one block of both.
-        if (positionSteps + blockSteps <= clipStartSteps || positionSteps >= clipEndSteps)
+        if (blockEnd <= clipStart || blockStart >= clipEnd)
             continue;
 
         // Where in this block the clip starts and stops sounding. A clip that
         // began before the block starts at output sample 0, which is what makes
         // seeking into the middle of one work without a special case.
-        const auto firstOffset = positionSteps >= clipStartSteps
+        const auto firstOffset = blockStart >= clipStart
                                      ? 0
-                                     : (int) std::ceil ((clipStartSteps - positionSteps) * samplesPerStep);
+                                     : (int) std::ceil (clipStart - blockStart);
 
-        const auto lastOffset = positionSteps + blockSteps <= clipEndSteps
+        const auto lastOffset = blockEnd <= clipEnd
                                     ? numSamples
-                                    : (int) std::ceil ((clipEndSteps - positionSteps) * samplesPerStep);
+                                    : (int) std::ceil (clipEnd - blockStart);
 
         const auto from = juce::jlimit (0, numSamples, firstOffset);
         const auto to = juce::jlimit (from, numSamples, lastOffset);
 
-        // Output samples since the clip began, which may be negative inside the
-        // block only when the clip starts later than it - hence `from`.
-        const auto elapsedAtFrom = (positionSteps - clipStartSteps) * samplesPerStep + (double) from;
+        // Real elapsed OUTPUT samples since the clip began - which is what
+        // readOffsetFor wants and what a sample that is not being stretched
+        // needs. At a constant tempo this is exactly what the old arithmetic
+        // produced; under a curve it is the one that stays right.
+        const auto elapsedAtFrom = blockStart - clipStart + (double) from;
 
         auto offset = readOffsetFor (settings, juce::jmax (0.0, elapsedAtFrom), engineSampleRate);
         const auto step = readOffsetFor (settings, 1.0, engineSampleRate);

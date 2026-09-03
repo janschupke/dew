@@ -3,6 +3,7 @@
 #include <span>
 
 #include "engine/EngineSnapshot.h"
+#include "engine/TempoMap.h"
 #include "engine/Transport.h"
 
 namespace dew
@@ -38,8 +39,8 @@ public:
                            juce::Span<const ClipSnapshot> clips,
                            int channelIndex,
                            int stepsPerBar,
-                           double positionSteps,
-                           double samplesPerStep,
+                           juce::int64 positionSamples,
+                           const TempoMap& tempoMap,
                            double engineSampleRate) noexcept;
 
     /** The read position, in source frames from the region start, that output

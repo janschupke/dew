@@ -8,6 +8,7 @@
 #include "ui/EditorState.h"
 #include "ui/SignalScope.h"
 #include "ui/primitives/DewControls.h"
+#include "ui/ParamContextMenu.h"
 #include "ui/primitives/DewNumberField.h"
 
 namespace dew
@@ -20,6 +21,11 @@ class TransportBar : public juce::Component,
                      private juce::ValueTree::Listener
 {
 public:
+    /** The tempo field's right-click. It is the one control outside the editors
+        that names a parameter, and now that tempo is automatable it offers a
+        curve like any other. */
+    void setParamMenuHost (const paramMenu::Host*);
+
     TransportBar (ProjectDocument&, AudioEngine&, EditorState&);
     ~TransportBar() override;
 
@@ -97,6 +103,8 @@ private:
     DewIconButton playButton { icons::play(), "Play or pause (Space)" };
     DewIconButton stopButton { icons::stop(), "Stop and rewind" };
     DewIconButton recordButton { icons::record(), "Record into the armed channel (R)" };
+    const paramMenu::Host* paramMenuHost = nullptr;
+
     DewNumberField tempoField;
 
     /** The meter, beside the tempo because it is the other thing that governs

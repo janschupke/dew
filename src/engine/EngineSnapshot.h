@@ -338,6 +338,17 @@ struct MixerTrackSnapshot
     already resolved to an array index. Built on the message thread from the
     ValueTree; read-only once published.
 */
+/** The map a snapshot has before anything gives it one: the default tempo, held
+    constant.
+
+    A default MEMBER rather than something buildSnapshot remembers to set,
+    because "never null" is an invariant everything that converts a step into
+    time relies on - and a snapshot assembled by hand in a test is exactly where
+    a convention gets forgotten. One allocation for the whole program: it hands
+    out a pointer to a function-local static.
+*/
+const std::shared_ptr<const TempoMap>& defaultTempoMap();
+
 struct EngineSnapshot
 {
     double tempoBpm = 128.0;
@@ -353,7 +364,7 @@ struct EngineSnapshot
         OfflineRenderer, RenderPanel and MidiExporter each build their own
         snapshot - so anything reachable from one needs no plumbing at all.
     */
-    std::shared_ptr<const TempoMap> tempoMap;
+    std::shared_ptr<const TempoMap> tempoMap = defaultTempoMap();
     int stepsPerBeat = 4;
 
     /** The project's meter. `beatsPerBar` groups beats into bars and is what
