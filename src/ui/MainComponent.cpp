@@ -302,6 +302,7 @@ void MainComponent::applySettings (const Settings& settings)
     tabs.applyPianoRollView (settings.getPianoRollZoom(), settings.getPianoRollScroll(),
                              settings.getPianoRollPitchScroll());
     tabs.setPianoRollSnap (settings.getPianoRollSnap());
+    tabs.setPlaylistTrackHeight (settings.getPlaylistTrackHeight());
 
     // Which devices are enabled rides the audio device XML, restored by the
     // app; only these two are dew's own.
@@ -330,6 +331,7 @@ void MainComponent::captureSettings (Settings& settings) const
     settings.setPianoRollScroll (scroll);
     settings.setPianoRollPitchScroll (pitch);
     settings.setPianoRollSnap (tabs.getPianoRollSnap());
+    settings.setPlaylistTrackHeight (tabs.getPlaylistTrackHeight());
 }
 
 void MainComponent::changeListenerCallback (juce::ChangeBroadcaster*)

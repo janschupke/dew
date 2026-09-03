@@ -1,5 +1,8 @@
 #include "ui/PlaylistComponent.h"
 
+#include <cmath>
+#include <utility>
+
 #include "model/AutomationCurve.h"
 
 #include "io/SamplePool.h"
@@ -33,6 +36,10 @@ public:
     TrackHeader (ProjectDocument& d, juce::ValueTree t)
         : document (d), track (std::move (t))
     {
+        setComponentID ("playlistTrackHeader");
+        muteButton.setComponentID ("trackMute");
+        soloButton.setComponentID ("trackSolo");
+
         nameLabel.setText (track[ids::name].toString(), juce::dontSendNotification);
         nameLabel.setEditable (false, true, false);
 
@@ -98,8 +105,16 @@ public:
 
     juce::ValueTree getTrack() const { return track; }
 
+    /** The band's width. Named rather than a bare 4 in a fillRect, and matched
+        to the tab the channel rack's own rows draw. */
+    static constexpr int colourTabWidth = 4;
+
     void refresh()
     {
+        setComponentID ("playlistTrackHeader");
+        muteButton.setComponentID ("trackMute");
+        soloButton.setComponentID ("trackSolo");
+
         nameLabel.setText (track[ids::name].toString(), juce::dontSendNotification);
         muteButton.setToggleState ((bool) track[ids::mute], juce::dontSendNotification);
         soloButton.setToggleState ((bool) track[ids::solo], juce::dontSendNotification);
@@ -118,25 +133,62 @@ public:
             g.fillAll();
         }
 
+        // A band down the whole left edge, not a tab beside the name.
+        //
+        // It is what stops a tall header being a short row with a hole under it,
+        // and it costs nothing: a band scales to any height by construction. The
+        // colour is taken from the track's POSITION - channelColour exists for
+        // painting things with no stored colour of their own - so this needs no
+        // schema change, and the channel rack already draws the same edge.
+        g.setColour (tokens::colour::channelColour (index));
+        g.fillRect (0, 0, colourTabWidth, getHeight());
+
         g.setColour (colour::divider);
         g.drawHorizontalLine (getHeight() - 1, 0.0f, (float) getWidth());
     }
 
+    /** Which row this is, for the colour band. Re-set by rebuildHeaders, which
+        already rebuilds every header whenever the list changes. */
+    void setIndex (int newIndex)
+    {
+        if (std::exchange (index, newIndex) != newIndex)
+            repaint();
+    }
+
     void resized() override
     {
-        auto area = getLocalBounds().reduced (space::sm, space::xs);
+        auto area = getLocalBounds().withTrimmedLeft (colourTabWidth);
 
-        soloButton.setBounds (area.removeFromRight (22).reduced (0, space::xxs));
-        area.removeFromRight (space::xxs);
-        muteButton.setBounds (area.removeFromRight (22).reduced (0, space::xxs));
-        area.removeFromRight (space::sm);
+        // The row keeps its OWN height, at the top. It does not stretch and it
+        // does not centre: a track's name labels the lane's first pixel, which
+        // is where its clips begin, and a name that drifts to the middle of a
+        // 200px header stops pointing at anything. Toggles stretched to 200px
+        // are also not toggles.
+        auto row = area.removeFromTop (juce::jmin (area.getHeight(), size::rowHeight))
+                       .reduced (space::sm, space::xs);
 
-        nameLabel.setBounds (area);
+        // Past the roomy threshold the name gets a line of its own and the
+        // toggles drop below it. One row of controls with a void under it is
+        // what a tall header looks like otherwise, and the name is the thing
+        // there is finally room to read.
+        const auto roomy = getHeight() >= size::trackHeightRoomy;
+
+        auto toggles = roomy ? area.removeFromTop (juce::jmin (area.getHeight(), size::rowHeight))
+                                   .reduced (space::sm, space::xs)
+                             : row;
+
+        soloButton.setBounds (toggles.removeFromRight (size::letterToggle).reduced (0, space::xxs));
+        toggles.removeFromRight (space::xxs);
+        muteButton.setBounds (toggles.removeFromRight (size::letterToggle).reduced (0, space::xxs));
+        toggles.removeFromRight (space::sm);
+
+        nameLabel.setBounds (roomy ? row : toggles);
     }
 
 private:
     ProjectDocument& document;
     juce::ValueTree track;
+    int index = 0;
 
     juce::Label nameLabel;
     DewLetterToggle muteButton { "M", colour::warning, "Mute this track" };
@@ -157,12 +209,20 @@ PlaylistComponent::PlaylistComponent (ProjectDocument& d, AudioEngine& e, Editor
     horizontalScroll.addListener (this);
     addChildComponent (horizontalScroll);
 
+    verticalScroll.addListener (this);
+    addChildComponent (verticalScroll);
+
+    // Transparent to the pointer itself so the gutter's own handling is
+    // unchanged, but its children still take their clicks.
+    headerHolder.setInterceptsMouseClicks (false, true);
+    addAndMakeVisible (headerHolder);
+
     addAutomationButton.onClick = [this] { showAutomationMenu(); };
     addAndMakeVisible (addAutomationButton);
 
     addTrackButton.onClick = [this] { addTrack(); };
     addTrackButton.setComponentID ("addTrackButton");
-    addAndMakeVisible (addTrackButton);
+    headerHolder.addAndMakeVisible (addTrackButton);
 
     toolbar.onToolChanged = [this] { repaint(); };
     toolbar.onZoom = [this] (double factor)
@@ -174,6 +234,8 @@ PlaylistComponent::PlaylistComponent (ProjectDocument& d, AudioEngine& e, Editor
         else
             zoomBy (factor, contentWidth() * 0.5f);
     };
+
+    toolbar.onTrackHeight = [this] (double factor) { zoomTracksBy (factor); };
     addAndMakeVisible (toolbar);
 
     setWantsKeyboardFocus (true);
@@ -273,14 +335,89 @@ juce::ValueTree PlaylistComponent::trackAt (int index) const
 
 // --- geometry ----------------------------------------------------------------
 
+void PlaylistComponent::scrollTracksTo (double offsetPx)
+{
+    trackScrollPx = juce::jmax (0.0, offsetPx);
+    viewIsUsers = true;
+
+    // updateScrollBar re-clamps against the content height, so an offset past
+    // the end lands on the end rather than off it.
+    updateScrollBar();
+    resized();
+    repaint();
+}
+
+void PlaylistComponent::setTrackHeight (int wanted)
+{
+    const auto clamped = juce::jlimit (size::trackHeightMin, size::trackHeightMax, wanted);
+
+    if (clamped == trackHeight)
+        return;
+
+    // Anchor on the middle of the lane view, for the same reason
+    // TimelineView::zoomAround anchors on the pointer: growing the rows from the
+    // top walks the arrangement out from under whatever you were looking at.
+    const auto anchorLane = (trackScrollPx + (double) laneViewHeight() * 0.5) / (double) trackHeight;
+
+    trackHeight = clamped;
+    trackScrollPx = juce::jmax (0.0, anchorLane * (double) trackHeight
+                                         - (double) laneViewHeight() * 0.5);
+
+    // A height change is the user taking the view, exactly as a zoom is -
+    // otherwise the next resize would re-fit and undo it.
+    viewIsUsers = true;
+
+    updateScrollBar();
+    resized();
+    repaint();
+}
+
+void PlaylistComponent::zoomTracksBy (double factor)
+{
+    if (factor <= 0.0)
+    {
+        fitTracksToWindow();
+        return;
+    }
+
+    setTrackHeight ((int) std::lround ((double) trackHeight * factor));
+}
+
+void PlaylistComponent::fitTracksToWindow()
+{
+    // The add-track row counts: fitting to the tracks alone would push the
+    // button that adds the next one just off the bottom.
+    const auto rows = juce::jmax (1, getNumTracks() + 1);
+
+    setTrackHeight (laneViewHeight() / rows);
+}
+
 int PlaylistComponent::tracksBottom() const
 {
-    return lanesTop() + getNumTracks() * size::rowHeight;
+    return (int) laneY (getNumTracks());
+}
+
+int PlaylistComponent::lanesBottom() const
+{
+    // The jmin, not viewBottom(): with the tracks fitting, this is exactly where
+    // the last one ends, which is where the grid and the playhead have always
+    // stopped. Taking the view's bottom instead would extend every one of them
+    // over empty space the moment a lane could be scrolled.
+    return juce::jmin (tracksBottom(), viewBottom());
+}
+
+juce::Rectangle<int> PlaylistComponent::getLaneArea() const
+{
+    return { size::gutterTrack, lanesTop(), (int) contentWidth(), laneViewHeight() };
 }
 
 float PlaylistComponent::contentWidth() const
 {
-    return (float) juce::jmax (0, getWidth() - size::gutterTrack);
+    // The vertical scrollbar's strip is reserved whether or not the bar is
+    // showing, the way the piano roll's note area reserves its own. Giving it
+    // back when the tracks happen to fit would re-lay the arrangement
+    // HORIZONTALLY every time a track was added.
+    return (float) juce::jmax (0, getWidth() - size::gutterTrack - size::scrollThickness);
 }
 
 int PlaylistComponent::barAtX (int x) const
@@ -293,7 +430,11 @@ int PlaylistComponent::barAtX (int x) const
 
 int PlaylistComponent::trackAtY (int y) const
 {
-    return (y - lanesTop()) / size::rowHeight;
+    // std::floor, not integer division: division truncates toward zero, so a y
+    // one pixel above the lanes reported track 0 rather than -1. Every caller
+    // guards on y < lanesTop() first, which is why it never showed - keep the
+    // guards, and do the arithmetic correctly anyway.
+    return (int) std::floor (((double) (y - lanesTop()) + trackScrollPx) / (double) trackHeight);
 }
 
 juce::Rectangle<float> PlaylistComponent::boundsForClip (const juce::ValueTree& clip, int trackIndex) const
@@ -302,9 +443,9 @@ juce::Rectangle<float> PlaylistComponent::boundsForClip (const juce::ValueTree& 
     const auto length = juce::jmax (1, (int) clip[ids::lengthBars]);
 
     return { (float) size::gutterTrack + timeline.xForStep ((double) start),
-             (float) (lanesTop() + trackIndex * size::rowHeight),
+             laneY (trackIndex),
              (float) (length * timeline.pixelsPerStep),
-             (float) size::rowHeight };
+             (float) trackHeight };
 }
 
 bool PlaylistComponent::isOnRightEdge (const juce::ValueTree& clip, int trackIndex,
@@ -366,10 +507,23 @@ void PlaylistComponent::updateScrollBar()
 
     timeline.clampScroll (contentWidth(), numBars());
 
+    // The content is the tracks PLUS the add-track row: fitting or scrolling to
+    // a bottom that hid the button that adds the next track would be the same
+    // as not having one.
+    const auto contentHeight = (double) ((getNumTracks() + 1) * trackHeight);
+    const auto laneView = (double) laneViewHeight();
+    const auto overflows = contentHeight > laneView + 1e-9;
+
+    verticalScroll.setVisible (overflows);
+
+    trackScrollPx = overflows ? juce::jlimit (0.0, contentHeight - laneView, trackScrollPx) : 0.0;
+
     const juce::ScopedValueSetter<bool> quiet (updatingScrollBar, true);
     horizontalScroll.setRangeLimits (0.0, (double) numBars(), juce::dontSendNotification);
     horizontalScroll.setCurrentRange (timeline.scrollOffsetSteps, visible,
                                       juce::dontSendNotification);
+    verticalScroll.setRangeLimits (0.0, contentHeight, juce::dontSendNotification);
+    verticalScroll.setCurrentRange (trackScrollPx, laneView, juce::dontSendNotification);
 }
 
 void PlaylistComponent::rebuildHeaders()
@@ -382,7 +536,8 @@ void PlaylistComponent::rebuildHeaders()
             auto* header = headers.add (new TrackHeader (document, track));
             header->onAddTrack = [this] { addTrack(); };
             header->onRemoveTrack = [this] (juce::ValueTree t) { removeTrack (t); };
-            addAndMakeVisible (header);
+            header->setIndex (headers.size() - 1);
+            headerHolder.addAndMakeVisible (header);
         }
 
     resized();
@@ -395,21 +550,29 @@ void PlaylistComponent::resized()
     horizontalScroll.setBounds (size::gutterTrack, getHeight() - size::scrollThickness,
                                 (int) contentWidth(), size::scrollThickness);
 
+    verticalScroll.setBounds (getWidth() - size::scrollThickness, lanesTop(),
+                              size::scrollThickness, laneViewHeight());
+
     // In the corner above the track headers, where the ruler does not reach.
     addAutomationButton.setBounds (juce::Rectangle<int> (0, rulerTop(), size::gutterTrack, size::rulerHeight)
                                        .reduced (space::xs, space::xxs));
 
+    // The holder spans the lane strip; its children sit in ITS coordinates,
+    // which is laneY minus the strip's own top.
+    headerHolder.setBounds (0, lanesTop(), size::gutterTrack, laneViewHeight());
+
+    const auto rowTop = [this] (int index) { return (int) laneY (index) - lanesTop(); };
+
     for (int i = 0; i < headers.size(); ++i)
-        headers[i]->setBounds (0, lanesTop() + i * size::rowHeight, size::gutterTrack, size::rowHeight);
+        headers[i]->setBounds (0, rowTop (i), size::gutterTrack, trackHeight);
 
-    // Directly below the last track, and never over the horizontal scrollbar -
-    // an add button you cannot reach because a scrollbar is on top of it is the
-    // same as no add button.
-    const auto buttonTop = lanesTop() + headers.size() * size::rowHeight;
-    const auto room = getHeight() - size::scrollThickness - buttonTop;
-
-    addTrackButton.setVisible (room >= size::rowHeight);
-    addTrackButton.setBounds (juce::Rectangle<int> (0, buttonTop, size::gutterTrack, size::rowHeight)
+    // Directly below the last track: the next empty row of the list, where the
+    // track it adds will appear. Always present now rather than hidden when the
+    // window ran out - it is reachable by scrolling, and an add button that
+    // disappears once you have enough tracks is the bug the channel rack already
+    // had and fixed.
+    addTrackButton.setBounds (juce::Rectangle<int> (0, rowTop (headers.size()),
+                                                    size::gutterTrack, trackHeight)
                                   .reduced (space::sm, space::xs));
 
     // Until someone has zoomed or scrolled, a layout frames the whole song.
@@ -422,12 +585,21 @@ void PlaylistComponent::resized()
     updateScrollBar();
 }
 
-void PlaylistComponent::scrollBarMoved (juce::ScrollBar*, double start)
+void PlaylistComponent::scrollBarMoved (juce::ScrollBar* bar, double start)
 {
     if (updatingScrollBar)
         return;
 
     viewIsUsers = true;
+
+    if (bar == &verticalScroll)
+    {
+        // The headers are laid out from laneY, so they follow the offset only
+        // when something re-lays them - resized() rather than a repaint.
+        scrollTracksTo (start);
+        return;
+    }
+
     timeline.scrollOffsetSteps = start;
     repaint();
 }
@@ -448,9 +620,25 @@ void PlaylistComponent::mouseWheelMove (const juce::MouseEvent& event,
     }
 
     viewIsUsers = true;
-    timeline.scrollOffsetSteps -= delta.along() * gesture::wheelStepsPerNotch;
-    updateScrollBar();
-    repaint();
+
+    // The piano roll's convention, adopted here because the playlist now has
+    // two axes to scroll and had only ever had one: shift scrolls time, and a
+    // plain wheel scrolls the TRACKS.
+    //
+    // This changes a shipped gesture - a plain wheel used to scroll time - and
+    // it is the change a user notices first. It is still the right one: the two
+    // timeline views disagreed about what a plain wheel meant, and the axis the
+    // wheel naturally maps to is the one that now moves.
+    if (event.mods.isShiftDown())
+    {
+        timeline.scrollOffsetSteps -= delta.along() * gesture::wheelStepsPerNotch;
+        updateScrollBar();
+        repaint();
+        return;
+    }
+
+    timeline.scrollOffsetSteps -= delta.x * gesture::wheelStepsPerNotch;
+    scrollTracksTo (trackScrollPx - delta.y * (double) trackHeight);
 }
 
 void PlaylistComponent::mouseMagnify (const juce::MouseEvent& event, float scaleFactor)
@@ -909,7 +1097,7 @@ void PlaylistComponent::mouseDown (const juce::MouseEvent& event)
         return;
     }
 
-    if (event.x < size::gutterTrack || event.y < lanesTop() || event.y >= tracksBottom())
+    if (event.x < size::gutterTrack || event.y < lanesTop() || event.y >= lanesBottom())
         return;
 
     const auto trackIndex = trackAtY (event.y);
@@ -1030,7 +1218,7 @@ void PlaylistComponent::mouseDown (const juce::MouseEvent& event)
 
 bool PlaylistComponent::paintClipAt (juce::Point<int> position)
 {
-    if (position.x < size::gutterTrack || position.y < lanesTop() || position.y >= tracksBottom())
+    if (position.x < size::gutterTrack || position.y < lanesTop() || position.y >= lanesBottom())
         return false;
 
     const auto trackIndex = trackAtY (position.y);
@@ -1227,7 +1415,7 @@ void PlaylistComponent::timerCallback()
     const auto to   = juce::jmax (x, lastPaintedPlayheadX < 0.0f ? x : lastPaintedPlayheadX);
 
     lastPaintedPlayheadX = x;
-    repaint ((int) from - 3, rulerTop(), (int) (to - from) + 7, tracksBottom() - rulerTop());
+    repaint ((int) from - 3, rulerTop(), (int) (to - from) + 7, lanesBottom() - rulerTop());
 }
 
 void PlaylistComponent::valueTreePropertyChanged (juce::ValueTree& tree, const juce::Identifier& property)
@@ -1408,11 +1596,114 @@ void PlaylistComponent::paintAutomationClip (juce::Graphics& g, const juce::Valu
 
 }
 
+/** The lanes and the clips on them. Its own function because it is the only
+    part of paint() that is CLIPPED: a lane can be scrolled now, and without a
+    clip region the stripe and the divider of a half-scrolled first track are
+    drawn straight over the ruler. Returns how many tracks it walked, which is
+    what tells paint() whether to draw the empty state.
+*/
+int PlaylistComponent::paintLanes (juce::Graphics& g, int bottom, bool anySolo)
+{
+    int trackIndex = 0;
+
+    const juce::Graphics::ScopedSaveState lanesClipped (g);
+    g.reduceClipRegion (getLaneArea());
+
+    for (const auto& track : playlist())
+    {
+        if (! track.hasType (ids::PLAYLIST_TRACK))
+            continue;
+
+        const auto y = (int) laneY (trackIndex);
+
+        // A lane wholly outside the view paints nothing. Twenty tracks at the
+        // tallest height would otherwise paint twenty lanes to show three.
+        if (y >= viewBottom() || y + trackHeight <= lanesTop())
+        {
+            ++trackIndex;
+            continue;
+        }
+
+        const auto audible = ! (bool) track[ids::mute] && (! anySolo || (bool) track[ids::solo]);
+
+        if (trackIndex % 2 == 1)
+        {
+            g.setColour (colour::wellDeep.withAlpha (emphasis::dimmed));
+            g.fillRect (size::gutterTrack, y, getWidth() - size::gutterTrack, trackHeight);
+        }
+
+        // The lane a clip is being dragged onto, so a cross-track drop lands
+        // where you meant it to.
+        if (gesture == Gesture::moving && trackIndex == dropTrackIndex)
+        {
+            g.setColour (colour::accent.withAlpha (emphasis::tint));
+            g.fillRect (size::gutterTrack, y, getWidth() - size::gutterTrack, trackHeight);
+        }
+
+        g.setColour (colour::divider);
+        g.drawHorizontalLine (y, (float) size::gutterTrack, (float) getWidth());
+
+        for (const auto& clip : track)
+        {
+            if (! clip.hasType (ids::CLIP))
+                continue;
+
+            const auto bounds = boundsForClip (clip, trackIndex).reduced (2.0f, 3.0f);
+
+            if (! bounds.intersects (juce::Rectangle<float> ((float) size::gutterTrack, (float) lanesTop(),
+                                                             contentWidth(),
+                                                             (float) (bottom - lanesTop()))))
+                continue;
+
+            if (ProjectEdits::isAutomationClip (clip))
+            {
+                paintAutomationClip (g, clip, trackIndex, bounds, audible);
+                continue;
+            }
+
+            if (ProjectEdits::isAudioClip (clip))
+            {
+                paintAudioClip (g, clip, bounds, audible);
+                continue;
+            }
+
+            const auto pattern = ProjectEdits::findPattern (document.getState(),
+                                                            (int) clip[ids::patternId]);
+
+            const auto isCurrent = (int) clip[ids::patternId] == editorState.getCurrentPatternId();
+            auto clipColour = isCurrent ? colour::accent : emphasis::secondary (colour::accent);
+
+            // A clip on a silenced track is drawn as silenced, so mute and solo
+            // are visible in the arrangement and not only in the headers.
+            if (! audible)
+                clipColour = emphasis::silenced (clipColour);
+
+            g.setColour (clipColour.withAlpha (audible ? emphasis::strong : emphasis::subdued));
+            g.fillRoundedRectangle (bounds, radius::sm);
+            g.setColour (clipColour.brighter (emphasis::edgeLift).withAlpha (audible ? 1.0f : emphasis::dimmed));
+            g.drawRoundedRectangle (bounds, radius::sm, stroke::regular);
+
+            g.setColour (colour::textOnAccent);
+            g.setFont (type::font (type::small, true));
+            g.drawText (pattern.isValid() ? pattern[ids::name].toString()
+                                          : "pattern " + clip[ids::patternId].toString(),
+                        bounds.toNearestInt().reduced (space::xs, 0), juce::Justification::centredLeft, true);
+        }
+
+        ++trackIndex;
+    }
+
+    return trackIndex;
+}
+
 void PlaylistComponent::paint (juce::Graphics& g)
 {
     const auto bars = numBars();
     const auto width = (float) timeline.pixelsPerStep;
-    const auto bottom = tracksBottom();
+    // Where the grid, the selection band and the playhead stop. lanesBottom
+    // rather than tracksBottom, so a scrolled arrangement does not draw its
+    // furniture over the strip below the view.
+    const auto bottom = lanesBottom();
     // The grid is drawn over the WHOLE width, so bar lines and numbers reach
     // the edge of the window rather than stopping with the arrangement. The
     // same change the two pattern editors got - three views that all stopped
@@ -1512,82 +1803,7 @@ void PlaylistComponent::paint (juce::Graphics& g)
     }
 
     // --- tracks --------------------------------------------------------------
-    int trackIndex = 0;
-
-    for (const auto& track : playlist())
-    {
-        if (! track.hasType (ids::PLAYLIST_TRACK))
-            continue;
-
-        const auto y = lanesTop() + trackIndex * size::rowHeight;
-        const auto audible = ! (bool) track[ids::mute] && (! anySolo || (bool) track[ids::solo]);
-
-        if (trackIndex % 2 == 1)
-        {
-            g.setColour (colour::wellDeep.withAlpha (emphasis::dimmed));
-            g.fillRect (size::gutterTrack, y, getWidth() - size::gutterTrack, size::rowHeight);
-        }
-
-        // The lane a clip is being dragged onto, so a cross-track drop lands
-        // where you meant it to.
-        if (gesture == Gesture::moving && trackIndex == dropTrackIndex)
-        {
-            g.setColour (colour::accent.withAlpha (emphasis::tint));
-            g.fillRect (size::gutterTrack, y, getWidth() - size::gutterTrack, size::rowHeight);
-        }
-
-        g.setColour (colour::divider);
-        g.drawHorizontalLine (y, (float) size::gutterTrack, (float) getWidth());
-
-        for (const auto& clip : track)
-        {
-            if (! clip.hasType (ids::CLIP))
-                continue;
-
-            const auto bounds = boundsForClip (clip, trackIndex).reduced (2.0f, 3.0f);
-
-            if (! bounds.intersects (juce::Rectangle<float> ((float) size::gutterTrack, (float) lanesTop(),
-                                                             contentWidth(),
-                                                             (float) (bottom - lanesTop()))))
-                continue;
-
-            if (ProjectEdits::isAutomationClip (clip))
-            {
-                paintAutomationClip (g, clip, trackIndex, bounds, audible);
-                continue;
-            }
-
-            if (ProjectEdits::isAudioClip (clip))
-            {
-                paintAudioClip (g, clip, bounds, audible);
-                continue;
-            }
-
-            const auto pattern = ProjectEdits::findPattern (document.getState(),
-                                                            (int) clip[ids::patternId]);
-
-            const auto isCurrent = (int) clip[ids::patternId] == editorState.getCurrentPatternId();
-            auto clipColour = isCurrent ? colour::accent : emphasis::secondary (colour::accent);
-
-            // A clip on a silenced track is drawn as silenced, so mute and solo
-            // are visible in the arrangement and not only in the headers.
-            if (! audible)
-                clipColour = emphasis::silenced (clipColour);
-
-            g.setColour (clipColour.withAlpha (audible ? emphasis::strong : emphasis::subdued));
-            g.fillRoundedRectangle (bounds, radius::sm);
-            g.setColour (clipColour.brighter (emphasis::edgeLift).withAlpha (audible ? 1.0f : emphasis::dimmed));
-            g.drawRoundedRectangle (bounds, radius::sm, stroke::regular);
-
-            g.setColour (colour::textOnAccent);
-            g.setFont (type::font (type::small, true));
-            g.drawText (pattern.isValid() ? pattern[ids::name].toString()
-                                          : "pattern " + clip[ids::patternId].toString(),
-                        bounds.toNearestInt().reduced (space::xs, 0), juce::Justification::centredLeft, true);
-        }
-
-        ++trackIndex;
-    }
+    const auto trackIndex = paintLanes (g, bottom, anySolo);
 
     // Past the end of the song.
     const auto endX = (float) size::gutterTrack + timeline.xForStep ((double) bars);

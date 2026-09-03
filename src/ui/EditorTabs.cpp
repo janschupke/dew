@@ -93,4 +93,15 @@ void EditorTabs::setPianoRollSnap (int index)
     pianoRoll.setSnap (NoteTools::snapFromIndex (index));
 }
 
+int EditorTabs::getPlaylistTrackHeight() const
+{
+    return playlist.getTrackHeight();
+}
+
+void EditorTabs::setPlaylistTrackHeight (int height)
+{
+    if (height > 0)
+        playlist.setTrackHeight (height);
+}
+
 } // namespace dew

@@ -92,6 +92,10 @@ TEST_CASE ("a fresh install gets sensible defaults", "[settings]")
     REQUIRE (settings->getSelectedChannelId() == 1);
     REQUIRE (settings->getCurrentPatternId() == 1);
     REQUIRE (settings->getPanelWidth() == Settings::defaultPanelWidth);
+
+    // 0 means "never set", which the playlist reads as "keep your default" -
+    // so an install that predates the control opens at the height it always had.
+    REQUIRE (settings->getPlaylistTrackHeight() == 0);
     REQUIRE (settings->getWindowState().isEmpty());
     REQUIRE (settings->getAudioState() == nullptr);
 }
@@ -187,6 +191,7 @@ TEST_CASE ("the audio device state survives a restart", "[settings]")
 // --- applied to the editor ---------------------------------------------------
 
 #include "ui/MainComponent.h"
+#include "ui/design/Tokens.h"
 
 TEST_CASE ("a session is restored into the editor and captured back out", "[settings][ui]")
 {
@@ -203,6 +208,7 @@ TEST_CASE ("a session is restored into the editor and captured back out", "[sett
         settings->setPianoRollScroll (8.0);
         settings->setPianoRollPitchScroll (420.0);
         settings->setPanelWidth (380);
+        settings->setPlaylistTrackHeight (96);
 
         dew::MainComponent component (false);
         component.setSize (1400, 800);
@@ -229,6 +235,32 @@ TEST_CASE ("a session is restored into the editor and captured back out", "[sett
         INFO ("restored scroll " << roundTripped->getPianoRollScroll());
         REQUIRE (roundTripped->getPianoRollScroll() >= 0.0);
         REQUIRE (roundTripped->getPianoRollScroll() <= 8.0);
+
+        // The lane height makes the whole trip: Settings -> EditorTabs ->
+        // PlaylistComponent and back. Asserting it here rather than on a
+        // PropertiesFile write is what covers the CLAMP as well, which lives in
+        // the playlist because dew_app cannot see the size ladder.
+        REQUIRE (roundTripped->getPlaylistTrackHeight() == 96);
+    }
+
+    // Out of range on the way in comes back inside it, because the playlist
+    // clamps what it is given. This is the leg that documents why Settings
+    // stores the number raw: the bounds are the ladder's, and dew_app is a leaf
+    // that cannot see the design library.
+    {
+        auto settings = temp.open();
+        settings->setPlaylistTrackHeight (10000);
+
+        dew::MainComponent component (false);
+        component.setSize (1400, 800);
+        component.applySettings (*settings);
+
+        auto roundTripped = temp.open();
+        component.captureSettings (*roundTripped);
+
+        INFO ("restored height " << roundTripped->getPlaylistTrackHeight());
+        REQUIRE (roundTripped->getPlaylistTrackHeight() <= dew::tokens::size::trackHeightMax);
+        REQUIRE (roundTripped->getPlaylistTrackHeight() >= dew::tokens::size::trackHeightMin);
     }
 }
 

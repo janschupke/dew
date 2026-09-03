@@ -1,4 +1,7 @@
 #include <catch2/catch_test_macros.hpp>
+#include <catch2/matchers/catch_matchers_floating_point.hpp>
+
+#include <cmath>
 
 #include <juce_gui_basics/juce_gui_basics.h>
 
@@ -9,11 +12,13 @@
 #include "engine/EngineSnapshot.h"
 #include "model/ProjectFactory.h"
 #include "ui/EditorState.h"
+#include "ui/design/Tokens.h"
 #include "ui/PlaylistComponent.h"
 
 #include "PaintProbe.h"
 
 using namespace dew;
+using Catch::Matchers::WithinAbs;
 
 namespace
 {
@@ -106,6 +111,24 @@ juce::Point<int> rulerPointFor (PlaylistHarness& h, int bar)
 }
 
 const juce::ModifierKeys shift { juce::ModifierKeys::shiftModifier };
+
+/** Component::findChildWithID is NOT recursive, and the track headers and the
+    add-track button live one level down inside the playlist's header holder -
+    the component that exists to CLIP them once a lane can be scrolled.
+*/
+juce::Component* findDescendantWithID (juce::Component& root, const juce::String& id)
+{
+    for (auto* child : root.getChildren())
+    {
+        if (child->getComponentID() == id)
+            return child;
+
+        if (auto* found = findDescendantWithID (*child, id))
+            return found;
+    }
+
+    return nullptr;
+}
 
 } // namespace
 
@@ -887,20 +910,239 @@ TEST_CASE ("the add-track button is the row after the last track", "[ui][playlis
     const juce::ScopedJuceInitialiser_GUI juceInit;
     PlaylistHarness h;
 
-    auto* button = h.playlist.findChildWithID ("addTrackButton");
+    auto* button = findDescendantWithID (h.playlist, "addTrackButton");
     REQUIRE (button != nullptr);
     REQUIRE (button->isVisible());
 
     // In the header column, below every track row.
     REQUIRE (button->getX() >= 0);
-    REQUIRE (button->getRight() <= 156);
+    REQUIRE (button->getRight() <= tokens::size::gutterTrack);
 
-    // Asked of the component: the lanes start at the bottom of the ruler, which
-    // is no longer the top of the component now there is a tool strip above it.
-    const auto lastTrackBottom = h.playlist.getRulerArea().getBottom()
-                               + h.playlist.getNumTracks() * 34;
+    // Asked of the component, at whatever height a lane currently is. The
+    // button's own y is relative to the header holder, so the holder's top is
+    // added back - the holder is a clipping parent, not a scroller, and carries
+    // no offset of its own.
+    auto* holder = button->getParentComponent();
+    REQUIRE (holder != nullptr);
+
+    const auto height = h.playlist.getTrackHeight();
+    const auto lastTrackBottom = h.playlist.getNumTracks() * height;
+
+    REQUIRE (holder->getY() == h.playlist.getRulerArea().getBottom());
     REQUIRE (button->getY() >= lastTrackBottom);
-    REQUIRE (button->getY() < lastTrackBottom + 34);
+    REQUIRE (button->getY() < lastTrackBottom + height);
+}
+
+TEST_CASE ("one control sets the height of every track", "[ui][playlist][height]")
+{
+    const juce::ScopedJuceInitialiser_GUI juceInit;
+    PlaylistHarness h;
+
+    juce::UndoManager scratch;
+    auto a = ProjectEdits::addClip (h.track (0), 1, 0, 1, &scratch);
+    auto d = ProjectEdits::addClip (h.track (3), 1, 0, 1, &scratch);
+
+    h.playlist.setTrackHeight (90);
+    REQUIRE (h.playlist.getTrackHeight() == 90);
+
+    // Uniform: the first track and the fourth are the same height.
+    REQUIRE_THAT ((double) h.playlist.getBoundsForClip (a, 0).getHeight(), WithinAbs (90.0, 1e-6));
+    REQUIRE_THAT ((double) h.playlist.getBoundsForClip (d, 3).getHeight(), WithinAbs (90.0, 1e-6));
+
+    // And contiguous: lane 1 begins exactly where lane 0 ends. A gap or an
+    // overlap here is a lane you can click into and reach the wrong track.
+    auto b = ProjectEdits::addClip (h.track (1), 1, 0, 1, &scratch);
+    REQUIRE_THAT ((double) h.playlist.getBoundsForClip (b, 1).getY(),
+                  WithinAbs ((double) h.playlist.getBoundsForClip (a, 0).getBottom(), 1e-6));
+}
+
+TEST_CASE ("the track height is clamped to what a lane can show", "[ui][playlist][height]")
+{
+    const juce::ScopedJuceInitialiser_GUI juceInit;
+    PlaylistHarness h;
+
+    h.playlist.setTrackHeight (1);
+    REQUIRE (h.playlist.getTrackHeight() == tokens::size::trackHeightMin);
+
+    h.playlist.setTrackHeight (10000);
+    REQUIRE (h.playlist.getTrackHeight() == tokens::size::trackHeightMax);
+}
+
+TEST_CASE ("hit testing follows the track height", "[ui][playlist][height]")
+{
+    // The test that catches a rowHeight left behind in trackAtY: at 90px a
+    // click aimed at track 2 lands on track 2 and nowhere else.
+    const juce::ScopedJuceInitialiser_GUI juceInit;
+    PlaylistHarness h;
+
+    h.playlist.setTrackHeight (90);
+
+    const auto at = pointFor (h, 2, 2);
+    h.playlist.mouseDown (eventAt (h.playlist, at));
+    h.playlist.mouseUp (eventAt (h.playlist, at));
+
+    REQUIRE (h.countClips (2) == 1);
+    REQUIRE (h.countClips (0) == 0);
+    REQUIRE (h.countClips (1) == 0);
+    REQUIRE (h.countClips (3) == 0);
+}
+
+TEST_CASE ("the toolbar's height buttons change every track at once", "[ui][playlist][height]")
+{
+    const juce::ScopedJuceInitialiser_GUI juceInit;
+    PlaylistHarness h;
+
+    const auto before = h.playlist.getTrackHeight();
+
+    // The seam the user reaches, the same way the zoom test drives zoom.
+    h.playlist.getToolbar().onTrackHeight (1.5);
+    REQUIRE (h.playlist.getTrackHeight() > before);
+
+    h.playlist.getToolbar().onTrackHeight (1.0 / 1.5);
+    REQUIRE (h.playlist.getTrackHeight() == before);
+
+    // Zero means fit, exactly as it does for zoom.
+    h.playlist.getToolbar().onTrackHeight (0.0);
+
+    const auto rows = h.playlist.getNumTracks() + 1;
+    REQUIRE ((rows * h.playlist.getTrackHeight() <= h.playlist.getLaneArea().getHeight()
+              || h.playlist.getTrackHeight() == tokens::size::trackHeightMin));
+}
+
+TEST_CASE ("the last track is reachable when the tracks overflow", "[ui][playlist][height]")
+{
+    // The test that proves the height control is a feature and not a trap.
+    // Without vertical scrolling, making the lanes taller simply puts the last
+    // tracks somewhere the pointer cannot go.
+    const juce::ScopedJuceInitialiser_GUI juceInit;
+    PlaylistHarness h;
+
+    while (h.playlist.getNumTracks() < 12)
+        h.playlist.addTrack();
+
+    h.playlist.setTrackHeight (tokens::size::trackHeightMax);
+
+    const auto lanes = h.playlist.getLaneArea();
+    REQUIRE (12 * h.playlist.getTrackHeight() > lanes.getHeight());
+
+    juce::UndoManager scratch;
+    auto probe = ProjectEdits::addClip (h.track (11), 1, 0, 1, &scratch);
+
+    // Out of the view to begin with...
+    REQUIRE_FALSE (h.playlist.getBoundsForClip (probe, 11).toNearestInt().intersects (lanes));
+
+    ProjectEdits::removeClip (h.track (11), probe, &scratch);
+
+    // ...and inside it once scrolled to the bottom.
+    h.playlist.scrollTracksTo (1e9);
+
+    const auto at = pointFor (h, 1, 11);
+    REQUIRE (lanes.contains (at));
+
+    h.playlist.mouseDown (eventAt (h.playlist, at));
+    h.playlist.mouseUp (eventAt (h.playlist, at));
+
+    REQUIRE (h.countClips (11) == 1);
+}
+
+TEST_CASE ("the add-track button is still reachable when the tracks overflow", "[ui][playlist][height]")
+{
+    const juce::ScopedJuceInitialiser_GUI juceInit;
+    PlaylistHarness h;
+
+    while (h.playlist.getNumTracks() < 12)
+        h.playlist.addTrack();
+
+    h.playlist.setTrackHeight (tokens::size::trackHeightMax);
+    h.playlist.scrollTracksTo (1e9);
+
+    auto* button = findDescendantWithID (h.playlist, "addTrackButton");
+    REQUIRE (button != nullptr);
+    REQUIRE (button->isVisible());
+
+    // The holder is what CLIPS, so "reachable" means "inside the holder's own
+    // bounds" - not inside getLaneArea(), which is the strip to the right of the
+    // gutter and never contains a header at all.
+    auto* holder = button->getParentComponent();
+    REQUIRE (holder != nullptr);
+    REQUIRE (holder->getLocalBounds().contains (button->getBounds()));
+
+    // And the holder itself is where the lanes are.
+    REQUIRE (holder->getY() == h.playlist.getRulerArea().getBottom());
+    REQUIRE (holder->getBottom() <= h.playlist.getHeight());
+}
+
+TEST_CASE ("a taller track gives the automation curve the whole lane", "[ui][playlist][height][automation]")
+{
+    const juce::ScopedJuceInitialiser_GUI juceInit;
+    PlaylistHarness h;
+
+    const auto target = targetNamed (h.document.getState(), firstChannelVolumeTarget (h.document.getState()));
+    const auto clip = h.playlist.createAutomationClip (target, 0, 4);
+    REQUIRE (clip.isValid());
+
+    auto automation = ProjectEdits::findAutomation (h.document.getState(), (int) clip[ids::automationId]);
+    const auto points = ProjectEdits::sortedAutomationPoints (automation);
+    REQUIRE (points.size() == 2);
+
+    points.getFirst().setProperty (ids::value, 0.0, nullptr);
+    points.getLast().setProperty (ids::value, 1.0, nullptr);
+
+    const auto spread = [&] (int trackIndex)
+    {
+        return std::abs (h.playlist.pointPosition (clip, trackIndex, points.getLast()).y
+                         - h.playlist.pointPosition (clip, trackIndex, points.getFirst()).y);
+    };
+
+    h.playlist.setTrackHeight (tokens::size::trackHeightMin);
+    const auto tight = spread (0);
+
+    h.playlist.setTrackHeight (tokens::size::trackHeightMax);
+    const auto roomy = spread (0);
+
+    INFO ("value axis: " << tight << "px at the minimum, " << roomy << "px at the maximum");
+    REQUIRE (roomy > tight * 4.0f);
+}
+
+TEST_CASE ("the header lays out at every height", "[ui][playlist][height]")
+{
+    const juce::ScopedJuceInitialiser_GUI juceInit;
+    PlaylistHarness h;
+
+    for (const auto height : { tokens::size::trackHeightMin,
+                               tokens::size::trackHeightRoomy,
+                               tokens::size::trackHeightMax })
+    {
+        h.playlist.setTrackHeight (height);
+
+        auto* header = findDescendantWithID (h.playlist, "playlistTrackHeader");
+        REQUIRE (header != nullptr);
+        REQUIRE (header->getHeight() == height);
+
+        // The toggles keep their own size rather than stretching to the lane.
+        for (const auto* id : { "trackMute", "trackSolo" })
+        {
+            auto* toggle = findDescendantWithID (*header, id);
+            INFO ("at height " << height << ", looking for " << id);
+            REQUIRE (toggle != nullptr);
+            REQUIRE (toggle->getHeight() <= tokens::size::letterToggle);
+            REQUIRE (header->getLocalBounds().contains (toggle->getBounds()));
+        }
+    }
+}
+
+TEST_CASE ("a project load does not reset the track height", "[ui][playlist][height]")
+{
+    // The payoff of keeping the height on the view rather than in the document,
+    // asserted rather than asserted about.
+    const juce::ScopedJuceInitialiser_GUI juceInit;
+    PlaylistHarness h;
+
+    h.playlist.setTrackHeight (90);
+    h.document.setState (ProjectFactory::createDefault(), true);
+    h.playlist.refresh();
+
+    REQUIRE (h.playlist.getTrackHeight() == 90);
 }
 
 TEST_CASE ("a track row's context menu offers rename, add and remove", "[ui][playlist]")

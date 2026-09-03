@@ -28,6 +28,9 @@ PlaylistToolbar::PlaylistToolbar()
     zoomButtons.onZoom = [this] (double factor) { if (onZoom) onZoom (factor); };
     addAndMakeVisible (zoomButtons);
 
+    heightButtons.onHeightChange = [this] (double factor) { if (onTrackHeight) onTrackHeight (factor); };
+    addAndMakeVisible (heightButtons);
+
     updateToolButtons();
 }
 
@@ -88,6 +91,12 @@ void PlaylistToolbar::resized()
     divider();
 
     place (zoomButtons, ZoomButtons::preferredWidth);
+
+    // Its own group: the two are the same gesture on different axes, and running
+    // them together would read as one six-button zoom.
+    divider();
+
+    place (heightButtons, TrackHeightButtons::preferredWidth);
 }
 
 } // namespace dew

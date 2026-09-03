@@ -41,6 +41,11 @@ public:
     int getPianoRollSnap() const;
     void setPianoRollSnap (int index);
 
+    /** The playlist's lane height. 0 on the way in means "leave the default",
+        which is what a settings file that predates the control stores. */
+    int getPlaylistTrackHeight() const;
+    void setPlaylistTrackHeight (int height);
+
 private:
     /** The incoming editor's alpha, 0 to 1 over panelMs.
 

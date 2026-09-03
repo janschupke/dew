@@ -2,6 +2,7 @@
 
 #include <juce_gui_basics/juce_gui_basics.h>
 
+#include "ui/TrackHeightButtons.h"
 #include "ui/ZoomButtons.h"
 #include "ui/primitives/DewControls.h"
 
@@ -49,6 +50,12 @@ public:
     */
     std::function<void (double)> onZoom;
 
+    /** The same, for the height of every lane: a factor, or 0 to fit the tracks
+        to the window. Deliberately the shape onZoom reports - one strip holding
+        both groups states one idea on two axes rather than two ideas once.
+    */
+    std::function<void (double)> onTrackHeight;
+
 
 private:
     void updateToolButtons();
@@ -59,6 +66,7 @@ private:
     DewIconButton paintButton { icons::pencil(), "Paint tool - drag to lay a run of clips (2)" };
 
     ZoomButtons zoomButtons { "Fit the song to the window (0)" };
+    TrackHeightButtons heightButtons;
 
     /** Where a vertical rule goes between groups. Recorded during layout and
         painted afterwards, the way the piano roll's strip does it, so the two

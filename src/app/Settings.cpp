@@ -176,6 +176,19 @@ void Settings::setPianoRollScroll (double s)  { file().setValue ("pianoRollScrol
 double Settings::getPianoRollPitchScroll() const  { return juce::jmax (0.0, file().getDoubleValue ("pianoRollPitch", 0.0)); }
 void Settings::setPianoRollPitchScroll (double s) { file().setValue ("pianoRollPitch", juce::jmax (0.0, s)); }
 
+int Settings::getPlaylistTrackHeight() const
+{
+    // 0 means "never set", which the playlist reads as "keep the default". A
+    // negative or absurd value is stored as it was and clamped there too - the
+    // clamp lives with the ladder, not here.
+    return juce::jmax (0, file().getIntValue ("playlistTrackHeight", 0));
+}
+
+void Settings::setPlaylistTrackHeight (int height)
+{
+    file().setValue ("playlistTrackHeight", height);
+}
+
 int Settings::getPianoRollSnap() const
 {
     // A division that does not exist falls back to the finest one, which is the

@@ -74,6 +74,20 @@ public:
     int getPianoRollSnap() const;
     void setPianoRollSnap (int);
 
+    /** How tall one playlist lane is, or 0 for "never set".
+
+        Deliberately NOT clamped here, unlike the panel width. The panel's bounds
+        are this class's own invention; a lane's bounds are the size ladder's,
+        and dew_app cannot see the design library - it is a leaf the UI reads,
+        which is the whole point of the layering. Restating the numbers here to
+        clamp them would also be exactly the duplication the ladder gate exists
+        to catch. So this stores a number and the playlist decides what is
+        showable, which is also the only place that knows how tall a header has
+        to be to hold an M and an S.
+    */
+    int getPlaylistTrackHeight() const;
+    void setPlaylistTrackHeight (int);
+
     int getPanelWidth() const;
     void setPanelWidth (int);
 

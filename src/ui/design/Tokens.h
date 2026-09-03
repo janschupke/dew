@@ -272,8 +272,33 @@ namespace size
     static_assert (knobRow >= knobCaption + knobSm + knobValue,
                    "a knob row must hold a compact knob and both its labels");
 
+    /** How tall ONE playlist lane is: a range, not a rung.
+
+        Header and lane are the same height by construction, which is the only
+        reason the two cannot drift. The range exists because an automation
+        curve drawn into a 34px lane has a 28px value axis, and the 7px grab
+        radius covers a fifth of it - the point editor is decorative at that
+        size, and there was no way to make the lane any taller.
+
+        Multiples of the rung rather than bare numbers, so a change to rowHeight
+        carries the whole range with it. Declared HERE and nowhere else: a
+        component restating one of these would be exactly the duplication the
+        ladder gate exists to catch.
+    */
+    inline constexpr int trackHeightMin     = rowHeight;      ///< today's row, and the densest readable one
+    inline constexpr int trackHeightDefault = rowHeight;      ///< so nothing re-flows on upgrade
+    inline constexpr int trackHeightRoomy   = rowHeight * 2;  ///< past here a header has room for a second line
+    inline constexpr int trackHeightMax     = rowHeight * 6;  ///< an arrangement, not one lane
+
     inline constexpr int letterToggle  = 22;  ///< the M and S on a row
     inline constexpr int meterHeight   = 10;
+
+    static_assert (trackHeightMin >= letterToggle + 2 * space::xs,
+                   "a lane must hold its M and S with room around them");
+    static_assert (trackHeightMin < trackHeightRoomy && trackHeightRoomy < trackHeightMax,
+                   "the roomy threshold has to sit inside the range");
+    static_assert (trackHeightMin <= trackHeightDefault && trackHeightDefault <= trackHeightMax,
+                   "the default has to be reachable");
     inline constexpr int waveformInset = 2;   ///< was -2, -2 and -3 in three painters
 }
 

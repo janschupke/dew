@@ -121,6 +121,50 @@ public:
     juce::Point<float> pointPosition (const juce::ValueTree& clip, int trackIndex,
                                       const juce::ValueTree& point) const;
 
+    // --- the height of a lane -------------------------------------------------
+    /** The height of EVERY lane.
+
+        One number for the whole view, not one per track. A per-track height
+        sounds more flexible and is not: an automation curve is only editable at
+        a height somebody chose for it, and a view where that is true of some
+        lanes and not others is a view where the same gesture works or does not
+        depending on where you aim it.
+
+        On the component rather than in the document, because it is not part of
+        the music and must not make a project dirty or land on the undo stack;
+        and on the component rather than on EditorState, because that is a
+        ChangeBroadcaster whose four other listeners have no interest in it. The
+        precedent is PianoRollComponent's own pitchScrollPx and TimelineView's
+        pixelsPerStep: view geometry lives on the view.
+    */
+    int getTrackHeight() const noexcept { return trackHeight; }
+
+    /** The one mutator. Clamps to the ladder, keeps the lane under the middle of
+        the view where it is, and re-lays everything that depends on the height.
+    */
+    void setTrackHeight (int height);
+
+    /** A factor to multiply the height by, or 0 to fit the tracks to the window
+        - the same shape zoomBy/zoomToFit already report on the other axis, so
+        the toolbar's two groups mean one thing twice.
+    */
+    void zoomTracksBy (double factor);
+    void fitTracksToWindow();
+
+    /** The strip the lanes are drawn in, so a test can aim at a lane rather than
+        recomputing the layout and drifting from it - the same reason
+        getRulerArea exists.
+    */
+    juce::Rectangle<int> getLaneArea() const;
+
+    /** Scrolls the lanes to this offset in pixels, clamped.
+
+        The seam a test reaches the vertical scroll by, because a ScrollBar
+        cannot be dragged headlessly - and the one the wheel and the bar itself
+        both go through, so there is one clamp rather than three.
+    */
+    void scrollTracksTo (double offsetPx);
+
 private:
     class TrackHeader;
 
@@ -150,9 +194,36 @@ private:
         vertical measurement is taken from these rather than from the
         component's own top, so the toolbar's height is stated once and cannot
         leave one part of the layout behind when it changes.
+
+        Still constexpr: neither depends on how tall a lane is.
     */
     static constexpr int rulerTop() { return tokens::size::stripToolbar; }
     static constexpr int lanesTop() { return tokens::size::stripToolbar + tokens::size::rulerHeight; }
+
+    /** The top of lane `index`, with the vertical scroll already applied.
+
+        EVERY vertical measurement goes through here: the headers' bounds, a
+        clip's bounds, hit testing and paint. Before there was a scroll offset,
+        header and lane were impossible to desynchronise because both read
+        `lanesTop() + i * rowHeight`; this is what keeps that true now that there
+        is one, and it is the reason the offset is not a Viewport.
+    */
+    float laneY (int index) const noexcept
+    {
+        return (float) lanesTop() + (float) index * (float) trackHeight - (float) trackScrollPx;
+    }
+
+    /** The bottom of the strip lanes may be drawn in: the last lane's bottom, or
+        the bottom of the view when the tracks overflow it. Bar lines, the
+        selection band, the beyond-end wash and the playhead all stop here.
+    */
+    int lanesBottom() const;
+
+    /** Above the horizontal scrollbar's strip, which is reserved whether or not
+        the bar is showing - the add-track button already assumed this.
+    */
+    int viewBottom() const noexcept { return getHeight() - tokens::size::scrollThickness; }
+    int laneViewHeight() const noexcept { return juce::jmax (0, viewBottom() - lanesTop()); }
 
     /** Lays a clip of the current pattern in the cell under this point, unless
         one is already there. Returns true if it wrote one, so a stroke can tell
@@ -205,6 +276,14 @@ private:
     void paintAutomationClip (juce::Graphics&, const juce::ValueTree& clip, int trackIndex,
                               juce::Rectangle<float> bounds, bool audible);
 
+    /** The lanes and the clips on them. Split out of paint() because it is the
+        only part of it that is CLIPPED - a lane can be scrolled now, and a
+        half-scrolled first track would otherwise draw its stripe and its divider
+        over the ruler. Returns how many tracks it walked, which is what tells
+        paint() whether to draw the empty state.
+    */
+    int paintLanes (juce::Graphics&, int bottom, bool anySolo);
+
 
     ProjectDocument& document;
     AudioEngine& engine;
@@ -226,7 +305,34 @@ private:
     ruler::Gesture rulerGesture;
 
     juce::ScrollBar horizontalScroll { false };
+
+    /** Vertical scroll, because a lane can now be taller than a sixth of the
+        window and four of them stop fitting.
+
+        A bare scrollbar and an offset, the way PianoRollComponent does it, and
+        NOT a juce::Viewport. The playlist paints its lanes rather than having
+        them as children, so a Viewport would scroll the headers and leave the
+        arrangement behind; and the toolbar, the ruler and the horizontal bar all
+        have to stay pinned. The channel rack can use one because its rows really
+        are children.
+    */
+    juce::ScrollBar verticalScroll { true };
+    double trackScrollPx = 0.0;
+
+    int trackHeight = tokens::size::trackHeightDefault;
+
     bool updatingScrollBar = false;
+
+    /** Holds the headers and the add-track row. NOT a Viewport and not a
+        scroller: it is here only to CLIP.
+
+        JUCE clips a child to its parent, and a header scrolled half off the top
+        would otherwise be drawn over the ruler. It carries no scroll position of
+        its own - trackScrollPx stays the single source of truth, which is what
+        keeps the headers in step with lanes that are painted rather than laid
+        out.
+    */
+    juce::Component headerHolder;
 
     juce::OwnedArray<TrackHeader> headers;
     DewButton addAutomationButton { "+ Automation", DewButton::Role::ghost };
