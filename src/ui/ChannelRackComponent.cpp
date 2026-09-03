@@ -264,6 +264,25 @@ private:
         addAndMakeVisible (knob);
     }
 
+public:
+    /** Every control on this row that was built from a ParamSpec gets its
+        right-click. One place, so a control added to a row cannot quietly be
+        the one that has no menu.
+
+        Called again when the host arrives: the rows are built in the rack's
+        constructor and the host is set from above afterwards.
+    */
+    void attachParamMenus (const paramMenu::Host* host)
+    {
+        const auto self = [this] { return channel; };
+
+        paramMenu::attachTo (host, volumeKnob, self, requireInstrumentParamSpec (ids::volume));
+        paramMenu::attachTo (host, panKnob, self, requireInstrumentParamSpec (ids::pan));
+        paramMenu::attachTo (host, muteButton, self, requireInstrumentParamSpec (ids::muted));
+        paramMenu::attachTo (host, soloButton, self, requireInstrumentParamSpec (ids::solo));
+    }
+
+private:
     juce::Label nameLabel;
     juce::Rectangle<int> pitchBounds;
     bool updating = false;
@@ -374,6 +393,17 @@ ChannelRackComponent::~ChannelRackComponent()
     editorState.removeChangeListener (this);
 }
 
+void ChannelRackComponent::setParamMenuHost (const paramMenu::Host* host)
+{
+    paramMenuHost = host;
+
+    // The rows exist before the host does - they are built in the constructor
+    // and the host is handed down afterwards - so this re-attaches rather than
+    // only recording the pointer for the next rebuild.
+    for (auto* header : headers)
+        header->attachParamMenus (host);
+}
+
 void ChannelRackComponent::refresh()
 {
     rebuildHeaders();
@@ -443,7 +473,8 @@ void ChannelRackComponent::rebuildHeaders()
 
     for (const auto& channel : document.getState())
         if (channel.hasType (ids::CHANNEL))
-            headers.add (new ChannelHeader (document, editorState, channel));
+            headers.add (new ChannelHeader (document, editorState, channel))
+                ->attachParamMenus (paramMenuHost);
 
     for (auto* header : headers)
     {

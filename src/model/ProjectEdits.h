@@ -191,6 +191,21 @@ struct ProjectEdits
 
     static juce::ValueTree findAutomation (const juce::ValueTree& project, int automationId);
 
+    /** Creates the automation AND places a clip for it, as ONE undo step.
+
+        In the model rather than in the playlist, because eleven controls can ask
+        for this now and the arrangement is not on screen for most of them.
+
+        The clip lands on the first lane with room at `startBar`, so a new curve
+        is visible rather than stacked invisibly under a pattern clip. If every
+        lane is occupied there it ADDS a track rather than giving up: that was
+        rare from one button and is routine once every knob offers it, and a
+        menu item that silently does nothing is worse than one more lane.
+    */
+    static juce::ValueTree addAutomationWithClip (juce::ValueTree project, const AutomationTarget&,
+                                                  int startBar, int lengthBars,
+                                                  juce::UndoManager*);
+
     /** Removes an automation and every clip that referred to it. */
     static bool removeAutomation (juce::ValueTree project, juce::ValueTree automation,
                                   juce::UndoManager*);

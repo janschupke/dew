@@ -4,6 +4,9 @@
 
 #include "io/SamplePool.h"
 #include "model/ProjectDocument.h"
+#include "model/ModuleCatalog.h"
+#include "model/Ids.h"
+#include "ui/ParamContextMenu.h"
 #include "ui/primitives/DewControls.h"
 
 namespace dew
@@ -26,6 +29,11 @@ class SampleSection : public juce::Component,
                       private juce::ValueTree::Listener
 {
 public:
+    /** Hands this section's knobs what a right-click menu needs. Null means no
+        menus. None of these is automatable, so what the menu offers is a reset -
+        which is the other half of why a control has one. */
+    void setParamMenuHost (const paramMenu::Host*);
+
     /** No EditorState, unlike OscillatorSection: that one keeps a selected
         slot, and a sample has nothing to select between.
     */
@@ -77,6 +85,8 @@ private:
                 const juce::String& transactionName);
 
     /** Wires a rotary to a property on the SAMPLE node. */
+    const paramMenu::Host* paramMenuHost = nullptr;
+
     void attachKnob (DewKnob&, const juce::Identifier& property,
                      const juce::String& transactionName);
 
@@ -99,9 +109,9 @@ private:
 
     juce::ValueTree sample;
 
-    DewKnob fadeInKnob { "FADE IN", 0.0, 2000.0, 1.0 };
-    DewKnob fadeOutKnob { "FADE OUT", 0.0, 2000.0, 1.0 };
-    DewKnob transposeKnob { "PITCH", -24.0, 24.0, 1.0 };
+    DewKnob fadeInKnob { requireInstrumentParamSpec (ids::fadeInMs) };
+    DewKnob fadeOutKnob { requireInstrumentParamSpec (ids::fadeOutMs) };
+    DewKnob transposeKnob { requireInstrumentParamSpec (ids::transpose) };
 
     DewIconButton reverseButton { icons::rewind(), "Play the sample backwards" };
     DewIconButton loopButton { icons::loop(), "Loop the sample to fill the clip" };

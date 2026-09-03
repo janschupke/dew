@@ -1,5 +1,9 @@
 #include "ui/MixerComponent.h"
 
+#include <vector>
+
+#include <memory>
+
 #include "model/ProjectEdits.h"
 #include "ui/primitives/DewMeter.h"
 #include "ui/design/Tokens.h"
@@ -255,6 +259,44 @@ public:
         gainSlider.setBounds (area);
     }
 
+    /** The controls on this strip that were built from a ParamSpec.
+
+        The master strip has a fader and nothing else, so its pan and its
+        toggles are not built at all - attachTo on a control that does not exist
+        would be a crash, which is why each of these is guarded by the same flag
+        that built it.
+    */
+    void attachParamMenus (const paramMenu::Host* host)
+    {
+        paramMenuTriggers.clear();
+
+        if (host == nullptr || host->document == nullptr)
+            return;
+
+        const auto self = [this] { return track; };
+
+        const auto watch = [this, host, &self] (juce::Component& control, const ParamSpec& spec)
+        {
+            paramMenuTriggers.push_back (
+                std::make_unique<paramMenu::Trigger> (control, host->contextFor (self, spec)));
+        };
+
+        // A Trigger rather than the hook the Dew controls carry: a mixer strip
+        // is a juce::Slider and two juce::TextButtons used directly, and making
+        // all three into Dew controls to give them a menu would be a much
+        // larger change than the menu is worth.
+        watch (gainSlider, requireMixerTrackParamSpec (ids::gain));
+
+        // The master strip is a fader and nothing else - its pan and its
+        // toggles are never built, so there is nothing there to watch.
+        if (isMaster)
+            return;
+
+        watch (panSlider, requireMixerTrackParamSpec (ids::pan));
+        watch (muteButton, requireMixerTrackParamSpec (ids::mute));
+        watch (soloButton, requireMixerTrackParamSpec (ids::solo));
+    }
+
 private:
     void valueTreePropertyChanged (juce::ValueTree&, const juce::Identifier& property) override
     {
@@ -361,9 +403,22 @@ private:
     juce::Slider gainSlider;
     juce::Slider panSlider;
     juce::TextButton muteButton, soloButton;
+
+    /** Owned here, and destroyed before the controls they watch. */
+    std::vector<std::unique_ptr<paramMenu::Trigger>> paramMenuTriggers;
 };
 
 // -----------------------------------------------------------------------------
+
+void MixerComponent::setParamMenuHost (const paramMenu::Host* host)
+{
+    paramMenuHost = host;
+
+    // The strips are built before the host arrives, so this re-attaches rather
+    // than only recording the pointer for the next rebuild.
+    for (auto* strip : strips)
+        strip->attachParamMenus (host);
+}
 
 MixerComponent::MixerComponent (ProjectDocument& d, EditorState& s, AudioEngine* e)
     : document (d), editorState (s), engine (e),
@@ -411,6 +466,7 @@ void MixerComponent::rebuildStrips()
         if (track.hasType (ids::MIXER_TRACK))
         {
             auto* strip = strips.add (new Strip (document, track, false));
+            strip->attachParamMenus (paramMenuHost);
             const auto id = (int) track[ids::id];
             strip->onSelected = [this, id] { editorState.setSelectedMixerTrackId (id); };
         }
@@ -420,6 +476,7 @@ void MixerComponent::rebuildStrips()
     if (const auto master = mixer.getChildWithName (ids::MASTER); master.isValid())
     {
         auto* strip = strips.add (new Strip (document, master, true));
+        strip->attachParamMenus (paramMenuHost);
         strip->onSelected = [this] { editorState.setSelectedMixerTrackId (masterTrackId); };
     }
 

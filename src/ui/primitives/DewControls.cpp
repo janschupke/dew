@@ -229,8 +229,51 @@ DewKnob::DewKnob (const juce::String& c, double minimum, double maximum, double 
     addAndMakeVisible (slider);
 }
 
+
+/** One rule for all four controls: a right-click that has somewhere to go opens
+    the menu and consumes the press.
+
+    Above each class's own handling rather than inside it, so a right-click never
+    arms a drag or a toggle that then never completes.
+*/
+static bool openContextMenu (const juce::MouseEvent& event, const std::function<void()>& hook)
+{
+    if (! event.mods.isPopupMenu() || hook == nullptr)
+        return false;
+
+    hook();
+    return true;
+}
+
+void DewButton::mouseDown (const juce::MouseEvent& event)
+{
+    if (openContextMenu (event, onContextMenu))
+        return;
+
+    juce::Button::mouseDown (event);
+}
+
+void DewIconButton::mouseDown (const juce::MouseEvent& event)
+{
+    if (openContextMenu (event, onContextMenu))
+        return;
+
+    juce::Button::mouseDown (event);
+}
+
+void DewLetterToggle::mouseDown (const juce::MouseEvent& event)
+{
+    if (openContextMenu (event, onContextMenu))
+        return;
+
+    juce::Button::mouseDown (event);
+}
+
 void DewKnob::mouseDown (const juce::MouseEvent& event)
 {
+    if (openContextMenu (event, onContextMenu))
+        return;
+
     const auto pixels = gesture::isFine (event.mods)
                             ? (int) ((double) gesture::dragPixelsForFullRange / gesture::fineMultiplier)
                             : gesture::dragPixelsForFullRange;

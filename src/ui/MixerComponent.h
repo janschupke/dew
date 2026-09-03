@@ -5,6 +5,7 @@
 #include "engine/AudioEngine.h"
 #include "model/ProjectDocument.h"
 #include "ui/EditorState.h"
+#include "ui/ParamContextMenu.h"
 #include "ui/EffectChainHost.h"
 
 namespace dew
@@ -31,6 +32,9 @@ class MixerComponent : public juce::Component,
                        private juce::Timer
 {
 public:
+    /** Set from above; null means no automation menus. */
+    void setParamMenuHost (const paramMenu::Host* host);
+
     /** The engine is optional: it only supplies meter levels, and the mixer is
         constructed without one in tests and in the screenshot tool.
     */
@@ -65,6 +69,8 @@ private:
     void updateRouting();
 
     static constexpr int stripWidth = 96;
+
+    const paramMenu::Host* paramMenuHost = nullptr;
 
     ProjectDocument& document;
     EditorState& editorState;

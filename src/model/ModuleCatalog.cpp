@@ -267,6 +267,30 @@ const ParamSpec mixerTrackSpecs[] {
     toggleSpec (&ids::solo, "Solo", "SOLO", /*automatable*/ false),
 };
 
+/** A sample's own settings.
+
+    None of them automatable, and each for its own reason. Reversing a sample is
+    a discontinuity in a read pointer rather than a parameter change - there is
+    no meaning to doing it halfway through a note that is already sounding - and
+    a fade or a transpose is set once for a take rather than moved through it.
+
+    Declared anyway, because a spec is what gives a control its range, its
+    decimals and its "reset to default", and these three knobs were the last in
+    the application still stating their own range by hand.
+*/
+const ParamSpec sampleSpecs[] {
+    { &ids::fadeInMs,  "Fade in",  "FADE IN",  " ms", 0.0, 2000.0, 0.0, 1.0, 0,
+      ParamCurve::linear, ParamControl::knob, /*bipolar*/ false, /*automatable*/ false },
+    { &ids::fadeOutMs, "Fade out", "FADE OUT", " ms", 0.0, 2000.0, 0.0, 1.0, 0,
+      ParamCurve::linear, ParamControl::knob, /*bipolar*/ false, /*automatable*/ false },
+    { &ids::transpose, "Pitch",    "PITCH",    "",   -24.0, 24.0, 0.0, 1.0, 0,
+      ParamCurve::linear, ParamControl::knob, /*bipolar*/ true, /*automatable*/ false,
+      /*integral*/ true },
+
+    toggleSpec (&ids::reverse, "Reverse", "REV",  /*automatable*/ false),
+    toggleSpec (&ids::loop,    "Loop",    "LOOP", /*automatable*/ false),
+};
+
 template <size_t N>
 const std::vector<ParamSpec>& asVector (const ParamSpec (&table)[N])
 {
@@ -280,6 +304,7 @@ const std::vector<ParamSpec>& channelParamSpecs() { return asVector (channelSpec
 const std::vector<ParamSpec>& ampParamSpecs()     { return asVector (ampSpecs); }
 const std::vector<ParamSpec>& oscParamSpecs()     { return asVector (oscSpecs); }
 const std::vector<ParamSpec>& mixerTrackParamSpecs() { return asVector (mixerTrackSpecs); }
+const std::vector<ParamSpec>& sampleParamSpecs()     { return asVector (sampleSpecs); }
 
 const ParamSpec* instrumentParamSpec (const juce::Identifier& property) noexcept
 {
@@ -287,7 +312,8 @@ const ParamSpec* instrumentParamSpec (const juce::Identifier& property) noexcept
     // oscillator's level and a mixer track's fader, and `pan` is both a
     // channel's and a track's; the instrument tables are searched first
     // because this is the INSTRUMENT lookup, and the mixer asks for its own.
-    for (const auto* table : { &channelParamSpecs(), &ampParamSpecs(), &oscParamSpecs() })
+    for (const auto* table : { &channelParamSpecs(), &ampParamSpecs(), &oscParamSpecs(),
+                               &sampleParamSpecs() })
         for (const auto& spec : *table)
             if (*spec.property == property)
                 return &spec;

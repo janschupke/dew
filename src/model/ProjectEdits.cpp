@@ -592,6 +592,45 @@ juce::ValueTree ProjectEdits::addAutomation (juce::ValueTree project, const Auto
     return automation;
 }
 
+juce::ValueTree ProjectEdits::addAutomationWithClip (juce::ValueTree project,
+                                                     const AutomationTarget& target,
+                                                     int startBar, int lengthBars,
+                                                     juce::UndoManager* undo)
+{
+    auto automation = addAutomation (project, target, undo);
+
+    if (! automation.isValid())
+        return {};
+
+    auto playlist = project.getChildWithName (ids::PLAYLIST);
+
+    for (auto track : playlist)
+    {
+        if (! track.hasType (ids::PLAYLIST_TRACK))
+            continue;
+
+        if (findClipAtBar (track, startBar).isValid())
+            continue;
+
+        auto clip = addAutomationClip (track, (int) automation[ids::id], startBar, lengthBars, undo);
+        growSongToFitClips (project, undo);
+        return clip;
+    }
+
+    // Every lane is taken at that bar, so make one. The alternative this used to
+    // choose - undo the definition and return nothing - was a menu item that
+    // did nothing at all, which is the worse of the two by a distance now that
+    // every control offers it.
+    auto track = addPlaylistTrack (project, "Track " + juce::String (playlist.getNumChildren() + 1), undo);
+
+    if (! track.isValid())
+        return {};
+
+    auto clip = addAutomationClip (track, (int) automation[ids::id], startBar, lengthBars, undo);
+    growSongToFitClips (project, undo);
+    return clip;
+}
+
 juce::ValueTree ProjectEdits::findAutomation (const juce::ValueTree& project, int automationId)
 {
     for (const auto& child : project)

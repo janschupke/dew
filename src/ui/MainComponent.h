@@ -12,6 +12,7 @@
 #include "ui/EditorState.h"
 #include "ui/EditorTabs.h"
 #include "ui/InstrumentPanel.h"
+#include "ui/ParamContextMenu.h"
 #include "app/Settings.h"
 #include "io/RenderJob.h"
 #include "ui/RenderPanel.h"
@@ -194,6 +195,16 @@ private:
     EditorState editorState;
 
     TransportBar transportBar;
+    /** What every control's right-click menu needs and no panel knows: where
+        the playhead is, and how to show the clip it makes.
+
+        Declared BEFORE the panels that take a pointer to it, so it outlives
+        them - a member's destruction order is the reverse of its declaration
+        order, and a panel unhooking on the way down must not read a host that
+        has already gone.
+    */
+    paramMenu::Host paramMenuHost;
+
     EditorTabs tabs;
     InstrumentPanel instrumentPanel;
     StatusBar statusBar;

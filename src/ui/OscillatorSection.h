@@ -5,6 +5,7 @@
 #include "engine/EngineSnapshot.h"
 #include "model/Ids.h"
 #include "model/ModuleCatalog.h"
+#include "ui/ParamContextMenu.h"
 #include "model/ProjectDocument.h"
 #include "ui/EditorState.h"
 #include "ui/primitives/DewControls.h"
@@ -40,6 +41,11 @@ class OscillatorSection : public juce::Component,
                           private juce::ChangeListener
 {
 public:
+    /** Hands this section's knobs what a right-click menu needs. Null means no
+        menus. Set from above, because a section knows which slot a knob was
+        built for and nothing about the playhead. */
+    void setParamMenuHost (const paramMenu::Host*);
+
     OscillatorSection (ProjectDocument&, EditorState&);
     ~OscillatorSection() override;
 
@@ -158,6 +164,8 @@ private:
 
     ProjectDocument& document;
     EditorState& editorState;
+    const paramMenu::Host* paramMenuHost = nullptr;
+
     juce::ValueTree instrument;
 
     juce::OwnedArray<SlotButton> slotButtons;

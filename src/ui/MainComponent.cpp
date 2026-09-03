@@ -25,6 +25,31 @@ MainComponent::MainComponent (bool openAudioDevice)
       instrumentPanel (document, editorState, &samplePool),
       statusBar (document, editorState, audioHost)
 {
+    // Every spec-built control's right-click, wired once here because this is
+    // the only object that knows all three halves: the document, where the
+    // playhead is, and how to show what gets made.
+    paramMenuHost.document = &document;
+
+    paramMenuHost.startBar = [this]
+    {
+        // Where you are LISTENING, not bar zero. A curve made while a song is
+        // playing should appear under the playhead rather than at the top of an
+        // arrangement you would then have to go and find it in.
+        const auto stepsPerBar = juce::jmax (1, Meter::of (document.getState()).stepsPerBar());
+
+        return juce::jmax (0, (int) (engine.getPlayheadSteps() / (double) stepsPerBar));
+    };
+
+    paramMenuHost.reveal = [this] (juce::ValueTree)
+    {
+        // Show the arrangement. Making something the user cannot see is worse
+        // than not offering to make it.
+        tabs.setCurrentTabIndex (EditorTabs::playlistTabIndex);
+    };
+
+    tabs.setParamMenuHost (&paramMenuHost);
+    instrumentPanel.setParamMenuHost (&paramMenuHost);
+
     // A layout, not a paint.
     collapse.onChanged = [this] { resized(); };
 

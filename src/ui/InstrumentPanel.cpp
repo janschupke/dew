@@ -106,6 +106,31 @@ double skewForRange (double minimum, double maximum)
 
 } // namespace
 
+void InstrumentPanel::setParamMenuHost (const paramMenu::Host* host)
+{
+    paramMenuHost = host;
+
+    // The chain under the panel gets it too: an effect's knobs are the largest
+    // group of spec-built controls in the application, and the panel is the only
+    // thing between them and whoever owns the host.
+    chainHost.getChain().setParamMenuHost (host);
+    oscSection.setParamMenuHost (host);
+    sampleSection.setParamMenuHost (host);
+
+    paramMenuTriggers.clear();
+
+    if (host == nullptr || host->document == nullptr)
+        return;
+
+    // The rotaries are attached in the constructor, before the host arrives, so
+    // this goes back over them rather than only recording the pointer.
+    for (const auto& bound : boundRotaries)
+        paramMenuTriggers.push_back (
+            std::make_unique<paramMenu::Trigger> (
+                *bound.slider,
+                host->contextFor (bound.owner, requireInstrumentParamSpec (bound.property))));
+}
+
 void InstrumentPanel::attachRotary (juce::Slider& slider, juce::Label& label, const juce::String& text,
                                     std::function<juce::ValueTree()> owner,
                                     const juce::Identifier& property,
@@ -158,6 +183,8 @@ void InstrumentPanel::attachRotary (juce::Slider& slider, juce::Label& label, co
 
         gestureActive = inDrag;
     };
+
+    boundRotaries.push_back ({ &slider, owner, property });
 
     styleCaption (label, text);
     addAndMakeVisible (slider);

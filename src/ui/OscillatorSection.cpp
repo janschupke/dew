@@ -252,6 +252,24 @@ OscillatorSection::~OscillatorSection()
     document.getState().removeListener (this);
 }
 
+void OscillatorSection::setParamMenuHost (const paramMenu::Host* host)
+{
+    paramMenuHost = host;
+
+    // The SLOT, asked for fresh: this section re-points at another oscillator
+    // without rebuilding its knobs, so a captured tree would edit whichever slot
+    // happened to be selected when the host arrived.
+    const auto slot = [this] { return selectedSlotTree(); };
+
+    paramMenu::attachTo (host, detuneKnob,   slot, requireInstrumentParamSpec (ids::detuneCents));
+    paramMenu::attachTo (host, gainKnob,     slot, requireInstrumentParamSpec (ids::gain));
+    paramMenu::attachTo (host, positionKnob, slot, requireInstrumentParamSpec (ids::wavePosition));
+    paramMenu::attachTo (host, modKnob,      slot, requireInstrumentParamSpec (ids::wavePositionMod));
+    paramMenu::attachTo (host, rateKnob,     slot, requireInstrumentParamSpec (ids::wavePositionRate));
+    paramMenu::attachTo (host, unisonKnob,   slot, requireInstrumentParamSpec (ids::unisonVoices));
+    paramMenu::attachTo (host, spreadKnob,   slot, requireInstrumentParamSpec (ids::unisonDetune));
+}
+
 void OscillatorSection::attachKnob (DewKnob& knob, const juce::Identifier& property,
                                     const juce::String& transactionName, bool integral)
 {

@@ -93,6 +93,12 @@ void EditorTabs::setPianoRollSnap (int index)
     pianoRoll.setSnap (NoteTools::snapFromIndex (index));
 }
 
+void EditorTabs::setParamMenuHost (const paramMenu::Host* host)
+{
+    channelRack.setParamMenuHost (host);
+    mixer.setParamMenuHost (host);
+}
+
 int EditorTabs::getPlaylistTrackHeight() const
 {
     return playlist.getTrackHeight();

@@ -5,6 +5,7 @@
 #include "engine/AudioEngine.h"
 #include "model/ProjectDocument.h"
 #include "ui/EditorState.h"
+#include "ui/ParamContextMenu.h"
 #include "ui/TimelineRuler.h"
 #include "ui/StepGridComponent.h"
 #include "ui/ZoomButtons.h"
@@ -26,6 +27,9 @@ class ChannelRackComponent : public juce::Component,
                              private juce::ChangeListener
 {
 public:
+    /** Set from above; null means no automation menus. */
+    void setParamMenuHost (const paramMenu::Host* host);
+
     ChannelRackComponent (ProjectDocument&, AudioEngine&, EditorState&, SamplePool* = nullptr);
     ~ChannelRackComponent() override;
 
@@ -62,6 +66,10 @@ private:
     void changeListenerCallback (juce::ChangeBroadcaster*) override;
 
     void rebuildHeaders();
+
+    /** Where a control's right-click gets what a row does not know: the
+        playhead, and how to show the clip it makes. */
+    const paramMenu::Host* paramMenuHost = nullptr;
 
     ProjectDocument& document;
     AudioEngine& engine;

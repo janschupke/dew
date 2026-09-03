@@ -835,32 +835,15 @@ juce::ValueTree PlaylistComponent::createAutomationClip (const AutomationTarget&
     auto& undo = document.getUndoManager();
     undo.beginNewTransaction ("Add automation");
 
-    auto automation = ProjectEdits::addAutomation (document.getState(), target, &undo);
-
-    if (! automation.isValid())
-        return {};
-
-    // Onto the first lane with room at that bar, so a new automation is visible
-    // rather than stacked invisibly under a pattern clip.
-    for (int i = 0; i < getNumTracks(); ++i)
-    {
-        auto track = trackAt (i);
-
-        if (ProjectEdits::findClipAtBar (track, startBar).isValid())
-            continue;
-
-        auto clip = ProjectEdits::addAutomationClip (track, (int) automation[ids::id],
+    // The placing is ProjectEdits' now: every control in the application can ask
+    // for a curve, and the arrangement is not on screen for most of them. What
+    // is left here is the view catching up with what changed.
+    auto clip = ProjectEdits::addAutomationWithClip (document.getState(), target,
                                                      startBar, lengthBars, &undo);
-        ProjectEdits::growSongToFitClips (document.getState(), &undo);
-        updateScrollBar();
-        repaint();
-        return clip;
-    }
 
-    // Every lane is occupied there: undo the definition rather than leaving one
-    // behind that nothing refers to.
-    ProjectEdits::removeAutomation (document.getState(), automation, &undo);
-    return {};
+    updateScrollBar();
+    repaint();
+    return clip;
 }
 
 namespace

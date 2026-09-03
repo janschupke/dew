@@ -54,6 +54,11 @@ public:
     */
     std::function<void()> onEditStart;
 
+    /** What to offer on a right-click, or null for nothing. A callback rather
+        than a target, so the design layer stays what its CMakeLists says it is:
+        a leaf that knows nothing about a project. */
+    std::function<void()> onContextMenu;
+
     void paint (juce::Graphics&) override;
     void resized() override;
     void mouseDown (const juce::MouseEvent&) override;

@@ -4,7 +4,10 @@
 
 #include "model/ProjectDocument.h"
 #include "ui/EditorState.h"
+#include <memory>
+#include <vector>
 #include "ui/EffectChainHost.h"
+#include "ui/ParamContextMenu.h"
 #include "ui/OscillatorSection.h"
 #include "ui/SampleSection.h"
 
@@ -28,6 +31,10 @@ class InstrumentPanel : public juce::Component,
                         private juce::ValueTree::Listener
 {
 public:
+    /** Hands this panel and the chain under it what a right-click menu needs.
+        Null means no menus. */
+    void setParamMenuHost (const paramMenu::Host*);
+
     /** @param pool  audio for the waveform display. Null is allowed - the
                       section draws its empty state - which is what lets a test
                       or dew_shot build the panel without a sample pool.
@@ -53,6 +60,26 @@ private:
         them again as a clamp, and they had drifted - an attack knob that
         stopped at two seconds on an engine that renders ten.
     */
+    const paramMenu::Host* paramMenuHost = nullptr;
+
+    /** Which node and property each rotary was attached to.
+
+        Recorded as they are built so setParamMenuHost can go back over them: the
+        panel is constructed before the host exists, and a knob whose menu was
+        only wired at construction would be a knob with no menu at all.
+    */
+    struct BoundRotary
+    {
+        juce::Slider* slider = nullptr;
+        std::function<juce::ValueTree()> owner;
+        juce::Identifier property;
+    };
+
+    std::vector<BoundRotary> boundRotaries;
+
+    /** Owned here, and destroyed before the sliders they watch. */
+    std::vector<std::unique_ptr<paramMenu::Trigger>> paramMenuTriggers;
+
     void attachRotary (juce::Slider&, juce::Label&, const juce::String& text,
                        std::function<juce::ValueTree()> owner,
                        const juce::Identifier& property,

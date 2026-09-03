@@ -50,6 +50,17 @@ SampleSection::~SampleSection()
     document.getState().removeListener (this);
 }
 
+void SampleSection::setParamMenuHost (const paramMenu::Host* host)
+{
+    paramMenuHost = host;
+
+    const std::function<juce::ValueTree()> self = [this] { return sample; };
+
+    paramMenu::attachTo (host, fadeInKnob,    self, requireInstrumentParamSpec (ids::fadeInMs));
+    paramMenu::attachTo (host, fadeOutKnob,   self, requireInstrumentParamSpec (ids::fadeOutMs));
+    paramMenu::attachTo (host, transposeKnob, self, requireInstrumentParamSpec (ids::transpose));
+}
+
 void SampleSection::attachKnob (DewKnob& knob, const juce::Identifier& property,
                                 const juce::String& transactionName)
 {

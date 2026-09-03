@@ -3,6 +3,7 @@
 #include <juce_gui_basics/juce_gui_basics.h>
 
 #include "model/ProjectDocument.h"
+#include "ui/ParamContextMenu.h"
 #include "ui/design/Animator.h"
 #include "ui/EditorState.h"
 #include "ui/primitives/DewControls.h"
@@ -51,6 +52,14 @@ public:
     enum class Orientation { vertical, horizontal };
 
     EffectChainComponent (ProjectDocument&, EditorState&);
+
+    /** Where a control's right-click menu gets the rest of what it needs.
+
+        Set from above rather than taken in the constructor: a panel knows which
+        node a knob was built for and nothing about the playhead or the tabs.
+        Null means no menus, which is what a test building one panel gets.
+    */
+    void setParamMenuHost (const paramMenu::Host* host) { paramMenuHost = host; }
     ~EffectChainComponent() override;
 
     void paint (juce::Graphics&) override;
@@ -206,6 +215,8 @@ private:
     void notifyRequiredSizeChanged();
 
     juce::ValueTree effectAt (int index) const;
+
+    const paramMenu::Host* paramMenuHost = nullptr;
 
     ProjectDocument& document;
     EditorState& editorState;

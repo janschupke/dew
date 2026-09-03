@@ -9,6 +9,7 @@
 #include "ui/design/Animator.h"
 #include "ui/MixerComponent.h"
 #include "ui/PianoRollComponent.h"
+#include "ui/ParamContextMenu.h"
 #include "ui/PlaylistComponent.h"
 #include "ui/ScoreEditorComponent.h"
 
@@ -26,6 +27,14 @@ public:
     EditorTabs (ProjectDocument&, AudioEngine&, EditorState&, SamplePool* = nullptr);
 
     void refresh();
+
+    /** Hands every editor that owns spec-built controls what their right-click
+        menus need. Null means no menus. */
+    void setParamMenuHost (const paramMenu::Host*);
+
+    /** Where the arrangement is, so whoever makes an automation clip can show
+        it rather than leaving it somewhere the user has to go and find. */
+    static constexpr int playlistTabIndex = 2;
 
     /** The score tab, so the shell can route its status messages. */
     ScoreEditorComponent& getScoreEditor() { return scoreEditor; }

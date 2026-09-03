@@ -86,8 +86,14 @@ void DewNumberField::commit (double newValue)
 
 void DewNumberField::mouseDown (const juce::MouseEvent& event)
 {
+    // It already declined a right-click; now it has somewhere to send one.
     if (event.mods.isPopupMenu())
+    {
+        if (onContextMenu != nullptr)
+            onContextMenu();
+
         return;
+    }
 
     dragging = true;
     valueAtDragStart = value;

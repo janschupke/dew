@@ -38,6 +38,7 @@ add_executable(dew_tests
   TypographyTests.cpp
   PianoRollTests.cpp
   PianoRollToolsTests.cpp
+  ParamMenuTests.cpp
   PlaylistTests.cpp
   MeterTests.cpp
   MidiExportTests.cpp

@@ -480,6 +480,12 @@ private:
                 knob->onEditStart = [this] { inDrag = true; gestureActive = false; };
                 knob->onEditEnd = [this] { inDrag = false; gestureActive = false; };
                 knob->onValueChange = [this, knob, property] { write (property, knob->getValue()); };
+
+                // Built from the same spec that built the knob, so what the
+                // menu offers to automate is exactly what the knob turns.
+                paramMenu::attachTo (owner.paramMenuHost, *knob,
+                                     [this] { return effect; }, spec);
+
                 addAndMakeVisible (*knob);
             }
             else
@@ -498,6 +504,10 @@ private:
                 // its own transaction either way.
                 field->onEditStart = [this] { inDrag = true; gestureActive = false; };
                 field->onValueChange = [this, field, property] { write (property, field->getValue()); };
+
+                paramMenu::attachTo (owner.paramMenuHost, *field,
+                                     [this] { return effect; }, spec);
+
                 addAndMakeVisible (*field);
             }
 

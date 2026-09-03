@@ -72,7 +72,21 @@ public:
 
     void setRole (Role);
 
+    /** What to offer when this control is right-clicked, or null for nothing.
+
+        A CALLBACK rather than a target or a node, because dew_design "knows
+        nothing about a project" - its own CMakeLists says so - and a control
+        that held an AutomationTarget would know about one. The editor that
+        BUILT this control from a ParamSpec is the one that knows which node it
+        was built for, so it is the one that closes over it.
+    */
+    std::function<void()> onContextMenu;
+
     void paintButton (juce::Graphics&, bool shouldDrawHighlighted, bool shouldDrawDown) override;
+
+    /** Above Button's own handling, so a right-click opens the menu rather than
+        arming a press that then never completes. */
+    void mouseDown (const juce::MouseEvent&) override;
 
 protected:
     void buttonStateChanged() override { lift.update(); }
@@ -97,10 +111,21 @@ public:
 
     void setIcon (juce::Path);
 
+    /** What to offer when this control is right-clicked, or null for nothing.
+
+        A CALLBACK rather than a target or a node, because dew_design "knows
+        nothing about a project" - its own CMakeLists says so - and a control
+        that held an AutomationTarget would know about one. The editor that
+        BUILT this control from a ParamSpec is the one that knows which node it
+        was built for, so it is the one that closes over it.
+    */
+    std::function<void()> onContextMenu;
+
     /** Colour used when the button is toggled on. Defaults to the accent. */
     void setOnColour (juce::Colour);
 
     void paintButton (juce::Graphics&, bool shouldDrawHighlighted, bool shouldDrawDown) override;
+    void mouseDown (const juce::MouseEvent&) override;
 
 protected:
     void buttonStateChanged() override { lift.update(); }
@@ -123,7 +148,18 @@ public:
     DewLetterToggle (const juce::String& letter, juce::Colour onColour,
                      const juce::String& tooltipText);
 
+    /** What to offer when this control is right-clicked, or null for nothing.
+
+        A CALLBACK rather than a target or a node, because dew_design "knows
+        nothing about a project" - its own CMakeLists says so - and a control
+        that held an AutomationTarget would know about one. The editor that
+        BUILT this control from a ParamSpec is the one that knows which node it
+        was built for, so it is the one that closes over it.
+    */
+    std::function<void()> onContextMenu;
+
     void paintButton (juce::Graphics&, bool shouldDrawHighlighted, bool shouldDrawDown) override;
+    void mouseDown (const juce::MouseEvent&) override;
 
 protected:
     void buttonStateChanged() override { lift.update(); }
@@ -184,6 +220,17 @@ public:
     */
     std::function<void()> onEditStart;
     std::function<void()> onEditEnd;
+
+    /** What to offer when this control is right-clicked, or null for nothing.
+
+        A CALLBACK rather than a target or a node, because dew_design "knows
+        nothing about a project" - its own CMakeLists says so - and a control
+        that held an AutomationTarget would know about one. The editor that
+        BUILT this control from a ParamSpec is the one that knows which node it
+        was built for, so it is the one that closes over it.
+    */
+    std::function<void()> onContextMenu;
+
 
     void paint (juce::Graphics&) override;
     void resized() override;

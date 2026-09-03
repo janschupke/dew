@@ -108,6 +108,11 @@ const std::vector<ParamSpec>& ampParamSpecs();
 /** One oscillator slot's continuous parameters. */
 const std::vector<ParamSpec>& oscParamSpecs();
 
+/** A sample's fades, its transpose, and its two switches. None automatable -
+    see the table - but declared so a control has one place to take its range,
+    its decimals and its default from. */
+const std::vector<ParamSpec>& sampleParamSpecs();
+
 /** A mixer track's fader and pan.
 
     Separate from the channel's, because `gain` and `pan` mean different things
