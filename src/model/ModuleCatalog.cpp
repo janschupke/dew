@@ -307,21 +307,49 @@ const ParamSpec projectSpecs[] {
       ParamCurve::logarithmic, ParamControl::field },
 };
 
+/** One declared table, as the vector the accessors hand out.
+
+    Returns BY VALUE, and the static that caches it belongs to the accessor
+    rather than to this helper. It used to hold the static itself:
+
+        template <size_t N>
+        const std::vector<ParamSpec>& asVector (const ParamSpec (&table)[N])
+        {
+            static const std::vector<ParamSpec> specs { ... };   // keyed on N
+        }
+
+    A function template is instantiated once per N, so that one static was
+    shared by every table of the same LENGTH, and the first caller decided what
+    all of them returned. channelSpecs and sampleSpecs are both five rows, and
+    ampSpecs and mixerTrackSpecs are both four, so sampleParamSpecs() handed
+    back the channel's volume and pan, and whichever of the envelope and the
+    fader was asked for second returned the other one's ranges. Nothing said so:
+    the lookups that then failed end in a jassert, which a RelWithDebInfo build
+    compiles out and leaves as a knob that silently spans nought to one.
+*/
 template <size_t N>
-const std::vector<ParamSpec>& asVector (const ParamSpec (&table)[N])
+std::vector<ParamSpec> toVector (const ParamSpec (&table)[N])
 {
-    static const std::vector<ParamSpec> specs { std::begin (table), std::end (table) };
-    return specs;
+    return { std::begin (table), std::end (table) };
 }
 
 } // namespace
 
-const std::vector<ParamSpec>& channelParamSpecs() { return asVector (channelSpecs); }
-const std::vector<ParamSpec>& ampParamSpecs()     { return asVector (ampSpecs); }
-const std::vector<ParamSpec>& oscParamSpecs()     { return asVector (oscSpecs); }
-const std::vector<ParamSpec>& mixerTrackParamSpecs() { return asVector (mixerTrackSpecs); }
-const std::vector<ParamSpec>& sampleParamSpecs()     { return asVector (sampleSpecs); }
-const std::vector<ParamSpec>& projectParamSpecs()    { return asVector (projectSpecs); }
+#define DEW_PARAM_TABLE(accessor, table)                          \
+    const std::vector<ParamSpec>& accessor()                      \
+    {                                                             \
+        static const std::vector<ParamSpec> specs = toVector (table); \
+        return specs;                                             \
+    }
+
+DEW_PARAM_TABLE (channelParamSpecs,    channelSpecs)
+DEW_PARAM_TABLE (ampParamSpecs,        ampSpecs)
+DEW_PARAM_TABLE (oscParamSpecs,        oscSpecs)
+DEW_PARAM_TABLE (mixerTrackParamSpecs, mixerTrackSpecs)
+DEW_PARAM_TABLE (sampleParamSpecs,     sampleSpecs)
+DEW_PARAM_TABLE (projectParamSpecs,    projectSpecs)
+
+#undef DEW_PARAM_TABLE
 
 const ParamSpec* instrumentParamSpec (const juce::Identifier& property) noexcept
 {

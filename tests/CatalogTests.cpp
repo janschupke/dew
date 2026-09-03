@@ -1,3 +1,5 @@
+#include <algorithm>
+
 #include <catch2/catch_approx.hpp>
 #include <catch2/catch_test_macros.hpp>
 
@@ -213,6 +215,49 @@ TEST_CASE ("every parameter has a place in its block, and mix is first", "[catal
     REQUIRE (effectParamIndex (EffectType::reverb, ids::cutoff) == -1);
 }
 
+TEST_CASE ("each parameter table is its own, whatever its length", "[catalog][params]")
+{
+    // The tables are cached behind accessors, and the cache used to be a static
+    // inside a function template keyed on the table's LENGTH - so every table of
+    // the same size shared one, and the first caller decided what the rest
+    // returned. channelSpecs and sampleSpecs are both five rows; ampSpecs and
+    // mixerTrackSpecs are both four.
+    //
+    // Asked for in the order that fails: the colliding table SECOND each time,
+    // because the first caller is the one that used to win.
+    struct Table { const std::vector<ParamSpec>& specs; const juce::Identifier& expected;
+                   const char* what; };
+
+    const Table tables[] {
+        { channelParamSpecs(),    ids::volume,   "channel" },
+        { sampleParamSpecs(),     ids::fadeInMs, "sample" },
+        { mixerTrackParamSpecs(), ids::gain,     "mixer track" },
+        { ampParamSpecs(),        ids::attack,   "amp" },
+        { oscParamSpecs(),        ids::octave,   "oscillator" },
+        { projectParamSpecs(),    ids::tempoBpm, "project" },
+    };
+
+    for (const auto& table : tables)
+    {
+        INFO ("the " << table.what << " table");
+        REQUIRE (! table.specs.empty());
+
+        const auto has = std::any_of (table.specs.begin(), table.specs.end(),
+                                      [&] (const auto& spec)
+                                      { return *spec.property == table.expected; });
+
+        CHECK (has);
+    }
+
+    // And the two pairs that collide are actually different lists, rather than
+    // two names for whichever one was built first.
+    CHECK (channelParamSpecs().size() == sampleParamSpecs().size());
+    CHECK (ampParamSpecs().size() == mixerTrackParamSpecs().size());
+
+    CHECK (&channelParamSpecs() != &sampleParamSpecs());
+    CHECK (&ampParamSpecs() != &mixerTrackParamSpecs());
+}
+
 TEST_CASE ("every instrument parameter says the same thing to the file and to the engine",
            "[catalog][params]")
 {
@@ -238,10 +283,13 @@ TEST_CASE ("every instrument parameter says the same thing to the file and to th
 
     struct Case { const juce::ValueTree& node; const std::vector<ParamSpec>& specs; const char* what; };
 
+    const auto sample = defaultTreeFor (childSpecFor (channelNode, "sample"));
+
     const Case cases[] {
         { channel, channelParamSpecs(), "channel" },
         { amp,     ampParamSpecs(),     "amp" },
         { osc,     oscParamSpecs(),     "oscillator" },
+        { sample,  sampleParamSpecs(),  "sample" },
     };
 
     for (const auto& c : cases)
