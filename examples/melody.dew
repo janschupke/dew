@@ -5,7 +5,7 @@
     "stepsPerBeat": 4,
     "beatsPerBar": 4,
     "beatUnit": 4,
-    "barsInSong": 4,
+    "barsInSong": 32,
     "channels": [
       {
         "id": 1,
@@ -25,7 +25,7 @@
               "enabled": true,
               "wave": "saw",
               "octave": 0,
-              "detuneCents": 0.0,
+              "detuneCents": 0,
               "gain": 0.8,
               "mode": "classic",
               "wavetable": "basic",
@@ -68,9 +68,9 @@
             }
           ],
           "amp": {
-            "attack": 0.001,
-            "decay": 0.14,
-            "sustain": 0.0,
+            "attack": 0.005,
+            "decay": 0.12,
+            "sustain": 0.7,
             "release": 0.3
           }
         },
@@ -105,8 +105,8 @@
             {
               "enabled": true,
               "wave": "triangle",
-              "octave": -1,
-              "detuneCents": 0.0,
+              "octave": 0,
+              "detuneCents": 0,
               "gain": 0.8,
               "mode": "classic",
               "wavetable": "basic",
@@ -150,7 +150,7 @@
           ],
           "amp": {
             "attack": 0.02,
-            "decay": 0.09,
+            "decay": 0.12,
             "sustain": 0.7,
             "release": 0.45
           }
@@ -230,9 +230,9 @@
             }
           ],
           "amp": {
-            "attack": 0.004,
-            "decay": 0.18,
-            "sustain": 0.35,
+            "attack": 0.005,
+            "decay": 0.12,
+            "sustain": 0.7,
             "release": 0.25
           }
         },
@@ -268,7 +268,7 @@
               "enabled": true,
               "wave": "sine",
               "octave": 0,
-              "detuneCents": 0.0,
+              "detuneCents": 0,
               "gain": 0.8,
               "mode": "classic",
               "wavetable": "basic",
@@ -635,13 +635,486 @@
             "velocity": 0.35
           }
         ]
+      },
+      {
+        "id": 2,
+        "name": "Dm - Bb - F - C",
+        "lengthSteps": 64,
+        "genId": "",
+        "genHash": "",
+        "notes": [
+          {
+            "ch": 3,
+            "step": 0,
+            "lengthSteps": 6,
+            "pitch": 50,
+            "velocity": 0.9
+          },
+          {
+            "ch": 3,
+            "step": 8,
+            "lengthSteps": 4,
+            "pitch": 62,
+            "velocity": 0.55
+          },
+          {
+            "ch": 2,
+            "step": 2,
+            "lengthSteps": 12,
+            "pitch": 62,
+            "velocity": 0.5
+          },
+          {
+            "ch": 2,
+            "step": 2,
+            "lengthSteps": 12,
+            "pitch": 65,
+            "velocity": 0.5
+          },
+          {
+            "ch": 2,
+            "step": 2,
+            "lengthSteps": 12,
+            "pitch": 69,
+            "velocity": 0.5
+          },
+          {
+            "ch": 3,
+            "step": 16,
+            "lengthSteps": 6,
+            "pitch": 46,
+            "velocity": 0.9
+          },
+          {
+            "ch": 3,
+            "step": 24,
+            "lengthSteps": 4,
+            "pitch": 58,
+            "velocity": 0.55
+          },
+          {
+            "ch": 2,
+            "step": 18,
+            "lengthSteps": 12,
+            "pitch": 58,
+            "velocity": 0.5
+          },
+          {
+            "ch": 2,
+            "step": 18,
+            "lengthSteps": 12,
+            "pitch": 62,
+            "velocity": 0.5
+          },
+          {
+            "ch": 2,
+            "step": 18,
+            "lengthSteps": 12,
+            "pitch": 65,
+            "velocity": 0.5
+          },
+          {
+            "ch": 3,
+            "step": 32,
+            "lengthSteps": 6,
+            "pitch": 53,
+            "velocity": 0.9
+          },
+          {
+            "ch": 3,
+            "step": 40,
+            "lengthSteps": 4,
+            "pitch": 65,
+            "velocity": 0.55
+          },
+          {
+            "ch": 2,
+            "step": 34,
+            "lengthSteps": 12,
+            "pitch": 57,
+            "velocity": 0.5
+          },
+          {
+            "ch": 2,
+            "step": 34,
+            "lengthSteps": 12,
+            "pitch": 60,
+            "velocity": 0.5
+          },
+          {
+            "ch": 2,
+            "step": 34,
+            "lengthSteps": 12,
+            "pitch": 65,
+            "velocity": 0.5
+          },
+          {
+            "ch": 3,
+            "step": 48,
+            "lengthSteps": 6,
+            "pitch": 48,
+            "velocity": 0.9
+          },
+          {
+            "ch": 3,
+            "step": 56,
+            "lengthSteps": 4,
+            "pitch": 60,
+            "velocity": 0.55
+          },
+          {
+            "ch": 2,
+            "step": 50,
+            "lengthSteps": 12,
+            "pitch": 60,
+            "velocity": 0.5
+          },
+          {
+            "ch": 2,
+            "step": 50,
+            "lengthSteps": 12,
+            "pitch": 64,
+            "velocity": 0.5
+          },
+          {
+            "ch": 2,
+            "step": 50,
+            "lengthSteps": 12,
+            "pitch": 67,
+            "velocity": 0.5
+          },
+          {
+            "ch": 1,
+            "step": 0,
+            "lengthSteps": 4,
+            "pitch": 81,
+            "velocity": 0.9
+          },
+          {
+            "ch": 1,
+            "step": 6,
+            "lengthSteps": 2,
+            "pitch": 79,
+            "velocity": 0.65
+          },
+          {
+            "ch": 1,
+            "step": 8,
+            "lengthSteps": 6,
+            "pitch": 77,
+            "velocity": 0.85
+          },
+          {
+            "ch": 1,
+            "step": 16,
+            "lengthSteps": 3,
+            "pitch": 74,
+            "velocity": 0.85
+          },
+          {
+            "ch": 1,
+            "step": 20,
+            "lengthSteps": 2,
+            "pitch": 77,
+            "velocity": 0.7
+          },
+          {
+            "ch": 1,
+            "step": 22,
+            "lengthSteps": 2,
+            "pitch": 79,
+            "velocity": 0.8
+          },
+          {
+            "ch": 1,
+            "step": 24,
+            "lengthSteps": 6,
+            "pitch": 81,
+            "velocity": 0.95
+          },
+          {
+            "ch": 1,
+            "step": 32,
+            "lengthSteps": 5,
+            "pitch": 77,
+            "velocity": 0.9
+          },
+          {
+            "ch": 1,
+            "step": 38,
+            "lengthSteps": 3,
+            "pitch": 74,
+            "velocity": 0.65
+          },
+          {
+            "ch": 1,
+            "step": 42,
+            "lengthSteps": 4,
+            "pitch": 72,
+            "velocity": 0.75
+          },
+          {
+            "ch": 1,
+            "step": 48,
+            "lengthSteps": 4,
+            "pitch": 76,
+            "velocity": 0.85
+          },
+          {
+            "ch": 1,
+            "step": 54,
+            "lengthSteps": 2,
+            "pitch": 74,
+            "velocity": 0.6
+          },
+          {
+            "ch": 1,
+            "step": 56,
+            "lengthSteps": 8,
+            "pitch": 72,
+            "velocity": 0.85
+          },
+          {
+            "ch": 4,
+            "step": 2,
+            "lengthSteps": 1,
+            "pitch": 93,
+            "velocity": 0.35
+          },
+          {
+            "ch": 4,
+            "step": 10,
+            "lengthSteps": 1,
+            "pitch": 93,
+            "velocity": 0.35
+          },
+          {
+            "ch": 4,
+            "step": 18,
+            "lengthSteps": 1,
+            "pitch": 91,
+            "velocity": 0.35
+          },
+          {
+            "ch": 4,
+            "step": 26,
+            "lengthSteps": 1,
+            "pitch": 91,
+            "velocity": 0.35
+          },
+          {
+            "ch": 4,
+            "step": 34,
+            "lengthSteps": 1,
+            "pitch": 89,
+            "velocity": 0.35
+          },
+          {
+            "ch": 4,
+            "step": 42,
+            "lengthSteps": 1,
+            "pitch": 89,
+            "velocity": 0.35
+          },
+          {
+            "ch": 4,
+            "step": 50,
+            "lengthSteps": 1,
+            "pitch": 87,
+            "velocity": 0.35
+          },
+          {
+            "ch": 4,
+            "step": 58,
+            "lengthSteps": 1,
+            "pitch": 87,
+            "velocity": 0.35
+          }
+        ]
+      },
+      {
+        "id": 3,
+        "name": "Bridge",
+        "lengthSteps": 64,
+        "genId": "",
+        "genHash": "",
+        "notes": [
+          {
+            "ch": 3,
+            "step": 0,
+            "lengthSteps": 6,
+            "pitch": 43,
+            "velocity": 0.9
+          },
+          {
+            "ch": 3,
+            "step": 8,
+            "lengthSteps": 4,
+            "pitch": 55,
+            "velocity": 0.55
+          },
+          {
+            "ch": 2,
+            "step": 2,
+            "lengthSteps": 12,
+            "pitch": 55,
+            "velocity": 0.5
+          },
+          {
+            "ch": 2,
+            "step": 2,
+            "lengthSteps": 12,
+            "pitch": 59,
+            "velocity": 0.5
+          },
+          {
+            "ch": 2,
+            "step": 2,
+            "lengthSteps": 12,
+            "pitch": 62,
+            "velocity": 0.5
+          },
+          {
+            "ch": 3,
+            "step": 16,
+            "lengthSteps": 6,
+            "pitch": 43,
+            "velocity": 0.9
+          },
+          {
+            "ch": 3,
+            "step": 24,
+            "lengthSteps": 4,
+            "pitch": 55,
+            "velocity": 0.55
+          },
+          {
+            "ch": 2,
+            "step": 18,
+            "lengthSteps": 12,
+            "pitch": 55,
+            "velocity": 0.5
+          },
+          {
+            "ch": 2,
+            "step": 18,
+            "lengthSteps": 12,
+            "pitch": 62,
+            "velocity": 0.5
+          },
+          {
+            "ch": 2,
+            "step": 18,
+            "lengthSteps": 12,
+            "pitch": 67,
+            "velocity": 0.5
+          },
+          {
+            "ch": 3,
+            "step": 32,
+            "lengthSteps": 6,
+            "pitch": 41,
+            "velocity": 0.9
+          },
+          {
+            "ch": 3,
+            "step": 40,
+            "lengthSteps": 4,
+            "pitch": 53,
+            "velocity": 0.55
+          },
+          {
+            "ch": 2,
+            "step": 34,
+            "lengthSteps": 12,
+            "pitch": 53,
+            "velocity": 0.5
+          },
+          {
+            "ch": 2,
+            "step": 34,
+            "lengthSteps": 12,
+            "pitch": 57,
+            "velocity": 0.5
+          },
+          {
+            "ch": 2,
+            "step": 34,
+            "lengthSteps": 12,
+            "pitch": 60,
+            "velocity": 0.5
+          },
+          {
+            "ch": 3,
+            "step": 48,
+            "lengthSteps": 6,
+            "pitch": 41,
+            "velocity": 0.9
+          },
+          {
+            "ch": 3,
+            "step": 56,
+            "lengthSteps": 4,
+            "pitch": 53,
+            "velocity": 0.55
+          },
+          {
+            "ch": 2,
+            "step": 50,
+            "lengthSteps": 12,
+            "pitch": 53,
+            "velocity": 0.5
+          },
+          {
+            "ch": 2,
+            "step": 50,
+            "lengthSteps": 12,
+            "pitch": 60,
+            "velocity": 0.5
+          },
+          {
+            "ch": 2,
+            "step": 50,
+            "lengthSteps": 12,
+            "pitch": 65,
+            "velocity": 0.5
+          },
+          {
+            "ch": 1,
+            "step": 8,
+            "lengthSteps": 8,
+            "pitch": 67,
+            "velocity": 0.7
+          },
+          {
+            "ch": 1,
+            "step": 24,
+            "lengthSteps": 8,
+            "pitch": 71,
+            "velocity": 0.75
+          },
+          {
+            "ch": 1,
+            "step": 40,
+            "lengthSteps": 8,
+            "pitch": 74,
+            "velocity": 0.8
+          },
+          {
+            "ch": 1,
+            "step": 56,
+            "lengthSteps": 8,
+            "pitch": 76,
+            "velocity": 0.85
+          }
+        ]
       }
     ],
     "automations": [],
     "playlist": {
       "tracks": [
         {
-          "name": "Track 1",
+          "name": "Arrangement",
           "mute": false,
           "solo": false,
           "genId": "",
@@ -652,6 +1125,69 @@
               "automationId": 1,
               "channelId": 1,
               "startBar": 0,
+              "lengthBars": 4,
+              "genId": ""
+            },
+            {
+              "kind": "pattern",
+              "patternId": 1,
+              "automationId": 1,
+              "channelId": 1,
+              "startBar": 4,
+              "lengthBars": 4,
+              "genId": ""
+            },
+            {
+              "kind": "pattern",
+              "patternId": 2,
+              "automationId": 1,
+              "channelId": 1,
+              "startBar": 8,
+              "lengthBars": 4,
+              "genId": ""
+            },
+            {
+              "kind": "pattern",
+              "patternId": 1,
+              "automationId": 1,
+              "channelId": 1,
+              "startBar": 12,
+              "lengthBars": 4,
+              "genId": ""
+            },
+            {
+              "kind": "pattern",
+              "patternId": 3,
+              "automationId": 1,
+              "channelId": 1,
+              "startBar": 16,
+              "lengthBars": 4,
+              "genId": ""
+            },
+            {
+              "kind": "pattern",
+              "patternId": 2,
+              "automationId": 1,
+              "channelId": 1,
+              "startBar": 20,
+              "lengthBars": 4,
+              "genId": ""
+            },
+            {
+              "kind": "pattern",
+              "patternId": 1,
+              "automationId": 1,
+              "channelId": 1,
+              "startBar": 24,
+              "lengthBars": 4,
+              "genId": ""
+            },
+            {
+              "kind": "pattern",
+              "patternId": 3,
+              "automationId": 1,
+              "channelId": 1,
+              "startBar": 28,
               "lengthBars": 4,
               "genId": ""
             }

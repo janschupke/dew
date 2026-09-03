@@ -8,172 +8,10 @@
     "barsInSong": 52,
     "channels": [
       {
-        "id": 1,
-        "name": "Kick",
-        "colour": "ffe4572e",
-        "mixerTrackId": 1,
-        "basePitch": 36,
-        "volume": 0.95,
-        "pan": 0.0,
-        "muted": false,
-        "solo": false,
-        "source": "synth",
-        "genId": "",
-        "instrument": {
-          "oscillators": [
-            {
-              "enabled": true,
-              "wave": "sine",
-              "octave": 0,
-              "detuneCents": 0.0,
-              "gain": 0.8,
-              "mode": "classic",
-              "wavetable": "basic",
-              "wavePosition": 0.0,
-              "wavePositionMod": 0.0,
-              "wavePositionSource": "envelope",
-              "wavePositionRate": 1.0,
-              "unisonVoices": 1,
-              "unisonDetune": 0.0
-            },
-            {
-              "enabled": false,
-              "wave": "saw",
-              "octave": 0,
-              "detuneCents": 0.0,
-              "gain": 0.8,
-              "mode": "classic",
-              "wavetable": "basic",
-              "wavePosition": 0.0,
-              "wavePositionMod": 0.0,
-              "wavePositionSource": "envelope",
-              "wavePositionRate": 1.0,
-              "unisonVoices": 1,
-              "unisonDetune": 0.0
-            },
-            {
-              "enabled": false,
-              "wave": "saw",
-              "octave": 0,
-              "detuneCents": 0.0,
-              "gain": 0.8,
-              "mode": "classic",
-              "wavetable": "basic",
-              "wavePosition": 0.0,
-              "wavePositionMod": 0.0,
-              "wavePositionSource": "envelope",
-              "wavePositionRate": 1.0,
-              "unisonVoices": 1,
-              "unisonDetune": 0.0
-            }
-          ],
-          "amp": {
-            "attack": 0.001,
-            "decay": 0.14,
-            "sustain": 0.0,
-            "release": 0.06
-          }
-        },
-        "sample": {
-          "file": "",
-          "sourceSampleRate": 44100,
-          "lengthSamples": 0,
-          "startSample": 0,
-          "endSample": 0,
-          "fadeInMs": 0.0,
-          "fadeOutMs": 0.0,
-          "transpose": 0.0,
-          "reverse": false,
-          "loop": false
-        },
-        "effects": []
-      },
-      {
-        "id": 2,
-        "name": "Snare",
-        "colour": "ff29a19c",
-        "mixerTrackId": 2,
-        "basePitch": 60,
-        "volume": 0.55,
-        "pan": 0.0,
-        "muted": false,
-        "solo": false,
-        "source": "synth",
-        "genId": "",
-        "instrument": {
-          "oscillators": [
-            {
-              "enabled": true,
-              "wave": "square",
-              "octave": -1,
-              "detuneCents": 0.0,
-              "gain": 0.8,
-              "mode": "classic",
-              "wavetable": "basic",
-              "wavePosition": 0.0,
-              "wavePositionMod": 0.0,
-              "wavePositionSource": "envelope",
-              "wavePositionRate": 1.0,
-              "unisonVoices": 1,
-              "unisonDetune": 0.0
-            },
-            {
-              "enabled": false,
-              "wave": "saw",
-              "octave": 0,
-              "detuneCents": 0.0,
-              "gain": 0.8,
-              "mode": "classic",
-              "wavetable": "basic",
-              "wavePosition": 0.0,
-              "wavePositionMod": 0.0,
-              "wavePositionSource": "envelope",
-              "wavePositionRate": 1.0,
-              "unisonVoices": 1,
-              "unisonDetune": 0.0
-            },
-            {
-              "enabled": false,
-              "wave": "saw",
-              "octave": 0,
-              "detuneCents": 0.0,
-              "gain": 0.8,
-              "mode": "classic",
-              "wavetable": "basic",
-              "wavePosition": 0.0,
-              "wavePositionMod": 0.0,
-              "wavePositionSource": "envelope",
-              "wavePositionRate": 1.0,
-              "unisonVoices": 1,
-              "unisonDetune": 0.0
-            }
-          ],
-          "amp": {
-            "attack": 0.001,
-            "decay": 0.09,
-            "sustain": 0.0,
-            "release": 0.06
-          }
-        },
-        "sample": {
-          "file": "",
-          "sourceSampleRate": 44100,
-          "lengthSamples": 0,
-          "startSample": 0,
-          "endSample": 0,
-          "fadeInMs": 0.0,
-          "fadeOutMs": 0.0,
-          "transpose": 0.0,
-          "reverse": false,
-          "loop": false
-        },
-        "effects": []
-      },
-      {
         "id": 3,
         "name": "Bass",
         "colour": "ff4fa3ff",
-        "mixerTrackId": 3,
+        "mixerTrackId": 1,
         "basePitch": 40,
         "volume": 0.75,
         "pan": 0.0,
@@ -254,7 +92,7 @@
         "id": 4,
         "name": "Lead",
         "colour": "fff2c14e",
-        "mixerTrackId": 4,
+        "mixerTrackId": 2,
         "basePitch": 72,
         "volume": 0.6,
         "pan": 0.0,
@@ -335,7 +173,7 @@
         "id": 5,
         "name": "pad",
         "colour": "ffb388eb",
-        "mixerTrackId": 1,
+        "mixerTrackId": 3,
         "basePitch": 60,
         "volume": 0.8,
         "pan": 0.0,
@@ -416,7 +254,7 @@
         "id": 6,
         "name": "answer",
         "colour": "ff3ecf8e",
-        "mixerTrackId": 1,
+        "mixerTrackId": 4,
         "basePitch": 60,
         "volume": 0.8,
         "pan": 0.0,
@@ -495,14 +333,6 @@
       }
     ],
     "patterns": [
-      {
-        "id": 1,
-        "name": "Pattern 1",
-        "lengthSteps": 16,
-        "genId": "",
-        "genHash": "",
-        "notes": []
-      },
       {
         "id": 2,
         "name": "intro",
@@ -5752,7 +5582,7 @@
       "tracks": [
         {
           "id": 1,
-          "name": "Insert 1",
+          "name": "Bass",
           "gain": 0.8,
           "pan": 0.0,
           "mute": false,
@@ -5761,7 +5591,7 @@
         },
         {
           "id": 2,
-          "name": "Insert 2",
+          "name": "Lead",
           "gain": 0.8,
           "pan": 0.0,
           "mute": false,
@@ -5770,7 +5600,7 @@
         },
         {
           "id": 3,
-          "name": "Insert 3",
+          "name": "pad",
           "gain": 0.8,
           "pan": 0.0,
           "mute": false,
@@ -5779,7 +5609,7 @@
         },
         {
           "id": 4,
-          "name": "Insert 4",
+          "name": "answer",
           "gain": 0.8,
           "pan": 0.0,
           "mute": false,

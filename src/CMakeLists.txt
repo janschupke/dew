@@ -61,11 +61,18 @@ juce_add_binary_data(dew_demo_data
     "${CMAKE_SOURCE_DIR}/examples/melody.dew"
     "${CMAKE_SOURCE_DIR}/examples/effects.dew"
     "${CMAKE_SOURCE_DIR}/examples/automation.dew"
+    "${CMAKE_SOURCE_DIR}/examples/wavetable.dew"
+    "${CMAKE_SOURCE_DIR}/examples/layers.dew"
+    "${CMAKE_SOURCE_DIR}/examples/arrangement.dew"
     "${CMAKE_SOURCE_DIR}/examples/amber.dew"
 
-    # The SOURCE of the last one, because the demo that opens it is the score
-    # compiled - so the .dew beside it cannot drift from the text that made it.
+    # The SOURCES of the compiled ones, because a demo that opens a score
+    # compiled is a demo whose .dew must not drift from the text that made it.
+    # drift.score comes first: the wavetable demo COMPILES it at build time, so
+    # the bytes have to be in the binary before that demo can be built at all.
     "${CMAKE_SOURCE_DIR}/examples/amber.score"
+    "${CMAKE_SOURCE_DIR}/examples/drift.score"
+    "${CMAKE_SOURCE_DIR}/examples/neon.score"
 )
 
 # ------------------------------------------------------------------------------
@@ -123,7 +130,9 @@ add_library(dew_model STATIC
   model/ProjectSerializer.cpp
   model/DemoLibrary.cpp
   model/ChannelColour.cpp
+  model/DemoBuilders.cpp
   model/ProjectFactory.cpp
+  model/Demos.cpp
   model/ProjectDocument.cpp
   model/ProjectEdits.cpp
   model/NoteTools.cpp

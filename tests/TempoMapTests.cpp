@@ -10,6 +10,7 @@
 #include "model/ProjectEdits.h"
 #include "model/ProjectFactory.h"
 #include "model/ProjectSerializer.h"
+#include "FixtureProject.h"
 
 using namespace dew;
 using Catch::Matchers::WithinAbs;
@@ -111,13 +112,28 @@ TEST_CASE ("a map is strictly monotone", "[tempo]")
     }
 }
 
-TEST_CASE ("every committed demo builds a constant map", "[tempo]")
+TEST_CASE ("the guard renders' fixture builds a constant map", "[tempo]")
 {
-    // None of them has a tempo curve, so every one of them must take the fast
-    // path - which is what says the guard renders are still comparing what they
-    // have always compared.
+    // This is the assertion that used to be made of the demos, and it belongs
+    // here now: the renders that compare samples with exactlyEqual run on the
+    // fixture, so the fixture is what has to take the fast path for them to be
+    // comparing what they have always compared.
+    const auto snapshot = buildSnapshot (dew::testing::fixtureProject(), nullptr);
+
+    REQUIRE (snapshot.tempoMap != nullptr);
+    REQUIRE (snapshot.tempoMap->isConstant());
+}
+
+TEST_CASE ("a demo's map is constant exactly when it draws no tempo", "[tempo]")
+{
+    // Stronger than "every demo is constant", which was only true while nothing
+    // shipped used the scope. Both directions are checked, so a demo that gains
+    // a tempo curve is noticed here, and so is one that claims to have one and
+    // whose curve the engine did not pick up.
     const auto& entries = DemoLibrary::entries();
     REQUIRE (! entries.empty());
+
+    int drawn = 0;
 
     for (int i = 0; i < (int) entries.size(); ++i)
     {
@@ -127,10 +143,26 @@ TEST_CASE ("every committed demo builds a constant map", "[tempo]")
         const auto tree = DemoLibrary::load (i, warnings);
         REQUIRE (tree.isValid());
 
+        bool drawsTempo = false;
+
+        for (const auto& automation : tree)
+            if (automation.hasType (ids::AUTOMATION)
+                && automation[ids::scope].toString() == "project"
+                && automation[ids::param].toString() == ids::tempoBpm.toString())
+                drawsTempo = true;
+
         const auto snapshot = buildSnapshot (tree, nullptr);
         REQUIRE (snapshot.tempoMap != nullptr);
-        REQUIRE (snapshot.tempoMap->isConstant());
+
+        INFO ((drawsTempo ? "draws a tempo" : "draws no tempo"));
+        REQUIRE (snapshot.tempoMap->isConstant() == ! drawsTempo);
+
+        drawn += drawsTempo ? 1 : 0;
     }
+
+    // Control case: a test over a library where nobody draws one proves nothing
+    // about the branch it exists to check.
+    REQUIRE (drawn >= 1);
 }
 
 TEST_CASE ("a snapshot always has a map, even an empty one", "[tempo]")
@@ -252,7 +284,7 @@ TEST_CASE ("an exported ramp moves no note", "[tempo][midi]")
     // The claim a tempo meta event makes: a tick is MUSICAL time, and the tempo
     // map is precisely the tick-to-seconds function. So a ramp changes how long
     // the file takes to play and not where a single note sits in it.
-    auto project = ProjectFactory::createDemo();
+    auto project = dew::testing::fixtureProject();
     juce::UndoManager undo;
 
     const auto ticksOf = [] (const juce::ValueTree& tree)

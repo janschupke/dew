@@ -46,6 +46,24 @@ struct ProjectFactory
     /** An arpeggio under a filter sweep and a fade, both as automation clips. */
     static juce::ValueTree createAutomationDemo();
 
+    /** Five wavetables, unison stacks and a morph position drawn as a curve.
+
+        Its notes come from examples/drift.score and its sound is built in
+        Demos.cpp: the language owns the music, the user owns the instrument,
+        and this demo is what that division looks like from both sides.
+    */
+    static juce::ValueTree createWavetableDemo();
+
+    /** Three oscillators on every channel: octaves, cent detune and per-slot
+        gain, with one wavetable slot standing among classic ones.
+    */
+    static juce::ValueTree createLayersDemo();
+
+    /** Eight channels, six patterns and three lanes that come and go
+        independently, with four drums sharing one mixer insert.
+    */
+    static juce::ValueTree createArrangementDemo();
+
     /** The score example, COMPILED rather than loaded.
 
         Opening it puts real text in the Score tab, so pressing Compile
