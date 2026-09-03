@@ -100,6 +100,11 @@ void AudioEngine::publish (EngineSnapshot snapshot)
     // making a module is allowed to allocate.
     resolveModules (snapshot);
 
+    // The message thread's own copy, taken before the snapshot is handed over.
+    // It converts for the ruler and for a seek; the audio thread uses the one in
+    // the snapshot it has latched.
+    uiTempoMap = snapshot.tempoMap;
+
     bridge.publish (std::move (snapshot));
 }
 
@@ -301,7 +306,21 @@ void AudioEngine::setPlayheadSteps (double steps)
     if (sps <= 0.0)
         return;
 
-    auto position = (juce::int64) (clamped * sps);
+    // Through the message thread's own map, so a seek under a tempo curve lands
+    // where the ruler drew it. Both ends of the wrap below convert with the SAME
+    // map, which is strictly better than the old arithmetic: that re-derived a
+    // constant rate and could round differently from the audio thread.
+    const auto map = uiTempoMap;
+
+    const auto samplesAt = [&map, sps, this] (double atSteps)
+    {
+        if (map != nullptr && ! map->isConstant())
+            return map->secondsForSteps (atSteps) * currentSampleRate;
+
+        return sps * atSteps;
+    };
+
+    auto position = (juce::int64) samplesAt (clamped);
 
     // Folded HERE as well, through the one wrap rule, so what is shown at once
     // is where the next block will actually land. Storing the raw position and
@@ -313,8 +332,8 @@ void AudioEngine::setPlayheadSteps (double steps)
 
     if (! wrap.isEmpty())
         position = Transport::wrappedIntoLoop (position,
-                                               (juce::int64) std::llround (sps * (double) wrap.startSteps),
-                                               (juce::int64) std::llround (sps * (double) wrap.endSteps));
+                                               (juce::int64) std::llround (samplesAt ((double) wrap.startSteps)),
+                                               (juce::int64) std::llround (samplesAt ((double) wrap.endSteps)));
 
     playheadSamples.store (position);
 }
@@ -353,6 +372,15 @@ void AudioEngine::setMode (Transport::Mode mode)
 
 double AudioEngine::getPlayheadSteps() const noexcept
 {
+    // Through the MESSAGE thread's own copy of the map, not the transport's:
+    // the transport's pointer is into whatever snapshot the audio thread has
+    // latched, and reading it from here would be a race.
+    const auto map = uiTempoMap;
+
+    if (map != nullptr && ! map->isConstant())
+        return map->stepsForSeconds ((double) playheadSamples.load()
+                                         / juce::jmax (1.0, currentSampleRate));
+
     const auto sps = Transport::samplesPerStepFor (transport.getTempo(),
                                                    transport.getStepsPerBeat(),
                                                    currentSampleRate);
@@ -692,6 +720,11 @@ void AudioEngine::processBlock (juce::AudioBuffer<float>& buffer) noexcept
     const auto& snapshot = bridge.acquire();
     applySnapshotIfChanged (snapshot);
 
+    // Every block, not only when the generation changes: the bridge can hand
+    // back a different slot holding the same generation, and a raw pointer into
+    // the previous one would outlive it.
+    transport.setTempoMap (snapshot.tempoMap.get());
+
     const auto mode = requestedMode.load();
     transport.setMode (mode);
 
@@ -786,7 +819,7 @@ void AudioEngine::processBlock (juce::AudioBuffer<float>& buffer) noexcept
     if (isPlayingNow && materialSteps > 0)
     {
         Sequencer::collect (snapshot, mode, transport.getPositionSamples(), numSamples,
-                            transport.samplesPerStep(), patternIndex, triggers);
+                            *snapshot.tempoMap, currentSampleRate, patternIndex, triggers);
     }
     else
     {

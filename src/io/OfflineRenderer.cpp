@@ -40,21 +40,25 @@ juce::Result planSpan (const EngineSnapshot& snapshot,
                 ? "This project has nothing in its playlist to render."
                 : "Pattern " + juce::String (options.patternId) + " is empty or does not exist.");
 
-    const auto samplesPerStep = Transport::samplesPerStepFor (snapshot.tempoBpm,
-                                                              snapshot.stepsPerBeat,
-                                                              options.sampleRate);
+    // Through the snapshot's own map, which is why the map lives there: this
+    // function builds no snapshot of its own and needs no RenderOptions field to
+    // reach it. Without a tempo curve the map is the same multiply this was.
+    const auto samplesAt = [&snapshot, &options] (double steps)
+    {
+        return snapshot.tempoMap->secondsForSteps (steps) * options.sampleRate;
+    };
 
-    const auto materialSamples = (juce::int64) std::llround (samplesPerStep * (double) materialSteps);
+    const auto materialSamples = (juce::int64) std::llround (samplesAt ((double) materialSteps));
     const auto tailSamples = (juce::int64) std::llround (options.tailSeconds * options.sampleRate);
 
     if (! options.barRange.isEmpty())
     {
         // A range is expressed in bars, so it is the one scope whose length does
         // not depend on how long the material happens to be.
-        const auto samplesPerBar = samplesPerStep * (double) snapshot.stepsPerBar();
+        const auto stepsPerBar = (double) snapshot.stepsPerBar();
 
-        span.firstSample = (juce::int64) std::llround ((double) options.barRange.firstBar * samplesPerBar);
-        const auto lastSample = (juce::int64) std::llround ((double) options.barRange.lastBar * samplesPerBar);
+        span.firstSample = (juce::int64) std::llround (samplesAt ((double) options.barRange.firstBar * stepsPerBar));
+        const auto lastSample = (juce::int64) std::llround (samplesAt ((double) options.barRange.lastBar * stepsPerBar));
 
         span.totalSamples = lastSample + tailSamples;
 

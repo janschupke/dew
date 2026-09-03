@@ -21,6 +21,7 @@ namespace
 struct ScopeName { AutomationScope scope; const char* id; };
 
 constexpr ScopeName scopeNames[] {
+    { AutomationScope::project,       "project" },
     { AutomationScope::channel,       "channel" },
     { AutomationScope::channelOsc,    "channelOsc" },
     { AutomationScope::channelEffect, "channelEffect" },
@@ -96,6 +97,12 @@ std::vector<ParamSpec> automatableIn (const std::vector<ParamSpec>& specs)
 
 } // namespace
 
+const std::vector<ParamSpec>& projectParams()
+{
+    static const auto specs = automatableIn (projectParamSpecs());
+    return specs;
+}
+
 const std::vector<ParamSpec>& channelParams()
 {
     static const auto specs = automatableIn (channelParamSpecs());
@@ -164,6 +171,7 @@ juce::StringArray automatableParameterNames()
                 names.addIfNotAlreadyThere (spec.property->toString());
     };
 
+    collect (projectParams());
     collect (channelParams());
     collect (mixerTrackParams());
     collect (masterParams());
@@ -194,6 +202,7 @@ const ParamSpec* findParamSpec (AutomationScope scope, const juce::String& effec
 {
     switch (scope)
     {
+        case AutomationScope::project:       return findIn (projectParams(), property);
         case AutomationScope::channel:       return findIn (channelParams(), property);
         case AutomationScope::channelOsc:    return findIn (oscParams(), property);
         case AutomationScope::mixerTrack:    return findIn (mixerTrackParams(), property);
@@ -259,7 +268,13 @@ std::optional<AutomationTarget> automationTargetFor (const juce::ValueTree& proj
     juce::String effectType;
     juce::String ownerName;
 
-    if (node.hasType (ids::CHANNEL))
+    if (node.hasType (ids::PROJECT))
+    {
+        target.scope = AutomationScope::project;
+        target.targetId = 0;
+        target.displayName = "Song";
+    }
+    else if (node.hasType (ids::CHANNEL))
     {
         target.scope = AutomationScope::channel;
         target.targetId = (int) node[ids::id];
@@ -365,6 +380,11 @@ std::vector<AutomationTarget> availableAutomationTargets (const juce::ValueTree&
             if (effect.hasType (ids::EFFECT))
                 offer (effect, effectParams (effect[ids::type].toString()));
     };
+
+    // The song's own group FIRST. The picker groups by the first word of a
+    // display name, and a global parameter buried after thirty channels is a
+    // parameter nobody finds.
+    offer (project, projectParams());
 
     for (const auto& channel : project)
     {

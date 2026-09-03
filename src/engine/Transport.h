@@ -1,6 +1,7 @@
 #pragma once
 
 #include <juce_core/juce_core.h>
+#include "engine/TempoMap.h"
 #include "model/Constants.h"
 
 namespace dew
@@ -22,8 +23,30 @@ public:
     double getTempo() const noexcept        { return tempoBpm; }
     int getStepsPerBeat() const noexcept    { return stepsPerBeat; }
 
-    /** Samples per sequencer step. A step is a 1/stepsPerBeat note. */
+    /** Samples per sequencer step. A step is a 1/stepsPerBeat note.
+
+        With a tempo map set this is the INSTANTANEOUS rate at the playhead, so
+        a note's duration and anything else measuring "how fast is time passing
+        right here" still get an answer. Use samplesForSteps for a SPAN.
+    */
     double samplesPerStep() const noexcept;
+
+    /** How steps become time, or null for one constant tempo.
+
+        NON-OWNING: the snapshot that holds it is latched by processBlock for
+        the whole block, which is exactly the lifetime SnapshotBridge::acquire
+        guarantees. Re-set every block rather than only when the generation
+        changes - the bridge can hand back a different slot holding the same
+        generation.
+    */
+    void setTempoMap (const TempoMap* map) noexcept { tempoMap = map; }
+
+    /** Steps <-> samples. THE conversion: loopStartSamples, getPositionInSteps,
+        the sequencer and the offline renderer all go through these, so a tempo
+        curve reaches all of them at once or none of them.
+    */
+    double samplesForSteps (double steps) const noexcept;
+    double stepsForSamples (double samples) const noexcept;
 
     // --- the loop window -----------------------------------------------------
     /** The half-open window [start, end) the playhead wraps inside, in steps.
@@ -106,6 +129,7 @@ public:
     static double samplesPerStepFor (double bpm, int stepsPerBeat, double sampleRate) noexcept;
 
 private:
+    const TempoMap* tempoMap = nullptr;
     double sampleRate = kDefaultSampleRate;
     double tempoBpm = 128.0;
     int stepsPerBeat = 4;

@@ -14,6 +14,7 @@ add_executable(dew_tests
   StatusBarTests.cpp
   ProjectEditsTests.cpp
   NoteToolsTests.cpp
+  TempoMapTests.cpp
   TransportTests.cpp
   SequencerTests.cpp
   LoopRegionTests.cpp

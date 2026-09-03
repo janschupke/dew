@@ -340,15 +340,20 @@ void RenderPanel::updateSummary()
 
     const auto materialSteps = Sequencer::materialLengthSteps (snapshot, request.options.mode, patternIndex);
 
-    const auto samplesPerStep = Transport::samplesPerStepFor (snapshot.tempoBpm,
-                                                              snapshot.stepsPerBeat,
-                                                              request.options.sampleRate);
+    // The snapshot's own map, which is already in seconds - so the summary of a
+    // render with a tempo curve says how long it will actually be, rather than
+    // how long it would be at the tempo the project starts at.
+    const auto& map = *snapshot.tempoMap;
 
-    auto seconds = samplesPerStep * (double) materialSteps / request.options.sampleRate;
+    auto seconds = map.secondsForSteps ((double) materialSteps);
 
     if (! request.options.barRange.isEmpty())
-        seconds = samplesPerStep * (double) snapshot.stepsPerBar()
-                  * (double) request.options.barRange.numBars() / request.options.sampleRate;
+    {
+        const auto stepsPerBar = (double) snapshot.stepsPerBar();
+
+        seconds = map.secondsForSteps ((double) request.options.barRange.lastBar * stepsPerBar)
+                    - map.secondsForSteps ((double) request.options.barRange.firstBar * stepsPerBar);
+    }
 
     if (request.options.format != RenderFormat::midi)
         seconds += request.options.tailSeconds;

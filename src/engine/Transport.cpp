@@ -25,7 +25,37 @@ void Transport::setTempo (double bpm, int newStepsPerBeat)
 
 double Transport::samplesPerStep() const noexcept
 {
-    return samplesPerStepFor (tempoBpm, stepsPerBeat, sampleRate);
+    if (tempoMap == nullptr || tempoMap->isConstant())
+        return samplesPerStepFor (tempoBpm, stepsPerBeat, sampleRate);
+
+    return tempoMap->secondsPerStepAt (getPositionInSteps()) * sampleRate;
+}
+
+double Transport::samplesForSteps (double steps) const noexcept
+{
+    // The constant case is the SAME expression it has always been, not a
+    // one-segment special case of the map.
+    //
+    // Not thrift: the render tests compare samples with juce::exactlyEqual, and
+    // (60/bpm * sampleRate / stepsPerBeat) * steps differs in the last bit from
+    // (60/bpm/stepsPerBeat) * steps * sampleRate at some tempos. A project with
+    // no tempo curve has to take the arithmetic it has always taken.
+    if (tempoMap == nullptr || tempoMap->isConstant())
+        return samplesPerStepFor (tempoBpm, stepsPerBeat, sampleRate) * steps;
+
+    return tempoMap->secondsForSteps (steps) * sampleRate;
+}
+
+double Transport::stepsForSamples (double samples) const noexcept
+{
+    if (tempoMap == nullptr || tempoMap->isConstant())
+    {
+        const auto sps = samplesPerStepFor (tempoBpm, stepsPerBeat, sampleRate);
+
+        return sps > 0.0 ? samples / sps : 0.0;
+    }
+
+    return tempoMap->stepsForSeconds (samples / juce::jmax (1.0, sampleRate));
 }
 
 void Transport::setLoopRange (double startSteps, double endSteps) noexcept
@@ -36,12 +66,12 @@ void Transport::setLoopRange (double startSteps, double endSteps) noexcept
 
 juce::int64 Transport::loopStartSamples() const noexcept
 {
-    return (juce::int64) std::llround (samplesPerStep() * loopStartSteps);
+    return (juce::int64) std::llround (samplesForSteps (loopStartSteps));
 }
 
 juce::int64 Transport::loopEndSamples() const noexcept
 {
-    return (juce::int64) std::llround (samplesPerStep() * loopEndSteps);
+    return (juce::int64) std::llround (samplesForSteps (loopEndSteps));
 }
 
 juce::int64 Transport::wrappedIntoLoop (juce::int64 position, juce::int64 startSamples,
@@ -88,8 +118,7 @@ void Transport::advance (int numSamples) noexcept
 
 double Transport::getPositionInSteps() const noexcept
 {
-    const auto sps = samplesPerStep();
-    return sps > 0.0 ? (double) positionSamples / sps : 0.0;
+    return stepsForSamples ((double) positionSamples);
 }
 
 } // namespace dew

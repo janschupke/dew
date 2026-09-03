@@ -3,6 +3,7 @@
 #include <vector>
 
 #include "engine/EngineSnapshot.h"
+#include "engine/TempoMap.h"
 #include "engine/Transport.h"
 
 namespace dew
@@ -40,7 +41,8 @@ public:
                          Transport::Mode mode,
                          juce::int64 positionSamples,
                          int numSamples,
-                         double samplesPerStep,
+                         const TempoMap& tempoMap,
+                         double sampleRate,
                          int patternIndexForPatternMode,
                          std::vector<NoteTrigger>& out);
 

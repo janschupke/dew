@@ -50,8 +50,9 @@ int countNoteOns (const juce::MidiFile& file)
 std::set<std::tuple<int, int, int>> sequencerNotes (const juce::ValueTree& project)
 {
     const auto snapshot = buildSnapshot (project, nullptr);
+    constexpr auto sampleRate = 44100.0;
     const auto samplesPerStep = Transport::samplesPerStepFor (snapshot.tempoBpm,
-                                                              snapshot.stepsPerBeat, 44100.0);
+                                                              snapshot.stepsPerBeat, sampleRate);
 
     const auto totalSteps = Sequencer::materialLengthSteps (snapshot, Transport::Mode::song, -1);
 
@@ -65,7 +66,7 @@ std::set<std::tuple<int, int, int>> sequencerNotes (const juce::ValueTree& proje
         const auto end = (juce::int64) std::llround ((double) (step + 1) * samplesPerStep);
 
         Sequencer::collect (snapshot, Transport::Mode::song, start, (int) (end - start),
-                            samplesPerStep, -1, triggers);
+                            *snapshot.tempoMap, sampleRate, -1, triggers);
 
         for (const auto& trigger : triggers)
         {

@@ -24,25 +24,46 @@ void Sequencer::collect (const EngineSnapshot& snapshot,
                          Transport::Mode mode,
                          juce::int64 positionSamples,
                          int numSamples,
-                         double samplesPerStep,
+                         const TempoMap& tempoMap,
+                         double sampleRate,
                          int patternIndexForPatternMode,
                          std::vector<NoteTrigger>& out)
 {
     out.clear();
 
-    if (numSamples <= 0 || samplesPerStep <= 0.0)
+    if (numSamples <= 0 || sampleRate <= 0.0)
         return;
 
     const auto blockStart = (double) positionSamples;
     const auto blockEnd = blockStart + (double) numSamples;
 
+    // The map, not a scalar rate.
+    //
+    // Multiplying by one samples-per-step is right only while the tempo is
+    // constant, and the error against a ramp accumulates AGAINST the sample
+    // counter - which is the one drift this codebase's timing design exists to
+    // prevent. Constant, the map is the same multiply it always was.
+    const auto samplesAtStep = [&tempoMap, sampleRate] (double step)
+    {
+        return tempoMap.secondsForSteps (step) * sampleRate;
+    };
+
+    const auto stepAtSample = [&tempoMap, sampleRate] (double samples)
+    {
+        return tempoMap.stepsForSeconds (samples / sampleRate);
+    };
+
     // Step boundaries falling inside [blockStart, blockEnd). At a typical tempo
     // and block size this is zero or one step, so the loop below is short.
-    auto firstStep = (juce::int64) std::ceil (blockStart / samplesPerStep);
-    const auto lastStep = (juce::int64) std::ceil (blockEnd / samplesPerStep) - 1;
+    auto firstStep = (juce::int64) std::ceil (stepAtSample (blockStart));
+    const auto lastStep = (juce::int64) std::ceil (stepAtSample (blockEnd)) - 1;
 
     if (firstStep < 0)
         firstStep = 0;
+
+    // Which step is being emitted, so a note's duration is measured from where
+    // it actually starts rather than from the beginning of the song.
+    juce::int64 currentStep = 0;
 
     const auto emit = [&] (const NoteSnapshot& note, int offset)
     {
@@ -54,13 +75,18 @@ void Sequencer::collect (const EngineSnapshot& snapshot,
         trigger.channelIndex = note.channelIndex;
         trigger.pitch = note.pitch;
         trigger.velocity = note.velocity;
-        trigger.durationSamples = (int) std::llround (samplesPerStep * (double) note.lengthSteps);
+        // The span, not a rate times a length: a note that runs through a tempo
+        // change lasts the musical length it was written with.
+        trigger.durationSamples = (int) std::llround (samplesAtStep ((double) currentStep
+                                                                        + (double) note.lengthSteps)
+                                                      - samplesAtStep ((double) currentStep));
         out.push_back (trigger);
     };
 
     for (auto step = firstStep; step <= lastStep; ++step)
     {
-        const auto stepStart = (double) step * samplesPerStep;
+        const auto stepStart = samplesAtStep ((double) step);
+        currentStep = step;
 
         if (stepStart < blockStart || stepStart >= blockEnd)
             continue;

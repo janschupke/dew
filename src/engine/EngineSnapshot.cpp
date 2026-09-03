@@ -504,6 +504,12 @@ EngineSnapshot buildSnapshot (const juce::ValueTree& project, juce::StringArray*
     EngineSnapshot snapshot;
     snapshot.generation = nextGeneration.fetch_add (1, std::memory_order_relaxed);
 
+    // Never null, including on the early return: everything that converts a step
+    // into time reads it, and a null check on that path would be a branch in the
+    // render loop guarding against a state that should not exist.
+    snapshot.tempoMap = std::make_shared<const TempoMap> (
+        TempoMap::constant (snapshot.tempoBpm, snapshot.stepsPerBeat));
+
     if (! project.isValid())
         return snapshot;
 
@@ -715,7 +721,10 @@ EngineSnapshot buildSnapshot (const juce::ValueTree& project, juce::StringArray*
 
         switch (a.scope)
         {
+            case AutomationScope::project:
             case AutomationScope::master:
+                // Neither names a node to find: the master is the one bus every
+                // project has, and the project scope is the arrangement itself.
                 a.targetIndex = -1;
                 resolved = true;
                 break;
@@ -875,6 +884,11 @@ EngineSnapshot buildSnapshot (const juce::ValueTree& project, juce::StringArray*
             snapshot.clips.push_back (c);
         }
     }
+
+    // LAST, because it reads the automations and the clips that were just
+    // resolved. Without a tempo curve it is the constant form, which is exactly
+    // the arithmetic every render has always done.
+    snapshot.tempoMap = std::make_shared<const TempoMap> (TempoMap::build (snapshot, warnings));
 
     return snapshot;
 }

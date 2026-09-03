@@ -6,6 +6,7 @@
 #include <memory>
 #include <vector>
 
+#include "engine/TempoMap.h"
 #include "model/AutomationCurve.h"
 #include "model/AutomationTargets.h"
 #include "model/ProjectSchema.h"
@@ -263,7 +264,11 @@ enum class AutomationParam
     filterMode,
     enabled,        ///< an effect slot's bypass
     oscEnabled,     ///< an oscillator slot's on/off
-    muted           ///< a channel's or a mixer track's mute
+    muted,          ///< a channel's or a mixer track's mute
+
+    /** The arrangement's own tempo. Not applied through an override like the
+        rest: it changes how STEPS become time, which is the TempoMap's job. */
+    tempoBpm
 };
 
 /** One automation definition, with its target resolved to indices. */
@@ -336,6 +341,19 @@ struct MixerTrackSnapshot
 struct EngineSnapshot
 {
     double tempoBpm = 128.0;
+
+    /** How steps become time. Never null.
+
+        A shared_ptr for the same reason ChannelSnapshot::audio is one, and with
+        the same rule: only the MESSAGE thread ever copies or releases it. The
+        audio thread reads through a raw pointer it took from a snapshot it has
+        already latched.
+
+        In the snapshot rather than threaded through RenderOptions because
+        OfflineRenderer, RenderPanel and MidiExporter each build their own
+        snapshot - so anything reachable from one needs no plumbing at all.
+    */
+    std::shared_ptr<const TempoMap> tempoMap;
     int stepsPerBeat = 4;
 
     /** The project's meter. `beatsPerBar` groups beats into bars and is what

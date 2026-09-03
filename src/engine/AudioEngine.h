@@ -345,6 +345,16 @@ private:
         This struct has no such member. The type system states the invariant
         now, instead of a comment asking for it.
     */
+    /** The map the MESSAGE thread converts with, replaced in publish().
+
+        A plain member rather than an atomic, because the audio thread reads the
+        one inside the snapshot it has latched and never this. setPlayheadSteps
+        and getPlayheadSteps are its only readers and both run on the message
+        thread - the doc on setPlayheadSteps said "any thread" and no caller ever
+        did.
+    */
+    std::shared_ptr<const TempoMap> uiTempoMap;
+
     struct ChannelOverrides
     {
         float volume = 0.0f;

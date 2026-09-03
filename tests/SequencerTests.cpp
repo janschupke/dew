@@ -8,6 +8,21 @@ using namespace dew;
 namespace
 {
 
+/** The tests speak in SAMPLES PER STEP, which is what Sequencer::collect took
+    before there was a tempo map. A constant map at a fixed rate is the same
+    thing said the other way round, and keeps every existing expectation - the
+    step boundaries, the offsets, the durations - exactly where it was.
+*/
+constexpr double kTestSampleRate = 48000.0;
+
+dew::TempoMap mapFor (double samplesPerStep)
+{
+    // stepsPerBeat of 1, so seconds-per-step IS 60/bpm and the bpm that produces
+    // this many samples per step falls straight out.
+    return dew::TempoMap::constant (60.0 * kTestSampleRate / samplesPerStep, 1);
+}
+
+
 /** A snapshot with one channel and one pattern whose notes are at the given steps. */
 EngineSnapshot snapshotWithSteps (const std::vector<int>& steps, int patternLength = 16,
                                   int noteLengthSteps = 1)
@@ -56,7 +71,8 @@ std::vector<NoteTrigger> collectOver (const EngineSnapshot& snapshot, Transport:
     {
         const auto thisBlock = (int) juce::jmin ((juce::int64) blockSize, toSample - position);
 
-        Sequencer::collect (snapshot, mode, position, thisBlock, samplesPerStep, patternIndex, block);
+        Sequencer::collect (snapshot, mode, position, thisBlock, mapFor (samplesPerStep),
+                            kTestSampleRate, patternIndex, block);
 
         for (const auto& trigger : block)
         {
@@ -89,7 +105,7 @@ TEST_CASE ("a note landing inside a block gets the right offset", "[sequencer]")
     std::vector<NoteTrigger> out;
 
     // Block 5900..6412 contains sample 6000 at offset 100.
-    Sequencer::collect (snapshot, Transport::Mode::pattern, 5900, 512, 6000.0, 0, out);
+    Sequencer::collect (snapshot, Transport::Mode::pattern, 5900, 512, mapFor (6000.0), kTestSampleRate, 0, out);
 
     REQUIRE (out.size() == 1);
     REQUIRE (out[0].sampleOffset == 100);
@@ -132,7 +148,7 @@ TEST_CASE ("a note carries its duration so the voice can release itself", "[sequ
     const auto snapshot = snapshotWithSteps ({ 0 }, 16, 4);
     std::vector<NoteTrigger> out;
 
-    Sequencer::collect (snapshot, Transport::Mode::pattern, 0, 512, 6000.0, 0, out);
+    Sequencer::collect (snapshot, Transport::Mode::pattern, 0, 512, mapFor (6000.0), kTestSampleRate, 0, out);
 
     REQUIRE (out.size() == 1);
     REQUIRE (out[0].durationSamples == 4 * 6000);

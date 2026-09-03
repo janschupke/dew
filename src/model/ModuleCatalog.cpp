@@ -291,6 +291,22 @@ const ParamSpec sampleSpecs[] {
     toggleSpec (&ids::loop,    "Loop",    "LOOP", /*automatable*/ false),
 };
 
+/** The arrangement's own parameters. One: the tempo.
+
+    20..999 reconciles the FOURTH disagreement of the same kind the rest of this
+    file exists to end - the transport's field offered 20..300 while
+    buildSnapshot clamped to 20..999, so the top two thirds of what the engine
+    renders could not be typed in.
+
+    Logarithmic for the same reason cutoff is: doubling a tempo is an octave.
+    Linearly the midpoint of 20..999 is 510bpm; logarithmically it is 141, which
+    is the middle of what anyone plays.
+*/
+const ParamSpec projectSpecs[] {
+    { &ids::tempoBpm, "Tempo", "TEMPO", " bpm", 20.0, 999.0, 128.0, 0.1, 1,
+      ParamCurve::logarithmic, ParamControl::field },
+};
+
 template <size_t N>
 const std::vector<ParamSpec>& asVector (const ParamSpec (&table)[N])
 {
@@ -305,6 +321,7 @@ const std::vector<ParamSpec>& ampParamSpecs()     { return asVector (ampSpecs); 
 const std::vector<ParamSpec>& oscParamSpecs()     { return asVector (oscSpecs); }
 const std::vector<ParamSpec>& mixerTrackParamSpecs() { return asVector (mixerTrackSpecs); }
 const std::vector<ParamSpec>& sampleParamSpecs()     { return asVector (sampleSpecs); }
+const std::vector<ParamSpec>& projectParamSpecs()    { return asVector (projectSpecs); }
 
 const ParamSpec* instrumentParamSpec (const juce::Identifier& property) noexcept
 {

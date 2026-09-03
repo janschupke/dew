@@ -778,6 +778,10 @@ TEST_CASE ("every target the picker offers is one a control could ask for", "[au
         if (target.scope == AutomationScope::master)
             return mixer.getChildWithName (ids::MASTER);
 
+        // The arrangement itself, which is the project's own root.
+        if (target.scope == AutomationScope::project)
+            return project;
+
         juce::ValueTree owner;
 
         for (const auto& child : target.scope == AutomationScope::mixerTrack
@@ -802,6 +806,7 @@ TEST_CASE ("every target the picker offers is one a control could ask for", "[au
             case AutomationScope::mixerEffect:
                 return nth (owner, ids::EFFECT, target.slot);
 
+            case AutomationScope::project:
             case AutomationScope::master:
                 break;
         }

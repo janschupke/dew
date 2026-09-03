@@ -25,6 +25,16 @@ namespace dew
 */
 enum class AutomationScope
 {
+    /** The arrangement itself: the tempo, and nothing else.
+
+        Not the meter: a clip is stored in BARS, and ProjectEdits::setMeter
+        rescales every clip's start and length to hold its position in steps -
+        which a per-block curve cannot do. And not barsInSong, which is a
+        document extent rather than a quantity. Saying so here is what stops the
+        scope accreting.
+    */
+    project,
+
     channel,        ///< a channel's own volume or pan
     channelOsc,     ///< a parameter of one oscillator slot on a channel
     channelEffect,  ///< a parameter of one slot in a channel's chain
@@ -46,6 +56,9 @@ juce::String automationScopeToString (AutomationScope);
     toggle as well as for a cutoff.
 */
 double automationValueFor (const ParamSpec&, double normalised);
+
+/** Parameters automatable on the arrangement itself: the tempo. */
+const std::vector<ParamSpec>& projectParams();
 
 /** Parameters automatable on a channel itself. */
 const std::vector<ParamSpec>& channelParams();

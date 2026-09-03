@@ -160,6 +160,7 @@ add_library(dew_engine STATIC
   engine/SignalTap.cpp
   engine/EngineSnapshot.cpp
   engine/SnapshotBridge.cpp
+  engine/TempoMap.cpp
   engine/Transport.cpp
   engine/Sequencer.cpp
   engine/Wavetable.cpp
