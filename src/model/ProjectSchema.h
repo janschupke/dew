@@ -100,8 +100,16 @@ struct NodeSpec
     what it was: a project nobody compiled. Bumped for the reason v7 and v8
     were: an older build would open a project, drop its score text on the next
     save, and say nothing about it.
+
+    v11 made an automation point's `step` a double and gave a point a `shape`.
+    The shape is additive with a declared default of "curve", which with a bend
+    of zero is exactly the straight line every earlier file already drew. The
+    step is NOT additive: it is the same key changing type, so a v11 file
+    written with a point at step 6.5 loads into an older build as step 6, which
+    moves it. That is the one thing the version gate is for, and it is why this
+    bump is not optional.
 */
-inline constexpr int kFormatVersion = 10;
+inline constexpr int kFormatVersion = 11;
 
 /** How many effects one channel or mixer track may carry. A document limit
     rather than an engine one: a chain longer than this cannot be saved, so it

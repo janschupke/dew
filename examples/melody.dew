@@ -1,5 +1,5 @@
 {
-    "formatVersion": 10,
+    "formatVersion": 11,
     "name": "Piano Roll",
     "tempoBpm": 96.0,
     "stepsPerBeat": 4,

@@ -192,6 +192,12 @@ TEST_CASE ("a project from before the score loads as one nobody compiled",
     REQUIRE (track.getChild (0)[ids::genId].toString().isEmpty());
 
     // And it is now a current-version document.
+    //
+    // The literal is a TRIPWIRE, not a fact about the score: it fires on every
+    // bump so that whoever bumps has to come back here and confirm this v9
+    // payload still loads without a warning. It has done that once already -
+    // v11 made an automation point's step a double - so update the number when
+    // the rest of this test still passes, and do not delete it.
     REQUIRE ((int) loaded.tree[ids::formatVersion] == kFormatVersion);
-    REQUIRE (kFormatVersion == 10);
+    REQUIRE (kFormatVersion == 11);
 }

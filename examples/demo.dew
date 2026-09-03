@@ -1,5 +1,5 @@
 {
-    "formatVersion": 10,
+    "formatVersion": 11,
     "name": "dew demo",
     "tempoBpm": 124.0,
     "stepsPerBeat": 4,

@@ -240,7 +240,12 @@ const NodeSpec& pointSpec()
 {
     static const NodeSpec spec {
         ids::POINT,
-        { { ids::step,  0 },
+        // A DOUBLE, unlike a note's step, which is an int. A note lands on a
+        // step; a curve point is dragged to wherever the pointer was, and
+        // coerceToTypeOf drives its conversion off the runtime type of this
+        // default - so an int here silently truncated every fractional point
+        // on save and moved it back to the last whole step.
+        { { ids::step,  0.0 },
           // 0..1 within the target's own range, so a point editor is uniform
           // whatever it is driving.
           { ids::value, 0.5 },

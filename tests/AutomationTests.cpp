@@ -438,6 +438,39 @@ TEST_CASE ("automation survives save and load", "[automation][schema]")
                   WithinAbs (ProjectEdits::automationValueAt (automation, 12.0), 1e-9));
 }
 
+TEST_CASE ("a point dragged between two steps survives save and load", "[automation][schema]")
+{
+    // The test above round-trips a curve whose points sit on whole steps, which
+    // is the one case the bug could not reach: `step` was declared an int in
+    // pointSpec, and coerceToTypeOf drives its conversion off the runtime type
+    // of the declared default - so every point a DRAG produced was truncated
+    // back to the last whole step on the way out, silently, and the curve
+    // reloaded as a shape nobody drew.
+    auto project = ProjectFactory::createDefault();
+    juce::UndoManager undo;
+
+    auto automation = ProjectEdits::addAutomation (project, targetNamed (project, "Kick > Volume"), &undo);
+    setCurve (automation, { { 0.0, 0.0 }, { 6.5, 0.5 }, { 13.25, 1.0 } }, &undo);
+
+    const auto loaded = ProjectSerializer::fromJsonString (ProjectSerializer::toJsonString (project));
+
+    REQUIRE (loaded.ok());
+    REQUIRE (loaded.warnings.isEmpty());
+
+    const auto reloaded = ProjectEdits::findAutomation (loaded.tree, (int) automation[ids::id]);
+    REQUIRE (reloaded.isValid());
+
+    juce::Array<double> steps;
+
+    for (const auto& point : reloaded)
+        if (point.hasType (ids::POINT))
+            steps.add ((double) point[ids::step]);
+
+    REQUIRE (steps.size() == 3);
+    REQUIRE_THAT (steps[1], WithinAbs (6.5, 1e-9));
+    REQUIRE_THAT (steps[2], WithinAbs (13.25, 1e-9));
+}
+
 TEST_CASE ("the target list covers channels, effects, tracks and master", "[automation]")
 {
     auto project = ProjectFactory::createDemo();
