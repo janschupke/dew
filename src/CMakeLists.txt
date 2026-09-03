@@ -89,6 +89,7 @@ add_library(dew_lang STATIC
   lang/Harmony.cpp
   lang/Voicing.cpp
   lang/Melody.cpp
+  lang/Counterpoint.cpp
   lang/Generator.cpp
   lang/Completion.cpp
   lang/Compile.cpp

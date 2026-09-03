@@ -238,6 +238,11 @@ void addForKind (std::vector<Completion>& out, ValueKind kind, int wordsAlready,
         case ValueKind::instrument:
         case ValueKind::scope:      // handled above: membersOf lists them
             break;
+
+        case ValueKind::rule:
+            add (out, "forbid", "remove the candidate outright", CompletionKind::value);
+            add (out, "soft", "charge it, and follow with a weight", CompletionKind::value);
+            break;
     }
 }
 
@@ -432,10 +437,11 @@ CompletionResult completionsAt (std::string_view source, std::uint32_t byteOffse
     {
         if (result.block == BlockKind::unknown)
         {
-            // The top level: the seven block keywords, and the set is closed.
+            // The top level, from the table that declares which blocks belong
+            // there. A hand-written exclusion list here offered `counterpoint`
+            // as a top-level keyword the day one was added.
             for (const auto& spec : schema())
-                if (spec.kind != BlockKind::part && spec.kind != BlockKind::melody
-                    && spec.kind != BlockKind::overrides)
+                if (spec.topLevel)
                     add (items, nameOf (spec.kind), std::string (spec.doc),
                          CompletionKind::block);
         }

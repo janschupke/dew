@@ -67,6 +67,7 @@ add_executable(dew_tests
   ScoreParserTests.cpp
   ScoreResolverTests.cpp
   ScoreGeneratorTests.cpp
+  ScoreCounterpointTests.cpp
   ScoreBakeTests.cpp
   ScoreSchemaTests.cpp
   ScoreEditorTests.cpp

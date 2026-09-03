@@ -103,6 +103,7 @@ const char* nameOf (ValueKind kind) noexcept
         case ValueKind::harmonyRef:   return "the name of a declared harmony";
         case ValueKind::channelRef:   return "the name of a declared channel";
         case ValueKind::cadence:      return "a chord tone to end on";
+        case ValueKind::rule:         return "`forbid`, or `soft` and a weight";
         case ValueKind::scope:        return "how often a choice is re-drawn";
     }
 
@@ -154,6 +155,7 @@ const std::vector<std::string_view>& membersOf (ValueKind kind)
         case ValueKind::harmonyRef:
         case ValueKind::channelRef:
         case ValueKind::cadence:
+        case ValueKind::rule:
             break;
     }
 
@@ -173,6 +175,7 @@ BlockKind blockKindFor (std::string_view keyword) noexcept
     if (keyword == "melody")      return BlockKind::melody;
     if (keyword == "chords")      return BlockKind::chords;
     if (keyword == "line")        return BlockKind::line;
+    if (keyword == "counterpoint") return BlockKind::counterpoint;
     if (keyword == "overrides")   return BlockKind::overrides;
 
     return BlockKind::unknown;
@@ -193,6 +196,7 @@ const char* nameOf (BlockKind kind) noexcept
         case BlockKind::melody:      return "melody";
         case BlockKind::chords:      return "chords";
         case BlockKind::line:        return "line";
+        case BlockKind::counterpoint: return "counterpoint";
         case BlockKind::overrides:   return "overrides";
         case BlockKind::unknown:     return "unknown";
     }
@@ -212,7 +216,7 @@ const std::vector<BlockSpec>& schema()
             { "key",   ValueKind::key,    true,  false, "the home key" },
             { "seed",  ValueKind::seed,   false, false, "the root of every random choice" } },
           {},
-          "whole-song properties" },
+          "whole-song properties", true },
 
         { BlockKind::channel,
           { { "instrument", ValueKind::instrument,  false, false, "what plays this part" },
@@ -221,7 +225,7 @@ const std::vector<BlockSpec>& schema()
             { "velocity",   ValueKind::jitteredInt, false, true,  "0..127, optionally jittered" },
             { "octave",     ValueKind::integer,     false, true,  "octaves to shift by" } },
           {},
-          "one instrument" },
+          "one instrument", true },
 
         { BlockKind::voicing,
           { { "size",     ValueKind::voices,     false, false, "how many voices sound" },
@@ -230,27 +234,27 @@ const std::vector<BlockSpec>& schema()
             { "motion",   ValueKind::motion,     false, false, "how it moves from the chord before" },
             { "maxLeap",  ValueKind::integer,    false, false, "the largest jump one voice may make" } },
           {},
-          "how a chord is laid out" },
+          "how a chord is laid out", true },
 
-        { BlockKind::rhythm, {}, {}, "a cycle of durations" },
+        { BlockKind::rhythm, {}, {}, "a cycle of durations", true },
 
         { BlockKind::harmony,
           { { "key", ValueKind::key, false, false, "the key these numerals are read in" } },
           {},
-          "a chord progression" },
+          "a chord progression", true },
 
         { BlockKind::section,
           { { "length",  ValueKind::bars,       true,  false, "how long this section is" },
             { "harmony", ValueKind::harmonyRef, false, false, "which progression it uses" } },
           { BlockKind::part, BlockKind::harmony },
-          "a named span of bars" },
+          "a named span of bars", true },
 
         { BlockKind::part,
           { { "chords", ValueKind::voicingRef, false, false, "play the harmony, voiced" },
             { "line",   ValueKind::lineSource, false, false, "play a single line" },
             { "rhythm", ValueKind::rhythmRef,  false, true,  "which rhythm to use" },
             { "octave", ValueKind::integer,    false, true,  "octaves to shift by" } },
-          { BlockKind::melody, BlockKind::rhythm },
+          { BlockKind::melody, BlockKind::counterpoint, BlockKind::rhythm },
           "what one channel plays in this section" },
 
         { BlockKind::melody,
@@ -268,7 +272,32 @@ const std::vector<BlockSpec>& schema()
           { BlockKind::rhythm },
           "a generated single-voice line" },
 
-        { BlockKind::arrangement, {}, {}, "the order the sections play in" },
+        { BlockKind::counterpoint,
+          { { "rhythm",       ValueKind::rhythmRef,    false, true,  "which rhythm to use" },
+            { "articulation", ValueKind::articulation, false, true,  "how long each note sounds" },
+            { "range",        ValueKind::pitchRange,   false, true,  "the pitches this voice may use" },
+            { "variance",     ValueKind::number,       false, true,
+              "0 is the same every compile; above 0 explores, reproducibly" },
+
+            // The rules, as a closed set. Open-ended ones would be a constraint
+            // solver by another name, and completion could not offer them.
+            { "parallel-fifths",  ValueKind::rule, false, true,
+              "two voices moving in parallel into a fifth" },
+            { "parallel-octaves", ValueKind::rule, false, true,
+              "the same, into an octave or a unison" },
+            { "direct-fifths",    ValueKind::rule, false, true,
+              "both voices moving the same way INTO a fifth or an octave" },
+            { "voice-crossing",   ValueKind::rule, false, true,
+              "this voice passing through the one it answers" },
+            { "dissonance-on-strong", ValueKind::rule, false, true,
+              "a dissonant interval on a beat that carries weight" },
+            { "leaps",            ValueKind::rule, false, true,  "how much a jump costs" },
+            { "repeats",          ValueKind::rule, false, true,
+              "how much repeating the same pitch costs" } },
+          { BlockKind::rhythm },
+          "a voice written against another" },
+
+        { BlockKind::arrangement, {}, {}, "the order the sections play in", true },
 
         { BlockKind::overrides, {}, { BlockKind::part }, "per-instance changes" },
     };

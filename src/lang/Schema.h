@@ -35,6 +35,7 @@ enum class ValueKind
     articulation,   ///< legato | detached
     lineSource,     ///< root | root-fifth | root-third-fifth
     cadence,        ///< 1, or `choose [1 3 5] per instance`
+    rule,           ///< forbid, or `soft 2.5`
     scope,          ///< note | bar | instance | section | song
     instrument,     ///< synth
     rhythmRef,      ///< a declared rhythm's name
@@ -64,6 +65,7 @@ enum class BlockKind
     arrangement,
     part,
     melody,
+    counterpoint,
     chords,
     line,
     overrides,
@@ -97,6 +99,17 @@ struct BlockSpec
     std::vector<KeySpec> keys;
     std::vector<BlockKind> children;
     std::string_view doc;
+
+    /** May this block be written at the top level of a file?
+
+        Declared here rather than worked out from the children lists. `part`,
+        `melody` and `counterpoint` are nested and `overrides` is synthesised by
+        the parser, so "a block nothing else contains" would call `overrides`
+        top level - and completion offered `counterpoint` as a seventh top-level
+        keyword the moment one was added, because the exclusion list was written
+        by hand somewhere else.
+    */
+    bool topLevel = false;
 };
 
 /** The whole language, declared once. Completion, validation and the reference

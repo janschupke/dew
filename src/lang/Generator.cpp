@@ -4,6 +4,7 @@
 #include <cmath>
 #include <map>
 
+#include "lang/Counterpoint.h"
 #include "lang/Harmony.h"
 #include "lang/Melody.h"
 #include "lang/Voicing.h"
@@ -387,6 +388,8 @@ private:
         if (channel == nullptr)
             return;
 
+        const auto before = notes.size();
+
         const auto transpose = 12 * (part.octave + channel->octave);
 
         DrawSite site;
@@ -399,9 +402,26 @@ private:
         else if (part.kind == PartKind::line)
             renderLine (part, *channel, spans, track, transpose, totalSteps, stepsPerBar,
                         notes, site);
+        else if (part.kind == PartKind::counterpoint)
+            renderCounterpoint (part, *channel, spans, track, transpose, totalSteps,
+                                stepsPerBar, notes, site);
         else
             renderMelody (part, *channel, spans, track, transpose, totalSteps, stepsPerBar,
                           notes, site);
+
+        // A part that writes nothing is almost always a mistake, and it is the
+        // one mistake that looks like success from every other angle: the
+        // compile passes, the project loads, and one instrument is missing.
+        // `rhythmFor` not knowing about a counterpoint's rhythm made an entire
+        // voice vanish exactly this quietly.
+        if (notes.size() == before)
+        {
+            auto& d = diagnostics.warning ("W604",
+                                           std::string ("`") + part.channel
+                                           + "` wrote no notes here",
+                                           part.range);
+            d.helps.push_back ("a part needs a rhythm, and something to play over it");
+        }
     }
 
     const RhythmSpec* rhythmFor (const PartSpec& part) const
@@ -414,6 +434,9 @@ private:
 
         if (! part.melody.rhythm.empty())
             return model.rhythm (part.melody.rhythm);
+
+        if (! part.counterpoint.rhythm.empty())
+            return model.rhythm (part.counterpoint.rhythm);
 
         return nullptr;
     }
@@ -647,6 +670,119 @@ private:
         auto ordinal = 0;
 
         for (const auto& note : line)
+        {
+            const auto sounded = note.pitch + transpose;
+
+            if (sounded >= lowestPitch && sounded <= highestPitch)
+                notes.push_back ({ track, note.startStep, note.lengthSteps, sounded,
+                                   velocityFor (channel, site, ordinal,
+                                                note.startStep
+                                                    / std::max (1, stepsPerBar)) });
+
+            ++ordinal;
+        }
+    }
+
+    /** What the voice being answered is sounding at each onset, or -1.
+
+        Read out of the notes ALREADY WRITTEN for this section rather than
+        regenerated, so the counterpoint answers exactly what will be heard -
+        including anything a per-instance override changed about it.
+    */
+    std::vector<int> voiceAt (const std::vector<Note>& notes, int track,
+                              const std::vector<Onset>& onsets) const
+    {
+        std::vector<int> sounding (onsets.size(), -1);
+
+        for (std::size_t i = 0; i < onsets.size(); ++i)
+        {
+            const auto step = onsets[i].startStep;
+            auto lowest = -1;
+
+            for (const auto& note : notes)
+                if (note.track == track && note.startStep <= step
+                    && step < note.startStep + note.lengthSteps)
+                    lowest = lowest < 0 ? note.pitch : std::min (lowest, note.pitch);
+
+            sounding[i] = lowest;
+        }
+
+        return sounding;
+    }
+
+    void renderCounterpoint (const PartSpec& part, const ChannelSpec& channel,
+                             const std::vector<ChordSpan>& spans, int track, int transpose,
+                             int totalSteps, int stepsPerBar, std::vector<Note>& notes,
+                             const DrawSite& site)
+    {
+        const auto* rhythm = rhythmFor (part);
+
+        if (rhythm == nullptr)
+            return;
+
+        const auto against = trackIndexFor (part.counterpoint.against);
+
+        if (against < 0)
+            return;
+
+        const auto onsets = tileRhythm (*rhythm, totalSteps, stepsPerBar, score.beatUnit,
+                                        score.stepsPerBeat);
+
+        if (onsets.empty())
+            return;
+
+        // The voice it answers has to have been written already. Parts render
+        // in the order they are declared, so this is a real constraint and
+        // saying so is better than answering silence.
+        const auto other = voiceAt (notes, against, onsets);
+        const auto anySounding = std::any_of (other.begin(), other.end(),
+                                              [] (int pitch) { return pitch >= 0; });
+
+        if (! anySounding)
+        {
+            auto& d = diagnostics.warning ("W602",
+                                           "`" + part.counterpoint.against
+                                           + "` has nothing to answer here",
+                                           part.counterpoint.againstRange);
+            d.notes.push_back ("parts are written in the order they are declared, so the "
+                               "voice being answered has to come first");
+            return;
+        }
+
+        const auto low = part.counterpoint.hasRange ? part.counterpoint.lowPitch
+                                                    : channel.lowPitch;
+        const auto high = part.counterpoint.hasRange ? part.counterpoint.highPitch
+                                                     : channel.highPitch;
+
+        // Which side this voice sits on, from the two declared RANGES - the
+        // only place the answer is written down. Inferring it from the first
+        // note the other voice happens to play gets it wrong whenever the two
+        // start close together, and then `voice-crossing forbid` forbids the
+        // wrong direction and every note crosses.
+        const auto* otherChannel = model.channel (part.counterpoint.against);
+        const auto otherMid = otherChannel != nullptr
+                                  ? (otherChannel->lowPitch + otherChannel->highPitch) / 2
+                                  : (low + high) / 2;
+
+        const auto ownIsAbove = (low + high) / 2 > otherMid;
+
+        const auto result = generateCounterpoint (onsets, spans, { other },
+                                                  part.counterpoint, low, high, ownIsAbove,
+                                                  stepsPerBar,
+                                                  site.instance.child ("counterpoint"));
+
+        // Relaxation is reported, never silent: a voice that went where it was
+        // told not to is something the writer has to know about.
+        for (const auto& relaxed : result.relaxations)
+            diagnostics.warning ("W603",
+                                 std::string ("`") + nameOf (relaxed.rule)
+                                 + "` had to be given up in bar "
+                                 + std::to_string (relaxed.bar),
+                                 part.counterpoint.againstRange);
+
+        auto ordinal = 0;
+
+        for (const auto& note : result.notes)
         {
             const auto sounded = note.pitch + transpose;
 

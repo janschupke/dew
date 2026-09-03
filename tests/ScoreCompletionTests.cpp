@@ -344,3 +344,26 @@ TEST_CASE ("every chord completion compiles", "[score][completion]")
         }
     }
 }
+
+TEST_CASE ("a nested block is never offered at the top level",
+           "[score][completion]")
+{
+    // The schema declares which blocks belong at the top level. A hand-written
+    // exclusion list here offered `counterpoint` as a seventh top-level keyword
+    // the day one was added, and it would have done it again for the next one.
+    const auto top = textsOf (at ("$"));
+
+    for (const auto* nested : { "part", "melody", "counterpoint", "overrides" })
+    {
+        INFO ("nested block " << nested);
+        REQUIRE (std::find (top.begin(), top.end(), nested) == top.end());
+    }
+
+    // And every block the schema calls top level IS offered.
+    for (const auto& spec : schema())
+        if (spec.topLevel)
+        {
+            INFO ("top-level block " << nameOf (spec.kind));
+            REQUIRE (std::find (top.begin(), top.end(), nameOf (spec.kind)) != top.end());
+        }
+}

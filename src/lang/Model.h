@@ -55,6 +55,39 @@ enum class Scope
     song       ///< one for the whole song
 };
 
+/** The counterpoint rules, as a CLOSED set.
+
+    Closed because completion depends on it, and because an open-ended rule
+    language is a constraint solver by another name - which is the thing this
+    design says no to.
+*/
+enum class CounterpointRule
+{
+    parallelFifths,
+    parallelOctaves,
+    directFifths,
+    voiceCrossing,
+    dissonanceOnStrong,
+    leaps,
+    repeats
+};
+
+inline constexpr int numCounterpointRules = 7;
+
+/** How strongly one rule applies. */
+enum class RuleStrength
+{
+    off,      ///< not written; the rule does not apply
+    soft,     ///< a cost on the transition
+    forbid    ///< removes the candidate outright
+};
+
+struct RuleSetting
+{
+    RuleStrength strength = RuleStrength::off;
+    float weight = 1.0f;   ///< meaningful only when soft
+};
+
 /** A value that is chosen from a list rather than set.
 
     Deliberately narrow: a list of chord-tone degrees, not an expression. The
@@ -148,7 +181,7 @@ struct HarmonySpec
     std::vector<ChordSpec> chords;
 };
 
-enum class PartKind { chords, line, melody };
+enum class PartKind { chords, line, melody, counterpoint };
 
 struct MelodySpec
 {
@@ -173,6 +206,24 @@ struct MelodySpec
     DegreeChoice cadence;
 };
 
+/** A voice written against voices already written. */
+struct CounterpointSpec
+{
+    std::string against;          ///< the channel this answers
+    SourceRange againstRange;
+
+    std::string rhythm;
+    Articulation articulation = Articulation::legato;
+
+    bool hasRange = false;
+    int lowPitch = 0;
+    int highPitch = 0;
+
+    float variance = 0.0f;
+
+    RuleSetting rules[numCounterpointRules];
+};
+
 struct PartSpec
 {
     std::string channel;
@@ -187,6 +238,7 @@ struct PartSpec
     int octave = 0;
 
     MelodySpec melody;
+    CounterpointSpec counterpoint;
 };
 
 struct SectionSpec
