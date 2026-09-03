@@ -9,6 +9,7 @@
 #include "engine/TempoMap.h"
 #include "model/AutomationCurve.h"
 #include "model/AutomationTargets.h"
+#include "model/InstrumentType.h"
 #include "model/ProjectSchema.h"
 #include "engine/Effects.h"
 #include "engine/Module.h"
@@ -48,28 +49,6 @@ inline constexpr int kMaxEffectUnits       = kMaxChannels * kMaxEffectsPerChain
                                              + kMaxMixerTracks * kMaxEffectsPerChain
                                              + kMaxEffectsPerChain;
 inline constexpr int kMaxAutomations       = 32;
-
-
-enum class Waveform { sine, saw, square, triangle };
-
-/** Which generator an oscillator slot runs.
-
-    A property of the SLOT rather than of the channel, so a wavetable can be
-    layered under a classic saw without the two being different instruments.
-*/
-enum class OscMode { classic, wavetable };
-
-/** What drives a wavetable slot's position over the length of a note. */
-enum class PositionSource { envelope, lfo };
-
-Waveform waveformFromString (const juce::String&);
-juce::String waveformToString (Waveform);
-
-OscMode oscModeFromString (const juce::String&);
-juce::String oscModeToString (OscMode);
-
-PositionSource positionSourceFromString (const juce::String&);
-juce::String positionSourceToString (PositionSource);
 
 /** One oscillator slot, resolved.
 
@@ -171,9 +150,6 @@ struct EffectChainSnapshot
         return false;
     }
 };
-
-/** What a channel gets its samples from. */
-enum class InstrumentType { synth, audio };
 
 /** An audio channel's playback settings, resolved.
 

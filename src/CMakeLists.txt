@@ -125,6 +125,7 @@ add_library(dew_model STATIC
   model/AutomationTargets.cpp
   model/ParamSpec.cpp
   model/EffectType.cpp
+  model/InstrumentType.cpp
   model/ModuleCatalog.cpp
   model/ProjectSchema.cpp
   model/ProjectSerializer.cpp
