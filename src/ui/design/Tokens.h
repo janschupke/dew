@@ -295,6 +295,13 @@ namespace motion
     /** How far a popup rises as it fades in. */
     inline constexpr int popupRisePx    = 6;
 
+    /** How long typing has to stop before the editor acts on what was typed.
+
+        Long enough that it does not run mid-word, short enough that a
+        diagnostic feels like a reaction rather than a report.
+    */
+    inline constexpr int typingPauseMs  = 250;
+
     /** How fast a meter falls, as a TIME constant rather than a per-tick
         coefficient.
 

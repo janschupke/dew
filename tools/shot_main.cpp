@@ -32,7 +32,7 @@ Usage:
 
 Options:
   --project <file.dew>   Project to load (default: the built-in demo)
-  --tab <name>           channel-rack | piano-roll | playlist | mixer
+  --tab <name>           channel-rack | piano-roll | playlist | mixer | score
   --size <WxH>           Default 1440x900
   --help
 )";
@@ -72,6 +72,7 @@ int tabIndexFor (const juce::String& name)
     if (name == "piano-roll")   return 1;
     if (name == "playlist")     return 2;
     if (name == "mixer")        return 3;
+    if (name == "score")        return 4;
     return -1;
 }
 
@@ -340,7 +341,8 @@ int main (int argc, char* argv[])
 
     if (mode == "tabs")
     {
-        const juce::StringArray names { "channel-rack", "piano-roll", "playlist", "mixer" };
+        const juce::StringArray names { "channel-rack", "piano-roll", "playlist", "mixer",
+                                        "score" };
 
         for (int i = 0; i < names.size(); ++i)
         {

@@ -264,6 +264,8 @@ add_library(dew_ui STATIC
   ui/PlaylistComponent.cpp
   ui/PlaylistToolbar.cpp
   ui/MixerComponent.cpp
+  ui/ScoreTokeniser.cpp
+  ui/ScoreEditorComponent.cpp
   ui/InstrumentPanel.cpp
   ui/EditorTabs.cpp
   ui/MainComponent.cpp

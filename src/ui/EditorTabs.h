@@ -10,19 +10,28 @@
 #include "ui/MixerComponent.h"
 #include "ui/PianoRollComponent.h"
 #include "ui/PlaylistComponent.h"
+#include "ui/ScoreEditorComponent.h"
 
 namespace dew
 {
 
 class SamplePool;
 
-/** The four editors, one per tab: channel rack, piano roll, playlist, mixer. */
+/** The five editors, one per tab: channel rack, piano roll, playlist, mixer,
+    and the score - the language, edited in the application it compiles for.
+*/
 class EditorTabs : public juce::TabbedComponent
 {
 public:
     EditorTabs (ProjectDocument&, AudioEngine&, EditorState&, SamplePool* = nullptr);
 
     void refresh();
+
+    /** The score tab, so the shell can route its status messages. */
+    ScoreEditorComponent& getScoreEditor() { return scoreEditor; }
+
+    /** Shows the score tab and compiles it. What Command-R does. */
+    void compileScore();
 
     /** The piano roll's zoom and scroll, for session persistence. */
     void capturePianoRollView (double& zoom, double& scroll, double& pitchScroll) const;
@@ -48,6 +57,7 @@ private:
     PianoRollComponent pianoRoll;
     PlaylistComponent playlist;
     MixerComponent mixer;
+    ScoreEditorComponent scoreEditor;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (EditorTabs)
 };

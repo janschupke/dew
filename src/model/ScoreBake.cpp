@@ -87,6 +87,35 @@ juce::ValueTree findChannelByName (const juce::ValueTree& project, const juce::S
     return {};
 }
 
+/** True if there is any music in this project at all.
+
+    A project with no notes and no clips has nothing whose meaning a grid or a
+    meter change could alter, so a score may set both. That distinction is what
+    makes File > New, paste a score, Compile actually work: a fresh project sits
+    at four steps per beat, almost every score needs twelve, and refusing there
+    would mean the button did nothing and explained why in a status bar.
+*/
+bool hasMusic (const juce::ValueTree& project)
+{
+    for (const auto& child : project)
+    {
+        if (child.hasType (ids::PATTERN))
+            for (const auto& note : child)
+                if (note.hasType (ids::NOTE))
+                    return true;
+
+        if (child.hasType (ids::AUTOMATION))
+            return true;
+    }
+
+    for (const auto& track : project.getChildWithName (ids::PLAYLIST))
+        for (const auto& clip : track)
+            if (clip.hasType (ids::CLIP))
+                return true;
+
+    return false;
+}
+
 /** Velocity as the document stores it: an exact three-decimal double.
 
     Not fussiness. ProjectEdits::addNote takes a float, and 0.535f widens to
@@ -175,12 +204,25 @@ BakeReport ScoreBake::into (juce::ValueTree project, const lang::Score& score,
     }
 
     const auto meter = Meter::of (project);
+    const auto empty = ! hasMusic (project);
+
+    // An empty project takes the score's grid and meter, because there is
+    // nothing in it whose meaning they could change.
+    if (empty)
+    {
+        if (undo != nullptr)
+            undo->beginNewTransaction ("Compile score");
+
+        project.setProperty (ids::stepsPerBeat, score.stepsPerBeat, undo);
+        project.setProperty (ids::beatsPerBar, score.beatsPerBar, undo);
+        project.setProperty (ids::beatUnit, score.beatUnit, undo);
+    }
 
     // A grid mismatch is refused rather than applied. stepsPerBeat owns how
     // long a step IS - Transport divides by it - so changing it would keep
     // every existing note's step count and alter how fast the whole project
     // plays. Nothing is touched, and the caller is told why.
-    if (meter.stepsPerBeat != score.stepsPerBeat)
+    if (! empty && meter.stepsPerBeat != score.stepsPerBeat)
     {
         report.warnings.add ("the score needs a grid of " + juce::String (score.stepsPerBeat)
                              + " steps per beat and the project has "
@@ -192,7 +234,7 @@ BakeReport ScoreBake::into (juce::ValueTree project, const lang::Score& score,
     // Same for the meter: ProjectEdits::setMeter rescales every clip and rounds,
     // so a score that could set it is a score that can silently move an
     // arrangement it did not write.
-    if (meter.beatsPerBar != score.beatsPerBar || meter.beatUnit != score.beatUnit)
+    if (! empty && (meter.beatsPerBar != score.beatsPerBar || meter.beatUnit != score.beatUnit))
     {
         report.warnings.add ("the score is in " + juce::String (score.beatsPerBar) + "/"
                              + juce::String (score.beatUnit) + " and the project is in "
@@ -204,8 +246,9 @@ BakeReport ScoreBake::into (juce::ValueTree project, const lang::Score& score,
 
     // ONE transaction, opened before the first mutation and never re-opened:
     // beginNewTransaction ARMS a transaction rather than being a no-op, so
-    // calling it per edit is what turns a bake into a hundred undo steps.
-    if (undo != nullptr)
+    // calling it per edit is what turns a bake into a hundred undo steps. The
+    // empty-project branch above opened it already, for the same reason.
+    if (undo != nullptr && ! empty)
         undo->beginNewTransaction ("Compile score");
 
     project.setProperty (ids::tempoBpm, score.tempoBpm, undo);

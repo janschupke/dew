@@ -11,7 +11,8 @@ EditorTabs::EditorTabs (ProjectDocument& document, AudioEngine& engine, EditorSt
       channelRack (document, engine, editorState, pool),
       pianoRoll (document, engine, editorState),
       playlist (document, engine, editorState, pool),
-      mixer (document, editorState, &engine)
+      mixer (document, editorState, &engine),
+      scoreEditor (document)
 {
     setComponentID ("editorTabs");
     setTabBarDepth (tokens::size::stripTabs);
@@ -41,6 +42,18 @@ EditorTabs::EditorTabs (ProjectDocument& document, AudioEngine& engine, EditorSt
 
     addTab ("Playlist", tokens::colour::background, &playlist, false);
     addTab ("Mixer", tokens::colour::background, &mixer, false);
+
+    // APPENDED, never inserted. The two setCurrentTabIndex calls above are
+    // written as literals and Settings persists the raw index, so a tab added
+    // anywhere but the end would silently reopen somebody on a different
+    // editor than the one they left.
+    addTab ("Score", tokens::colour::background, &scoreEditor, false);
+}
+
+void EditorTabs::compileScore()
+{
+    setCurrentTabIndex (getNumTabs() - 1);
+    scoreEditor.compileIntoProject();
 }
 
 void EditorTabs::currentTabChanged (int newIndex, const juce::String& newName)
@@ -57,6 +70,7 @@ void EditorTabs::refresh()
     pianoRoll.refresh();
     playlist.refresh();
     mixer.refresh();
+    scoreEditor.refresh();
 }
 
 void EditorTabs::capturePianoRollView (double& zoom, double& scroll, double& pitchScroll) const

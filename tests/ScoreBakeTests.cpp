@@ -191,7 +191,7 @@ TEST_CASE ("baking is one undo step", "[score][bake]")
 {
     const auto score = compileOrFail (tinyScore());
 
-    auto project = ProjectFactory::createDefault();
+    auto project = ProjectFactory::createDemo();
     project.setProperty (ids::stepsPerBeat, score.stepsPerBeat, nullptr);
 
     const auto before = project.createCopy();
@@ -300,7 +300,11 @@ TEST_CASE ("a grid mismatch changes nothing and says why", "[score][bake]")
 
     REQUIRE (score.stepsPerBeat == 12);
 
-    auto project = ProjectFactory::createDefault();
+    // A project with MUSIC in it. An empty one takes the score's grid, because
+    // there is nothing there whose meaning it could change - this test is about
+    // the other case, and on a default project it would have been testing a
+    // rule that no longer applies.
+    auto project = ProjectFactory::createDemo();
     REQUIRE (Meter::of (project).stepsPerBeat == 4);
 
     const auto before = project.createCopy();
@@ -326,7 +330,7 @@ TEST_CASE ("a meter mismatch changes nothing and says why", "[score][bake]")
         "  part pad {\n    chords with warm\n    rhythm held\n  }\n}\n"
         "arrangement { verse }\n");
 
-    auto project = ProjectFactory::createDefault();
+    auto project = ProjectFactory::createDemo();
     project.setProperty (ids::stepsPerBeat, score.stepsPerBeat, nullptr);
 
     const auto before = project.createCopy();

@@ -193,6 +193,7 @@ void DewApplication::getAllCommands (juce::Array<juce::CommandID>& commands)
                          CommandIDs::transportPlayStop, CommandIDs::transportRewind,
                          CommandIDs::transportToggleMode, CommandIDs::transportRecord,
                          CommandIDs::addChannel, CommandIDs::addPattern,
+                         CommandIDs::compileScore,
                      CommandIDs::audioSettings, CommandIDs::midiSettings });
 }
 
@@ -275,6 +276,13 @@ void DewApplication::getCommandInfo (juce::CommandID id, juce::ApplicationComman
             info.addDefaultKeypress ('p', juce::ModifierKeys::commandModifier
                                               | juce::ModifierKeys::shiftModifier);
             info.setActive (document != nullptr);
+            break;
+
+        case CommandIDs::compileScore:
+            info.setInfo ("Compile Score", "Turn the score into notes in this project",
+                          "Project", 0);
+            info.addDefaultKeypress ('r', juce::ModifierKeys::commandModifier);
+            info.setActive (main != nullptr);
             break;
 
         case CommandIDs::midiSettings:
@@ -431,6 +439,10 @@ bool DewApplication::perform (const InvocationInfo& info)
             main->showMidiSettings();
             return true;
 
+        case CommandIDs::compileScore:
+            main->compileScore();
+            return true;
+
         case CommandIDs::addPattern:
         {
             auto& undo = document->getUndoManager();
@@ -489,6 +501,8 @@ juce::PopupMenu DewApplication::getMenuForIndex (int index, const juce::String&)
         case 3:
             menu.addCommandItem (&commandManager, CommandIDs::addChannel);
             menu.addCommandItem (&commandManager, CommandIDs::addPattern);
+            menu.addSeparator();
+            menu.addCommandItem (&commandManager, CommandIDs::compileScore);
             break;
 
         case 4:

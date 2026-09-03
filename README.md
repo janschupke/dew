@@ -68,7 +68,7 @@ picture and nearly invisible in code.
 ## Test
 
 ```sh
-ctest --preset release        # 698 tests
+ctest --preset release        # 859 tests
 ```
 
 The gate, which is what CI runs and what a change has to pass:
@@ -144,13 +144,19 @@ licence question. Without it the format reports itself unavailable and the rest 
   scroll and snap, panel width and chosen device. The piano roll's *tool* deliberately
   does not: restoring into paint or slice would mean the first click of a session cuts
   something nobody asked for.
+- **Score** — a fifth tab holding a text description of the whole song: key, meter, chord
+  progression, sections, voicing and melody rules per channel. It is checked as you type -
+  squiggles where it is wrong, a clickable list of what is wrong - and compiled into real
+  patterns, notes and clips on ⌘R. The source is stored in the `.dew`, so recompiling
+  updates what it wrote last time and leaves anything you have since edited by hand alone.
+  See **The score language** below.
 - **File** — New, Open, Save, Save As, dirty tracking, a save-before-closing prompt, and
   undo/redo over every edit.
 
 ## Keyboard and mouse
 
-⌘N ⌘O ⌘S ⇧⌘S · ⌘E render · ⌘Z ⇧⌘Z · Space play · R record · ⌘L pattern/song · ⌘K add
-channel.
+⌘N ⌘O ⌘S ⇧⌘S · ⌘E render · ⌘R compile score · ⌘Z ⇧⌘Z · Space play · R record · ⌘L
+pattern/song · ⌘K add channel.
 
 In a timeline editor — the step grid, the piano roll, the playlist — `+` `-` `0` zoom in,
 out and to fit. They read one keyboard map, so a key that means something in two of them
@@ -333,8 +339,9 @@ feel direct is a regression, not a polish.
 
 ## The score language
 
-A song can be written as text and compiled to notes. `examples/amber.score` is the one CI
-compiles and renders; `dew_score` is the tool.
+A song can be written as text and compiled to notes. It is edited in the **Score** tab, the
+fifth one, and compiled with the button there or Command-R; `examples/amber.score` is the
+one CI compiles and renders, and `dew_score` is the same compiler on the command line.
 
 ```
 song {
@@ -458,6 +465,32 @@ all work on it unchanged and no new clip kind exists to be taught to the four pl
 would need it. The language owns notes, patterns and clips; the user owns channels,
 instruments, effects and the mixer — a track adopts a channel by name and reads nothing
 from it but the name, so a sound you dialled in survives a recompile.
+
+### The editor
+
+Two things happen in the Score tab and they are deliberately not the same thing.
+**Checking** runs on a debounce as you type: it lexes, parses, resolves and generates, and
+it writes nothing - no notes, no undo entry. **Compiling** happens only when you ask, and
+writes patterns, notes and clips in one undo transaction. A debounced auto-compile would
+put an undo step full of notes on every pause in typing and would replace hand edits
+without being asked, which is the one thing the recompile policy exists to prevent. The
+source text itself *is* saved on the debounce, one transaction per typing run.
+
+Errors surface in three places doing three jobs: the squiggle says **where**, the list
+under the editor says **what** and scrolls the editor to it when clicked, and the status
+bar says whether the project was written to at all.
+
+The highlighter is not a second grammar. `lang::scanOne` is a template over a minimal
+cursor concept, and the editor's tokeniser is its second instantiation - the first walks a
+`std::string_view` for the compiler, this one walks a `juce::CodeDocument::Iterator`. A
+test asserts both produce the same token kinds over the example score, because a
+highlighter that disagrees with the compiler is worse than none. Keywords are coloured from
+the schema table rather than from a keyword list, so a key cannot exist without being
+highlighted.
+
+Compiling into a project that already has music refuses a grid or meter mismatch, as
+described below. Compiling into an *empty* one applies both: nothing there has a meaning
+they could change, and a new project sits at four steps per beat.
 
 ### Recompiling, and what happens to what you changed
 

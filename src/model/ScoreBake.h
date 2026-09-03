@@ -72,6 +72,11 @@ struct ScoreBake
         the project's - `stepsPerBeat` owns how long a step is, and
         ProjectEdits::setMeter rescales every clip and rounds, so applying
         either silently would move the user's existing arrangement.
+
+        Unless the project holds no music at all, in which case it takes both:
+        there is nothing there whose meaning they could change, and a fresh
+        project sits at four steps per beat while almost every score needs
+        twelve. Refusing there would make Compile do nothing on a new project.
     */
     static BakeReport into (juce::ValueTree project, const lang::Score&,
                             juce::UndoManager*, Policy = Policy::keepHandEdits);

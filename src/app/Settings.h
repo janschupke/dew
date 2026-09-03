@@ -144,7 +144,13 @@ public:
     static constexpr int minPanelWidth = 220;
     static constexpr int maxPanelWidth = 640;
     static constexpr int defaultPanelWidth = 300;
-    static constexpr int numTabs = 4;
+    /** Channel rack, piano roll, playlist, mixer, score.
+
+        The persisted tab is a raw index, so this and EditorTabs' addTab calls
+        are one fact written twice - and a new tab has to be APPENDED, or
+        reopening the application lands somebody on a different editor.
+    */
+    static constexpr int numTabs = 5;
     static constexpr int maxMidiTranspose = 24;
 
 private:

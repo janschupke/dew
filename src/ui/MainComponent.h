@@ -56,6 +56,9 @@ public:
     AudioEngine& getEngine() noexcept        { return engine; }
     EditorState& getEditorState() noexcept   { return editorState; }
 
+    /** Shows the score tab and compiles what is in it into the project. */
+    void compileScore()                      { tabs.compileScore(); }
+
     /** Rebuilds every view after the document is replaced by New or Open. */
     void documentWasReplaced();
 

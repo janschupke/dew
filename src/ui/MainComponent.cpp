@@ -50,6 +50,16 @@ MainComponent::MainComponent (bool openAudioDevice)
     addAndMakeVisible (statusBar);
     addAndMakeVisible (divider);
 
+    // The score editor says what a compile did, and does not otherwise reach
+    // out of its tab. Errors surface in three places doing three jobs: the
+    // squiggle says where, the list under the editor says what, and this says
+    // whether the project was written to at all.
+    tabs.getScoreEditor().onMessage = [this] (const juce::String& message,
+                                              StatusBar::Severity severity)
+    {
+        statusBar.showMessage (message, severity);
+    };
+
     transportBar.onToggleRecord = [this]
     {
         if (const auto error = toggleRecording(); error.isNotEmpty())

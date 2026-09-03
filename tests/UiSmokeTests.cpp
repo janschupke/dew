@@ -6,6 +6,7 @@
 #include "model/Ids.h"
 #include "model/ProjectEdits.h"
 #include "model/ProjectFactory.h"
+#include "app/Settings.h"
 #include "ui/MainComponent.h"
 #include "PaintProbe.h"
 
@@ -127,7 +128,7 @@ TEST_CASE ("every editor tab paints something", "[ui][smoke]")
             tabs = asTabs;
 
     REQUIRE (tabs != nullptr);
-    REQUIRE (tabs->getNumTabs() == 4);
+    REQUIRE (tabs->getNumTabs() == dew::Settings::numTabs);
 
     for (int i = 0; i < tabs->getNumTabs(); ++i)
     {
@@ -293,10 +294,10 @@ TEST_CASE ("every tab is painted, not only the active one", "[ui][smoke]")
     const auto strip = bar->getLocalArea (&component, bar->getLocalBounds())
                           .withPosition (bar->getScreenPosition() - component.getScreenPosition());
 
-    // Ink in each quarter of the occupied tab run: four tabs, four labels.
+    // Ink under each tab: one label apiece.
     auto* tabBar = dynamic_cast<juce::TabbedButtonBar*> (bar);
     REQUIRE (tabBar != nullptr);
-    REQUIRE (tabBar->getNumTabs() == 4);
+    REQUIRE (tabBar->getNumTabs() == dew::Settings::numTabs);
 
     for (int i = 0; i < tabBar->getNumTabs(); ++i)
     {
