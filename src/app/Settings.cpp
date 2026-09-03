@@ -93,16 +93,37 @@ int Settings::getTabIndex() const
     return juce::jlimit (0, numTabs - 1, file().getIntValue ("tab", 0));
 }
 
-void Settings::setTabIndex (int index) { file().setValue ("tab", juce::jlimit (0, numTabs - 1, index)); }
+void Settings::setTabIndex (int index)
+{
+    file().setValue ("tab", juce::jlimit (0, numTabs - 1, index));
+}
 
-int Settings::getSelectedChannelId() const   { return juce::jmax (1, file().getIntValue ("selectedChannel", 1)); }
-void Settings::setSelectedChannelId (int id) { file().setValue ("selectedChannel", juce::jmax (1, id)); }
+int Settings::getSelectedChannelId() const
+{
+    return juce::jmax (1, file().getIntValue ("selectedChannel", 1));
+}
+void Settings::setSelectedChannelId (int id)
+{
+    file().setValue ("selectedChannel", juce::jmax (1, id));
+}
 
-int Settings::getSelectedMixerTrackId() const   { return juce::jmax (0, file().getIntValue ("selectedMixerTrack", 1)); }
-void Settings::setSelectedMixerTrackId (int id) { file().setValue ("selectedMixerTrack", juce::jmax (0, id)); }
+int Settings::getSelectedMixerTrackId() const
+{
+    return juce::jmax (0, file().getIntValue ("selectedMixerTrack", 1));
+}
+void Settings::setSelectedMixerTrackId (int id)
+{
+    file().setValue ("selectedMixerTrack", juce::jmax (0, id));
+}
 
-int Settings::getCurrentPatternId() const   { return juce::jmax (1, file().getIntValue ("currentPattern", 1)); }
-void Settings::setCurrentPatternId (int id) { file().setValue ("currentPattern", juce::jmax (1, id)); }
+int Settings::getCurrentPatternId() const
+{
+    return juce::jmax (1, file().getIntValue ("currentPattern", 1));
+}
+void Settings::setCurrentPatternId (int id)
+{
+    file().setValue ("currentPattern", juce::jmax (1, id));
+}
 
 // --- rendering ---------------------------------------------------------------
 
@@ -125,8 +146,14 @@ void Settings::setLastRenderDirectory (const juce::File& directory)
         file().setValue ("lastRenderDir", directory.getFullPathName());
 }
 
-int Settings::getRenderFormat() const   { return juce::jlimit (0, 3, file().getIntValue ("renderFormat", 0)); }
-void Settings::setRenderFormat (int f)  { file().setValue ("renderFormat", juce::jlimit (0, 3, f)); }
+int Settings::getRenderFormat() const
+{
+    return juce::jlimit (0, 3, file().getIntValue ("renderFormat", 0));
+}
+void Settings::setRenderFormat (int f)
+{
+    file().setValue ("renderFormat", juce::jlimit (0, 3, f));
+}
 
 int Settings::getRenderSampleRate() const
 {
@@ -134,10 +161,14 @@ int Settings::getRenderSampleRate() const
 
     return (stored == 44100 || stored == 48000 || stored == 88200 || stored == 96000
             || stored == 32000)
-             ? stored : 44100;
+               ? stored
+               : 44100;
 }
 
-void Settings::setRenderSampleRate (int rate) { file().setValue ("renderRate", rate); }
+void Settings::setRenderSampleRate (int rate)
+{
+    file().setValue ("renderRate", rate);
+}
 
 int Settings::getRenderBitDepth() const
 {
@@ -146,7 +177,10 @@ int Settings::getRenderBitDepth() const
     return (stored == 16 || stored == 24 || stored == 32) ? stored : 24;
 }
 
-void Settings::setRenderBitDepth (int depth) { file().setValue ("renderDepth", depth); }
+void Settings::setRenderBitDepth (int depth)
+{
+    file().setValue ("renderDepth", depth);
+}
 
 double Settings::getRenderTailSeconds() const
 {
@@ -158,8 +192,14 @@ void Settings::setRenderTailSeconds (double seconds)
     file().setValue ("renderTail", juce::jlimit (0.0, 30.0, seconds));
 }
 
-bool Settings::getRenderNormalize() const    { return file().getBoolValue ("renderNormalize", false); }
-void Settings::setRenderNormalize (bool on)  { file().setValue ("renderNormalize", on); }
+bool Settings::getRenderNormalize() const
+{
+    return file().getBoolValue ("renderNormalize", false);
+}
+void Settings::setRenderNormalize (bool on)
+{
+    file().setValue ("renderNormalize", on);
+}
 
 double Settings::getPianoRollZoom() const
 {
@@ -168,13 +208,28 @@ double Settings::getPianoRollZoom() const
     return juce::jlimit (3.0, 120.0, file().getDoubleValue ("pianoRollZoom", 24.0));
 }
 
-void Settings::setPianoRollZoom (double zoom) { file().setValue ("pianoRollZoom", zoom); }
+void Settings::setPianoRollZoom (double zoom)
+{
+    file().setValue ("pianoRollZoom", zoom);
+}
 
-double Settings::getPianoRollScroll() const   { return juce::jmax (0.0, file().getDoubleValue ("pianoRollScroll", 0.0)); }
-void Settings::setPianoRollScroll (double s)  { file().setValue ("pianoRollScroll", juce::jmax (0.0, s)); }
+double Settings::getPianoRollScroll() const
+{
+    return juce::jmax (0.0, file().getDoubleValue ("pianoRollScroll", 0.0));
+}
+void Settings::setPianoRollScroll (double s)
+{
+    file().setValue ("pianoRollScroll", juce::jmax (0.0, s));
+}
 
-double Settings::getPianoRollPitchScroll() const  { return juce::jmax (0.0, file().getDoubleValue ("pianoRollPitch", 0.0)); }
-void Settings::setPianoRollPitchScroll (double s) { file().setValue ("pianoRollPitch", juce::jmax (0.0, s)); }
+double Settings::getPianoRollPitchScroll() const
+{
+    return juce::jmax (0.0, file().getDoubleValue ("pianoRollPitch", 0.0));
+}
+void Settings::setPianoRollPitchScroll (double s)
+{
+    file().setValue ("pianoRollPitch", juce::jmax (0.0, s));
+}
 
 int Settings::getPlaylistTrackHeight() const
 {
@@ -231,8 +286,7 @@ void Settings::setReduceMotion (bool reduce)
 
 double Settings::getUiScale() const
 {
-    return juce::jlimit (minUiScale, maxUiScale,
-                         file().getDoubleValue ("uiScale", defaultUiScale));
+    return juce::jlimit (minUiScale, maxUiScale, file().getDoubleValue ("uiScale", defaultUiScale));
 }
 
 void Settings::setUiScale (double scale)
@@ -301,7 +355,8 @@ int Settings::getMidiTranspose() const
 
 void Settings::setMidiTranspose (int semitones)
 {
-    file().setValue ("midiTranspose", juce::jlimit (-maxMidiTranspose, maxMidiTranspose, semitones));
+    file().setValue ("midiTranspose",
+                     juce::jlimit (-maxMidiTranspose, maxMidiTranspose, semitones));
 }
 
 } // namespace dew

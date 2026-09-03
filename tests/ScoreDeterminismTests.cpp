@@ -16,54 +16,59 @@ namespace
 */
 std::string scoreWith (const std::string& verseVariance = "0.5",
                        const std::string& arrangement = "  intro\n  verse\n  outro\n",
-                       const std::string& seed = "0x51A9",
-                       const std::string& tempo = "120")
+                       const std::string& seed = "0x51A9", const std::string& tempo = "120")
 {
-    return
-        "song {\n"
-        "  title \"T\"\n"
-        "  tempo " + tempo + "\n"
-        "  meter 4/4\n"
-        "  key   C major\n"
-        "  seed  " + seed + "\n"
-        "}\n"
-        "channel lead {\n"
-        "  mixer 1\n"
-        "  range C4..C6\n"
-        "}\n"
-        "rhythm pulse { 1/4 }\n"
-        "harmony h { I | vi | IV | V }\n"
-        "section intro {\n"
-        "  length 4 bars\n"
-        "  harmony h\n"
-        "  part lead {\n"
-        "    melody {\n"
-        "      rhythm   pulse\n"
-        "      variance 0.5\n"
-        "    }\n"
-        "  }\n"
-        "}\n"
-        "section verse {\n"
-        "  length 4 bars\n"
-        "  harmony h\n"
-        "  part lead {\n"
-        "    melody {\n"
-        "      rhythm   pulse\n"
-        "      variance " + verseVariance + "\n"
-        "    }\n"
-        "  }\n"
-        "}\n"
-        "section outro {\n"
-        "  length 4 bars\n"
-        "  harmony h\n"
-        "  part lead {\n"
-        "    melody {\n"
-        "      rhythm   pulse\n"
-        "      variance 0.5\n"
-        "    }\n"
-        "  }\n"
-        "}\n"
-        "arrangement {\n" + arrangement + "}\n";
+    return "song {\n"
+           "  title \"T\"\n"
+           "  tempo "
+           + tempo
+           + "\n"
+             "  meter 4/4\n"
+             "  key   C major\n"
+             "  seed  "
+           + seed
+           + "\n"
+             "}\n"
+             "channel lead {\n"
+             "  mixer 1\n"
+             "  range C4..C6\n"
+             "}\n"
+             "rhythm pulse { 1/4 }\n"
+             "harmony h { I | vi | IV | V }\n"
+             "section intro {\n"
+             "  length 4 bars\n"
+             "  harmony h\n"
+             "  part lead {\n"
+             "    melody {\n"
+             "      rhythm   pulse\n"
+             "      variance 0.5\n"
+             "    }\n"
+             "  }\n"
+             "}\n"
+             "section verse {\n"
+             "  length 4 bars\n"
+             "  harmony h\n"
+             "  part lead {\n"
+             "    melody {\n"
+             "      rhythm   pulse\n"
+             "      variance "
+           + verseVariance
+           + "\n"
+             "    }\n"
+             "  }\n"
+             "}\n"
+             "section outro {\n"
+             "  length 4 bars\n"
+             "  harmony h\n"
+             "  part lead {\n"
+             "    melody {\n"
+             "      rhythm   pulse\n"
+             "      variance 0.5\n"
+             "    }\n"
+             "  }\n"
+             "}\n"
+             "arrangement {\n"
+           + arrangement + "}\n";
 }
 
 Score compileOk (const std::string& source)
@@ -98,37 +103,35 @@ std::string fingerprint (const Score& score)
 {
     std::string out;
     out += score.title + "|" + std::to_string (score.tempoBpm) + "|"
-         + std::to_string (score.stepsPerBeat) + "|" + std::to_string (score.barsInSong) + "\n";
+           + std::to_string (score.stepsPerBeat) + "|" + std::to_string (score.barsInSong) + "\n";
 
     for (const auto& pattern : score.patterns)
     {
         out += "P " + pattern.name + " " + std::to_string (pattern.lengthSteps) + "\n";
 
         for (const auto& note : pattern.notes)
-            out += "  " + std::to_string (note.track) + " " + std::to_string (note.startStep)
-                 + " " + std::to_string (note.lengthSteps) + " " + std::to_string (note.pitch)
-                 + " " + std::to_string ((int) (note.velocity * 1000.0f)) + "\n";
+            out += "  " + std::to_string (note.track) + " " + std::to_string (note.startStep) + " "
+                   + std::to_string (note.lengthSteps) + " " + std::to_string (note.pitch) + " "
+                   + std::to_string ((int) (note.velocity * 1000.0f)) + "\n";
     }
 
     for (const auto& clip : score.clips)
-        out += "C " + std::to_string (clip.pattern) + " " + std::to_string (clip.startBar)
-             + " " + std::to_string (clip.lengthBars) + "\n";
+        out += "C " + std::to_string (clip.pattern) + " " + std::to_string (clip.startBar) + " "
+               + std::to_string (clip.lengthBars) + "\n";
 
     return out;
 }
 
 } // namespace
 
-TEST_CASE ("compiling the same source twice gives the same score",
-           "[score][determinism]")
+TEST_CASE ("compiling the same source twice gives the same score", "[score][determinism]")
 {
     const auto source = scoreWith();
 
     REQUIRE (fingerprint (compileOk (source)) == fingerprint (compileOk (source)));
 }
 
-TEST_CASE ("editing one section leaves every other section alone",
-           "[score][determinism]")
+TEST_CASE ("editing one section leaves every other section alone", "[score][determinism]")
 {
     // THE invariant that forces the design. Draws are stateless and keyed on a
     // structural path, so changing how many random values one decision consumes
@@ -149,8 +152,7 @@ TEST_CASE ("editing one section leaves every other section alone",
     REQUIRE (pitchesOf (before, "outro") == pitchesOf (after, "outro"));
 }
 
-TEST_CASE ("reordering the arrangement moves clips but not notes",
-           "[score][determinism]")
+TEST_CASE ("reordering the arrangement moves clips but not notes", "[score][determinism]")
 {
     const auto before = compileOk (scoreWith ("0.5", "  intro\n  verse\n  outro\n"));
     const auto after = compileOk (scoreWith ("0.5", "  outro\n  intro\n  verse\n"));
@@ -163,8 +165,7 @@ TEST_CASE ("reordering the arrangement moves clips but not notes",
     }
 }
 
-TEST_CASE ("appending an instance changes nothing before it",
-           "[score][determinism]")
+TEST_CASE ("appending an instance changes nothing before it", "[score][determinism]")
 {
     const auto before = compileOk (scoreWith ("0.5", "  intro\n  verse\n  outro\n"));
     const auto after = compileOk (scoreWith ("0.5", "  intro\n  verse\n  outro\n  intro\n"));
@@ -177,8 +178,7 @@ TEST_CASE ("appending an instance changes nothing before it",
     REQUIRE (after.clips.size() == before.clips.size() + 1);
 }
 
-TEST_CASE ("whitespace and comments change nothing at all",
-           "[score][determinism]")
+TEST_CASE ("whitespace and comments change nothing at all", "[score][determinism]")
 {
     // A decision site's identity is its STRUCTURAL path, never its byte offset.
     // If it were the offset, inserting a blank line would reshuffle the song -
@@ -192,13 +192,10 @@ TEST_CASE ("whitespace and comments change nothing at all",
     REQUIRE (fingerprint (compileOk (plain)) == fingerprint (compileOk (spaced)));
 }
 
-TEST_CASE ("changing the tempo or the title changes no note",
-           "[score][determinism]")
+TEST_CASE ("changing the tempo or the title changes no note", "[score][determinism]")
 {
-    const auto slow = compileOk (scoreWith ("0.5", "  intro\n  verse\n  outro\n",
-                                            "0x51A9", "120"));
-    const auto fast = compileOk (scoreWith ("0.5", "  intro\n  verse\n  outro\n",
-                                            "0x51A9", "160"));
+    const auto slow = compileOk (scoreWith ("0.5", "  intro\n  verse\n  outro\n", "0x51A9", "120"));
+    const auto fast = compileOk (scoreWith ("0.5", "  intro\n  verse\n  outro\n", "0x51A9", "160"));
 
     for (const auto* name : { "intro", "verse", "outro" })
     {
@@ -281,8 +278,7 @@ TEST_CASE ("variance zero makes the seed irrelevant", "[score][determinism]")
     REQUIRE (pitchesOf (a, "verse") == pitchesOf (b, "verse"));
 }
 
-TEST_CASE ("compiling many times over a running process never wavers",
-           "[score][determinism]")
+TEST_CASE ("compiling many times over a running process never wavers", "[score][determinism]")
 {
     // Compiling twice was not enough, and this is the test that says why.
     //
@@ -319,33 +315,34 @@ namespace
 {
 
 /** A score whose line ends on a chosen chord tone. */
-std::string withCadence (const std::string& cadence,
-                         const std::string& arrangement = "  verse\n",
+std::string withCadence (const std::string& cadence, const std::string& arrangement = "  verse\n",
                          const std::string& seed = "0x51A9")
 {
-    return
-        "song {\n"
-        "  title \"T\"\n"
-        "  tempo 120\n"
-        "  meter 4/4\n"
-        "  key   C major\n"
-        "  seed  " + seed + "\n"
-        "}\n"
-        "channel lead {\n  mixer 1\n  range C4..C6\n}\n"
-        "rhythm pulse { 1/4 }\n"
-        "harmony h { I | vi | IV | V }\n"
-        "section verse {\n"
-        "  length 4 bars\n"
-        "  harmony h\n"
-        "  part lead {\n"
-        "    melody {\n"
-        "      rhythm   pulse\n"
-        "      variance 0.5\n"
-        + cadence +
-        "    }\n"
-        "  }\n"
-        "}\n"
-        "arrangement {\n" + arrangement + "}\n";
+    return "song {\n"
+           "  title \"T\"\n"
+           "  tempo 120\n"
+           "  meter 4/4\n"
+           "  key   C major\n"
+           "  seed  "
+           + seed
+           + "\n"
+             "}\n"
+             "channel lead {\n  mixer 1\n  range C4..C6\n}\n"
+             "rhythm pulse { 1/4 }\n"
+             "harmony h { I | vi | IV | V }\n"
+             "section verse {\n"
+             "  length 4 bars\n"
+             "  harmony h\n"
+             "  part lead {\n"
+             "    melody {\n"
+             "      rhythm   pulse\n"
+             "      variance 0.5\n"
+           + cadence
+           + "    }\n"
+             "  }\n"
+             "}\n"
+             "arrangement {\n"
+           + arrangement + "}\n";
 }
 
 /** The pitch class the last note of a pattern lands on. */
@@ -360,8 +357,7 @@ int endsOn (const Score& score, const std::string& pattern)
 
 } // namespace
 
-TEST_CASE ("a cadence lands the line on the chord tone it names",
-           "[score][determinism][cadence]")
+TEST_CASE ("a cadence lands the line on the chord tone it names", "[score][determinism][cadence]")
 {
     // The progression ends on V, which in C major is G: root 7, third 11,
     // fifth 2. Naming the tone has to be enough to land on it.
@@ -410,8 +406,8 @@ TEST_CASE ("`per song` draws once for the whole song", "[score][determinism][cad
     // The scope IS the identity of the draw: at song scope three instances of
     // the same section end the same way, which is what makes the scope worth
     // writing rather than a synonym for "random".
-    const auto score = compileOk (withCadence ("      cadence choose [1 3 5] per song\n",
-                                               "  verse x3\n"));
+    const auto score = compileOk (
+        withCadence ("      cadence choose [1 3 5] per song\n", "  verse x3\n"));
 
     REQUIRE (score.patterns.size() == 3);
 
@@ -424,20 +420,20 @@ TEST_CASE ("`per song` draws once for the whole song", "[score][determinism][cad
     REQUIRE (endings.size() == 1);
 }
 
-TEST_CASE ("a velocity scope changes how often the jitter is re-drawn",
-           "[score][determinism]")
+TEST_CASE ("a velocity scope changes how often the jitter is re-drawn", "[score][determinism]")
 {
     const auto scoreWithScope = [] (const std::string& scope)
     {
-        return compileOk (
-            "song {\n  tempo 120\n  meter 4/4\n  key C major\n  seed 7\n}\n"
-            "channel pad {\n  mixer 1\n  range C3..C5\n  velocity 80 +- 20" + scope + "\n}\n"
-            "voicing warm { size 3 voices }\n"
-            "rhythm pulse { 1/4 }\n"
-            "harmony h { I | V }\n"
-            "section verse {\n  length 2 bars\n  harmony h\n"
-            "  part pad {\n    chords with warm\n    rhythm pulse\n  }\n}\n"
-            "arrangement {\n  verse\n}\n");
+        return compileOk ("song {\n  tempo 120\n  meter 4/4\n  key C major\n  seed 7\n}\n"
+                          "channel pad {\n  mixer 1\n  range C3..C5\n  velocity 80 +- 20"
+                          + scope
+                          + "\n}\n"
+                            "voicing warm { size 3 voices }\n"
+                            "rhythm pulse { 1/4 }\n"
+                            "harmony h { I | V }\n"
+                            "section verse {\n  length 2 bars\n  harmony h\n"
+                            "  part pad {\n    chords with warm\n    rhythm pulse\n  }\n}\n"
+                            "arrangement {\n  verse\n}\n");
     };
 
     const auto velocitiesOf = [] (const Score& score)

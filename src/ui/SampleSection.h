@@ -25,8 +25,7 @@ namespace dew
     is not decoration here - it is the control, and the trim handles are on it
     rather than in a pair of numeric fields beside it.
 */
-class SampleSection : public juce::Component,
-                      private juce::ValueTree::Listener
+class SampleSection : public juce::Component, private juce::ValueTree::Listener
 {
 public:
     /** Hands this section's knobs what a right-click menu needs. Null means no
@@ -51,9 +50,9 @@ public:
     */
     static constexpr int waveformHeight = 60;
 
-    static constexpr int requiredHeight = waveformHeight
-                                        + tokens::space::sm + 68    // fade in + fade out
-                                        + tokens::space::sm + 68;   // transpose + toggles
+    static constexpr int requiredHeight = waveformHeight + tokens::space::sm
+                                          + 68                      // fade in + fade out
+                                          + tokens::space::sm + 68; // transpose + toggles
 
     void paint (juce::Graphics&) override;
     void resized() override;
@@ -76,7 +75,10 @@ public:
 
     /** One of the knobs, so a test can drive a whole gesture through it. This
         panel is where the one-undo-step-per-gesture rule was missing. */
-    DewKnob& getFadeInKnob() noexcept { return fadeInKnob; }
+    DewKnob& getFadeInKnob() noexcept
+    {
+        return fadeInKnob;
+    }
 
 private:
     void valueTreePropertyChanged (juce::ValueTree&, const juce::Identifier&) override;
@@ -100,7 +102,12 @@ private:
 
     int sampleAtX (float x) const;
 
-    enum class Handle { none, start, end };
+    enum class Handle
+    {
+        none,
+        start,
+        end
+    };
 
     Handle handleAt (juce::Point<float>) const;
 

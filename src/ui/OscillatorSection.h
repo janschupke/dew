@@ -73,7 +73,10 @@ public:
         than cached by the host, so there is only one copy of the answer and
         nothing for a layout and a refresh to disagree about.
     */
-    int getRequiredHeight() const noexcept { return heightFor (showingWavetable); }
+    int getRequiredHeight() const noexcept
+    {
+        return heightFor (showingWavetable);
+    }
 
     /** Fired when getRequiredHeight() changes - a mode edit, or selecting a
         slot in the other mode. The host has to lay out again; nothing else can
@@ -88,11 +91,17 @@ public:
 
     // --- for tests -----------------------------------------------------------
     int getNumSlots() const;
-    int getSelectedSlot() const noexcept { return selectedSlot; }
+    int getSelectedSlot() const noexcept
+    {
+        return selectedSlot;
+    }
     void selectSlot (int index);
 
     bool isSlotEnabled (int index) const;
-    bool isShowingWavetable() const noexcept { return showingWavetable; }
+    bool isShowingWavetable() const noexcept
+    {
+        return showingWavetable;
+    }
 
     /** What the power button does. Exposed so a test drives the behaviour
         rather than the widget: a DewIconButton flips its own toggle state
@@ -102,16 +111,46 @@ public:
     void setSlotEnabled (int index, bool shouldBeEnabled);
 
     juce::Button& getSlotButton (int index) const;
-    juce::Button& getEnableButton() noexcept { return enableButton; }
-    juce::ComboBox& getWaveBox() noexcept   { return waveBox; }
-    juce::ComboBox& getModeBox() noexcept   { return modeBox; }
-    juce::ComboBox& getTableBox() noexcept  { return tableBox; }
-    juce::ComboBox& getSourceBox() noexcept { return sourceBox; }
-    DewKnob& getPositionKnob() noexcept     { return positionKnob; }
-    DewKnob& getModKnob() noexcept          { return modKnob; }
-    DewKnob& getRateKnob() noexcept         { return rateKnob; }
-    DewKnob& getUnisonKnob() noexcept       { return unisonKnob; }
-    DewKnob& getSpreadKnob() noexcept       { return spreadKnob; }
+    juce::Button& getEnableButton() noexcept
+    {
+        return enableButton;
+    }
+    juce::ComboBox& getWaveBox() noexcept
+    {
+        return waveBox;
+    }
+    juce::ComboBox& getModeBox() noexcept
+    {
+        return modeBox;
+    }
+    juce::ComboBox& getTableBox() noexcept
+    {
+        return tableBox;
+    }
+    juce::ComboBox& getSourceBox() noexcept
+    {
+        return sourceBox;
+    }
+    DewKnob& getPositionKnob() noexcept
+    {
+        return positionKnob;
+    }
+    DewKnob& getModKnob() noexcept
+    {
+        return modKnob;
+    }
+    DewKnob& getRateKnob() noexcept
+    {
+        return rateKnob;
+    }
+    DewKnob& getUnisonKnob() noexcept
+    {
+        return unisonKnob;
+    }
+    DewKnob& getSpreadKnob() noexcept
+    {
+        return spreadKnob;
+    }
 
 private:
     class SlotButton;
@@ -123,22 +162,22 @@ private:
         told you none of that.
     */
     static constexpr int selectorHeight = tokens::size::iconButton;
-    static constexpr int octaveHeight   = tokens::size::rulerHeight;
-    static constexpr int shapeHeight    = tokens::size::knob;
+    static constexpr int octaveHeight = tokens::size::rulerHeight;
+    static constexpr int shapeHeight = tokens::size::knob;
 
     static constexpr int rowGap = tokens::space::sm;
     static constexpr int formRowHeight = tokens::size::controlHeight;
     static constexpr int knobRowHeight = tokens::size::knobRow;
 
     static constexpr int classicHeight = selectorHeight            // slot selector
-                                       + rowGap + formRowHeight   // power + mode
-                                       + rowGap + formRowHeight   // wave, or table
-                                       + rowGap + octaveHeight    // octave
-                                       + rowGap + knobRowHeight;  // detune + gain
+                                         + rowGap + formRowHeight  // power + mode
+                                         + rowGap + formRowHeight  // wave, or table
+                                         + rowGap + octaveHeight   // octave
+                                         + rowGap + knobRowHeight; // detune + gain
 
     static constexpr int wavetableExtra = rowGap + knobRowHeight   // position, mod, rate
-                                        + rowGap + knobRowHeight   // unison + spread
-                                        + rowGap + shapeHeight;    // the shape display
+                                          + rowGap + knobRowHeight // unison + spread
+                                          + rowGap + shapeHeight;  // the shape display
 
     void valueTreePropertyChanged (juce::ValueTree&, const juce::Identifier&) override;
     void valueTreeChildAdded (juce::ValueTree&, juce::ValueTree&) override;
@@ -146,7 +185,10 @@ private:
     void changeListenerCallback (juce::ChangeBroadcaster*) override;
 
     juce::ValueTree slotAt (int index) const;
-    juce::ValueTree selectedSlotTree() const { return slotAt (selectedSlot); }
+    juce::ValueTree selectedSlotTree() const
+    {
+        return slotAt (selectedSlot);
+    }
 
     /** Writes to the selected slot, opening one undo transaction per gesture. */
     void write (const juce::Identifier& property, const juce::var& value,
@@ -184,13 +226,13 @@ private:
     // Every one of these used to state its range here, a second time. The
     // catalog states it once, and the engine clamps by the same row.
     DewKnob detuneKnob { requireInstrumentParamSpec (ids::detuneCents) };
-    DewKnob gainKnob   { requireInstrumentParamSpec (ids::gain) };
+    DewKnob gainKnob { requireInstrumentParamSpec (ids::gain) };
 
     DewKnob positionKnob { requireInstrumentParamSpec (ids::wavePosition) };
-    DewKnob modKnob      { requireInstrumentParamSpec (ids::wavePositionMod) };
-    DewKnob rateKnob     { requireInstrumentParamSpec (ids::wavePositionRate) };
-    DewKnob unisonKnob   { requireInstrumentParamSpec (ids::unisonVoices) };
-    DewKnob spreadKnob   { requireInstrumentParamSpec (ids::unisonDetune) };
+    DewKnob modKnob { requireInstrumentParamSpec (ids::wavePositionMod) };
+    DewKnob rateKnob { requireInstrumentParamSpec (ids::wavePositionRate) };
+    DewKnob unisonKnob { requireInstrumentParamSpec (ids::unisonVoices) };
+    DewKnob spreadKnob { requireInstrumentParamSpec (ids::unisonDetune) };
 
     juce::Rectangle<int> offCaptionBounds, shapeBounds;
 

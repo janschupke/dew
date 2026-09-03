@@ -22,7 +22,9 @@ juce::String transposeLabel (int semitones)
 // -----------------------------------------------------------------------------
 
 MidiSettingsPanel::DeviceRow::DeviceRow (MidiSettingsPanel& o, juce::MidiDeviceInfo i, bool present)
-    : owner (o), info (std::move (i)), connected (present)
+    : owner (o)
+    , info (std::move (i))
+    , connected (present)
 {
     tick.setToggleState (owner.host.isDeviceWanted (info.identifier), juce::dontSendNotification);
     tick.onClick = [this]
@@ -52,8 +54,8 @@ void MidiSettingsPanel::DeviceRow::paint (juce::Graphics& g)
 
     g.setFont (type::font (type::body));
     g.setColour (connected ? colour::textPrimary : colour::textDisabled);
-    g.drawText (info.name.isNotEmpty() ? info.name : info.identifier,
-                text, juce::Justification::centredLeft, true);
+    g.drawText (info.name.isNotEmpty() ? info.name : info.identifier, text,
+                juce::Justification::centredLeft, true);
 
     if (connected)
         return;
@@ -68,7 +70,8 @@ void MidiSettingsPanel::DeviceRow::paint (juce::Graphics& g)
 // -----------------------------------------------------------------------------
 
 MidiSettingsPanel::MidiSettingsPanel (MidiInputHost& h, Settings* s)
-    : host (h), settings (s)
+    : host (h)
+    , settings (s)
 {
     setComponentID ("midiSettings");
     setSize (preferredWidth, preferredHeight);
@@ -98,7 +101,8 @@ MidiSettingsPanel::MidiSettingsPanel (MidiInputHost& h, Settings* s)
 
     // Ids are offset so that "no transpose" is not id 0, which a ComboBox uses
     // to mean nothing selected.
-    for (int semitones = -MidiRouter::maxTranspose; semitones <= MidiRouter::maxTranspose; ++semitones)
+    for (int semitones = -MidiRouter::maxTranspose; semitones <= MidiRouter::maxTranspose;
+         ++semitones)
         transposeBox.addItem (transposeLabel (semitones), semitones + MidiRouter::maxTranspose + 1);
 
     transposeBox.onChange = [this]
@@ -137,8 +141,8 @@ void MidiSettingsPanel::refresh()
 
     for (const auto& device : host.getListedDevices())
     {
-        const auto connected = std::any_of (present.begin(), present.end(),
-                                            [&] (const auto& d) { return d.identifier == device.identifier; });
+        const auto connected = std::any_of (present.begin(), present.end(), [&] (const auto& d)
+                                            { return d.identifier == device.identifier; });
 
         auto* row = rows.add (new DeviceRow (*this, device, connected));
         listHolder.addAndMakeVisible (row);
@@ -148,7 +152,8 @@ void MidiSettingsPanel::refresh()
     channelBox.setSelectedId (filter + 1, juce::dontSendNotification);
 
     const auto semitones = host.getRouter().getTranspose();
-    transposeBox.setSelectedId (semitones + MidiRouter::maxTranspose + 1, juce::dontSendNotification);
+    transposeBox.setSelectedId (semitones + MidiRouter::maxTranspose + 1,
+                                juce::dontSendNotification);
 
     resized();
     updateSummary();
@@ -189,9 +194,8 @@ void MidiSettingsPanel::updateSummary()
     const auto velocity = (packed >> 8) & 0xff;
     const auto channel = (packed >> 16) & 0xff;
 
-    summaryText = "Note " + juce::String (pitch)
-                + "  ·  vel " + juce::String (velocity)
-                + "  ·  ch " + juce::String (channel);
+    summaryText = "Note " + juce::String (pitch) + "  ·  vel " + juce::String (velocity)
+                  + "  ·  ch " + juce::String (channel);
 }
 
 void MidiSettingsPanel::timerCallback()
@@ -212,7 +216,7 @@ juce::String MidiSettingsPanel::getDeviceRowText (int index) const
 {
     if (auto* row = rows[index])
         return (row->info.name.isNotEmpty() ? row->info.name : row->info.identifier)
-             + (row->connected ? juce::String() : juce::String (" (not connected)"));
+               + (row->connected ? juce::String() : juce::String (" (not connected)"));
 
     return {};
 }
@@ -273,7 +277,8 @@ void MidiSettingsPanel::paint (juce::Graphics& g)
         g.drawText (labels[i], labelBounds[i], juce::Justification::centredLeft, false);
 
     // The live state, under the controls: what the choices above added up to.
-    const auto summary = getLocalBounds().reduced (space::xl)
+    const auto summary = getLocalBounds()
+                             .reduced (space::xl)
                              .withTop (getHeight() - space::xl - size::controlHeight)
                              .withHeight (size::controlHeight);
 
@@ -290,11 +295,12 @@ void MidiSettingsPanel::paint (juce::Graphics& g)
 
     g.setColour (connected ? colour::textPrimary : colour::textSecondary);
     g.setFont (type::font (type::small));
-    g.drawText (summaryText, summary.withTrimmedLeft (space::lg),
-                juce::Justification::centredLeft, true);
+    g.drawText (summaryText, summary.withTrimmedLeft (space::lg), juce::Justification::centredLeft,
+                true);
 }
 
-void MidiSettingsPanel::show (MidiInputHost& hostToUse, Settings* settingsToUse, juce::Component* parent)
+void MidiSettingsPanel::show (MidiInputHost& hostToUse, Settings* settingsToUse,
+                              juce::Component* parent)
 {
     juce::DialogWindow::LaunchOptions options;
 

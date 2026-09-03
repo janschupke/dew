@@ -25,7 +25,13 @@ class StatusBar : public juce::Component,
                   private juce::ValueTree::Listener
 {
 public:
-    enum class Severity { info, success, warning, error };
+    enum class Severity
+    {
+        info,
+        success,
+        warning,
+        error
+    };
 
     StatusBar (ProjectDocument&, EditorState&, LiveAudioHost&);
     ~StatusBar() override;
@@ -53,14 +59,26 @@ public:
     */
     void setHoverHelp (const juce::String&);
 
-    juce::String getHoverHelp() const { return hoverText; }
+    juce::String getHoverHelp() const
+    {
+        return hoverText;
+    }
 
     void refresh();
 
     // --- for tests -----------------------------------------------------------
-    juce::String getMessageText() const  { return messageText; }
-    Severity getMessageSeverity() const  { return messageSeverity; }
-    juce::String getContextText() const  { return contextText; }
+    juce::String getMessageText() const
+    {
+        return messageText;
+    }
+    Severity getMessageSeverity() const
+    {
+        return messageSeverity;
+    }
+    juce::String getContextText() const
+    {
+        return contextText;
+    }
     bool hasMessage() const;
 
     /** Advances the message clock without waiting, so expiry is testable. */

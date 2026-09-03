@@ -36,7 +36,10 @@ struct RollHarness
         roll.centreOnPitch (66);
     }
 
-    juce::ValueTree pattern() { return ProjectEdits::findPattern (document.getState(), 1); }
+    juce::ValueTree pattern()
+    {
+        return ProjectEdits::findPattern (document.getState(), 1);
+    }
 
     int countNotes()
     {
@@ -67,13 +70,20 @@ inline juce::MouseEvent eventAt (juce::Component& target, juce::Point<int> local
     const auto position = local.toFloat();
 
     return { juce::Desktop::getInstance().getMainMouseSource(),
-             position, mods,
-             1.0f, 0.0f, 0.0f, 0.0f, 0.0f,
-             &target, &target,
+             position,
+             mods,
+             1.0f,
+             0.0f,
+             0.0f,
+             0.0f,
+             0.0f,
+             &target,
+             &target,
              juce::Time::getCurrentTime(),
              position,
              juce::Time::getCurrentTime(),
-             clickCount, wasDragged };
+             clickCount,
+             wasDragged };
 }
 
 inline void clickAndRelease (juce::Component& c, juce::Point<int> at,
@@ -95,8 +105,9 @@ inline void dragBetween (juce::Component& c, juce::Point<int> from, juce::Point<
     for (int i = 1; i <= samples; ++i)
     {
         const auto t = (float) i / (float) samples;
-        c.mouseDrag (eventAt (c, { juce::roundToInt ((float) from.x + t * (float) (to.x - from.x)),
-                                   juce::roundToInt ((float) from.y + t * (float) (to.y - from.y)) },
+        c.mouseDrag (eventAt (c,
+                              { juce::roundToInt ((float) from.x + t * (float) (to.x - from.x)),
+                                juce::roundToInt ((float) from.y + t * (float) (to.y - from.y)) },
                               mods, 1, true));
     }
 

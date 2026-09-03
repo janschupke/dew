@@ -44,9 +44,15 @@ struct CliArgs
     }
 
     /** For tests, which have arguments but no argv. */
-    explicit CliArgs (const juce::StringArray& raw) { parse (raw); }
+    explicit CliArgs (const juce::StringArray& raw)
+    {
+        parse (raw);
+    }
 
-    bool has (const juce::String& name) const { return options.containsKey (name); }
+    bool has (const juce::String& name) const
+    {
+        return options.containsKey (name);
+    }
 
     juce::String value (const juce::String& name, const juce::String& fallback = {}) const
     {

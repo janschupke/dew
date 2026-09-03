@@ -71,7 +71,8 @@ struct NoteTools
 
     // --- lookup --------------------------------------------------------------
     /** Every note of this channel in this pattern, in tree order. */
-    static juce::Array<juce::ValueTree> notesOnChannel (const juce::ValueTree& pattern, int channelId);
+    static juce::Array<juce::ValueTree> notesOnChannel (const juce::ValueTree& pattern,
+                                                        int channelId);
 
     /** What an edit applies to: the selection when it has any, otherwise every
         note on the channel.
@@ -88,8 +89,8 @@ struct NoteTools
         *inside*, not one that starts exactly there - which is what painting
         needs, so a brush stroke does not write inside a note it is crossing.
     */
-    static juce::ValueTree noteCovering (const juce::ValueTree& pattern, int channelId,
-                                         int step, int pitch);
+    static juce::ValueTree noteCovering (const juce::ValueTree& pattern, int channelId, int step,
+                                         int pitch);
 
     // --- operations ----------------------------------------------------------
     /** Splits `note` in two at `atStep`, returning the tail.
@@ -127,8 +128,8 @@ struct NoteTools
         already against a limit - so the caller can skip an empty undo
         transaction rather than filling the stack with edits that did nothing.
     */
-    static int transpose (const juce::Array<juce::ValueTree>& notes, int semitones,
-                          int minPitch, int maxPitch, juce::UndoManager*);
+    static int transpose (const juce::Array<juce::ValueTree>& notes, int semitones, int minPitch,
+                          int maxPitch, juce::UndoManager*);
 
     /** How much to disturb each note, and what to leave alone.
 
@@ -137,8 +138,8 @@ struct NoteTools
     */
     struct RandomizeOptions
     {
-        double velocityAmount = 0.25;   ///< +/- around each note's velocity, in velocity units
-        int    stepAmount     = 0;      ///< +/- around each note's start, in steps
+        double velocityAmount = 0.25; ///< +/- around each note's velocity, in velocity units
+        int stepAmount = 0;           ///< +/- around each note's start, in steps
     };
 
     /** Disturbs velocity and start step, once, in place.

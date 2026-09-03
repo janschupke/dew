@@ -84,8 +84,7 @@ void SynthVoice::start (int pitch, float velocity, const OscBankSnapshot& bank,
             continue;
 
         const auto effectivePitch = juce::jlimit (0.0, 127.0,
-                                                  (double) pitch
-                                                      + 12.0 * (double) settings.octave);
+                                                  (double) pitch + 12.0 * (double) settings.octave);
 
         if (settings.mode == OscMode::wavetable)
         {
@@ -112,9 +111,10 @@ void SynthVoice::start (int pitch, float velocity, const OscBankSnapshot& bank,
             for (int u = 0; u < osc.numUnison; ++u)
             {
                 const auto spread = osc.numUnison > 1
-                                  ? (double) settings.unisonDetune
-                                        * (2.0 * (double) u / (double) (osc.numUnison - 1) - 1.0)
-                                  : 0.0;
+                                        ? (double) settings.unisonDetune
+                                              * (2.0 * (double) u / (double) (osc.numUnison - 1)
+                                                 - 1.0)
+                                        : 0.0;
 
                 const auto frequency = midiToHz (effectivePitch,
                                                  (double) settings.detuneCents + spread);
@@ -127,9 +127,8 @@ void SynthVoice::start (int pitch, float velocity, const OscBankSnapshot& bank,
                 // starting together sum into a click and begin their detune in
                 // unison; spreading them is deterministic, which randomising
                 // would not be - and a render here has to be reproducible.
-                osc.phase[(size_t) u] = osc.numUnison > 1
-                                      ? (double) u / (double) osc.numUnison
-                                      : 0.0;
+                osc.phase[(size_t) u] = osc.numUnison > 1 ? (double) u / (double) osc.numUnison
+                                                          : 0.0;
             }
 
             osc.updateMip();
@@ -158,8 +157,8 @@ void SynthVoice::start (int pitch, float velocity, const OscBankSnapshot& bank,
     vibratoPhase = 0.0;
     modulated = false;
 
-    adsrParams.attack  = amp.attack;
-    adsrParams.decay   = amp.decay;
+    adsrParams.attack = amp.attack;
+    adsrParams.decay = amp.decay;
     adsrParams.sustain = amp.sustain;
     adsrParams.release = amp.release;
     adsr.setParameters (adsrParams);
@@ -188,7 +187,7 @@ void SynthVoice::setPitchModulation (float bendSemitones, float modulation, int 
         return;
 
     const auto silent = juce::exactlyEqual (bendSemitones, 0.0f)
-                     && juce::exactlyEqual (modulation, 0.0f);
+                        && juce::exactlyEqual (modulation, 0.0f);
 
     if (silent)
     {
@@ -228,7 +227,7 @@ void SynthVoice::setPitchModulation (float bendSemitones, float modulation, int 
     vibratoPhase -= std::floor (vibratoPhase);
 
     const auto vibrato = (double) depth
-                       * std::sin (juce::MathConstants<double>::twoPi * vibratoPhase);
+                         * std::sin (juce::MathConstants<double>::twoPi * vibratoPhase);
 
     const auto semitones = (double) bendSemitones + vibrato;
     const auto factor = std::pow (2.0, semitones / 12.0);
@@ -265,8 +264,7 @@ void SynthVoice::setWavetablePosition (const OscBankSnapshot& bank) noexcept
         auto& osc = wavetables[(size_t) w];
 
         if (osc.slot >= 0 && osc.slot < bank.numSlots)
-            osc.basePosition = juce::jlimit (0.0f, 1.0f,
-                                             bank.slots[(size_t) osc.slot].position);
+            osc.basePosition = juce::jlimit (0.0f, 1.0f, bank.slots[(size_t) osc.slot].position);
     }
 }
 
@@ -331,13 +329,9 @@ float SynthVoice::Oscillator::nextSample() noexcept
 
     switch (wave)
     {
-        case Waveform::sine:
-            value = std::sin (juce::MathConstants<double>::twoPi * t);
-            break;
+        case Waveform::sine: value = std::sin (juce::MathConstants<double>::twoPi * t); break;
 
-        case Waveform::saw:
-            value = 2.0 * t - 1.0 - polyBlep (t, dt);
-            break;
+        case Waveform::saw: value = 2.0 * t - 1.0 - polyBlep (t, dt); break;
 
         case Waveform::square:
             value = t < 0.5 ? 1.0 : -1.0;

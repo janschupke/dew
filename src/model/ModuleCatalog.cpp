@@ -10,7 +10,7 @@ namespace
 {
 
 constexpr ParamChoice filterModes[] {
-    { "lowpass",  "Low pass"  },
+    { "lowpass", "Low pass" },
     { "highpass", "High pass" },
     { "bandpass", "Band pass" },
 };
@@ -35,46 +35,46 @@ const ParamSpec filterParams[] {
     // slot's parameter block, and what every plugin API makes a discrete
     // parameter. Automatable now: it needed no engine plumbing at all, and it is
     // the proof that a stepped curve and a continuous one are one model.
-    { &ids::filterMode, "Mode", "MODE", "", 0.0, lastFilterMode, 0.0, 1.0, 0,
-      ParamCurve::linear, ParamControl::choice, false, /*automatable*/ true, /*integral*/ true,
-      filterModes, (int) std::size (filterModes), "lowpass" },
+    { &ids::filterMode, "Mode", "MODE", "", 0.0, lastFilterMode, 0.0, 1.0, 0, ParamCurve::linear,
+      ParamControl::choice, false, /*automatable*/ true, /*integral*/ true, filterModes,
+      (int) std::size (filterModes), "lowpass" },
     { &ids::cutoff, "Cutoff", "CUTOFF", " Hz", 20.0, 20000.0, 1200.0, 1.0, 0,
       ParamCurve::logarithmic, ParamControl::field },
     { &ids::resonance, "Resonance", "RES", "", 0.05, 4.0, 0.4, 0.01, 2 },
 };
 
 const ParamSpec reverbParams[] {
-    { &ids::roomSize, "Size",    "SIZE",  "", 0.0, 1.0, 0.5, 0.01, 2 },
-    { &ids::damping,  "Damping", "DAMP",  "", 0.0, 1.0, 0.5, 0.01, 2 },
-    { &ids::width,    "Width",   "WIDTH", "", 0.0, 1.0, 1.0, 0.01, 2 },
+    { &ids::roomSize, "Size", "SIZE", "", 0.0, 1.0, 0.5, 0.01, 2 },
+    { &ids::damping, "Damping", "DAMP", "", 0.0, 1.0, 0.5, 0.01, 2 },
+    { &ids::width, "Width", "WIDTH", "", 0.0, 1.0, 1.0, 0.01, 2 },
 };
 
 const ParamSpec delayParams[] {
-    { &ids::delayMs,  "Time",     "TIME", " ms", 1.0, 1000.0, 250.0, 1.0, 0,
-      ParamCurve::logarithmic, ParamControl::field },
-    { &ids::feedback, "Feedback", "FBK",  "", 0.0, 0.95, 0.35, 0.01, 2 },
+    { &ids::delayMs, "Time", "TIME", " ms", 1.0, 1000.0, 250.0, 1.0, 0, ParamCurve::logarithmic,
+      ParamControl::field },
+    { &ids::feedback, "Feedback", "FBK", "", 0.0, 0.95, 0.35, 0.01, 2 },
 };
 
 const ParamSpec driveParams[] {
-    { &ids::drive,      "Drive",  "DRIVE", "", 1.0, 40.0, 2.0, 0.1,  1 },
-    { &ids::outputGain, "Output", "OUT",   "", 0.0, 4.0,  1.0, 0.01, 2 },
+    { &ids::drive, "Drive", "DRIVE", "", 1.0, 40.0, 2.0, 0.1, 1 },
+    { &ids::outputGain, "Output", "OUT", "", 0.0, 4.0, 1.0, 0.01, 2 },
 };
 
 const ParamSpec chorusParams[] {
-    { &ids::rate,  "Rate",  "RATE",  " Hz", 0.01, 20.0, 1.2, 0.01, 2,
-      ParamCurve::logarithmic, ParamControl::field },
+    { &ids::rate, "Rate", "RATE", " Hz", 0.01, 20.0, 1.2, 0.01, 2, ParamCurve::logarithmic,
+      ParamControl::field },
     { &ids::depth, "Depth", "DEPTH", "", 0.0, 1.0, 0.3, 0.01, 2 },
 };
 
 const ParamSpec eqParams[] {
-    { &ids::lowGainDb,  "Low",  "LOW",  " dB", -24.0, 24.0, 0.0, 0.1, 1,
-      ParamCurve::linear, ParamControl::knob, /*bipolar*/ true },
-    { &ids::midGainDb,  "Mid",  "MID",  " dB", -24.0, 24.0, 0.0, 0.1, 1,
-      ParamCurve::linear, ParamControl::knob, true },
-    { &ids::midFreq,    "Freq", "FREQ", " Hz", 100.0, 8000.0, 900.0, 1.0, 0,
-      ParamCurve::logarithmic, ParamControl::field },
-    { &ids::highGainDb, "High", "HIGH", " dB", -24.0, 24.0, 0.0, 0.1, 1,
-      ParamCurve::linear, ParamControl::knob, true },
+    { &ids::lowGainDb, "Low", "LOW", " dB", -24.0, 24.0, 0.0, 0.1, 1, ParamCurve::linear,
+      ParamControl::knob, /*bipolar*/ true },
+    { &ids::midGainDb, "Mid", "MID", " dB", -24.0, 24.0, 0.0, 0.1, 1, ParamCurve::linear,
+      ParamControl::knob, true },
+    { &ids::midFreq, "Freq", "FREQ", " Hz", 100.0, 8000.0, 900.0, 1.0, 0, ParamCurve::logarithmic,
+      ParamControl::field },
+    { &ids::highGainDb, "High", "HIGH", " dB", -24.0, 24.0, 0.0, 0.1, 1, ParamCurve::linear,
+      ParamControl::knob, true },
 };
 
 } // namespace
@@ -84,10 +84,10 @@ const std::vector<EffectDescriptor>& effectDescriptors()
     static const std::vector<EffectDescriptor> all {
         { EffectType::filter, "filter", "Filter", filterParams, (int) std::size (filterParams) },
         { EffectType::reverb, "reverb", "Reverb", reverbParams, (int) std::size (reverbParams) },
-        { EffectType::delay,  "delay",  "Delay",  delayParams,  (int) std::size (delayParams)  },
-        { EffectType::drive,  "drive",  "Drive",  driveParams,  (int) std::size (driveParams)  },
+        { EffectType::delay, "delay", "Delay", delayParams, (int) std::size (delayParams) },
+        { EffectType::drive, "drive", "Drive", driveParams, (int) std::size (driveParams) },
         { EffectType::chorus, "chorus", "Chorus", chorusParams, (int) std::size (chorusParams) },
-        { EffectType::eq,     "eq",     "EQ",     eqParams,     (int) std::size (eqParams)     },
+        { EffectType::eq, "eq", "EQ", eqParams, (int) std::size (eqParams) },
     };
 
     // Not a comment asking someone to keep two things in step: adding an
@@ -178,8 +178,19 @@ namespace
 constexpr ParamSpec toggleSpec (const juce::Identifier* property, const char* displayName,
                                 const char* caption, bool automatable, bool defaultOn = false)
 {
-    return { property, displayName, caption, "", 0.0, 1.0, defaultOn ? 1.0 : 0.0, 1.0, 0,
-             ParamCurve::linear, ParamControl::toggle, /*bipolar*/ false, automatable,
+    return { property,
+             displayName,
+             caption,
+             "",
+             0.0,
+             1.0,
+             defaultOn ? 1.0 : 0.0,
+             1.0,
+             0,
+             ParamCurve::linear,
+             ParamControl::toggle,
+             /*bipolar*/ false,
+             automatable,
              /*integral*/ true };
 }
 
@@ -196,9 +207,23 @@ constexpr ParamSpec choiceSpec (const juce::Identifier* property, const char* di
                                 const char* defaultText, double defaultIndex,
                                 bool automatable = false)
 {
-    return { property, displayName, caption, "", 0.0, (double) (numChoices - 1), defaultIndex,
-             1.0, 0, ParamCurve::linear, ParamControl::choice, /*bipolar*/ false, automatable,
-             /*integral*/ true, choices, numChoices, defaultText };
+    return { property,
+             displayName,
+             caption,
+             "",
+             0.0,
+             (double) (numChoices - 1),
+             defaultIndex,
+             1.0,
+             0,
+             ParamCurve::linear,
+             ParamControl::choice,
+             /*bipolar*/ false,
+             automatable,
+             /*integral*/ true,
+             choices,
+             numChoices,
+             defaultText };
 }
 
 // The oscillator's own named sets. Their ORDER is their index order, so it
@@ -206,11 +231,15 @@ constexpr ParamSpec choiceSpec (const juce::Identifier* property, const char* di
 // the same number waveformFromString would produce.
 
 constexpr ParamChoice waveforms[] {
-    { "sine", "Sine" }, { "saw", "Saw" }, { "square", "Square" }, { "triangle", "Triangle" },
+    { "sine", "Sine" },
+    { "saw", "Saw" },
+    { "square", "Square" },
+    { "triangle", "Triangle" },
 };
 
 constexpr ParamChoice oscModes[] {
-    { "classic", "Classic" }, { "wavetable", "Wavetable" },
+    { "classic", "Classic" },
+    { "wavetable", "Wavetable" },
 };
 
 /** The wavetable bank, by name.
@@ -222,11 +251,12 @@ constexpr ParamChoice oscModes[] {
 */
 constexpr ParamChoice wavetables[] {
     { "basic", "Basic Shapes" }, { "pulse", "Pulse" }, { "harmonics", "Harmonics" },
-    { "formant", "Formant" }, { "fold", "Fold" },
+    { "formant", "Formant" },    { "fold", "Fold" },
 };
 
 constexpr ParamChoice positionSources[] {
-    { "envelope", "Envelope" }, { "lfo", "LFO" },
+    { "envelope", "Envelope" },
+    { "lfo", "LFO" },
 };
 
 const ParamSpec channelSpecs[] {
@@ -236,13 +266,13 @@ const ParamSpec channelSpecs[] {
     //
     // A MIDI note number, so the range is the whole of MIDI and the value is
     // an integer in the file.
-    { &ids::basePitch, "Base pitch", "PITCH", "", 0.0, 127.0, 60.0, 1.0, 0,
-      ParamCurve::linear, ParamControl::stepper, false, /*automatable*/ false,
+    { &ids::basePitch, "Base pitch", "PITCH", "", 0.0, 127.0, 60.0, 1.0, 0, ParamCurve::linear,
+      ParamControl::stepper, false, /*automatable*/ false,
       /*integral*/ true },
 
     { &ids::volume, "Volume", "VOLUME", "", 0.0, 1.0, 0.8, 0.001, 3 },
-    { &ids::pan,    "Pan",    "PAN",    "", -1.0, 1.0, 0.0, 0.001, 3,
-      ParamCurve::linear, ParamControl::knob, /*bipolar*/ true },
+    { &ids::pan, "Pan", "PAN", "", -1.0, 1.0, 0.0, 0.001, 3, ParamCurve::linear, ParamControl::knob,
+      /*bipolar*/ true },
 
     // Mute is automatable and solo is NOT, and that asymmetry is the point.
     //
@@ -252,7 +282,7 @@ const ParamSpec channelSpecs[] {
     // a curve over it would mean re-deciding every channel's audibility every
     // block. Mute already expresses everything a curve wants from either.
     toggleSpec (&ids::muted, "Mute", "MUTE", /*automatable*/ true),
-    toggleSpec (&ids::solo,  "Solo", "SOLO", /*automatable*/ false),
+    toggleSpec (&ids::solo, "Solo", "SOLO", /*automatable*/ false),
 };
 
 const ParamSpec ampSpecs[] {
@@ -263,12 +293,12 @@ const ParamSpec ampSpecs[] {
     // cent of the travel: half a millisecond to ten seconds is four and a half
     // decades, and a knob that spends nine tenths of its sweep between five and
     // ten seconds is a knob with one useful position.
-    { &ids::attack,  "Attack",  "ATTACK",  " s", 0.0005, 10.0, 0.005, 0.0005, 4,
+    { &ids::attack, "Attack", "ATTACK", " s", 0.0005, 10.0, 0.005, 0.0005, 4,
       ParamCurve::logarithmic },
-    { &ids::decay,   "Decay",   "DECAY",   " s", 0.0005, 10.0, 0.120, 0.0005, 4,
+    { &ids::decay, "Decay", "DECAY", " s", 0.0005, 10.0, 0.120, 0.0005, 4,
       ParamCurve::logarithmic },
-    { &ids::sustain, "Sustain", "SUSTAIN", "",   0.0,    1.0,  0.700, 0.001,  3 },
-    { &ids::release, "Release", "RELEASE", " s", 0.002,  10.0, 0.150, 0.001,  3,
+    { &ids::sustain, "Sustain", "SUSTAIN", "", 0.0, 1.0, 0.700, 0.001, 3 },
+    { &ids::release, "Release", "RELEASE", " s", 0.002, 10.0, 0.150, 0.001, 3,
       ParamCurve::logarithmic },
 };
 
@@ -288,8 +318,8 @@ const ParamSpec oscSpecs[] {
 
     // Four octaves either way, which is what the engine renders; the stepper
     // offered three.
-    { &ids::octave, "Octave", "OCT", "", -4.0, 4.0, 0.0, 1.0, 0,
-      ParamCurve::linear, ParamControl::stepper, true, /*automatable*/ false,
+    { &ids::octave, "Octave", "OCT", "", -4.0, 4.0, 0.0, 1.0, 0, ParamCurve::linear,
+      ParamControl::stepper, true, /*automatable*/ false,
       /*integral*/ true },
 
     // One semitone either way, and here the KNOB is the one that wins. The
@@ -302,8 +332,8 @@ const ParamSpec oscSpecs[] {
     // type the schema coerces to and quietly round a stored 12.5 to 12. It
     // would also make numDiscreteValues report two hundred and one steps for a
     // parameter that is continuous.
-    { &ids::detuneCents, "Detune", "DETUNE", " c", -100.0, 100.0, 0.0, 1.0, 0,
-      ParamCurve::linear, ParamControl::knob, /*bipolar*/ true, /*automatable*/ false },
+    { &ids::detuneCents, "Detune", "DETUNE", " c", -100.0, 100.0, 0.0, 1.0, 0, ParamCurve::linear,
+      ParamControl::knob, /*bipolar*/ true, /*automatable*/ false },
 
     { &ids::gain, "Gain", "GAIN", "", 0.0, 1.0, 0.8, 0.01, 2 },
 
@@ -311,20 +341,20 @@ const ParamSpec oscSpecs[] {
     choiceSpec (&ids::wavetable, "Table", "TABLE", wavetables, (int) std::size (wavetables),
                 "basic", 0.0),
 
-    { &ids::wavePosition,     "Position", "POSITION", "",    0.0,  1.0,  0.0, 0.01, 2 },
-    { &ids::wavePositionMod,  "Mod",      "MOD",      "",   -1.0,  1.0,  0.0, 0.01, 2,
-      ParamCurve::linear, ParamControl::knob, /*bipolar*/ true },
+    { &ids::wavePosition, "Position", "POSITION", "", 0.0, 1.0, 0.0, 0.01, 2 },
+    { &ids::wavePositionMod, "Mod", "MOD", "", -1.0, 1.0, 0.0, 0.01, 2, ParamCurve::linear,
+      ParamControl::knob, /*bipolar*/ true },
 
     choiceSpec (&ids::wavePositionSource, "Source", "SOURCE", positionSources,
                 (int) std::size (positionSources), "envelope", 0.0),
 
-    { &ids::wavePositionRate, "Rate",     "RATE",     " Hz", 0.01, 20.0, 1.0, 0.01, 2,
+    { &ids::wavePositionRate, "Rate", "RATE", " Hz", 0.01, 20.0, 1.0, 0.01, 2,
       ParamCurve::logarithmic },
 
-    { &ids::unisonVoices,     "Unison",   "UNISON",   "",    1.0,  (double) kMaxUnisonVoices,
-      1.0, 1.0, 0, ParamCurve::linear, ParamControl::knob, false, /*automatable*/ false,
+    { &ids::unisonVoices, "Unison", "UNISON", "", 1.0, (double) kMaxUnisonVoices, 1.0, 1.0, 0,
+      ParamCurve::linear, ParamControl::knob, false, /*automatable*/ false,
       /*integral*/ true },
-    { &ids::unisonDetune,     "Spread",   "SPREAD",   " c",  0.0, 50.0, 0.0, 0.5, 1 },
+    { &ids::unisonDetune, "Spread", "SPREAD", " c", 0.0, 50.0, 0.0, 0.5, 1 },
 };
 
 const ParamSpec mixerTrackSpecs[] {
@@ -334,8 +364,8 @@ const ParamSpec mixerTrackSpecs[] {
     // range was unreachable from anywhere. The FADER wins: 2.0 is six decibels
     // no control ever offered.
     { &ids::gain, "Gain", "GAIN", "", 0.0, 1.5, 0.8, 0.001, 3 },
-    { &ids::pan,  "Pan",  "PAN",  "", -1.0, 1.0, 0.0, 0.001, 3,
-      ParamCurve::linear, ParamControl::knob, /*bipolar*/ true },
+    { &ids::pan, "Pan", "PAN", "", -1.0, 1.0, 0.0, 0.001, 3, ParamCurve::linear, ParamControl::knob,
+      /*bipolar*/ true },
 
     // A track says `mute` where a channel says `muted`. Two spellings of one
     // idea, kept because both are already in every saved file.
@@ -355,16 +385,16 @@ const ParamSpec mixerTrackSpecs[] {
     the application still stating their own range by hand.
 */
 const ParamSpec sampleSpecs[] {
-    { &ids::fadeInMs,  "Fade in",  "FADE IN",  " ms", 0.0, 2000.0, 0.0, 1.0, 0,
-      ParamCurve::linear, ParamControl::knob, /*bipolar*/ false, /*automatable*/ false },
-    { &ids::fadeOutMs, "Fade out", "FADE OUT", " ms", 0.0, 2000.0, 0.0, 1.0, 0,
-      ParamCurve::linear, ParamControl::knob, /*bipolar*/ false, /*automatable*/ false },
+    { &ids::fadeInMs, "Fade in", "FADE IN", " ms", 0.0, 2000.0, 0.0, 1.0, 0, ParamCurve::linear,
+      ParamControl::knob, /*bipolar*/ false, /*automatable*/ false },
+    { &ids::fadeOutMs, "Fade out", "FADE OUT", " ms", 0.0, 2000.0, 0.0, 1.0, 0, ParamCurve::linear,
+      ParamControl::knob, /*bipolar*/ false, /*automatable*/ false },
     // A double in the schema, so not integral here - see detuneCents.
-    { &ids::transpose, "Pitch",    "PITCH",    "",   -24.0, 24.0, 0.0, 1.0, 0,
-      ParamCurve::linear, ParamControl::knob, /*bipolar*/ true, /*automatable*/ false },
+    { &ids::transpose, "Pitch", "PITCH", "", -24.0, 24.0, 0.0, 1.0, 0, ParamCurve::linear,
+      ParamControl::knob, /*bipolar*/ true, /*automatable*/ false },
 
-    toggleSpec (&ids::reverse, "Reverse", "REV",  /*automatable*/ false),
-    toggleSpec (&ids::loop,    "Loop",    "LOOP", /*automatable*/ false),
+    toggleSpec (&ids::reverse, "Reverse", "REV", /*automatable*/ false),
+    toggleSpec (&ids::loop, "Loop", "LOOP", /*automatable*/ false),
 };
 
 /** The arrangement's own parameters. One: the tempo.
@@ -379,8 +409,8 @@ const ParamSpec sampleSpecs[] {
     is the middle of what anyone plays.
 */
 const ParamSpec projectSpecs[] {
-    { &ids::tempoBpm, "Tempo", "TEMPO", " bpm", 20.0, 999.0, 128.0, 0.1, 1,
-      ParamCurve::logarithmic, ParamControl::field },
+    { &ids::tempoBpm, "Tempo", "TEMPO", " bpm", 20.0, 999.0, 128.0, 0.1, 1, ParamCurve::logarithmic,
+      ParamControl::field },
 };
 
 /** An instrument's parameters, as the nodes they actually live on.
@@ -398,11 +428,11 @@ const ParamSpec projectSpecs[] {
     that set base pitch would retune a part that is already written.
 */
 const ParamGroup synthGroups[] {
-    { &ids::CHANNEL, "",            "Channel",    channelSpecs, (int) std::size (channelSpecs),
-      1, /*inPreset*/ false },
-    { &ids::OSC,     "oscillators", "Oscillator", oscSpecs,     (int) std::size (oscSpecs),
+    { &ids::CHANNEL, "", "Channel", channelSpecs, (int) std::size (channelSpecs), 1,
+      /*inPreset*/ false },
+    { &ids::OSC, "oscillators", "Oscillator", oscSpecs, (int) std::size (oscSpecs),
       kMaxOscillators },
-    { &ids::AMP,     "amp",         "Envelope",   ampSpecs,     (int) std::size (ampSpecs) },
+    { &ids::AMP, "amp", "Envelope", ampSpecs, (int) std::size (ampSpecs) },
 };
 
 /** The audio channel's. Thin, and honestly so: everything that makes one
@@ -411,9 +441,9 @@ const ParamGroup synthGroups[] {
     them - a preset carrying a path points at somebody else's disk, and a trim
     measured in frames means nothing against another take. */
 const ParamGroup audioGroups[] {
-    { &ids::CHANNEL, "",       "Channel", channelSpecs, (int) std::size (channelSpecs),
-      1, /*inPreset*/ false },
-    { &ids::SAMPLE,  "sample", "Sample",  sampleSpecs,  (int) std::size (sampleSpecs) },
+    { &ids::CHANNEL, "", "Channel", channelSpecs, (int) std::size (channelSpecs), 1,
+      /*inPreset*/ false },
+    { &ids::SAMPLE, "sample", "Sample", sampleSpecs, (int) std::size (sampleSpecs) },
 };
 
 /** One declared table, as the vector the accessors hand out.
@@ -436,27 +466,26 @@ const ParamGroup audioGroups[] {
     the lookups that then failed end in a jassert, which a RelWithDebInfo build
     compiles out and leaves as a knob that silently spans nought to one.
 */
-template <size_t N>
-std::vector<ParamSpec> toVector (const ParamSpec (&table)[N])
+template <size_t N> std::vector<ParamSpec> toVector (const ParamSpec (&table)[N])
 {
     return { std::begin (table), std::end (table) };
 }
 
 } // namespace
 
-#define DEW_PARAM_TABLE(accessor, table)                          \
-    const std::vector<ParamSpec>& accessor()                      \
-    {                                                             \
-        static const std::vector<ParamSpec> specs = toVector (table); \
-        return specs;                                             \
+#define DEW_PARAM_TABLE(accessor, table)                                                           \
+    const std::vector<ParamSpec>& accessor()                                                       \
+    {                                                                                              \
+        static const std::vector<ParamSpec> specs = toVector (table);                              \
+        return specs;                                                                              \
     }
 
-DEW_PARAM_TABLE (channelParamSpecs,    channelSpecs)
-DEW_PARAM_TABLE (ampParamSpecs,        ampSpecs)
-DEW_PARAM_TABLE (oscParamSpecs,        oscSpecs)
+DEW_PARAM_TABLE (channelParamSpecs, channelSpecs)
+DEW_PARAM_TABLE (ampParamSpecs, ampSpecs)
+DEW_PARAM_TABLE (oscParamSpecs, oscSpecs)
 DEW_PARAM_TABLE (mixerTrackParamSpecs, mixerTrackSpecs)
-DEW_PARAM_TABLE (sampleParamSpecs,     sampleSpecs)
-DEW_PARAM_TABLE (projectParamSpecs,    projectSpecs)
+DEW_PARAM_TABLE (sampleParamSpecs, sampleSpecs)
+DEW_PARAM_TABLE (projectParamSpecs, projectSpecs)
 
 #undef DEW_PARAM_TABLE
 
@@ -510,8 +539,8 @@ ParamGroup effectGroup (EffectType type) noexcept
     // with one loop body rather than two that must agree.
     const auto& descriptor = effectDescriptor (type);
 
-    return { &ids::EFFECT, "effects", descriptor.displayName,
-             descriptor.params, descriptor.numParams };
+    return { &ids::EFFECT, "effects", descriptor.displayName, descriptor.params,
+             descriptor.numParams };
 }
 
 const ParamSpec* instrumentParamSpec (const juce::Identifier& property) noexcept
@@ -520,8 +549,8 @@ const ParamSpec* instrumentParamSpec (const juce::Identifier& property) noexcept
     // oscillator's level and a mixer track's fader, and `pan` is both a
     // channel's and a track's; the instrument tables are searched first
     // because this is the INSTRUMENT lookup, and the mixer asks for its own.
-    for (const auto* table : { &channelParamSpecs(), &ampParamSpecs(), &oscParamSpecs(),
-                               &sampleParamSpecs() })
+    for (const auto* table :
+         { &channelParamSpecs(), &ampParamSpecs(), &oscParamSpecs(), &sampleParamSpecs() })
         for (const auto& spec : *table)
             if (*spec.property == property)
                 return &spec;

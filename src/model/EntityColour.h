@@ -38,42 +38,42 @@ namespace dew
 */
 namespace entityColour
 {
-    /** How many distinct colours a project cycles through. */
-    int rampSize() noexcept;
+/** How many distinct colours a project cycles through. */
+int rampSize() noexcept;
 
-    /** What the nth ramp entry is CALLED.
+/** What the nth ramp entry is CALLED.
 
-        A menu has to say something, and "Colour 4" says nothing about which one
-        it is. Here rather than beside the ramp in the design system for the
-        reason the ramp itself is duplicated: dew_design must keep knowing
-        nothing about the document, and it is the document's menu that needs a
-        word.
-    */
-    juce::String rampName (int index);
+    A menu has to say something, and "Colour 4" says nothing about which one
+    it is. Here rather than beside the ramp in the design system for the
+    reason the ramp itself is duplicated: dew_design must keep knowing
+    nothing about the document, and it is the document's menu that needs a
+    word.
+*/
+juce::String rampName (int index);
 
-    /** The stored form - eight hex digits, "aarrggbb" - for the nth channel.
-        Wraps, so any index is valid. */
-    juce::String defaultHex (int index);
+/** The stored form - eight hex digits, "aarrggbb" - for the nth channel.
+    Wraps, so any index is valid. */
+juce::String defaultHex (int index);
 
-    /** What a node is painted in. Falls back to the first ramp entry when the
-        property is absent or unreadable, because a channel with no colour is
-        still a channel and must not paint as transparent black. */
-    juce::Colour of (const juce::ValueTree& node);
+/** What a node is painted in. Falls back to the first ramp entry when the
+    property is absent or unreadable, because a channel with no colour is
+    still a channel and must not paint as transparent black. */
+juce::Colour of (const juce::ValueTree& node);
 
-    /** The colour this node CHOSE, or nothing.
+/** The colour this node CHOSE, or nothing.
 
-        The difference from of() is the whole of what "inherit" means. A lane
-        and a strip have a sensible colour without choosing one - a lane from
-        its position, a strip from what is routed into it - and the empty
-        property says to keep using it. of() cannot express that, because it has
-        to return a colour; a caller that has something to fall back to asks
-        this instead and falls back itself.
-    */
-    std::optional<juce::Colour> stored (const juce::ValueTree& node);
+    The difference from of() is the whole of what "inherit" means. A lane
+    and a strip have a sensible colour without choosing one - a lane from
+    its position, a strip from what is routed into it - and the empty
+    property says to keep using it. of() cannot express that, because it has
+    to return a colour; a caller that has something to fall back to asks
+    this instead and falls back itself.
+*/
+std::optional<juce::Colour> stored (const juce::ValueTree& node);
 
-    /** The stored form of `colour`, or an empty string meaning "inherit". */
-    juce::String hexOf (juce::Colour);
-}
+/** The stored form of `colour`, or an empty string meaning "inherit". */
+juce::String hexOf (juce::Colour);
+} // namespace entityColour
 
 // clang-format on
 } // namespace dew

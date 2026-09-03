@@ -48,10 +48,14 @@ std::optional<long long> readInteger (std::string_view text)
             const auto c = text[i];
             auto digit = 0;
 
-            if (c >= '0' && c <= '9')      digit = c - '0';
-            else if (c >= 'a' && c <= 'f') digit = c - 'a' + 10;
-            else if (c >= 'A' && c <= 'F') digit = c - 'A' + 10;
-            else                           return std::nullopt;
+            if (c >= '0' && c <= '9')
+                digit = c - '0';
+            else if (c >= 'a' && c <= 'f')
+                digit = c - 'a' + 10;
+            else if (c >= 'A' && c <= 'F')
+                digit = c - 'A' + 10;
+            else
+                return std::nullopt;
 
             if (value > 0x0FFFFFFFFFFFFFFFULL)
                 return std::nullopt;
@@ -124,7 +128,9 @@ class Resolver
 {
 public:
     Resolver (std::string_view src, DiagnosticBag& bag, SymbolTable& table)
-        : source (src), diagnostics (bag), symbols (table)
+        : source (src)
+        , diagnostics (bag)
+        , symbols (table)
     {
     }
 
@@ -152,16 +158,20 @@ private:
 
             const auto kind = blockKindFor (block.keyword);
 
-            if (kind == BlockKind::channel)      addName (symbols.channels, name, block);
-            else if (kind == BlockKind::voicing) addName (symbols.voicings, name, block);
-            else if (kind == BlockKind::rhythm)  addName (symbols.rhythms, name, block);
-            else if (kind == BlockKind::harmony) addName (symbols.harmonies, name, block);
-            else if (kind == BlockKind::section) addName (symbols.sections, name, block);
+            if (kind == BlockKind::channel)
+                addName (symbols.channels, name, block);
+            else if (kind == BlockKind::voicing)
+                addName (symbols.voicings, name, block);
+            else if (kind == BlockKind::rhythm)
+                addName (symbols.rhythms, name, block);
+            else if (kind == BlockKind::harmony)
+                addName (symbols.harmonies, name, block);
+            else if (kind == BlockKind::section)
+                addName (symbols.sections, name, block);
         }
     }
 
-    void addName (std::vector<std::string>& names, const std::string& name,
-                  const Block& block)
+    void addName (std::vector<std::string>& names, const std::string& name, const Block& block)
     {
         if (contains (names, name))
         {
@@ -188,18 +198,24 @@ private:
             if (kind == BlockKind::song)
             {
                 if (sawSong)
-                    diagnostics.error ("E202", "a score has one `song` block",
-                                       block.keywordRange, "declared again here");
+                    diagnostics.error ("E202", "a score has one `song` block", block.keywordRange,
+                                       "declared again here");
 
                 sawSong = true;
                 resolveSong (block);
             }
-            else if (kind == BlockKind::channel)     resolveChannel (block);
-            else if (kind == BlockKind::voicing)     resolveVoicing (block);
-            else if (kind == BlockKind::rhythm)      model.rhythms.push_back (resolveRhythm (block));
-            else if (kind == BlockKind::harmony)     model.harmonies.push_back (resolveHarmony (block));
-            else if (kind == BlockKind::section)     resolveSection (block);
-            else if (kind == BlockKind::arrangement) resolveArrangement (block);
+            else if (kind == BlockKind::channel)
+                resolveChannel (block);
+            else if (kind == BlockKind::voicing)
+                resolveVoicing (block);
+            else if (kind == BlockKind::rhythm)
+                model.rhythms.push_back (resolveRhythm (block));
+            else if (kind == BlockKind::harmony)
+                model.harmonies.push_back (resolveHarmony (block));
+            else if (kind == BlockKind::section)
+                resolveSection (block);
+            else if (kind == BlockKind::arrangement)
+                resolveArrangement (block);
         }
 
         if (! sawSong)
@@ -226,7 +242,7 @@ private:
             {
                 auto& d = diagnostics.error ("E204",
                                              std::string ("`") + std::string (statement.key)
-                                             + "` is not a key of `" + nameOf (kind) + "`",
+                                                 + "` is not a key of `" + nameOf (kind) + "`",
                                              statement.keyRange, "unknown key");
 
                 if (const auto suggestion = closestKeyTo (kind, statement.key);
@@ -238,10 +254,9 @@ private:
 
             if (contains (seen, statement.key))
             {
-                diagnostics.error ("E205",
-                                   std::string ("`") + std::string (statement.key)
-                                   + "` is set twice",
-                                   statement.keyRange, "set again here");
+                diagnostics.error (
+                    "E205", std::string ("`") + std::string (statement.key) + "` is set twice",
+                    statement.keyRange, "set again here");
                 continue;
             }
 
@@ -272,18 +287,16 @@ private:
                 list += "`" + std::string (missing[i]) + "`";
             }
 
-            diagnostics.error ("E206",
-                               std::string ("`") + nameOf (kind) + "` needs " + list,
+            diagnostics.error ("E206", std::string ("`") + nameOf (kind) + "` needs " + list,
                                block.keywordRange, "missing here");
         }
     }
 
     void wrongValue (const Statement& statement, ValueKind kind)
     {
-        auto& d = diagnostics.error ("E207",
-                                     std::string ("`") + std::string (statement.key)
-                                     + "` takes " + nameOf (kind),
-                                     statement.range, "not that");
+        auto& d = diagnostics.error (
+            "E207", std::string ("`") + std::string (statement.key) + "` takes " + nameOf (kind),
+            statement.range, "not that");
 
         if (const auto& members = membersOf (kind); ! members.empty())
         {
@@ -330,7 +343,7 @@ private:
         {
             diagnostics.error ("E208", "this range runs backwards", statement.range,
                                std::string (statement.values[0].text) + " is above "
-                               + std::string (statement.values[2].text));
+                                   + std::string (statement.values[2].text));
             return std::nullopt;
         }
 
@@ -354,8 +367,7 @@ private:
             return std::nullopt;
 
         const auto& members = membersOf (kind);
-        const auto at = std::find (members.begin(), members.end(),
-                                   statement.values.front().text);
+        const auto at = std::find (members.begin(), members.end(), statement.values.front().text);
 
         if (at == members.end())
             return std::nullopt;
@@ -384,8 +396,8 @@ private:
     }
 
     std::string_view resolveName (const Statement& statement,
-                                  const std::vector<std::string>& declared,
-                                  const char* code, const char* what)
+                                  const std::vector<std::string>& declared, const char* code,
+                                  const char* what)
     {
         if (statement.values.size() != 1)
             return {};
@@ -395,8 +407,7 @@ private:
         if (! contains (declared, name))
         {
             diagnostics.error (code,
-                               std::string ("no ") + what + " called `"
-                               + std::string (name) + "`",
+                               std::string ("no ") + what + " called `" + std::string (name) + "`",
                                statement.values.front().range, "not declared");
             return {};
         }
@@ -407,56 +418,57 @@ private:
     // --- song ---------------------------------------------------------------
     void resolveSong (const Block& block)
     {
-        forEachStatement (block, BlockKind::song, [&] (const KeySpec& spec,
-                                                       const Statement& statement)
-        {
-            if (statement.key == "title")
+        forEachStatement (
+            block, BlockKind::song,
+            [&] (const KeySpec& spec, const Statement& statement)
             {
-                if (statement.values.size() == 1
-                    && statement.values.front().kind == TokenKind::text)
+                if (statement.key == "title")
                 {
-                    const auto quoted = statement.values.front().text;
-                    model.song.title = std::string (quoted.substr (1, quoted.size() - 2));
+                    if (statement.values.size() == 1
+                        && statement.values.front().kind == TokenKind::text)
+                    {
+                        const auto quoted = statement.values.front().text;
+                        model.song.title = std::string (quoted.substr (1, quoted.size() - 2));
+                    }
+                    else
+                    {
+                        wrongValue (statement, spec.kind);
+                    }
                 }
-                else
+                else if (statement.key == "tempo")
                 {
-                    wrongValue (statement, spec.kind);
+                    readTempo (statement, spec);
                 }
-            }
-            else if (statement.key == "tempo")
-            {
-                readTempo (statement, spec);
-            }
-            else if (statement.key == "meter")
-            {
-                readMeter (statement, spec);
-            }
-            else if (statement.key == "grid")
-            {
-                readGrid (statement, spec);
-            }
-            else if (statement.key == "key")
-            {
-                if (const auto key = asKey (statement); key.has_value())
-                    model.song.key = *key;
-                else
-                    wrongValue (statement, spec.kind);
-            }
-            else if (statement.key == "seed")
-            {
-                if (statement.values.size() != 1)
+                else if (statement.key == "meter")
                 {
-                    wrongValue (statement, spec.kind);
-                    return;
+                    readMeter (statement, spec);
                 }
+                else if (statement.key == "grid")
+                {
+                    readGrid (statement, spec);
+                }
+                else if (statement.key == "key")
+                {
+                    if (const auto key = asKey (statement); key.has_value())
+                        model.song.key = *key;
+                    else
+                        wrongValue (statement, spec.kind);
+                }
+                else if (statement.key == "seed")
+                {
+                    if (statement.values.size() != 1)
+                    {
+                        wrongValue (statement, spec.kind);
+                        return;
+                    }
 
-                if (const auto value = readInteger (statement.values.front().text);
-                    value.has_value())
-                    model.song.seed = (std::uint64_t) *value;
-                else
-                    wrongValue (statement, spec.kind);
-            }
-        });
+                    if (const auto value = readInteger (statement.values.front().text);
+                        value.has_value())
+                        model.song.seed = (std::uint64_t) *value;
+                    else
+                        wrongValue (statement, spec.kind);
+                }
+            });
     }
 
     void readTempo (const Statement& statement, const KeySpec& spec)
@@ -473,8 +485,7 @@ private:
 
         if (! value.has_value() || *value < 20.0 || *value > 400.0)
         {
-            auto& d = diagnostics.error ("E209", "a tempo must be 20 to 400",
-                                         statement.range);
+            auto& d = diagnostics.error ("E209", "a tempo must be 20 to 400", statement.range);
             d.notes.push_back ("dew stores one tempo for the whole song");
             return;
         }
@@ -539,8 +550,7 @@ private:
 
         if (! value.has_value() || *value < 1 || *value > maxStepsPerBeat)
         {
-            auto& d = diagnostics.error ("E212",
-                                         "a grid is `auto` or 1 to 16 steps per beat",
+            auto& d = diagnostics.error ("E212", "a grid is `auto` or 1 to 16 steps per beat",
                                          statement.range);
             d.notes.push_back ("dew stores a note's position as a whole number of "
                                "steps, and stepsPerBeat runs to 16");
@@ -565,55 +575,56 @@ private:
             return;
         }
 
-        forEachStatement (block, BlockKind::channel, [&] (const KeySpec& spec,
-                                                          const Statement& statement)
-        {
-            if (statement.key == "instrument")
+        forEachStatement (
+            block, BlockKind::channel,
+            [&] (const KeySpec& spec, const Statement& statement)
             {
-                if (! asMemberIndex (statement, spec.kind).has_value())
-                    wrongValue (statement, spec.kind);
-            }
-            else if (statement.key == "mixer")
-            {
-                // The two failures are told apart on purpose. `mixer 1 range
-                // C4..C6` on one line is a SHAPE mistake - statements are
-                // newline-terminated - and reporting it as "a mixer track is
-                // 1 to 32" sends you looking at the number, which is fine.
-                const auto value = asInteger (statement);
-
-                if (! value.has_value())
-                    wrongValue (statement, spec.kind);
-                else if (*value < 1 || *value > 32)
-                    diagnostics.error ("E240", "a mixer track is 1 to 32", statement.range);
-                else
-                    channel.mixerTrack = *value;
-            }
-            else if (statement.key == "octave")
-            {
-                const auto value = asInteger (statement);
-
-                if (! value.has_value() || *value < -4 || *value > 4)
-                    diagnostics.error ("E231", "an octave shift is -4 to 4", statement.range);
-                else
-                    channel.octave = *value;
-            }
-            else if (statement.key == "range")
-            {
-                if (const auto range = asPitchRange (statement); range.has_value())
+                if (statement.key == "instrument")
                 {
-                    channel.lowPitch = range->first;
-                    channel.highPitch = range->second;
+                    if (! asMemberIndex (statement, spec.kind).has_value())
+                        wrongValue (statement, spec.kind);
                 }
-                else
+                else if (statement.key == "mixer")
                 {
-                    wrongValue (statement, spec.kind);
+                    // The two failures are told apart on purpose. `mixer 1 range
+                    // C4..C6` on one line is a SHAPE mistake - statements are
+                    // newline-terminated - and reporting it as "a mixer track is
+                    // 1 to 32" sends you looking at the number, which is fine.
+                    const auto value = asInteger (statement);
+
+                    if (! value.has_value())
+                        wrongValue (statement, spec.kind);
+                    else if (*value < 1 || *value > 32)
+                        diagnostics.error ("E240", "a mixer track is 1 to 32", statement.range);
+                    else
+                        channel.mixerTrack = *value;
                 }
-            }
-            else if (statement.key == "velocity")
-            {
-                readVelocity (channel, statement, spec);
-            }
-        });
+                else if (statement.key == "octave")
+                {
+                    const auto value = asInteger (statement);
+
+                    if (! value.has_value() || *value < -4 || *value > 4)
+                        diagnostics.error ("E231", "an octave shift is -4 to 4", statement.range);
+                    else
+                        channel.octave = *value;
+                }
+                else if (statement.key == "range")
+                {
+                    if (const auto range = asPitchRange (statement); range.has_value())
+                    {
+                        channel.lowPitch = range->first;
+                        channel.highPitch = range->second;
+                    }
+                    else
+                    {
+                        wrongValue (statement, spec.kind);
+                    }
+                }
+                else if (statement.key == "velocity")
+                {
+                    readVelocity (channel, statement, spec);
+                }
+            });
 
         model.channels.push_back (channel);
     }
@@ -637,7 +648,8 @@ private:
 
         auto& d = diagnostics.error ("E240",
                                      std::string ("`") + std::string (statement.values[at].text)
-                                     + "` is not a scope", statement.values[at].range);
+                                         + "` is not a scope",
+                                     statement.values[at].range);
 
         std::string list;
 
@@ -648,8 +660,7 @@ private:
         return false;
     }
 
-    void readVelocity (ChannelSpec& channel, const Statement& statement,
-                       const KeySpec& spec)
+    void readVelocity (ChannelSpec& channel, const Statement& statement, const KeySpec& spec)
     {
         // `72`, `72 +- 6`, or `72 +- 6 per bar`.
         auto values = statement.values;
@@ -720,72 +731,72 @@ private:
             return;
         }
 
-        forEachStatement (block, BlockKind::voicing, [&] (const KeySpec& spec,
-                                                          const Statement& statement)
-        {
-            if (statement.key == "size")
+        forEachStatement (
+            block, BlockKind::voicing,
+            [&] (const KeySpec& spec, const Statement& statement)
             {
-                // `4` or `4 voices`.
-                if (statement.values.empty() || statement.values.size() > 2
-                    || (statement.values.size() == 2
-                        && statement.values[1].text != "voices"
-                        && statement.values[1].text != "voice"))
+                if (statement.key == "size")
                 {
-                    wrongValue (statement, spec.kind);
-                    return;
+                    // `4` or `4 voices`.
+                    if (statement.values.empty() || statement.values.size() > 2
+                        || (statement.values.size() == 2 && statement.values[1].text != "voices"
+                            && statement.values[1].text != "voice"))
+                    {
+                        wrongValue (statement, spec.kind);
+                        return;
+                    }
+
+                    const auto value = readInteger (statement.values.front().text);
+
+                    if (! value.has_value() || *value < 1 || *value > 8)
+                        diagnostics.error ("E215", "a voicing holds 1 to 8 voices",
+                                           statement.range);
+                    else
+                        voicing.voices = (int) *value;
                 }
-
-                const auto value = readInteger (statement.values.front().text);
-
-                if (! value.has_value() || *value < 1 || *value > 8)
-                    diagnostics.error ("E215", "a voicing holds 1 to 8 voices",
-                                       statement.range);
-                else
-                    voicing.voices = (int) *value;
-            }
-            else if (statement.key == "spread")
-            {
-                if (const auto index = asMemberIndex (statement, spec.kind); index.has_value())
-                    voicing.spread = (Spread) *index;
-                else
-                    wrongValue (statement, spec.kind);
-            }
-            else if (statement.key == "motion")
-            {
-                if (const auto index = asMemberIndex (statement, spec.kind); index.has_value())
-                    voicing.motion = (Motion) *index;
-                else
-                    wrongValue (statement, spec.kind);
-            }
-            else if (statement.key == "register")
-            {
-                if (const auto range = asPitchRange (statement); range.has_value())
+                else if (statement.key == "spread")
                 {
-                    voicing.lowPitch = range->first;
-                    voicing.highPitch = range->second;
+                    if (const auto index = asMemberIndex (statement, spec.kind); index.has_value())
+                        voicing.spread = (Spread) *index;
+                    else
+                        wrongValue (statement, spec.kind);
                 }
-                else
+                else if (statement.key == "motion")
                 {
-                    wrongValue (statement, spec.kind);
+                    if (const auto index = asMemberIndex (statement, spec.kind); index.has_value())
+                        voicing.motion = (Motion) *index;
+                    else
+                        wrongValue (statement, spec.kind);
                 }
-            }
-            else if (statement.key == "bass")
-            {
-                if (const auto index = asMemberIndex (statement, spec.kind); index.has_value())
-                    voicing.bass = (BassRule) *index;
-                else
-                    wrongValue (statement, spec.kind);
-            }
-            else if (statement.key == "maxLeap")
-            {
-                const auto value = asInteger (statement);
+                else if (statement.key == "register")
+                {
+                    if (const auto range = asPitchRange (statement); range.has_value())
+                    {
+                        voicing.lowPitch = range->first;
+                        voicing.highPitch = range->second;
+                    }
+                    else
+                    {
+                        wrongValue (statement, spec.kind);
+                    }
+                }
+                else if (statement.key == "bass")
+                {
+                    if (const auto index = asMemberIndex (statement, spec.kind); index.has_value())
+                        voicing.bass = (BassRule) *index;
+                    else
+                        wrongValue (statement, spec.kind);
+                }
+                else if (statement.key == "maxLeap")
+                {
+                    const auto value = asInteger (statement);
 
-                if (! value.has_value() || *value < 1 || *value > 24)
-                    wrongValue (statement, spec.kind);
-                else
-                    voicing.maxLeap = *value;
-            }
-        });
+                    if (! value.has_value() || *value < 1 || *value > 24)
+                        wrongValue (statement, spec.kind);
+                    else
+                        voicing.maxLeap = *value;
+                }
+            });
 
         model.voicings.push_back (voicing);
     }
@@ -811,10 +822,9 @@ private:
 
             if (! duration.has_value())
             {
-                diagnostics.error ("E216",
-                                   std::string ("`") + std::string (entry.text)
-                                   + "` is not a duration",
-                                   entry.range);
+                diagnostics.error (
+                    "E216", std::string ("`") + std::string (entry.text) + "` is not a duration",
+                    entry.range);
                 continue;
             }
 
@@ -823,8 +833,7 @@ private:
 
             if (entry.repeat > 256)
             {
-                diagnostics.error ("E241", "a rhythm entry repeats at most 256 times",
-                                   entry.range);
+                diagnostics.error ("E241", "a rhythm entry repeats at most 256 times", entry.range);
                 continue;
             }
 
@@ -835,8 +844,7 @@ private:
         }
 
         if (rhythm.steps.empty())
-            diagnostics.error ("E217", "a rhythm needs at least one duration",
-                               block.keywordRange);
+            diagnostics.error ("E217", "a rhythm needs at least one duration", block.keywordRange);
 
         return rhythm;
     }
@@ -848,14 +856,14 @@ private:
         harmony.name = std::string (block.name());
         harmony.range = block.keywordRange;
 
-        forEachStatement (block, BlockKind::harmony, [&] (const KeySpec& spec,
-                                                          const Statement& statement)
-        {
-            if (const auto key = asKey (statement); key.has_value())
-                harmony.key = *key;
-            else
-                wrongValue (statement, spec.kind);
-        });
+        forEachStatement (block, BlockKind::harmony,
+                          [&] (const KeySpec& spec, const Statement& statement)
+                          {
+                              if (const auto key = asKey (statement); key.has_value())
+                                  harmony.key = *key;
+                              else
+                                  wrongValue (statement, spec.kind);
+                          });
 
         const auto key = harmony.key.value_or (model.song.key);
 
@@ -897,8 +905,7 @@ private:
         }
 
         if (harmony.chords.empty())
-            diagnostics.error ("E220", "a harmony needs at least one chord",
-                               block.keywordRange);
+            diagnostics.error ("E220", "a harmony needs at least one chord", block.keywordRange);
 
         return harmony;
     }
@@ -937,8 +944,8 @@ private:
             return;
         }
 
-        diagnostics.error ("E222", "a chord takes `xN`, `N bars` or a note value",
-                           entry.range, "not that");
+        diagnostics.error ("E222", "a chord takes `xN`, `N bars` or a note value", entry.range,
+                           "not that");
     }
 
     // --- section ------------------------------------------------------------
@@ -955,32 +962,32 @@ private:
             return;
         }
 
-        forEachStatement (block, BlockKind::section, [&] (const KeySpec& spec,
-                                                          const Statement& statement)
-        {
-            if (statement.key == "length")
-            {
-                const auto bars = asBars (statement);
+        forEachStatement (block, BlockKind::section,
+                          [&] (const KeySpec& spec, const Statement& statement)
+                          {
+                              if (statement.key == "length")
+                              {
+                                  const auto bars = asBars (statement);
 
-                if (! bars.has_value())
-                    wrongValue (statement, spec.kind);
-                else if (*bars < 1 || *bars > 512)
-                    diagnostics.error ("E223", "a section spans 1 to 512 bars",
-                                       statement.range);
-                else
-                    section.bars = *bars;
-            }
-            else if (statement.key == "harmony")
-            {
-                const auto name = resolveName (statement, symbols.harmonies,
-                                               "E224", "harmony");
+                                  if (! bars.has_value())
+                                      wrongValue (statement, spec.kind);
+                                  else if (*bars < 1 || *bars > 512)
+                                      diagnostics.error ("E223", "a section spans 1 to 512 bars",
+                                                         statement.range);
+                                  else
+                                      section.bars = *bars;
+                              }
+                              else if (statement.key == "harmony")
+                              {
+                                  const auto name = resolveName (statement, symbols.harmonies,
+                                                                 "E224", "harmony");
 
-                if (! name.empty())
-                    section.harmony = std::string (name);
-                else if (statement.values.size() != 1)
-                    wrongValue (statement, spec.kind);
-            }
-        });
+                                  if (! name.empty())
+                                      section.harmony = std::string (name);
+                                  else if (statement.values.size() != 1)
+                                      wrongValue (statement, spec.kind);
+                              }
+                          });
 
         for (const auto& child : block.children)
         {
@@ -993,7 +1000,7 @@ private:
             else
                 diagnostics.error ("E225",
                                    std::string ("`") + std::string (child.keyword)
-                                   + "` is not part of a section",
+                                       + "` is not part of a section",
                                    child.keywordRange);
         }
 
@@ -1024,65 +1031,65 @@ private:
 
         auto sawKind = false;
 
-        forEachStatement (block, BlockKind::part, [&] (const KeySpec& spec,
-                                                       const Statement& statement)
-        {
-            if (statement.key == "chords")
+        forEachStatement (
+            block, BlockKind::part,
+            [&] (const KeySpec& spec, const Statement& statement)
             {
-                // `chords with warm`.
-                if (statement.values.size() != 2 || statement.values[0].text != "with")
+                if (statement.key == "chords")
                 {
-                    diagnostics.error ("E229", "`chords` takes `with <voicing>`",
-                                       statement.range);
-                    return;
-                }
+                    // `chords with warm`.
+                    if (statement.values.size() != 2 || statement.values[0].text != "with")
+                    {
+                        diagnostics.error ("E229", "`chords` takes `with <voicing>`",
+                                           statement.range);
+                        return;
+                    }
 
-                const auto name = statement.values[1].text;
+                    const auto name = statement.values[1].text;
 
-                if (! contains (symbols.voicings, name))
-                {
-                    diagnostics.error ("E230",
-                                       "no voicing called `" + std::string (name) + "`",
-                                       statement.values[1].range, "not declared");
-                    return;
-                }
+                    if (! contains (symbols.voicings, name))
+                    {
+                        diagnostics.error ("E230", "no voicing called `" + std::string (name) + "`",
+                                           statement.values[1].range, "not declared");
+                        return;
+                    }
 
-                part.kind = PartKind::chords;
-                part.voicing = std::string (name);
-                sawKind = true;
-            }
-            else if (statement.key == "line")
-            {
-                if (const auto index = asMemberIndex (statement, spec.kind); index.has_value())
-                {
-                    part.kind = PartKind::line;
-                    part.lineSource = (LineSource) *index;
+                    part.kind = PartKind::chords;
+                    part.voicing = std::string (name);
                     sawKind = true;
                 }
-                else
+                else if (statement.key == "line")
                 {
-                    wrongValue (statement, spec.kind);
+                    if (const auto index = asMemberIndex (statement, spec.kind); index.has_value())
+                    {
+                        part.kind = PartKind::line;
+                        part.lineSource = (LineSource) *index;
+                        sawKind = true;
+                    }
+                    else
+                    {
+                        wrongValue (statement, spec.kind);
+                    }
                 }
-            }
-            else if (statement.key == "rhythm")
-            {
-                const auto name = resolveName (statement, symbols.rhythms, "E233", "rhythm");
+                else if (statement.key == "rhythm")
+                {
+                    const auto name = resolveName (statement, symbols.rhythms, "E233", "rhythm");
 
-                if (! name.empty())
-                    part.rhythm = std::string (name);
-                else if (statement.values.size() != 1)
-                    wrongValue (statement, spec.kind);
-            }
-            else if (statement.key == "octave")
-            {
-                const auto value = asInteger (statement);
+                    if (! name.empty())
+                        part.rhythm = std::string (name);
+                    else if (statement.values.size() != 1)
+                        wrongValue (statement, spec.kind);
+                }
+                else if (statement.key == "octave")
+                {
+                    const auto value = asInteger (statement);
 
-                if (! value.has_value() || *value < -4 || *value > 4)
-                    diagnostics.error ("E231", "an octave shift is -4 to 4", statement.range);
-                else
-                    part.octave = *value;
-            }
-        });
+                    if (! value.has_value() || *value < -4 || *value > 4)
+                        diagnostics.error ("E231", "an octave shift is -4 to 4", statement.range);
+                    else
+                        part.octave = *value;
+                }
+            });
 
         for (const auto& child : block.children)
         {
@@ -1114,7 +1121,7 @@ private:
             {
                 diagnostics.error ("E225",
                                    std::string ("`") + std::string (child.keyword)
-                                   + "` is not part of a part",
+                                       + "` is not part of a part",
                                    child.keywordRange);
             }
         }
@@ -1192,11 +1199,10 @@ private:
             // The tones a chord actually has, counted the way musicians count
             // them. `2` is not a chord tone and saying so is better than
             // rounding it to one.
-            if (! degree.has_value() || (*degree != 1 && *degree != 3
-                                         && *degree != 5 && *degree != 7))
+            if (! degree.has_value()
+                || (*degree != 1 && *degree != 3 && *degree != 5 && *degree != 7))
             {
-                auto& d = diagnostics.error ("E241", "a cadence ends on a chord tone",
-                                             value.range);
+                auto& d = diagnostics.error ("E241", "a cadence ends on a chord tone", value.range);
                 d.helps.push_back ("1 is the root, 3 the third, 5 the fifth, 7 the seventh");
                 (void) statement;
                 return std::nullopt;
@@ -1210,7 +1216,7 @@ private:
             if (const auto degree = readDegree (values.front()))
             {
                 melody.cadence.degrees = { *degree };
-                melody.cadence.scope = Scope::song;   // never re-drawn: it is set
+                melody.cadence.scope = Scope::song; // never re-drawn: it is set
             }
 
             return;
@@ -1244,8 +1250,7 @@ private:
 
         if (degrees.empty())
         {
-            diagnostics.error ("E243", "a choice needs something to choose from",
-                               statement.range);
+            diagnostics.error ("E243", "a choice needs something to choose from", statement.range);
             return;
         }
 
@@ -1286,12 +1291,11 @@ private:
             spec.sourceRange = block.header.front().range;
 
             if (! contains (symbols.channels, spec.source))
-                diagnostics.error ("E248",
-                                   std::string ("no channel called `") + spec.source + "`",
+                diagnostics.error ("E248", std::string ("no channel called `") + spec.source + "`",
                                    spec.sourceRange);
             else if (spec.source == part.channel)
-                diagnostics.error ("E249", "a voice cannot imitate itself",
-                                   spec.sourceRange, "name a different channel");
+                diagnostics.error ("E249", "a voice cannot imitate itself", spec.sourceRange,
+                                   "name a different channel");
         }
         else
         {
@@ -1300,38 +1304,40 @@ private:
             d.helps.push_back ("write `imitate <channel> { delay 1 bar }`");
         }
 
-        forEachStatement (block, BlockKind::imitate, [&] (const KeySpec& keySpec,
-                                                          const Statement& statement)
-        {
-            if (statement.key == "delay")
+        forEachStatement (
+            block, BlockKind::imitate,
+            [&] (const KeySpec& keySpec, const Statement& statement)
             {
-                const auto bars = asBars (statement);
+                if (statement.key == "delay")
+                {
+                    const auto bars = asBars (statement);
 
-                if (! bars.has_value() || *bars < 0 || *bars > 64)
-                    wrongValue (statement, keySpec.kind);
-                else
-                    spec.delaySteps = *bars;   // in BARS here; steps once the grid is known
-            }
-            else if (statement.key == "transpose")
-            {
-                if (statement.values.size() == 1)
-                    if (const auto value = readInteger (statement.values.front().text);
-                        value.has_value() && *value >= -24 && *value <= 24)
-                    {
-                        spec.transpose = (int) *value;
-                        return;
-                    }
+                    if (! bars.has_value() || *bars < 0 || *bars > 64)
+                        wrongValue (statement, keySpec.kind);
+                    else
+                        spec.delaySteps = *bars; // in BARS here; steps once the grid is known
+                }
+                else if (statement.key == "transpose")
+                {
+                    if (statement.values.size() == 1)
+                        if (const auto value = readInteger (statement.values.front().text);
+                            value.has_value() && *value >= -24 && *value <= 24)
+                        {
+                            spec.transpose = (int) *value;
+                            return;
+                        }
 
-                wrongValue (statement, keySpec.kind);
-            }
-            else if (statement.key == "mode")
-            {
-                if (const auto index = asMemberIndex (statement, keySpec.kind); index.has_value())
-                    spec.mode = (TransposeMode) *index;
-                else
                     wrongValue (statement, keySpec.kind);
-            }
-        });
+                }
+                else if (statement.key == "mode")
+                {
+                    if (const auto index = asMemberIndex (statement, keySpec.kind);
+                        index.has_value())
+                        spec.mode = (TransposeMode) *index;
+                    else
+                        wrongValue (statement, keySpec.kind);
+                }
+            });
 
         return spec;
     }
@@ -1353,12 +1359,10 @@ private:
             spec.againstRange = block.header[1].range;
 
             if (! contains (symbols.channels, spec.against))
-                diagnostics.error ("E244",
-                                   std::string ("no channel called `") + spec.against + "`",
+                diagnostics.error ("E244", std::string ("no channel called `") + spec.against + "`",
                                    block.header[1].range);
             else if (spec.against == part.channel)
-                diagnostics.error ("E245", "a voice cannot answer itself",
-                                   block.header[1].range,
+                diagnostics.error ("E245", "a voice cannot answer itself", block.header[1].range,
                                    "name a different channel");
         }
         else
@@ -1368,61 +1372,64 @@ private:
             d.helps.push_back ("write `counterpoint against <channel> { ... }`");
         }
 
-        forEachStatement (block, BlockKind::counterpoint, [&] (const KeySpec& keySpec,
-                                                               const Statement& statement)
-        {
-            if (statement.key == "rhythm")
+        forEachStatement (
+            block, BlockKind::counterpoint,
+            [&] (const KeySpec& keySpec, const Statement& statement)
             {
-                const auto name = resolveName (statement, symbols.rhythms, "E233", "rhythm");
+                if (statement.key == "rhythm")
+                {
+                    const auto name = resolveName (statement, symbols.rhythms, "E233", "rhythm");
 
-                if (! name.empty())
-                    spec.rhythm = std::string (name);
-                else if (statement.values.size() != 1)
-                    wrongValue (statement, keySpec.kind);
-            }
-            else if (statement.key == "articulation")
-            {
-                if (const auto index = asMemberIndex (statement, keySpec.kind); index.has_value())
-                    spec.articulation = (Articulation) *index;
-                else
-                    wrongValue (statement, keySpec.kind);
-            }
-            else if (statement.key == "range")
-            {
-                if (const auto range = asPitchRange (statement); range.has_value())
-                {
-                    spec.hasRange = true;
-                    spec.lowPitch = range->first;
-                    spec.highPitch = range->second;
+                    if (! name.empty())
+                        spec.rhythm = std::string (name);
+                    else if (statement.values.size() != 1)
+                        wrongValue (statement, keySpec.kind);
                 }
-                else
+                else if (statement.key == "articulation")
                 {
-                    wrongValue (statement, keySpec.kind);
+                    if (const auto index = asMemberIndex (statement, keySpec.kind);
+                        index.has_value())
+                        spec.articulation = (Articulation) *index;
+                    else
+                        wrongValue (statement, keySpec.kind);
                 }
-            }
-            else if (statement.key == "variance")
-            {
-                if (statement.values.size() == 1)
-                    if (const auto value = readNumber (statement.values.front().text))
+                else if (statement.key == "range")
+                {
+                    if (const auto range = asPitchRange (statement); range.has_value())
                     {
-                        spec.variance = (float) std::clamp (*value, 0.0, 1.0);
-                        return;
+                        spec.hasRange = true;
+                        spec.lowPitch = range->first;
+                        spec.highPitch = range->second;
                     }
+                    else
+                    {
+                        wrongValue (statement, keySpec.kind);
+                    }
+                }
+                else if (statement.key == "variance")
+                {
+                    if (statement.values.size() == 1)
+                        if (const auto value = readNumber (statement.values.front().text))
+                        {
+                            spec.variance = (float) std::clamp (*value, 0.0, 1.0);
+                            return;
+                        }
 
-                wrongValue (statement, keySpec.kind);
-            }
-            else if (statement.key == "align")
-            {
-                if (const auto index = asMemberIndex (statement, keySpec.kind); index.has_value())
-                    spec.align = (Alignment) *index;
-                else
                     wrongValue (statement, keySpec.kind);
-            }
-            else if (const auto rule = ruleFor (statement.key); rule.has_value())
-            {
-                readRule (spec.rules[(std::size_t) *rule], statement, keySpec);
-            }
-        });
+                }
+                else if (statement.key == "align")
+                {
+                    if (const auto index = asMemberIndex (statement, keySpec.kind);
+                        index.has_value())
+                        spec.align = (Alignment) *index;
+                    else
+                        wrongValue (statement, keySpec.kind);
+                }
+                else if (const auto rule = ruleFor (statement.key); rule.has_value())
+                {
+                    readRule (spec.rules[(std::size_t) *rule], statement, keySpec);
+                }
+            });
 
         return spec;
     }
@@ -1466,76 +1473,77 @@ private:
     {
         MelodySpec melody;
 
-        forEachStatement (block, BlockKind::melody, [&] (const KeySpec& spec,
-                                                         const Statement& statement)
-        {
-            if (statement.key == "rhythm")
+        forEachStatement (
+            block, BlockKind::melody,
+            [&] (const KeySpec& spec, const Statement& statement)
             {
-                const auto name = resolveName (statement, symbols.rhythms, "E233", "rhythm");
+                if (statement.key == "rhythm")
+                {
+                    const auto name = resolveName (statement, symbols.rhythms, "E233", "rhythm");
 
-                if (! name.empty())
-                    melody.rhythm = std::string (name);
-                else if (statement.values.size() != 1)
-                    wrongValue (statement, spec.kind);
-            }
-            else if (statement.key == "articulation")
-            {
-                if (const auto index = asMemberIndex (statement, spec.kind); index.has_value())
-                    melody.articulation = (Articulation) *index;
-                else
-                    wrongValue (statement, spec.kind);
-            }
-            else if (statement.key == "contour")
-            {
-                if (const auto index = asMemberIndex (statement, spec.kind); index.has_value())
-                    melody.contour = (Contour) *index;
-                else
-                    wrongValue (statement, spec.kind);
-            }
-            else if (statement.key == "strong")
-            {
-                if (const auto index = asMemberIndex (statement, spec.kind); index.has_value())
-                    melody.strong = (StrongRule) *index;
-                else
-                    wrongValue (statement, spec.kind);
-            }
-            else if (statement.key == "variance")
-            {
-                readVariance (melody, statement, spec);
-            }
-            else if (statement.key == "mute")
-            {
-                readMuteBudget (melody, statement, spec);
-            }
-            else if (statement.key == "cadence")
-            {
-                readCadence (melody, statement, spec);
-            }
-            else if (statement.key == "leap")
-            {
-                readLeap (melody, statement, spec);
-            }
-            else if (statement.key == "align")
-            {
-                if (const auto index = asMemberIndex (statement, spec.kind); index.has_value())
-                    melody.align = (Alignment) *index;
-                else
-                    wrongValue (statement, spec.kind);
-            }
-            else if (statement.key == "range")
-            {
-                if (const auto range = asPitchRange (statement); range.has_value())
-                {
-                    melody.hasRange = true;
-                    melody.lowPitch = range->first;
-                    melody.highPitch = range->second;
+                    if (! name.empty())
+                        melody.rhythm = std::string (name);
+                    else if (statement.values.size() != 1)
+                        wrongValue (statement, spec.kind);
                 }
-                else
+                else if (statement.key == "articulation")
                 {
-                    wrongValue (statement, spec.kind);
+                    if (const auto index = asMemberIndex (statement, spec.kind); index.has_value())
+                        melody.articulation = (Articulation) *index;
+                    else
+                        wrongValue (statement, spec.kind);
                 }
-            }
-        });
+                else if (statement.key == "contour")
+                {
+                    if (const auto index = asMemberIndex (statement, spec.kind); index.has_value())
+                        melody.contour = (Contour) *index;
+                    else
+                        wrongValue (statement, spec.kind);
+                }
+                else if (statement.key == "strong")
+                {
+                    if (const auto index = asMemberIndex (statement, spec.kind); index.has_value())
+                        melody.strong = (StrongRule) *index;
+                    else
+                        wrongValue (statement, spec.kind);
+                }
+                else if (statement.key == "variance")
+                {
+                    readVariance (melody, statement, spec);
+                }
+                else if (statement.key == "mute")
+                {
+                    readMuteBudget (melody, statement, spec);
+                }
+                else if (statement.key == "cadence")
+                {
+                    readCadence (melody, statement, spec);
+                }
+                else if (statement.key == "leap")
+                {
+                    readLeap (melody, statement, spec);
+                }
+                else if (statement.key == "align")
+                {
+                    if (const auto index = asMemberIndex (statement, spec.kind); index.has_value())
+                        melody.align = (Alignment) *index;
+                    else
+                        wrongValue (statement, spec.kind);
+                }
+                else if (statement.key == "range")
+                {
+                    if (const auto range = asPitchRange (statement); range.has_value())
+                    {
+                        melody.hasRange = true;
+                        melody.lowPitch = range->first;
+                        melody.highPitch = range->second;
+                    }
+                    else
+                    {
+                        wrongValue (statement, spec.kind);
+                    }
+                }
+            });
 
         for (const auto& child : block.children)
         {
@@ -1544,7 +1552,7 @@ private:
             else
                 diagnostics.error ("E225",
                                    std::string ("`") + std::string (child.keyword)
-                                   + "` is not part of a melody",
+                                       + "` is not part of a melody",
                                    child.keywordRange);
         }
 
@@ -1593,11 +1601,9 @@ private:
 
         if (*count >= *window)
         {
-            auto& d = diagnostics.error ("E235",
-                                         "a mute budget has to leave a note sounding",
+            auto& d = diagnostics.error ("E235", "a mute budget has to leave a note sounding",
                                          statement.range);
-            d.notes.push_back ("`" + std::to_string (*count) + " of "
-                               + std::to_string (*window)
+            d.notes.push_back ("`" + std::to_string (*count) + " of " + std::to_string (*window)
                                + "` would silence every window");
             return;
         }
@@ -1622,8 +1628,7 @@ private:
             {
                 // At the REFERENCE, not at any definition: the reference is the
                 // mistake, and pointing elsewhere sends you to the wrong line.
-                auto& d = diagnostics.error ("E236",
-                                             "no section called `" + item.section + "`",
+                auto& d = diagnostics.error ("E236", "no section called `" + item.section + "`",
                                              entry.sectionRange, "not declared");
 
                 std::vector<std::string_view> names { symbols.sections.begin(),
@@ -1638,8 +1643,7 @@ private:
 
             if (entry.repeat > 256)
             {
-                diagnostics.error ("E237", "a section repeats at most 256 times",
-                                   entry.range);
+                diagnostics.error ("E237", "a section repeats at most 256 times", entry.range);
                 continue;
             }
 
@@ -1649,8 +1653,7 @@ private:
                     if (blockKindFor (child.keyword) == BlockKind::part)
                         item.overrides.push_back (resolvePart (child));
                     else
-                        diagnostics.error ("E238",
-                                           "an instance can only override a `part`",
+                        diagnostics.error ("E238", "an instance can only override a `part`",
                                            child.keywordRange);
                 }
 
@@ -1666,8 +1669,7 @@ private:
                                             std::string_view text)
     {
         for (const auto& name : names)
-            if (name.size() > 2 && text.size() > 2
-                && name.substr (0, 2) == text.substr (0, 2))
+            if (name.size() > 2 && text.size() > 2 && name.substr (0, 2) == text.substr (0, 2))
                 return name;
 
         return {};
@@ -1728,8 +1730,8 @@ const SectionSpec* Model::section (std::string_view name) const noexcept
     return nullptr;
 }
 
-Model resolve (const Document& document, std::string_view source,
-               DiagnosticBag& diagnostics, SymbolTable& symbols)
+Model resolve (const Document& document, std::string_view source, DiagnosticBag& diagnostics,
+               SymbolTable& symbols)
 {
     Resolver resolver { source, diagnostics, symbols };
     return resolver.run (document);

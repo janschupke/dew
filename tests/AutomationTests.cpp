@@ -37,7 +37,8 @@ AutomationTarget targetNamed (const juce::ValueTree& project, const juce::String
 float rmsOfWindow (const juce::AudioBuffer<float>& buffer, double fromSeconds, double toSeconds,
                    double sampleRate = 44100.0)
 {
-    const auto start = juce::jlimit (0, buffer.getNumSamples() - 1, (int) (fromSeconds * sampleRate));
+    const auto start = juce::jlimit (0, buffer.getNumSamples() - 1,
+                                     (int) (fromSeconds * sampleRate));
     const auto end = juce::jlimit (start, buffer.getNumSamples(), (int) (toSeconds * sampleRate));
 
     return end > start ? buffer.getRMSLevel (0, start, end - start) : 0.0f;
@@ -85,7 +86,8 @@ TEST_CASE ("a curve reads back the shape it was drawn as", "[automation]")
     auto project = ProjectFactory::createDefault();
     juce::UndoManager undo;
 
-    auto automation = ProjectEdits::addAutomation (project, targetNamed (project, "Kick > Volume"), &undo);
+    auto automation = ProjectEdits::addAutomation (project, targetNamed (project, "Kick > Volume"),
+                                                   &undo);
     REQUIRE (automation.isValid());
 
     // A fresh automation is a line, not an empty box.
@@ -113,7 +115,8 @@ TEST_CASE ("a point cannot be dragged past its neighbours", "[automation]")
     auto project = ProjectFactory::createDefault();
     juce::UndoManager undo;
 
-    auto automation = ProjectEdits::addAutomation (project, targetNamed (project, "Kick > Volume"), &undo);
+    auto automation = ProjectEdits::addAutomation (project, targetNamed (project, "Kick > Volume"),
+                                                   &undo);
 
     auto a = ProjectEdits::addAutomationPoint (automation, 4.0, 0.2, &undo);
     ProjectEdits::addAutomationPoint (automation, 8.0, 0.8, &undo);
@@ -152,7 +155,8 @@ TEST_CASE ("two points cannot share a step", "[automation]")
     auto project = ProjectFactory::createDefault();
     juce::UndoManager undo;
 
-    auto automation = ProjectEdits::addAutomation (project, targetNamed (project, "Kick > Volume"), &undo);
+    auto automation = ProjectEdits::addAutomation (project, targetNamed (project, "Kick > Volume"),
+                                                   &undo);
 
     const auto countPoints = [&automation]
     {
@@ -180,7 +184,8 @@ TEST_CASE ("a curve keeps at least two points", "[automation]")
     auto project = ProjectFactory::createDefault();
     juce::UndoManager undo;
 
-    auto automation = ProjectEdits::addAutomation (project, targetNamed (project, "Kick > Volume"), &undo);
+    auto automation = ProjectEdits::addAutomation (project, targetNamed (project, "Kick > Volume"),
+                                                   &undo);
 
     juce::Array<juce::ValueTree> points;
 
@@ -208,7 +213,8 @@ TEST_CASE ("an automation sweep is audible as a rising envelope", "[automation][
     auto project = dew::testing::fixtureProject();
     juce::UndoManager undo;
 
-    auto automation = ProjectEdits::addAutomation (project, targetNamed (project, "Master > Gain"), &undo);
+    auto automation = ProjectEdits::addAutomation (project, targetNamed (project, "Master > Gain"),
+                                                   &undo);
     REQUIRE (automation.isValid());
 
     // Silence to full over one bar, then held, at 16 steps a bar.
@@ -227,9 +233,9 @@ TEST_CASE ("an automation sweep is audible as a rising envelope", "[automation][
     REQUIRE (report.ok());
     REQUIRE (report.warnings.isEmpty());
 
-    const auto atStart  = rmsOfWindow (rendered, 0.0, 0.4);
+    const auto atStart = rmsOfWindow (rendered, 0.0, 0.4);
     const auto atMiddle = rmsOfWindow (rendered, 0.8, 1.2);
-    const auto atEnd    = rmsOfWindow (rendered, 1.6, 2.0);
+    const auto atEnd = rmsOfWindow (rendered, 1.6, 2.0);
 
     INFO ("rms " << atStart << " -> " << atMiddle << " -> " << atEnd);
 
@@ -243,7 +249,8 @@ TEST_CASE ("an automation clip only acts where it is placed", "[automation][rend
     auto project = dew::testing::fixtureProject();
     juce::UndoManager undo;
 
-    auto automation = ProjectEdits::addAutomation (project, targetNamed (project, "Master > Gain"), &undo);
+    auto automation = ProjectEdits::addAutomation (project, targetNamed (project, "Master > Gain"),
+                                                   &undo);
 
     // A curve that is silent all the way through.
     setCurve (automation, { { 0.0, 0.0 }, { 64.0, 0.0 } }, &undo);
@@ -293,9 +300,8 @@ TEST_CASE ("automating an effect parameter changes what the effect does", "[auto
     REQUIRE (filter.isValid());
 
     const auto trackName = mixerTrack[ids::name].toString();
-    auto automation = ProjectEdits::addAutomation (project,
-                                                   targetNamed (project, trackName + " > Filter > Cutoff"),
-                                                   &undo);
+    auto automation = ProjectEdits::addAutomation (
+        project, targetNamed (project, trackName + " > Filter > Cutoff"), &undo);
 
     // Wide open, shut within the first bar, then held shut.
     setCurve (automation, { { 0.0, 1.0 }, { 16.0, 0.0 } }, &undo);
@@ -346,15 +352,14 @@ TEST_CASE ("a discrete curve never lands between two states", "[automation]")
         const auto value = automationValueFor (*spec, normalised);
 
         INFO ("at " << normalised << " the mode index is " << value);
-        REQUIRE ((juce::approximatelyEqual (value, 0.0)
-                  || juce::approximatelyEqual (value, 1.0)
+        REQUIRE ((juce::approximatelyEqual (value, 0.0) || juce::approximatelyEqual (value, 1.0)
                   || juce::approximatelyEqual (value, 2.0)));
     }
 
     // Equal-width buckets, so the ends and the middle are the three modes.
-    REQUIRE_THAT (automationValueFor (*spec, 0.0),  WithinAbs (0.0, 1e-9));
-    REQUIRE_THAT (automationValueFor (*spec, 0.5),  WithinAbs (1.0, 1e-9));
-    REQUIRE_THAT (automationValueFor (*spec, 1.0),  WithinAbs (2.0, 1e-9));
+    REQUIRE_THAT (automationValueFor (*spec, 0.0), WithinAbs (0.0, 1e-9));
+    REQUIRE_THAT (automationValueFor (*spec, 0.5), WithinAbs (1.0, 1e-9));
+    REQUIRE_THAT (automationValueFor (*spec, 1.0), WithinAbs (2.0, 1e-9));
 
     // And a continuous neighbour in the same table is untouched by the snap.
     const auto* cutoff = findParamSpec (AutomationScope::channelEffect, "filter", ids::cutoff);
@@ -371,12 +376,14 @@ TEST_CASE ("a fresh curve over a discrete target is stepped", "[automation]")
     auto project = ProjectFactory::createDefault();
     juce::UndoManager undo;
 
-    auto continuous = ProjectEdits::addAutomation (project, targetNamed (project, "Kick > Volume"), &undo);
+    auto continuous = ProjectEdits::addAutomation (project, targetNamed (project, "Kick > Volume"),
+                                                   &undo);
 
     for (const auto& point : ProjectEdits::sortedAutomationPoints (continuous))
         REQUIRE (point[ids::shape].toString() == "curve");
 
-    auto stepped = ProjectEdits::addAutomation (project, targetNamed (project, "Kick > Mute"), &undo);
+    auto stepped = ProjectEdits::addAutomation (project, targetNamed (project, "Kick > Mute"),
+                                                &undo);
 
     for (const auto& point : ProjectEdits::sortedAutomationPoints (stepped))
         REQUIRE (point[ids::shape].toString() == "step");
@@ -414,10 +421,8 @@ TEST_CASE ("a mute curve silences a channel and lets it back in", "[automation][
 
     // Muted for the first two bars, then heard. Stepped, so it is a jump at bar
     // three rather than a fade across the clip.
-    auto automation = ProjectEdits::addAutomation (project,
-                                                   targetNamed (project,
-                                                                first[ids::name].toString() + " > Mute"),
-                                                   &undo);
+    auto automation = ProjectEdits::addAutomation (
+        project, targetNamed (project, first[ids::name].toString() + " > Mute"), &undo);
     setCurve (automation, { { 0.0, 1.0 }, { 32.0, 0.0 } }, &undo);
 
     auto track = project.getChildWithName (ids::PLAYLIST).getChild (0);
@@ -480,7 +485,8 @@ TEST_CASE ("a muted playlist track's automation does nothing", "[automation][ren
     auto project = dew::testing::fixtureProject();
     juce::UndoManager undo;
 
-    auto automation = ProjectEdits::addAutomation (project, targetNamed (project, "Master > Gain"), &undo);
+    auto automation = ProjectEdits::addAutomation (project, targetNamed (project, "Master > Gain"),
+                                                   &undo);
     setCurve (automation, { { 0.0, 0.0 }, { 64.0, 0.0 } }, &undo);
 
     auto playlist = project.getChildWithName (ids::PLAYLIST);
@@ -508,7 +514,8 @@ TEST_CASE ("an automation pointing at something deleted is dropped with a warnin
     auto channel = project.getChildWithName (ids::CHANNEL);
     const auto name = channel[ids::name].toString();
 
-    auto automation = ProjectEdits::addAutomation (project, targetNamed (project, name + " > Volume"), &undo);
+    auto automation = ProjectEdits::addAutomation (
+        project, targetNamed (project, name + " > Volume"), &undo);
     auto track = project.getChildWithName (ids::PLAYLIST).getChild (0);
     ProjectEdits::addAutomationClip (track, (int) automation[ids::id], 0, 2, &undo);
 
@@ -531,7 +538,8 @@ TEST_CASE ("removing an automation removes the clips that used it", "[automation
     auto project = dew::testing::fixtureProject();
     juce::UndoManager undo;
 
-    auto automation = ProjectEdits::addAutomation (project, targetNamed (project, "Master > Gain"), &undo);
+    auto automation = ProjectEdits::addAutomation (project, targetNamed (project, "Master > Gain"),
+                                                   &undo);
     auto track = project.getChildWithName (ids::PLAYLIST).getChild (0);
 
     const auto countClips = [&track]
@@ -564,13 +572,15 @@ TEST_CASE ("automation survives save and load", "[automation][schema]")
     auto project = dew::testing::fixtureProject();
     juce::UndoManager undo;
 
-    auto automation = ProjectEdits::addAutomation (project, targetNamed (project, "Master > Gain"), &undo);
+    auto automation = ProjectEdits::addAutomation (project, targetNamed (project, "Master > Gain"),
+                                                   &undo);
     setCurve (automation, { { 0.0, 0.1 }, { 24.0, 0.9 } }, &undo);
 
     auto track = project.getChildWithName (ids::PLAYLIST).getChild (0);
     ProjectEdits::addAutomationClip (track, (int) automation[ids::id], 1, 3, &undo);
 
-    const auto loaded = ProjectSerializer::fromJsonString (ProjectSerializer::toJsonString (project));
+    const auto loaded = ProjectSerializer::fromJsonString (
+        ProjectSerializer::toJsonString (project));
 
     REQUIRE (loaded.ok());
     REQUIRE (loaded.warnings.isEmpty());
@@ -587,7 +597,8 @@ TEST_CASE ("a stepped segment holds its left value until the next point", "[auto
     auto project = ProjectFactory::createDefault();
     juce::UndoManager undo;
 
-    auto automation = ProjectEdits::addAutomation (project, targetNamed (project, "Kick > Volume"), &undo);
+    auto automation = ProjectEdits::addAutomation (project, targetNamed (project, "Kick > Volume"),
+                                                   &undo);
     setCurve (automation, { { 0.0, 0.2 }, { 16.0, 0.8 } }, &undo);
 
     auto first = ProjectEdits::sortedAutomationPoints (automation).getFirst();
@@ -600,8 +611,8 @@ TEST_CASE ("a stepped segment holds its left value until the next point", "[auto
 
     // Stepped, every step of the segment reads the LEFT value - right up to but
     // not including the next point, where it jumps.
-    REQUIRE_THAT (ProjectEdits::automationValueAt (automation, 0.0),  WithinAbs (0.2, 1e-9));
-    REQUIRE_THAT (ProjectEdits::automationValueAt (automation, 8.0),  WithinAbs (0.2, 1e-9));
+    REQUIRE_THAT (ProjectEdits::automationValueAt (automation, 0.0), WithinAbs (0.2, 1e-9));
+    REQUIRE_THAT (ProjectEdits::automationValueAt (automation, 8.0), WithinAbs (0.2, 1e-9));
     REQUIRE_THAT (ProjectEdits::automationValueAt (automation, 15.9), WithinAbs (0.2, 1e-9));
     REQUIRE_THAT (ProjectEdits::automationValueAt (automation, 16.0), WithinAbs (0.8, 1e-9));
 
@@ -623,7 +634,8 @@ TEST_CASE ("a point added to a staircase does not put a ramp in it", "[automatio
     auto project = ProjectFactory::createDefault();
     juce::UndoManager undo;
 
-    auto automation = ProjectEdits::addAutomation (project, targetNamed (project, "Kick > Volume"), &undo);
+    auto automation = ProjectEdits::addAutomation (project, targetNamed (project, "Kick > Volume"),
+                                                   &undo);
     setCurve (automation, { { 0.0, 0.0 }, { 16.0, 1.0 } }, &undo);
 
     ProjectEdits::setPointShape (ProjectEdits::sortedAutomationPoints (automation).getFirst(),
@@ -680,7 +692,8 @@ TEST_CASE ("the editor and the engine agree about every point of a curve", "[aut
     auto project = ProjectFactory::createDefault();
     juce::UndoManager undo;
 
-    auto automation = ProjectEdits::addAutomation (project, targetNamed (project, "Master > Gain"), &undo);
+    auto automation = ProjectEdits::addAutomation (project, targetNamed (project, "Master > Gain"),
+                                                   &undo);
     setCurve (automation, { { 0.0, 0.1 }, { 9.0, 0.85 }, { 20.0, 0.4 }, { 33.0, 1.0 } }, &undo);
 
     // A bend on the second segment, so the comparison covers the branch a
@@ -708,8 +721,8 @@ TEST_CASE ("the editor and the engine agree about every point of a curve", "[aut
 
         INFO ("step " << step);
         REQUIRE_THAT ((double) engine.valueAt (step),
-                      WithinAbs (automationValueFor (spec,
-                                                      ProjectEdits::automationValueAt (automation, step)),
+                      WithinAbs (automationValueFor (
+                                     spec, ProjectEdits::automationValueAt (automation, step)),
                                  1e-5));
     }
 }
@@ -725,10 +738,12 @@ TEST_CASE ("a point dragged between two steps survives save and load", "[automat
     auto project = ProjectFactory::createDefault();
     juce::UndoManager undo;
 
-    auto automation = ProjectEdits::addAutomation (project, targetNamed (project, "Kick > Volume"), &undo);
+    auto automation = ProjectEdits::addAutomation (project, targetNamed (project, "Kick > Volume"),
+                                                   &undo);
     setCurve (automation, { { 0.0, 0.0 }, { 6.5, 0.5 }, { 13.25, 1.0 } }, &undo);
 
-    const auto loaded = ProjectSerializer::fromJsonString (ProjectSerializer::toJsonString (project));
+    const auto loaded = ProjectSerializer::fromJsonString (
+        ProjectSerializer::toJsonString (project));
 
     REQUIRE (loaded.ok());
     REQUIRE (loaded.warnings.isEmpty());
@@ -786,30 +801,29 @@ TEST_CASE ("every target the picker offers is one a control could ask for", "[au
         juce::ValueTree owner;
 
         for (const auto& child : target.scope == AutomationScope::mixerTrack
-                                 || target.scope == AutomationScope::mixerEffect
-                                     ? mixer : project)
+                                         || target.scope == AutomationScope::mixerEffect
+                                     ? mixer
+                                     : project)
             if (child.hasType (target.scope == AutomationScope::mixerTrack
-                               || target.scope == AutomationScope::mixerEffect
-                                   ? ids::MIXER_TRACK : ids::CHANNEL)
+                                       || target.scope == AutomationScope::mixerEffect
+                                   ? ids::MIXER_TRACK
+                                   : ids::CHANNEL)
                 && (int) child[ids::id] == target.targetId)
                 owner = child;
 
         switch (target.scope)
         {
             case AutomationScope::channel:
-            case AutomationScope::mixerTrack:
-                return owner;
+            case AutomationScope::mixerTrack: return owner;
 
             case AutomationScope::channelOsc:
                 return nth (owner.getChildWithName (ids::INSTRUMENT), ids::OSC, target.slot);
 
             case AutomationScope::channelEffect:
-            case AutomationScope::mixerEffect:
-                return nth (owner, ids::EFFECT, target.slot);
+            case AutomationScope::mixerEffect: return nth (owner, ids::EFFECT, target.slot);
 
             case AutomationScope::project:
-            case AutomationScope::master:
-                break;
+            case AutomationScope::master: break;
         }
 
         return {};
@@ -853,8 +867,9 @@ TEST_CASE ("a node with nothing to automate resolves to nothing", "[automation]"
     REQUIRE_FALSE (automationTargetFor (project, amp, ids::attack).has_value());
 
     // A pattern, and a playlist track - which carries no id to point at.
-    REQUIRE_FALSE (automationTargetFor (project, project.getChildWithName (ids::PATTERN),
-                                        ids::lengthSteps).has_value());
+    REQUIRE_FALSE (
+        automationTargetFor (project, project.getChildWithName (ids::PATTERN), ids::lengthSteps)
+            .has_value());
 
     const auto track = project.getChildWithName (ids::PLAYLIST).getChild (0);
     REQUIRE (track.isValid());
@@ -916,4 +931,3 @@ TEST_CASE ("the target list covers channels, effects, tracks and master", "[auto
         REQUIRE (target.property != ids::id);
     }
 }
-

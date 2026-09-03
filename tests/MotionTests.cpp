@@ -14,7 +14,6 @@ using namespace dew;
 using namespace dew::tokens;
 using Catch::Approx;
 
-
 namespace
 {
 
@@ -57,7 +56,7 @@ TEST_CASE ("easing is a pure function that spans nought to one", "[motion]")
 
 TEST_CASE ("a value moves rather than jumping, and arrives exactly", "[motion]")
 {
-    ScopedAnimation animation;   // this test opts in; nothing else does
+    ScopedAnimation animation; // this test opts in; nothing else does
 
     MotionValue value { 0.0f };
     value.animateTo (1.0f, motion::valueMs, Ease::decelerate);
@@ -70,7 +69,7 @@ TEST_CASE ("a value moves rather than jumping, and arrives exactly", "[motion]")
         value.advance (10);
     }
 
-    value.advance (motion::valueMs);   // well past the end
+    value.advance (motion::valueMs); // well past the end
 
     REQUIRE (path.size() > 8);
     CHECK (path.getFirst() == Approx (0.0f).margin (1e-6));
@@ -163,8 +162,14 @@ namespace
 
 struct CountingClient : Animator::Client
 {
-    CountingClient() { Animator::shared().addClient (*this); }
-    ~CountingClient() override { Animator::shared().removeClient (*this); }
+    CountingClient()
+    {
+        Animator::shared().addClient (*this);
+    }
+    ~CountingClient() override
+    {
+        Animator::shared().removeClient (*this);
+    }
 
     bool advanceAnimation (int deltaMs) override
     {
@@ -275,7 +280,7 @@ TEST_CASE ("a knob sweeps to a new value and arrives exactly on it", "[motion][k
         Animator::shared().advance (motion::valueMs / 12);
 
         const auto now = renderKnobArc (knob);
-        REQUIRE (now >= previous - 0.01f);      // monotone
+        REQUIRE (now >= previous - 0.01f); // monotone
 
         if (now > atStart + 0.05f && now < 1.0f - 0.05f)
             sawMiddle = true;

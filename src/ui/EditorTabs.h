@@ -37,7 +37,10 @@ public:
     static constexpr int playlistTabIndex = 2;
 
     /** The score tab, so the shell can route its status messages. */
-    ScoreEditorComponent& getScoreEditor() { return scoreEditor; }
+    ScoreEditorComponent& getScoreEditor()
+    {
+        return scoreEditor;
+    }
 
     /** Shows the score tab and compiles it. What Command-R does. */
     void compileScore();

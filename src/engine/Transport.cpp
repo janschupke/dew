@@ -61,7 +61,7 @@ double Transport::stepsForSamples (double samples) const noexcept
 void Transport::setLoopRange (double startSteps, double endSteps) noexcept
 {
     loopStartSteps = juce::jmax (0.0, startSteps);
-    loopEndSteps   = juce::jmax (0.0, endSteps);
+    loopEndSteps = juce::jmax (0.0, endSteps);
 }
 
 juce::int64 Transport::loopStartSamples() const noexcept

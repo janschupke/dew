@@ -59,7 +59,11 @@ PianoRollToolbar::PianoRollToolbar()
 
     // Zoom-to-fit used to be reachable only by double-clicking the piano keys,
     // which is also where a double-click means "audition this twice".
-    zoomButtons.onZoom = [this] (double factor) { if (onZoom) onZoom (factor); };
+    zoomButtons.onZoom = [this] (double factor)
+    {
+        if (onZoom)
+            onZoom (factor);
+    };
     addAndMakeVisible (zoomButtons);
 
     rowHeightButtons.onHeightChange = [this] (double factor)
@@ -73,7 +77,11 @@ PianoRollToolbar::PianoRollToolbar()
     const auto addAction = [this] (juce::Button& button, std::function<void()>& callback)
     {
         button.setWantsKeyboardFocus (false);
-        button.onClick = [&callback] { if (callback) callback(); };
+        button.onClick = [&callback]
+        {
+            if (callback)
+                callback();
+        };
         addAndMakeVisible (button);
     };
 
@@ -83,7 +91,11 @@ PianoRollToolbar::PianoRollToolbar()
     const auto addTranspose = [this] (juce::Button& button, int semitones)
     {
         button.setWantsKeyboardFocus (false);
-        button.onClick = [this, semitones] { if (onTranspose) onTranspose (semitones); };
+        button.onClick = [this, semitones]
+        {
+            if (onTranspose)
+                onTranspose (semitones);
+        };
         addAndMakeVisible (button);
     };
 

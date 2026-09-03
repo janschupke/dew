@@ -67,8 +67,7 @@ void SynthChannel::allNotesOff() noexcept
             voice.release();
 }
 
-void SynthChannel::renderAdd (float* buffer, int numSamples,
-                              float bendSemitones, float modulation,
+void SynthChannel::renderAdd (float* buffer, int numSamples, float bendSemitones, float modulation,
                               const OscBankSnapshot* live) noexcept
 {
     for (auto& voice : voices)

@@ -97,20 +97,17 @@ private:
     /** The base pitch stepper, which is an IncDecButtons slider and not a knob:
         a semitone is a number you nudge, not a sweep. */
     void attachStepper (juce::Slider&, juce::Label&, const juce::String& text,
-                        std::function<juce::ValueTree()> owner,
-                        const juce::Identifier& property,
+                        std::function<juce::ValueTree()> owner, const juce::Identifier& property,
                         const juce::String& transactionName);
 
     /** The same binding for a DewKnob, which carries its own caption and its own
         readout, so there is no label to pass and no text box to configure. */
     void attachKnob (DewKnob&, std::function<juce::ValueTree()> owner,
-                     const juce::Identifier& property,
-                     const juce::String& transactionName);
+                     const juce::Identifier& property, const juce::String& transactionName);
 
     /** Shared by both: the write, the undo transaction and the param menu. */
     void bindRotary (juce::Slider&, DewKnob*, std::function<juce::ValueTree()> owner,
-                     const juce::Identifier& property,
-                     const juce::String& transactionName);
+                     const juce::Identifier& property, const juce::String& transactionName);
 
     ProjectDocument& document;
     EditorState& editorState;
@@ -153,13 +150,13 @@ private:
         ParamSpec like every other DewKnob, which is what stops a range being
         stated here a second time and drifting from the engine's own clamp.
     */
-    DewKnob attackKnob  { requireInstrumentParamSpec (ids::attack) };
-    DewKnob decayKnob   { requireInstrumentParamSpec (ids::decay) };
+    DewKnob attackKnob { requireInstrumentParamSpec (ids::attack) };
+    DewKnob decayKnob { requireInstrumentParamSpec (ids::decay) };
     DewKnob sustainKnob { requireInstrumentParamSpec (ids::sustain) };
     DewKnob releaseKnob { requireInstrumentParamSpec (ids::release) };
 
     DewKnob volumeKnob { requireInstrumentParamSpec (ids::volume) };
-    DewKnob panKnob    { requireInstrumentParamSpec (ids::pan) };
+    DewKnob panKnob { requireInstrumentParamSpec (ids::pan) };
 
     juce::ComboBox mixerBox;
     juce::Label mixerLabel;

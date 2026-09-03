@@ -150,7 +150,8 @@ void DewNumberField::mouseWheelMove (const juce::MouseEvent& event,
     if (logarithmic && minimum > 0.0 && maximum > minimum)
     {
         // One notch is a fixed proportion of the range, in ratio terms.
-        const auto ratio = std::exp (std::log (maximum / minimum) * 0.02 * juce::jmax (1.0, scale * 4.0));
+        const auto ratio = std::exp (std::log (maximum / minimum) * 0.02
+                                     * juce::jmax (1.0, scale * 4.0));
         commit (up ? value * ratio : value / ratio);
         return;
     }

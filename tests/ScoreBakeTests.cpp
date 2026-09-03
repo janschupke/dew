@@ -82,44 +82,42 @@ juce::ValueTree generatedPattern (const juce::ValueTree& project)
 */
 std::string varyingScore (const std::string& arrangement)
 {
-    return
-        "song {\n  tempo 120\n  meter 4/4\n  key C major\n  seed 99\n}\n"
-        "channel lead {\n  mixer 1\n  range C4..C6\n}\n"
-        "rhythm pulse { 1/4 }\n"
-        "harmony h { I | vi | IV | V }\n"
-        "section verse {\n  length 4 bars\n  harmony h\n"
-        "  part lead {\n    melody {\n      rhythm pulse\n      variance 0.9\n    }\n  }\n}\n"
-        "arrangement {\n" + arrangement + "}\n";
+    return "song {\n  tempo 120\n  meter 4/4\n  key C major\n  seed 99\n}\n"
+           "channel lead {\n  mixer 1\n  range C4..C6\n}\n"
+           "rhythm pulse { 1/4 }\n"
+           "harmony h { I | vi | IV | V }\n"
+           "section verse {\n  length 4 bars\n  harmony h\n"
+           "  part lead {\n    melody {\n      rhythm pulse\n      variance 0.9\n    }\n  }\n}\n"
+           "arrangement {\n"
+           + arrangement + "}\n";
 }
 
 /** A minimal score, so a test can vary one thing without a long fixture. */
 std::string tinyScore (const std::string& body = {})
 {
-    return
-        "song {\n"
-        "  tempo 120\n"
-        "  meter 4/4\n"
-        "  key   C major\n"
-        "}\n"
-        "channel pad { mixer 1 }\n"
-        "voicing warm { size 3 voices }\n"
-        "rhythm held { 1/1 }\n"
-        "harmony h { I | vi | IV | V }\n"
-        "section verse {\n"
-        "  length 4 bars\n"
-        "  harmony h\n"
-        "  part pad {\n"
-        "    chords with warm\n"
-        "    rhythm held\n"
-        "  }\n"
-        "}\n"
-        + (body.empty() ? std::string ("arrangement {\n  verse\n}\n") : body);
+    return "song {\n"
+           "  tempo 120\n"
+           "  meter 4/4\n"
+           "  key   C major\n"
+           "}\n"
+           "channel pad { mixer 1 }\n"
+           "voicing warm { size 3 voices }\n"
+           "rhythm held { 1/1 }\n"
+           "harmony h { I | vi | IV | V }\n"
+           "section verse {\n"
+           "  length 4 bars\n"
+           "  harmony h\n"
+           "  part pad {\n"
+           "    chords with warm\n"
+           "    rhythm held\n"
+           "  }\n"
+           "}\n"
+           + (body.empty() ? std::string ("arrangement {\n  verse\n}\n") : body);
 }
 
 } // namespace
 
-TEST_CASE ("a baked score becomes ordinary patterns, notes and clips",
-           "[score][bake]")
+TEST_CASE ("a baked score becomes ordinary patterns, notes and clips", "[score][bake]")
 {
     const auto score = compileOrFail (tinyScore());
 
@@ -149,8 +147,7 @@ TEST_CASE ("a baked score becomes ordinary patterns, notes and clips",
     REQUIRE (clips > 0);
 }
 
-TEST_CASE ("a baked project round-trips through its own file format",
-           "[score][bake]")
+TEST_CASE ("a baked project round-trips through its own file format", "[score][bake]")
 {
     const auto score = compileOrFail (tinyScore());
 
@@ -179,7 +176,7 @@ TEST_CASE ("a baked project round-trips through its own file format",
         if (before[i] != after[i])
         {
             firstDifference = "line " + juce::String (i) + "\n  wrote: " + before[i]
-                            + "\n  read:  " + after[i];
+                              + "\n  read:  " + after[i];
             break;
         }
 
@@ -209,8 +206,7 @@ TEST_CASE ("baking is one undo step", "[score][bake]")
     REQUIRE (project.isEquivalentTo (before));
 }
 
-TEST_CASE ("a track adopts a channel of the same name and leaves its sound alone",
-           "[score][bake]")
+TEST_CASE ("a track adopts a channel of the same name and leaves its sound alone", "[score][bake]")
 {
     // The ownership line: the language owns notes, the user owns the sound.
     // A default project already has a channel called "Lead".
@@ -365,8 +361,7 @@ TEST_CASE ("an identical repeat is one pattern and two clips", "[score][bake]")
     REQUIRE (countChildren (lane, ids::CLIP) == 2);
 
     // Both clips point at the same pattern.
-    REQUIRE ((int) lane.getChild (0)[ids::patternId]
-             == (int) lane.getChild (1)[ids::patternId]);
+    REQUIRE ((int) lane.getChild (0)[ids::patternId] == (int) lane.getChild (1)[ids::patternId]);
 }
 
 TEST_CASE ("a re-rolled repeat is two patterns", "[score][bake]")
@@ -441,8 +436,8 @@ TEST_CASE ("every note the bake writes is inside its pattern", "[score][bake]")
             const auto start = (int) note[ids::step];
             const auto end = start + (int) note[ids::lengthSteps];
 
-            INFO ("note at " << start << " length " << (end - start)
-                             << " in a pattern of " << length);
+            INFO ("note at " << start << " length " << (end - start) << " in a pattern of "
+                             << length);
             REQUIRE (start >= 0);
             REQUIRE (end <= length);
         }
@@ -507,9 +502,8 @@ TEST_CASE ("the example score renders to real audio", "[score][bake]")
             sumSquares += (double) sample * sample;
         }
 
-    const auto rms = std::sqrt (sumSquares
-                                / (double) (buffer.getNumSamples()
-                                            * juce::jmax (1, buffer.getNumChannels())));
+    const auto rms = std::sqrt (
+        sumSquares / (double) (buffer.getNumSamples() * juce::jmax (1, buffer.getNumChannels())));
 
     INFO ("peak " << peak << "  rms " << rms);
     REQUIRE (peak > 0.05f);
@@ -523,8 +517,9 @@ TEST_CASE ("the language example in the README still compiles", "[score][bake]")
     // commits, and a README example that stopped compiling would be the first
     // symptom - and the last one anybody noticed. So the documentation is
     // executed rather than trusted.
-    const juce::File readme { juce::File (DEW_EXAMPLES_DIR).getParentDirectory()
-                                  .getChildFile ("README.md") };
+    const juce::File readme {
+        juce::File (DEW_EXAMPLES_DIR).getParentDirectory().getChildFile ("README.md")
+    };
     REQUIRE (readme.existsAsFile());
 
     const auto text = readme.loadFileAsString();
@@ -585,8 +580,7 @@ TEST_CASE ("the committed example still compiles", "[score][bake]")
     }
 }
 
-TEST_CASE ("compiling the same score twice leaves the same document",
-           "[score][bake][recompile]")
+TEST_CASE ("compiling the same score twice leaves the same document", "[score][bake][recompile]")
 {
     // The property that makes a .dew worth storing a score in: recompiling is
     // an update, not an accumulation. Pattern ids hold still too, so a clip a
@@ -604,13 +598,12 @@ TEST_CASE ("compiling the same score twice leaves the same document",
     REQUIRE (second.patternsWritten == first.patternsWritten);
     REQUIRE (second.patternsKept == 0);
     REQUIRE (second.patternsRemoved == 0);
-    REQUIRE (second.channelsCreated == 0);   // found again, not made again
+    REQUIRE (second.channelsCreated == 0); // found again, not made again
 
     REQUIRE (project.isEquivalentTo (afterFirst));
 }
 
-TEST_CASE ("a generated pattern edited by hand is kept, and said so",
-           "[score][bake][recompile]")
+TEST_CASE ("a generated pattern edited by hand is kept, and said so", "[score][bake][recompile]")
 {
     const auto score = compileOrFail (tinyScore());
 
@@ -691,8 +684,7 @@ TEST_CASE ("a section the score no longer produces takes its pattern with it",
     REQUIRE (countChildren (project, ids::PATTERN) == after - 1);
 }
 
-TEST_CASE ("an orphaned pattern that was edited by hand is kept",
-           "[score][bake][recompile]")
+TEST_CASE ("an orphaned pattern that was edited by hand is kept", "[score][bake][recompile]")
 {
     // Deleting a repeat from the arrangement must not throw away work somebody
     // did on the notes it left behind. It stays in the pattern list, without a
@@ -718,8 +710,7 @@ TEST_CASE ("an orphaned pattern that was edited by hand is kept",
     REQUIRE (findByGenId (project, "verse#1").isValid());
 }
 
-TEST_CASE ("a renamed generated channel is found again, not duplicated",
-           "[score][bake][recompile]")
+TEST_CASE ("a renamed generated channel is found again, not duplicated", "[score][bake][recompile]")
 {
     const auto score = compileOrFail (tinyScore());
 
@@ -730,8 +721,7 @@ TEST_CASE ("a renamed generated channel is found again, not duplicated",
     const auto before = countChildren (project, ids::CHANNEL);
 
     for (auto channel : project)
-        if (channel.hasType (ids::CHANNEL)
-            && channel[ids::genId].toString() == "channel:pad")
+        if (channel.hasType (ids::CHANNEL) && channel[ids::genId].toString() == "channel:pad")
             channel.setProperty (ids::name, "Warm Pad", nullptr);
 
     const auto report = ScoreBake::into (project, score, nullptr);
@@ -740,8 +730,7 @@ TEST_CASE ("a renamed generated channel is found again, not duplicated",
     REQUIRE (countChildren (project, ids::CHANNEL) == before);
 }
 
-TEST_CASE ("a pattern hash is about the music, not the bookkeeping",
-           "[score][bake][recompile]")
+TEST_CASE ("a pattern hash is about the music, not the bookkeeping", "[score][bake][recompile]")
 {
     const auto score = compileOrFail (tinyScore());
 
@@ -794,8 +783,8 @@ TEST_CASE ("the score is stored with what it compiled to", "[score][bake]")
 
     // Through a real save and load, because a score that lives only in memory
     // is a .dew you can hear and never change again.
-    const auto loaded =
-        ProjectSerializer::fromJsonString (ProjectSerializer::toJsonString (project));
+    const auto loaded = ProjectSerializer::fromJsonString (
+        ProjectSerializer::toJsonString (project));
 
     REQUIRE (loaded.ok());
     REQUIRE (ProjectEdits::scoreSource (loaded.tree).toStdString() == source);

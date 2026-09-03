@@ -145,7 +145,7 @@ TEST_CASE ("added channels and patterns get unused ids", "[edits]")
     const auto channel = ProjectEdits::addChannel (project, "Extra", &undo);
     const auto pattern = ProjectEdits::addPattern (project, &undo);
 
-    REQUIRE ((int) channel[ids::id] == 5);     // 1-4 already exist
+    REQUIRE ((int) channel[ids::id] == 5); // 1-4 already exist
     REQUIRE ((int) pattern[ids::id] == 2);
 
     // Ids must be unique, or notes and clips resolve to the wrong thing.
@@ -191,7 +191,7 @@ TEST_CASE ("clips are found by the bar they cover, not just where they start", "
     auto track = project.getChildWithName (ids::PLAYLIST).getChild (0);
     juce::UndoManager undo;
 
-    ProjectEdits::addClip (track, 1, 2, 3, &undo);   // bars 2, 3, 4
+    ProjectEdits::addClip (track, 1, 2, 3, &undo); // bars 2, 3, 4
 
     REQUIRE (! ProjectEdits::findClipAtBar (track, 1).isValid());
     REQUIRE (ProjectEdits::findClipAtBar (track, 2).isValid());
@@ -227,7 +227,7 @@ TEST_CASE ("edits refuse to produce nonsense values", "[edits]")
 TEST_CASE ("duplicating a pattern copies its notes under a new identity", "[edits][patterns]")
 {
     auto project = ProjectFactory::createDefault();
-    auto source  = ProjectEdits::findPattern (project, 1);
+    auto source = ProjectEdits::findPattern (project, 1);
     juce::UndoManager undo;
 
     ProjectEdits::toggleStep (source, 1, 0, 60, &undo);
@@ -263,12 +263,12 @@ TEST_CASE ("removing a pattern removes the clips that referred to it", "[edits][
     auto project = ProjectFactory::createDefault();
     juce::UndoManager undo;
 
-    const auto first  = ProjectEdits::findPattern (project, 1);
+    const auto first = ProjectEdits::findPattern (project, 1);
     const auto second = ProjectEdits::addPattern (project, &undo);
     const auto secondId = (int) second[ids::id];
 
     auto playlist = project.getChildWithName (ids::PLAYLIST);
-    auto track    = playlist.getChild (0);
+    auto track = playlist.getChild (0);
     REQUIRE (track.hasType (ids::PLAYLIST_TRACK));
 
     ProjectEdits::addClip (track, (int) first[ids::id], 0, 1, &undo);
@@ -294,7 +294,8 @@ TEST_CASE ("the last pattern cannot be removed", "[edits][patterns]")
     juce::UndoManager undo;
 
     REQUIRE (countChildren (project, ids::PATTERN) == 1);
-    REQUIRE (! ProjectEdits::removePattern (project, ProjectEdits::findPattern (project, 1), &undo));
+    REQUIRE (
+        ! ProjectEdits::removePattern (project, ProjectEdits::findPattern (project, 1), &undo));
     REQUIRE (countChildren (project, ids::PATTERN) == 1);
 }
 
@@ -305,11 +306,11 @@ TEST_CASE ("pattern deletion is one undo step", "[edits][patterns][undo]")
 
     const auto second = ProjectEdits::addPattern (project, &undo);
     auto playlist = project.getChildWithName (ids::PLAYLIST);
-    auto track    = playlist.getChild (0);
+    auto track = playlist.getChild (0);
     ProjectEdits::addClip (track, (int) second[ids::id], 0, 1, &undo);
 
     const auto patterns = countChildren (project, ids::PATTERN);
-    const auto clips    = countChildren (track, ids::CLIP);
+    const auto clips = countChildren (track, ids::CLIP);
 
     undo.beginNewTransaction ("Delete pattern");
     REQUIRE (ProjectEdits::removePattern (project, second, &undo));
@@ -344,7 +345,7 @@ TEST_CASE ("a clip can be moved to another track", "[edits][playlist]")
     juce::UndoManager undo;
 
     auto playlist = project.getChildWithName (ids::PLAYLIST);
-    auto first  = playlist.getChild (0);
+    auto first = playlist.getChild (0);
     auto second = playlist.getChild (1);
 
     REQUIRE (first.hasType (ids::PLAYLIST_TRACK));
@@ -376,7 +377,7 @@ TEST_CASE ("moving a clip onto its own track is an ordinary move", "[edits][play
     juce::UndoManager undo;
 
     auto track = project.getChildWithName (ids::PLAYLIST).getChild (0);
-    auto clip  = ProjectEdits::addClip (track, 1, 0, 1, &undo);
+    auto clip = ProjectEdits::addClip (track, 1, 0, 1, &undo);
 
     const auto same = ProjectEdits::moveClipToTrack (track, clip, track, 3, &undo);
 
@@ -476,8 +477,8 @@ TEST_CASE ("a whole gesture is one undo step", "[model][undo]")
     // Twenty values, the way a drag arrives: the first opens the transaction
     // and the rest join it.
     for (int i = 1; i <= 20; ++i)
-        ProjectEdits::setProperty (channel, ids::volume, before * 0.5 + (double) i * 0.01,
-                                   &undo, "Change volume", i > 1);
+        ProjectEdits::setProperty (channel, ids::volume, before * 0.5 + (double) i * 0.01, &undo,
+                                   "Change volume", i > 1);
 
     REQUIRE (! juce::exactlyEqual ((double) channel[ids::volume], before));
 
@@ -522,8 +523,8 @@ TEST_CASE ("writing the value that is already there records nothing", "[model][u
     auto& undo = document.getUndoManager();
     auto channel = document.getState().getChildWithName (ids::CHANNEL);
 
-    ProjectEdits::setProperty (channel, ids::volume, channel[ids::volume],
-                               &undo, "Change volume", false);
+    ProjectEdits::setProperty (channel, ids::volume, channel[ids::volume], &undo, "Change volume",
+                               false);
 
     CHECK_FALSE (undo.canUndo());
 }

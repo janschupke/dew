@@ -66,10 +66,26 @@ bool parseFormat (const juce::String& text, dew::RenderFormat& format)
 {
     const auto lower = text.toLowerCase();
 
-    if (lower == "wav")                      { format = dew::RenderFormat::wav;  return true; }
-    if (lower == "flac")                     { format = dew::RenderFormat::flac; return true; }
-    if (lower == "mp3")                      { format = dew::RenderFormat::mp3;  return true; }
-    if (lower == "midi" || lower == "mid")   { format = dew::RenderFormat::midi; return true; }
+    if (lower == "wav")
+    {
+        format = dew::RenderFormat::wav;
+        return true;
+    }
+    if (lower == "flac")
+    {
+        format = dew::RenderFormat::flac;
+        return true;
+    }
+    if (lower == "mp3")
+    {
+        format = dew::RenderFormat::mp3;
+        return true;
+    }
+    if (lower == "midi" || lower == "mid")
+    {
+        format = dew::RenderFormat::midi;
+        return true;
+    }
 
     return false;
 }
@@ -85,8 +101,8 @@ bool parseBars (const juce::String& text, dew::BarRange& range)
     const auto first = text.upToFirstOccurrenceOf (separator, false, false).trim();
     const auto last = text.fromFirstOccurrenceOf (separator, false, false).trim();
 
-    if (first.isEmpty() || last.isEmpty()
-        || ! first.containsOnly ("0123456789") || ! last.containsOnly ("0123456789"))
+    if (first.isEmpty() || last.isEmpty() || ! first.containsOnly ("0123456789")
+        || ! last.containsOnly ("0123456789"))
         return false;
 
     range.firstBar = juce::jmax (0, first.getIntValue() - 1);
@@ -99,8 +115,8 @@ bool parseBars (const juce::String& text, dew::BarRange& range)
 juce::File withExtensionFor (const juce::File& file, dew::RenderFormat format)
 {
     return file.getFileExtension().isEmpty()
-             ? file.withFileExtension (dew::OfflineRenderer::extensionFor (format))
-             : file;
+               ? file.withFileExtension (dew::OfflineRenderer::extensionFor (format))
+               : file;
 }
 
 } // namespace
@@ -131,7 +147,8 @@ int main (int argc, char* argv[])
 
         const auto target = juce::File::getCurrentWorkingDirectory().getChildFile (path);
 
-        const auto result = dew::ProjectSerializer::writeToFile (dew::ProjectFactory::createDemo(), target);
+        const auto result = dew::ProjectSerializer::writeToFile (dew::ProjectFactory::createDemo(),
+                                                                 target);
 
         if (result.failed())
             return fail (result.getErrorMessage());
@@ -206,8 +223,8 @@ int main (int argc, char* argv[])
                                     : "expected a project file and an output file");
     }
 
-    const juce::File projectFile (juce::File::getCurrentWorkingDirectory()
-                                      .getChildFile (positional[0]));
+    const juce::File projectFile (
+        juce::File::getCurrentWorkingDirectory().getChildFile (positional[0]));
 
     const auto loaded = dew::ProjectSerializer::readFromFile (projectFile);
 
@@ -228,7 +245,8 @@ int main (int argc, char* argv[])
 
     // --- format ---------------------------------------------------------------
     if (args.has ("--format") && ! parseFormat (args.value ("--format"), options.format))
-        return fail ("unknown format '" + args.value ("--format") + "'; try wav, flac, mp3 or midi");
+        return fail ("unknown format '" + args.value ("--format")
+                     + "'; try wav, flac, mp3 or midi");
 
     if (args.has ("--rate"))
         options.sampleRate = juce::jlimit (8000.0, 192000.0,
@@ -299,8 +317,7 @@ int main (int argc, char* argv[])
             return fail ("--stems needs a directory to write into");
 
         report = dew::OfflineRenderer::renderStems (
-            loaded.tree,
-            juce::File::getCurrentWorkingDirectory().getChildFile (directory),
+            loaded.tree, juce::File::getCurrentWorkingDirectory().getChildFile (directory),
             options);
     }
     else
@@ -329,8 +346,8 @@ int main (int argc, char* argv[])
     std::cout << "  " << juce::String (report.seconds, 2) << " s"
               << "  ·  " << report.numSamples << " frames"
               << "  ·  " << juce::String (options.sampleRate, 0) << " Hz"
-              << "\n  peak " << juce::String (report.peak, 4)
-              << "  ·  rms " << juce::String (report.rms, 4);
+              << "\n  peak " << juce::String (report.peak, 4) << "  ·  rms "
+              << juce::String (report.rms, 4);
 
     if (report.normalizationGainDb != 0.0f)
         std::cout << "  ·  normalized " << juce::String (report.normalizationGainDb, 2) << " dB";

@@ -5,10 +5,10 @@ namespace dew
 
 namespace
 {
-constexpr int ccModWheel      = 1;
-constexpr int ccSustainPedal  = 64;
-constexpr int ccAllSoundOff   = 120;
-constexpr int ccAllNotesOff   = 123;
+constexpr int ccModWheel = 1;
+constexpr int ccSustainPedal = 64;
+constexpr int ccAllSoundOff = 120;
+constexpr int ccAllNotesOff = 123;
 
 /** The wheel's centre. 14 bits, so 0..16383 with 8192 at rest. */
 constexpr int pitchWheelCentre = 8192;
@@ -21,9 +21,8 @@ MidiRouter::MidiRouter (AudioEngine& e)
 
 int MidiRouter::packNote (int pitch, int velocity, int midiChannel) noexcept
 {
-    return (juce::jlimit (0, 127, pitch) & 0xff)
-         | ((juce::jlimit (0, 127, velocity) & 0xff) << 8)
-         | ((juce::jlimit (0, 16, midiChannel) & 0xff) << 16);
+    return (juce::jlimit (0, 127, pitch) & 0xff) | ((juce::jlimit (0, 127, velocity) & 0xff) << 8)
+           | ((juce::jlimit (0, 16, midiChannel) & 0xff) << 16);
 }
 
 void MidiRouter::setTargetChannel (int channelIndex) noexcept

@@ -70,11 +70,10 @@ juce::String RenderJob::getStage() const
 
 void RenderJob::run()
 {
-    report = request.stems
-               ? OfflineRenderer::renderStems (request.project, request.destination,
-                                               request.options, &progress)
-               : OfflineRenderer::renderToFile (request.project, request.destination,
-                                                request.options, &progress);
+    report = request.stems ? OfflineRenderer::renderStems (request.project, request.destination,
+                                                           request.options, &progress)
+                           : OfflineRenderer::renderToFile (request.project, request.destination,
+                                                            request.options, &progress);
 
     // Written last, so a reader that sees this has the report to go with it.
     finished.store (true, std::memory_order_release);

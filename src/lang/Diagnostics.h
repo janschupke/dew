@@ -77,21 +77,33 @@ public:
 
     explicit DiagnosticBag (std::string_view source);
 
-    Diagnostic& add (Severity, std::string code, std::string message,
-                     SourceRange, std::string primaryLabel = {});
+    Diagnostic& add (Severity, std::string code, std::string message, SourceRange,
+                     std::string primaryLabel = {});
 
-    Diagnostic& error (std::string code, std::string message,
-                       SourceRange, std::string primaryLabel = {});
+    Diagnostic& error (std::string code, std::string message, SourceRange,
+                       std::string primaryLabel = {});
 
-    Diagnostic& warning (std::string code, std::string message,
-                         SourceRange, std::string primaryLabel = {});
+    Diagnostic& warning (std::string code, std::string message, SourceRange,
+                         std::string primaryLabel = {});
 
-    bool hasErrors() const noexcept { return errorCount > 0; }
-    std::size_t size() const noexcept { return items.size(); }
+    bool hasErrors() const noexcept
+    {
+        return errorCount > 0;
+    }
+    std::size_t size() const noexcept
+    {
+        return items.size();
+    }
 
-    const std::vector<Diagnostic>& all() const noexcept { return items; }
+    const std::vector<Diagnostic>& all() const noexcept
+    {
+        return items;
+    }
 
-    const LineIndex& lines() const noexcept { return index; }
+    const LineIndex& lines() const noexcept
+    {
+        return index;
+    }
 
 private:
     /** Somewhere to put a rejected diagnostic so `add` can always return a
@@ -118,10 +130,9 @@ private:
     The caret row is built from CHARACTER columns, so a line containing a
     multi-byte character still puts the carets under the token.
 */
-std::string render (const Diagnostic&, std::string_view source,
-                    std::string_view fileName, const LineIndex&);
+std::string render (const Diagnostic&, std::string_view source, std::string_view fileName,
+                    const LineIndex&);
 
-std::string renderAll (const DiagnosticBag&, std::string_view source,
-                       std::string_view fileName);
+std::string renderAll (const DiagnosticBag&, std::string_view source, std::string_view fileName);
 
 } // namespace dew::lang

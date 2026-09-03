@@ -87,14 +87,15 @@ TEST_CASE ("the queue survives a producer and a consumer hammering it", "[previe
     std::vector<int> received;
     received.reserve (attempts);
 
-    std::thread producer ([&]
-    {
-        for (int i = 0; i < attempts; ++i)
-            if (queue.push ({ PreviewEvent::Kind::noteOn, i % 8, i % 128, 1.0f }))
-                accepted.fetch_add (1, std::memory_order_relaxed);
+    std::thread producer (
+        [&]
+        {
+            for (int i = 0; i < attempts; ++i)
+                if (queue.push ({ PreviewEvent::Kind::noteOn, i % 8, i % 128, 1.0f }))
+                    accepted.fetch_add (1, std::memory_order_relaxed);
 
-        producerDone.store (true, std::memory_order_release);
-    });
+            producerDone.store (true, std::memory_order_release);
+        });
 
     int corrupt = 0;
 
@@ -115,8 +116,8 @@ TEST_CASE ("the queue survives a producer and a consumer hammering it", "[previe
 
     producer.join();
 
-    INFO ("accepted " << accepted.load() << " of " << attempts
-          << ", received " << received.size() << ", corrupt " << corrupt);
+    INFO ("accepted " << accepted.load() << " of " << attempts << ", received " << received.size()
+                      << ", corrupt " << corrupt);
 
     REQUIRE (corrupt == 0);
     REQUIRE ((int) received.size() == accepted.load());

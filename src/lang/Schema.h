@@ -15,37 +15,37 @@ namespace dew::lang
 */
 enum class ValueKind
 {
-    text,           ///< "Amber"
-    integer,        ///< 4
-    number,         ///< 0.25
-    tempo,          ///< 96 bpm
-    meter,          ///< 4/4
-    grid,           ///< auto, or 12
-    key,            ///< F minor
-    seed,           ///< 0x5EEDC0FFEE
-    pitchRange,     ///< C3..C5
-    bars,           ///< 8 bars
-    jitteredInt,    ///< 72 +- 6
-    voices,         ///< 4 voices
-    muteBudget,     ///< 1 of 4
-    spread,         ///< close | open | drop2 | drop3 | shell | rootless
-    motion,         ///< smooth | parallel | fixed
-    contour,        ///< arch | rise | fall | flat | wave
-    strongRule,     ///< chord-tones | scale-tones | free
-    articulation,   ///< legato | detached
-    lineSource,     ///< root | root-fifth | root-third-fifth
-    cadence,        ///< 1, or `choose [1 3 5] per instance`
-    rule,           ///< forbid, or `soft 2.5`
-    bassRule,       ///< from-inversion | root | any
-    leapRule,       ///< `max 7 resolve step`
-    alignment,      ///< bar | continuous
-    transposeMode,  ///< diatonic | chromatic
-    scope,          ///< note | bar | instance | section | song
-    instrument,     ///< synth
-    rhythmRef,      ///< a declared rhythm's name
-    voicingRef,     ///< a declared voicing's name, after `with`
-    harmonyRef,     ///< a declared harmony's name
-    channelRef      ///< a declared channel's name
+    text,          ///< "Amber"
+    integer,       ///< 4
+    number,        ///< 0.25
+    tempo,         ///< 96 bpm
+    meter,         ///< 4/4
+    grid,          ///< auto, or 12
+    key,           ///< F minor
+    seed,          ///< 0x5EEDC0FFEE
+    pitchRange,    ///< C3..C5
+    bars,          ///< 8 bars
+    jitteredInt,   ///< 72 +- 6
+    voices,        ///< 4 voices
+    muteBudget,    ///< 1 of 4
+    spread,        ///< close | open | drop2 | drop3 | shell | rootless
+    motion,        ///< smooth | parallel | fixed
+    contour,       ///< arch | rise | fall | flat | wave
+    strongRule,    ///< chord-tones | scale-tones | free
+    articulation,  ///< legato | detached
+    lineSource,    ///< root | root-fifth | root-third-fifth
+    cadence,       ///< 1, or `choose [1 3 5] per instance`
+    rule,          ///< forbid, or `soft 2.5`
+    bassRule,      ///< from-inversion | root | any
+    leapRule,      ///< `max 7 resolve step`
+    alignment,     ///< bar | continuous
+    transposeMode, ///< diatonic | chromatic
+    scope,         ///< note | bar | instance | section | song
+    instrument,    ///< synth
+    rhythmRef,     ///< a declared rhythm's name
+    voicingRef,    ///< a declared voicing's name, after `with`
+    harmonyRef,    ///< a declared harmony's name
+    channelRef     ///< a declared channel's name
 };
 
 const char* nameOf (ValueKind) noexcept;

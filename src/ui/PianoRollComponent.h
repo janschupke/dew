@@ -102,28 +102,55 @@ public:
 
     // --- geometry, public so a test can aim at a note instead of recomputing
     //     the layout and drifting from it -------------------------------------
-    const TimelineView& getTimeline() const noexcept { return timeline; }
-    int getNumSelectedNotes() const noexcept         { return selection.size(); }
+    const TimelineView& getTimeline() const noexcept
+    {
+        return timeline;
+    }
+    int getNumSelectedNotes() const noexcept
+    {
+        return selection.size();
+    }
 
     /** Where a note is painted, in this component's coordinates. */
-    juce::Rectangle<float> getBoundsForNote (const juce::ValueTree& note) const { return boundsForNote (note); }
+    juce::Rectangle<float> getBoundsForNote (const juce::ValueTree& note) const
+    {
+        return boundsForNote (note);
+    }
 
-    juce::Rectangle<int> getNoteArea() const     { return noteArea(); }
+    juce::Rectangle<int> getNoteArea() const
+    {
+        return noteArea();
+    }
 
     /** Which pitch a y coordinate lands on. Public for the same reason the
         areas are: a test asserting the view did not walk has to ask what is
         under a point, not recompute the mapping and drift from it. */
-    int getPitchAtY (int y) const { return pitchAtY (y); }
-    juce::Rectangle<int> getKeyboardArea() const { return keyboardArea(); }
-    juce::Rectangle<int> getVelocityArea() const { return velocityArea(); }
-    juce::Rectangle<int> getRulerArea() const    { return rulerArea(); }
+    int getPitchAtY (int y) const
+    {
+        return pitchAtY (y);
+    }
+    juce::Rectangle<int> getKeyboardArea() const
+    {
+        return keyboardArea();
+    }
+    juce::Rectangle<int> getVelocityArea() const
+    {
+        return velocityArea();
+    }
+    juce::Rectangle<int> getRulerArea() const
+    {
+        return rulerArea();
+    }
     juce::Rectangle<float> getVelocityBarBounds (const juce::ValueTree& note) const
     {
         return velocityBarBounds (note);
     }
 
     /** The pitch currently being auditioned, or -1. */
-    int getAuditionPitch() const noexcept { return auditionPitch; }
+    int getAuditionPitch() const noexcept
+    {
+        return auditionPitch;
+    }
 
     /** Where the view is, so a session can be restored to it. */
     void captureView (double& zoom, double& scroll, double& pitchScroll) const;
@@ -141,7 +168,10 @@ public:
         a view where the same gesture works or does not depending on which
         octave you aim at is worse than one that is uniformly too dense.
     */
-    int getRowHeight() const noexcept { return rowHeight; }
+    int getRowHeight() const noexcept
+    {
+        return rowHeight;
+    }
     void setRowHeight (int);
 
     /** Multiplies the row height, or fits every pitch that has a note in it
@@ -154,16 +184,31 @@ public:
         opening into Paint or Slice means the first click of a session writes or
         cuts something, which is not a state to restore someone into.
     */
-    SnapDivision getSnap() const noexcept { return toolbar.getSnap(); }
-    void setSnap (SnapDivision snap) { toolbar.setSnap (snap); }
+    SnapDivision getSnap() const noexcept
+    {
+        return toolbar.getSnap();
+    }
+    void setSnap (SnapDivision snap)
+    {
+        toolbar.setSnap (snap);
+    }
 
-    RollTool getTool() const noexcept { return toolbar.getTool(); }
-    void setTool (RollTool tool) { toolbar.setTool (tool); }
+    RollTool getTool() const noexcept
+    {
+        return toolbar.getTool();
+    }
+    void setTool (RollTool tool)
+    {
+        toolbar.setTool (tool);
+    }
 
     /** The tool strip, so a test can drive the channel selector and the zoom
         buttons through the same seam the user reaches them by.
     */
-    PianoRollToolbar& getToolbar() noexcept { return toolbar; }
+    PianoRollToolbar& getToolbar() noexcept
+    {
+        return toolbar;
+    }
 
     /** The notes an edit acts on: the selection when there is one, otherwise
         every note of the current channel.
@@ -177,8 +222,18 @@ public:
 private:
     // Scrubbing and range-selecting are not here: the ruler's whole gesture
     // lives in ruler::Gesture, which the playlist and the channel rack share.
-    enum class Gesture { none, moving, resizing, selecting, velocity, auditioning, erasing,
-                         painting, slicing };
+    enum class Gesture
+    {
+        none,
+        moving,
+        resizing,
+        selecting,
+        velocity,
+        auditioning,
+        erasing,
+        painting,
+        slicing
+    };
 
     void timerCallback() override;
     void valueTreePropertyChanged (juce::ValueTree&, const juce::Identifier&) override;
@@ -294,10 +349,10 @@ private:
     static_assert (eraseStridePx < tokens::size::pianoRowMin,
                    "an erase sweep must sample more often than once a row");
 
-    static constexpr int lowestPitch     = 12;   ///< C0
-    static constexpr int highestPitch    = 108;  ///< C8
-    static constexpr int numRows         = highestPitch - lowestPitch + 1;
-    static constexpr int velocityHeight  = 62;
+    static constexpr int lowestPitch = 12;   ///< C0
+    static constexpr int highestPitch = 108; ///< C8
+    static constexpr int numRows = highestPitch - lowestPitch + 1;
+    static constexpr int velocityHeight = 62;
 
     /** Space above and below a velocity bar. Shared by painting and hit-testing
         so the two cannot drift apart again.

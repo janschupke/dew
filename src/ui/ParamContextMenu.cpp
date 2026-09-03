@@ -102,7 +102,9 @@ void show (juce::Component& control, const Context& context)
                         });
 }
 
-Trigger::Trigger (juce::Component& c, Context ctx) : control (c), context (std::move (ctx))
+Trigger::Trigger (juce::Component& c, Context ctx)
+    : control (c)
+    , context (std::move (ctx))
 {
     control.addMouseListener (this, false);
 }

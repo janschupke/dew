@@ -29,8 +29,7 @@ class ScoreEditorComponent;
     it scrolls, so this watches the top line on a timer. That is the same idiom
     the meters and the scope already use, and it is why the rate is a token.
 */
-class DiagnosticsOverlay : public juce::Component,
-                           private juce::Timer
+class DiagnosticsOverlay : public juce::Component, private juce::Timer
 {
 public:
     explicit DiagnosticsOverlay (ScoreEditorComponent&);
@@ -123,15 +122,24 @@ public:
     /** Lex, parse, resolve. Called on the debounce; safe to call by hand. */
     void checkNow();
 
-    const std::vector<lang::Diagnostic>& getDiagnostics() const { return diagnostics; }
+    const std::vector<lang::Diagnostic>& getDiagnostics() const
+    {
+        return diagnostics;
+    }
 
     /** How many times the text has been checked. A test types ten characters,
         advances the clock once, and asserts this went up by one.
     */
-    int getCheckCount() const { return checkCount; }
+    int getCheckCount() const
+    {
+        return checkCount;
+    }
 
     /** True while an edit is waiting for typing to stop. */
-    bool isCheckPending() const { return isTimerRunning(); }
+    bool isCheckPending() const
+    {
+        return isTimerRunning();
+    }
 
     /** Fires the pending check now, as if typing had paused.
 
@@ -142,8 +150,14 @@ public:
     */
     void flushPendingCheck();
 
-    juce::CodeDocument& getSourceDocument() { return source; }
-    juce::CodeEditorComponent& getEditor() { return editor; }
+    juce::CodeDocument& getSourceDocument()
+    {
+        return source;
+    }
+    juce::CodeEditorComponent& getEditor()
+    {
+        return editor;
+    }
 
     /** Puts the caret on a diagnostic and scrolls it into view. */
     void showDiagnostic (int index);
@@ -182,7 +196,10 @@ public:
 
     bool isCompletionVisible() const;
 
-    ScoreCompletionList& getCompletionList() { return completions; }
+    ScoreCompletionList& getCompletionList()
+    {
+        return completions;
+    }
 
     // --- text size -----------------------------------------------------------
     /** Which rung of the code scale the editor draws at.
@@ -196,7 +213,10 @@ public:
         design-system fact and dew_app cannot see dew_design.
     */
     void setFontStep (int);
-    int getFontStep() const noexcept { return fontStep; }
+    int getFontStep() const noexcept
+    {
+        return fontStep;
+    }
 
     static int numFontSteps() noexcept;
     static int defaultFontStep() noexcept;
@@ -235,7 +255,6 @@ private:
     void paintListBoxItem (int row, juce::Graphics&, int width, int height, bool selected) override;
     void listBoxItemClicked (int row, const juce::MouseEvent&) override;
 
-
     /** Writes the text into the project. One transaction per typing run. */
     void storeSource();
 
@@ -263,7 +282,7 @@ private:
     juce::String mirrored;
 
     int checkCount = 0;
-    int fontStep = 0;   ///< seeded by applyFontStep in the constructor
+    int fontStep = 0; ///< seeded by applyFontStep in the constructor
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (ScoreEditorComponent)
 };

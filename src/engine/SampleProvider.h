@@ -36,7 +36,7 @@ struct SampleProvider
         provider's job: a ValueTree does not know where its own file is.
     */
     virtual std::shared_ptr<const juce::AudioBuffer<float>>
-        audioFor (const juce::String& storedPath, double& sourceSampleRate) = 0;
+    audioFor (const juce::String& storedPath, double& sourceSampleRate) = 0;
 };
 
 } // namespace dew

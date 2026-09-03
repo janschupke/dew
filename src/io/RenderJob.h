@@ -23,8 +23,7 @@ namespace dew
     callAsync, no cross-thread call into a Component, and no question about what
     is alive when the answer arrives.
 */
-class RenderJob : private juce::Thread,
-                  private juce::Timer
+class RenderJob : private juce::Thread, private juce::Timer
 {
 public:
     struct Request

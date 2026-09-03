@@ -16,19 +16,27 @@ namespace dew
 
     All edits must go through getUndoManager() so undo/redo covers everything.
 */
-class ProjectDocument : public juce::FileBasedDocument,
-                        private juce::ValueTree::Listener
+class ProjectDocument : public juce::FileBasedDocument, private juce::ValueTree::Listener
 {
 public:
     ProjectDocument();
     ~ProjectDocument() override;
 
     static constexpr const char* fileExtension = ".dew";
-    static constexpr const char* fileWildcard  = "*.dew";
+    static constexpr const char* fileWildcard = "*.dew";
 
-    juce::ValueTree& getState()             { return state; }
-    const juce::ValueTree& getState() const { return state; }
-    juce::UndoManager& getUndoManager()     { return undoManager; }
+    juce::ValueTree& getState()
+    {
+        return state;
+    }
+    const juce::ValueTree& getState() const
+    {
+        return state;
+    }
+    juce::UndoManager& getUndoManager()
+    {
+        return undoManager;
+    }
 
     /** Replaces the whole document. Used by File > New and by loading. Clears
         undo history, because undoing across a document swap is meaningless.
@@ -38,7 +46,10 @@ public:
     /** Warnings from the most recent load: unknown keys, wrong types, and other
         recoverable problems. Empty after a clean load.
     */
-    const juce::StringArray& getLastLoadWarnings() const { return lastLoadWarnings; }
+    const juce::StringArray& getLastLoadWarnings() const
+    {
+        return lastLoadWarnings;
+    }
 
     /** Fired whenever the project changes in a way the engine must see. */
     std::function<void()> onProjectChanged;

@@ -30,10 +30,10 @@ juce::Path iconForType (EffectType type)
     {
         case EffectType::filter: return icons::effectFilter();
         case EffectType::reverb: return icons::effectReverb();
-        case EffectType::delay:  return icons::effectDelay();
-        case EffectType::drive:  return icons::effectDrive();
+        case EffectType::delay: return icons::effectDelay();
+        case EffectType::drive: return icons::effectDrive();
         case EffectType::chorus: return icons::effectChorus();
-        case EffectType::eq:     return icons::effectEq();
+        case EffectType::eq: return icons::effectEq();
     }
 
     jassertfalse;
@@ -53,7 +53,7 @@ constexpr int dropMargin = space::xl;
 class EffectChainComponent::Card : public juce::Component
 {
 public:
-    static constexpr int columns = 3;            ///< down a column
+    static constexpr int columns = 3; ///< down a column
     static constexpr int numberFieldHeight = 40;
     static constexpr int captionHeight = 12;
 
@@ -61,7 +61,7 @@ public:
     // is not easier to drag, only emptier. 88 is what the gallery gives a knob
     // (72 wide) and a number field (86) with room for the cell inset.
     static constexpr int paramColumnWidth = 88;
-    static constexpr int modeColumnWidth = 120;  ///< fits "Low pass" and the chevron
+    static constexpr int modeColumnWidth = 120; ///< fits "Low pass" and the chevron
     /** What the header packs: grip, bypass, icon, name, preset, reorder,
         remove and - vertically - the expand chevron. */
     static constexpr int cardMinWidth = 276 + size::minTouchTarget;
@@ -70,7 +70,11 @@ public:
     static constexpr int cardHeight = size::rowHeight + tokens::size::knobRow + space::sm;
 
     Card (EffectChainComponent& o, ProjectDocument& d, EditorState& s, juce::ValueTree e, int i)
-        : owner (o), document (d), editorState (s), effect (std::move (e)), index (i)
+        : owner (o)
+        , document (d)
+        , editorState (s)
+        , effect (std::move (e))
+        , index (i)
     {
         // A card for an effect the catalog does not know cannot be built, and
         // the snapshot builder has already warned about it by the time we are
@@ -115,8 +119,14 @@ public:
         forwardChildMouseEventsTo (*this);
     }
 
-    int getEffectId() const { return (int) effect[ids::id]; }
-    bool isExpanded() const { return editorState.isEffectExpanded (getEffectId()); }
+    int getEffectId() const
+    {
+        return (int) effect[ids::id];
+    }
+    bool isExpanded() const
+    {
+        return editorState.isEffectExpanded (getEffectId());
+    }
 
     void setSelected (bool shouldBeSelected)
     {
@@ -154,8 +164,7 @@ public:
     {
         const auto mode = modeBox != nullptr ? modeColumnWidth : 0;
 
-        return juce::jmax (cardMinWidth,
-                           columnCount() * paramColumnWidth + mode + 2 * space::sm);
+        return juce::jmax (cardMinWidth, columnCount() * paramColumnWidth + mode + 2 * space::sm);
     }
 
     void refreshValues()
@@ -214,8 +223,7 @@ public:
         const auto local = event.getEventRelativeTo (this).getPosition();
 
         const auto wasGrip = draggingFromGrip;
-        const auto shouldToggle = ! owner.isHorizontal() && ! wasGrip
-                                  && local.y < size::rowHeight
+        const auto shouldToggle = ! owner.isHorizontal() && ! wasGrip && local.y < size::rowHeight
                                   && ! gesture::passedThreshold (pressedAt, local);
 
         draggingFromGrip = false;
@@ -239,8 +247,14 @@ public:
                                  : juce::MouseCursor::NormalCursor);
     }
 
-    void mouseEnter (const juce::MouseEvent&) override { hover.enter(); }
-    void mouseExit (const juce::MouseEvent&) override  { hover.exit(); }
+    void mouseEnter (const juce::MouseEvent&) override
+    {
+        hover.enter();
+    }
+    void mouseExit (const juce::MouseEvent&) override
+    {
+        hover.exit();
+    }
 
     void paint (juce::Graphics& g) override
     {
@@ -261,8 +275,7 @@ public:
             g.fillRect (header.withTop (header.getBottom() - radius::md));
 
         g.setColour (selected ? colour::accent : colour::outline);
-        g.drawRoundedRectangle (body, radius::md,
-                                selected ? stroke::regular : stroke::hairline);
+        g.drawRoundedRectangle (body, radius::md, selected ? stroke::regular : stroke::hairline);
 
         const auto bypassed = ! (bool) effect[ids::enabled];
         const auto textColour = bypassed ? colour::textDisabled : colour::textPrimary;
@@ -272,8 +285,8 @@ public:
 
         g.setColour (textColour);
         g.setFont (type::font (type::body));
-        g.drawText (effectTypeDisplayName (type), nameBounds,
-                    juce::Justification::centredLeft, false);
+        g.drawText (effectTypeDisplayName (type), nameBounds, juce::Justification::centredLeft,
+                    false);
 
         if (bypassed)
         {
@@ -312,8 +325,8 @@ public:
                                     .reduced (space::xxs, 0);
 
                     modeCaptionBounds = cell.removeFromTop (captionHeight);
-                    modeBox->setBounds (cell.withSizeKeepingCentre (cell.getWidth(),
-                                                                    size::controlHeight));
+                    modeBox->setBounds (
+                        cell.withSizeKeepingCentre (cell.getWidth(), size::controlHeight));
                 }
                 else
                 {
@@ -330,7 +343,10 @@ private:
     /** Whether the parameters are showing. Folding is a column behaviour; in a
         row every card is open, so there is nothing for the chevron to do.
     */
-    bool showsParameters() const { return owner.isHorizontal() || isExpanded(); }
+    bool showsParameters() const
+    {
+        return owner.isHorizontal() || isExpanded();
+    }
 
     /** Three to a row down a column, everything on one row across a band.
 
@@ -392,14 +408,16 @@ private:
 
         for (int i = 0; i < params.size(); i += columnsHere)
         {
-            auto row = visible ? area.removeFromTop (tokens::size::knobRow) : juce::Rectangle<int>();
+            auto row = visible ? area.removeFromTop (tokens::size::knobRow)
+                               : juce::Rectangle<int>();
             const auto width = juce::jmax (1, row.getWidth() / columnsHere);
 
             for (int c = 0; c < columnsHere && i + c < params.size(); ++c)
             {
                 auto* control = params[i + c];
-                auto* component = control->knob != nullptr ? (juce::Component*) control->knob.get()
-                                                           : (juce::Component*) control->field.get();
+                auto* component = control->knob != nullptr
+                                      ? (juce::Component*) control->knob.get()
+                                      : (juce::Component*) control->field.get();
                 component->setVisible (visible);
 
                 if (! visible)
@@ -445,8 +463,9 @@ private:
             modeBox->addItem ("Band pass", 3);
 
             const auto mode = filterModeFromString (effect[ids::filterMode].toString());
-            modeBox->setSelectedId (mode == FilterMode::lowpass ? 1
-                                    : mode == FilterMode::highpass ? 2 : 3,
+            modeBox->setSelectedId (mode == FilterMode::lowpass    ? 1
+                                    : mode == FilterMode::highpass ? 2
+                                                                   : 3,
                                     juce::dontSendNotification);
 
             modeBox->onChange = [this]
@@ -455,8 +474,9 @@ private:
                     return;
 
                 ProjectEdits::setProperty (effect, ids::filterMode,
-                                           modeBox->getSelectedId() == 2 ? "highpass"
-                                           : modeBox->getSelectedId() == 3 ? "bandpass" : "lowpass",
+                                           modeBox->getSelectedId() == 2   ? "highpass"
+                                           : modeBox->getSelectedId() == 3 ? "bandpass"
+                                                                           : "lowpass",
                                            &document.getUndoManager(), "Change filter mode");
             };
 
@@ -481,21 +501,29 @@ private:
 
             if (spec.control == ParamControl::knob)
             {
-                control->knob = std::make_unique<DewKnob> (spec.caption, spec.minimum,
-                                                           spec.maximum, spec.interval);
+                control->knob = std::make_unique<DewKnob> (spec.caption, spec.minimum, spec.maximum,
+                                                           spec.interval);
                 control->knob->setNumDecimalPlaces (spec.decimals);
                 control->knob->setBipolar (spec.bipolar);
                 control->knob->setValue (value, juce::dontSendNotification);
 
                 auto* knob = control->knob.get();
-                knob->onEditStart = [this] { inDrag = true; gestureActive = false; };
-                knob->onEditEnd = [this] { inDrag = false; gestureActive = false; };
-                knob->onValueChange = [this, knob, property] { write (property, knob->getValue()); };
+                knob->onEditStart = [this]
+                {
+                    inDrag = true;
+                    gestureActive = false;
+                };
+                knob->onEditEnd = [this]
+                {
+                    inDrag = false;
+                    gestureActive = false;
+                };
+                knob->onValueChange = [this, knob, property]
+                { write (property, knob->getValue()); };
 
                 // Built from the same spec that built the knob, so what the
                 // menu offers to automate is exactly what the knob turns.
-                paramMenu::attachTo (owner.paramMenuHost, *knob,
-                                     [this] { return effect; }, spec);
+                paramMenu::attachTo (owner.paramMenuHost, *knob, [this] { return effect; }, spec);
 
                 addAndMakeVisible (*knob);
             }
@@ -513,11 +541,15 @@ private:
                 // A number field has no edit-end, so its drag is bounded by the
                 // start of the next one - which is enough: a new gesture opens
                 // its own transaction either way.
-                field->onEditStart = [this] { inDrag = true; gestureActive = false; };
-                field->onValueChange = [this, field, property] { write (property, field->getValue()); };
+                field->onEditStart = [this]
+                {
+                    inDrag = true;
+                    gestureActive = false;
+                };
+                field->onValueChange = [this, field, property]
+                { write (property, field->getValue()); };
 
-                paramMenu::attachTo (owner.paramMenuHost, *field,
-                                     [this] { return effect; }, spec);
+                paramMenu::attachTo (owner.paramMenuHost, *field, [this] { return effect; }, spec);
 
                 addAndMakeVisible (*field);
             }
@@ -559,7 +591,8 @@ private:
 // -----------------------------------------------------------------------------
 
 EffectChainComponent::EffectChainComponent (ProjectDocument& d, EditorState& s)
-    : document (d), editorState (s)
+    : document (d)
+    , editorState (s)
 {
     setComponentID ("effectChain");
 
@@ -849,8 +882,7 @@ int EffectChainComponent::getRequiredWidth() const
 int EffectChainComponent::slotAtPosition (juce::Point<int> position) const
 {
     for (int i = 0; i < cards.size(); ++i)
-        if (isHorizontal() ? position.x < cards[i]->getRight()
-                           : position.y < cards[i]->getBottom())
+        if (isHorizontal() ? position.x < cards[i]->getRight() : position.y < cards[i]->getBottom())
             return i;
 
     return juce::jmax (0, cards.size() - 1);
@@ -960,7 +992,7 @@ void EffectChainComponent::applyCardPositions()
         auto* card = cards[i];
 
         if (i == reorder.source && reorder.active)
-            continue;   // it is under the cursor, not in the row
+            continue; // it is under the cursor, not in the row
 
         const auto along = juce::roundToInt (slide[i]->get());
 
@@ -1131,7 +1163,8 @@ void EffectChainComponent::valueTreeChildAdded (juce::ValueTree& parent, juce::V
         rebuild();
 }
 
-void EffectChainComponent::valueTreeChildRemoved (juce::ValueTree& parent, juce::ValueTree& child, int)
+void EffectChainComponent::valueTreeChildRemoved (juce::ValueTree& parent, juce::ValueTree& child,
+                                                  int)
 {
     if (parent == chainOwner || child.hasType (ids::EFFECT))
         rebuild();

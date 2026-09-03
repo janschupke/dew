@@ -21,32 +21,32 @@ namespace
 */
 struct RenderSpan
 {
-    juce::int64 firstSample = 0;    ///< first sample kept
-    juce::int64 totalSamples = 0;   ///< samples rendered, counted from zero
+    juce::int64 firstSample = 0;  ///< first sample kept
+    juce::int64 totalSamples = 0; ///< samples rendered, counted from zero
     juce::int64 stopAfterSamples = 0;
-    juce::int64 numKept() const noexcept { return juce::jmax ((juce::int64) 0, totalSamples - firstSample); }
+    juce::int64 numKept() const noexcept
+    {
+        return juce::jmax ((juce::int64) 0, totalSamples - firstSample);
+    }
 };
 
-juce::Result planSpan (const EngineSnapshot& snapshot,
-                       const RenderOptions& options,
-                       int patternIndex,
-                       RenderSpan& span)
+juce::Result planSpan (const EngineSnapshot& snapshot, const RenderOptions& options,
+                       int patternIndex, RenderSpan& span)
 {
-    const auto materialSteps = Sequencer::materialLengthSteps (snapshot, options.mode, patternIndex);
+    const auto materialSteps = Sequencer::materialLengthSteps (snapshot, options.mode,
+                                                               patternIndex);
 
     if (materialSteps <= 0)
-        return juce::Result::fail (
-            options.mode == Transport::Mode::song
-                ? "This project has nothing in its playlist to render."
-                : "Pattern " + juce::String (options.patternId) + " is empty or does not exist.");
+        return juce::Result::fail (options.mode == Transport::Mode::song
+                                       ? "This project has nothing in its playlist to render."
+                                       : "Pattern " + juce::String (options.patternId)
+                                             + " is empty or does not exist.");
 
     // Through the snapshot's own map, which is why the map lives there: this
     // function builds no snapshot of its own and needs no RenderOptions field to
     // reach it. Without a tempo curve the map is the same multiply this was.
     const auto samplesAt = [&snapshot, &options] (double steps)
-    {
-        return snapshot.tempoMap->secondsForSteps (steps) * options.sampleRate;
-    };
+    { return snapshot.tempoMap->secondsForSteps (steps) * options.sampleRate; };
 
     const auto materialSamples = (juce::int64) std::llround (samplesAt ((double) materialSteps));
     const auto tailSamples = (juce::int64) std::llround (options.tailSeconds * options.sampleRate);
@@ -57,8 +57,10 @@ juce::Result planSpan (const EngineSnapshot& snapshot,
         // not depend on how long the material happens to be.
         const auto stepsPerBar = (double) snapshot.stepsPerBar();
 
-        span.firstSample = (juce::int64) std::llround (samplesAt ((double) options.barRange.firstBar * stepsPerBar));
-        const auto lastSample = (juce::int64) std::llround (samplesAt ((double) options.barRange.lastBar * stepsPerBar));
+        span.firstSample = (juce::int64) std::llround (
+            samplesAt ((double) options.barRange.firstBar * stepsPerBar));
+        const auto lastSample = (juce::int64) std::llround (
+            samplesAt ((double) options.barRange.lastBar * stepsPerBar));
 
         span.totalSamples = lastSample + tailSamples;
 
@@ -98,13 +100,9 @@ juce::Result planSpan (const EngineSnapshot& snapshot,
     `progressFrom`/`progressTo` are this pass's slice of the whole job, so N
     stems report one continuous 0..1 rather than N sawtooths.
 */
-RenderReport renderSnapshot (EngineSnapshot snapshot,
-                             AudioEngine& engine,
-                             juce::AudioBuffer<float>& destination,
-                             const RenderOptions& options,
-                             RenderProgress* progress,
-                             double progressFrom,
-                             double progressTo)
+RenderReport renderSnapshot (EngineSnapshot snapshot, AudioEngine& engine,
+                             juce::AudioBuffer<float>& destination, const RenderOptions& options,
+                             RenderProgress* progress, double progressFrom, double progressTo)
 {
     RenderReport report;
 
@@ -165,12 +163,8 @@ RenderReport renderSnapshot (EngineSnapshot snapshot,
 
         if (keepTo > keepFrom)
             for (int channel = 0; channel < 2; ++channel)
-                destination.copyFrom (channel,
-                                      (int) (keepFrom - span.firstSample),
-                                      view,
-                                      channel,
-                                      (int) (keepFrom - position),
-                                      (int) (keepTo - keepFrom));
+                destination.copyFrom (channel, (int) (keepFrom - span.firstSample), view, channel,
+                                      (int) (keepFrom - position), (int) (keepTo - keepFrom));
 
         position += thisBlock;
     }
@@ -184,13 +178,12 @@ RenderReport renderSnapshot (EngineSnapshot snapshot,
     // the target, so the peak has to be measured on the buffer that will be
     // written. The other order leaves a file quieter than asked for whenever the
     // peak sits inside a fade.
-    RenderPost::applyFades (destination, options.sampleRate,
-                            options.fadeInSeconds, options.fadeOutSeconds);
+    RenderPost::applyFades (destination, options.sampleRate, options.fadeInSeconds,
+                            options.fadeOutSeconds);
 
     if (options.normalize)
-        report.normalizationGainDb =
-            RenderPost::normalize (destination,
-                                   juce::Decibels::decibelsToGain (options.normalizePeakDb));
+        report.normalizationGainDb = RenderPost::normalize (
+            destination, juce::Decibels::decibelsToGain (options.normalizePeakDb));
 
     // Measured after post-processing, so the numbers the UI and dew_render print
     // are the numbers in the file. Dither is not applied here - it belongs to the
@@ -198,8 +191,8 @@ RenderReport renderSnapshot (EngineSnapshot snapshot,
     report.numSamples = kept;
     report.seconds = (double) kept / options.sampleRate;
     report.peak = destination.getMagnitude (0, kept);
-    report.rms = 0.5f * (destination.getRMSLevel (0, 0, kept)
-                         + destination.getRMSLevel (1, 0, kept));
+    report.rms = 0.5f
+                 * (destination.getRMSLevel (0, 0, kept) + destination.getRMSLevel (1, 0, kept));
 
     return report;
 }
@@ -213,30 +206,26 @@ std::unique_ptr<juce::AudioFormat> audioFormatFor (const RenderOptions& options)
 {
     switch (options.format)
     {
-        case RenderFormat::wav:
-            return std::make_unique<juce::WavAudioFormat>();
+        case RenderFormat::wav: return std::make_unique<juce::WavAudioFormat>();
 
-        case RenderFormat::flac:
-            return std::make_unique<juce::FlacAudioFormat>();
+        case RenderFormat::flac: return std::make_unique<juce::FlacAudioFormat>();
 
         case RenderFormat::mp3:
         {
-           #if JUCE_USE_LAME_AUDIO_FORMAT
-            const auto lame = options.lameExecutable != juce::File()
-                                ? options.lameExecutable
-                                : OfflineRenderer::findLame();
+#if JUCE_USE_LAME_AUDIO_FORMAT
+            const auto lame = options.lameExecutable != juce::File() ? options.lameExecutable
+                                                                     : OfflineRenderer::findLame();
 
             if (! lame.existsAsFile())
                 return {};
 
             return std::make_unique<juce::LAMEEncoderAudioFormat> (lame);
-           #else
+#else
             return {};
-           #endif
+#endif
         }
 
-        case RenderFormat::midi:
-            break;
+        case RenderFormat::midi: break;
     }
 
     return {};
@@ -254,16 +243,14 @@ juce::Result validateForFormat (const RenderOptions& options)
     if (options.format == RenderFormat::mp3)
     {
         if (! OfflineRenderer::isAvailable (RenderFormat::mp3))
-            return juce::Result::fail (
-                "MP3 export needs the lame encoder, which was not found. "
-                "Install it with `brew install lame`.");
+            return juce::Result::fail ("MP3 export needs the lame encoder, which was not found. "
+                                       "Install it with `brew install lame`.");
 
         const auto rate = (int) std::llround (options.sampleRate);
 
         if (rate != 32000 && rate != 44100 && rate != 48000)
-            return juce::Result::fail (
-                "MP3 supports 32000, 44100 or 48000 Hz. This render is at "
-                + juce::String (rate) + " Hz.");
+            return juce::Result::fail ("MP3 supports 32000, 44100 or 48000 Hz. This render is at "
+                                       + juce::String (rate) + " Hz.");
     }
 
     if (options.format == RenderFormat::wav || options.format == RenderFormat::flac)
@@ -287,12 +274,9 @@ juce::AudioFormatWriterOptions writerOptionsFor (const RenderOptions& options)
     if (options.format == RenderFormat::mp3)
     {
         // 16 is the only depth lame's wrapper accepts, whatever was asked for.
-        return writerOptions
-                   .withBitsPerSample (16)
-                   .withQualityOptionIndex (
-                       juce::jlimit (0,
-                                     juce::jmax (0, OfflineRenderer::mp3QualityOptions().size() - 1),
-                                     options.mp3QualityIndex));
+        return writerOptions.withBitsPerSample (16).withQualityOptionIndex (
+            juce::jlimit (0, juce::jmax (0, OfflineRenderer::mp3QualityOptions().size() - 1),
+                          options.mp3QualityIndex));
     }
 
     writerOptions = writerOptions.withBitsPerSample (options.bitDepth);
@@ -324,8 +308,7 @@ juce::StringArray mixerTrackNames (const juce::ValueTree& project)
     Shared by renderToFile and every stem, so the temporary-file swap, the
     format switch and the MP3 destructor rule exist in exactly one place.
 */
-juce::Result writeAudio (juce::AudioBuffer<float>& buffer,
-                         const juce::File& destination,
+juce::Result writeAudio (juce::AudioBuffer<float>& buffer, const juce::File& destination,
                          const RenderOptions& options)
 {
     // Dither belongs to the destination's LSB, so it happens here rather than in
@@ -343,7 +326,8 @@ juce::Result writeAudio (juce::AudioBuffer<float>& buffer,
     juce::TemporaryFile temp (destination);
 
     {
-        auto fileStream = std::unique_ptr<juce::FileOutputStream> (temp.getFile().createOutputStream());
+        auto fileStream = std::unique_ptr<juce::FileOutputStream> (
+            temp.getFile().createOutputStream());
 
         if (fileStream == nullptr || ! fileStream->openedOk())
             return juce::Result::fail ("Could not create " + destination.getFullPathName());
@@ -359,9 +343,10 @@ juce::Result writeAudio (juce::AudioBuffer<float>& buffer,
         auto writer = format->createWriterFor (outputStream, writerOptionsFor (options));
 
         if (writer == nullptr)
-            return juce::Result::fail ("Could not create a " + OfflineRenderer::nameFor (options.format)
-                                       + " writer at " + juce::String (options.bitDepth)
-                                       + "-bit / " + juce::String (options.sampleRate, 0) + " Hz.");
+            return juce::Result::fail ("Could not create a "
+                                       + OfflineRenderer::nameFor (options.format) + " writer at "
+                                       + juce::String (options.bitDepth) + "-bit / "
+                                       + juce::String (options.sampleRate, 0) + " Hz.");
 
         if (! writer->writeFromAudioSampleBuffer (buffer, 0, buffer.getNumSamples()))
             return juce::Result::fail ("Could not write audio to " + destination.getFullPathName());
@@ -388,9 +373,9 @@ juce::String OfflineRenderer::extensionFor (RenderFormat format) noexcept
 {
     switch (format)
     {
-        case RenderFormat::wav:  return ".wav";
+        case RenderFormat::wav: return ".wav";
         case RenderFormat::flac: return ".flac";
-        case RenderFormat::mp3:  return ".mp3";
+        case RenderFormat::mp3: return ".mp3";
         case RenderFormat::midi: return ".mid";
     }
 
@@ -401,9 +386,9 @@ juce::String OfflineRenderer::nameFor (RenderFormat format) noexcept
 {
     switch (format)
     {
-        case RenderFormat::wav:  return "WAV";
+        case RenderFormat::wav: return "WAV";
         case RenderFormat::flac: return "FLAC";
-        case RenderFormat::mp3:  return "MP3";
+        case RenderFormat::mp3: return "MP3";
         case RenderFormat::midi: return "MIDI";
     }
 
@@ -412,12 +397,12 @@ juce::String OfflineRenderer::nameFor (RenderFormat format) noexcept
 
 juce::StringArray OfflineRenderer::mp3QualityOptions()
 {
-   #if JUCE_USE_LAME_AUDIO_FORMAT
+#if JUCE_USE_LAME_AUDIO_FORMAT
     const auto lame = findLame();
 
     if (lame.existsAsFile())
         return juce::LAMEEncoderAudioFormat (lame).getQualityOptions();
-   #endif
+#endif
 
     return {};
 }
@@ -443,9 +428,8 @@ juce::File OfflineRenderer::findLame()
 
         // A GUI app launched from Finder does not inherit a shell's PATH, so the
         // usual Homebrew locations have to be named.
-        for (const auto* fallback : { "/opt/homebrew/bin/lame",
-                                      "/usr/local/bin/lame",
-                                      "/usr/bin/lame" })
+        for (const auto* fallback :
+             { "/opt/homebrew/bin/lame", "/usr/local/bin/lame", "/usr/bin/lame" })
             if (juce::File file { fallback }; file.existsAsFile())
                 return file;
 
@@ -460,11 +444,11 @@ bool OfflineRenderer::isAvailable (RenderFormat format)
     if (format != RenderFormat::mp3)
         return true;
 
-   #if JUCE_USE_LAME_AUDIO_FORMAT
+#if JUCE_USE_LAME_AUDIO_FORMAT
     return findLame().existsAsFile();
-   #else
+#else
     return false;
-   #endif
+#endif
 }
 
 RenderReport OfflineRenderer::renderToBuffer (const juce::ValueTree& project,
@@ -476,8 +460,8 @@ RenderReport OfflineRenderer::renderToBuffer (const juce::ValueTree& project,
     auto snapshot = buildSnapshot (project, &warnings, options.samplePool);
 
     AudioEngine engine;
-    auto report = renderSnapshot (std::move (snapshot), engine, destination, options,
-                                  progress, 0.0, 1.0);
+    auto report = renderSnapshot (std::move (snapshot), engine, destination, options, progress, 0.0,
+                                  1.0);
 
     report.warnings.addArray (warnings);
     return report;
@@ -485,8 +469,7 @@ RenderReport OfflineRenderer::renderToBuffer (const juce::ValueTree& project,
 
 RenderReport OfflineRenderer::renderToFile (const juce::ValueTree& project,
                                             const juce::File& destination,
-                                            const RenderOptions& options,
-                                            RenderProgress* progress)
+                                            const RenderOptions& options, RenderProgress* progress)
 {
     RenderReport report;
 
@@ -527,10 +510,8 @@ RenderReport OfflineRenderer::renderToFile (const juce::ValueTree& project,
     return report;
 }
 
-RenderReport OfflineRenderer::renderStems (const juce::ValueTree& project,
-                                           const juce::File& folder,
-                                           const RenderOptions& options,
-                                           RenderProgress* progress)
+RenderReport OfflineRenderer::renderStems (const juce::ValueTree& project, const juce::File& folder,
+                                           const RenderOptions& options, RenderProgress* progress)
 {
     RenderReport report;
 
@@ -588,7 +569,8 @@ RenderReport OfflineRenderer::renderStems (const juce::ValueTree& project,
                 return report;
             }
 
-            progress->setStage ("Stem " + juce::String (track + 1) + " of " + juce::String (numTracks));
+            progress->setStage ("Stem " + juce::String (track + 1) + " of "
+                                + juce::String (numTracks));
         }
 
         auto stem = base;
@@ -620,9 +602,10 @@ RenderReport OfflineRenderer::renderStems (const juce::ValueTree& project,
             return report;
         }
 
-        const auto name = juce::isPositiveAndBelow (track, names.size()) && names[track].isNotEmpty()
-                            ? names[track]
-                            : "Track " + juce::String (track + 1);
+        const auto name = juce::isPositiveAndBelow (track, names.size())
+                                  && names[track].isNotEmpty()
+                              ? names[track]
+                              : "Track " + juce::String (track + 1);
 
         if (options.skipSilentStems && pass.peak <= 0.0f)
         {
@@ -633,8 +616,8 @@ RenderReport OfflineRenderer::renderStems (const juce::ValueTree& project,
         // The index keeps the mixer's order, and disambiguates two inserts that
         // happen to have been given the same name.
         const auto fileName = juce::File::createLegalFileName (
-            juce::String (track + 1).paddedLeft ('0', 2) + " " + name)
-            + extensionFor (options.format);
+                                  juce::String (track + 1).paddedLeft ('0', 2) + " " + name)
+                              + extensionFor (options.format);
 
         const auto destination = folder.getChildFile (fileName);
 
@@ -655,9 +638,10 @@ RenderReport OfflineRenderer::renderStems (const juce::ValueTree& project,
     }
 
     if (! silent.isEmpty())
-        report.warnings.add ("Nothing was routed to " + silent.joinIntoString (", ")
-                             + ", so no file was written for "
-                             + (silent.size() == 1 ? juce::String ("it.") : juce::String ("them.")));
+        report.warnings.add (
+            "Nothing was routed to " + silent.joinIntoString (", ")
+            + ", so no file was written for "
+            + (silent.size() == 1 ? juce::String ("it.") : juce::String ("them.")));
 
     if (report.files.isEmpty())
         report.result = juce::Result::fail ("Every stem was silent, so nothing was written.");

@@ -64,11 +64,11 @@ TEST_CASE ("zoom stops at its limits without moving the view", "[timeline]")
 TEST_CASE ("the view cannot scroll past the material, in either direction", "[timeline]")
 {
     TimelineView view;
-    view.pixelsPerStep = 10.0;          // 40 steps visible in 400px
+    view.pixelsPerStep = 10.0; // 40 steps visible in 400px
     view.scrollOffsetSteps = 500.0;
 
     view.clampScroll (400.0f, 64);
-    REQUIRE_THAT (view.scrollOffsetSteps, WithinAbs (24.0, 1e-9));   // 64 - 40
+    REQUIRE_THAT (view.scrollOffsetSteps, WithinAbs (24.0, 1e-9)); // 64 - 40
 
     view.scrollOffsetSteps = -12.0;
     view.clampScroll (400.0f, 64);
@@ -83,7 +83,7 @@ TEST_CASE ("the view cannot scroll past the material, in either direction", "[ti
 TEST_CASE ("following the playhead scrolls the least it can", "[timeline]")
 {
     TimelineView view;
-    view.pixelsPerStep = 10.0;          // 40 steps visible in 400px
+    view.pixelsPerStep = 10.0; // 40 steps visible in 400px
     view.scrollOffsetSteps = 0.0;
 
     // Already comfortably in view: do not move at all.
@@ -108,7 +108,7 @@ TEST_CASE ("painting only walks the steps that are on screen", "[timeline]")
     const auto range = view.visibleStepRange (400.0f, 256);
 
     REQUIRE (range.getStart() == 100);
-    REQUIRE (range.getEnd() <= 142);      // 40 visible plus a step of slack
+    REQUIRE (range.getEnd() <= 142); // 40 visible plus a step of slack
     REQUIRE (range.getEnd() >= 140);
 
     // A range longer than the material still stops at the material.

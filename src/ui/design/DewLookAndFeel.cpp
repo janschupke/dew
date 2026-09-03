@@ -132,13 +132,15 @@ juce::Rectangle<int> DewLookAndFeel::getTooltipBounds (const juce::String& tipTe
     const auto w = (int) (layout.getWidth() + 2.0f * tokens::space::md);
     const auto h = (int) (layout.getHeight() + 2.0f * tokens::space::xs);
 
-    return juce::Rectangle<int> (screenPos.x > parentArea.getCentreX() ? screenPos.x - (w + 12) : screenPos.x + 24,
-                                 screenPos.y > parentArea.getCentreY() ? screenPos.y - (h + 6)  : screenPos.y + 6,
-                                 w, h)
-             .constrainedWithin (parentArea);
+    return juce::Rectangle<int> (
+               screenPos.x > parentArea.getCentreX() ? screenPos.x - (w + 12) : screenPos.x + 24,
+               screenPos.y > parentArea.getCentreY() ? screenPos.y - (h + 6) : screenPos.y + 6, w,
+               h)
+        .constrainedWithin (parentArea);
 }
 
-void DewLookAndFeel::drawTooltip (juce::Graphics& g, const juce::String& text, int width, int height)
+void DewLookAndFeel::drawTooltip (juce::Graphics& g, const juce::String& text, int width,
+                                  int height)
 {
     using namespace tokens;
 
@@ -148,7 +150,8 @@ void DewLookAndFeel::drawTooltip (juce::Graphics& g, const juce::String& text, i
     g.fillRoundedRectangle (bounds, tokens::radius::sm);
 
     g.setColour (colour::outline);
-    g.drawRoundedRectangle (bounds.reduced (stroke::whisper), tokens::radius::sm, tokens::stroke::hairline);
+    g.drawRoundedRectangle (bounds.reduced (stroke::whisper), tokens::radius::sm,
+                            tokens::stroke::hairline);
 
     layOutTooltip (text, colour::textPrimary).draw (g, bounds);
 }
@@ -182,8 +185,8 @@ void DewLookAndFeel::drawRotarySlider (juce::Graphics& g, int x, int y, int widt
     const auto range = slider.getRange();
     const auto bipolar = range.getStart() < 0.0 && range.getEnd() > 0.0;
 
-    paint::rotary (g, juce::Rectangle<int> (x, y, width, height).toFloat(),
-                   sliderPos, slider.isEnabled(), bipolar);
+    paint::rotary (g, juce::Rectangle<int> (x, y, width, height).toFloat(), sliderPos,
+                   slider.isEnabled(), bipolar);
 }
 
 void DewLookAndFeel::drawButtonBackground (juce::Graphics& g, juce::Button& button,
@@ -208,8 +211,8 @@ void DewLookAndFeel::drawButtonBackground (juce::Graphics& g, juce::Button& butt
     g.drawRoundedRectangle (bounds, corner, tokens::stroke::hairline);
 }
 
-void DewLookAndFeel::drawTabButton (juce::TabBarButton& button, juce::Graphics& g,
-                                    bool isMouseOver, bool isMouseDown)
+void DewLookAndFeel::drawTabButton (juce::TabBarButton& button, juce::Graphics& g, bool isMouseOver,
+                                    bool isMouseDown)
 {
     using namespace tokens;
 
@@ -218,10 +221,10 @@ void DewLookAndFeel::drawTabButton (juce::TabBarButton& button, juce::Graphics& 
 
     // A tab reads as a surface that is either lifted (active), warmed (hover)
     // or flush (at rest) - the same three states every other row in dew uses.
-    g.setColour (active ? colour::surface
-                        : isMouseDown ? colour::surfaceHover
-                                      : isMouseOver ? colour::surfaceRaised
-                                                    : colour::background);
+    g.setColour (active        ? colour::surface
+                 : isMouseDown ? colour::surfaceHover
+                 : isMouseOver ? colour::surfaceRaised
+                               : colour::background);
     g.fillRect (area);
 
     if (active)
@@ -236,12 +239,12 @@ void DewLookAndFeel::drawTabButton (juce::TabBarButton& button, juce::Graphics& 
                             (float) area.getBottom() - 6.0f);
     }
 
-    g.setColour (active ? colour::textPrimary
-                        : isMouseOver ? colour::textPrimary.withAlpha (emphasis::strong)
-                                      : colour::textSecondary);
+    g.setColour (active        ? colour::textPrimary
+                 : isMouseOver ? colour::textPrimary.withAlpha (emphasis::strong)
+                               : colour::textSecondary);
     g.setFont (type::font (type::body, active));
-    g.drawText (button.getButtonText(), button.getLocalBounds(),
-                juce::Justification::centred, false);
+    g.drawText (button.getButtonText(), button.getLocalBounds(), juce::Justification::centred,
+                false);
 }
 
 int DewLookAndFeel::getTabButtonBestWidth (juce::TabBarButton& button, int)
@@ -253,7 +256,6 @@ int DewLookAndFeel::getTabButtonBestWidth (juce::TabBarButton& button, int)
 
     return juce::jmax (72, text + tokens::space::xl * 2);
 }
-
 
 void DewLookAndFeel::drawTabAreaBehindFrontButton (juce::TabbedButtonBar&, juce::Graphics& g,
                                                    int width, int height)
@@ -268,24 +270,25 @@ void DewLookAndFeel::drawTabAreaBehindFrontButton (juce::TabbedButtonBar&, juce:
 
 // --- combo boxes -------------------------------------------------------------
 
-void DewLookAndFeel::drawComboBox (juce::Graphics& g, int width, int height, bool isButtonDown,
-                                   int, int, int, int, juce::ComboBox& box)
+void DewLookAndFeel::drawComboBox (juce::Graphics& g, int width, int height, bool isButtonDown, int,
+                                   int, int, int, juce::ComboBox& box)
 {
     using namespace tokens;
 
-    const auto bounds = juce::Rectangle<int> (0, 0, width, height).toFloat().reduced (stroke::whisper);
+    const auto
+        bounds = juce::Rectangle<int> (0, 0, width, height).toFloat().reduced (stroke::whisper);
     const auto over = box.isMouseOver (true);
 
     // Painted like DewButton, because that is what it is standing next to.
     g.setColour (! box.isEnabled() ? colour::surface
-                                   : isButtonDown ? colour::surfaceHover
-                                                  : over ? colour::surfaceHover.withAlpha (emphasis::strong)
-                                                         : colour::surfaceRaised);
+                 : isButtonDown    ? colour::surfaceHover
+                 : over            ? colour::surfaceHover.withAlpha (emphasis::strong)
+                                   : colour::surfaceRaised);
     g.fillRoundedRectangle (bounds, radius::md);
 
     g.setColour (box.hasKeyboardFocus (false) ? colour::accent
-                                              : over ? colour::outline.brighter (emphasis::controlLift)
-                                                     : colour::outline);
+                 : over                       ? colour::outline.brighter (emphasis::controlLift)
+                                              : colour::outline);
     g.drawRoundedRectangle (bounds, radius::md, stroke::hairline);
 
     // The app's own chevron rather than JUCE's triangle.
@@ -299,8 +302,7 @@ void DewLookAndFeel::drawComboBox (juce::Graphics& g, int width, int height, boo
 void DewLookAndFeel::positionComboBoxText (juce::ComboBox& box, juce::Label& label)
 {
     // Room on the right for the chevron, and the same inset a DewButton uses.
-    label.setBounds (tokens::space::lg, 0,
-                     juce::jmax (0, box.getWidth() - tokens::space::lg - 30),
+    label.setBounds (tokens::space::lg, 0, juce::jmax (0, box.getWidth() - tokens::space::lg - 30),
                      box.getHeight());
     label.setFont (getComboBoxFont (box));
     label.setColour (juce::Label::textColourId,
@@ -315,7 +317,7 @@ juce::Font DewLookAndFeel::getComboBoxFont (juce::ComboBox&)
 // --- menus -------------------------------------------------------------------
 
 juce::PopupMenu::Options DewLookAndFeel::getOptionsForComboBoxPopupMenu (juce::ComboBox& box,
-                                                                        juce::Label& label)
+                                                                         juce::Label& label)
 {
     using namespace tokens;
 
@@ -333,12 +335,13 @@ juce::PopupMenu::Options DewLookAndFeel::getOptionsForComboBoxPopupMenu (juce::C
     // moved, because calculateWindowPos takes y = target.getBottom() - that is
     // what leaves a small gap under the box instead of butting against it.
     auto options = juce::PopupMenu::Options()
-        .withTargetComponent (&box)
-        .withTargetScreenArea (box.getScreenBounds().withHeight (box.getHeight() + space::xxs))
-        .withInitiallySelectedItem (box.getSelectedId())
-        .withMinimumWidth (box.getWidth())
-        .withMaximumNumColumns (1)
-        .withStandardItemHeight (label.getHeight());
+                       .withTargetComponent (&box)
+                       .withTargetScreenArea (
+                           box.getScreenBounds().withHeight (box.getHeight() + space::xxs))
+                       .withInitiallySelectedItem (box.getSelectedId())
+                       .withMinimumWidth (box.getWidth())
+                       .withMaximumNumColumns (1)
+                       .withStandardItemHeight (label.getHeight());
 
     // Inside a dialog, the menu is drawn INTO the dialog rather than as a
     // window of its own.
@@ -365,7 +368,8 @@ void DewLookAndFeel::drawPopupMenuBackground (juce::Graphics& g, int width, int 
 {
     using namespace tokens;
 
-    const auto bounds = juce::Rectangle<int> (0, 0, width, height).toFloat().reduced (stroke::whisper);
+    const auto
+        bounds = juce::Rectangle<int> (0, 0, width, height).toFloat().reduced (stroke::whisper);
 
     g.setColour (colour::surface);
     g.fillRoundedRectangle (bounds, radius::md);
@@ -376,9 +380,9 @@ void DewLookAndFeel::drawPopupMenuBackground (juce::Graphics& g, int width, int 
 
 void DewLookAndFeel::drawPopupMenuItem (juce::Graphics& g, const juce::Rectangle<int>& area,
                                         bool isSeparator, bool isActive, bool isHighlighted,
-                                        bool isTicked, bool hasSubMenu,
-                                        const juce::String& text, const juce::String& shortcutKeyText,
-                                        const juce::Drawable*, const juce::Colour*)
+                                        bool isTicked, bool hasSubMenu, const juce::String& text,
+                                        const juce::String& shortcutKeyText, const juce::Drawable*,
+                                        const juce::Colour*)
 {
     using namespace tokens;
 
@@ -398,9 +402,9 @@ void DewLookAndFeel::drawPopupMenuItem (juce::Graphics& g, const juce::Rectangle
         g.fillRoundedRectangle (row.toFloat(), radius::sm);
     }
 
-    const auto textColour = ! isActive ? colour::textDisabled
-                                       : isHighlighted ? colour::textOnAccent
-                                                       : colour::textPrimary;
+    const auto textColour = ! isActive      ? colour::textDisabled
+                            : isHighlighted ? colour::textOnAccent
+                                            : colour::textPrimary;
 
     auto content = row.reduced (space::md, 0);
 
@@ -415,8 +419,8 @@ void DewLookAndFeel::drawPopupMenuItem (juce::Graphics& g, const juce::Rectangle
 
     if (hasSubMenu)
     {
-        const auto arrow = content.removeFromRight (16).toFloat()
-                               .withSizeKeepingCentre (12.0f, 12.0f);
+        const auto arrow = content.removeFromRight (16).toFloat().withSizeKeepingCentre (12.0f,
+                                                                                         12.0f);
         icons::draw (g, icons::chevronRight(), arrow, textColour);
     }
 
@@ -434,8 +438,8 @@ void DewLookAndFeel::drawPopupMenuItem (juce::Graphics& g, const juce::Rectangle
 }
 
 void DewLookAndFeel::getIdealPopupMenuItemSize (const juce::String& text, bool isSeparator,
-                                                int standardMenuItemHeight,
-                                                int& idealWidth, int& idealHeight)
+                                                int standardMenuItemHeight, int& idealWidth,
+                                                int& idealHeight)
 {
     using namespace tokens;
 
@@ -473,8 +477,8 @@ void DewLookAndFeel::preparePopupMenuWindow (juce::Component& window)
     window.setAlpha (0.0f);
     window.setBounds (target.translated (0, tokens::motion::popupRisePx));
 
-    juce::Desktop::getInstance().getAnimator()
-        .animateComponent (&window, target, 1.0f, tokens::motion::popupMs, false, 1.0, 0.0);
+    juce::Desktop::getInstance().getAnimator().animateComponent (
+        &window, target, 1.0f, tokens::motion::popupMs, false, 1.0, 0.0);
 }
 
 } // namespace dew

@@ -71,8 +71,7 @@ TEST_CASE ("an empty colour means inherit, and is not a colour", "[model][colour
     CHECK_FALSE (entityColour::stored (track).has_value());
 }
 
-TEST_CASE ("a colour written by the menu is a colour the model reads back",
-           "[model][colour]")
+TEST_CASE ("a colour written by the menu is a colour the model reads back", "[model][colour]")
 {
     const juce::ScopedJuceInitialiser_GUI juceInit;
 
@@ -172,8 +171,7 @@ TEST_CASE ("a lane paints its own colour, and its position when it has none",
     // Not the colour the position would have given, or this would pass whatever
     // the painter read.
     REQUIRE (chosen != tokens::colour::channelColour (0));
-    REQUIRE (juce::exactlyEqual (testing::coverageOf (testing::render (playlist), chosen),
-                                 0.0f));
+    REQUIRE (juce::exactlyEqual (testing::coverageOf (testing::render (playlist), chosen), 0.0f));
 
     ProjectEdits::setColour (track, entityColour::defaultHex (6), nullptr);
     playlist.refresh();

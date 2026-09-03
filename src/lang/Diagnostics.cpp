@@ -28,7 +28,8 @@ std::string severityName (Severity severity)
 } // namespace
 
 DiagnosticBag::DiagnosticBag (std::string_view source)
-    : text (source), index (source)
+    : text (source)
+    , index (source)
 {
 }
 
@@ -44,9 +45,15 @@ Diagnostic& DiagnosticBag::add (Severity severity, std::string code, std::string
             // Reported at the end of the source rather than at the hundredth
             // error's position: it is a fact about the file, not about a line.
             const auto end = (std::uint32_t) text.size();
-            items.push_back ({ Severity::error, "E999",
+            items.push_back ({ Severity::error,
+                               "E999",
                                "too many errors; stopping here",
-                               { end, end }, {}, {}, {}, {}, std::nullopt });
+                               { end, end },
+                               {},
+                               {},
+                               {},
+                               {},
+                               std::nullopt });
         }
 
         discarded = {};
@@ -54,8 +61,7 @@ Diagnostic& DiagnosticBag::add (Severity severity, std::string code, std::string
     }
 
     // An exact repeat is never worth saying twice.
-    const auto duplicate = std::any_of (items.begin(), items.end(),
-                                        [&] (const Diagnostic& d)
+    const auto duplicate = std::any_of (items.begin(), items.end(), [&] (const Diagnostic& d)
                                         { return d.code == code && d.primary == range; });
 
     if (duplicate)
@@ -82,21 +88,28 @@ Diagnostic& DiagnosticBag::add (Severity severity, std::string code, std::string
         ++errorCount;
     }
 
-    items.push_back ({ severity, std::move (code), std::move (message),
-                       range, std::move (primaryLabel), {}, {}, {}, std::nullopt });
+    items.push_back ({ severity,
+                       std::move (code),
+                       std::move (message),
+                       range,
+                       std::move (primaryLabel),
+                       {},
+                       {},
+                       {},
+                       std::nullopt });
 
     return items.back();
 }
 
-Diagnostic& DiagnosticBag::error (std::string code, std::string message,
-                                  SourceRange range, std::string primaryLabel)
+Diagnostic& DiagnosticBag::error (std::string code, std::string message, SourceRange range,
+                                  std::string primaryLabel)
 {
     return add (Severity::error, std::move (code), std::move (message), range,
                 std::move (primaryLabel));
 }
 
-Diagnostic& DiagnosticBag::warning (std::string code, std::string message,
-                                    SourceRange range, std::string primaryLabel)
+Diagnostic& DiagnosticBag::warning (std::string code, std::string message, SourceRange range,
+                                    std::string primaryLabel)
 {
     return add (Severity::warning, std::move (code), std::move (message), range,
                 std::move (primaryLabel));
@@ -114,9 +127,9 @@ std::string render (const Diagnostic& diagnostic, std::string_view source,
     const std::string gutter (lineNumber.size(), ' ');
 
     std::string out;
-    out += std::string (fileName) + ":" + lineNumber + ":" + std::to_string (column)
-         + ": " + severityName (diagnostic.severity) + "[" + diagnostic.code + "]: "
-         + diagnostic.message + "\n";
+    out += std::string (fileName) + ":" + lineNumber + ":" + std::to_string (column) + ": "
+           + severityName (diagnostic.severity) + "[" + diagnostic.code + "]: " + diagnostic.message
+           + "\n";
 
     const auto lineText = index.lineTextAt (diagnostic.primary.begin);
 
@@ -129,7 +142,7 @@ std::string render (const Diagnostic& diagnostic, std::string_view source,
     const auto caretCount = std::max<std::size_t> (1, characterCount (span));
 
     out += " " + gutter + " | " + std::string ((std::size_t) column - 1, ' ')
-         + std::string (caretCount, '^');
+           + std::string (caretCount, '^');
 
     if (! diagnostic.primaryLabel.empty())
         out += " " + diagnostic.primaryLabel;
@@ -142,7 +155,7 @@ std::string render (const Diagnostic& diagnostic, std::string_view source,
 
         out += " " + gutter + " = note: " + related.label + " here:\n";
         out += " " + std::to_string (relatedLine) + " | "
-             + std::string (index.lineTextAt (related.range.begin)) + "\n";
+               + std::string (index.lineTextAt (related.range.begin)) + "\n";
     }
 
     for (const auto& note : diagnostic.notes)
@@ -154,8 +167,7 @@ std::string render (const Diagnostic& diagnostic, std::string_view source,
     return out;
 }
 
-std::string renderAll (const DiagnosticBag& bag, std::string_view source,
-                       std::string_view fileName)
+std::string renderAll (const DiagnosticBag& bag, std::string_view source, std::string_view fileName)
 {
     std::string out;
 

@@ -105,7 +105,7 @@ TEST_CASE ("the committed demo files are byte for byte what the factory writes",
         // been done to both - and trim() would not do it, because the endings
         // that differ are in the middle.
         REQUIRE (ProjectSerializer::toJsonString (demo.build()).replace ("\r\n", "\n").trim()
-                     == file.loadFileAsString().replace ("\r\n", "\n").trim());
+                 == file.loadFileAsString().replace ("\r\n", "\n").trim());
     }
 }
 
@@ -272,7 +272,8 @@ TEST_CASE ("each demo exercises the part of the app it is named for", "[demos]")
 
         int masterEffects = 0;
 
-        for (const auto& effect : project.getChildWithName (ids::MIXER).getChildWithName (ids::MASTER))
+        for (const auto& effect :
+             project.getChildWithName (ids::MIXER).getChildWithName (ids::MASTER))
             if (effect.hasType (ids::EFFECT))
             {
                 ++masterEffects;

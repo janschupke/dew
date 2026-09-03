@@ -31,9 +31,9 @@ struct NodeSpec;
 
 struct ChildSpec
 {
-    juce::String jsonKey;    ///< key this child occupies in the JSON object
-    const NodeSpec* spec;    ///< the child node's own schema
-    bool isArray;            ///< true: every child of this type becomes an array element
+    juce::String jsonKey; ///< key this child occupies in the JSON object
+    const NodeSpec* spec; ///< the child node's own schema
+    bool isArray;         ///< true: every child of this type becomes an array element
 
     /** Arrays with a fixed number of slots. 0 means variable length.
 
@@ -143,7 +143,6 @@ inline constexpr int kMaxOscillators = 3;
 */
 inline constexpr int kMaxUnisonVoices = 7;
 
-
 /** Value of the "format" key, so a wrong-but-valid JSON file is rejected with a
     useful message instead of loading as an empty project.
 */
@@ -192,9 +191,7 @@ juce::var varFromTree (const juce::ValueTree& tree, const NodeSpec& spec);
 /** var -> ValueTree, following the spec. Never fails: anything unreadable falls
     back to the declared default and is appended to `warnings`.
 */
-juce::ValueTree treeFromVar (const juce::var& value,
-                             const NodeSpec& spec,
-                             juce::StringArray& warnings,
-                             const juce::String& path = "$");
+juce::ValueTree treeFromVar (const juce::var& value, const NodeSpec& spec,
+                             juce::StringArray& warnings, const juce::String& path = "$");
 
 } // namespace dew

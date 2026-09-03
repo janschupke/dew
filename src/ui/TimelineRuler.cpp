@@ -13,8 +13,8 @@ using namespace tokens;
 namespace ruler
 {
 
-void paint (juce::Graphics& g, juce::Rectangle<int> bounds,
-            const TimelineView& timeline, const Style& style)
+void paint (juce::Graphics& g, juce::Rectangle<int> bounds, const TimelineView& timeline,
+            const Style& style)
 {
     if (bounds.isEmpty())
         return;
@@ -33,17 +33,20 @@ void paint (juce::Graphics& g, juce::Rectangle<int> bounds,
     if (style.hasSelection())
     {
         const auto fromX = (float) bounds.getX() + timeline.xForStep (style.selectionStartSteps);
-        const auto toX   = (float) bounds.getX() + timeline.xForStep (style.selectionEndSteps);
+        const auto toX = (float) bounds.getX() + timeline.xForStep (style.selectionEndSteps);
 
         g.setColour (colour::accentMuted);
         g.fillRect (juce::Rectangle<float> (fromX, (float) bounds.getY(),
-                                            juce::jmax (1.0f, toX - fromX), (float) bounds.getHeight()));
+                                            juce::jmax (1.0f, toX - fromX),
+                                            (float) bounds.getHeight()));
 
         // An edge at each end, so where a span STOPS is readable even when it
         // runs off the side of the view.
         g.setColour (colour::accent);
-        g.fillRect (juce::Rectangle<float> (fromX, (float) bounds.getY(), 2.0f, (float) bounds.getHeight()));
-        g.fillRect (juce::Rectangle<float> (toX - 2.0f, (float) bounds.getY(), 2.0f, (float) bounds.getHeight()));
+        g.fillRect (juce::Rectangle<float> (fromX, (float) bounds.getY(), 2.0f,
+                                            (float) bounds.getHeight()));
+        g.fillRect (juce::Rectangle<float> (toX - 2.0f, (float) bounds.getY(), 2.0f,
+                                            (float) bounds.getHeight()));
     }
 
     // Unclamped, so the ruler does not stop numbering halfway across the
@@ -63,22 +66,25 @@ void paint (juce::Graphics& g, juce::Rectangle<int> bounds,
 
         if (step % stepsPerBar == 0)
         {
-            g.setColour (beyond ? colour::dividerStrong.withAlpha (emphasis::subdued) : colour::dividerStrong);
+            g.setColour (beyond ? colour::dividerStrong.withAlpha (emphasis::subdued)
+                                : colour::dividerStrong);
             g.drawVerticalLine ((int) x, (float) bounds.getY(), (float) bounds.getBottom());
 
             // Bar numbers only where there is room for them to be readable.
             if (timeline.pixelsPerStep * stepsPerBar >= 28.0)
             {
                 g.setColour (beyond ? colour::textDisabled : colour::textSecondary);
-                g.drawText (juce::String (step / stepsPerBar + 1),
-                            juce::Rectangle<int> ((int) x + 3, bounds.getY(), 40, bounds.getHeight()),
-                            juce::Justification::centredLeft, false);
+                g.drawText (
+                    juce::String (step / stepsPerBar + 1),
+                    juce::Rectangle<int> ((int) x + 3, bounds.getY(), 40, bounds.getHeight()),
+                    juce::Justification::centredLeft, false);
             }
         }
         else if (step % stepsPerBeat == 0 && timeline.pixelsPerStep * stepsPerBeat >= 10.0)
         {
             g.setColour (beyond ? colour::divider.withAlpha (emphasis::subdued) : colour::divider);
-            g.drawVerticalLine ((int) x, (float) bounds.getBottom() - 6.0f, (float) bounds.getBottom());
+            g.drawVerticalLine ((int) x, (float) bounds.getBottom() - 6.0f,
+                                (float) bounds.getBottom());
         }
     }
 
@@ -91,14 +97,16 @@ void paint (juce::Graphics& g, juce::Rectangle<int> bounds,
         const auto margin = timelinePaint::playheadHeadHalfWidth;
 
         if (x >= (float) bounds.getX() - margin && x <= (float) bounds.getRight() + margin)
-            timelinePaint::playheadHead (g, x, (float) bounds.getBottom(), style.playheadBrightness);
+            timelinePaint::playheadHead (g, x, (float) bounds.getBottom(),
+                                         style.playheadBrightness);
     }
 
     g.setColour (colour::dividerStrong);
     g.drawHorizontalLine (bounds.getBottom() - 1, (float) bounds.getX(), (float) bounds.getRight());
 }
 
-double stepForClick (int x, juce::Rectangle<int> bounds, const TimelineView& timeline, int totalSteps)
+double stepForClick (int x, juce::Rectangle<int> bounds, const TimelineView& timeline,
+                     int totalSteps)
 {
     const auto raw = timeline.stepForX ((float) (x - bounds.getX()));
 

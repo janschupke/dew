@@ -35,8 +35,8 @@ int EngineSnapshot::channelIndexForId (int channelId) const
 
 const std::shared_ptr<const TempoMap>& defaultTempoMap()
 {
-    static const std::shared_ptr<const TempoMap> map
-        = std::make_shared<const TempoMap> (TempoMap::constant (128.0, 4));
+    static const std::shared_ptr<const TempoMap> map = std::make_shared<const TempoMap> (
+        TempoMap::constant (128.0, 4));
 
     return map;
 }
@@ -85,8 +85,7 @@ bool EngineSnapshot::isSilent() const
     // "nothing to play", and dew_render exits non-zero on a perfectly good
     // arrangement of recordings.
     for (const auto& clip : clips)
-        if (clip.channelIndex >= 0
-            && channels[(size_t) clip.channelIndex].audio != nullptr)
+        if (clip.channelIndex >= 0 && channels[(size_t) clip.channelIndex].audio != nullptr)
             return false;
 
     return true;
@@ -112,8 +111,7 @@ float clampBySpec (const juce::Identifier& property, const juce::ValueTree& node
     return spec.clamp ((float) (double) node.getProperty (property, spec.defaultVar()));
 }
 
-OscBankSnapshot readOscBank (const juce::ValueTree& instrument,
-                             const juce::String& ownerName,
+OscBankSnapshot readOscBank (const juce::ValueTree& instrument, const juce::String& ownerName,
                              const std::function<void (const juce::String&)>& warn)
 {
     OscBankSnapshot bank;
@@ -131,16 +129,16 @@ OscBankSnapshot readOscBank (const juce::ValueTree& instrument,
         }
 
         auto& s = bank.slots[(size_t) bank.numSlots++];
-        s.enabled     = (bool) osc.getProperty (ids::enabled, true);
-        s.mode        = oscModeFromString (osc[ids::mode].toString());
-        s.wave        = waveformFromString (osc[ids::wave].toString());
+        s.enabled = (bool) osc.getProperty (ids::enabled, true);
+        s.mode = oscModeFromString (osc[ids::mode].toString());
+        s.wave = waveformFromString (osc[ids::wave].toString());
         // Clamped by the declared spec rather than by a number written here.
         // These used to be a second opinion about the range, and the knobs were
         // a third: the octave stepper offered three when the engine renders
         // four.
-        s.octave      = (int) clampBySpec (ids::octave, osc);
+        s.octave = (int) clampBySpec (ids::octave, osc);
         s.detuneCents = clampBySpec (ids::detuneCents, osc);
-        s.gain        = clampBySpec (ids::gain, osc);
+        s.gain = clampBySpec (ids::gain, osc);
 
         const auto tableName = osc[ids::wavetable].toString();
         const auto tableIndex = wavetableIndexFor (tableName);
@@ -151,13 +149,13 @@ OscBankSnapshot readOscBank (const juce::ValueTree& instrument,
             warn (ownerName + " asks for wavetable \"" + tableName
                   + "\", which this build does not have; using the first one.");
 
-        s.table          = juce::jmax (0, tableIndex);
-        s.position       = clampBySpec (ids::wavePosition, osc);
-        s.positionMod    = clampBySpec (ids::wavePositionMod, osc);
+        s.table = juce::jmax (0, tableIndex);
+        s.position = clampBySpec (ids::wavePosition, osc);
+        s.positionMod = clampBySpec (ids::wavePositionMod, osc);
         s.positionSource = positionSourceFromString (osc[ids::wavePositionSource].toString());
-        s.positionRate   = clampBySpec (ids::wavePositionRate, osc);
-        s.unisonVoices   = (int) clampBySpec (ids::unisonVoices, osc);
-        s.unisonDetune   = clampBySpec (ids::unisonDetune, osc);
+        s.positionRate = clampBySpec (ids::wavePositionRate, osc);
+        s.unisonVoices = (int) clampBySpec (ids::unisonVoices, osc);
+        s.unisonDetune = clampBySpec (ids::unisonDetune, osc);
 
         bank.anyEnabled = bank.anyEnabled || s.enabled;
     }
@@ -183,8 +181,8 @@ AmpSettings readAmp (const juce::ValueTree& amp)
     // A zero attack clicks and a zero release cuts abruptly, so the declared
     // minimums are short rather than zero - and they are declared, in the same
     // table the envelope's knobs are built from.
-    s.attack  = clampBySpec (ids::attack, amp);
-    s.decay   = clampBySpec (ids::decay, amp);
+    s.attack = clampBySpec (ids::attack, amp);
+    s.decay = clampBySpec (ids::decay, amp);
     s.sustain = clampBySpec (ids::sustain, amp);
     s.release = clampBySpec (ids::release, amp);
     return s;
@@ -232,16 +230,25 @@ int claimEffectUnit (int effectId, std::array<int, kMaxEffectUnits>& owners)
 AutomationParam automationParamFromIdentifier (const juce::Identifier& property)
 {
     static const std::pair<const juce::Identifier*, AutomationParam> table[] {
-        { &ids::volume, AutomationParam::volume }, { &ids::pan, AutomationParam::pan },
-        { &ids::gain, AutomationParam::gain }, { &ids::cutoff, AutomationParam::cutoff },
+        { &ids::volume, AutomationParam::volume },
+        { &ids::pan, AutomationParam::pan },
+        { &ids::gain, AutomationParam::gain },
+        { &ids::cutoff, AutomationParam::cutoff },
         { &ids::wavePosition, AutomationParam::position },
-        { &ids::resonance, AutomationParam::resonance }, { &ids::mix, AutomationParam::mix },
-        { &ids::roomSize, AutomationParam::roomSize }, { &ids::damping, AutomationParam::damping },
-        { &ids::width, AutomationParam::width }, { &ids::delayMs, AutomationParam::delayMs },
-        { &ids::feedback, AutomationParam::feedback }, { &ids::drive, AutomationParam::drive },
-        { &ids::outputGain, AutomationParam::outputGain }, { &ids::rate, AutomationParam::rate },
-        { &ids::depth, AutomationParam::depth }, { &ids::lowGainDb, AutomationParam::lowGainDb },
-        { &ids::midGainDb, AutomationParam::midGainDb }, { &ids::midFreq, AutomationParam::midFreq },
+        { &ids::resonance, AutomationParam::resonance },
+        { &ids::mix, AutomationParam::mix },
+        { &ids::roomSize, AutomationParam::roomSize },
+        { &ids::damping, AutomationParam::damping },
+        { &ids::width, AutomationParam::width },
+        { &ids::delayMs, AutomationParam::delayMs },
+        { &ids::feedback, AutomationParam::feedback },
+        { &ids::drive, AutomationParam::drive },
+        { &ids::outputGain, AutomationParam::outputGain },
+        { &ids::rate, AutomationParam::rate },
+        { &ids::depth, AutomationParam::depth },
+        { &ids::lowGainDb, AutomationParam::lowGainDb },
+        { &ids::midGainDb, AutomationParam::midGainDb },
+        { &ids::midFreq, AutomationParam::midFreq },
         { &ids::highGainDb, AutomationParam::highGainDb },
 
         // The discrete ones. `mute` and `muted` are two spellings of one idea -
@@ -286,8 +293,8 @@ EffectParamBlock readEffectParams (const juce::ValueTree& effect, EffectType typ
         // The DEFAULT matters as much as the clamp. A missing property used to
         // read as a void var, which became 0.0 - and for `mix` that meant a
         // slot that silently bypassed itself.
-        block[(size_t) index] = spec.clamp ((float) (double) effect.getProperty (*spec.property,
-                                                                                 spec.defaultVar()));
+        block[(size_t) index] = spec.clamp (
+            (float) (double) effect.getProperty (*spec.property, spec.defaultVar()));
     };
 
     for (const auto& spec : commonEffectParams())
@@ -345,8 +352,8 @@ EffectChainSnapshot readEffectChain (const juce::ValueTree& owner, const juce::S
 
         if (slot.unitIndex < 0)
         {
-            warn ("More than " + juce::String (kMaxEffectUnits)
-                  + " effects in the project; " + ownerName + " is not fully rendered.");
+            warn ("More than " + juce::String (kMaxEffectUnits) + " effects in the project; "
+                  + ownerName + " is not fully rendered.");
             break;
         }
 
@@ -428,9 +435,7 @@ void readSample (ChannelSnapshot& c, const juce::ValueTree& channel, SampleProvi
     const auto region = juce::jmax (0, settings.endSample - settings.startSample);
 
     const auto toFrames = [sourceSampleRate] (double ms)
-    {
-        return (int) juce::jmax (0.0, ms * 0.001 * sourceSampleRate);
-    };
+    { return (int) juce::jmax (0.0, ms * 0.001 * sourceSampleRate); };
 
     // Fades are clamped to the region and then to each other: two fades longer
     // than the audio between them would otherwise multiply into a notch rather
@@ -468,15 +473,15 @@ EngineSnapshot buildSnapshot (const juce::ValueTree& project, juce::StringArray*
     if (! project.isValid())
         return snapshot;
 
-    snapshot.tempoBpm     = juce::jlimit (20.0, 999.0, (double) project[ids::tempoBpm]);
+    snapshot.tempoBpm = juce::jlimit (20.0, 999.0, (double) project[ids::tempoBpm]);
 
     // Through Meter rather than read here, so the engine's idea of a bar and
     // the editors' cannot drift apart - both clamp the same way and both treat
     // an absent property as 4/4.
     const auto meter = Meter::of (project);
     snapshot.stepsPerBeat = meter.stepsPerBeat;
-    snapshot.beatsPerBar  = meter.beatsPerBar;
-    snapshot.beatUnit     = meter.beatUnit;
+    snapshot.beatsPerBar = meter.beatsPerBar;
+    snapshot.beatUnit = meter.beatUnit;
 
     // Which pool unit each effect id has claimed, for the whole project. -1 is
     // free; the map is rebuilt from scratch every time, and is a pure function
@@ -487,8 +492,8 @@ EngineSnapshot buildSnapshot (const juce::ValueTree& project, juce::StringArray*
     // --- mixer ---------------------------------------------------------------
     const auto mixer = project.getChildWithName (ids::MIXER);
     const auto master = mixer.getChildWithName (ids::MASTER);
-    snapshot.masterGain = requireMixerTrackParamSpec (ids::gain)
-                              .clamp ((float) (double) master[ids::gain]);
+    snapshot.masterGain = requireMixerTrackParamSpec (ids::gain).clamp (
+        (float) (double) master[ids::gain]);
 
     // Before the tracks, so the master's effects claim their pool units first
     // and adding an insert cannot move them.
@@ -501,16 +506,15 @@ EngineSnapshot buildSnapshot (const juce::ValueTree& project, juce::StringArray*
 
         if ((int) snapshot.mixerTracks.size() >= kMaxMixerTracks)
         {
-            warn ("More than " + juce::String (kMaxMixerTracks) + " mixer tracks; the rest are not rendered.");
+            warn ("More than " + juce::String (kMaxMixerTracks)
+                  + " mixer tracks; the rest are not rendered.");
             break;
         }
 
         MixerTrackSnapshot m;
-        m.id   = (int) track[ids::id];
-        m.gain = requireMixerTrackParamSpec (ids::gain)
-                     .clamp ((float) (double) track[ids::gain]);
-        m.pan  = requireMixerTrackParamSpec (ids::pan)
-                     .clamp ((float) (double) track[ids::pan]);
+        m.id = (int) track[ids::id];
+        m.gain = requireMixerTrackParamSpec (ids::gain).clamp ((float) (double) track[ids::gain]);
+        m.pan = requireMixerTrackParamSpec (ids::pan).clamp ((float) (double) track[ids::pan]);
         m.mute = (bool) track[ids::mute];
         m.solo = (bool) track[ids::solo];
 
@@ -529,22 +533,22 @@ EngineSnapshot buildSnapshot (const juce::ValueTree& project, juce::StringArray*
 
         if ((int) snapshot.channels.size() >= kMaxChannels)
         {
-            warn ("More than " + juce::String (kMaxChannels) + " channels; the rest are not rendered.");
+            warn ("More than " + juce::String (kMaxChannels)
+                  + " channels; the rest are not rendered.");
             break;
         }
 
         ChannelSnapshot c;
-        c.id        = (int) channel[ids::id];
-        c.volume    = juce::jlimit (0.0f, 1.0f, (float) (double) channel[ids::volume]);
-        c.pan       = juce::jlimit (-1.0f, 1.0f, (float) (double) channel[ids::pan]);
-        c.muted     = (bool) channel[ids::muted];
-        c.solo      = (bool) channel[ids::solo];
+        c.id = (int) channel[ids::id];
+        c.volume = juce::jlimit (0.0f, 1.0f, (float) (double) channel[ids::volume]);
+        c.pan = juce::jlimit (-1.0f, 1.0f, (float) (double) channel[ids::pan]);
+        c.muted = (bool) channel[ids::muted];
+        c.solo = (bool) channel[ids::solo];
 
         snapshot.anyChannelSolo = snapshot.anyChannelSolo || c.solo;
 
         const auto instrument = channel.getChildWithName (ids::INSTRUMENT);
-        c.osc = readOscBank (instrument,
-                             "Channel \"" + channel[ids::name].toString() + "\"", warn);
+        c.osc = readOscBank (instrument, "Channel \"" + channel[ids::name].toString() + "\"", warn);
         c.amp = readAmp (instrument.getChildWithName (ids::AMP));
 
         // Resolve the mixer routing now; the audio thread must not search.
@@ -558,7 +562,8 @@ EngineSnapshot buildSnapshot (const juce::ValueTree& project, juce::StringArray*
         if (c.mixerTrackIndex < 0 && ! snapshot.mixerTracks.empty())
         {
             warn ("Channel \"" + channel[ids::name].toString() + "\" routes to mixer track "
-                  + juce::String (mixerTrackId) + ", which does not exist; using the first insert.");
+                  + juce::String (mixerTrackId)
+                  + ", which does not exist; using the first insert.");
             c.mixerTrackIndex = 0;
         }
 
@@ -602,7 +607,7 @@ EngineSnapshot buildSnapshot (const juce::ValueTree& project, juce::StringArray*
             continue;
 
         PatternSnapshot p;
-        p.id          = (int) pattern[ids::id];
+        p.id = (int) pattern[ids::id];
         p.lengthSteps = juce::jmax (1, (int) pattern[ids::lengthSteps]);
 
         for (const auto& note : pattern)
@@ -612,10 +617,10 @@ EngineSnapshot buildSnapshot (const juce::ValueTree& project, juce::StringArray*
 
             NoteSnapshot n;
             n.channelIndex = snapshot.channelIndexForId ((int) note[ids::ch]);
-            n.step         = juce::jmax (0, (int) note[ids::step]);
-            n.lengthSteps  = juce::jmax (1, (int) note[ids::lengthSteps]);
-            n.pitch        = juce::jlimit (0, 127, (int) note[ids::pitch]);
-            n.velocity     = juce::jlimit (0.0f, 1.0f, (float) (double) note[ids::velocity]);
+            n.step = juce::jmax (0, (int) note[ids::step]);
+            n.lengthSteps = juce::jmax (1, (int) note[ids::lengthSteps]);
+            n.pitch = juce::jlimit (0, 127, (int) note[ids::pitch]);
+            n.velocity = juce::jlimit (0.0f, 1.0f, (float) (double) note[ids::velocity]);
 
             if (n.channelIndex < 0)
             {
@@ -649,7 +654,8 @@ EngineSnapshot buildSnapshot (const juce::ValueTree& project, juce::StringArray*
 
         if ((int) snapshot.automations.size() >= kMaxAutomations)
         {
-            warn ("More than " + juce::String (kMaxAutomations) + " automations; the rest are ignored.");
+            warn ("More than " + juce::String (kMaxAutomations)
+                  + " automations; the rest are ignored.");
             break;
         }
 
@@ -713,7 +719,7 @@ EngineSnapshot buildSnapshot (const juce::ValueTree& project, juce::StringArray*
                     const auto& slots = snapshot.channels[(size_t) a.targetIndex].osc;
 
                     resolved = a.slotIndex >= 0 && a.slotIndex < slots.numSlots
-                            && slots.slots[(size_t) a.slotIndex].mode == OscMode::wavetable;
+                               && slots.slots[(size_t) a.slotIndex].mode == OscMode::wavetable;
                 }
 
                 if (resolved && a.scope == AutomationScope::channelEffect)
@@ -799,8 +805,8 @@ EngineSnapshot buildSnapshot (const juce::ValueTree& project, juce::StringArray*
                 continue;
 
             ClipSnapshot c;
-            c.startBar     = juce::jmax (0, (int) clip[ids::startBar]);
-            c.lengthBars   = juce::jmax (1, (int) clip[ids::lengthBars]);
+            c.startBar = juce::jmax (0, (int) clip[ids::startBar]);
+            c.lengthBars = juce::jmax (1, (int) clip[ids::lengthBars]);
             c.trackAudible = trackAudible;
 
             if (clip[ids::kind].toString() == "automation")

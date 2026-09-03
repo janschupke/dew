@@ -82,8 +82,8 @@ TEST_CASE ("a module's state is its declared parameters and nothing else", "[pre
 
     // The channel's own parameters are the instrument's, but they are not its
     // sound - a preset that set the volume would be a level jump mid-mix.
-    for (const auto& key : { ids::volume, ids::pan, ids::basePitch, ids::name,
-                             ids::colour, ids::mixerTrackId, ids::muted, ids::solo })
+    for (const auto& key : { ids::volume, ids::pan, ids::basePitch, ids::name, ids::colour,
+                             ids::mixerTrackId, ids::muted, ids::solo })
     {
         INFO ("key " << key.toString());
         CHECK_FALSE (object->hasProperty (key));
@@ -131,7 +131,8 @@ TEST_CASE ("a default channel's state applied to a default channel changes nothi
     const auto state = stateFor (instrumentDescriptor (InstrumentType::synth), channel);
 
     juce::UndoManager undo;
-    REQUIRE (ProjectEdits::applyInstrumentPreset (channel, instrumentPreset ("synth", state), &undo));
+    REQUIRE (
+        ProjectEdits::applyInstrumentPreset (channel, instrumentPreset ("synth", state), &undo));
 
     CHECK (channel.isEquivalentTo (before));
 
@@ -241,8 +242,8 @@ TEST_CASE ("a value outside its range is clamped and reported", "[preset]")
     state->setProperty (ids::resonance, -5.0);
 
     juce::StringArray warnings;
-    const auto validated = validateState (effectDescriptor (EffectType::filter),
-                                          juce::var (state), warnings);
+    const auto validated = validateState (effectDescriptor (EffectType::filter), juce::var (state),
+                                          warnings);
 
     auto* object = validated.getDynamicObject();
     REQUIRE (object != nullptr);
@@ -258,11 +259,11 @@ TEST_CASE ("a key the type does not declare is dropped and reported", "[preset]"
 {
     auto* state = new juce::DynamicObject();
     state->setProperty (ids::roomSize, 0.4);
-    state->setProperty (ids::cutoff, 800.0);   // a filter's, not a reverb's
+    state->setProperty (ids::cutoff, 800.0); // a filter's, not a reverb's
 
     juce::StringArray warnings;
-    const auto validated = validateState (effectDescriptor (EffectType::reverb),
-                                          juce::var (state), warnings);
+    const auto validated = validateState (effectDescriptor (EffectType::reverb), juce::var (state),
+                                          warnings);
 
     auto* object = validated.getDynamicObject();
     REQUIRE (object != nullptr);
@@ -279,7 +280,7 @@ TEST_CASE ("a preset carrying the channel's own parameters is refused, not obeye
     // A preset written against a different idea of what a preset is. Loading
     // its volume silently would move a fader in a finished mix.
     auto* state = new juce::DynamicObject();
-    state->setProperty ("", 0.5);   // the channel group's jsonKey
+    state->setProperty ("", 0.5); // the channel group's jsonKey
 
     juce::StringArray warnings;
     const auto validated = validateState (instrumentDescriptor (InstrumentType::synth),
@@ -296,7 +297,7 @@ TEST_CASE ("a preset carrying the channel's own parameters is refused, not obeye
 TEST_CASE ("an unreadable choice falls back rather than storing nonsense", "[preset]")
 {
     auto* osc = new juce::DynamicObject();
-    osc->setProperty (ids::wave, "sawtooth");   // not one of the four
+    osc->setProperty (ids::wave, "sawtooth"); // not one of the four
 
     juce::Array<juce::var> slots;
     slots.add (juce::var (osc));
@@ -398,8 +399,7 @@ TEST_CASE ("the embedded presets match the committed files", "[preset][library]"
         INFO ("file: " << file.getFullPathName());
 
         REQUIRE (file.existsAsFile());
-        REQUIRE (PresetLibrary::jsonFor (entry.fileName).trim()
-                     == file.loadFileAsString().trim());
+        REQUIRE (PresetLibrary::jsonFor (entry.fileName).trim() == file.loadFileAsString().trim());
     }
 }
 
@@ -416,7 +416,7 @@ TEST_CASE ("the committed presets are byte for byte what the factory writes", "[
 
         REQUIRE (file.existsAsFile());
         REQUIRE (PresetSerializer::toJsonString (entry.build()).replace ("\r\n", "\n").trim()
-                     == file.loadFileAsString().replace ("\r\n", "\n").trim());
+                 == file.loadFileAsString().replace ("\r\n", "\n").trim());
     }
 }
 
@@ -591,7 +591,8 @@ TEST_CASE ("the instrument panel offers the presets for the channel it is on", "
 
     const auto osc = ProjectEdits::oscillatorAt (firstChannel (document.getState()), 0);
     CHECK (osc[ids::wave].toString() == "sine");
-    CHECK_FALSE ((bool) ProjectEdits::oscillatorAt (firstChannel (document.getState()), 1)[ids::enabled]);
+    CHECK_FALSE (
+        (bool) ProjectEdits::oscillatorAt (firstChannel (document.getState()), 1)[ids::enabled]);
 }
 
 TEST_CASE ("the panel's audio face offers the audio presets", "[preset][ui]")

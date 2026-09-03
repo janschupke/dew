@@ -22,7 +22,10 @@ struct ScratchFile
     {
     }
 
-    ~ScratchFile() { file.deleteFile(); }
+    ~ScratchFile()
+    {
+        file.deleteFile();
+    }
 
     juce::File file;
 };
@@ -34,7 +37,8 @@ RenderOptions shortRender()
     return options;
 }
 
-std::unique_ptr<juce::AudioFormatReader> readerFor (juce::AudioFormat& format, const juce::File& file)
+std::unique_ptr<juce::AudioFormatReader> readerFor (juce::AudioFormat& format,
+                                                    const juce::File& file)
 {
     return std::unique_ptr<juce::AudioFormatReader> (
         format.createReaderFor (file.createInputStream().release(), true));
@@ -51,8 +55,8 @@ TEST_CASE ("a WAV is written at each integer bit depth", "[engine][render][forma
     auto options = shortRender();
     options.bitDepth = depth;
 
-    const auto report = OfflineRenderer::renderToFile (dew::testing::fixtureProject(),
-                                                        scratch.file, options);
+    const auto report = OfflineRenderer::renderToFile (dew::testing::fixtureProject(), scratch.file,
+                                                       options);
 
     INFO ("depth " << depth << ": " << report.result.getErrorMessage());
     REQUIRE (report.ok());
@@ -75,8 +79,8 @@ TEST_CASE ("a 32-bit float WAV says so, and is not clipped", "[engine][render][f
     options.bitDepth = 32;
     options.floatingPoint = true;
 
-    const auto report = OfflineRenderer::renderToFile (dew::testing::fixtureProject(),
-                                                        scratch.file, options);
+    const auto report = OfflineRenderer::renderToFile (dew::testing::fixtureProject(), scratch.file,
+                                                       options);
 
     INFO (report.result.getErrorMessage());
     REQUIRE (report.ok());
@@ -97,8 +101,8 @@ TEST_CASE ("asking for float at anything but 32 bits is refused", "[engine][rend
     options.bitDepth = 24;
     options.floatingPoint = true;
 
-    const auto report = OfflineRenderer::renderToFile (dew::testing::fixtureProject(),
-                                                        scratch.file, options);
+    const auto report = OfflineRenderer::renderToFile (dew::testing::fixtureProject(), scratch.file,
+                                                       options);
 
     REQUIRE_FALSE (report.ok());
     REQUIRE_FALSE (scratch.file.existsAsFile());
@@ -111,13 +115,14 @@ TEST_CASE ("FLAC round-trips the render bit-exactly", "[engine][render][format]"
     auto options = shortRender();
     options.format = RenderFormat::flac;
     options.bitDepth = 24;
-    options.dither = false;   // comparing against the float source, so no noise
+    options.dither = false; // comparing against the float source, so no noise
 
     juce::AudioBuffer<float> expected;
-    REQUIRE (OfflineRenderer::renderToBuffer (dew::testing::fixtureProject(), expected, options).ok());
+    REQUIRE (
+        OfflineRenderer::renderToBuffer (dew::testing::fixtureProject(), expected, options).ok());
 
-    const auto report = OfflineRenderer::renderToFile (dew::testing::fixtureProject(),
-                                                        scratch.file, options);
+    const auto report = OfflineRenderer::renderToFile (dew::testing::fixtureProject(), scratch.file,
+                                                       options);
 
     INFO (report.result.getErrorMessage());
     REQUIRE (report.ok());
@@ -137,8 +142,8 @@ TEST_CASE ("FLAC round-trips the render bit-exactly", "[engine][render][format]"
 
     for (int channel = 0; channel < 2; ++channel)
         for (int i = 0; i < expected.getNumSamples(); ++i)
-            REQUIRE (std::abs (readBack.getSample (channel, i)
-                               - expected.getSample (channel, i)) <= lsb);
+            REQUIRE (std::abs (readBack.getSample (channel, i) - expected.getSample (channel, i))
+                     <= lsb);
 }
 
 TEST_CASE ("a format knows its own extension and name", "[render][format]")
@@ -168,8 +173,8 @@ TEST_CASE ("MP3 is refused clearly when lame is missing", "[engine][render][form
     auto options = shortRender();
     options.format = RenderFormat::mp3;
 
-    const auto report = OfflineRenderer::renderToFile (dew::testing::fixtureProject(),
-                                                        scratch.file, options);
+    const auto report = OfflineRenderer::renderToFile (dew::testing::fixtureProject(), scratch.file,
+                                                       options);
 
     REQUIRE_FALSE (report.ok());
     REQUIRE (report.result.getErrorMessage().contains ("lame"));
@@ -187,8 +192,8 @@ TEST_CASE ("MP3 rejects a sample rate lame cannot take", "[engine][render][forma
     options.format = RenderFormat::mp3;
     options.sampleRate = 96000.0;
 
-    const auto report = OfflineRenderer::renderToFile (dew::testing::fixtureProject(),
-                                                        scratch.file, options);
+    const auto report = OfflineRenderer::renderToFile (dew::testing::fixtureProject(), scratch.file,
+                                                       options);
 
     // The writer would happily accept this and then fail inside a destructor.
     REQUIRE_FALSE (report.ok());
@@ -205,8 +210,8 @@ TEST_CASE ("an MP3 is written and is recognisably one", "[engine][render][format
     auto options = shortRender();
     options.format = RenderFormat::mp3;
 
-    const auto report = OfflineRenderer::renderToFile (dew::testing::fixtureProject(),
-                                                        scratch.file, options);
+    const auto report = OfflineRenderer::renderToFile (dew::testing::fixtureProject(), scratch.file,
+                                                       options);
 
     INFO (report.result.getErrorMessage());
     REQUIRE (report.ok());
@@ -235,10 +240,10 @@ TEST_CASE ("an out-of-range mp3 quality index cannot reach lame", "[engine][rend
 
     auto options = shortRender();
     options.format = RenderFormat::mp3;
-    options.mp3QualityIndex = 9999;   // unclamped, this invokes lame with -b 0
+    options.mp3QualityIndex = 9999; // unclamped, this invokes lame with -b 0
 
-    const auto report = OfflineRenderer::renderToFile (dew::testing::fixtureProject(),
-                                                        scratch.file, options);
+    const auto report = OfflineRenderer::renderToFile (dew::testing::fixtureProject(), scratch.file,
+                                                       options);
 
     INFO (report.result.getErrorMessage());
     REQUIRE (report.ok());

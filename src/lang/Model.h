@@ -48,18 +48,18 @@ struct SongSpec
 */
 enum class Scope
 {
-    note,      ///< a fresh draw at every onset
-    bar,       ///< one per bar
-    instance,  ///< one per rendered section instance - the default for a choice
-    section,   ///< one per section, shared by all of its instances
-    song       ///< one for the whole song
+    note,     ///< a fresh draw at every onset
+    bar,      ///< one per bar
+    instance, ///< one per rendered section instance - the default for a choice
+    section,  ///< one per section, shared by all of its instances
+    song      ///< one for the whole song
 };
 
 /** How an imitation moves the line it copies. */
 enum class TransposeMode
 {
-    diatonic,   ///< by scale degrees, so it stays in the key
-    chromatic   ///< by semitones, exactly
+    diatonic, ///< by scale degrees, so it stays in the key
+    chromatic ///< by semitones, exactly
 };
 
 /** One voice repeating another, later and possibly higher.
@@ -72,7 +72,7 @@ enum class TransposeMode
 */
 struct ImitationSpec
 {
-    std::string source;         ///< the channel being imitated
+    std::string source; ///< the channel being imitated
     SourceRange sourceRange;
 
     int delaySteps = 0;
@@ -83,16 +83,16 @@ struct ImitationSpec
 /** Whether a rhythm restarts at every bar line or runs on. */
 enum class Alignment
 {
-    bar,        ///< restart the cycle on each bar line - the default
-    continuous  ///< let it run on and phase against the bar
+    bar,       ///< restart the cycle on each bar line - the default
+    continuous ///< let it run on and phase against the bar
 };
 
 /** Which note a voicing puts at the bottom. */
 enum class BassRule
 {
-    fromInversion,  ///< honour `^N`; choose freely when the chord has none
-    root,           ///< always the root
-    any             ///< whatever voices most smoothly, ignoring `^N`
+    fromInversion, ///< honour `^N`; choose freely when the chord has none
+    root,          ///< always the root
+    any            ///< whatever voices most smoothly, ignoring `^N`
 };
 
 /** The counterpoint rules, as a CLOSED set.
@@ -117,15 +117,15 @@ inline constexpr int numCounterpointRules = 7;
 /** How strongly one rule applies. */
 enum class RuleStrength
 {
-    off,      ///< not written; the rule does not apply
-    soft,     ///< a cost on the transition
-    forbid    ///< removes the candidate outright
+    off,   ///< not written; the rule does not apply
+    soft,  ///< a cost on the transition
+    forbid ///< removes the candidate outright
 };
 
 struct RuleSetting
 {
     RuleStrength strength = RuleStrength::off;
-    float weight = 1.0f;   ///< meaningful only when soft
+    float weight = 1.0f; ///< meaningful only when soft
 };
 
 /** A value that is chosen from a list rather than set.
@@ -137,10 +137,13 @@ struct RuleSetting
 */
 struct DegreeChoice
 {
-    std::vector<int> degrees;          ///< 1, 3, 5, 7 - which tone of the chord
+    std::vector<int> degrees; ///< 1, 3, 5, 7 - which tone of the chord
     Scope scope = Scope::instance;
 
-    bool declared() const noexcept { return ! degrees.empty(); }
+    bool declared() const noexcept
+    {
+        return ! degrees.empty();
+    }
 };
 
 struct ChannelSpec
@@ -161,12 +164,46 @@ struct ChannelSpec
     int octave = 0;
 };
 
-enum class Spread { close, open, drop2, drop3, shell, rootless };
-enum class Motion { smooth, parallel, fixed };
-enum class Contour { arch, rise, fall, flat, wave };
-enum class StrongRule { chordTones, scaleTones, free };
-enum class Articulation { legato, detached };
-enum class LineSource { root, rootFifth, rootThirdFifth };
+enum class Spread
+{
+    close,
+    open,
+    drop2,
+    drop3,
+    shell,
+    rootless
+};
+enum class Motion
+{
+    smooth,
+    parallel,
+    fixed
+};
+enum class Contour
+{
+    arch,
+    rise,
+    fall,
+    flat,
+    wave
+};
+enum class StrongRule
+{
+    chordTones,
+    scaleTones,
+    free
+};
+enum class Articulation
+{
+    legato,
+    detached
+};
+enum class LineSource
+{
+    root,
+    rootFifth,
+    rootThirdFifth
+};
 
 struct VoicingSpec
 {
@@ -231,7 +268,14 @@ struct HarmonySpec
     std::vector<ChordSpec> chords;
 };
 
-enum class PartKind { chords, line, melody, counterpoint, imitation };
+enum class PartKind
+{
+    chords,
+    line,
+    melody,
+    counterpoint,
+    imitation
+};
 
 struct MelodySpec
 {
@@ -276,7 +320,7 @@ struct MelodySpec
 /** A voice written against voices already written. */
 struct CounterpointSpec
 {
-    std::string against;          ///< the channel this answers
+    std::string against; ///< the channel this answers
     SourceRange againstRange;
 
     std::string rhythm;
@@ -299,9 +343,9 @@ struct PartSpec
 
     PartKind kind = PartKind::chords;
 
-    std::string voicing;          ///< for chords
+    std::string voicing; ///< for chords
     LineSource lineSource = LineSource::root;
-    std::string rhythm;           ///< a named rhythm, or empty for an inline one
+    std::string rhythm; ///< a named rhythm, or empty for an inline one
     std::optional<RhythmSpec> inlineRhythm;
     int octave = 0;
 
@@ -316,7 +360,7 @@ struct SectionSpec
     SourceRange range;
 
     int bars = 4;
-    std::string harmony;                    ///< a named harmony, or empty
+    std::string harmony; ///< a named harmony, or empty
     std::optional<HarmonySpec> inlineHarmony;
     std::vector<PartSpec> parts;
 };
@@ -326,7 +370,7 @@ struct ArrangementItem
     std::string section;
     SourceRange range;
 
-    std::string label;      ///< from `as`, pinning the instance
+    std::string label; ///< from `as`, pinning the instance
     int repeat = 1;
     bool identical = false;
 

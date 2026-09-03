@@ -24,16 +24,16 @@ enum class ParamCurve
 /** What a parameter looks like when a person edits it. */
 enum class ParamControl
 {
-    knob,     ///< the 0..1 quantities a hand turns
-    field,    ///< frequencies and times, where the number itself matters
-    choice,   ///< one of a named set
+    knob,   ///< the 0..1 quantities a hand turns
+    field,  ///< frequencies and times, where the number itself matters
+    choice, ///< one of a named set
     toggle,
-    stepper   ///< an integer with buttons
+    stepper ///< an integer with buttons
 };
 
 struct ParamChoice
 {
-    const char* id;           ///< what goes in the file
+    const char* id; ///< what goes in the file
     const char* displayName;
 };
 
@@ -59,22 +59,22 @@ struct ParamSpec
         disconnect anything, because there is nothing to keep in step. */
     const juce::Identifier* property = nullptr;
 
-    const char* displayName = "";   ///< "Cutoff" - the automation picker, tooltips
-    const char* caption = "";       ///< "CUTOFF" - the control's own label
-    const char* suffix = "";        ///< " Hz", or empty
+    const char* displayName = ""; ///< "Cutoff" - the automation picker, tooltips
+    const char* caption = "";     ///< "CUTOFF" - the control's own label
+    const char* suffix = "";      ///< " Hz", or empty
 
     double minimum = 0.0;
     double maximum = 1.0;
     double defaultValue = 0.0;
-    double interval = 0.01;         ///< editing step; 0 means continuous
+    double interval = 0.01; ///< editing step; 0 means continuous
     int decimals = 2;
 
     ParamCurve curve = ParamCurve::linear;
     ParamControl control = ParamControl::knob;
 
-    bool bipolar = false;           ///< pan-like: a point editor centres it
+    bool bipolar = false; ///< pan-like: a point editor centres it
     bool automatable = true;
-    bool integral = false;          ///< stored as an int, like octave
+    bool integral = false; ///< stored as an int, like octave
 
     /** For ParamControl::choice: the values, and the default as text. */
     const ParamChoice* choices = nullptr;
@@ -105,7 +105,10 @@ struct ParamSpec
     */
     int numDiscreteValues() const noexcept;
 
-    bool isDiscrete() const noexcept { return numDiscreteValues() > 1; }
+    bool isDiscrete() const noexcept
+    {
+        return numDiscreteValues() > 1;
+    }
 
     /** 0..1 onto the parameter's own units, honouring the curve.
 

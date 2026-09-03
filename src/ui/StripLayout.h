@@ -29,8 +29,8 @@ public:
                          capped at size::controlHeight
     */
     StripLayout (juce::Rectangle<int> strip, int insetX, int insetY)
-        : area (strip.reduced (insetX, insetY)),
-          controlHeight (juce::jmin (tokens::size::controlHeight, area.getHeight()))
+        : area (strip.reduced (insetX, insetY))
+        , controlHeight (juce::jmin (tokens::size::controlHeight, area.getHeight()))
     {
     }
 
@@ -42,7 +42,10 @@ public:
     }
 
     /** A wider break, for controls that belong together but are not a group. */
-    void gap() { area.removeFromLeft (tokens::space::sm); }
+    void gap()
+    {
+        area.removeFromLeft (tokens::space::sm);
+    }
 
     /** A group break. Returns the x a rule should be drawn on, which the strip
         paints itself - the layout says where, the painter says how. */
@@ -72,11 +75,20 @@ public:
     }
 
     /** What is left, for the one control that takes the rest of the strip. */
-    juce::Rectangle<int> remaining() const noexcept { return area.withHeight (controlHeight); }
+    juce::Rectangle<int> remaining() const noexcept
+    {
+        return area.withHeight (controlHeight);
+    }
 
-    int getRemainingWidth() const noexcept { return area.getWidth(); }
+    int getRemainingWidth() const noexcept
+    {
+        return area.getWidth();
+    }
 
-    int getControlHeight() const noexcept { return controlHeight; }
+    int getControlHeight() const noexcept
+    {
+        return controlHeight;
+    }
 
 private:
     juce::Rectangle<int> area;

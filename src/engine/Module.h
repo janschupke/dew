@@ -20,7 +20,11 @@ namespace dew
 class ParamBlock
 {
 public:
-    ParamBlock (const float* v, int n) noexcept : values (v), count (n) {}
+    ParamBlock (const float* v, int n) noexcept
+        : values (v)
+        , count (n)
+    {
+    }
 
     float operator[] (int i) const noexcept
     {
@@ -34,7 +38,10 @@ public:
         return juce::jlimit (0, numChoices - 1, (int) ((*this)[i] + 0.5f));
     }
 
-    int size() const noexcept { return count; }
+    int size() const noexcept
+    {
+        return count;
+    }
 
 private:
     const float* values;

@@ -51,14 +51,16 @@ const SamplePool::Entry& SamplePool::load (const juce::File& file)
 
         if (length > 0 && reader->numChannels > 0)
         {
-            auto audio = std::make_shared<juce::AudioBuffer<float>> ((int) reader->numChannels, length);
+            auto audio = std::make_shared<juce::AudioBuffer<float>> ((int) reader->numChannels,
+                                                                     length);
 
             // Reads as float whatever the file's bit depth is, which is what the
             // renderer wants and what makes the peaks comparable across formats.
             reader->read (audio.get(), 0, length, 0, true, true);
 
             entry.peaks = WaveformPeaks::compute (*audio);
-            entry.sourceSampleRate = reader->sampleRate > 0.0 ? reader->sampleRate : kDefaultSampleRate;
+            entry.sourceSampleRate = reader->sampleRate > 0.0 ? reader->sampleRate
+                                                              : kDefaultSampleRate;
             entry.audio = std::move (audio);
         }
     }

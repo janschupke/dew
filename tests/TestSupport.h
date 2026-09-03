@@ -20,7 +20,10 @@ struct TempDir
         dir.createDirectory();
     }
 
-    ~TempDir() { dir.deleteRecursively(); }
+    ~TempDir()
+    {
+        dir.deleteRecursively();
+    }
 
     TempDir (const TempDir&) = delete;
     TempDir& operator= (const TempDir&) = delete;

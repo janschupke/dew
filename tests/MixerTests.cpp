@@ -209,9 +209,9 @@ TEST_CASE ("each strip lists the channels routed into it", "[mixer][ui]")
             {
                 const auto pixel = image.getPixelAt (x, y);
 
-                if (std::abs ((int) pixel.getRed()   - (int) target.getRed())   < 20
-                 && std::abs ((int) pixel.getGreen() - (int) target.getGreen()) < 20
-                 && std::abs ((int) pixel.getBlue()  - (int) target.getBlue())  < 20)
+                if (std::abs ((int) pixel.getRed() - (int) target.getRed()) < 20
+                    && std::abs ((int) pixel.getGreen() - (int) target.getGreen()) < 20
+                    && std::abs ((int) pixel.getBlue() - (int) target.getBlue()) < 20)
                     ++matching;
             }
 
@@ -303,8 +303,8 @@ TEST_CASE ("the mixer is two rows: strips above, the effect chain below", "[mixe
 
     REQUIRE (stripArea != nullptr);
 
-    INFO ("strips " << stripArea->getBounds().toString()
-          << " chain " << chainHost->getBounds().toString());
+    INFO ("strips " << stripArea->getBounds().toString() << " chain "
+                    << chainHost->getBounds().toString());
 
     // Two rows, in that order, neither overlapping the other.
     REQUIRE (chainHost->getY() >= stripArea->getBottom());
@@ -346,7 +346,7 @@ TEST_CASE ("the effect chain sits on a container with an edge", "[mixer][ui]")
     // Just outside the card is the mixer's background; just inside is a
     // surface. If the two are the same colour there is no container.
     const auto outside = image.getPixelAt (bounds.getCentreX(), bounds.getY() - 3);
-    const auto inside  = image.getPixelAt (bounds.getCentreX(), bounds.getY() + 4);
+    const auto inside = image.getPixelAt (bounds.getCentreX(), bounds.getY() + 4);
 
     INFO ("outside " << outside.toString() << " inside " << inside.toString());
     CHECK (outside != inside);
@@ -421,7 +421,8 @@ TEST_CASE ("dragging a mixer fader is one undo step", "[ui][mixer]")
     for (int i = 1; i <= 20; ++i)
         fader->setValue ((double) i / 40.0, juce::sendNotificationSync);
 
-    if (fader->onDragEnd != nullptr) fader->onDragEnd();
+    if (fader->onDragEnd != nullptr)
+        fader->onDragEnd();
 
     REQUIRE ((double) track[ids::gain] == Approx (0.5));
 
@@ -437,7 +438,8 @@ TEST_CASE ("dragging a mixer fader is one undo step", "[ui][mixer]")
     for (int i = 1; i <= 20; ++i)
         pan->setValue ((double) -i / 40.0, juce::sendNotificationSync);
 
-    if (pan->onDragEnd != nullptr) pan->onDragEnd();
+    if (pan->onDragEnd != nullptr)
+        pan->onDragEnd();
 
     REQUIRE ((double) track[ids::pan] == Approx (-0.5));
 

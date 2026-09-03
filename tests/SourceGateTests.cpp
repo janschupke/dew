@@ -26,13 +26,13 @@ TEST_CASE ("the source gates can see every source directory", "[build][gate]")
 
     REQUIRE (files.size() > 90);
 
-    for (const auto* expected : { "Tokens.h", "DewControls.cpp", "PianoRollComponent.cpp",
-                                  "AudioEngine.cpp", "ProjectSchema.cpp", "Settings.cpp",
-                                  "EffectModules.cpp", "MainComponent.cpp" })
+    for (const auto* expected :
+         { "Tokens.h", "DewControls.cpp", "PianoRollComponent.cpp", "AudioEngine.cpp",
+           "ProjectSchema.cpp", "Settings.cpp", "EffectModules.cpp", "MainComponent.cpp" })
     {
         INFO ("expected a file named " << expected << " under DEW_SOURCE_DIR");
-        REQUIRE (std::any_of (files.begin(), files.end(),
-                              [expected] (const juce::File& f) { return f.getFileName() == expected; }));
+        REQUIRE (std::any_of (files.begin(), files.end(), [expected] (const juce::File& f)
+                              { return f.getFileName() == expected; }));
     }
 }
 
@@ -214,17 +214,17 @@ TEST_CASE ("the engine layer opens no files and no devices", "[build][layering]"
     // no audio hardware - and it is the precondition for ever wrapping this
     // engine as a plugin, since a plugin must not go looking at the filesystem
     // on its host's behalf.
-    const auto found = offenders ([] (const juce::String& line)
-    {
-        const auto trimmed = line.trim();
+    const auto found = offenders (
+        [] (const juce::String& line)
+        {
+            const auto trimmed = line.trim();
 
-        if (! trimmed.startsWith ("#include"))
-            return false;
+            if (! trimmed.startsWith ("#include"))
+                return false;
 
-        return trimmed.contains ("juce_audio_devices")
-               || trimmed.contains ("juce_audio_formats")
-               || trimmed.contains ("\"io/");
-    });
+            return trimmed.contains ("juce_audio_devices")
+                   || trimmed.contains ("juce_audio_formats") || trimmed.contains ("\"io/");
+        });
 
     juce::StringArray fromEngine;
 
@@ -300,13 +300,13 @@ TEST_CASE ("no layer includes a header a layer above it owns", "[build][layering
     // ladder, because dew_design and dew_app are siblings that know nothing of
     // each other - a rank would let one include the other and say nothing.
     const std::map<juce::String, juce::StringArray> directDeps {
-        { "dew_lang",   {} },
-        { "dew_model",  { "dew_lang" } },
+        { "dew_lang", {} },
+        { "dew_model", { "dew_lang" } },
         { "dew_engine", { "dew_model" } },
-        { "dew_io",     { "dew_engine" } },
+        { "dew_io", { "dew_engine" } },
         { "dew_design", { "dew_engine" } },
-        { "dew_app",    { "dew_model" } },
-        { "dew_ui",     { "dew_design", "dew_app", "dew_io" } },
+        { "dew_app", { "dew_model" } },
+        { "dew_ui", { "dew_design", "dew_app", "dew_io" } },
     };
 
     std::map<juce::String, std::set<juce::String>> mayReach;
@@ -327,7 +327,7 @@ TEST_CASE ("no layer includes a header a layer above it owns", "[build][layering
             pending.addArray (directDeps.at (next));
         }
 
-        reached.insert (entry.first);   // its own headers, always
+        reached.insert (entry.first); // its own headers, always
         mayReach[entry.first] = reached;
     }
 
@@ -348,16 +348,16 @@ TEST_CASE ("no layer includes a header a layer above it owns", "[build][layering
             continue;
 
         const auto directory = source.contains ("/")
-                                 ? source.upToLastOccurrenceOf ("/", false, false)
-                                 : juce::String ("");
+                                   ? source.upToLastOccurrenceOf ("/", false, false)
+                                   : juce::String ("");
 
         const auto existing = layerOfDirectory.find (directory);
 
         if (existing == layerOfDirectory.end())
             layerOfDirectory[directory] = layer;
         else if (existing->second != layer)
-            ambiguous.add ("src/" + directory + " holds sources of both "
-                           + existing->second + " and " + layer);
+            ambiguous.add ("src/" + directory + " holds sources of both " + existing->second
+                           + " and " + layer);
     }
 
     ambiguous.removeDuplicates (false);
@@ -383,8 +383,8 @@ TEST_CASE ("no layer includes a header a layer above it owns", "[build][layering
                                   .replaceCharacter ('\\', '/');
 
         const auto directory = relative.contains ("/")
-                                 ? relative.upToLastOccurrenceOf ("/", false, false)
-                                 : juce::String ("");
+                                   ? relative.upToLastOccurrenceOf ("/", false, false)
+                                   : juce::String ("");
 
         const auto owner = layerOfDirectory.find (directory);
 
@@ -404,7 +404,7 @@ TEST_CASE ("no layer includes a header a layer above it owns", "[build][layering
                 continue;
 
             const auto included = trimmed.fromFirstOccurrenceOf ("\"", false, false)
-                                         .upToFirstOccurrenceOf ("\"", false, false);
+                                      .upToFirstOccurrenceOf ("\"", false, false);
 
             if (! included.contains ("/"))
                 continue;
@@ -417,8 +417,8 @@ TEST_CASE ("no layer includes a header a layer above it owns", "[build][layering
 
             if (reachable.count (includedOwner->second) == 0)
                 climbing.add (name + ":" + juce::String (i + 1) + "  " + owner->second
-                              + " includes " + included + ", which "
-                              + includedOwner->second + " owns");
+                              + " includes " + included + ", which " + includedOwner->second
+                              + " owns");
         }
     }
 
@@ -467,20 +467,22 @@ TEST_CASE ("no source spells an automatable parameter as a string literal", "[bu
     REQUIRE (names.contains ("cutoff"));
     REQUIRE (names.contains ("midFreq"));
 
-    const auto found = dew::testing::offenders ([&names] (const juce::String& line)
-    {
-        const auto trimmed = line.trim();
+    const auto found = dew::testing::offenders (
+        [&names] (const juce::String& line)
+        {
+            const auto trimmed = line.trim();
 
-        // Doc comments name properties all through this codebase, deliberately.
-        if (trimmed.startsWith ("//") || trimmed.startsWith ("*") || trimmed.startsWith ("/*"))
+            // Doc comments name properties all through this codebase, deliberately.
+            if (trimmed.startsWith ("//") || trimmed.startsWith ("*") || trimmed.startsWith ("/*"))
+                return false;
+
+            for (const auto& name : names)
+                if (line.contains ("\"" + name + "\""))
+                    return true;
+
             return false;
-
-        for (const auto& name : names)
-            if (line.contains ("\"" + name + "\""))
-                return true;
-
-        return false;
-    }, { "Ids.h", "Icons.cpp", "lang" });
+        },
+        { "Ids.h", "Icons.cpp", "lang" });
 
     INFO ("automatable parameters written as string literals:\n" << found.joinIntoString ("\n"));
     CHECK (found.isEmpty());
@@ -503,15 +505,17 @@ TEST_CASE ("no source names a colour by its hex value", "[build][gate][design]")
     //
     // juce::Colour::fromString is deliberately NOT caught: it reads a colour a
     // document stored, which is data, not a design decision.
-    const auto found = offenders ([] (const juce::String& line)
-    {
-        const auto trimmed = line.trim();
+    const auto found = offenders (
+        [] (const juce::String& line)
+        {
+            const auto trimmed = line.trim();
 
-        if (trimmed.startsWith ("//") || trimmed.startsWith ("*") || trimmed.startsWith ("/*"))
-            return false;
+            if (trimmed.startsWith ("//") || trimmed.startsWith ("*") || trimmed.startsWith ("/*"))
+                return false;
 
-        return line.contains ("juce::Colour (0x") || line.contains ("juce::Colour(0x");
-    }, { "Tokens.h" });
+            return line.contains ("juce::Colour (0x") || line.contains ("juce::Colour(0x");
+        },
+        { "Tokens.h" });
 
     INFO ("colours written as hex outside the token file:\n" << found.joinIntoString ("\n"));
     CHECK (found.isEmpty());
@@ -526,47 +530,52 @@ TEST_CASE ("no source states an emphasis as a bare number", "[build][gate][desig
     //
     // 0.0 and 1.0 are allowed: fully transparent and fully opaque are not
     // rungs on a scale, they are the ends of the axis the scale sits on.
-    const auto found = offenders ([] (const juce::String& line)
-    {
-        const auto trimmed = line.trim();
-
-        if (trimmed.startsWith ("//") || trimmed.startsWith ("*") || trimmed.startsWith ("/*"))
-            return false;
-
-        for (const auto* call : { ".withAlpha (", ".brighter (", ".darker (",
-                                  ".withSaturation (", ".withBrightness (",
-                                  ".withMultipliedSaturation (", ".withMultipliedBrightness (" })
+    const auto found = offenders (
+        [] (const juce::String& line)
         {
-            auto rest = line;
+            const auto trimmed = line.trim();
 
-            while (rest.contains (call))
+            if (trimmed.startsWith ("//") || trimmed.startsWith ("*") || trimmed.startsWith ("/*"))
+                return false;
+
+            for (const auto* call :
+                 { ".withAlpha (", ".brighter (", ".darker (", ".withSaturation (",
+                   ".withBrightness (", ".withMultipliedSaturation (",
+                   ".withMultipliedBrightness (" })
             {
-                rest = rest.fromFirstOccurrenceOf (call, false, false);
+                auto rest = line;
 
-                // Just this call's own argument list, so a token argument
-                // followed later in the line by an unrelated number is not a
-                // false positive.
-                const auto argument = rest.upToFirstOccurrenceOf (")", false, false);
-
-                for (int i = 0; i < argument.length(); ++i)
+                while (rest.contains (call))
                 {
-                    if (! juce::CharacterFunctions::isDigit (argument[i]))
-                        continue;
+                    rest = rest.fromFirstOccurrenceOf (call, false, false);
 
-                    if (i > 0 && (juce::CharacterFunctions::isLetterOrDigit (argument[i - 1])
-                                  || argument[i - 1] == '.' || argument[i - 1] == '_'))
-                        continue;
+                    // Just this call's own argument list, so a token argument
+                    // followed later in the line by an unrelated number is not a
+                    // false positive.
+                    const auto argument = rest.upToFirstOccurrenceOf (")", false, false);
 
-                    const auto number = argument.substring (i).initialSectionContainingOnly ("0123456789.");
+                    for (int i = 0; i < argument.length(); ++i)
+                    {
+                        if (! juce::CharacterFunctions::isDigit (argument[i]))
+                            continue;
 
-                    if (number != "0.0" && number != "1.0" && number != "0" && number != "1")
-                        return true;
+                        if (i > 0
+                            && (juce::CharacterFunctions::isLetterOrDigit (argument[i - 1])
+                                || argument[i - 1] == '.' || argument[i - 1] == '_'))
+                            continue;
+
+                        const auto number = argument.substring (i).initialSectionContainingOnly (
+                            "0123456789.");
+
+                        if (number != "0.0" && number != "1.0" && number != "0" && number != "1")
+                            return true;
+                    }
                 }
             }
-        }
 
-        return false;
-    }, { "Tokens.h" });
+            return false;
+        },
+        { "Tokens.h" });
 
     INFO ("emphasis written as bare numbers:\n" << found.joinIntoString ("\n"));
     CHECK (found.isEmpty());
@@ -582,40 +591,42 @@ TEST_CASE ("no source states a radius or a stroke as a bare number", "[build][ga
     // space - where 0.22 is a position, not a width - and its stroke weights
     // already come from icon::. A gate that read them as pixel values would be
     // reading a different coordinate system.
-    const auto found = offenders ([] (const juce::String& line)
-    {
-        const auto trimmed = line.trim();
-
-        if (trimmed.startsWith ("//") || trimmed.startsWith ("*") || trimmed.startsWith ("/*"))
-            return false;
-
-        const auto numberAfterComma = [] (const juce::String& text)
+    const auto found = offenders (
+        [] (const juce::String& line)
         {
-            for (int i = 1; i < text.length(); ++i)
-                if (text[i - 1] == ','
-                    && juce::CharacterFunctions::isDigit (text.substring (i).trimStart()[0]))
+            const auto trimmed = line.trim();
+
+            if (trimmed.startsWith ("//") || trimmed.startsWith ("*") || trimmed.startsWith ("/*"))
+                return false;
+
+            const auto numberAfterComma = [] (const juce::String& text)
+            {
+                for (int i = 1; i < text.length(); ++i)
+                    if (text[i - 1] == ','
+                        && juce::CharacterFunctions::isDigit (text.substring (i).trimStart()[0]))
+                        return true;
+
+                return false;
+            };
+
+            for (const auto* call : { "RoundedRectangle (", "drawRect (", "drawEllipse (" })
+                if (line.contains (call)
+                    && numberAfterComma (line.fromFirstOccurrenceOf (call, false, false)))
                     return true;
 
+            auto rest = line;
+
+            while (rest.contains ("PathStrokeType ("))
+            {
+                rest = rest.fromFirstOccurrenceOf ("PathStrokeType (", false, false);
+
+                if (juce::CharacterFunctions::isDigit (rest.trimStart()[0]))
+                    return true;
+            }
+
             return false;
-        };
-
-        for (const auto* call : { "RoundedRectangle (", "drawRect (", "drawEllipse (" })
-            if (line.contains (call)
-                && numberAfterComma (line.fromFirstOccurrenceOf (call, false, false)))
-                return true;
-
-        auto rest = line;
-
-        while (rest.contains ("PathStrokeType ("))
-        {
-            rest = rest.fromFirstOccurrenceOf ("PathStrokeType (", false, false);
-
-            if (juce::CharacterFunctions::isDigit (rest.trimStart()[0]))
-                return true;
-        }
-
-        return false;
-    }, { "Tokens.h", "Icons.cpp" });
+        },
+        { "Tokens.h", "Icons.cpp" });
 
     INFO ("radii and strokes written as bare numbers:\n" << found.joinIntoString ("\n"));
     CHECK (found.isEmpty());
@@ -634,56 +645,64 @@ TEST_CASE ("no component redeclares a size the ladder already names", "[build][g
     // called those strip heights would be a gate somebody turns off. A
     // declaration has to be claiming to be a dimension - to end in Height,
     // Width, Thickness, Depth or Gutter - before its value is compared.
-    struct Rung { int value; const char* name; };
-
-    const Rung ladder[] {
-        { tokens::size::controlHeight,   "controlHeight" },
-        { tokens::size::controlHeightSm, "controlHeightSm" },
-        { tokens::size::iconButton,      "iconButton" },
-        { tokens::size::knob,            "knob" },
-        { tokens::size::rowHeight,       "rowHeight or stripToolbar" },
-        { tokens::size::rulerHeight,     "rulerHeight or letterToggle" },
-        { tokens::size::stripStatus,     "stripStatus or iconButton" },
-        { tokens::size::stripHeading,    "stripHeading or controlHeight" },
-        { tokens::size::stripFormRow,    "stripFormRow" },
-        { tokens::size::stripTabs,       "stripTabs" },
-        { tokens::size::stripTransport,  "stripTransport" },
-        { tokens::size::gutterChannel,   "gutterChannel" },
-        { tokens::size::gutterTrack,     "gutterTrack" },
-        { tokens::size::gutterKeyboard,  "gutterKeyboard" },
-        { tokens::size::gutterLabel,     "gutterLabel" },
-        { tokens::size::scrollThickness, "scrollThickness or meterHeight" },
-        { tokens::size::knobRow,         "knobRow" },
+    struct Rung
+    {
+        int value;
+        const char* name;
     };
 
-    const auto found = offenders ([&ladder] (const juce::String& line)
-    {
-        const auto trimmed = line.trim();
+    const Rung ladder[] {
+        { tokens::size::controlHeight, "controlHeight" },
+        { tokens::size::controlHeightSm, "controlHeightSm" },
+        { tokens::size::iconButton, "iconButton" },
+        { tokens::size::knob, "knob" },
+        { tokens::size::rowHeight, "rowHeight or stripToolbar" },
+        { tokens::size::rulerHeight, "rulerHeight or letterToggle" },
+        { tokens::size::stripStatus, "stripStatus or iconButton" },
+        { tokens::size::stripHeading, "stripHeading or controlHeight" },
+        { tokens::size::stripFormRow, "stripFormRow" },
+        { tokens::size::stripTabs, "stripTabs" },
+        { tokens::size::stripTransport, "stripTransport" },
+        { tokens::size::gutterChannel, "gutterChannel" },
+        { tokens::size::gutterTrack, "gutterTrack" },
+        { tokens::size::gutterKeyboard, "gutterKeyboard" },
+        { tokens::size::gutterLabel, "gutterLabel" },
+        { tokens::size::scrollThickness, "scrollThickness or meterHeight" },
+        { tokens::size::knobRow, "knobRow" },
+    };
 
-        if (! trimmed.startsWith ("constexpr int") && ! trimmed.startsWith ("static constexpr int"))
+    const auto found = offenders (
+        [&ladder] (const juce::String& line)
+        {
+            const auto trimmed = line.trim();
+
+            if (! trimmed.startsWith ("constexpr int")
+                && ! trimmed.startsWith ("static constexpr int"))
+                return false;
+
+            const auto declaration = trimmed.fromFirstOccurrenceOf ("int ", false, false);
+            const auto name = declaration.upToFirstOccurrenceOf ("=", false, false).trim();
+            const auto value = declaration.fromFirstOccurrenceOf ("=", false, false)
+                                   .upToFirstOccurrenceOf (";", false, false)
+                                   .trim();
+
+            // A dimension, not a count or a limit.
+            auto claimsToBeADimension = false;
+
+            for (const auto* suffix : { "Height", "Width", "Thickness", "Depth", "Gutter" })
+                if (name.endsWith (suffix))
+                    claimsToBeADimension = true;
+
+            if (! claimsToBeADimension || ! value.containsOnly ("0123456789"))
+                return false;
+
+            for (const auto& rung : ladder)
+                if (value.getIntValue() == rung.value)
+                    return true;
+
             return false;
-
-        const auto declaration = trimmed.fromFirstOccurrenceOf ("int ", false, false);
-        const auto name = declaration.upToFirstOccurrenceOf ("=", false, false).trim();
-        const auto value = declaration.fromFirstOccurrenceOf ("=", false, false)
-                                      .upToFirstOccurrenceOf (";", false, false).trim();
-
-        // A dimension, not a count or a limit.
-        auto claimsToBeADimension = false;
-
-        for (const auto* suffix : { "Height", "Width", "Thickness", "Depth", "Gutter" })
-            if (name.endsWith (suffix))
-                claimsToBeADimension = true;
-
-        if (! claimsToBeADimension || ! value.containsOnly ("0123456789"))
-            return false;
-
-        for (const auto& rung : ladder)
-            if (value.getIntValue() == rung.value)
-                return true;
-
-        return false;
-    }, { "Tokens.h" });
+        },
+        { "Tokens.h" });
 
     INFO ("dimensions the size ladder already declares:\n" << found.joinIntoString ("\n"));
     CHECK (found.isEmpty());
@@ -706,68 +725,71 @@ TEST_CASE ("no source states a gap or an inset as a bare number", "[build][gate]
     // a float, dew's spacing scale is integral, and `reduced (2.0f)` on a float
     // rectangle is a sub-pixel optical inset - a different thing from a gap,
     // and one stroke::whisper already names where it recurs.
-    const auto found = offenders ([] (const juce::String& line)
-    {
-        const auto trimmed = line.trim();
-
-        if (trimmed.startsWith ("//") || trimmed.startsWith ("*") || trimmed.startsWith ("/*"))
-            return false;
-
-        const auto bareInteger = [] (const juce::String& text)
+    const auto found = offenders (
+        [] (const juce::String& line)
         {
-            const auto argument = text.trimStart();
+            const auto trimmed = line.trim();
 
-            if (! juce::CharacterFunctions::isDigit (argument[0]))
+            if (trimmed.startsWith ("//") || trimmed.startsWith ("*") || trimmed.startsWith ("/*"))
                 return false;
 
-            const auto number = argument.initialSectionContainingOnly ("0123456789");
-
-            // A zero inset is not a gap on any scale; it says "not in this
-            // direction", which is what `reduced (space::xs, 0)` means.
-            return number != "0" && ! argument.substring (number.length()).startsWith (".");
-        };
-
-        for (const auto* call : { "reduced (", "expanded (" })
-        {
-            auto rest = line;
-
-            while (rest.contains (call))
+            const auto bareInteger = [] (const juce::String& text)
             {
-                rest = rest.fromFirstOccurrenceOf (call, false, false);
+                const auto argument = text.trimStart();
 
-                if (bareInteger (rest))
-                    return true;
+                if (! juce::CharacterFunctions::isDigit (argument[0]))
+                    return false;
 
-                // The second argument too: reduced (x, y) insets both axes.
-                const auto arguments = rest.upToFirstOccurrenceOf (")", false, false);
+                const auto number = argument.initialSectionContainingOnly ("0123456789");
 
-                if (arguments.contains (",") && bareInteger (arguments.fromFirstOccurrenceOf (",", false, false)))
+                // A zero inset is not a gap on any scale; it says "not in this
+                // direction", which is what `reduced (space::xs, 0)` means.
+                return number != "0" && ! argument.substring (number.length()).startsWith (".");
+            };
+
+            for (const auto* call : { "reduced (", "expanded (" })
+            {
+                auto rest = line;
+
+                while (rest.contains (call))
+                {
+                    rest = rest.fromFirstOccurrenceOf (call, false, false);
+
+                    if (bareInteger (rest))
+                        return true;
+
+                    // The second argument too: reduced (x, y) insets both axes.
+                    const auto arguments = rest.upToFirstOccurrenceOf (")", false, false);
+
+                    if (arguments.contains (",")
+                        && bareInteger (arguments.fromFirstOccurrenceOf (",", false, false)))
+                        return true;
+                }
+            }
+
+            // A slice taken and discarded is a gap, whatever it is called. The
+            // whole statement has to BE the call - `area.removeFromTop (6);` - so
+            // that `button.setBounds (row.removeFromRight (110))`, where the slice
+            // is the button's own width, is not read as one.
+            for (const auto* call : { ".removeFromTop (", ".removeFromBottom (",
+                                      ".removeFromLeft (", ".removeFromRight (" })
+            {
+                if (! trimmed.endsWith (");") || ! trimmed.contains (call))
+                    continue;
+
+                const auto receiver = trimmed.upToFirstOccurrenceOf (call, false, false);
+
+                if (! receiver.containsOnly ("abcdefghijklmnopqrstuvwxyz"
+                                             "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_."))
+                    continue;
+
+                if (bareInteger (trimmed.fromFirstOccurrenceOf (call, false, false)))
                     return true;
             }
-        }
 
-        // A slice taken and discarded is a gap, whatever it is called. The
-        // whole statement has to BE the call - `area.removeFromTop (6);` - so
-        // that `button.setBounds (row.removeFromRight (110))`, where the slice
-        // is the button's own width, is not read as one.
-        for (const auto* call : { ".removeFromTop (", ".removeFromBottom (",
-                                  ".removeFromLeft (", ".removeFromRight (" })
-        {
-            if (! trimmed.endsWith (");") || ! trimmed.contains (call))
-                continue;
-
-            const auto receiver = trimmed.upToFirstOccurrenceOf (call, false, false);
-
-            if (! receiver.containsOnly ("abcdefghijklmnopqrstuvwxyz"
-                                         "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_."))
-                continue;
-
-            if (bareInteger (trimmed.fromFirstOccurrenceOf (call, false, false)))
-                return true;
-        }
-
-        return false;
-    }, { "Tokens.h" });
+            return false;
+        },
+        { "Tokens.h" });
 
     INFO ("gaps and insets written as bare numbers:\n" << found.joinIntoString ("\n"));
     CHECK (found.isEmpty());
@@ -779,17 +801,19 @@ TEST_CASE ("no source picks its own refresh rate", "[build][gate][design]")
     // follow when the application decides what "a list refresh" costs, and dew
     // had one - the transport bar - beside four others already quoting
     // motion::uiRefreshHz and motion::playheadHz.
-    const auto found = offenders ([] (const juce::String& line)
-    {
-        const auto trimmed = line.trim();
+    const auto found = offenders (
+        [] (const juce::String& line)
+        {
+            const auto trimmed = line.trim();
 
-        if (trimmed.startsWith ("//") || trimmed.startsWith ("*") || trimmed.startsWith ("/*"))
-            return false;
+            if (trimmed.startsWith ("//") || trimmed.startsWith ("*") || trimmed.startsWith ("/*"))
+                return false;
 
-        return trimmed.contains ("startTimerHz (")
-               && juce::CharacterFunctions::isDigit (
-                      trimmed.fromFirstOccurrenceOf ("startTimerHz (", false, false)[0]);
-    }, { "Tokens.h" });
+            return trimmed.contains ("startTimerHz (")
+                   && juce::CharacterFunctions::isDigit (
+                       trimmed.fromFirstOccurrenceOf ("startTimerHz (", false, false)[0]);
+        },
+        { "Tokens.h" });
 
     INFO ("timers started at a rate of their own choosing:\n" << found.joinIntoString ("\n"));
     CHECK (found.isEmpty());
@@ -817,13 +841,13 @@ TEST_CASE ("every token the design system declares is one the app uses", "[build
     {
         const auto trimmed = line.trim();
 
-        for (const auto* form : { "inline const juce::Colour ", "inline constexpr int ",
-                                  "inline constexpr float " })
+        for (const auto* form :
+             { "inline const juce::Colour ", "inline constexpr int ", "inline constexpr float " })
             if (trimmed.startsWith (form))
                 declared.addIfNotAlreadyThere (
                     trimmed.fromFirstOccurrenceOf (form, false, false)
-                           .initialSectionContainingOnly ("abcdefghijklmnopqrstuvwxyz"
-                                                          "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_"));
+                        .initialSectionContainingOnly ("abcdefghijklmnopqrstuvwxyz"
+                                                       "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_"));
     }
 
     // Control case: a gate over an empty list is not a gate.
@@ -839,8 +863,10 @@ TEST_CASE ("every token the design system declares is one the app uses", "[build
 
     juce::String everythingElse;
 
-    for (const auto* directory : { DEW_SOURCE_DIR, DEW_SOURCE_DIR "/../tests", DEW_SOURCE_DIR "/../tools" })
-        for (const auto& entry : juce::RangedDirectoryIterator (juce::File (directory), true, "*.cpp;*.h"))
+    for (const auto* directory :
+         { DEW_SOURCE_DIR, DEW_SOURCE_DIR "/../tests", DEW_SOURCE_DIR "/../tools" })
+        for (const auto& entry :
+             juce::RangedDirectoryIterator (juce::File (directory), true, "*.cpp;*.h"))
             if (entry.getFile().getFileName() != "Tokens.h")
                 everythingElse += entry.getFile().loadFileAsString();
 
@@ -855,9 +881,7 @@ TEST_CASE ("every token the design system declares is one the app uses", "[build
              i = everythingElse.indexOf (i + 1, name))
         {
             const auto isWordCharacter = [] (juce::juce_wchar c)
-            {
-                return juce::CharacterFunctions::isLetterOrDigit (c) || c == '_';
-            };
+            { return juce::CharacterFunctions::isLetterOrDigit (c) || c == '_'; };
 
             const juce::juce_wchar before = i > 0 ? everythingElse[i - 1] : ' ';
             const juce::juce_wchar after = everythingElse[i + name.length()];
@@ -889,17 +913,19 @@ TEST_CASE ("no view reads the wheel or the drag scale for itself", "[build][gate
     //
     // Gestures.h is where the reading happens, so it is the one place allowed
     // to touch the raw fields.
-    const auto found = offenders ([] (const juce::String& line)
-    {
-        const auto trimmed = line.trim();
+    const auto found = offenders (
+        [] (const juce::String& line)
+        {
+            const auto trimmed = line.trim();
 
-        if (trimmed.startsWith ("//") || trimmed.startsWith ("*") || trimmed.startsWith ("/*"))
-            return false;
+            if (trimmed.startsWith ("//") || trimmed.startsWith ("*") || trimmed.startsWith ("/*"))
+                return false;
 
-        return line.contains ("wheel.deltaX") || line.contains ("wheel.deltaY")
-               || line.contains ("wheel.isReversed")
-               || line.contains ("setMouseDragSensitivity");
-    }, { "Gestures.h", "DewControls.cpp" });
+            return line.contains ("wheel.deltaX") || line.contains ("wheel.deltaY")
+                   || line.contains ("wheel.isReversed")
+                   || line.contains ("setMouseDragSensitivity");
+        },
+        { "Gestures.h", "DewControls.cpp" });
 
     INFO ("views reading the wheel or the drag scale directly:\n" << found.joinIntoString ("\n"));
     CHECK (found.isEmpty());
@@ -917,18 +943,20 @@ TEST_CASE ("no editor writes an undoable property by hand", "[build][gate][undo]
     // A write with no UndoManager is not caught, and deliberately: writing to a
     // detached copy nobody can undo is a different thing, and it says so where
     // it happens.
-    const auto found = offenders ([] (const juce::String& line)
-    {
-        const auto trimmed = line.trim();
+    const auto found = offenders (
+        [] (const juce::String& line)
+        {
+            const auto trimmed = line.trim();
 
-        if (trimmed.startsWith ("//") || trimmed.startsWith ("*") || trimmed.startsWith ("/*"))
-            return false;
+            if (trimmed.startsWith ("//") || trimmed.startsWith ("*") || trimmed.startsWith ("/*"))
+                return false;
 
-        if (! line.contains (".setProperty (") || line.contains ("ProjectEdits::setProperty"))
-            return false;
+            if (! line.contains (".setProperty (") || line.contains ("ProjectEdits::setProperty"))
+                return false;
 
-        return line.contains ("&undo") || line.contains ("getUndoManager()");
-    }, { "ProjectEdits.cpp", "ProjectFactory.cpp", "ProjectSchema.cpp" });
+            return line.contains ("&undo") || line.contains ("getUndoManager()");
+        },
+        { "ProjectEdits.cpp", "ProjectFactory.cpp", "ProjectSchema.cpp" });
 
     INFO ("undoable property writes outside ProjectEdits:\n" << found.joinIntoString ("\n"));
     CHECK (found.isEmpty());
@@ -947,17 +975,18 @@ TEST_CASE ("no source binds a key outside the hotkey registry", "[build][gate][h
     // Return, Tab and Escape, and that is a modal handler rather than a
     // binding - nothing outside that popup can reach those keys, so putting
     // them in a table shared with the menu bar would say something untrue.
-    const auto found = offenders ([] (const juce::String& line)
-    {
-        const auto trimmed = line.trim();
+    const auto found = offenders (
+        [] (const juce::String& line)
+        {
+            const auto trimmed = line.trim();
 
-        if (trimmed.startsWith ("//") || trimmed.startsWith ("*") || trimmed.startsWith ("/*"))
-            return false;
+            if (trimmed.startsWith ("//") || trimmed.startsWith ("*") || trimmed.startsWith ("/*"))
+                return false;
 
-        return line.contains ("addDefaultKeypress (")
-               || line.contains ("juce::KeyPress (")
-               || line.contains ("KeyPress::createFromDescription");
-    }, { "Hotkeys.h", "Hotkeys.cpp", "ScoreEditorComponent.cpp" });
+            return line.contains ("addDefaultKeypress (") || line.contains ("juce::KeyPress (")
+                   || line.contains ("KeyPress::createFromDescription");
+        },
+        { "Hotkeys.h", "Hotkeys.cpp", "ScoreEditorComponent.cpp" });
 
     INFO ("keys bound outside the registry:\n" << found.joinIntoString ("\n"));
     CHECK (found.isEmpty());

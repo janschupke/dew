@@ -16,15 +16,25 @@ namespace dew
 class Transport
 {
 public:
-    enum class Mode { pattern, song };
+    enum class Mode
+    {
+        pattern,
+        song
+    };
 
     void prepare (double newSampleRate);
 
     void setTempo (double bpm, int stepsPerBeat);
-    double getTempo() const noexcept        { return tempoBpm; }
-    int getStepsPerBeat() const noexcept    { return stepsPerBeat; }
+    double getTempo() const noexcept
+    {
+        return tempoBpm;
+    }
+    int getStepsPerBeat() const noexcept
+    {
+        return stepsPerBeat;
+    }
 
-// clang-format on
+    // clang-format on
     /** Samples per sequencer step. A step is a 1/stepsPerBeat note.
 
         With a tempo map set this is the INSTANTANEOUS rate at the playhead, so
@@ -42,9 +52,12 @@ public:
         changes - the bridge can hand back a different slot holding the same
         generation.
     */
-    void setTempoMap (const TempoMap* map) noexcept { tempoMap = map; }
+    void setTempoMap (const TempoMap* map) noexcept
+    {
+        tempoMap = map;
+    }
 
-// clang-format on
+    // clang-format on
     /** Steps <-> samples. THE conversion: loopStartSamples, getPositionInSteps,
         the sequencer and the offline renderer all go through these, so a tempo
         curve reaches all of them at once or none of them.
@@ -73,12 +86,12 @@ public:
     */
     void setLoopRange (double startSteps, double endSteps) noexcept;
 
-// clang-format off
+    // clang-format off
     double getLoopStartSteps() const noexcept  { return loopStartSteps; }
     double getLoopEndSteps() const noexcept    { return loopEndSteps; }
     bool hasLoop() const noexcept              { return loopEndSteps > loopStartSteps; }
 
-// clang-format on
+    // clang-format on
     /** The window in samples at the current tempo, rounded ONCE, here.
 
         Both ends are rounded from the same tempo in the same place, so advance(),
@@ -106,28 +119,54 @@ public:
         seeker flickering. Predicting the fold makes the optimistic value the
         one the audio thread arrives at, rather than a different one.
     */
-    static juce::int64 wrappedIntoLoop (juce::int64 positionSamples,
-                                        juce::int64 startSamples,
+    static juce::int64 wrappedIntoLoop (juce::int64 positionSamples, juce::int64 startSamples,
                                         juce::int64 endSamples) noexcept;
 
     /** The old length-at-zero form, kept and not deprecated: most callers still
         mean precisely it - wrap at the end of the material, starting at the top.
     */
-    void setLoopLengthSteps (int steps) noexcept  { setLoopRange (0.0, (double) juce::jmax (0, steps)); }
+    void setLoopLengthSteps (int steps) noexcept
+    {
+        setLoopRange (0.0, (double) juce::jmax (0, steps));
+    }
 
-    void setMode (Mode m) noexcept   { mode = m; }
-    Mode getMode() const noexcept    { return mode; }
+    void setMode (Mode m) noexcept
+    {
+        mode = m;
+    }
+    Mode getMode() const noexcept
+    {
+        return mode;
+    }
 
-    void start() noexcept            { playing = true; }
-    void stop() noexcept             { playing = false; }
-    bool isPlaying() const noexcept  { return playing; }
+    void start() noexcept
+    {
+        playing = true;
+    }
+    void stop() noexcept
+    {
+        playing = false;
+    }
+    bool isPlaying() const noexcept
+    {
+        return playing;
+    }
 
-    void setPositionSamples (juce::int64 samples) noexcept  { positionSamples = juce::jmax ((juce::int64) 0, samples); }
-    juce::int64 getPositionSamples() const noexcept         { return positionSamples; }
+    void setPositionSamples (juce::int64 samples) noexcept
+    {
+        positionSamples = juce::jmax ((juce::int64) 0, samples);
+    }
+    juce::int64 getPositionSamples() const noexcept
+    {
+        return positionSamples;
+    }
 
-    void rewind() noexcept  { positionSamples = 0; }
+    void rewind() noexcept
+    {
+        positionSamples = 0;
+    }
 
-// clang-format on
+    // clang-format on
     /** Advances by a block. Wraps into the loop window when one is set. */
     void advance (int numSamples) noexcept;
 

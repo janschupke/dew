@@ -36,7 +36,7 @@ EngineSnapshot makeConsistentSnapshot (juce::uint64 generation, int size)
 bool isConsistent (const EngineSnapshot& s)
 {
     if (s.generation == 0)
-        return s.channels.empty();   // the initial, never-published snapshot
+        return s.channels.empty(); // the initial, never-published snapshot
 
     // Exact comparison is the point: this is checking the bytes were not
     // rewritten mid-read, not that a computation came out close.
@@ -118,44 +118,47 @@ TEST_CASE ("a reader never sees a torn snapshot under a continuous writer", "[br
     std::atomic<juce::uint64> readsPerformed { 0 };
     std::atomic<juce::uint64> highestSeen { 0 };
 
-    std::thread writer ([&]
-    {
-        for (juce::uint64 generation = 1; ! stop.load(); ++generation)
+    std::thread writer (
+        [&]
         {
-            // Varying sizes force the vectors to reallocate, which is when a
-            // torn read would be most destructive.
-            bridge.publish (makeConsistentSnapshot (generation, 1 + (int) (generation % 32)));
-        }
-    });
-
-    std::thread reader ([&]
-    {
-        while (! stop.load())
-        {
-            const auto& snapshot = bridge.acquire();
-
-            // Read it the way the audio thread would: touch every field, more
-            // than once, over a window long enough for a writer to interfere.
-            for (int pass = 0; pass < 4; ++pass)
-                if (! isConsistent (snapshot))
-                    tornReads.fetch_add (1);
-
-            auto previous = highestSeen.load();
-            while (snapshot.generation > previous
-                   && ! highestSeen.compare_exchange_weak (previous, snapshot.generation))
+            for (juce::uint64 generation = 1; ! stop.load(); ++generation)
             {
+                // Varying sizes force the vectors to reallocate, which is when a
+                // torn read would be most destructive.
+                bridge.publish (makeConsistentSnapshot (generation, 1 + (int) (generation % 32)));
             }
+        });
 
-            readsPerformed.fetch_add (1);
-        }
-    });
+    std::thread reader (
+        [&]
+        {
+            while (! stop.load())
+            {
+                const auto& snapshot = bridge.acquire();
+
+                // Read it the way the audio thread would: touch every field, more
+                // than once, over a window long enough for a writer to interfere.
+                for (int pass = 0; pass < 4; ++pass)
+                    if (! isConsistent (snapshot))
+                        tornReads.fetch_add (1);
+
+                auto previous = highestSeen.load();
+                while (snapshot.generation > previous
+                       && ! highestSeen.compare_exchange_weak (previous, snapshot.generation))
+                {
+                }
+
+                readsPerformed.fetch_add (1);
+            }
+        });
 
     std::this_thread::sleep_for (std::chrono::milliseconds (1500));
     stop.store (true);
     writer.join();
     reader.join();
 
-    INFO ("reads: " << readsPerformed.load() << ", highest generation seen: " << highestSeen.load());
+    INFO ("reads: " << readsPerformed.load()
+                    << ", highest generation seen: " << highestSeen.load());
 
     REQUIRE (tornReads.load() == 0);
 

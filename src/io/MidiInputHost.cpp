@@ -4,7 +4,8 @@ namespace dew
 {
 
 MidiInputHost::MidiInputHost (juce::AudioDeviceManager& manager, AudioEngine& engine)
-    : deviceManager (manager), router (engine)
+    : deviceManager (manager)
+    , router (engine)
 {
 }
 
@@ -56,8 +57,8 @@ juce::Array<juce::MidiDeviceInfo> MidiInputHost::getListedDevices() const
     // when its cable is pulled instead of silently disappearing.
     for (const auto& identifier : wanted)
     {
-        const auto present = std::any_of (devices.begin(), devices.end(),
-                                          [&] (const auto& d) { return d.identifier == identifier; });
+        const auto present = std::any_of (devices.begin(), devices.end(), [&] (const auto& d)
+                                          { return d.identifier == identifier; });
 
         if (! present)
             devices.add ({ {}, identifier });
@@ -77,7 +78,7 @@ bool MidiInputHost::isDeviceConnected (const juce::String& identifier) const
 
     return std::any_of (devices.begin(), devices.end(),
                         [&] (const auto& d) { return d.identifier == identifier; })
-        && deviceManager.isMidiInputDeviceEnabled (identifier);
+           && deviceManager.isMidiInputDeviceEnabled (identifier);
 }
 
 bool MidiInputHost::hasConnectedInput() const
@@ -136,8 +137,7 @@ void MidiInputHost::reconcileWith (const juce::Array<juce::MidiDeviceInfo>& pres
                 router.reset();
                 break;
 
-            case Action::none:
-                break;
+            case Action::none: break;
         }
     }
 
@@ -159,8 +159,7 @@ juce::String MidiInputHost::describeInputs() const
             names.add (device.name);
 
     if (names.isEmpty())
-        return wanted.isEmpty() ? "no MIDI input"
-                                : "MIDI input not connected";
+        return wanted.isEmpty() ? "no MIDI input" : "MIDI input not connected";
 
     return names.joinIntoString (", ");
 }

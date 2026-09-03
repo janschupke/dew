@@ -36,7 +36,10 @@ struct PresetSerializer
         Preset preset;
         juce::StringArray warnings;
 
-        bool ok() const { return result.wasOk(); }
+        bool ok() const
+        {
+            return result.wasOk();
+        }
     };
 
     static juce::String toJsonString (const Preset&);

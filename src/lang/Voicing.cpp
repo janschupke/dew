@@ -247,7 +247,7 @@ std::vector<int> voiceChord (const Chord& chord, const VoicingSpec& voicing,
                 continue;
 
             auto cost = 4 * rangeCost (pitches, voicing.lowPitch, voicing.highPitch)
-                      + 2 * spacingCost (pitches);
+                        + 2 * spacingCost (pitches);
 
             if (! previous.empty() && voicing.motion != Motion::fixed)
             {
@@ -257,7 +257,7 @@ std::vector<int> voiceChord (const Chord& chord, const VoicingSpec& voicing,
                 // dominant term. `parallel` deliberately ignores motion, so a
                 // chord shape simply transposes.
                 cost += (voicing.motion == Motion::smooth ? 3 : 0) * motion
-                      + 6 * parallelCost (previous, pitches);
+                        + 6 * parallelCost (previous, pitches);
 
                 if (previous.size() == pitches.size())
                     for (std::size_t i = 0; i < pitches.size(); ++i)

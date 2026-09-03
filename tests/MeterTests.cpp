@@ -132,14 +132,12 @@ TEST_CASE ("changing the meter does not change how long a step is", "[meter][tim
     auto project = ProjectFactory::createDefault();
 
     const auto before = Transport::samplesPerStepFor ((double) project[ids::tempoBpm],
-                                                      Meter::of (project).stepsPerBeat,
-                                                      48000.0);
+                                                      Meter::of (project).stepsPerBeat, 48000.0);
 
     ProjectEdits::setMeter (project, 3, 4, nullptr);
 
     const auto after = Transport::samplesPerStepFor ((double) project[ids::tempoBpm],
-                                                     Meter::of (project).stepsPerBeat,
-                                                     48000.0);
+                                                     Meter::of (project).stepsPerBeat, 48000.0);
 
     CHECK (juce::exactlyEqual (before, after));
 }
@@ -244,7 +242,7 @@ TEST_CASE ("the ruler recovers the beat from the meter, not from a four", "[mete
     const juce::Rectangle<int> bounds { 0, 0, 480, 24 };
 
     ruler::Style style;
-    style.stepsPerBar = 12;   // 3/4 at four steps to the beat
+    style.stepsPerBar = 12; // 3/4 at four steps to the beat
     style.beatsPerBar = 3;
     style.totalSteps = 96;
 

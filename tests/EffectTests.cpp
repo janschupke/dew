@@ -32,7 +32,8 @@ constexpr int blockSize = 512;
 */
 struct Params
 {
-    explicit Params (EffectType t) : type (t)
+    explicit Params (EffectType t)
+        : type (t)
     {
         // Start from the declared defaults, so a test only states what it cares
         // about - exactly as `EffectParams params;` used to.
@@ -64,7 +65,10 @@ struct Params
         return *this;
     }
 
-    Params& setMode (FilterMode mode) { return set (ids::filterMode, (float) mode); }
+    Params& setMode (FilterMode mode)
+    {
+        return set (ids::filterMode, (float) mode);
+    }
 
     EffectType type;
     EffectParamBlock block {};
@@ -89,10 +93,10 @@ void runEffect (const Params& params, juce::AudioBuffer<float>& buffer)
     for (int start = 0; start < buffer.getNumSamples(); start += blockSize)
     {
         const auto n = juce::jmin (blockSize, buffer.getNumSamples() - start);
-        processEffectSlot (*module, params.block, params.type,
-                           { buffer.getWritePointer (0) + start,
-                             buffer.getWritePointer (1) + start, n },
-                           dryScratch);
+        processEffectSlot (
+            *module, params.block, params.type,
+            { buffer.getWritePointer (0) + start, buffer.getWritePointer (1) + start, n },
+            dryScratch);
     }
 }
 
@@ -102,8 +106,9 @@ juce::AudioBuffer<float> sineBuffer (double frequency, int numSamples, float amp
 
     for (int i = 0; i < numSamples; ++i)
     {
-        const auto value = amplitude * (float) std::sin (juce::MathConstants<double>::twoPi
-                                                         * frequency * (double) i / sampleRate);
+        const auto value = amplitude
+                           * (float) std::sin (juce::MathConstants<double>::twoPi * frequency
+                                               * (double) i / sampleRate);
         buffer.setSample (0, i, value);
         buffer.setSample (1, i, value);
     }
@@ -140,11 +145,11 @@ TEST_CASE ("a lowpass removes high content and keeps low content", "[effects][ds
     const auto lowAfter = rmsOf (low, 11025, 11025);
     const auto highAfter = rmsOf (high, 11025, 11025);
 
-    INFO ("80Hz " << lowBefore << " -> " << lowAfter
-          << ", 5kHz " << highBefore << " -> " << highAfter);
+    INFO ("80Hz " << lowBefore << " -> " << lowAfter << ", 5kHz " << highBefore << " -> "
+                  << highAfter);
 
-    REQUIRE (lowAfter > lowBefore * 0.7f);          // barely touched
-    REQUIRE (highAfter < highBefore * 0.05f);       // gone
+    REQUIRE (lowAfter > lowBefore * 0.7f);    // barely touched
+    REQUIRE (highAfter < highBefore * 0.05f); // gone
 }
 
 TEST_CASE ("a highpass does the opposite", "[effects][dsp]")
@@ -170,7 +175,7 @@ TEST_CASE ("a delay produces a repeat at the time it was set to", "[effects][dsp
 {
     Params params { EffectType::delay };
     params.set (ids::delayMs, 200.0f);
-    params.set (ids::feedback, 0.0f);      // one repeat only, so the position is unambiguous
+    params.set (ids::feedback, 0.0f); // one repeat only, so the position is unambiguous
     params.set (ids::mix, 1.0f);
 
     // A short click at the very start, then silence.
@@ -223,9 +228,9 @@ TEST_CASE ("delay feedback makes repeats that decay rather than one or forever",
     runEffect (params, buffer);
 
     const auto window = (int) (sampleRate * 0.05);
-    const auto first  = rmsOf (buffer, (int) (sampleRate * 0.100) - window / 2, window);
+    const auto first = rmsOf (buffer, (int) (sampleRate * 0.100) - window / 2, window);
     const auto second = rmsOf (buffer, (int) (sampleRate * 0.200) - window / 2, window);
-    const auto third  = rmsOf (buffer, (int) (sampleRate * 0.300) - window / 2, window);
+    const auto third = rmsOf (buffer, (int) (sampleRate * 0.300) - window / 2, window);
 
     INFO ("repeats: " << first << " " << second << " " << third);
 
@@ -252,7 +257,7 @@ TEST_CASE ("reverb extends a sound past where it ended", "[effects][dsp]")
         buffer.copyFrom (c, 0, tone, c, 0, tone.getNumSamples());
 
     const auto tailBefore = rmsOf (buffer, (int) (sampleRate * 0.4), (int) (sampleRate * 0.2));
-    REQUIRE (tailBefore < 1.0e-6f);      // silent before the reverb
+    REQUIRE (tailBefore < 1.0e-6f); // silent before the reverb
 
     runEffect (params, buffer);
 
@@ -308,7 +313,7 @@ TEST_CASE ("the EQ bands move the frequencies they name", "[effects][dsp]")
 
     Params boostLow { EffectType::eq };
     boostLow.set (ids::lowGainDb, 12.0f);
-    REQUIRE (gainAt (60.0, boostLow) > 2.5f);          // roughly +12dB
+    REQUIRE (gainAt (60.0, boostLow) > 2.5f); // roughly +12dB
     REQUIRE_THAT (gainAt (8000.0, boostLow), WithinAbs (1.0, 0.1));
 
     Params cutMid { EffectType::eq };
@@ -616,8 +621,8 @@ TEST_CASE ("the master chain is one of the owners a new id is derived from", "[e
 
     // And an effect added elsewhere afterwards clears both of them, rather than
     // colliding with a master effect the scan still could not see.
-    const auto elsewhere = ProjectEdits::addEffect (project, project.getChildWithName (ids::CHANNEL),
-                                                    "delay", &undo);
+    const auto elsewhere = ProjectEdits::addEffect (
+        project, project.getChildWithName (ids::CHANNEL), "delay", &undo);
     REQUIRE (elsewhere.isValid());
     REQUIRE ((int) elsewhere[ids::id] != (int) first[ids::id]);
     REQUIRE ((int) elsewhere[ids::id] != (int) second[ids::id]);
@@ -673,8 +678,8 @@ namespace
 
 struct ChainHarness
 {
-    explicit ChainHarness (EffectChainComponent::Orientation orientation
-                               = EffectChainComponent::Orientation::vertical)
+    explicit ChainHarness (
+        EffectChainComponent::Orientation orientation = EffectChainComponent::Orientation::vertical)
     {
         document.setState (ProjectFactory::createDefault(), true);
         chain.setOrientation (orientation);
@@ -707,7 +712,10 @@ struct ChainHarness
         return bounds;
     }
 
-    juce::Point<int> centreOf (int slot) { return chain.getSlotBounds (slot).getCentre(); }
+    juce::Point<int> centreOf (int slot)
+    {
+        return chain.getSlotBounds (slot).getCentre();
+    }
 
     /** Walks the pointer from a card to a point in the chain's coordinates.
 
@@ -723,8 +731,8 @@ struct ChainHarness
         chain.beginReorder (slot, start);
 
         for (int i = 1; i <= steps; ++i)
-            chain.updateReorder ({ start.x + (to.x - start.x) * i / steps,
-                                   start.y + (to.y - start.y) * i / steps });
+            chain.updateReorder (
+                { start.x + (to.x - start.x) * i / steps, start.y + (to.y - start.y) * i / steps });
     }
 
     /** Where a drop at `to` would put the card, without letting go. */
@@ -744,9 +752,15 @@ struct ChainHarness
                                     : juce::Point<int> { 0, chain.getHeight() };
     }
 
-    juce::Point<int> beforeTheStart() const { return { 0, 0 }; }
+    juce::Point<int> beforeTheStart() const
+    {
+        return { 0, 0 };
+    }
 
-    juce::ValueTree channel() { return document.getState().getChildWithName (ids::CHANNEL); }
+    juce::ValueTree channel()
+    {
+        return document.getState().getChildWithName (ids::CHANNEL);
+    }
 
     juce::StringArray typesInOrder()
     {
@@ -796,8 +810,9 @@ TEST_CASE ("pointing the editor at another chain shows that chain", "[effects][u
 
     juce::UndoManager& undo = h.document.getUndoManager();
 
-    auto mixerTrack = h.document.getState().getChildWithName (ids::MIXER)
-                                            .getChildWithName (ids::MIXER_TRACK);
+    auto mixerTrack = h.document.getState()
+                          .getChildWithName (ids::MIXER)
+                          .getChildWithName (ids::MIXER_TRACK);
     REQUIRE (mixerTrack.isValid());
 
     h.chain.addEffectOfType ("reverb");
@@ -940,7 +955,7 @@ TEST_CASE ("which cards are open survives a rebuild, and follows the effect", "[
     REQUIRE (h.typesInOrder() == juce::StringArray { "delay", "reverb", "filter" });
     REQUIRE (! h.chain.isSlotExpanded (0));
     REQUIRE (! h.chain.isSlotExpanded (1));
-    REQUIRE (h.chain.isSlotExpanded (2));      // still the filter
+    REQUIRE (h.chain.isSlotExpanded (2)); // still the filter
 
     // And an unrelated document change does not close anything.
     juce::UndoManager& undo = h.document.getUndoManager();
@@ -1020,7 +1035,8 @@ TEST_CASE ("the grip drops a card where the cursor is", "[effects][ui]")
 
         // Dragged past the end it lands on the last card, not out of range.
         REQUIRE (h.chain.slotAtPosition (cards.getLast().getBottomRight()
-                                         + juce::Point<int> { 400, 400 }) == 2);
+                                         + juce::Point<int> { 400, 400 })
+                 == 2);
     }
 }
 
@@ -1150,11 +1166,20 @@ TEST_CASE ("a frequency field drags by ratio, not by hertz", "[effects][ui]")
         const auto make = [&field] (juce::Point<float> position, juce::Point<float> down)
         {
             return juce::MouseEvent { juce::Desktop::getInstance().getMainMouseSource(),
-                                      position, juce::ModifierKeys(),
-                                      1.0f, 0.0f, 0.0f, 0.0f, 0.0f,
-                                      &field, &field,
-                                      juce::Time::getCurrentTime(), down,
-                                      juce::Time::getCurrentTime(), 1, false };
+                                      position,
+                                      juce::ModifierKeys(),
+                                      1.0f,
+                                      0.0f,
+                                      0.0f,
+                                      0.0f,
+                                      0.0f,
+                                      &field,
+                                      &field,
+                                      juce::Time::getCurrentTime(),
+                                      down,
+                                      juce::Time::getCurrentTime(),
+                                      1,
+                                      false };
         };
 
         field.mouseDown (make (start, start));
@@ -1324,10 +1349,10 @@ TEST_CASE ("a slot switched away and back does not resume its old tail", "[effec
     auto burst = sineBuffer (440.0, blockSize * 16);
 
     for (int start = 0; start < burst.getNumSamples(); start += blockSize)
-        processEffectSlot (*module, reverb.block, EffectType::reverb,
-                           { burst.getWritePointer (0) + start,
-                             burst.getWritePointer (1) + start, blockSize },
-                           dryScratch);
+        processEffectSlot (
+            *module, reverb.block, EffectType::reverb,
+            { burst.getWritePointer (0) + start, burst.getWritePointer (1) + start, blockSize },
+            dryScratch);
 
     juce::AudioBuffer<float> silence (2, blockSize);
     silence.clear();
@@ -1337,16 +1362,16 @@ TEST_CASE ("a slot switched away and back does not resume its old tail", "[effec
 
     const auto tail = silence.getMagnitude (0, blockSize);
     INFO ("tail after the burst: " << tail);
-    REQUIRE (tail > 1.0e-5f);   // there IS something to leak
+    REQUIRE (tail > 1.0e-5f); // there IS something to leak
 
     // What the chain runner does when a slot's type changed.
     module->reset();
 
     juce::AudioBuffer<float> afterReset (2, blockSize);
     afterReset.clear();
-    processEffectSlot (*module, reverb.block, EffectType::reverb,
-                       { afterReset.getWritePointer (0), afterReset.getWritePointer (1), blockSize },
-                       dryScratch);
+    processEffectSlot (
+        *module, reverb.block, EffectType::reverb,
+        { afterReset.getWritePointer (0), afterReset.getWritePointer (1), blockSize }, dryScratch);
 
     REQUIRE (afterReset.getMagnitude (0, blockSize) < tail * 0.01f);
 }
@@ -1384,8 +1409,7 @@ TEST_CASE ("a twitch on the grip reorders nothing", "[effects][ui][drag]")
     CHECK_FALSE (h.document.getUndoManager().canUndo());
 }
 
-TEST_CASE ("a dragged card leaves its place and the chain opens a gap",
-           "[effects][ui][drag]")
+TEST_CASE ("a dragged card leaves its place and the chain opens a gap", "[effects][ui][drag]")
 {
     const juce::ScopedJuceInitialiser_GUI juceInit;
 
@@ -1471,8 +1495,7 @@ TEST_CASE ("a whole reorder drag is one undo step", "[effects][ui][drag]")
     }
 }
 
-TEST_CASE ("where a card lands does not depend on how it got there",
-           "[effects][ui][drag]")
+TEST_CASE ("where a card lands does not depend on how it got there", "[effects][ui][drag]")
 {
     // The insertion point is a hit test against where the cards were when the
     // drag STARTED. Against live bounds it would be reading a layout the drag
@@ -1515,8 +1538,8 @@ TEST_CASE ("where a card lands does not depend on how it got there",
 
     h.chain.endReorder (false);
 
-    INFO ("down: " << juce::String (descending.size()) << " up: "
-                   << juce::String (ascending.size()));
+    INFO ("down: " << juce::String (descending.size())
+                   << " up: " << juce::String (ascending.size()));
     CHECK (descending == ascending);
 
     // And it really did move over the drag rather than sitting still.

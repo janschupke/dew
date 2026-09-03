@@ -34,7 +34,10 @@ struct WaveformPeaks
 
     std::vector<Bin> bins;
 
-    bool isEmpty() const noexcept  { return bins.empty(); }
+    bool isEmpty() const noexcept
+    {
+        return bins.empty();
+    }
 
     /** Reduces every channel of `audio` to `numBins` min/max pairs.
 

@@ -7,10 +7,7 @@ namespace dew
 {
 
 const SnapDivision NoteTools::allSnapDivisions[NoteTools::numSnapDivisions] = {
-    SnapDivision::sixteenth,
-    SnapDivision::eighth,
-    SnapDivision::quarter,
-    SnapDivision::half,
+    SnapDivision::sixteenth, SnapDivision::eighth, SnapDivision::quarter, SnapDivision::half,
     SnapDivision::bar
 };
 
@@ -22,10 +19,10 @@ int NoteTools::stepsForSnap (SnapDivision division, int stepsPerBeat, int beatsP
     switch (division)
     {
         case SnapDivision::sixteenth: return juce::jmax (1, perBeat / 4);
-        case SnapDivision::eighth:    return juce::jmax (1, perBeat / 2);
-        case SnapDivision::quarter:   return perBeat;
-        case SnapDivision::half:      return perBeat * 2;
-        case SnapDivision::bar:       return perBar;
+        case SnapDivision::eighth: return juce::jmax (1, perBeat / 2);
+        case SnapDivision::quarter: return perBeat;
+        case SnapDivision::half: return perBeat * 2;
+        case SnapDivision::bar: return perBar;
     }
 
     return 1;
@@ -42,11 +39,11 @@ juce::String NoteTools::nameForSnap (SnapDivision division, int beatUnit)
     switch (division)
     {
         case SnapDivision::sixteenth: return "1/" + noteValue (4);
-        case SnapDivision::eighth:    return "1/" + noteValue (2);
-        case SnapDivision::quarter:   return "1/" + noteValue (1);
-        case SnapDivision::half:      return unit >= 2 ? "1/" + juce::String (unit / 2)
-                                                       : juce::String ("2/1");
-        case SnapDivision::bar:       return "Bar";
+        case SnapDivision::eighth: return "1/" + noteValue (2);
+        case SnapDivision::quarter: return "1/" + noteValue (1);
+        case SnapDivision::half:
+            return unit >= 2 ? "1/" + juce::String (unit / 2) : juce::String ("2/1");
+        case SnapDivision::bar: return "Bar";
     }
 
     return "1/" + noteValue (4);
@@ -87,7 +84,8 @@ int NoteTools::snapCeil (int step, int snapSteps) noexcept
     return (juce::jmax (0, step) + snap - 1) / snap * snap;
 }
 
-juce::Array<juce::ValueTree> NoteTools::notesOnChannel (const juce::ValueTree& pattern, int channelId)
+juce::Array<juce::ValueTree> NoteTools::notesOnChannel (const juce::ValueTree& pattern,
+                                                        int channelId)
 {
     juce::Array<juce::ValueTree> notes;
 
@@ -107,8 +105,8 @@ juce::Array<juce::ValueTree> NoteTools::scopeFor (const juce::ValueTree& pattern
     return notesOnChannel (pattern, channelId);
 }
 
-juce::ValueTree NoteTools::noteCovering (const juce::ValueTree& pattern, int channelId,
-                                         int step, int pitch)
+juce::ValueTree NoteTools::noteCovering (const juce::ValueTree& pattern, int channelId, int step,
+                                         int pitch)
 {
     for (const auto& note : pattern)
     {
@@ -116,7 +114,7 @@ juce::ValueTree NoteTools::noteCovering (const juce::ValueTree& pattern, int cha
             || (int) note[ids::pitch] != pitch)
             continue;
 
-        const auto start  = (int) note[ids::step];
+        const auto start = (int) note[ids::step];
         const auto length = juce::jmax (1, (int) note[ids::lengthSteps]);
 
         if (step >= start && step < start + length)
@@ -132,7 +130,7 @@ juce::ValueTree NoteTools::sliceNote (juce::ValueTree pattern, juce::ValueTree n
     if (! pattern.isValid() || ! note.isValid())
         return {};
 
-    const auto start  = (int) note[ids::step];
+    const auto start = (int) note[ids::step];
     const auto length = juce::jmax (1, (int) note[ids::lengthSteps]);
 
     if (atStep <= start || atStep >= start + length)
@@ -142,9 +140,9 @@ juce::ValueTree NoteTools::sliceNote (juce::ValueTree pattern, juce::ValueTree n
 
     // Both halves keep the original velocity. A slice is a rhythmic edit; making
     // the tail quieter would be a second edit nobody asked for.
-    return ProjectEdits::addNote (pattern, (int) note[ids::ch], atStep,
-                                  start + length - atStep, (int) note[ids::pitch],
-                                  (float) (double) note[ids::velocity], undo);
+    return ProjectEdits::addNote (pattern, (int) note[ids::ch], atStep, start + length - atStep,
+                                  (int) note[ids::pitch], (float) (double) note[ids::velocity],
+                                  undo);
 }
 
 int NoteTools::quantize (juce::ValueTree pattern, const juce::Array<juce::ValueTree>& notes,
@@ -183,8 +181,9 @@ int NoteTools::quantize (juce::ValueTree pattern, const juce::Array<juce::ValueT
 
             // Keep the longer of the two: the survivor should sound for as long
             // as the longest note that was there before.
-            ProjectEdits::resizeNote (kept, juce::jmax ((int) kept[ids::lengthSteps],
-                                                        (int) other[ids::lengthSteps]), undo);
+            ProjectEdits::resizeNote (
+                kept, juce::jmax ((int) kept[ids::lengthSteps], (int) other[ids::lengthSteps]),
+                undo);
             duplicates.add (other);
         }
     }
@@ -198,8 +197,8 @@ int NoteTools::quantize (juce::ValueTree pattern, const juce::Array<juce::ValueT
     return duplicates.size();
 }
 
-int NoteTools::transpose (const juce::Array<juce::ValueTree>& notes, int semitones,
-                          int minPitch, int maxPitch, juce::UndoManager* undo)
+int NoteTools::transpose (const juce::Array<juce::ValueTree>& notes, int semitones, int minPitch,
+                          int maxPitch, juce::UndoManager* undo)
 {
     if (notes.isEmpty() || semitones == 0)
         return 0;
@@ -218,7 +217,8 @@ int NoteTools::transpose (const juce::Array<juce::ValueTree>& notes, int semiton
         return 0;
 
     for (auto note : notes)
-        ProjectEdits::moveNote (note, (int) note[ids::step], (int) note[ids::pitch] + allowed, undo);
+        ProjectEdits::moveNote (note, (int) note[ids::step], (int) note[ids::pitch] + allowed,
+                                undo);
 
     return allowed;
 }
@@ -228,7 +228,7 @@ void NoteTools::randomize (juce::ValueTree pattern, const juce::Array<juce::Valu
                            juce::UndoManager* undo)
 {
     const auto movesVelocity = options.velocityAmount > 0.0;
-    const auto movesStep     = options.stepAmount > 0;
+    const auto movesStep = options.stepAmount > 0;
 
     if (! movesVelocity && ! movesStep)
         return;
@@ -248,8 +248,8 @@ void NoteTools::randomize (juce::ValueTree pattern, const juce::Array<juce::Valu
         {
             const auto offset = random.nextInt (2 * options.stepAmount + 1) - options.stepAmount;
 
-            ProjectEdits::moveNote (note, (int) note[ids::step] + offset,
-                                    (int) note[ids::pitch], undo);
+            ProjectEdits::moveNote (note, (int) note[ids::step] + offset, (int) note[ids::pitch],
+                                    undo);
         }
     }
 

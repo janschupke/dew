@@ -23,7 +23,9 @@ class ChannelRackComponent::ChannelHeader : public HeaderRow
 {
 public:
     ChannelHeader (ProjectDocument& d, EditorState& s, juce::ValueTree c)
-        : document (d), editorState (s), channel (std::move (c))
+        : document (d)
+        , editorState (s)
+        , channel (std::move (c))
     {
         // Named, so a test can find a row by asking rather than by counting the
         // widgets on it. It used to be identified as "one label and two
@@ -98,7 +100,10 @@ public:
         setMouseCursor (juce::MouseCursor::PointingHandCursor);
     }
 
-    int getChannelId() const  { return (int) channel[ids::id]; }
+    int getChannelId() const
+    {
+        return (int) channel[ids::id];
+    }
 
     void refresh()
     {
@@ -129,10 +134,10 @@ public:
         // The rack's rest and hover colours are two steps apart on the surface
         // ladder, so the lift interpolates BETWEEN them rather than brightening
         // one - a brightened surface and surfaceRaised are not the same colour.
-        g.setColour (selected ? colour::surfaceHover
-                              : colour::surface.interpolatedWith (
-                                    colour::surfaceRaised,
-                                    hover.lift() / tokens::emphasis::surfaceLift));
+        g.setColour (
+            selected ? colour::surfaceHover
+                     : colour::surface.interpolatedWith (
+                           colour::surfaceRaised, hover.lift() / tokens::emphasis::surfaceLift));
         g.fillAll();
 
         const auto colourValue = entityColour::of (channel);
@@ -164,9 +169,17 @@ public:
         }
     }
 
-    void select() { editorState.setSelectedChannelId (getChannelId()); }
+    void select()
+    {
+        editorState.setSelectedChannelId (getChannelId());
+    }
 
-    enum class MenuItem { rename = 1, addChannel, removeChannel };
+    enum class MenuItem
+    {
+        rename = 1,
+        addChannel,
+        removeChannel
+    };
 
     /** Where the colour submenu's ids start: after this row's own, so the two
         numberings cannot collide. */
@@ -190,9 +203,15 @@ public:
 
         switch ((MenuItem) choice)
         {
-            case MenuItem::rename:         nameLabel.showEditor(); break;
-            case MenuItem::addChannel:     if (onAddChannel) onAddChannel(); break;
-            case MenuItem::removeChannel:  if (onRemoveChannel) onRemoveChannel (getChannelId()); break;
+            case MenuItem::rename: nameLabel.showEditor(); break;
+            case MenuItem::addChannel:
+                if (onAddChannel)
+                    onAddChannel();
+                break;
+            case MenuItem::removeChannel:
+                if (onRemoveChannel)
+                    onRemoveChannel (getChannelId());
+                break;
             default: break;
         }
     }
@@ -203,9 +222,15 @@ public:
 
     /** Selected on every press, so the menu always acts on the row that was
         clicked rather than on whatever was selected before it. */
-    void headerPressed() override { select(); }
+    void headerPressed() override
+    {
+        select();
+    }
 
-    juce::Label* editableLabel() override { return &nameLabel; }
+    juce::Label* editableLabel() override
+    {
+        return &nameLabel;
+    }
 
     void resized() override
     {
@@ -251,8 +276,17 @@ private:
         knob.setTooltip (tooltip);
         knob.setValue ((double) channel[property], juce::dontSendNotification);
 
-        knob.onEditStart = [this] { select(); inDrag = true; gestureActive = false; };
-        knob.onEditEnd = [this] { inDrag = false; gestureActive = false; };
+        knob.onEditStart = [this]
+        {
+            select();
+            inDrag = true;
+            gestureActive = false;
+        };
+        knob.onEditEnd = [this]
+        {
+            inDrag = false;
+            gestureActive = false;
+        };
 
         knob.onValueChange = [this, &knob, property, transactionName]
         {
@@ -264,8 +298,7 @@ private:
             // own. beginNewTransaction ARMS a new one rather than being a no-op
             // when one is open, which is why the distinction has to be made.
             ProjectEdits::setProperty (channel, property, knob.getValue(),
-                                       &document.getUndoManager(), transactionName,
-                                       gestureActive);
+                                       &document.getUndoManager(), transactionName, gestureActive);
 
             gestureActive = inDrag;
         };
@@ -306,8 +339,12 @@ private:
 
 // -----------------------------------------------------------------------------
 
-ChannelRackComponent::ChannelRackComponent (ProjectDocument& d, AudioEngine& e, EditorState& s, SamplePool* p)
-    : document (d), engine (e), editorState (s), grid (d, e, s, p)
+ChannelRackComponent::ChannelRackComponent (ProjectDocument& d, AudioEngine& e, EditorState& s,
+                                            SamplePool* p)
+    : document (d)
+    , engine (e)
+    , editorState (s)
+    , grid (d, e, s, p)
 {
     setComponentID ("channelRack");
     contentHolder.setComponentID ("channelRackContent");
@@ -581,9 +618,9 @@ void ChannelRackComponent::resized()
     auto rulerStrip = area.removeFromTop (size::rulerHeight);
 
     // The corner beside the ruler, which the ruler itself does not draw into.
-    zoomButtons.setBounds (rulerStrip.withWidth (ZoomButtons::preferredWidth)
-                                     .withX (size::gutterChannel - ZoomButtons::preferredWidth
-                                             - space::sm));
+    zoomButtons.setBounds (
+        rulerStrip.withWidth (ZoomButtons::preferredWidth)
+            .withX (size::gutterChannel - ZoomButtons::preferredWidth - space::sm));
 
     ruler.setBounds (rulerStrip.withTrimmedLeft (size::gutterChannel));
 
@@ -606,8 +643,8 @@ void ChannelRackComponent::resized()
     // empty row of the list, where the channel it adds will appear. The two
     // kinds share that row rather than stacking, so the grid still starts one
     // row after the last channel.
-    auto addRow = juce::Rectangle<int> (0, headers.size() * size::rowHeight,
-                                        size::gutterChannel, size::rowHeight)
+    auto addRow = juce::Rectangle<int> (0, headers.size() * size::rowHeight, size::gutterChannel,
+                                        size::rowHeight)
                       .reduced (space::sm, space::xs);
 
     addChannelButton.setBounds (addRow.removeFromLeft (addRow.getWidth() / 2 - space::xxs));

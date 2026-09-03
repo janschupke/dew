@@ -37,7 +37,8 @@ class PlaylistComponent::TrackHeader : public HeaderRow
 {
 public:
     TrackHeader (ProjectDocument& d, juce::ValueTree t)
-        : document (d), track (std::move (t))
+        : document (d)
+        , track (std::move (t))
     {
         setComponentID ("playlistTrackHeader");
         muteButton.setComponentID ("trackMute");
@@ -77,7 +78,13 @@ public:
         addAndMakeVisible (soloButton);
     }
 
-    enum class MenuItem { rename = 1, addTrack, removeTrack, resetHeight };
+    enum class MenuItem
+    {
+        rename = 1,
+        addTrack,
+        removeTrack,
+        resetHeight
+    };
 
     /** Where the colour submenu's ids start: after this row's own, so the two
         numberings cannot collide. */
@@ -106,10 +113,19 @@ public:
 
         switch ((MenuItem) choice)
         {
-            case MenuItem::rename:      nameLabel.showEditor(); break;
-            case MenuItem::addTrack:    if (onAddTrack) onAddTrack(); break;
-            case MenuItem::removeTrack: if (onRemoveTrack) onRemoveTrack (track); break;
-            case MenuItem::resetHeight: if (onResetHeight) onResetHeight(); break;
+            case MenuItem::rename: nameLabel.showEditor(); break;
+            case MenuItem::addTrack:
+                if (onAddTrack)
+                    onAddTrack();
+                break;
+            case MenuItem::removeTrack:
+                if (onRemoveTrack)
+                    onRemoveTrack (track);
+                break;
+            case MenuItem::resetHeight:
+                if (onResetHeight)
+                    onResetHeight();
+                break;
             default: break;
         }
     }
@@ -121,9 +137,15 @@ public:
     /** So does the height: every lane shares one. */
     std::function<void()> onResetHeight;
 
-    juce::Label* editableLabel() override { return &nameLabel; }
+    juce::Label* editableLabel() override
+    {
+        return &nameLabel;
+    }
 
-    juce::ValueTree getTrack() const { return track; }
+    juce::ValueTree getTrack() const
+    {
+        return track;
+    }
 
     // --- the resize grip -----------------------------------------------------
     /** How deep the grab band along the bottom edge is.
@@ -148,9 +170,8 @@ public:
 
     void mouseMove (const juce::MouseEvent& event) override
     {
-        setMouseCursor (isOnResizeEdge (event.getPosition())
-                            ? juce::MouseCursor::UpDownResizeCursor
-                            : juce::MouseCursor::NormalCursor);
+        setMouseCursor (isOnResizeEdge (event.getPosition()) ? juce::MouseCursor::UpDownResizeCursor
+                                                             : juce::MouseCursor::NormalCursor);
     }
 
     void mouseDrag (const juce::MouseEvent& event) override
@@ -290,8 +311,12 @@ private:
 
 // -----------------------------------------------------------------------------
 
-PlaylistComponent::PlaylistComponent (ProjectDocument& d, AudioEngine& e, EditorState& s, SamplePool* p)
-    : document (d), engine (e), editorState (s), samplePool (p)
+PlaylistComponent::PlaylistComponent (ProjectDocument& d, AudioEngine& e, EditorState& s,
+                                      SamplePool* p)
+    : document (d)
+    , engine (e)
+    , editorState (s)
+    , samplePool (p)
 {
     setComponentID ("playlist");
     document.getState().addListener (this);
@@ -464,17 +489,17 @@ void PlaylistComponent::setTrackHeight (int wanted)
     const auto contentHeight = (double) ((getNumTracks() + 1) * trackHeight);
     const auto wasScrollable = contentHeight > (double) laneViewHeight();
 
-    const auto anchorLane = (trackScrollPx + (double) laneViewHeight() * 0.5) / (double) trackHeight;
+    const auto anchorLane = (trackScrollPx + (double) laneViewHeight() * 0.5)
+                            / (double) trackHeight;
 
     trackHeight = clamped;
 
     if (resizingRows)
         trackScrollPx = heightDragScrollPx;
     else
-        trackScrollPx = wasScrollable
-                          ? juce::jmax (0.0, anchorLane * (double) trackHeight
-                                                 - (double) laneViewHeight() * 0.5)
-                          : 0.0;
+        trackScrollPx = wasScrollable ? juce::jmax (0.0, anchorLane * (double) trackHeight
+                                                             - (double) laneViewHeight() * 0.5)
+                                      : 0.0;
 
     // A height change is the user taking the view, exactly as a zoom is -
     // otherwise the next resize would re-fit and undo it.
@@ -585,15 +610,14 @@ int PlaylistComponent::trackAtY (int y) const
     return (int) std::floor (((double) (y - lanesTop()) + trackScrollPx) / (double) trackHeight);
 }
 
-juce::Rectangle<float> PlaylistComponent::boundsForClip (const juce::ValueTree& clip, int trackIndex) const
+juce::Rectangle<float> PlaylistComponent::boundsForClip (const juce::ValueTree& clip,
+                                                         int trackIndex) const
 {
     const auto start = (int) clip[ids::startBar];
     const auto length = juce::jmax (1, (int) clip[ids::lengthBars]);
 
-    return { (float) size::gutterTrack + timeline.xForStep ((double) start),
-             laneY (trackIndex),
-             (float) (length * timeline.pixelsPerStep),
-             (float) trackHeight };
+    return { (float) size::gutterTrack + timeline.xForStep ((double) start), laneY (trackIndex),
+             (float) (length * timeline.pixelsPerStep), (float) trackHeight };
 }
 
 bool PlaylistComponent::isOnRightEdge (const juce::ValueTree& clip, int trackIndex,
@@ -702,12 +726,13 @@ void PlaylistComponent::resized()
     horizontalScroll.setBounds (size::gutterTrack, getHeight() - size::scrollThickness,
                                 (int) contentWidth(), size::scrollThickness);
 
-    verticalScroll.setBounds (getWidth() - size::scrollThickness, lanesTop(),
-                              size::scrollThickness, laneViewHeight());
+    verticalScroll.setBounds (getWidth() - size::scrollThickness, lanesTop(), size::scrollThickness,
+                              laneViewHeight());
 
     // In the corner above the track headers, where the ruler does not reach.
-    addAutomationButton.setBounds (juce::Rectangle<int> (0, rulerTop(), size::gutterTrack, size::rulerHeight)
-                                       .reduced (space::xs, space::xxs));
+    addAutomationButton.setBounds (
+        juce::Rectangle<int> (0, rulerTop(), size::gutterTrack, size::rulerHeight)
+            .reduced (space::xs, space::xxs));
 
     // The holder spans the lane strip; its children sit in ITS coordinates,
     // which is laneY minus the strip's own top.
@@ -728,11 +753,11 @@ void PlaylistComponent::resized()
     // height is a property of the arrangement and this is a button. It used to
     // take the whole row, so at the tallest lane height "+ Track" was a
     // two-hundred-pixel rectangle.
-    const auto addRow = juce::Rectangle<int> (0, rowTop (headers.size()),
-                                              size::gutterTrack, trackHeight);
+    const auto addRow = juce::Rectangle<int> (0, rowTop (headers.size()), size::gutterTrack,
+                                              trackHeight);
 
     addTrackButton.setBounds (addRow.withHeight (juce::jmin (trackHeight, size::rowHeight))
-                                    .reduced (space::sm, space::xs));
+                                  .reduced (space::sm, space::xs));
 
     // Until someone has zoomed or scrolled, a layout frames the whole song.
     // Latching after the FIRST layout instead would hand the zoom to whatever
@@ -798,7 +823,7 @@ void PlaylistComponent::mouseWheelMove (const juce::MouseEvent& event,
     if (event.mods.isShiftDown())
     {
         timeline.scrollOffsetSteps -= timeline.stepsForPixels (delta.along()
-                                                                   * gesture::wheelPixelsPerNotch);
+                                                               * gesture::wheelPixelsPerNotch);
         updateScrollBar();
         repaint();
         return;
@@ -825,25 +850,15 @@ bool PlaylistComponent::keyPressed (const juce::KeyPress& key)
     // anyone remembered to add them twice.
     switch (hotkeys::viewCommandFor (key))
     {
-        case hotkeys::ViewCommand::zoomIn:
-            zoomBy (1.5, contentWidth() * 0.5f);
-            return true;
+        case hotkeys::ViewCommand::zoomIn: zoomBy (1.5, contentWidth() * 0.5f); return true;
 
-        case hotkeys::ViewCommand::zoomOut:
-            zoomBy (1.0 / 1.5, contentWidth() * 0.5f);
-            return true;
+        case hotkeys::ViewCommand::zoomOut: zoomBy (1.0 / 1.5, contentWidth() * 0.5f); return true;
 
-        case hotkeys::ViewCommand::zoomToFit:
-            zoomToFit();
-            return true;
+        case hotkeys::ViewCommand::zoomToFit: zoomToFit(); return true;
 
-        case hotkeys::ViewCommand::selectTool:
-            toolbar.setTool (PlaylistTool::select);
-            return true;
+        case hotkeys::ViewCommand::selectTool: toolbar.setTool (PlaylistTool::select); return true;
 
-        case hotkeys::ViewCommand::paintTool:
-            toolbar.setTool (PlaylistTool::paint);
-            return true;
+        case hotkeys::ViewCommand::paintTool: toolbar.setTool (PlaylistTool::paint); return true;
 
         case hotkeys::ViewCommand::clearSelection:
             editorState.clearBarSelection();
@@ -871,8 +886,7 @@ bool PlaylistComponent::keyPressed (const juce::KeyPress& key)
         case hotkeys::ViewCommand::eraseTool:
         case hotkeys::ViewCommand::deleteSelection:
         case hotkeys::ViewCommand::selectAll:
-        case hotkeys::ViewCommand::none:
-            break;
+        case hotkeys::ViewCommand::none: break;
     }
 
     return false;
@@ -967,12 +981,13 @@ juce::Point<float> PlaylistComponent::pointPosition (const juce::ValueTree& clip
 {
     // Kept as a forwarder: it is public, documented as a test seam, and the
     // tests aim at points through it.
-    return laneGeometry (clip, trackIndex).positionOf ((double) point[ids::step],
-                                                       (double) point[ids::value]);
+    return laneGeometry (clip, trackIndex)
+        .positionOf ((double) point[ids::step], (double) point[ids::value]);
 }
 
 void PlaylistComponent::positionToCurve (const juce::ValueTree& clip, int trackIndex,
-                                         juce::Point<int> position, double& step, double& value) const
+                                         juce::Point<int> position, double& step,
+                                         double& value) const
 {
     const auto geometry = laneGeometry (clip, trackIndex);
 
@@ -1010,8 +1025,8 @@ juce::ValueTree PlaylistComponent::createAutomationClip (const AutomationTarget&
     // The placing is ProjectEdits' now: every control in the application can ask
     // for a curve, and the arrangement is not on screen for most of them. What
     // is left here is the view catching up with what changed.
-    auto clip = ProjectEdits::addAutomationWithClip (document.getState(), target,
-                                                     startBar, lengthBars, &undo);
+    auto clip = ProjectEdits::addAutomationWithClip (document.getState(), target, startBar,
+                                                     lengthBars, &undo);
 
     updateScrollBar();
     repaint();
@@ -1020,25 +1035,25 @@ juce::ValueTree PlaylistComponent::createAutomationClip (const AutomationTarget&
 
 namespace
 {
-    // Numbered EXPLICITLY. These ids are what applyClipMenuChoice takes, so a
-    // test names an item by its number - and inserting an item in the middle
-    // would silently re-aim every one of them at something else.
-    enum class ClipMenuItem
-    {
-        openPattern      = 1,
-        deleteClip       = 2,
-        deletePoint      = 3,
-        addClip          = 4,
-        duplicatePattern = 5,
+// Numbered EXPLICITLY. These ids are what applyClipMenuChoice takes, so a
+// test names an item by its number - and inserting an item in the middle
+// would silently re-aim every one of them at something else.
+enum class ClipMenuItem
+{
+    openPattern = 1,
+    deleteClip = 2,
+    deletePoint = 3,
+    addClip = 4,
+    duplicatePattern = 5,
 
-        // APPENDED, never inserted. These ids are what applyClipMenuChoice
-        // takes, so a test names an item by its number and inserting one in the
-        // middle would silently re-aim every one of them.
-        shapeLine        = 6,
-        shapeCurve       = 7,
-        shapeStep        = 8
-    };
-}
+    // APPENDED, never inserted. These ids are what applyClipMenuChoice
+    // takes, so a test names an item by its number and inserting one in the
+    // middle would silently re-aim every one of them.
+    shapeLine = 6,
+    shapeCurve = 7,
+    shapeStep = 8
+};
+} // namespace
 
 void PlaylistComponent::latchMenuContext (const juce::ValueTree& clip, int trackIndex,
                                           juce::Point<int> position) const
@@ -1138,9 +1153,7 @@ void PlaylistComponent::applyClipChoice (juce::ValueTree track, int bar, int cho
 
     switch ((ClipMenuItem) choice)
     {
-        case ClipMenuItem::openPattern:
-            openPatternOf (clip);
-            break;
+        case ClipMenuItem::openPattern: openPatternOf (clip); break;
 
         case ClipMenuItem::duplicatePattern:
             if (clip.isValid() && ProjectEdits::isMidiClip (clip))
@@ -1155,8 +1168,8 @@ void PlaylistComponent::applyClipChoice (juce::ValueTree track, int bar, int cho
                     // One transaction covers both halves: a copy nothing points
                     // at, or a clip pointing at a pattern that undo took away,
                     // are each worse than the state this started in.
-                    if (auto fresh = ProjectEdits::duplicatePattern (document.getState(),
-                                                                     pattern, &undo);
+                    if (auto fresh = ProjectEdits::duplicatePattern (document.getState(), pattern,
+                                                                     &undo);
                         fresh.isValid())
                         ProjectEdits::setProperty (clip, ids::patternId, (int) fresh[ids::id],
                                                    &undo, "Duplicate pattern", true);
@@ -1192,7 +1205,8 @@ void PlaylistComponent::applyClipChoice (juce::ValueTree track, int bar, int cho
                 else
                     ProjectEdits::setPointShape (owner,
                                                  (ClipMenuItem) choice == ClipMenuItem::shapeStep
-                                                     ? SegmentShape::step : SegmentShape::curve,
+                                                     ? SegmentShape::step
+                                                     : SegmentShape::curve,
                                                  &undo);
             }
             break;
@@ -1204,8 +1218,7 @@ void PlaylistComponent::applyClipChoice (juce::ValueTree track, int bar, int cho
             updateScrollBar();
             break;
 
-        default:
-            break;
+        default: break;
     }
 
     menuPoint = {};
@@ -1254,7 +1267,8 @@ juce::StringArray PlaylistComponent::clipMenuItemsAt (juce::Point<int> position)
     const auto trackIndex = trackAtY (position.y);
     const auto track = trackAt (trackIndex);
     const auto bar = barAtX (position.x);
-    const auto clip = track.isValid() ? ProjectEdits::findClipAtBar (track, bar) : juce::ValueTree();
+    const auto clip = track.isValid() ? ProjectEdits::findClipAtBar (track, bar)
+                                      : juce::ValueTree();
 
     latchMenuContext (clip, trackIndex, position);
 
@@ -1445,13 +1459,14 @@ void PlaylistComponent::mouseDown (const juce::MouseEvent& event)
 
         auto menu = buildClipMenu (track, bar);
         menu.setLookAndFeel (&getLookAndFeel());
-        menu.showMenuAsync (juce::PopupMenu::Options()
-                                .withTargetScreenArea ({ event.getScreenX(), event.getScreenY(), 1, 1 }),
-                            [safe = juce::Component::SafePointer<PlaylistComponent> (this), track, bar] (int choice)
-                            {
-                                if (safe != nullptr && choice > 0)
-                                    safe->applyClipChoice (track, bar, choice);
-                            });
+        menu.showMenuAsync (
+            juce::PopupMenu::Options().withTargetScreenArea (
+                { event.getScreenX(), event.getScreenY(), 1, 1 }),
+            [safe = juce::Component::SafePointer<PlaylistComponent> (this), track, bar] (int choice)
+            {
+                if (safe != nullptr && choice > 0)
+                    safe->applyClipChoice (track, bar, choice);
+            });
         return;
     }
 
@@ -1479,7 +1494,7 @@ void PlaylistComponent::mouseDown (const juce::MouseEvent& event)
     {
         draggedClip = clip;
         draggedClipTrack = track;
-        draggedPoint = hit.point;         // the segment's LEFT point owns its bend
+        draggedPoint = hit.point; // the segment's LEFT point owns its bend
         dropTrackIndex = trackIndex;
         gesture = Gesture::bendingSegment;
         bendOrigin = event.getPosition();
@@ -1604,8 +1619,7 @@ void PlaylistComponent::beginCopyDrag (int targetTrackIndex, int targetBar)
     // The gesture rebinds to the COPY and leaves the original where it was -
     // the same rebinding a cross-track move already forces, for the same reason:
     // the rest of the drag would otherwise edit a node nothing is looking at.
-    if (auto copy = ProjectEdits::copyClip (targetTrack, source, targetBar, &undo);
-        copy.isValid())
+    if (auto copy = ProjectEdits::copyClip (targetTrack, source, targetBar, &undo); copy.isValid())
     {
         draggedClip = copy;
         draggedClipTrack = targetTrack;
@@ -1651,7 +1665,7 @@ void PlaylistComponent::mouseDrag (const juce::MouseEvent& event)
         const auto scale = gesture::isFine (event.mods) ? gesture::fineMultiplier : 1.0;
 
         auto bend = bendAtDragStart
-                      + travel / (double) gesture::dragPixelsForFullRange * scale * 2.0;
+                    + travel / (double) gesture::dragPixelsForFullRange * scale * 2.0;
 
         // Up bulges the curve UP whichever way the segment runs. Without this the
         // same hand movement bulges up on a rising segment and down on a falling
@@ -1682,7 +1696,8 @@ void PlaylistComponent::mouseDrag (const juce::MouseEvent& event)
             step = std::round (step / beat) * beat;
         }
 
-        ProjectEdits::moveAutomationPoint (automationOf (draggedClip), draggedPoint, step, value, &undo);
+        ProjectEdits::moveAutomationPoint (automationOf (draggedClip), draggedPoint, step, value,
+                                           &undo);
         repaint();
         return;
     }
@@ -1700,8 +1715,9 @@ void PlaylistComponent::mouseDrag (const juce::MouseEvent& event)
 
         // On the first drag that actually goes somewhere, so a mod-press that
         // never moves does not litter a copy on top of its own original.
-        if (dragCopies && (targetBar != (int) draggedClip[ids::startBar]
-                           || targetTrackIndex != dropTrackIndex))
+        if (dragCopies
+            && (targetBar != (int) draggedClip[ids::startBar]
+                || targetTrackIndex != dropTrackIndex))
             beginCopyDrag (targetTrackIndex, targetBar);
 
         auto targetTrack = trackAt (targetTrackIndex);
@@ -1711,8 +1727,8 @@ void PlaylistComponent::mouseDrag (const juce::MouseEvent& event)
             // Crossing tracks replaces the clip's tree, so the drag has to keep
             // following the new one or the rest of the gesture edits a detached
             // node and nothing appears to happen.
-            draggedClip = ProjectEdits::moveClipToTrack (draggedClipTrack, draggedClip,
-                                                         targetTrack, targetBar, &undo);
+            draggedClip = ProjectEdits::moveClipToTrack (draggedClipTrack, draggedClip, targetTrack,
+                                                         targetBar, &undo);
             draggedClipTrack = targetTrack;
             dropTrackIndex = targetTrackIndex;
         }
@@ -1778,13 +1794,14 @@ void PlaylistComponent::timerCallback()
     // whole arrangement. Repainting on a bar change was what made the playhead
     // jump a bar at a time instead of moving.
     const auto from = juce::jmin (x, lastPaintedPlayheadX < 0.0f ? x : lastPaintedPlayheadX);
-    const auto to   = juce::jmax (x, lastPaintedPlayheadX < 0.0f ? x : lastPaintedPlayheadX);
+    const auto to = juce::jmax (x, lastPaintedPlayheadX < 0.0f ? x : lastPaintedPlayheadX);
 
     lastPaintedPlayheadX = x;
     repaint ((int) from - 3, rulerTop(), (int) (to - from) + 7, lanesBottom() - rulerTop());
 }
 
-void PlaylistComponent::valueTreePropertyChanged (juce::ValueTree& tree, const juce::Identifier& property)
+void PlaylistComponent::valueTreePropertyChanged (juce::ValueTree& tree,
+                                                  const juce::Identifier& property)
 {
     if (property == ids::barsInSong)
         updateScrollBar();
@@ -1812,28 +1829,31 @@ void PlaylistComponent::valueTreeChildRemoved (juce::ValueTree& parent, juce::Va
     repaint();
 }
 
-void PlaylistComponent::changeListenerCallback (juce::ChangeBroadcaster*) { repaint(); }
+void PlaylistComponent::changeListenerCallback (juce::ChangeBroadcaster*)
+{
+    repaint();
+}
 
 // --- painting ----------------------------------------------------------------
 
 void PlaylistComponent::paintAudioClip (juce::Graphics& g, const juce::ValueTree& clip,
                                         juce::Rectangle<float> bounds, bool audible)
 {
-    const auto channel = ProjectEdits::findChannel (document.getState(), (int) clip[ids::channelId]);
+    const auto channel = ProjectEdits::findChannel (document.getState(),
+                                                    (int) clip[ids::channelId]);
 
     // The channel's own colour rather than the accent, because an audio clip IS
     // its channel - one recording, one channel - and the arrangement should say
     // which one at a glance, the way the channel rack's colour tabs do.
-    auto clipColour = channel.isValid()
-                          ? entityColour::of (channel)
-                          : colour::textDisabled;
+    auto clipColour = channel.isValid() ? entityColour::of (channel) : colour::textDisabled;
 
     if (! audible)
         clipColour = emphasis::silenced (clipColour);
 
     g.setColour (clipColour.withAlpha (audible ? emphasis::subdued : emphasis::wash));
     g.fillRoundedRectangle (bounds, radius::sm);
-    g.setColour (clipColour.brighter (emphasis::edgeLift).withAlpha (audible ? 1.0f : emphasis::dimmed));
+    g.setColour (
+        clipColour.brighter (emphasis::edgeLift).withAlpha (audible ? 1.0f : emphasis::dimmed));
     g.drawRoundedRectangle (bounds, radius::sm, stroke::regular);
 
     auto* pool = samplePool;
@@ -1853,11 +1873,11 @@ void PlaylistComponent::paintAudioClip (juce::Graphics& g, const juce::ValueTree
             g.reduceClipRegion (bounds.toNearestInt());
 
             const auto trace = clipColour.brighter (emphasis::edgeLift)
-                                  .withAlpha (audible ? emphasis::strong : emphasis::subdued);
+                                   .withAlpha (audible ? emphasis::strong : emphasis::subdued);
             const juce::Range<float> span { bounds.getX(), bounds.getRight() };
 
-            paint::waveform (g, { bounds.getY(), bounds.getBottom() }, span, span,
-                             entry.peaks, [trace] (float) { return trace; });
+            paint::waveform (g, { bounds.getY(), bounds.getBottom() }, span, span, entry.peaks,
+                             [trace] (float) { return trace; });
         }
     }
 
@@ -1876,8 +1896,7 @@ void PlaylistComponent::paintAutomationClip (juce::Graphics& g, const juce::Valu
 
     // An automation clip reads as a different kind of thing from a pattern
     // clip: no fill, a visible curve, and its own colour.
-    const auto clipColour = audible ? colour::warning
-                                    : emphasis::silenced (colour::warning);
+    const auto clipColour = audible ? colour::warning : emphasis::silenced (colour::warning);
 
     g.setColour (colour::wellDeep.withAlpha (emphasis::strong));
     g.fillRoundedRectangle (bounds, radius::sm);
@@ -1897,8 +1916,9 @@ void PlaylistComponent::paintAutomationClip (juce::Graphics& g, const juce::Valu
     // an automation lane is only a row tall.
     g.setColour (clipColour.withAlpha (emphasis::subdued));
     g.setFont (type::font (type::caption));
-    g.drawText (automation[ids::name].toString(), bounds.toNearestInt().reduced (space::xs, space::xxs),
-                juce::Justification::topLeft, true);
+    g.drawText (automation[ids::name].toString(),
+                bounds.toNearestInt().reduced (space::xs, space::xxs), juce::Justification::topLeft,
+                true);
 
     const juce::Graphics::ScopedSaveState clipped (g);
     g.reduceClipRegion (bounds.toNearestInt());
@@ -1911,11 +1931,9 @@ void PlaylistComponent::paintAutomationClip (juce::Graphics& g, const juce::Valu
     // resolving its (scope, targetId, slot) back to a ParamSpec, and the one
     // function that will do that does not exist yet. Wiring it from here would
     // be a second copy of the resolution the picker already does.
-    automationLane::paintCurve (g, laneGeometry (clip, trackIndex),
-                                ProjectEdits::sortedAutomationPoints (automation),
-                                { clipColour,
-                                  false,
-                                  clip == hoveredSegmentClip ? hoveredSegment : -1 });
+    automationLane::paintCurve (
+        g, laneGeometry (clip, trackIndex), ProjectEdits::sortedAutomationPoints (automation),
+        { clipColour, false, clip == hoveredSegmentClip ? hoveredSegment : -1 });
 }
 
 /** The lanes and the clips on them. Its own function because it is the only
@@ -1972,8 +1990,8 @@ int PlaylistComponent::paintLanes (juce::Graphics& g, int bottom, bool anySolo)
 
             const auto bounds = boundsForClip (clip, trackIndex).reduced (2.0f, 3.0f);
 
-            if (! bounds.intersects (juce::Rectangle<float> ((float) size::gutterTrack, (float) lanesTop(),
-                                                             contentWidth(),
+            if (! bounds.intersects (juce::Rectangle<float> ((float) size::gutterTrack,
+                                                             (float) lanesTop(), contentWidth(),
                                                              (float) (bottom - lanesTop()))))
                 continue;
 
@@ -2000,8 +2018,7 @@ int PlaylistComponent::paintLanes (juce::Graphics& g, int bottom, bool anySolo)
             // this is the CURRENT pattern stays the saturation rather than the
             // hue, so choosing a colour costs nothing that was already being
             // said here.
-            const auto base = entityColour::stored (trackAt (trackIndex))
-                                  .value_or (colour::accent);
+            const auto base = entityColour::stored (trackAt (trackIndex)).value_or (colour::accent);
 
             auto clipColour = isCurrent ? base : emphasis::secondary (base);
 
@@ -2012,14 +2029,16 @@ int PlaylistComponent::paintLanes (juce::Graphics& g, int bottom, bool anySolo)
 
             g.setColour (clipColour.withAlpha (audible ? emphasis::strong : emphasis::subdued));
             g.fillRoundedRectangle (bounds, radius::sm);
-            g.setColour (clipColour.brighter (emphasis::edgeLift).withAlpha (audible ? 1.0f : emphasis::dimmed));
+            g.setColour (clipColour.brighter (emphasis::edgeLift)
+                             .withAlpha (audible ? 1.0f : emphasis::dimmed));
             g.drawRoundedRectangle (bounds, radius::sm, stroke::regular);
 
             g.setColour (colour::textOnAccent);
             g.setFont (type::font (type::small, true));
             g.drawText (pattern.isValid() ? pattern[ids::name].toString()
                                           : "pattern " + clip[ids::patternId].toString(),
-                        bounds.toNearestInt().reduced (space::xs, 0), juce::Justification::centredLeft, true);
+                        bounds.toNearestInt().reduced (space::xs, 0),
+                        juce::Justification::centredLeft, true);
         }
 
         ++trackIndex;
@@ -2055,7 +2074,6 @@ void PlaylistComponent::paint (juce::Graphics& g)
     // Below the last track is not a lane that stopped working.
     paint::inertArea (g, { 0, bottom, getWidth(), juce::jmax (0, getHeight() - bottom) });
 
-
     // --- ruler ---------------------------------------------------------------
     g.setColour (colour::surface);
     g.fillRect (0, rulerTop(), getWidth(), size::rulerHeight);
@@ -2066,12 +2084,15 @@ void PlaylistComponent::paint (juce::Graphics& g)
     {
         const auto selection = editorState.getSelectedBarRange();
 
-        const auto fromX = (float) size::gutterTrack + timeline.xForStep ((double) selection.getStart());
-        const auto toX = (float) size::gutterTrack + timeline.xForStep ((double) selection.getEnd());
+        const auto fromX = (float) size::gutterTrack
+                           + timeline.xForStep ((double) selection.getStart());
+        const auto toX = (float) size::gutterTrack
+                         + timeline.xForStep ((double) selection.getEnd());
 
         g.setColour (colour::accent.withAlpha (emphasis::dimmed));
         g.fillRect (juce::Rectangle<float> (fromX, (float) rulerTop(),
-                                            juce::jmax (1.0f, toX - fromX), (float) size::rulerHeight)
+                                            juce::jmax (1.0f, toX - fromX),
+                                            (float) size::rulerHeight)
                         .getIntersection ({ (float) size::gutterTrack, (float) rulerTop(),
                                             (float) getWidth() - (float) size::gutterTrack,
                                             (float) size::rulerHeight }));
@@ -2089,10 +2110,11 @@ void PlaylistComponent::paint (juce::Graphics& g)
         const auto beyond = bar >= bars;
 
         g.setColour (beyond ? colour::textDisabled : colour::textSecondary);
-        g.drawText (juce::String (bar + 1), (int) x + 3, rulerTop(), (int) width - 4, size::rulerHeight,
-                    juce::Justification::centredLeft, false);
+        g.drawText (juce::String (bar + 1), (int) x + 3, rulerTop(), (int) width - 4,
+                    size::rulerHeight, juce::Justification::centredLeft, false);
 
-        g.setColour (beyond ? colour::dividerStrong.withAlpha (emphasis::subdued) : colour::dividerStrong);
+        g.setColour (beyond ? colour::dividerStrong.withAlpha (emphasis::subdued)
+                            : colour::dividerStrong);
         g.drawVerticalLine ((int) x, (float) rulerTop(), (float) bottom);
     }
 
@@ -2104,8 +2126,10 @@ void PlaylistComponent::paint (juce::Graphics& g)
     {
         const auto selection = editorState.getSelectedBarRange();
 
-        const auto fromX = (float) size::gutterTrack + timeline.xForStep ((double) selection.getStart());
-        const auto toX = (float) size::gutterTrack + timeline.xForStep ((double) selection.getEnd());
+        const auto fromX = (float) size::gutterTrack
+                           + timeline.xForStep ((double) selection.getStart());
+        const auto toX = (float) size::gutterTrack
+                         + timeline.xForStep ((double) selection.getEnd());
 
         const juce::Rectangle<float> content ((float) size::gutterTrack, (float) rulerTop(),
                                               (float) getWidth() - (float) size::gutterTrack,
@@ -2124,7 +2148,7 @@ void PlaylistComponent::paint (juce::Graphics& g)
         // contain. The ruler is where the span can be stated outright without
         // covering anything up.
         g.setColour (colour::accent.withAlpha (emphasis::tint));
-        g.fillRect (visible.withTrimmedTop ((float) size::rulerHeight));   // below the ruler strip
+        g.fillRect (visible.withTrimmedTop ((float) size::rulerHeight)); // below the ruler strip
 
         g.setColour (colour::accent);
 
@@ -2141,8 +2165,10 @@ void PlaylistComponent::paint (juce::Graphics& g)
     const auto endX = (float) size::gutterTrack + timeline.xForStep ((double) bars);
 
     if (endX < (float) getWidth())
-        paint::beyondEnd (g, { (int) endX, lanesTop(), getWidth() - (int) endX,
-                               juce::jmax (0, bottom - lanesTop()) }, endX);
+        paint::beyondEnd (g,
+                          { (int) endX, lanesTop(), getWidth() - (int) endX,
+                            juce::jmax (0, bottom - lanesTop()) },
+                          endX);
 
     g.setColour (colour::dividerStrong);
     g.drawVerticalLine (size::gutterTrack, (float) rulerTop(), (float) bottom);

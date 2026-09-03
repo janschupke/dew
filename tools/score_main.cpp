@@ -59,8 +59,8 @@ int main (int argc, char* argv[])
         return args.positional.isEmpty() ? 1 : 0;
     }
 
-    const juce::File source { juce::File::getCurrentWorkingDirectory()
-                                  .getChildFile (args.positional[0]) };
+    const juce::File source { juce::File::getCurrentWorkingDirectory().getChildFile (
+        args.positional[0]) };
 
     if (! source.existsAsFile())
         return fail ("no such file: " + source.getFullPathName());
@@ -84,9 +84,8 @@ int main (int argc, char* argv[])
 
     if (args.has ("--check"))
     {
-        std::cout << "ok: " << score.patterns.size() << " pattern(s), "
-                  << score.clips.size() << " clip(s), " << score.noteCount()
-                  << " note(s)" << std::endl;
+        std::cout << "ok: " << score.patterns.size() << " pattern(s), " << score.clips.size()
+                  << " clip(s), " << score.noteCount() << " note(s)" << std::endl;
         return 0;
     }
 
@@ -100,8 +99,8 @@ int main (int argc, char* argv[])
                   << "channels   " << score.tracks.size() << "\n"
                   << "patterns   " << score.patterns.size() << "\n"
                   << "clips      " << score.clips.size() << "\n"
-                  << "notes      " << score.noteCount() << " played, "
-                  << score.flatten().size() << " after repeats" << std::endl;
+                  << "notes      " << score.noteCount() << " played, " << score.flatten().size()
+                  << " after repeats" << std::endl;
         return 0;
     }
 
@@ -111,20 +110,19 @@ int main (int argc, char* argv[])
         return fail ("nowhere to write - give an output file, --check or --summary");
     }
 
-    const juce::File destination { juce::File::getCurrentWorkingDirectory()
-                                       .getChildFile (args.positional[1]) };
+    const juce::File destination { juce::File::getCurrentWorkingDirectory().getChildFile (
+        args.positional[1]) };
 
     dew::BakeReport report;
     juce::ValueTree project;
 
-    const auto policy = args.has ("--discard-edits")
-                            ? dew::ScoreBake::Policy::discardHandEdits
-                            : dew::ScoreBake::Policy::keepHandEdits;
+    const auto policy = args.has ("--discard-edits") ? dew::ScoreBake::Policy::discardHandEdits
+                                                     : dew::ScoreBake::Policy::keepHandEdits;
 
     if (args.has ("--into"))
     {
-        const juce::File base { juce::File::getCurrentWorkingDirectory()
-                                    .getChildFile (args.value ("--into")) };
+        const juce::File base { juce::File::getCurrentWorkingDirectory().getChildFile (
+            args.value ("--into")) };
 
         auto loaded = dew::ProjectSerializer::readFromFile (base);
 
@@ -141,14 +139,15 @@ int main (int argc, char* argv[])
 
         if (policy == dew::ScoreBake::Policy::discardHandEdits)
             std::cerr << "warning: --discard-edits does nothing without --into; "
-                         "a new project has no edits to discard" << std::endl;
+                         "a new project has no edits to discard"
+                      << std::endl;
     }
 
     // The source travels with what it compiled to. Without this a .dew is a
     // dead end - you can hear the score and never change it - and the two files
     // start drifting the moment either is copied without the other.
-    dew::ProjectEdits::setScoreSource (project, source.loadFileAsString(),
-                                       source.getFileName(), nullptr);
+    dew::ProjectEdits::setScoreSource (project, source.loadFileAsString(), source.getFileName(),
+                                       nullptr);
 
     for (const auto& warning : report.warnings)
         std::cerr << "warning: " << warning << std::endl;
@@ -165,8 +164,8 @@ int main (int argc, char* argv[])
     // stores a pattern once and may place it several times, so "written" is
     // what is in the document and "played" is what you hear.
     std::cout << destination.getFullPathName() << "\n"
-              << "  channels " << report.channelsCreated << " created, "
-              << report.channelsAdopted << " adopted by name\n"
+              << "  channels " << report.channelsCreated << " created, " << report.channelsAdopted
+              << " adopted by name\n"
               << "  patterns " << report.patternsWritten << " written";
 
     if (report.patternsKept > 0)
@@ -177,8 +176,8 @@ int main (int argc, char* argv[])
 
     std::cout << "\n"
               << "  clips    " << report.clipsWritten << "\n"
-              << "  notes    " << report.notesWritten << " written, "
-              << score.noteCount() << " played" << std::endl;
+              << "  notes    " << report.notesWritten << " written, " << score.noteCount()
+              << " played" << std::endl;
 
     return 0;
 }

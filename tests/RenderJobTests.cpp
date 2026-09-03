@@ -18,7 +18,10 @@ struct ScratchFile
     {
     }
 
-    ~ScratchFile() { file.deleteFile(); }
+    ~ScratchFile()
+    {
+        file.deleteFile();
+    }
 
     juce::File file;
 };
@@ -39,11 +42,12 @@ RenderReport runToCompletion (RenderJob& job, RenderJob::Request request)
     RenderReport result;
     bool called = false;
 
-    REQUIRE (job.start (std::move (request), [&] (const RenderReport& r)
-    {
-        result = r;
-        called = true;
-    }));
+    REQUIRE (job.start (std::move (request),
+                        [&] (const RenderReport& r)
+                        {
+                            result = r;
+                            called = true;
+                        }));
 
     const auto deadline = juce::Time::getMillisecondCounter() + 30000;
 
@@ -69,7 +73,7 @@ TEST_CASE ("a job renders the same file the synchronous path does", "[engine][jo
     RenderOptions options;
     options.seconds = 0.5;
     const auto synchronous = OfflineRenderer::renderToFile (dew::testing::fixtureProject(),
-                                                             direct.file, options);
+                                                            direct.file, options);
 
     INFO (asynchronous.result.getErrorMessage());
     REQUIRE (asynchronous.ok());
@@ -105,11 +109,12 @@ TEST_CASE ("only one render runs at a time", "[engine][job]")
     RenderReport report;
     bool called = false;
 
-    REQUIRE (job.start (requestFor (first.file), [&] (const RenderReport& r)
-    {
-        report = r;
-        called = true;
-    }));
+    REQUIRE (job.start (requestFor (first.file),
+                        [&] (const RenderReport& r)
+                        {
+                            report = r;
+                            called = true;
+                        }));
 
     // Starting a second while the first is going is refused, not queued.
     REQUIRE_FALSE (job.start (requestFor (second.file), [] (const RenderReport&) {}));
@@ -137,13 +142,14 @@ TEST_CASE ("a cancelled job says so, and leaves no file behind", "[engine][job]"
     bool called = false;
 
     auto request = requestFor (scratch.file);
-    request.options.seconds = 30.0;   // long enough to still be going
+    request.options.seconds = 30.0; // long enough to still be going
 
-    REQUIRE (job.start (std::move (request), [&] (const RenderReport& r)
-    {
-        report = r;
-        called = true;
-    }));
+    REQUIRE (job.start (std::move (request),
+                        [&] (const RenderReport& r)
+                        {
+                            report = r;
+                            called = true;
+                        }));
 
     job.cancel();
 

@@ -47,8 +47,10 @@ void sortNotes (std::vector<Note>& notes)
     std::stable_sort (notes.begin(), notes.end(),
                       [] (const Note& a, const Note& b)
                       {
-                          if (a.startStep != b.startStep) return a.startStep < b.startStep;
-                          if (a.track != b.track)         return a.track < b.track;
+                          if (a.startStep != b.startStep)
+                              return a.startStep < b.startStep;
+                          if (a.track != b.track)
+                              return a.track < b.track;
                           return a.pitch < b.pitch;
                       });
 }
@@ -65,18 +67,18 @@ struct DrawSite
 {
     std::uint64_t songSeed = 0;
     std::string section;
-    SeedPath instance { 0 };   ///< song -> section -> instance -> channel
+    SeedPath instance { 0 }; ///< song -> section -> instance -> channel
 
     SeedPath pathFor (Scope scope, std::string_view label, int ordinal, int bar) const
     {
         switch (scope)
         {
-            case Scope::song:     return SeedPath { songSeed }.child (label);
-            case Scope::section:  return SeedPath { songSeed }.child ("section:" + section)
-                                                              .child (label);
+            case Scope::song: return SeedPath { songSeed }.child (label);
+            case Scope::section:
+                return SeedPath { songSeed }.child ("section:" + section).child (label);
             case Scope::instance: return instance.child (label);
-            case Scope::bar:      return instance.child (label, bar);
-            case Scope::note:     break;
+            case Scope::bar: return instance.child (label, bar);
+            case Scope::note: break;
         }
 
         return instance.child (label, ordinal);
@@ -86,7 +88,11 @@ struct DrawSite
 class Generator
 {
 public:
-    Generator (const Model& m, DiagnosticBag& bag) : model (m), diagnostics (bag) {}
+    Generator (const Model& m, DiagnosticBag& bag)
+        : model (m)
+        , diagnostics (bag)
+    {
+    }
 
     Score run()
     {
@@ -140,12 +146,10 @@ private:
             if (score.stepsPerBeat % needed == 0)
                 continue;
 
-            auto& d = diagnostics.error ("E401",
-                                         "this duration needs a grid of "
-                                         + std::to_string (needed) + " steps per beat",
-                                         use.range,
-                                         "requires stepsPerBeat divisible by "
-                                         + std::to_string (needed));
+            auto& d = diagnostics.error (
+                "E401",
+                "this duration needs a grid of " + std::to_string (needed) + " steps per beat",
+                use.range, "requires stepsPerBeat divisible by " + std::to_string (needed));
             d.notes.push_back ("the score declares a grid of "
                                + std::to_string (score.stepsPerBeat));
             d.helps.push_back ("remove `grid` to let the compiler choose one");
@@ -157,29 +161,27 @@ private:
 
     void reportGridTooFine (const GridResolution& resolved)
     {
-        const auto anchor = resolved.firstWitness.has_value()
-                                ? resolved.firstWitness->range
-                                : model.song.gridRange;
+        const auto anchor = resolved.firstWitness.has_value() ? resolved.firstWitness->range
+                                                              : model.song.gridRange;
 
-        auto& d = diagnostics.error ("E402",
-                                     "this score needs a grid of "
-                                     + std::to_string (resolved.required)
-                                     + " steps per beat, but dew stores at most "
-                                     + std::to_string (maxStepsPerBeat),
-                                     anchor);
+        auto& d = diagnostics.error (
+            "E402",
+            "this score needs a grid of " + std::to_string (resolved.required)
+                + " steps per beat, but dew stores at most " + std::to_string (maxStepsPerBeat),
+            anchor);
 
         // BOTH witnesses, because the conflict is between two durations and
         // either one alone would have been fine.
         if (resolved.firstWitness.has_value())
-            d.notes.push_back (std::to_string (gridNeededFor (resolved.firstWitness->duration,
-                                                              score.beatUnit))
-                               + " steps per beat are needed here");
+            d.notes.push_back (
+                std::to_string (gridNeededFor (resolved.firstWitness->duration, score.beatUnit))
+                + " steps per beat are needed here");
 
         if (resolved.secondWitness.has_value())
-            d.related.push_back ({ resolved.secondWitness->range,
-                                   std::to_string (gridNeededFor (resolved.secondWitness->duration,
-                                                                  score.beatUnit))
-                                   + " steps per beat are needed" });
+            d.related.push_back (
+                { resolved.secondWitness->range,
+                  std::to_string (gridNeededFor (resolved.secondWitness->duration, score.beatUnit))
+                      + " steps per beat are needed" });
 
         d.helps.push_back ("a note value and a triplet of a finer value cannot share "
                            "a grid this coarse");
@@ -197,8 +199,8 @@ private:
                 return;
             }
 
-            score.tracks.push_back ({ channel.name, channel.mixerTrack,
-                                      channel.lowPitch, channel.highPitch });
+            score.tracks.push_back (
+                { channel.name, channel.mixerTrack, channel.lowPitch, channel.highPitch });
         }
     }
 
@@ -243,23 +245,24 @@ private:
                 // the point: what pins an instance's music must be what pins
                 // its pattern, or a recompile would preserve one and not the
                 // other.
-                const auto instanceKey =
-                    item.label.empty() ? item.section + "#" + std::to_string (ordinal)
-                                       : item.section + "@" + item.label;
+                const auto instanceKey = item.label.empty()
+                                             ? item.section + "#" + std::to_string (ordinal)
+                                             : item.section + "@" + item.label;
 
-                const auto instancePath =
-                    item.label.empty()
-                        ? SeedPath { model.song.seed }.child ("section:" + item.section)
-                                                      .child ("instance", ordinal)
-                        : SeedPath { model.song.seed }.child ("section:" + item.section)
-                                                      .child ("label:" + item.label);
+                const auto instancePath = item.label.empty()
+                                              ? SeedPath { model.song.seed }
+                                                    .child ("section:" + item.section)
+                                                    .child ("instance", ordinal)
+                                              : SeedPath { model.song.seed }
+                                                    .child ("section:" + item.section)
+                                                    .child ("label:" + item.label);
 
                 auto notes = renderSection (*section, item, instancePath, stepsPerBar);
                 sortNotes (notes);
 
                 const auto lengthSteps = section->bars * stepsPerBar;
-                const auto pattern = patternFor (item, *section, notes, lengthSteps,
-                                                 ordinal, instanceKey);
+                const auto pattern = patternFor (item, *section, notes, lengthSteps, ordinal,
+                                                 instanceKey);
 
                 for (auto p = 0; p < placements; ++p)
                 {
@@ -317,10 +320,8 @@ private:
     }
 
     // --- one section instance -----------------------------------------------
-    std::vector<Note> renderSection (const SectionSpec& section,
-                                     const ArrangementItem& item,
-                                     const SeedPath& instancePath,
-                                     int stepsPerBar)
+    std::vector<Note> renderSection (const SectionSpec& section, const ArrangementItem& item,
+                                     const SeedPath& instancePath, int stepsPerBar)
     {
         std::vector<Note> notes;
 
@@ -333,9 +334,8 @@ private:
 
         const auto totalSteps = section.bars * stepsPerBar;
 
-        const auto spans = layOutHarmony (*harmonySpec, model.song.key, totalSteps,
-                                          stepsPerBar, score.beatUnit, score.stepsPerBeat,
-                                          diagnostics);
+        const auto spans = layOutHarmony (*harmonySpec, model.song.key, totalSteps, stepsPerBar,
+                                          score.beatUnit, score.stepsPerBeat, diagnostics);
 
         if (spans.empty())
             return notes;
@@ -351,8 +351,8 @@ private:
                 if (override.channel == part.channel)
                     effective = &override;
 
-            renderPart (*effective, spans, instancePath, section.name, totalSteps,
-                        stepsPerBar, notes);
+            renderPart (*effective, spans, instancePath, section.name, totalSteps, stepsPerBar,
+                        notes);
         }
 
         return notes;
@@ -367,16 +367,16 @@ private:
                                 : (score.clips.empty() ? 0
                                                        : (score.clips.back().startBar
                                                           + score.clips.back().lengthBars)
-                                                         * stepsPerBar);
+                                                             * stepsPerBar);
 
         for (const auto& span : spans)
-            score.harmony.push_back ({ offset + span.startStep, offset + span.endStep,
-                                       span.chord.label });
+            score.harmony.push_back (
+                { offset + span.startStep, offset + span.endStep, span.chord.label });
     }
 
     void renderPart (const PartSpec& part, const std::vector<ChordSpan>& spans,
-                     const SeedPath& instancePath, const std::string& sectionName,
-                     int totalSteps, int stepsPerBar, std::vector<Note>& notes)
+                     const SeedPath& instancePath, const std::string& sectionName, int totalSteps,
+                     int stepsPerBar, std::vector<Note>& notes)
     {
         const auto track = trackIndexFor (part.channel);
 
@@ -400,17 +400,17 @@ private:
         if (part.kind == PartKind::chords)
             renderChords (part, *channel, spans, track, transpose, notes, site, stepsPerBar);
         else if (part.kind == PartKind::line)
-            renderLine (part, *channel, spans, track, transpose, totalSteps, stepsPerBar,
-                        notes, site);
+            renderLine (part, *channel, spans, track, transpose, totalSteps, stepsPerBar, notes,
+                        site);
         else if (part.kind == PartKind::imitation)
-            renderImitation (part, *channel, spans, track, transpose, totalSteps,
-                             stepsPerBar, notes, site);
+            renderImitation (part, *channel, spans, track, transpose, totalSteps, stepsPerBar,
+                             notes, site);
         else if (part.kind == PartKind::counterpoint)
-            renderCounterpoint (part, *channel, spans, track, transpose, totalSteps,
-                                stepsPerBar, notes, site);
+            renderCounterpoint (part, *channel, spans, track, transpose, totalSteps, stepsPerBar,
+                                notes, site);
         else
-            renderMelody (part, *channel, spans, track, transpose, totalSteps, stepsPerBar,
-                          notes, site);
+            renderMelody (part, *channel, spans, track, transpose, totalSteps, stepsPerBar, notes,
+                          site);
 
         // A part that writes nothing is almost always a mistake, and it is the
         // one mistake that looks like success from every other angle: the
@@ -419,10 +419,8 @@ private:
         // voice vanish exactly this quietly.
         if (notes.size() == before)
         {
-            auto& d = diagnostics.warning ("W604",
-                                           std::string ("`") + part.channel
-                                           + "` wrote no notes here",
-                                           part.range);
+            auto& d = diagnostics.warning (
+                "W604", std::string ("`") + part.channel + "` wrote no notes here", part.range);
             d.helps.push_back ("a part needs a rhythm, and something to play over it");
         }
     }
@@ -462,8 +460,7 @@ private:
         return choice.degrees[rng.below ((std::uint32_t) choice.degrees.size())];
     }
 
-    float velocityFor (const ChannelSpec& channel, const DrawSite& site, int ordinal,
-                       int bar) const
+    float velocityFor (const ChannelSpec& channel, const DrawSite& site, int ordinal, int bar) const
     {
         auto value = (float) channel.velocity;
 
@@ -529,8 +526,8 @@ private:
             }
 
             if (onsets.empty())
-                onsets.push_back ({ 0, span.endStep - span.startStep, false, false,
-                                    MetricStrength::barStart });
+                onsets.push_back (
+                    { 0, span.endStep - span.startStep, false, false, MetricStrength::barStart });
 
             for (const auto& onset : onsets)
             {
@@ -544,8 +541,8 @@ private:
                     if (sounded < lowestPitch || sounded > highestPitch)
                         continue;
 
-                    notes.push_back ({ track, span.startStep + onset.startStep,
-                                       onset.lengthSteps, sounded,
+                    notes.push_back ({ track, span.startStep + onset.startStep, onset.lengthSteps,
+                                       sounded,
                                        velocityFor (channel, site, ordinal,
                                                     (span.startStep + onset.startStep)
                                                         / std::max (1, stepsPerBar)) });
@@ -557,9 +554,8 @@ private:
     }
 
     void renderLine (const PartSpec& part, const ChannelSpec& channel,
-                     const std::vector<ChordSpan>& spans, int track, int transpose,
-                     int totalSteps, int stepsPerBar, std::vector<Note>& notes,
-                     const DrawSite& site)
+                     const std::vector<ChordSpan>& spans, int track, int transpose, int totalSteps,
+                     int stepsPerBar, std::vector<Note>& notes, const DrawSite& site)
     {
         const auto* rhythm = rhythmFor (part);
 
@@ -571,8 +567,8 @@ private:
 
         if (onsets.empty())
             for (const auto& span : spans)
-                onsets.push_back ({ span.startStep, span.endStep - span.startStep,
-                                    false, false, MetricStrength::barStart });
+                onsets.push_back ({ span.startStep, span.endStep - span.startStep, false, false,
+                                    MetricStrength::barStart });
 
         auto ordinal = 0;
 
@@ -584,8 +580,7 @@ private:
             const ChordSpan* span = nullptr;
 
             for (const auto& candidate : spans)
-                if (onset.startStep >= candidate.startStep
-                    && onset.startStep < candidate.endStep)
+                if (onset.startStep >= candidate.startStep && onset.startStep < candidate.endStep)
                     span = &candidate;
 
             if (span == nullptr)
@@ -610,8 +605,7 @@ private:
             if (sounded >= lowestPitch && sounded <= highestPitch)
                 notes.push_back ({ track, onset.startStep, onset.lengthSteps, sounded,
                                    velocityFor (channel, site, ordinal,
-                                                onset.startStep
-                                                    / std::max (1, stepsPerBar)) });
+                                                onset.startStep / std::max (1, stepsPerBar)) });
 
             ++ordinal;
         }
@@ -650,8 +644,7 @@ private:
             return;
 
         auto onsets = tileRhythm (*rhythm, totalSteps, stepsPerBar, score.beatUnit,
-                                  score.stepsPerBeat,
-                                  part.melody.align == Alignment::bar);
+                                  score.stepsPerBeat, part.melody.align == Alignment::bar);
 
         if (onsets.empty())
             return;
@@ -680,8 +673,7 @@ private:
             if (sounded >= lowestPitch && sounded <= highestPitch)
                 notes.push_back ({ track, note.startStep, note.lengthSteps, sounded,
                                    velocityFor (channel, site, ordinal,
-                                                note.startStep
-                                                    / std::max (1, stepsPerBar)) });
+                                                note.startStep / std::max (1, stepsPerBar)) });
 
             ++ordinal;
         }
@@ -735,10 +727,9 @@ private:
 
         if (copied.empty())
         {
-            auto& d = diagnostics.warning ("W605",
-                                           "`" + part.imitation.source
-                                           + "` has nothing to imitate here",
-                                           part.imitation.sourceRange);
+            auto& d = diagnostics.warning (
+                "W605", "`" + part.imitation.source + "` has nothing to imitate here",
+                part.imitation.sourceRange);
             d.notes.push_back ("parts are written in the order they are declared, so the "
                                "voice being copied has to come first");
             return;
@@ -756,8 +747,7 @@ private:
             if (start >= totalSteps)
                 continue;
 
-            const auto shifted = transposePitch (note.pitch, spans, start,
-                                                 part.imitation);
+            const auto shifted = transposePitch (note.pitch, spans, start, part.imitation);
             const auto sounded = shifted + transpose;
 
             if (sounded < channel.lowPitch || sounded > channel.highPitch)
@@ -766,10 +756,9 @@ private:
             if (sounded < lowestPitch || sounded > highestPitch)
                 continue;
 
-            notes.push_back ({ track, start,
-                               std::min (note.lengthSteps, totalSteps - start), sounded,
-                               velocityFor (channel, site, ordinal,
-                                            start / std::max (1, stepsPerBar)) });
+            notes.push_back (
+                { track, start, std::min (note.lengthSteps, totalSteps - start), sounded,
+                  velocityFor (channel, site, ordinal, start / std::max (1, stepsPerBar)) });
             ++ordinal;
         }
     }
@@ -849,17 +838,15 @@ private:
 
         if (! anySounding)
         {
-            auto& d = diagnostics.warning ("W602",
-                                           "`" + part.counterpoint.against
-                                           + "` has nothing to answer here",
-                                           part.counterpoint.againstRange);
+            auto& d = diagnostics.warning (
+                "W602", "`" + part.counterpoint.against + "` has nothing to answer here",
+                part.counterpoint.againstRange);
             d.notes.push_back ("parts are written in the order they are declared, so the "
                                "voice being answered has to come first");
             return;
         }
 
-        const auto low = part.counterpoint.hasRange ? part.counterpoint.lowPitch
-                                                    : channel.lowPitch;
+        const auto low = part.counterpoint.hasRange ? part.counterpoint.lowPitch : channel.lowPitch;
         const auto high = part.counterpoint.hasRange ? part.counterpoint.highPitch
                                                      : channel.highPitch;
 
@@ -875,9 +862,8 @@ private:
 
         const auto ownIsAbove = (low + high) / 2 > otherMid;
 
-        const auto result = generateCounterpoint (onsets, spans, { other },
-                                                  part.counterpoint, low, high, ownIsAbove,
-                                                  stepsPerBar,
+        const auto result = generateCounterpoint (onsets, spans, { other }, part.counterpoint, low,
+                                                  high, ownIsAbove, stepsPerBar,
                                                   site.instance.child ("counterpoint"));
 
         // Relaxation is reported, never silent: a voice that went where it was
@@ -885,8 +871,8 @@ private:
         for (const auto& relaxed : result.relaxations)
             diagnostics.warning ("W603",
                                  std::string ("`") + nameOf (relaxed.rule)
-                                 + "` had to be given up in bar "
-                                 + std::to_string (relaxed.bar),
+                                     + "` had to be given up in bar "
+                                     + std::to_string (relaxed.bar),
                                  part.counterpoint.againstRange);
 
         auto ordinal = 0;
@@ -898,14 +884,16 @@ private:
             if (sounded >= lowestPitch && sounded <= highestPitch)
                 notes.push_back ({ track, note.startStep, note.lengthSteps, sounded,
                                    velocityFor (channel, site, ordinal,
-                                                note.startStep
-                                                    / std::max (1, stepsPerBar)) });
+                                                note.startStep / std::max (1, stepsPerBar)) });
 
             ++ordinal;
         }
     }
 
-    int stepsPerBarOf() const noexcept { return score.stepsPerBeat * score.beatsPerBar; }
+    int stepsPerBarOf() const noexcept
+    {
+        return score.stepsPerBeat * score.beatsPerBar;
+    }
 
     const Model& model;
     DiagnosticBag& diagnostics;
@@ -940,8 +928,10 @@ std::vector<Note> Score::flatten() const
     std::stable_sort (out.begin(), out.end(),
                       [] (const Note& a, const Note& b)
                       {
-                          if (a.startStep != b.startStep) return a.startStep < b.startStep;
-                          if (a.track != b.track)         return a.track < b.track;
+                          if (a.startStep != b.startStep)
+                              return a.startStep < b.startStep;
+                          if (a.track != b.track)
+                              return a.track < b.track;
                           return a.pitch < b.pitch;
                       });
 

@@ -79,11 +79,9 @@ inline bool apply (int choice, juce::ValueTree node, int baseId, ProjectDocument
 
     const auto index = choice - baseId;
 
-    ProjectEdits::setColour (node,
-                             index < entityColour::rampSize()
-                                 ? entityColour::defaultHex (index)
-                                 : juce::String(),
-                             &undo);
+    ProjectEdits::setColour (
+        node, index < entityColour::rampSize() ? entityColour::defaultHex (index) : juce::String(),
+        &undo);
 
     return true;
 }

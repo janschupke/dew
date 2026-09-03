@@ -55,8 +55,7 @@ inline juce::StringArray offenders (const std::function<bool (const juce::String
         // exempting five of its files by name would be a list that the sixth
         // silently escaped.
         for (const auto* name : exempt)
-            if (file.getFileName() == name
-                || file.getParentDirectory().getFileName() == name)
+            if (file.getFileName() == name || file.getParentDirectory().getFileName() == name)
                 skip = true;
 
         if (skip)
@@ -67,8 +66,8 @@ inline juce::StringArray offenders (const std::function<bool (const juce::String
 
         for (int i = 0; i < lines.size(); ++i)
             if (matches (lines[i]))
-                found.add (file.getFileName() + ":" + juce::String (i + 1)
-                           + "  " + lines[i].trim());
+                found.add (file.getFileName() + ":" + juce::String (i + 1) + "  "
+                           + lines[i].trim());
     }
 
     return found;

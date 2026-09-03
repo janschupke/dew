@@ -17,7 +17,13 @@ namespace dew
     anyway because "what do you want out of this project" is one question to the
     user, and one switch in renderToFile.
 */
-enum class RenderFormat { wav, flac, mp3, midi };
+enum class RenderFormat
+{
+    wav,
+    flac,
+    mp3,
+    midi
+};
 
 /** A half-open range of bars, 0-based - the same convention ClipSnapshot::startBar
     uses, so a clip at startBar 4 is inside BarRange { 4, 5 }.
@@ -30,8 +36,14 @@ struct BarRange
     int firstBar = 0;
     int lastBar = 0;
 
-    bool isEmpty() const noexcept  { return lastBar <= firstBar; }
-    int numBars() const noexcept   { return juce::jmax (0, lastBar - firstBar); }
+    bool isEmpty() const noexcept
+    {
+        return lastBar <= firstBar;
+    }
+    int numBars() const noexcept
+    {
+        return juce::jmax (0, lastBar - firstBar);
+    }
 };
 
 /** How to render. At namespace scope rather than nested in OfflineRenderer:
@@ -154,8 +166,16 @@ struct RenderProgress
         because juce::String is not trivially copyable; contended at most at the
         rate a UI redraws.
     */
-    juce::String getStage() const           { const juce::ScopedLock l (lock); return stage; }
-    void setStage (juce::String newStage)   { const juce::ScopedLock l (lock); stage = std::move (newStage); }
+    juce::String getStage() const
+    {
+        const juce::ScopedLock l (lock);
+        return stage;
+    }
+    void setStage (juce::String newStage)
+    {
+        const juce::ScopedLock l (lock);
+        stage = std::move (newStage);
+    }
 
 private:
     juce::CriticalSection lock;
@@ -189,7 +209,10 @@ struct RenderReport
     */
     juce::Array<juce::File> files;
 
-    bool ok() const { return result.wasOk(); }
+    bool ok() const
+    {
+        return result.wasOk();
+    }
 };
 
 /** Renders a project to audio without an audio device.
@@ -228,8 +251,7 @@ struct OfflineRenderer
                                         RenderProgress* progress = nullptr);
 
     /** Renders and writes one file, in whatever `options.format` asks for. */
-    static RenderReport renderToFile (const juce::ValueTree& project,
-                                      const juce::File& destination,
+    static RenderReport renderToFile (const juce::ValueTree& project, const juce::File& destination,
                                       const RenderOptions& options = {},
                                       RenderProgress* progress = nullptr);
 
@@ -240,8 +262,7 @@ struct OfflineRenderer
         to it - which is what makes a stem sound the way that track sounds in the
         mix. The cost is one full render per track.
     */
-    static RenderReport renderStems (const juce::ValueTree& project,
-                                     const juce::File& folder,
+    static RenderReport renderStems (const juce::ValueTree& project, const juce::File& folder,
                                      const RenderOptions& options = {},
                                      RenderProgress* progress = nullptr);
 

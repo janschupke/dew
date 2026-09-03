@@ -18,13 +18,9 @@ struct Share
 
 } // namespace
 
-std::vector<ChordSpan> layOutHarmony (const HarmonySpec& harmony,
-                                      const Key& songKey,
-                                      int totalSteps,
-                                      int stepsPerBar,
-                                      int beatUnit,
-                                      int stepsPerBeat,
-                                      DiagnosticBag& diagnostics)
+std::vector<ChordSpan> layOutHarmony (const HarmonySpec& harmony, const Key& songKey,
+                                      int totalSteps, int stepsPerBar, int beatUnit,
+                                      int stepsPerBeat, DiagnosticBag& diagnostics)
 {
     std::vector<ChordSpan> spans;
 
@@ -82,8 +78,8 @@ std::vector<ChordSpan> layOutHarmony (const HarmonySpec& harmony,
             }
         }
 
-        auto& d = diagnostics.error ("E301", "this harmony is longer than its section",
-                                     culprit, "the section is already full here");
+        auto& d = diagnostics.error ("E301", "this harmony is longer than its section", culprit,
+                                     "the section is already full here");
         d.notes.push_back ("the section holds " + std::to_string (totalSteps)
                            + " steps; the chords need " + std::to_string (absolute));
         return spans;
@@ -135,8 +131,7 @@ std::vector<ChordSpan> layOutHarmony (const HarmonySpec& harmony,
         std::vector<std::size_t> order (shares.size());
         std::iota (order.begin(), order.end(), 0);
 
-        std::stable_sort (order.begin(), order.end(),
-                          [&] (std::size_t a, std::size_t b)
+        std::stable_sort (order.begin(), order.end(), [&] (std::size_t a, std::size_t b)
                           { return shares[a].remainder > shares[b].remainder; });
 
         for (std::size_t i = 0; i < order.size() && leftover > 0; ++i, --leftover)
@@ -155,11 +150,11 @@ std::vector<ChordSpan> layOutHarmony (const HarmonySpec& harmony,
 
         if (fixed[i] <= 0)
         {
-            auto& d = diagnostics.error ("E303", "this chord gets no time at all",
-                                         chord.range, "rounds to zero steps");
+            auto& d = diagnostics.error ("E303", "this chord gets no time at all", chord.range,
+                                         "rounds to zero steps");
             d.notes.push_back ("there are " + std::to_string (remaining)
-                               + " steps to share between "
-                               + std::to_string (weightTotal) + " parts");
+                               + " steps to share between " + std::to_string (weightTotal)
+                               + " parts");
             d.helps.push_back ("use coarser weights, or a longer section");
             return {};
         }
@@ -167,7 +162,7 @@ std::vector<ChordSpan> layOutHarmony (const HarmonySpec& harmony,
         const auto resolved = resolveChord (chord.symbol, key, nullptr);
 
         if (! resolved.has_value())
-            continue;   // already reported where it was written
+            continue; // already reported where it was written
 
         ChordSpan span;
         span.startStep = position;
@@ -188,10 +183,10 @@ std::vector<ChordSpan> layOutHarmony (const HarmonySpec& harmony,
             const auto bar = position / stepsPerBar + 1;
             const auto intoBar = position % stepsPerBar;
 
-            auto& d = diagnostics.error ("E304", "this `|` is not on a bar line",
-                                         chord.range, "the bar check is here");
-            d.notes.push_back ("the position here is bar " + std::to_string (bar)
-                               + ", " + std::to_string (intoBar) + " steps in");
+            auto& d = diagnostics.error ("E304", "this `|` is not on a bar line", chord.range,
+                                         "the bar check is here");
+            d.notes.push_back ("the position here is bar " + std::to_string (bar) + ", "
+                               + std::to_string (intoBar) + " steps in");
         }
     }
 

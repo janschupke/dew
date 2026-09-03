@@ -21,8 +21,7 @@ namespace dew
     because a tick that silently disappears is a tick the user cannot untick or
     account for.
 */
-class MidiSettingsPanel : public juce::Component,
-                          private juce::Timer
+class MidiSettingsPanel : public juce::Component, private juce::Timer
 {
 public:
     MidiSettingsPanel (MidiInputHost&, Settings* settingsToUpdate = nullptr);
@@ -38,8 +37,14 @@ public:
     std::function<void()> onDevicesChanged;
 
     // --- for tests -----------------------------------------------------------
-    juce::String getSummaryText() const  { return summaryText; }
-    int getNumDeviceRows() const         { return rows.size(); }
+    juce::String getSummaryText() const
+    {
+        return summaryText;
+    }
+    int getNumDeviceRows() const
+    {
+        return rows.size();
+    }
 
     /** The row's label, including its "not connected" suffix. */
     juce::String getDeviceRowText (int index) const;

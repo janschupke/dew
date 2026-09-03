@@ -29,7 +29,10 @@ struct Meter
     */
     int beatUnit = 4;
 
-    int stepsPerBar() const noexcept { return stepsPerBeat * beatsPerBar; }
+    int stepsPerBar() const noexcept
+    {
+        return stepsPerBeat * beatsPerBar;
+    }
 
     /** Read from a PROJECT tree and clamped. Never returns a zero in any field,
         because every caller divides or takes a modulo by one of them.
@@ -51,12 +54,14 @@ struct Meter
 
     bool operator== (const Meter& other) const noexcept
     {
-        return stepsPerBeat == other.stepsPerBeat
-            && beatsPerBar == other.beatsPerBar
-            && beatUnit == other.beatUnit;
+        return stepsPerBeat == other.stepsPerBeat && beatsPerBar == other.beatsPerBar
+               && beatUnit == other.beatUnit;
     }
 
-    bool operator!= (const Meter& other) const noexcept { return ! operator== (other); }
+    bool operator!= (const Meter& other) const noexcept
+    {
+        return ! operator== (other);
+    }
 };
 
 } // namespace dew

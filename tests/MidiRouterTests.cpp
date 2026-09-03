@@ -23,7 +23,7 @@ struct RouterHarness
         engine.prepare (sampleRate, blockSize);
         engine.setProject (ProjectFactory::createDefault());
         router.setTargetChannel (channelIndex);
-        render();   // let the first snapshot land
+        render(); // let the first snapshot land
     }
 
     /** Renders one block and returns its peak. */
@@ -65,8 +65,14 @@ struct RouterHarness
         return peak;
     }
 
-    float bend() const  { return engine.getChannelBend (channelIndex); }
-    float mod() const   { return engine.getChannelModulation (channelIndex); }
+    float bend() const
+    {
+        return engine.getChannelBend (channelIndex);
+    }
+    float mod() const
+    {
+        return engine.getChannelModulation (channelIndex);
+    }
 
     static constexpr double sampleRate = 44100.0;
     static constexpr int blockSize = 256;
@@ -157,10 +163,10 @@ TEST_CASE ("the sustain pedal holds a note past its key release", "[midi][router
 {
     RouterHarness h;
 
-    h.router.handleMessage (cc (1, 64, 127));           // pedal down
+    h.router.handleMessage (cc (1, 64, 127)); // pedal down
     h.router.handleMessage (noteOn (1, 60, 100));
 
-    const auto sounding = h.peakAfter (40);             // past attack and decay
+    const auto sounding = h.peakAfter (40); // past attack and decay
     REQUIRE (sounding > 0.0f);
 
     // Key up, pedal still down: the note must keep going.
@@ -170,7 +176,7 @@ TEST_CASE ("the sustain pedal holds a note past its key release", "[midi][router
     INFO ("sounding " << sounding << ", held " << held);
     REQUIRE (held > 0.0f);
 
-    h.router.handleMessage (cc (1, 64, 0));             // pedal up
+    h.router.handleMessage (cc (1, 64, 0)); // pedal up
     const auto afterRelease = h.peakAfter (60);
 
     INFO ("after the pedal lifted: " << afterRelease);
@@ -185,14 +191,14 @@ TEST_CASE ("the sustain threshold is the spec's half-way point", "[midi][router]
 
     REQUIRE (MidiRouter::sustainThreshold == 64);
 
-    h.router.handleMessage (cc (1, 64, 63));          // 63 is up
+    h.router.handleMessage (cc (1, 64, 63)); // 63 is up
     h.router.handleMessage (noteOn (1, 60, 100));
     REQUIRE (h.peakAfter (40) > 0.0f);
 
     h.router.handleMessage (noteOff (1, 60));
     const auto notHeld = h.peakAfter (60);
 
-    h.router.handleMessage (cc (1, 64, 64));          // 64 is down
+    h.router.handleMessage (cc (1, 64, 64)); // 64 is down
     h.router.handleMessage (noteOn (1, 62, 100));
     REQUIRE (h.peakAfter (40) > 0.0f);
     h.router.handleMessage (noteOff (1, 62));
@@ -274,8 +280,7 @@ TEST_CASE ("transpose is clamped to the range the panel offers", "[midi][router]
     REQUIRE (h.router.getTranspose() == -MidiRouter::maxTranspose);
 }
 
-TEST_CASE ("the pitch wheel bends by its range, and its centre is exactly zero",
-           "[midi][router]")
+TEST_CASE ("the pitch wheel bends by its range, and its centre is exactly zero", "[midi][router]")
 {
     RouterHarness h;
 
@@ -333,9 +338,9 @@ TEST_CASE ("a message-thread reset clears the MIDI thread's state on its own sid
     // instead, and the MIDI thread clears its own state next time it wakes.
     RouterHarness h;
 
-    h.router.handleMessage (cc (1, 64, 127));      // pedal down
+    h.router.handleMessage (cc (1, 64, 127)); // pedal down
     h.router.handleMessage (noteOn (1, 60, 100));
-    h.router.handleMessage (noteOff (1, 60));      // now held by the pedal
+    h.router.handleMessage (noteOff (1, 60)); // now held by the pedal
 
     REQUIRE (h.peakAfter (40) > 0.0f);
 
@@ -378,7 +383,7 @@ TEST_CASE ("messages dew does not play are ignored rather than guessed at", "[mi
     h.router.handleMessage (juce::MidiMessage::aftertouchChange (1, 60, 90));
 
     REQUIRE (h.router.getActivityCount() == before);
-    REQUIRE (h.render() >= 0.0f);   // and nothing threw
+    REQUIRE (h.render() >= 0.0f); // and nothing threw
 }
 
 TEST_CASE ("a key pressed again while the pedal holds it survives the pedal lifting",
@@ -390,12 +395,12 @@ TEST_CASE ("a key pressed again while the pedal holds it survives the pedal lift
 
     h.router.handleMessage (cc (1, 64, 127));
     h.router.handleMessage (noteOn (1, 60, 100));
-    h.router.handleMessage (noteOff (1, 60));      // released, now sustained
-    h.router.handleMessage (noteOn (1, 60, 100));  // pressed again
+    h.router.handleMessage (noteOff (1, 60));     // released, now sustained
+    h.router.handleMessage (noteOn (1, 60, 100)); // pressed again
 
     REQUIRE (h.peakAfter (40) > 0.0f);
 
-    h.router.handleMessage (cc (1, 64, 0));        // pedal up
+    h.router.handleMessage (cc (1, 64, 0)); // pedal up
 
     const auto stillSounding = h.peakAfter (30);
     INFO ("after the pedal lifted: " << stillSounding);

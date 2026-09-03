@@ -18,9 +18,7 @@ namespace dew
 */
 // juce::JUCEApplication already IS an ApplicationCommandTarget - inheriting it
 // again makes the base ambiguous.
-class DewApplication : public juce::JUCEApplication,
-                       public juce::MenuBarModel,
-                       private juce::Timer
+class DewApplication : public juce::JUCEApplication, public juce::MenuBarModel, private juce::Timer
 {
 public:
     // MainWindow is only declared here and defined in the .cpp, so BOTH of
@@ -34,7 +32,10 @@ public:
 
     const juce::String getApplicationName() override;
     const juce::String getApplicationVersion() override;
-    bool moreThanOneInstanceAllowed() override  { return false; }
+    bool moreThanOneInstanceAllowed() override
+    {
+        return false;
+    }
 
     void initialise (const juce::String&) override;
     void shutdown() override;
@@ -42,7 +43,10 @@ public:
     void anotherInstanceStarted (const juce::String&) override;
 
     // --- ApplicationCommandTarget ------------------------------------------
-    ApplicationCommandTarget* getNextCommandTarget() override  { return nullptr; }
+    ApplicationCommandTarget* getNextCommandTarget() override
+    {
+        return nullptr;
+    }
     void getAllCommands (juce::Array<juce::CommandID>&) override;
     void getCommandInfo (juce::CommandID, juce::ApplicationCommandInfo&) override;
     bool perform (const InvocationInfo&) override;

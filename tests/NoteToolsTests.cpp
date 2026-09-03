@@ -15,8 +15,9 @@ namespace
 */
 struct ToolsFixture
 {
-    ToolsFixture() : project (ProjectFactory::createDefault()),
-                     pattern (ProjectEdits::findPattern (project, 1))
+    ToolsFixture()
+        : project (ProjectFactory::createDefault())
+        , pattern (ProjectEdits::findPattern (project, 1))
     {
     }
 
@@ -119,10 +120,10 @@ TEST_CASE ("the scope is the selection when there is one, and the channel when t
 {
     ToolsFixture f;
 
-    const auto first  = f.add (0, 1, 60);
+    const auto first = f.add (0, 1, 60);
     const auto second = f.add (4, 1, 62);
     f.add (8, 1, 64);
-    f.add (0, 1, 40, 1.0f, 2);   // another channel
+    f.add (0, 1, 40, 1.0f, 2); // another channel
 
     CHECK (NoteTools::scopeFor (f.pattern, 1, {}).size() == 3);
     CHECK (NoteTools::scopeFor (f.pattern, 2, {}).size() == 1);
@@ -142,9 +143,9 @@ TEST_CASE ("a covering note is found from inside it, not only at its start", "[m
 
     CHECK (NoteTools::noteCovering (f.pattern, 1, 4, 60).isValid());
     CHECK (NoteTools::noteCovering (f.pattern, 1, 6, 60).isValid());
-    CHECK (! NoteTools::noteCovering (f.pattern, 1, 8, 60).isValid());   // one past the end
-    CHECK (! NoteTools::noteCovering (f.pattern, 1, 6, 61).isValid());   // wrong pitch
-    CHECK (! NoteTools::noteCovering (f.pattern, 2, 6, 60).isValid());   // wrong channel
+    CHECK (! NoteTools::noteCovering (f.pattern, 1, 8, 60).isValid()); // one past the end
+    CHECK (! NoteTools::noteCovering (f.pattern, 1, 6, 61).isValid()); // wrong pitch
+    CHECK (! NoteTools::noteCovering (f.pattern, 2, 6, 60).isValid()); // wrong channel
 }
 
 // --- slice -------------------------------------------------------------------
@@ -225,7 +226,8 @@ TEST_CASE ("quantize rounds starts to the nearest line and leaves lengths alone"
     auto c = f.add (5, 2, 64);
     auto d = f.add (7, 1, 65);
 
-    CHECK (NoteTools::quantize (f.pattern, NoteTools::scopeFor (f.pattern, 1, {}), 4, &f.undo) == 0);
+    CHECK (NoteTools::quantize (f.pattern, NoteTools::scopeFor (f.pattern, 1, {}), 4, &f.undo)
+           == 0);
 
     CHECK ((int) a[ids::step] == 0);
     CHECK ((int) b[ids::step] == 4);
@@ -257,9 +259,10 @@ TEST_CASE ("quantize collapses notes landing on one step and pitch, keeping the 
 {
     ToolsFixture f;
     auto shorter = f.add (3, 1, 60);
-    auto longer  = f.add (5, 4, 60);
+    auto longer = f.add (5, 4, 60);
 
-    CHECK (NoteTools::quantize (f.pattern, NoteTools::scopeFor (f.pattern, 1, {}), 4, &f.undo) == 1);
+    CHECK (NoteTools::quantize (f.pattern, NoteTools::scopeFor (f.pattern, 1, {}), 4, &f.undo)
+           == 1);
 
     CHECK (f.countNotes() == 1);
     CHECK ((int) shorter[ids::step] == 4);
@@ -273,8 +276,8 @@ TEST_CASE ("quantize does not collapse across pitches or channels", "[model][not
 {
     ToolsFixture f;
     f.add (3, 1, 60);
-    f.add (5, 1, 62);            // same step after quantizing, different pitch
-    f.add (5, 1, 60, 1.0f, 2);   // same step and pitch, different channel
+    f.add (5, 1, 62);          // same step after quantizing, different pitch
+    f.add (5, 1, 60, 1.0f, 2); // same step and pitch, different channel
 
     auto scope = NoteTools::notesOnChannel (f.pattern, 1);
     scope.addArray (NoteTools::notesOnChannel (f.pattern, 2));
@@ -319,7 +322,8 @@ TEST_CASE ("transpose moves a group by one interval", "[model][notetools]")
     auto b = f.add (0, 1, 64);
     auto c = f.add (0, 1, 67);
 
-    CHECK (NoteTools::transpose (NoteTools::scopeFor (f.pattern, 1, {}), 12, 12, 108, &f.undo) == 12);
+    CHECK (NoteTools::transpose (NoteTools::scopeFor (f.pattern, 1, {}), 12, 12, 108, &f.undo)
+           == 12);
 
     CHECK ((int) a[ids::pitch] == 72);
     CHECK ((int) b[ids::pitch] == 76);
@@ -330,8 +334,8 @@ TEST_CASE ("a chord against the ceiling keeps its intervals instead of compressi
            "[model][notetools]")
 {
     ToolsFixture f;
-    auto low  = f.add (0, 1, 100);
-    auto high = f.add (0, 1, 108);   // already at the top of the roll
+    auto low = f.add (0, 1, 100);
+    auto high = f.add (0, 1, 108); // already at the top of the roll
 
     // Nothing can move, so nothing does - and the caller is told, so it can skip
     // an undo transaction that would restore nothing.
@@ -340,7 +344,8 @@ TEST_CASE ("a chord against the ceiling keeps its intervals instead of compressi
     CHECK ((int) high[ids::pitch] == 108);
 
     // Down is still available, and the interval is preserved.
-    CHECK (NoteTools::transpose (NoteTools::scopeFor (f.pattern, 1, {}), -12, 12, 108, &f.undo) == -12);
+    CHECK (NoteTools::transpose (NoteTools::scopeFor (f.pattern, 1, {}), -12, 12, 108, &f.undo)
+           == -12);
     CHECK ((int) high[ids::pitch] - (int) low[ids::pitch] == 8);
 }
 
@@ -355,8 +360,7 @@ TEST_CASE ("transposing by nothing is a no-op", "[model][notetools]")
 
 // --- randomize ---------------------------------------------------------------
 
-TEST_CASE ("randomize with a fixed seed is reproducible and stays in range",
-           "[model][notetools]")
+TEST_CASE ("randomize with a fixed seed is reproducible and stays in range", "[model][notetools]")
 {
     const NoteTools::RandomizeOptions options { 0.4, 2 };
 
@@ -368,8 +372,8 @@ TEST_CASE ("randomize with a fixed seed is reproducible and stays in range",
             f.add (i * 2, 1, 60, 0.6f);
 
         juce::Random random (1234);
-        NoteTools::randomize (f.pattern, NoteTools::scopeFor (f.pattern, 1, {}), options,
-                              random, &f.undo);
+        NoteTools::randomize (f.pattern, NoteTools::scopeFor (f.pattern, 1, {}), options, random,
+                              &f.undo);
 
         for (const auto& note : NoteTools::notesOnChannel (f.pattern, 1))
         {
@@ -407,8 +411,8 @@ TEST_CASE ("randomize touches only the properties it was asked to", "[model][not
     auto note = f.add (8, 3, 60, 0.6f);
 
     juce::Random random (7);
-    NoteTools::randomize (f.pattern, NoteTools::scopeFor (f.pattern, 1, {}), { 0.4, 0 },
-                          random, &f.undo);
+    NoteTools::randomize (f.pattern, NoteTools::scopeFor (f.pattern, 1, {}), { 0.4, 0 }, random,
+                          &f.undo);
 
     CHECK ((int) note[ids::step] == 8);
     CHECK ((int) note[ids::lengthSteps] == 3);
@@ -416,8 +420,8 @@ TEST_CASE ("randomize touches only the properties it was asked to", "[model][not
 
     const auto velocityAfter = (double) note[ids::velocity];
 
-    NoteTools::randomize (f.pattern, NoteTools::scopeFor (f.pattern, 1, {}), { 0.0, 2 },
-                          random, &f.undo);
+    NoteTools::randomize (f.pattern, NoteTools::scopeFor (f.pattern, 1, {}), { 0.0, 2 }, random,
+                          &f.undo);
 
     CHECK (juce::exactlyEqual ((double) note[ids::velocity], velocityAfter));
     CHECK ((int) note[ids::pitch] == 60);
@@ -432,8 +436,8 @@ TEST_CASE ("randomize with both amounts at zero writes nothing at all", "[model]
     f.undo.beginNewTransaction ("Randomize");
 
     juce::Random random (1);
-    NoteTools::randomize (f.pattern, NoteTools::scopeFor (f.pattern, 1, {}), { 0.0, 0 },
-                          random, &f.undo);
+    NoteTools::randomize (f.pattern, NoteTools::scopeFor (f.pattern, 1, {}), { 0.0, 0 }, random,
+                          &f.undo);
 
     CHECK ((int) note[ids::step] == 4);
 
@@ -456,8 +460,8 @@ TEST_CASE ("randomize clamps a note pushed before the start rather than losing i
     juce::Random random (99);
 
     for (int pass = 0; pass < 10; ++pass)
-        NoteTools::randomize (f.pattern, NoteTools::scopeFor (f.pattern, 1, {}), { 0.0, 4 },
-                              random, &f.undo);
+        NoteTools::randomize (f.pattern, NoteTools::scopeFor (f.pattern, 1, {}), { 0.0, 4 }, random,
+                              &f.undo);
 
     CHECK (f.countNotes() == 20);
 

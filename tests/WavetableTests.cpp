@@ -36,7 +36,7 @@ double harmonicAmplitude (const Wavetable& table, float position, int mip, int k
     {
         const auto value = (double) table.at (position, mip, (double) i / (double) n);
         const auto theta = juce::MathConstants<double>::twoPi * (double) k * (double) i
-                         / (double) n;
+                           / (double) n;
         re += value * std::cos (theta);
         im += value * std::sin (theta);
     }
@@ -101,8 +101,7 @@ TEST_CASE ("a mip carries the same levels as the one above it", "[wavetable]")
     for (int mip = 1; mip <= 5; ++mip)
     {
         INFO ("mip " << mip);
-        REQUIRE (harmonicAmplitude (basic, 1.0f, mip, 1)
-                     == Approx (reference).epsilon (0.02));
+        REQUIRE (harmonicAmplitude (basic, 1.0f, mip, 1) == Approx (reference).epsilon (0.02));
     }
 }
 
@@ -205,9 +204,7 @@ TEST_CASE ("position crossfades between neighbouring frames", "[wavetable]")
     const auto& basic = tableNamed ("basic");
 
     const auto atFrame = [&basic] (int frame, double phase)
-    {
-        return (double) basic.frameData (frame, 0)[(int) (phase * kWavetableSize)];
-    };
+    { return (double) basic.frameData (frame, 0)[(int) (phase * kWavetableSize)]; };
 
     // Landing exactly on a sample, so this measures the frame crossfade and
     // not the phase interpolation either side of it.
@@ -216,11 +213,11 @@ TEST_CASE ("position crossfades between neighbouring frames", "[wavetable]")
     // Exactly on a frame, and exactly between two.
     REQUIRE ((double) basic.at (0.0f, 0, phase) == Approx (atFrame (0, phase)).margin (1.0e-5));
     REQUIRE ((double) basic.at (1.0f, 0, phase)
-                 == Approx (atFrame (kWavetableFrames - 1, phase)).margin (1.0e-5));
+             == Approx (atFrame (kWavetableFrames - 1, phase)).margin (1.0e-5));
 
     const auto halfway = 0.5f / (float) (kWavetableFrames - 1);
     REQUIRE ((double) basic.at (halfway, 0, phase)
-                 == Approx ((atFrame (0, phase) + atFrame (1, phase)) / 2.0).margin (1.0e-5));
+             == Approx ((atFrame (0, phase) + atFrame (1, phase)) / 2.0).margin (1.0e-5));
 }
 
 // --- the bank's names --------------------------------------------------------
@@ -263,7 +260,6 @@ TEST_CASE ("the mip for a phase increment stays band-limited", "[wavetable]")
         REQUIRE ((double) wavetableMipHarmonics (mip) * dt <= 0.5 + 1.0e-9);
     }
 }
-
 
 // --- the engine --------------------------------------------------------------
 
@@ -369,9 +365,9 @@ TEST_CASE ("a wavetable slot leaves the classic oscillators exactly as they were
 
     SECTION ("with a wavetable slot running at no gain")
     {
-        REQUIRE (identical (alone,
-                            renderOneNote (bankOf ({ classicSlot (Waveform::sine),
-                                                     wavetableSlot ("basic", 0.0f, 0.0f) }))));
+        REQUIRE (
+            identical (alone, renderOneNote (bankOf ({ classicSlot (Waveform::sine),
+                                                       wavetableSlot ("basic", 0.0f, 0.0f) }))));
     }
 }
 
@@ -379,7 +375,7 @@ TEST_CASE ("a wavetable slot sounds, and its position changes what it sounds lik
            "[engine][wavetable]")
 {
     const auto atStart = renderOneNote (bankOf ({ wavetableSlot ("basic", 0.0f) }));
-    const auto atEnd   = renderOneNote (bankOf ({ wavetableSlot ("basic", 1.0f) }));
+    const auto atEnd = renderOneNote (bankOf ({ wavetableSlot ("basic", 1.0f) }));
 
     REQUIRE (peakOf (atStart) > 0.05f);
     REQUIRE (peakOf (atEnd) > 0.05f);
@@ -397,7 +393,7 @@ TEST_CASE ("every factory table can be played", "[engine][wavetable]")
         INFO (table.getName());
 
         REQUIRE (peakOf (renderOneNote (bankOf ({ wavetableSlot (table.getName(), 0.5f) })))
-                     > 0.05f);
+                 > 0.05f);
     }
 }
 
@@ -412,7 +408,7 @@ TEST_CASE ("position modulation moves the sound through the note", "[engine][wav
     still.positionMod = 0.0f;
 
     const auto moving = renderOneNote (bankOf ({ modulated }), 16384);
-    const auto fixed  = renderOneNote (bankOf ({ still }), 16384);
+    const auto fixed = renderOneNote (bankOf ({ still }), 16384);
 
     REQUIRE (! identical (moving, fixed));
 
@@ -420,7 +416,7 @@ TEST_CASE ("position modulation moves the sound through the note", "[engine][wav
     // end as at its start. Compared as whole windows, since the pitch is
     // unchanged and only the timbre moved.
     const auto early = moving.getMagnitude (0, 2048);
-    const auto late  = moving.getMagnitude (12288, 2048);
+    const auto late = moving.getMagnitude (12288, 2048);
 
     REQUIRE (early > 0.01f);
     REQUIRE (late > 0.01f);
@@ -469,12 +465,12 @@ TEST_CASE ("one unison voice is exactly no unison at all", "[engine][wavetable]"
 
     auto explicitOne = single;
     explicitOne.unisonVoices = 1;
-    explicitOne.unisonDetune = 40.0f;   // nothing to spread between
+    explicitOne.unisonDetune = 40.0f; // nothing to spread between
 
     // A spread computed with a divide-by-(n-1) would produce a NaN here, and a
     // start phase of i/n would still be 0. Both have to come out untouched.
-    REQUIRE (identical (renderOneNote (bankOf ({ single })),
-                        renderOneNote (bankOf ({ explicitOne }))));
+    REQUIRE (
+        identical (renderOneNote (bankOf ({ single })), renderOneNote (bankOf ({ explicitOne }))));
 }
 
 TEST_CASE ("a high note does not fold its harmonics back down", "[engine][wavetable]")
@@ -482,7 +478,7 @@ TEST_CASE ("a high note does not fold its harmonics back down", "[engine][waveta
     // The reason the table is stored as a mip pyramid at all. A saw read
     // straight from the full-band frame at this pitch would fold most of its
     // harmonics below the fundamental, where nothing but aliasing can be.
-    constexpr int pitch = 108;                       // ~4186 Hz
+    constexpr int pitch = 108; // ~4186 Hz
     const auto fundamental = 440.0 * std::pow (2.0, (pitch - 69) / 12.0);
 
     const auto rendered = renderOneNote (bankOf ({ wavetableSlot ("basic", 1.0f) }), 8192, pitch);
@@ -498,8 +494,10 @@ TEST_CASE ("a high note does not fold its harmonics back down", "[engine][waveta
 
         for (int i = 0; i < 8192; ++i)
         {
-            const auto window = 0.5 - 0.5 * std::cos (juce::MathConstants<double>::twoPi
-                                                      * (double) i / 8192.0);
+            const auto window = 0.5
+                                - 0.5
+                                      * std::cos (juce::MathConstants<double>::twoPi * (double) i
+                                                  / 8192.0);
             const auto value = (double) rendered.getSample (0, i) * window;
             const auto theta = juce::MathConstants<double>::twoPi * hz * (double) i / 44100.0;
 
@@ -567,8 +565,7 @@ TEST_CASE ("a position change reaches a note that is already sounding", "[engine
 
 // --- automation --------------------------------------------------------------
 
-TEST_CASE ("only a wavetable slot offers its position to automation",
-           "[automation][wavetable]")
+TEST_CASE ("only a wavetable slot offers its position to automation", "[automation][wavetable]")
 {
     auto project = dew::testing::fixtureProject();
 
@@ -627,7 +624,7 @@ TEST_CASE ("an automated position survives a snapshot, and a classic slot drops 
     for (const auto& a : snapshot.automations)
         if (a.param == AutomationParam::position)
             resolved = a.scope == AutomationScope::channelOsc && a.slotIndex == 0
-                    && a.targetIndex >= 0;
+                       && a.targetIndex >= 0;
 
     REQUIRE (resolved);
 
@@ -648,8 +645,7 @@ TEST_CASE ("an automated position survives a snapshot, and a classic slot drops 
 
 // --- the document ------------------------------------------------------------
 
-TEST_CASE ("a wavetable slot keeps every setting across a round trip",
-           "[schema][wavetable]")
+TEST_CASE ("a wavetable slot keeps every setting across a round trip", "[schema][wavetable]")
 {
     auto project = dew::testing::fixtureProject();
     auto channel = project.getChildWithName (ids::CHANNEL);
@@ -672,8 +668,8 @@ TEST_CASE ("a wavetable slot keeps every setting across a round trip",
     INFO ("warnings: " << loaded.warnings.joinIntoString ("; "));
     REQUIRE (loaded.warnings.isEmpty());
 
-    const auto reloaded = ProjectEdits::oscillatorAt (
-        loaded.tree.getChildWithName (ids::CHANNEL), 1);
+    const auto reloaded = ProjectEdits::oscillatorAt (loaded.tree.getChildWithName (ids::CHANNEL),
+                                                      1);
 
     REQUIRE (reloaded[ids::mode].toString() == "wavetable");
     REQUIRE (reloaded[ids::wavetable].toString() == "formant");
@@ -799,7 +795,11 @@ struct PanelHarness
     PanelHarness()
     {
         document.setState (dew::testing::fixtureProject(), true);
-        section.onHeightChanged = [this] { ++heightChanges; layOut(); };
+        section.onHeightChanged = [this]
+        {
+            ++heightChanges;
+            layOut();
+        };
         section.setVisible (true);
         section.setOwner (channel().getChildWithName (ids::INSTRUMENT));
         layOut();
@@ -841,8 +841,14 @@ struct PanelHarness
         editorState.dispatchPendingMessages();
     }
 
-    juce::ValueTree channel() { return document.getState().getChildWithName (ids::CHANNEL); }
-    juce::ValueTree slot (int i) { return ProjectEdits::oscillatorAt (channel(), i); }
+    juce::ValueTree channel()
+    {
+        return document.getState().getChildWithName (ids::CHANNEL);
+    }
+    juce::ValueTree slot (int i)
+    {
+        return ProjectEdits::oscillatorAt (channel(), i);
+    }
 
     int heightChanges = 0;
     ProjectDocument document;
@@ -890,8 +896,7 @@ TEST_CASE ("choosing the wavetable mode swaps the face and the height", "[ui][wa
     REQUIRE (OscillatorSection::heightFor (true) > OscillatorSection::heightFor (false));
 }
 
-TEST_CASE ("switching the mode is one undo step, and undoing restores the face",
-           "[ui][wavetable]")
+TEST_CASE ("switching the mode is one undo step, and undoing restores the face", "[ui][wavetable]")
 {
     const juce::ScopedJuceInitialiser_GUI juceInit;
     PanelHarness h;
@@ -1016,9 +1021,10 @@ TEST_CASE ("the wavetable face fits the narrowest panel the app allows", "[ui][w
     h.section.resized();
 
     const std::initializer_list<juce::Component*> controls {
-        &h.section.getTableBox(), &h.section.getSourceBox(),
-        &h.section.getPositionKnob(), &h.section.getModKnob(), &h.section.getRateKnob(),
-        &h.section.getUnisonKnob(), &h.section.getSpreadKnob() };
+        &h.section.getTableBox(),  &h.section.getSourceBox(), &h.section.getPositionKnob(),
+        &h.section.getModKnob(),   &h.section.getRateKnob(),  &h.section.getUnisonKnob(),
+        &h.section.getSpreadKnob()
+    };
 
     for (auto* control : controls)
     {

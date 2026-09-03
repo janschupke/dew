@@ -9,8 +9,7 @@ using namespace dew::lang;
 namespace
 {
 
-Chord chordOf (std::string_view symbol, const Key& key, int inversion = 0,
-               std::string_view of = {})
+Chord chordOf (std::string_view symbol, const Key& key, int inversion = 0, std::string_view of = {})
 {
     std::string reason;
     const auto resolved = resolveChord ({ symbol, inversion, of }, key, &reason);
@@ -21,8 +20,7 @@ Chord chordOf (std::string_view symbol, const Key& key, int inversion = 0,
 
 } // namespace
 
-TEST_CASE ("middle C is 60 and is called C4, as the piano roll says",
-           "[score][music]")
+TEST_CASE ("middle C is 60 and is called C4, as the piano roll says", "[score][music]")
 {
     // Not a free choice: PianoRollComponent::noteName spells a pitch as
     // `pitch / 12 - 1`. Any other convention would put a score's notes an octave
@@ -31,7 +29,7 @@ TEST_CASE ("middle C is 60 and is called C4, as the piano roll says",
     REQUIRE (pitchName (60) == "C4");
 
     REQUIRE (parsePitch ("C-1") == 0);
-    REQUIRE (parsePitch ("A4") == 69);       // concert A
+    REQUIRE (parsePitch ("A4") == 69); // concert A
     REQUIRE (parsePitch ("F#3") == 54);
     REQUIRE (parsePitch ("Bb2") == 46);
     REQUIRE (parsePitch ("C3") == 48);
@@ -65,7 +63,7 @@ TEST_CASE ("a key needs a tonic and a mode", "[score][music]")
 
     REQUIRE_FALSE (parseKey ("H", "major").has_value());
     REQUIRE_FALSE (parseKey ("C", "wobbly").has_value());
-    REQUIRE_FALSE (parseKey ("C4", "major").has_value());   // a key has no octave
+    REQUIRE_FALSE (parseKey ("C4", "major").has_value()); // a key has no octave
 }
 
 TEST_CASE ("scale membership follows the mode", "[score][music]")
@@ -104,8 +102,7 @@ TEST_CASE ("a roman numeral names a degree of its key", "[score][music]")
     REQUIRE (chordOf ("VII", aMinor).pitchClasses() == std::vector<int> { 7, 11, 2 });
 }
 
-TEST_CASE ("an accidental prefix borrows a chord from outside the key",
-           "[score][music]")
+TEST_CASE ("an accidental prefix borrows a chord from outside the key", "[score][music]")
 {
     const Key cMajor { 0, Mode::major };
 
@@ -136,8 +133,7 @@ TEST_CASE ("qualities and extensions build the chords they name", "[score][music
     REQUIRE (ninth.intervals == std::vector<int> { 0, 4, 7, 10, 14 });
 }
 
-TEST_CASE ("an absolute chord is told apart from a numeral with no lookahead",
-           "[score][music]")
+TEST_CASE ("an absolute chord is told apart from a numeral with no lookahead", "[score][music]")
 {
     const Key cMajor { 0, Mode::major };
 
@@ -189,8 +185,7 @@ TEST_CASE ("an inversion a chord does not have is refused", "[score][music]")
     REQUIRE (resolveChord ({ "V7", 3, {} }, cMajor, nullptr).has_value());
 }
 
-TEST_CASE ("a secondary dominant is read in the key it tonicises",
-           "[score][music]")
+TEST_CASE ("a secondary dominant is read in the key it tonicises", "[score][music]")
 {
     const Key cMajor { 0, Mode::major };
 
@@ -213,11 +208,11 @@ TEST_CASE ("a tonicisation moves the melody's key too", "[score][music]")
 
     const auto plain = resolveChord ({ "V", 0, {} }, cMajor, nullptr);
     REQUIRE (plain.has_value());
-    REQUIRE (plain->localKey.tonicPc == 0);           // unchanged
+    REQUIRE (plain->localKey.tonicPc == 0); // unchanged
 
     const auto secondary = resolveChord ({ "V7", 0, "vi" }, cMajor, nullptr);
     REQUIRE (secondary.has_value());
-    REQUIRE (secondary->localKey.tonicPc == 9);       // A
+    REQUIRE (secondary->localKey.tonicPc == 9); // A
 
     // HARMONIC minor, deliberately: natural minor has no leading tone, and the
     // leading tone is the entire reason a dominant tonicises anything.
@@ -261,20 +256,19 @@ TEST_CASE ("an unknown quality is named rather than ignored", "[score][music]")
     REQUIRE_FALSE (resolveChord ({ "wobble", 0, {} }, cMajor, nullptr).has_value());
 }
 
-TEST_CASE ("every seven-note mode supports numerals and the others do not",
-           "[score][music]")
+TEST_CASE ("every seven-note mode supports numerals and the others do not", "[score][music]")
 {
-    for (const auto mode : { Mode::major, Mode::minor, Mode::dorian, Mode::phrygian,
-                             Mode::lydian, Mode::mixolydian, Mode::locrian,
-                             Mode::harmonicMinor, Mode::melodicMinor })
+    for (const auto mode :
+         { Mode::major, Mode::minor, Mode::dorian, Mode::phrygian, Mode::lydian, Mode::mixolydian,
+           Mode::locrian, Mode::harmonicMinor, Mode::melodicMinor })
     {
         INFO ("mode " << nameOf (mode));
         REQUIRE (degreesOf (mode).size() == 7);
         REQUIRE (supportsRomanNumerals (mode));
     }
 
-    for (const auto mode : { Mode::majorPentatonic, Mode::minorPentatonic,
-                             Mode::blues, Mode::chromatic })
+    for (const auto mode :
+         { Mode::majorPentatonic, Mode::minorPentatonic, Mode::blues, Mode::chromatic })
     {
         INFO ("mode " << nameOf (mode));
         REQUIRE_FALSE (supportsRomanNumerals (mode));
@@ -282,11 +276,10 @@ TEST_CASE ("every seven-note mode supports numerals and the others do not",
 
     // Every mode's degrees are ascending and inside one octave, which is what
     // scalePitchesBetween assumes.
-    for (const auto mode : { Mode::major, Mode::minor, Mode::dorian, Mode::phrygian,
-                             Mode::lydian, Mode::mixolydian, Mode::locrian,
-                             Mode::harmonicMinor, Mode::melodicMinor,
-                             Mode::majorPentatonic, Mode::minorPentatonic,
-                             Mode::blues, Mode::chromatic })
+    for (const auto mode :
+         { Mode::major, Mode::minor, Mode::dorian, Mode::phrygian, Mode::lydian, Mode::mixolydian,
+           Mode::locrian, Mode::harmonicMinor, Mode::melodicMinor, Mode::majorPentatonic,
+           Mode::minorPentatonic, Mode::blues, Mode::chromatic })
     {
         INFO ("mode " << nameOf (mode));
         const auto& degrees = degreesOf (mode);
@@ -300,8 +293,7 @@ TEST_CASE ("every seven-note mode supports numerals and the others do not",
     }
 }
 
-TEST_CASE ("an accidental on a numeral is read against the major scale",
-           "[score][music]")
+TEST_CASE ("an accidental on a numeral is read against the major scale", "[score][music]")
 {
     // The rule, and the bug it fixes. Flattening the MODE's own degree is right
     // in major and wrong in minor: the sixth of natural minor is already flat,

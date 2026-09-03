@@ -17,18 +17,18 @@ namespace dew
 // Simple metres first, then compound, then the odd ones - the order a musician
 // would look for them in rather than numeric order. Every denominator here is a
 // note value, which is why the list is closed: 3/6 is not a metre.
-const TransportBar::MeterChoice TransportBar::meterChoices[] = {
-    { 4, 4 }, { 3, 4 }, { 2, 4 }, { 5, 4 }, { 6, 4 },
-    { 6, 8 }, { 9, 8 }, { 12, 8 }, { 7, 8 }, { 5, 8 },
-    { 2, 2 }, { 3, 8 }
-};
+const TransportBar::MeterChoice TransportBar::meterChoices[] = { { 4, 4 }, { 3, 4 },  { 2, 4 },
+                                                                 { 5, 4 }, { 6, 4 },  { 6, 8 },
+                                                                 { 9, 8 }, { 12, 8 }, { 7, 8 },
+                                                                 { 5, 8 }, { 2, 2 },  { 3, 8 } };
 
-const int TransportBar::numMeterChoices
-    = (int) (sizeof (meterChoices) / sizeof (meterChoices[0]));
-
+const int TransportBar::numMeterChoices = (int) (sizeof (meterChoices) / sizeof (meterChoices[0]));
 
 TransportBar::TransportBar (ProjectDocument& d, AudioEngine& e, EditorState& s)
-    : document (d), engine (e), editorState (s), signalScope (&e)
+    : document (d)
+    , engine (e)
+    , editorState (s)
+    , signalScope (&e)
 {
     setComponentID ("transportBar");
     patternBox.setComponentID ("patternSelector");
@@ -83,8 +83,7 @@ TransportBar::TransportBar (ProjectDocument& d, AudioEngine& e, EditorState& s)
     tempoField.onValueChange = [this]
     {
         ProjectEdits::setProperty (document.getState(), ids::tempoBpm, tempoField.getValue(),
-                                   &document.getUndoManager(), "Change tempo",
-                                   tempoGestureActive);
+                                   &document.getUndoManager(), "Change tempo", tempoGestureActive);
 
         // A number field drag emits a value per frame, exactly as a knob does.
         tempoGestureActive = true;
@@ -145,8 +144,8 @@ TransportBar::TransportBar (ProjectDocument& d, AudioEngine& e, EditorState& s)
     {
         auto& undo = document.getUndoManager();
         undo.beginNewTransaction ("Duplicate pattern");
-        const auto copy = ProjectEdits::duplicatePattern (document.getState(),
-                                                          currentPattern(), &undo);
+        const auto copy = ProjectEdits::duplicatePattern (document.getState(), currentPattern(),
+                                                          &undo);
 
         if (copy.isValid())
         {
@@ -175,9 +174,8 @@ TransportBar::TransportBar (ProjectDocument& d, AudioEngine& e, EditorState& s)
     patternLengthField.onValueChange = [this]
     {
         ProjectEdits::setProperty (currentPattern(), ids::lengthSteps,
-                                   (int) patternLengthField.getValue(),
-                                   &document.getUndoManager(), "Change pattern length",
-                                   lengthGestureActive);
+                                   (int) patternLengthField.getValue(), &document.getUndoManager(),
+                                   "Change pattern length", lengthGestureActive);
 
         lengthGestureActive = true;
     };
@@ -190,7 +188,6 @@ TransportBar::TransportBar (ProjectDocument& d, AudioEngine& e, EditorState& s)
     addAndMakeVisible (positionLabel);
 
     addAndMakeVisible (signalScope);
-
 
     document.getState().addListener (this);
     editorState.addChangeListener (this);
@@ -212,9 +209,8 @@ void TransportBar::setParamMenuHost (const paramMenu::Host* host)
     // Through the field's own hook rather than a Trigger: a DewNumberField has
     // one, and only the raw juce::Sliders in the mixer and the instrument panel
     // need the listener form.
-    paramMenu::attachTo (host, tempoField,
-                         [this] { return document.getState(); },
-                         projectParamSpecs().front());
+    paramMenu::attachTo (
+        host, tempoField, [this] { return document.getState(); }, projectParamSpecs().front());
 }
 
 void TransportBar::refresh()
@@ -299,7 +295,8 @@ void TransportBar::changeListenerCallback (juce::ChangeBroadcaster*)
     refreshPatternLength();
 }
 
-void TransportBar::valueTreePropertyChanged (juce::ValueTree& tree, const juce::Identifier& property)
+void TransportBar::valueTreePropertyChanged (juce::ValueTree& tree,
+                                             const juce::Identifier& property)
 {
     if (property == ids::tempoBpm)
         tempoField.setValue ((double) tree[ids::tempoBpm], juce::dontSendNotification);
@@ -394,8 +391,8 @@ void TransportBar::applyMeterChoice (int itemId)
     undo.beginNewTransaction ("Change time signature");
 
     auto exact = true;
-    ProjectEdits::setMeter (document.getState(), choice.beatsPerBar, choice.beatUnit,
-                            &undo, &exact);
+    ProjectEdits::setMeter (document.getState(), choice.beatsPerBar, choice.beatUnit, &undo,
+                            &exact);
 
     if (onMeterChanged != nullptr)
         onMeterChanged (exact);
@@ -416,9 +413,9 @@ juce::String TransportBar::positionText (double steps, const Meter& meter)
 
 void TransportBar::updatePositionLabel()
 {
-    positionLabel.setText (positionText (engine.getPlayheadSteps(),
-                                         Meter::of (document.getState())),
-                           juce::dontSendNotification);
+    positionLabel.setText (
+        positionText (engine.getPlayheadSteps(), Meter::of (document.getState())),
+        juce::dontSendNotification);
 }
 
 void TransportBar::paint (juce::Graphics& g)

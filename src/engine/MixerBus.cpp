@@ -28,7 +28,7 @@ void MixerBus::panGains (float pan, float& leftGain, float& rightGain) noexcept
     const auto clamped = juce::jlimit (-1.0f, 1.0f, pan);
     const auto angle = (clamped + 1.0f) * 0.25f * juce::MathConstants<float>::pi;
 
-    leftGain  = std::cos (angle);
+    leftGain = std::cos (angle);
     rightGain = std::sin (angle);
 }
 
@@ -45,8 +45,8 @@ MixerBus::TrackGains MixerBus::trackGains (float pan, float gain) noexcept
              gain * juce::jmax (leftGain, rightGain) * juce::MathConstants<float>::sqrt2 };
 }
 
-void MixerBus::addPanned (const float* mono, int numSamples, float gain, float pan,
-                          float* left, float* right) noexcept
+void MixerBus::addPanned (const float* mono, int numSamples, float gain, float pan, float* left,
+                          float* right) noexcept
 {
     float leftGain = 0.0f, rightGain = 0.0f;
     panGains (pan, leftGain, rightGain);

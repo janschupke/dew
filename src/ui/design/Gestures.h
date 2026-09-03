@@ -91,7 +91,10 @@ struct WheelDelta
     double y = 0.0;
 
     /** What a scroll of both axes amounts to along one. */
-    double along() const noexcept { return x + y; }
+    double along() const noexcept
+    {
+        return x + y;
+    }
 };
 
 inline WheelDelta deltaOf (const juce::MouseWheelDetails& wheel) noexcept

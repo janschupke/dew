@@ -94,8 +94,7 @@ struct Stroke
     int modifiers = 0;
 };
 
-template <typename Action>
-struct Binding
+template <typename Action> struct Binding
 {
     Action action;
     Stroke stroke;

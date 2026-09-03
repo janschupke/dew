@@ -18,7 +18,7 @@ namespace
 {
 
 const juce::Array<EffectType> allTypes { EffectType::filter, EffectType::reverb, EffectType::delay,
-                                         EffectType::drive, EffectType::chorus, EffectType::eq };
+                                         EffectType::drive,  EffectType::chorus, EffectType::eq };
 
 } // namespace
 
@@ -62,7 +62,7 @@ TEST_CASE ("an unknown effect id is refused rather than guessed", "[catalog]")
     // by a newer dew played back wrong and silently.
     REQUIRE_FALSE (effectTypeFor ("bitcrusher").has_value());
     REQUIRE_FALSE (effectTypeFor ("").has_value());
-    REQUIRE_FALSE (effectTypeFor ("Filter").has_value());   // ids are exact
+    REQUIRE_FALSE (effectTypeFor ("Filter").has_value()); // ids are exact
 }
 
 TEST_CASE ("effect ids are unique", "[catalog]")
@@ -279,7 +279,7 @@ TEST_CASE ("an unknown instrument source is refused rather than guessed", "[cata
     // effectTypeFor returning an optional was written to close.
     REQUIRE_FALSE (instrumentTypeFor ("sampler").has_value());
     REQUIRE_FALSE (instrumentTypeFor ("").has_value());
-    REQUIRE_FALSE (instrumentTypeFor ("Synth").has_value());   // ids are exact
+    REQUIRE_FALSE (instrumentTypeFor ("Synth").has_value()); // ids are exact
 }
 
 TEST_CASE ("instrument ids are unique", "[catalog][instrument]")
@@ -327,16 +327,20 @@ TEST_CASE ("each parameter table is its own, whatever its length", "[catalog][pa
     //
     // Asked for in the order that fails: the colliding table SECOND each time,
     // because the first caller is the one that used to win.
-    struct Table { const std::vector<ParamSpec>& specs; const juce::Identifier& expected;
-                   const char* what; };
+    struct Table
+    {
+        const std::vector<ParamSpec>& specs;
+        const juce::Identifier& expected;
+        const char* what;
+    };
 
     const Table tables[] {
-        { channelParamSpecs(),    ids::volume,   "channel" },
-        { sampleParamSpecs(),     ids::fadeInMs, "sample" },
-        { mixerTrackParamSpecs(), ids::gain,     "mixer track" },
-        { ampParamSpecs(),        ids::attack,   "amp" },
-        { oscParamSpecs(),        ids::octave,   "oscillator" },
-        { projectParamSpecs(),    ids::tempoBpm, "project" },
+        { channelParamSpecs(), ids::volume, "channel" },
+        { sampleParamSpecs(), ids::fadeInMs, "sample" },
+        { mixerTrackParamSpecs(), ids::gain, "mixer track" },
+        { ampParamSpecs(), ids::attack, "amp" },
+        { oscParamSpecs(), ids::octave, "oscillator" },
+        { projectParamSpecs(), ids::tempoBpm, "project" },
     };
 
     for (const auto& table : tables)
@@ -344,8 +348,7 @@ TEST_CASE ("each parameter table is its own, whatever its length", "[catalog][pa
         INFO ("the " << table.what << " table");
         REQUIRE (! table.specs.empty());
 
-        const auto has = std::any_of (table.specs.begin(), table.specs.end(),
-                                      [&] (const auto& spec)
+        const auto has = std::any_of (table.specs.begin(), table.specs.end(), [&] (const auto& spec)
                                       { return *spec.property == table.expected; });
 
         CHECK (has);
@@ -383,15 +386,20 @@ TEST_CASE ("every instrument parameter says the same thing to the file and to th
     const auto amp = defaultTreeFor (childSpecFor (instrumentNode, "amp"));
     const auto osc = defaultTreeFor (childSpecFor (instrumentNode, "oscillators"));
 
-    struct Case { const juce::ValueTree& node; const std::vector<ParamSpec>& specs; const char* what; };
+    struct Case
+    {
+        const juce::ValueTree& node;
+        const std::vector<ParamSpec>& specs;
+        const char* what;
+    };
 
     const auto sample = defaultTreeFor (childSpecFor (channelNode, "sample"));
 
     const Case cases[] {
         { channel, channelParamSpecs(), "channel" },
-        { amp,     ampParamSpecs(),     "amp" },
-        { osc,     oscParamSpecs(),     "oscillator" },
-        { sample,  sampleParamSpecs(),  "sample" },
+        { amp, ampParamSpecs(), "amp" },
+        { osc, oscParamSpecs(), "oscillator" },
+        { sample, sampleParamSpecs(), "sample" },
     };
 
     for (const auto& c : cases)
@@ -450,7 +458,7 @@ TEST_CASE ("every instrument parameter says the same thing to the file and to th
     CHECK (instrumentParamSpec (ids::attack) != nullptr);
     CHECK (instrumentParamSpec (ids::octave) != nullptr);
     CHECK (instrumentParamSpec (ids::volume) != nullptr);
-    CHECK (instrumentParamSpec (ids::cutoff) == nullptr);   // an effect's, not an instrument's
+    CHECK (instrumentParamSpec (ids::cutoff) == nullptr); // an effect's, not an instrument's
 }
 
 TEST_CASE ("the envelope reaches as far as the engine renders", "[catalog][params]")
@@ -475,15 +483,19 @@ TEST_CASE ("automation reaches everything a control does", "[catalog][params]")
     // 0..1.5, the engine clamped at 2.0, and an automation curve mapped onto
     // 0..1 - so automating a fader swept two thirds of it and stopped, and
     // nothing anywhere said why.
-    struct Case { AutomationScope scope; const juce::Identifier& property;
-                  const std::vector<ParamSpec>& specs; };
+    struct Case
+    {
+        AutomationScope scope;
+        const juce::Identifier& property;
+        const std::vector<ParamSpec>& specs;
+    };
 
     const Case cases[] {
-        { AutomationScope::channel,    ids::volume,       channelParamSpecs() },
-        { AutomationScope::channel,    ids::pan,          channelParamSpecs() },
-        { AutomationScope::mixerTrack, ids::gain,         mixerTrackParamSpecs() },
-        { AutomationScope::mixerTrack, ids::pan,          mixerTrackParamSpecs() },
-        { AutomationScope::master,     ids::gain,         mixerTrackParamSpecs() },
+        { AutomationScope::channel, ids::volume, channelParamSpecs() },
+        { AutomationScope::channel, ids::pan, channelParamSpecs() },
+        { AutomationScope::mixerTrack, ids::gain, mixerTrackParamSpecs() },
+        { AutomationScope::mixerTrack, ids::pan, mixerTrackParamSpecs() },
+        { AutomationScope::master, ids::gain, mixerTrackParamSpecs() },
         { AutomationScope::channelOsc, ids::wavePosition, oscParamSpecs() },
     };
 

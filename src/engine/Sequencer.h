@@ -37,13 +37,9 @@ public:
         `out` is cleared first. It is a caller-owned vector so the audio thread
         can reuse its capacity instead of allocating per block.
     */
-    static void collect (const EngineSnapshot& snapshot,
-                         Transport::Mode mode,
-                         juce::int64 positionSamples,
-                         int numSamples,
-                         const TempoMap& tempoMap,
-                         double sampleRate,
-                         int patternIndexForPatternMode,
+    static void collect (const EngineSnapshot& snapshot, Transport::Mode mode,
+                         juce::int64 positionSamples, int numSamples, const TempoMap& tempoMap,
+                         double sampleRate, int patternIndexForPatternMode,
                          std::vector<NoteTrigger>& out);
 
     /** How long the MATERIAL is, in steps, for the given mode: the pattern's

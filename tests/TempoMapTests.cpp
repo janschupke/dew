@@ -57,8 +57,8 @@ TEST_CASE ("with no tempo automation the map is the arithmetic it replaces", "[t
                     INFO (bpm << "bpm, " << stepsPerBeat << " steps/beat, " << sampleRate << "Hz, "
                               << steps << " steps");
 
-                    REQUIRE (juce::exactlyEqual (transport.samplesForSteps (steps),
-                                                 expected * steps));
+                    REQUIRE (
+                        juce::exactlyEqual (transport.samplesForSteps (steps), expected * steps));
                 }
             }
         }
@@ -226,16 +226,17 @@ TEST_CASE ("a tempo curve makes the arrangement longer", "[tempo][render]")
 
     const auto steps = (double) after.songLengthSteps();
 
-    INFO ("without " << before.tempoMap->secondsForSteps (steps)
-          << "s, with " << after.tempoMap->secondsForSteps (steps) << "s");
+    INFO ("without " << before.tempoMap->secondsForSteps (steps) << "s, with "
+                     << after.tempoMap->secondsForSteps (steps) << "s");
 
     // Slower over the bars the clip covers, so the arrangement takes longer.
     REQUIRE (after.tempoMap->secondsForSteps (steps) > before.tempoMap->secondsForSteps (steps));
 
     // And still exactly invertible, which a hand-built table easily is not.
     for (int step = 0; step <= (int) steps; ++step)
-        REQUIRE_THAT (after.tempoMap->stepsForSeconds (after.tempoMap->secondsForSteps ((double) step)),
-                      WithinAbs ((double) step, 1e-9));
+        REQUIRE_THAT (
+            after.tempoMap->stepsForSeconds (after.tempoMap->secondsForSteps ((double) step)),
+            WithinAbs ((double) step, 1e-9));
 }
 
 TEST_CASE ("a tempo clip only affects the bars it covers", "[tempo]")

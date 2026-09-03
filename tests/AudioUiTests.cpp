@@ -24,7 +24,6 @@ using namespace dew;
 namespace
 {
 
-
 /** A real WAV on disk. The pool reads files, so a test that wants a waveform
     drawn has to give it one - there is no in-memory shortcut, and inventing one
     would test a path the application never takes.
@@ -54,7 +53,6 @@ juce::File writeTone (const juce::File& file, int numSamples = 44100)
 
     return file;
 }
-
 
 /** Fraction of pixels that are not the background, as every UI test here does. */
 float inkFraction (const juce::Image& image)
@@ -141,8 +139,8 @@ TEST_CASE ("an audio channel's row draws a waveform instead of cells", "[ui][aud
     const auto row = rowOf (document.getState(), channel);
     REQUIRE (row >= 0);
 
-    const juce::Rectangle<int> rowBounds (0, row * tokens::size::rowHeight,
-                                          grid.getWidth(), tokens::size::rowHeight);
+    const juce::Rectangle<int> rowBounds (0, row * tokens::size::rowHeight, grid.getWidth(),
+                                          tokens::size::rowHeight);
 
     const auto withAudio = pixelsOfColourIn (render (grid), rowBounds, colourOf (channel));
 
@@ -191,11 +189,10 @@ TEST_CASE ("an audio row ignores clicks that would toggle a step", "[ui][audio]"
 
     const juce::Point<float> onAudioRow (60.0f, (float) ((rows - 1) * tokens::size::rowHeight + 4));
 
-    const juce::MouseEvent event (juce::Desktop::getInstance().getMainMouseSource(),
-                                  onAudioRow, juce::ModifierKeys::leftButtonModifier,
-                                  1.0f, 0.0f, 0.0f, 0.0f, 0.0f,
-                                  &grid, &grid, juce::Time::getCurrentTime(),
-                                  onAudioRow, juce::Time::getCurrentTime(), 1, false);
+    const juce::MouseEvent event (juce::Desktop::getInstance().getMainMouseSource(), onAudioRow,
+                                  juce::ModifierKeys::leftButtonModifier, 1.0f, 0.0f, 0.0f, 0.0f,
+                                  0.0f, &grid, &grid, juce::Time::getCurrentTime(), onAudioRow,
+                                  juce::Time::getCurrentTime(), 1, false);
 
     grid.mouseDown (event);
 
@@ -222,9 +219,7 @@ TEST_CASE ("the sidebar swaps faces with the selected channel", "[ui][audio]")
     panel.setVisible (true);
 
     const auto sectionNamed = [&panel] (const juce::String& id) -> juce::Component*
-    {
-        return panel.findChildWithID (id);
-    };
+    { return panel.findChildWithID (id); };
 
     // A synth channel: oscillators, no sample section.
     editorState.setSelectedChannelId (1);

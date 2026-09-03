@@ -65,7 +65,7 @@ inline constexpr float pointDotInner = 5.0f;
 */
 struct Geometry
 {
-    juce::Rectangle<float> bounds;              ///< already inset
+    juce::Rectangle<float> bounds; ///< already inset
     juce::Range<double> stepSpan { 0.0, 16.0 };
 
     juce::Point<float> positionOf (double step, double value) const noexcept;
@@ -73,7 +73,10 @@ struct Geometry
     double stepAt (float x) const noexcept;
     double valueAt (float y) const noexcept;
 
-    bool isEditable() const noexcept { return bounds.getWidth() >= minEditableWidth; }
+    bool isEditable() const noexcept
+    {
+        return bounds.getWidth() >= minEditableWidth;
+    }
 };
 
 /** The geometry for one clip.
@@ -92,7 +95,12 @@ Geometry geometryFor (juce::Rectangle<float> clipBounds, int lengthBars, int ste
 */
 struct Hit
 {
-    enum class Kind { none, point, segment };
+    enum class Kind
+    {
+        none,
+        point,
+        segment
+    };
 
     Kind kind = Kind::none;
     juce::ValueTree point;
@@ -127,7 +135,7 @@ struct Style
 {
     juce::Colour curve;
     bool bipolar = false;
-    int hoveredSegment = -1;   ///< index of the segment's LEFT point, or -1
+    int hoveredSegment = -1; ///< index of the segment's LEFT point, or -1
 };
 
 void paintCurve (juce::Graphics&, const Geometry&, const juce::Array<juce::ValueTree>& points,

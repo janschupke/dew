@@ -47,10 +47,10 @@ juce::String segmentShapeToString (SegmentShape);
 */
 struct CurvePoint
 {
-    double step  = 0.0;
-    double value = 0.0;   ///< 0..1, within the target's own range
-    double curve = 0.0;   ///< -1..1 bend of the segment to the RIGHT of this point
-    SegmentShape shape = SegmentShape::curve;   ///< of that same segment
+    double step = 0.0;
+    double value = 0.0; ///< 0..1, within the target's own range
+    double curve = 0.0; ///< -1..1 bend of the segment to the RIGHT of this point
+    SegmentShape shape = SegmentShape::curve; ///< of that same segment
 };
 
 /** The 0..1 value of a curve at a step. Held flat before the first point and

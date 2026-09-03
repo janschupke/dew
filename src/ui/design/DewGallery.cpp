@@ -25,39 +25,61 @@ constexpr int titleHeight = size::rowHeight;
     The height used to be a hard-coded 132 in one and a 62 in the other, so
     adding an icon that wrapped to a third row drew it over the next section.
 */
-constexpr int iconCell  = 62;
+constexpr int iconCell = 62;
 constexpr int iconGlyph = 26;
 
-struct Swatch { const char* name; juce::Colour value; };
+struct Swatch
+{
+    const char* name;
+    juce::Colour value;
+};
 
 std::vector<Swatch> palette()
 {
     return {
-        { "wellDeep", colour::wellDeep }, { "well", colour::well },
-        { "background", colour::background }, { "surface", colour::surface },
-        { "surfaceRaised", colour::surfaceRaised }, { "surfaceHover", colour::surfaceHover },
-        { "divider", colour::divider }, { "dividerStrong", colour::dividerStrong },
+        { "wellDeep", colour::wellDeep },
+        { "well", colour::well },
+        { "background", colour::background },
+        { "surface", colour::surface },
+        { "surfaceRaised", colour::surfaceRaised },
+        { "surfaceHover", colour::surfaceHover },
+        { "divider", colour::divider },
+        { "dividerStrong", colour::dividerStrong },
         { "outline", colour::outline },
-        { "textPrimary", colour::textPrimary }, { "textSecondary", colour::textSecondary },
+        { "textPrimary", colour::textPrimary },
+        { "textSecondary", colour::textSecondary },
         { "textDisabled", colour::textDisabled },
-        { "accent", colour::accent }, { "accentMuted", colour::accentMuted },
-        { "playhead", colour::playhead }, { "recording", colour::recording },
-        { "success", colour::success }, { "warning", colour::warning },
+        { "accent", colour::accent },
+        { "accentMuted", colour::accentMuted },
+        { "playhead", colour::playhead },
+        { "recording", colour::recording },
+        { "success", colour::success },
+        { "warning", colour::warning },
         { "danger", colour::danger },
-        { "beatShade", colour::beatShade }, { "barShade", colour::barShade },
-        { "keyBlack", colour::keyBlack }, { "keyWhite", colour::keyWhite },
+        { "beatShade", colour::beatShade },
+        { "barShade", colour::barShade },
+        { "keyBlack", colour::keyBlack },
+        { "keyWhite", colour::keyWhite },
         // Both were missing, and the ramp's absence was why nothing outside a
         // test referred to it - a token the gallery does not show is a token
         // nobody knows they have.
         { "textOnAccent", colour::textOnAccent },
-        { "channel 0", colour::channelColour (0) }, { "channel 1", colour::channelColour (1) },
-        { "channel 2", colour::channelColour (2) }, { "channel 3", colour::channelColour (3) },
-        { "channel 4", colour::channelColour (4) }, { "channel 5", colour::channelColour (5) },
-        { "channel 6", colour::channelColour (6) }, { "channel 7", colour::channelColour (7) },
+        { "channel 0", colour::channelColour (0) },
+        { "channel 1", colour::channelColour (1) },
+        { "channel 2", colour::channelColour (2) },
+        { "channel 3", colour::channelColour (3) },
+        { "channel 4", colour::channelColour (4) },
+        { "channel 5", colour::channelColour (5) },
+        { "channel 6", colour::channelColour (6) },
+        { "channel 7", colour::channelColour (7) },
     };
 }
 
-struct Rung { const char* name; float value; };
+struct Rung
+{
+    const char* name;
+    float value;
+};
 
 /** The emphasis scale, which had no name until it had one.
 
@@ -68,15 +90,17 @@ struct Rung { const char* name; float value; };
 */
 std::vector<Rung> emphasisAlphas()
 {
-    return { { "tint", emphasis::tint }, { "wash", emphasis::wash },
-             { "hatch", emphasis::hatch }, { "subdued", emphasis::subdued },
+    return { { "tint", emphasis::tint },     { "wash", emphasis::wash },
+             { "hatch", emphasis::hatch },   { "subdued", emphasis::subdued },
              { "dimmed", emphasis::dimmed }, { "strong", emphasis::strong } };
 }
 
 std::vector<Rung> emphasisLifts()
 {
-    return { { "surfaceLift", emphasis::surfaceLift }, { "controlLift", emphasis::controlLift },
-             { "pressLift", emphasis::pressLift }, { "edgeLift", emphasis::edgeLift } };
+    return { { "surfaceLift", emphasis::surfaceLift },
+             { "controlLift", emphasis::controlLift },
+             { "pressLift", emphasis::pressLift },
+             { "edgeLift", emphasis::edgeLift } };
 }
 
 } // namespace
@@ -85,7 +109,12 @@ DewGallery::DewGallery()
 {
     setComponentID ("gallery");
 
-    const auto add = [this] (juce::Component* c) { controls.add (c); addAndMakeVisible (c); return c; };
+    const auto add = [this] (juce::Component* c)
+    {
+        controls.add (c);
+        addAndMakeVisible (c);
+        return c;
+    };
 
     // --- buttons in every role and state -------------------------------------
     add (new DewButton ("Normal", DewButton::Role::normal));
@@ -208,8 +237,8 @@ DewGallery::DewGallery()
     // --- signal scope, both states -------------------------------------------
     // Engine-less on purpose: neither starts a timer, so this page renders the
     // same way every time it is asked to.
-    add (new SignalScope());   // never pushed - the empty state the bar shows
-                               // when nothing is sounding
+    add (new SignalScope()); // never pushed - the empty state the bar shows
+                             // when nothing is sounding
 
     auto* driven = new SignalScope();
     {
@@ -217,7 +246,7 @@ DewGallery::DewGallery()
         // have something to say: an unambiguous rising edge for the trace, and
         // energy at two separate places on the log axis for the bars.
         std::array<float, SignalScope::windowSamples> signal {};
-        juce::Random random { 1234 };   // fixed seed: this page is a screenshot
+        juce::Random random { 1234 }; // fixed seed: this page is a screenshot
 
         for (size_t i = 0; i < signal.size(); ++i)
         {
@@ -255,7 +284,6 @@ int DewGallery::layOut (juce::Rectangle<int> area, bool apply)
 {
     if (apply)
         sections.clear();
-
 
     // The page title is painted in this strip; sections start below it. Its
     // height is stated once, here, and paint() takes it from the same place.
@@ -298,8 +326,8 @@ int DewGallery::layOut (juce::Rectangle<int> area, bool apply)
 
         for (int i = 0; i < 8; ++i)
         {
-            place (controls[index++], row.removeFromLeft (size::iconButton + 6)
-                                          .withHeight (size::iconButton + 6));
+            place (controls[index++],
+                   row.removeFromLeft (size::iconButton + 6).withHeight (size::iconButton + 6));
             row.removeFromLeft (space::md);
         }
     }
@@ -349,13 +377,13 @@ int DewGallery::layOut (juce::Rectangle<int> area, bool apply)
 
     // Signal scope.
     {
-        auto row = sectionHeading ("Signal scope - empty, and with a signal",
-                                   size::controlHeight);
+        auto row = sectionHeading ("Signal scope - empty, and with a signal", size::controlHeight);
 
         for (int i = 0; i < 2; ++i)
         {
-            place (controls[index++], row.removeFromLeft (SignalScope::preferredWidth)
-                                          .withHeight (size::controlHeight));
+            place (
+                controls[index++],
+                row.removeFromLeft (SignalScope::preferredWidth).withHeight (size::controlHeight));
             row.removeFromLeft (space::xl);
         }
     }
@@ -411,12 +439,11 @@ void DewGallery::paint (juce::Graphics& g)
     {
         g.setColour (colour::textSecondary);
         g.setFont (type::font (type::small, true));
-        g.drawText (section.title.toUpperCase(), section.bounds,
-                    juce::Justification::centredLeft, false);
+        g.drawText (section.title.toUpperCase(), section.bounds, juce::Justification::centredLeft,
+                    false);
 
         g.setColour (colour::divider);
-        g.drawHorizontalLine (section.bounds.getBottom(),
-                              (float) section.bounds.getX(),
+        g.drawHorizontalLine (section.bounds.getBottom(), (float) section.bounds.getX(),
                               (float) getWidth() - (float) space::xxl);
     }
 
@@ -433,8 +460,8 @@ void DewGallery::paint (juce::Graphics& g)
             const auto row = i / perRow;
 
             const juce::Rectangle<int> cellBounds (area.getX() + column * iconCell,
-                                                   area.getY() + row * iconCell,
-                                                   iconCell - 4, iconCell - 4);
+                                                   area.getY() + row * iconCell, iconCell - 4,
+                                                   iconCell - 4);
 
             auto glyph = cellBounds.withSizeKeepingCentre (iconGlyph, iconGlyph)
                              .withY (cellBounds.getY() + 6);
@@ -461,8 +488,8 @@ void DewGallery::paint (juce::Graphics& g)
             const auto column = i % perRow;
             const auto row = i / perRow;
 
-            juce::Rectangle<int> cellBounds (area.getX() + column * cell,
-                                             area.getY() + row * 48, cell - 6, 44);
+            juce::Rectangle<int> cellBounds (area.getX() + column * cell, area.getY() + row * 48,
+                                             cell - 6, 44);
 
             auto chip = cellBounds.removeFromTop (26);
             g.setColour (swatches[(size_t) i].value);
@@ -472,7 +499,8 @@ void DewGallery::paint (juce::Graphics& g)
 
             g.setColour (colour::textSecondary);
             g.setFont (type::font (type::caption));
-            g.drawText (swatches[(size_t) i].name, cellBounds, juce::Justification::centredTop, false);
+            g.drawText (swatches[(size_t) i].name, cellBounds, juce::Justification::centredTop,
+                        false);
         }
     }
 
@@ -481,8 +509,8 @@ void DewGallery::paint (juce::Graphics& g)
         auto area = emphasisBounds;
 
         constexpr int cell = 104;
-        const auto drawRow = [&] (juce::Rectangle<int> row, const std::vector<Rung>& rungs,
-                                  bool overAccent)
+        const auto drawRow =
+            [&] (juce::Rectangle<int> row, const std::vector<Rung>& rungs, bool overAccent)
         {
             for (int i = 0; i < (int) rungs.size(); ++i)
             {
@@ -499,8 +527,8 @@ void DewGallery::paint (juce::Graphics& g)
 
                 g.setColour (colour::textSecondary);
                 g.setFont (type::font (type::caption));
-                g.drawText (rungs[(size_t) i].name, cellBounds,
-                            juce::Justification::centredTop, false);
+                g.drawText (rungs[(size_t) i].name, cellBounds, juce::Justification::centredTop,
+                            false);
             }
         };
 

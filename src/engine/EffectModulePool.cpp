@@ -5,7 +5,6 @@
 namespace dew
 {
 
-
 void EffectModulePool::prepare (double newSampleRate, int maximumBlockSize)
 {
     sampleRate = newSampleRate > 0.0 ? newSampleRate : kDefaultSampleRate;

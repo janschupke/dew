@@ -22,8 +22,8 @@ namespace dew
 struct EffectDescriptor
 {
     EffectType type;
-    const char* id;            ///< "filter" - what a .dew stores
-    const char* displayName;   ///< "Filter"
+    const char* id;          ///< "filter" - what a .dew stores
+    const char* displayName; ///< "Filter"
     const ParamSpec* params;
     int numParams;
 };
@@ -93,8 +93,8 @@ std::vector<ParamSpec> effectParamsFor (EffectType);
 */
 struct ParamGroup
 {
-    const juce::Identifier* node;   ///< ids::CHANNEL, ids::OSC, ids::AMP, ids::SAMPLE
-    const char* jsonKey;            ///< "oscillators", "amp"; empty for the channel itself
+    const juce::Identifier* node; ///< ids::CHANNEL, ids::OSC, ids::AMP, ids::SAMPLE
+    const char* jsonKey;          ///< "oscillators", "amp"; empty for the channel itself
     const char* displayName;
     const ParamSpec* params;
     int numParams;
@@ -117,7 +117,7 @@ struct ParamGroup
 struct InstrumentDescriptor
 {
     InstrumentType type;
-    const char* id;            ///< "synth" - what a .dew stores in a channel's `source`
+    const char* id; ///< "synth" - what a .dew stores in a channel's `source`
     const char* displayName;
     const ParamGroup* groups;
     int numGroups;

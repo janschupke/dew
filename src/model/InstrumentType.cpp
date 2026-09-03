@@ -12,9 +12,12 @@ namespace dew
 
 Waveform waveformFromString (const juce::String& s)
 {
-    if (s == "sine")     return Waveform::sine;
-    if (s == "square")   return Waveform::square;
-    if (s == "triangle") return Waveform::triangle;
+    if (s == "sine")
+        return Waveform::sine;
+    if (s == "square")
+        return Waveform::square;
+    if (s == "triangle")
+        return Waveform::triangle;
     return Waveform::saw;
 }
 
@@ -22,10 +25,10 @@ juce::String waveformToString (Waveform w)
 {
     switch (w)
     {
-        case Waveform::sine:     return "sine";
-        case Waveform::square:   return "square";
+        case Waveform::sine: return "sine";
+        case Waveform::square: return "square";
         case Waveform::triangle: return "triangle";
-        case Waveform::saw:      break;
+        case Waveform::saw: break;
     }
 
     return "saw";
@@ -41,7 +44,7 @@ juce::String oscModeToString (OscMode m)
     switch (m)
     {
         case OscMode::wavetable: return "wavetable";
-        case OscMode::classic:   break;
+        case OscMode::classic: break;
     }
 
     return "classic";
@@ -56,7 +59,7 @@ juce::String positionSourceToString (PositionSource p)
 {
     switch (p)
     {
-        case PositionSource::lfo:      return "lfo";
+        case PositionSource::lfo: return "lfo";
         case PositionSource::envelope: break;
     }
 

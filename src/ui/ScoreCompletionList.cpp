@@ -19,8 +19,8 @@ juce::Colour colourFor (lang::CompletionKind kind)
     switch (kind)
     {
         case lang::CompletionKind::block: return tokens::colour::accent;
-        case lang::CompletionKind::key:   return tokens::colour::accent;
-        case lang::CompletionKind::name:  return tokens::colour::success;
+        case lang::CompletionKind::key: return tokens::colour::accent;
+        case lang::CompletionKind::name: return tokens::colour::success;
         case lang::CompletionKind::value: break;
     }
 
@@ -116,10 +116,10 @@ void ScoreCompletionList::paintListBoxItem (int row, juce::Graphics& g, int widt
     g.setFont (tokens::type::monospaced (tokens::type::small));
     g.setColour (colourFor (item.kind));
 
-    const auto textWidth = juce::jmin (area.getWidth() / 2,
-                                       juce::GlyphArrangement::getStringWidthInt (
-                                           g.getCurrentFont(), item.text)
-                                           + tokens::space::md);
+    const auto textWidth = juce::jmin (
+        area.getWidth() / 2,
+        juce::GlyphArrangement::getStringWidthInt (g.getCurrentFont(), item.text)
+            + tokens::space::md);
 
     g.drawText (item.text, area.removeFromLeft (textWidth), juce::Justification::centredLeft);
 

@@ -46,12 +46,11 @@ juce::String describe (juce::Component& c)
 */
 bool isAControl (juce::Component& c)
 {
-    return dynamic_cast<DewButton*> (&c) != nullptr
-        || dynamic_cast<DewIconButton*> (&c) != nullptr
-        || dynamic_cast<DewLetterToggle*> (&c) != nullptr
-        || dynamic_cast<DewKnob*> (&c) != nullptr
-        || dynamic_cast<DewNumberField*> (&c) != nullptr
-        || dynamic_cast<juce::ComboBox*> (&c) != nullptr;
+    return dynamic_cast<DewButton*> (&c) != nullptr || dynamic_cast<DewIconButton*> (&c) != nullptr
+           || dynamic_cast<DewLetterToggle*> (&c) != nullptr
+           || dynamic_cast<DewKnob*> (&c) != nullptr
+           || dynamic_cast<DewNumberField*> (&c) != nullptr
+           || dynamic_cast<juce::ComboBox*> (&c) != nullptr;
 }
 
 void walk (juce::Component& root, const std::function<void (juce::Component&)>& visit)
@@ -91,8 +90,7 @@ TEST_CASE ("hover help reads the nearest tooltip above the pointer", "[ui][hover
     CHECK (HoverHelp::helpFor (orphan).isEmpty());
 }
 
-TEST_CASE ("a hovered control reaches the status bar, and a message wins",
-           "[ui][hover][statusbar]")
+TEST_CASE ("a hovered control reaches the status bar, and a message wins", "[ui][hover][statusbar]")
 {
     const juce::ScopedJuceInitialiser_GUI juceInit;
 
@@ -146,16 +144,17 @@ TEST_CASE ("every control in the window says what it is", "[ui][hover]")
         component.showTab (tab);
         component.resized();
 
-        walk (component, [&] (juce::Component& c)
-        {
-            if (! isAControl (c))
-                return;
+        walk (component,
+              [&] (juce::Component& c)
+              {
+                  if (! isAControl (c))
+                      return;
 
-            ++controls;
+                  ++controls;
 
-            if (HoverHelp::helpFor (c).isEmpty())
-                silent.addIfNotAlreadyThere (describe (c));
-        });
+                  if (HoverHelp::helpFor (c).isEmpty())
+                      silent.addIfNotAlreadyThere (describe (c));
+              });
     }
 
     // A control case: a walk that found nothing would pass for the wrong reason,

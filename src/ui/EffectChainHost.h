@@ -39,13 +39,15 @@ public:
     */
     void setOwner (juce::ValueTree owner, juce::String name);
 
-    EffectChainComponent& getChain() noexcept { return chain; }
+    EffectChainComponent& getChain() noexcept
+    {
+        return chain;
+    }
 
     /** Heading, chain and - in a row - the scrollbar under it. Whoever stacks
         this asks rather than repeating the arithmetic.
     */
     int getPreferredHeight() const;
-
 
 private:
     /** How near the edge a dragged card has to get before the view follows it,

@@ -20,7 +20,10 @@ struct ScratchFolder
     {
     }
 
-    ~ScratchFolder() { folder.deleteRecursively(); }
+    ~ScratchFolder()
+    {
+        folder.deleteRecursively();
+    }
 
     juce::File folder;
 };
@@ -46,8 +49,7 @@ int numMixerTracks (const juce::ValueTree& project)
 
 } // namespace
 
-TEST_CASE ("stems produce one file per track that has something in it",
-           "[engine][render][stems]")
+TEST_CASE ("stems produce one file per track that has something in it", "[engine][render][stems]")
 {
     ScratchFolder scratch;
 
@@ -73,7 +75,7 @@ TEST_CASE ("every stem is audible on its own", "[engine][render][stems]")
     ScratchFolder scratch;
 
     const auto report = OfflineRenderer::renderStems (dew::testing::fixtureProject(),
-                                                       scratch.folder, shortRender());
+                                                      scratch.folder, shortRender());
 
     REQUIRE (report.ok());
 
@@ -95,8 +97,7 @@ TEST_CASE ("every stem is audible on its own", "[engine][render][stems]")
     }
 }
 
-TEST_CASE ("stem files are named for their tracks, in mixer order",
-           "[engine][render][stems]")
+TEST_CASE ("stem files are named for their tracks, in mixer order", "[engine][render][stems]")
 {
     ScratchFolder scratch;
 
@@ -151,8 +152,7 @@ TEST_CASE ("a track nothing is routed to is skipped rather than written empty",
     REQUIRE (audible.files.size() <= all.files.size());
 }
 
-TEST_CASE ("soloing one track still yields a stem for every track",
-           "[engine][render][stems]")
+TEST_CASE ("soloing one track still yields a stem for every track", "[engine][render][stems]")
 {
     auto project = dew::testing::fixtureProject();
 
@@ -208,8 +208,7 @@ TEST_CASE ("a muted track is still exported as its own stem", "[engine][render][
     REQUIRE (report.files.size() == numMixerTracks (project));
 }
 
-TEST_CASE ("stems warn when the master chain will stop them summing",
-           "[engine][render][stems]")
+TEST_CASE ("stems warn when the master chain will stop them summing", "[engine][render][stems]")
 {
     auto project = dew::testing::fixtureProject();
 
@@ -253,21 +252,20 @@ TEST_CASE ("stems can be cancelled part way", "[engine][render][stems]")
     progress.cancelled.store (true);
 
     const auto report = OfflineRenderer::renderStems (dew::testing::fixtureProject(),
-                                                       scratch.folder, shortRender(), &progress);
+                                                      scratch.folder, shortRender(), &progress);
 
     REQUIRE (report.cancelled);
     REQUIRE (report.ok());
 }
 
-TEST_CASE ("stems report progress across the whole set, not per file",
-           "[engine][render][stems]")
+TEST_CASE ("stems report progress across the whole set, not per file", "[engine][render][stems]")
 {
     ScratchFolder scratch;
 
     RenderProgress progress;
 
     const auto report = OfflineRenderer::renderStems (dew::testing::fixtureProject(),
-                                                       scratch.folder, shortRender(), &progress);
+                                                      scratch.folder, shortRender(), &progress);
 
     REQUIRE (report.ok());
     REQUIRE (progress.fraction.load() == Approx (1.0));
@@ -281,7 +279,7 @@ TEST_CASE ("stems refuse MIDI, which is one file by nature", "[engine][render][s
     options.format = RenderFormat::midi;
 
     const auto report = OfflineRenderer::renderStems (dew::testing::fixtureProject(),
-                                                       scratch.folder, options);
+                                                      scratch.folder, options);
 
     REQUIRE_FALSE (report.ok());
 }

@@ -15,8 +15,7 @@ namespace dew
     Drag distance maps to value through the field's own range, so a range of 20
     to 300 bpm and a range of -1 to 1 both feel the same to move.
 */
-class DewNumberField : public juce::Component,
-                       public juce::SettableTooltipClient
+class DewNumberField : public juce::Component, public juce::SettableTooltipClient
 {
 public:
     DewNumberField();
@@ -24,7 +23,10 @@ public:
 
     void setRange (double minimum, double maximum, double interval);
     void setValue (double newValue, juce::NotificationType = juce::sendNotification);
-    double getValue() const noexcept { return value; }
+    double getValue() const noexcept
+    {
+        return value;
+    }
 
     /** Text shown after the number, e.g. " bpm". */
     void setSuffix (juce::String);

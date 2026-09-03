@@ -26,12 +26,18 @@ struct GridHarness
         grid.resized();
     }
 
-    juce::ValueTree pattern() { return ProjectEdits::findPattern (document.getState(), 1); }
+    juce::ValueTree pattern()
+    {
+        return ProjectEdits::findPattern (document.getState(), 1);
+    }
 
     /** The channel drawn on row 0. Channels are direct children of PROJECT and
         the grid draws them in tree order, so the first one is the top row.
     */
-    juce::ValueTree firstChannel() { return document.getState().getChildWithName (ids::CHANNEL); }
+    juce::ValueTree firstChannel()
+    {
+        return document.getState().getChildWithName (ids::CHANNEL);
+    }
 
     void setPatternLength (int steps)
     {
@@ -59,13 +65,20 @@ juce::MouseEvent eventAt (juce::Component& target, juce::Point<int> local,
     const auto position = local.toFloat();
 
     return { juce::Desktop::getInstance().getMainMouseSource(),
-             position, mods,
-             1.0f, 0.0f, 0.0f, 0.0f, 0.0f,
-             &target, &target,
+             position,
+             mods,
+             1.0f,
+             0.0f,
+             0.0f,
+             0.0f,
+             0.0f,
+             &target,
+             &target,
              juce::Time::getCurrentTime(),
              position,
              juce::Time::getCurrentTime(),
-             1, false };
+             1,
+             false };
 }
 
 } // namespace
@@ -216,8 +229,8 @@ TEST_CASE ("a right-drag on the step grid erases rather than adding", "[stepgrid
 
     for (int step = 0; step < 8; ++step)
         if (! ProjectEdits::findNoteAtStep (h.pattern(), channelId, step).isValid())
-            ProjectEdits::addNote (h.pattern(), channelId, step, 1,
-                                   (int) channel[ids::basePitch], 1.0f, &setup);
+            ProjectEdits::addNote (h.pattern(), channelId, step, 1, (int) channel[ids::basePitch],
+                                   1.0f, &setup);
 
     const auto before = stepsLitOnRow (h, channelId);
     REQUIRE (before >= 8);
@@ -226,7 +239,7 @@ TEST_CASE ("a right-drag on the step grid erases rather than adding", "[stepgrid
 
     h.grid.mouseDown (eventAt (h.grid, cellCentre (h, 0, 0), rightButton));
     h.grid.mouseDrag (eventAt (h.grid, cellCentre (h, 7, 0), rightButton));
-    h.grid.mouseUp   (eventAt (h.grid, cellCentre (h, 7, 0), rightButton));
+    h.grid.mouseUp (eventAt (h.grid, cellCentre (h, 7, 0), rightButton));
 
     INFO ("steps left on the row: " << stepsLitOnRow (h, channelId));
     REQUIRE (stepsLitOnRow (h, channelId) == before - 8);
@@ -250,8 +263,8 @@ TEST_CASE ("a right-drag starting on an empty cell still erases", "[stepgrid][er
             ProjectEdits::removeNote (h.pattern(), existing, &setup);
 
     for (int step = 8; step < 12; ++step)
-        ProjectEdits::addNote (h.pattern(), channelId, step, 1,
-                               (int) channel[ids::basePitch], 1.0f, &setup);
+        ProjectEdits::addNote (h.pattern(), channelId, step, 1, (int) channel[ids::basePitch], 1.0f,
+                               &setup);
 
     REQUIRE (stepsLitOnRow (h, channelId) == 4);
 
@@ -261,7 +274,7 @@ TEST_CASE ("a right-drag starting on an empty cell still erases", "[stepgrid][er
     // cell is empty, so this drag ADDS" and filled the row instead.
     h.grid.mouseDown (eventAt (h.grid, cellCentre (h, 0, 0), rightButton));
     h.grid.mouseDrag (eventAt (h.grid, cellCentre (h, 11, 0), rightButton));
-    h.grid.mouseUp   (eventAt (h.grid, cellCentre (h, 11, 0), rightButton));
+    h.grid.mouseUp (eventAt (h.grid, cellCentre (h, 11, 0), rightButton));
 
     INFO ("steps left on the row: " << stepsLitOnRow (h, channelId));
     REQUIRE (stepsLitOnRow (h, channelId) == 0);
@@ -289,7 +302,7 @@ TEST_CASE ("a fast sweep fills the cells between two drag samples", "[stepgrid][
     // the pointer was reported would light two cells and leave ten dark.
     h.grid.mouseDown (eventAt (h.grid, cellCentre (h, 0, 0)));
     h.grid.mouseDrag (eventAt (h.grid, cellCentre (h, 11, 0)));
-    h.grid.mouseUp   (eventAt (h.grid, cellCentre (h, 11, 0)));
+    h.grid.mouseUp (eventAt (h.grid, cellCentre (h, 11, 0)));
 
     INFO ("steps lit by a two-sample sweep: " << stepsLitOnRow (h, channelId));
     REQUIRE (stepsLitOnRow (h, channelId) == 12);
@@ -315,13 +328,12 @@ TEST_CASE ("a left-drag on the step grid still paints", "[stepgrid][erase]")
 
     h.grid.mouseDown (eventAt (h.grid, cellCentre (h, 0, 0), left));
     h.grid.mouseDrag (eventAt (h.grid, cellCentre (h, 3, 0), left));
-    h.grid.mouseUp   (eventAt (h.grid, cellCentre (h, 3, 0), left));
+    h.grid.mouseUp (eventAt (h.grid, cellCentre (h, 3, 0), left));
 
     REQUIRE (stepsLitOnRow (h, channelId) == 4);
 }
 
-TEST_CASE ("a left click on a lit step keeps it, and selects its channel",
-           "[stepgrid][erase]")
+TEST_CASE ("a left click on a lit step keeps it, and selects its channel", "[stepgrid][erase]")
 {
     // The first cell used to decide whether the whole drag added or removed, so
     // pressing a lit step turned the gesture into an erase - which made the
@@ -341,8 +353,8 @@ TEST_CASE ("a left click on a lit step keeps it, and selects its channel",
             existing.isValid())
             ProjectEdits::removeNote (h.pattern(), existing, &setup);
 
-    ProjectEdits::addNote (h.pattern(), channelId, 4, 1, (int) channel[ids::basePitch],
-                           1.0f, &setup);
+    ProjectEdits::addNote (h.pattern(), channelId, 4, 1, (int) channel[ids::basePitch], 1.0f,
+                           &setup);
 
     REQUIRE (stepsLitOnRow (h, channelId) == 1);
 
@@ -351,14 +363,13 @@ TEST_CASE ("a left click on a lit step keeps it, and selects its channel",
     const juce::ModifierKeys left { juce::ModifierKeys::leftButtonModifier };
 
     h.grid.mouseDown (eventAt (h.grid, cellCentre (h, 4, 0), left));
-    h.grid.mouseUp   (eventAt (h.grid, cellCentre (h, 4, 0), left));
+    h.grid.mouseUp (eventAt (h.grid, cellCentre (h, 4, 0), left));
 
     CHECK (stepsLitOnRow (h, channelId) == 1);
     CHECK (h.editorState.getSelectedChannelId() == channelId);
 }
 
-TEST_CASE ("a left drag over lit steps fills the gaps and leaves them alone",
-           "[stepgrid][erase]")
+TEST_CASE ("a left drag over lit steps fills the gaps and leaves them alone", "[stepgrid][erase]")
 {
     const juce::ScopedJuceInitialiser_GUI juceInit;
 
@@ -383,7 +394,7 @@ TEST_CASE ("a left drag over lit steps fills the gaps and leaves them alone",
     // Starting ON a lit step, which used to mean "erase everything I touch".
     h.grid.mouseDown (eventAt (h.grid, cellCentre (h, 0, 0), left));
     h.grid.mouseDrag (eventAt (h.grid, cellCentre (h, 3, 0), left));
-    h.grid.mouseUp   (eventAt (h.grid, cellCentre (h, 3, 0), left));
+    h.grid.mouseUp (eventAt (h.grid, cellCentre (h, 3, 0), left));
 
     CHECK (stepsLitOnRow (h, channelId) == 4);
 }
@@ -414,7 +425,7 @@ TEST_CASE ("right-drag is still the way a step is taken back", "[stepgrid][erase
 
     h.grid.mouseDown (eventAt (h.grid, cellCentre (h, 0, 0), right));
     h.grid.mouseDrag (eventAt (h.grid, cellCentre (h, 3, 0), right));
-    h.grid.mouseUp   (eventAt (h.grid, cellCentre (h, 3, 0), right));
+    h.grid.mouseUp (eventAt (h.grid, cellCentre (h, 3, 0), right));
 
     CHECK (stepsLitOnRow (h, channelId) == 0);
 }

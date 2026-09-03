@@ -113,12 +113,11 @@ const NodeSpec& ampSpec()
 
 const NodeSpec& instrumentSpec()
 {
-    static const NodeSpec spec {
-        ids::INSTRUMENT,
-        {},
-        { { "oscillators", &oscSpec(), true, kMaxOscillators, &makeOscillatorSlot },
-          { "amp",         &ampSpec(), false } }
-    };
+    static const NodeSpec spec { ids::INSTRUMENT,
+                                 {},
+                                 { { "oscillators", &oscSpec(), true, kMaxOscillators,
+                                     &makeOscillatorSlot },
+                                   { "amp", &ampSpec(), false } } };
     return spec;
 }
 
@@ -144,8 +143,8 @@ const NodeSpec& effectSpec()
     static const NodeSpec spec = []
     {
         std::vector<PropSpec> props {
-            { ids::id,      1 },
-            { ids::type,    "filter" },
+            { ids::id, 1 },
+            { ids::type, "filter" },
             { ids::enabled, true },
         };
 
@@ -192,14 +191,14 @@ const NodeSpec& sampleSpec()
     static const NodeSpec spec = []
     {
         std::vector<PropSpec> props {
-            { ids::file,             "" },
+            { ids::file, "" },
             { ids::sourceSampleRate, 44100 },
-            { ids::lengthSamples,    0 },
-            { ids::startSample,      0 },
+            { ids::lengthSamples, 0 },
+            { ids::startSample, 0 },
             // 0 rather than lengthSamples: the trim end has to mean "the end of
             // whatever is there" before the file has been read, and a recording
             // sets its length after the node already exists.
-            { ids::endSample,        0 },
+            { ids::endSample, 0 },
         };
 
         appendGroup (props, groupFor (instrumentDescriptor (InstrumentType::audio), ids::SAMPLE));
@@ -215,9 +214,9 @@ const NodeSpec& channelSpec()
     static const NodeSpec spec = []
     {
         std::vector<PropSpec> props {
-            { ids::id,           1 },
-            { ids::name,         "Channel" },
-            { ids::colour,       "ff4fa3ff" },
+            { ids::id, 1 },
+            { ids::name, "Channel" },
+            { ids::colour, "ff4fa3ff" },
             { ids::mixerTrackId, 1 },
         };
 
@@ -242,10 +241,11 @@ const NodeSpec& channelSpec()
         // no range, nothing turns it, and a preset must never carry it.
         props.push_back ({ ids::genId, "" });
 
-        return NodeSpec { ids::CHANNEL, std::move (props),
+        return NodeSpec { ids::CHANNEL,
+                          std::move (props),
                           { { "instrument", &instrumentSpec(), false },
-                            { "sample",     &sampleSpec(),     false },
-                            { "effects",    &effectSpec(),     true } } };
+                            { "sample", &sampleSpec(), false },
+                            { "effects", &effectSpec(), true } } };
     }();
 
     return spec;
@@ -253,34 +253,30 @@ const NodeSpec& channelSpec()
 
 const NodeSpec& noteSpec()
 {
-    static const NodeSpec spec {
-        ids::NOTE,
-        { { ids::ch,          1 },
-          { ids::step,        0 },
-          { ids::lengthSteps, 1 },
-          { ids::pitch,       60 },
-          { ids::velocity,    1.0 } },
-        {}
-    };
+    static const NodeSpec spec { ids::NOTE,
+                                 { { ids::ch, 1 },
+                                   { ids::step, 0 },
+                                   { ids::lengthSteps, 1 },
+                                   { ids::pitch, 60 },
+                                   { ids::velocity, 1.0 } },
+                                 {} };
     return spec;
 }
 
 const NodeSpec& patternSpec()
 {
-    static const NodeSpec spec {
-        ids::PATTERN,
-        { { ids::id,          1 },
-          { ids::name,        "Pattern 1" },
-          { ids::lengthSteps, 16 },
-          { ids::genId,       "" },
-          // What the notes hashed to when the compiler wrote them. Recompiling
-          // hashes them again: equal means nobody has touched this pattern and
-          // it can be replaced, different means somebody has and it must not
-          // be. Without it a recompile is a choice between losing hand edits
-          // and never updating anything.
-          { ids::genHash,     "" } },
-        { { "notes", &noteSpec(), true } }
-    };
+    static const NodeSpec spec { ids::PATTERN,
+                                 { { ids::id, 1 },
+                                   { ids::name, "Pattern 1" },
+                                   { ids::lengthSteps, 16 },
+                                   { ids::genId, "" },
+                                   // What the notes hashed to when the compiler wrote them.
+                                   // Recompiling hashes them again: equal means nobody has touched
+                                   // this pattern and it can be replaced, different means somebody
+                                   // has and it must not be. Without it a recompile is a choice
+                                   // between losing hand edits and never updating anything.
+                                   { ids::genHash, "" } },
+                                 { { "notes", &noteSpec(), true } } };
     return spec;
 }
 
@@ -293,7 +289,7 @@ const NodeSpec& pointSpec()
         // coerceToTypeOf drives its conversion off the runtime type of this
         // default - so an int here silently truncated every fractional point
         // on save and moved it back to the last whole step.
-        { { ids::step,  0.0 },
+        { { ids::step, 0.0 },
           // 0..1 within the target's own range, so a point editor is uniform
           // whatever it is driving.
           { ids::value, 0.5 },
@@ -311,20 +307,18 @@ const NodeSpec& pointSpec()
 
 const NodeSpec& automationSpec()
 {
-    static const NodeSpec spec {
-        ids::AUTOMATION,
-        { { ids::id,       1 },
-          { ids::name,     "Automation" },
-          { ids::scope,    "channel" },
-          { ids::targetId, 1 },
-          { ids::slot,     -1 },
-          // The identifier, not "volume". This default names a property, so
-          // spelling it out here is a second declaration that a rename cannot
-          // follow - which would leave every new automation clip pointing at a
-          // parameter that no longer exists, silently.
-          { ids::param,    ids::volume.toString() } },
-        { { "points", &pointSpec(), true } }
-    };
+    static const NodeSpec spec { ids::AUTOMATION,
+                                 { { ids::id, 1 },
+                                   { ids::name, "Automation" },
+                                   { ids::scope, "channel" },
+                                   { ids::targetId, 1 },
+                                   { ids::slot, -1 },
+                                   // The identifier, not "volume". This default names a property,
+                                   // so spelling it out here is a second declaration that a rename
+                                   // cannot follow - which would leave every new automation clip
+                                   // pointing at a parameter that no longer exists, silently.
+                                   { ids::param, ids::volume.toString() } },
+                                 { { "points", &pointSpec(), true } } };
     return spec;
 }
 
@@ -335,15 +329,15 @@ const NodeSpec& clipSpec()
         // `kind` rather than replacing patternId with a generic refId: a
         // version 3 file has clips with no kind at all, and defaulting it to
         // "pattern" is what makes those load unchanged.
-        { { ids::kind,         "pattern" },
-          { ids::patternId,    1 },
+        { { ids::kind, "pattern" },
+          { ids::patternId, 1 },
           { ids::automationId, 1 },
           // Which channel an "audio" clip plays, alongside the pattern and
           // automation references. Only the one matching `kind` is meaningful.
-          { ids::channelId,    1 },
-          { ids::startBar,     0 },
-          { ids::lengthBars,   1 },
-          { ids::genId,        "" } },
+          { ids::channelId, 1 },
+          { ids::startBar, 0 },
+          { ids::lengthBars, 1 },
+          { ids::genId, "" } },
         {}
     };
     return spec;
@@ -353,13 +347,13 @@ const NodeSpec& playlistTrackSpec()
 {
     static const NodeSpec spec {
         ids::PLAYLIST_TRACK,
-        { { ids::name,   "Track" },
-          { ids::mute,   false },
-          { ids::solo,   false },
+        { { ids::name, "Track" },
+          { ids::mute, false },
+          { ids::solo, false },
           // Empty means inherit: the lane takes the colour of its POSITION,
           // which is what it did before it could carry one of its own.
           { ids::colour, "" },
-          { ids::genId,  "" } },
+          { ids::genId, "" } },
         { { "clips", &clipSpec(), true } }
     };
     return spec;
@@ -367,11 +361,7 @@ const NodeSpec& playlistTrackSpec()
 
 const NodeSpec& playlistSpec()
 {
-    static const NodeSpec spec {
-        ids::PLAYLIST,
-        {},
-        { { "tracks", &playlistTrackSpec(), true } }
-    };
+    static const NodeSpec spec { ids::PLAYLIST, {}, { { "tracks", &playlistTrackSpec(), true } } };
     return spec;
 }
 
@@ -389,19 +379,17 @@ const NodeSpec& masterSpec()
 
 const NodeSpec& mixerTrackSpec()
 {
-    static const NodeSpec spec {
-        ids::MIXER_TRACK,
-        { { ids::id,     1 },
-          { ids::name,   "Insert" },
-          { ids::gain,   0.8 },
-          { ids::pan,    0.0 },
-          { ids::mute,   false },
-          { ids::solo,   false },
-          // Empty means inherit: the strip takes the colours of the channels
-          // routed into it, which is what it did before.
-          { ids::colour, "" } },
-        { { "effects", &effectSpec(), true } }
-    };
+    static const NodeSpec spec { ids::MIXER_TRACK,
+                                 { { ids::id, 1 },
+                                   { ids::name, "Insert" },
+                                   { ids::gain, 0.8 },
+                                   { ids::pan, 0.0 },
+                                   { ids::mute, false },
+                                   { ids::solo, false },
+                                   // Empty means inherit: the strip takes the colours of the
+                                   // channels routed into it, which is what it did before.
+                                   { ids::colour, "" } },
+                                 { { "effects", &effectSpec(), true } } };
     return spec;
 }
 
@@ -414,11 +402,7 @@ const NodeSpec& mixerTrackSpec()
 */
 const NodeSpec& lineSpec()
 {
-    static const NodeSpec spec {
-        ids::LINE,
-        { { ids::text, "" } },
-        {}
-    };
+    static const NodeSpec spec { ids::LINE, { { ids::text, "" } }, {} };
     return spec;
 }
 
@@ -431,28 +415,23 @@ const NodeSpec& lineSpec()
 */
 const NodeSpec& scoreSpec()
 {
-    static const NodeSpec spec {
-        ids::SCORE,
-        // The source's own file name, when it came from one. Diagnostics are
-        // reported against a name, and "untitled.score:12" is worse than the
-        // name the user knows it by.
-        { { ids::name, "" } },
-        { { "lines", &lineSpec(), true } }
-    };
+    static const NodeSpec spec { ids::SCORE,
+                                 // The source's own file name, when it came from one. Diagnostics
+                                 // are reported against a name, and "untitled.score:12" is worse
+                                 // than the name the user knows it by.
+                                 { { ids::name, "" } },
+                                 { { "lines", &lineSpec(), true } } };
     return spec;
 }
 
 const NodeSpec& mixerSpec()
 {
-    static const NodeSpec spec {
-        ids::MIXER,
-        {},
-        { { "master", &masterSpec(),     false },
-          { "tracks", &mixerTrackSpec(), true } }
-    };
+    static const NodeSpec spec { ids::MIXER,
+                                 {},
+                                 { { "master", &masterSpec(), false },
+                                   { "tracks", &mixerTrackSpec(), true } } };
     return spec;
 }
-
 
 /** Slot `index` of a fixed-length array child. One helper rather than three
     copies, so the three walkers cannot drift over what an unused slot is.
@@ -523,21 +502,21 @@ const NodeSpec& projectSpec()
     static const NodeSpec spec {
         ids::PROJECT,
         { { ids::formatVersion, kFormatVersion },
-          { ids::name,          "Untitled" },
-          { ids::tempoBpm,      128.0 },
-          { ids::stepsPerBeat,  4 },
-          { ids::beatsPerBar,   4 },
-          { ids::beatUnit,      4 },
-          { ids::barsInSong,    16 } },
-        { { "channels",    &channelSpec(),    true },
-          { "patterns",    &patternSpec(),    true },
+          { ids::name, "Untitled" },
+          { ids::tempoBpm, 128.0 },
+          { ids::stepsPerBeat, 4 },
+          { ids::beatsPerBar, 4 },
+          { ids::beatUnit, 4 },
+          { ids::barsInSong, 16 } },
+        { { "channels", &channelSpec(), true },
+          { "patterns", &patternSpec(), true },
           { "automations", &automationSpec(), true },
-          { "playlist",    &playlistSpec(),   false },
-          { "mixer",       &mixerSpec(),      false },
+          { "playlist", &playlistSpec(), false },
+          { "mixer", &mixerSpec(), false },
           // Last, and permanently so: canonicalTree materialises children in
           // this order and isEquivalentTo compares them in order, so moving
           // this entry would make every committed project unequal to itself.
-          { "score",       &scoreSpec(),      false } }
+          { "score", &scoreSpec(), false } }
     };
     return spec;
 }
@@ -607,10 +586,9 @@ juce::ValueTree canonicalTree (const juce::ValueTree& tree, const NodeSpec& spec
         else
         {
             const auto node = tree.getChildWithName (child.spec->type);
-            out.appendChild (canonicalTree (node.isValid() ? node
-                                                           : defaultTreeFor (*child.spec),
-                                            *child.spec),
-                             nullptr);
+            out.appendChild (
+                canonicalTree (node.isValid() ? node : defaultTreeFor (*child.spec), *child.spec),
+                nullptr);
         }
     }
 
@@ -639,20 +617,17 @@ juce::var varFromTree (const juce::ValueTree& tree, const NodeSpec& spec)
         else
         {
             const auto node = tree.getChildWithName (child.spec->type);
-            object->setProperty (child.jsonKey,
-                                 varFromTree (node.isValid() ? node
-                                                             : defaultTreeFor (*child.spec),
-                                              *child.spec));
+            object->setProperty (
+                child.jsonKey,
+                varFromTree (node.isValid() ? node : defaultTreeFor (*child.spec), *child.spec));
         }
     }
 
     return juce::var (object);
 }
 
-juce::ValueTree treeFromVar (const juce::var& value,
-                             const NodeSpec& spec,
-                             juce::StringArray& warnings,
-                             const juce::String& path)
+juce::ValueTree treeFromVar (const juce::var& value, const NodeSpec& spec,
+                             juce::StringArray& warnings, const juce::String& path)
 {
     juce::ValueTree tree (spec.type);
 
@@ -688,8 +663,8 @@ juce::ValueTree treeFromVar (const juce::var& value,
         else
         {
             warnings.add (path + "." + key + ": expected "
-                          + (prop.defaultValue.isBool()   ? "a boolean"
-                             : prop.defaultValue.isInt()  ? "an integer"
+                          + (prop.defaultValue.isBool()     ? "a boolean"
+                             : prop.defaultValue.isInt()    ? "an integer"
                              : prop.defaultValue.isDouble() ? "a number"
                                                             : "a string")
                           + ", got " + object->getProperty (prop.id).toString()
@@ -720,8 +695,8 @@ juce::ValueTree treeFromVar (const juce::var& value,
                     }
 
                     tree.appendChild (treeFromVar (element, *child.spec, warnings,
-                                                   path + "." + child.jsonKey
-                                                        + "[" + juce::String (index++) + "]"),
+                                                   path + "." + child.jsonKey + "["
+                                                       + juce::String (index++) + "]"),
                                       nullptr);
                 }
             }
@@ -737,9 +712,9 @@ juce::ValueTree treeFromVar (const juce::var& value,
         }
         else
         {
-            tree.appendChild (treeFromVar (childValue, *child.spec, warnings,
-                                           path + "." + child.jsonKey),
-                              nullptr);
+            tree.appendChild (
+                treeFromVar (childValue, *child.spec, warnings, path + "." + child.jsonKey),
+                nullptr);
         }
     }
 
@@ -749,7 +724,8 @@ juce::ValueTree treeFromVar (const juce::var& value,
         const auto key = property.name.toString();
 
         const auto isKnownProp = std::any_of (spec.props.begin(), spec.props.end(),
-                                              [&] (const auto& p) { return p.id == property.name; });
+                                              [&] (const auto& p)
+                                              { return p.id == property.name; });
         const auto isKnownChild = std::any_of (spec.children.begin(), spec.children.end(),
                                                [&] (const auto& c) { return c.jsonKey == key; });
 

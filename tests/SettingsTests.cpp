@@ -21,9 +21,15 @@ struct TempSettings
         directory.createDirectory();
     }
 
-    ~TempSettings() { directory.deleteRecursively(); }
+    ~TempSettings()
+    {
+        directory.deleteRecursively();
+    }
 
-    std::unique_ptr<Settings> open() { return std::make_unique<Settings> (directory); }
+    std::unique_ptr<Settings> open()
+    {
+        return std::make_unique<Settings> (directory);
+    }
 
     juce::File directory;
 };
@@ -137,8 +143,8 @@ TEST_CASE ("a window rectangle that is entirely offscreen is refused", "[setting
 
     REQUIRE (! Settings::isWindowStateUsable (""));
     REQUIRE (! Settings::isWindowStateUsable ("garbage"));
-    REQUIRE (! Settings::isWindowStateUsable ("100 100"));           // too few numbers
-    REQUIRE (! Settings::isWindowStateUsable ("100 100 10 10"));     // absurdly small
+    REQUIRE (! Settings::isWindowStateUsable ("100 100"));       // too few numbers
+    REQUIRE (! Settings::isWindowStateUsable ("100 100 10 10")); // absurdly small
     REQUIRE (! Settings::isWindowStateUsable ("-9000 -9000 1200 800"));
 
     // Somewhere on a real display, which is where the app actually opens.
@@ -152,7 +158,7 @@ TEST_CASE ("a window rectangle that is entirely offscreen is refused", "[setting
 
     const auto area = display->userBounds;
     const auto onScreen = juce::String (area.getX() + 20) + " " + juce::String (area.getY() + 20)
-                        + " 1000 700";
+                          + " 1000 700";
 
     REQUIRE (Settings::isWindowStateUsable (onScreen));
 
@@ -324,17 +330,16 @@ TEST_CASE ("render settings round-trip to disk", "[settings][render]")
     REQUIRE (reopened->getRenderNormalize());
 }
 
-TEST_CASE ("nonsense render settings fall back rather than being restored",
-           "[settings][render]")
+TEST_CASE ("nonsense render settings fall back rather than being restored", "[settings][render]")
 {
     TempSettings temp;
 
     {
         auto settings = temp.open();
 
-        settings->setRenderFormat (99);          // clamped on the way in
-        settings->setRenderSampleRate (12345);   // not a rate anything offers
-        settings->setRenderBitDepth (7);         // not a depth anything writes
+        settings->setRenderFormat (99);        // clamped on the way in
+        settings->setRenderSampleRate (12345); // not a rate anything offers
+        settings->setRenderBitDepth (7);       // not a depth anything writes
         settings->setRenderTailSeconds (1.0e9);
         settings->flush();
     }
@@ -388,8 +393,7 @@ TEST_CASE ("a render directory that still exists comes back", "[settings][render
     REQUIRE (reopened->getLastRenderDirectory() == kept);
 }
 
-TEST_CASE ("the interface scale survives a relaunch, and a broken one does not",
-           "[settings]")
+TEST_CASE ("the interface scale survives a relaunch, and a broken one does not", "[settings]")
 {
     const juce::ScopedJuceInitialiser_GUI juceInit;
     TempSettings temp;
@@ -436,8 +440,7 @@ TEST_CASE ("every offered interface scale is one the file will keep", "[settings
     }
 }
 
-TEST_CASE ("the piano roll's row height and the score's text size are remembered",
-           "[settings]")
+TEST_CASE ("the piano roll's row height and the score's text size are remembered", "[settings]")
 {
     const juce::ScopedJuceInitialiser_GUI juceInit;
     TempSettings temp;

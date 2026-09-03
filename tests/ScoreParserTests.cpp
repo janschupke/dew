@@ -10,61 +10,60 @@ using namespace dew::lang;
 namespace
 {
 
-constexpr const char* kSource =
-    "// amber.score\n"
-    "song {\n"
-    "  title  \"Amber\"\n"
-    "  tempo  96 bpm\n"
-    "  meter  4/4\n"
-    "  key    F minor\n"
-    "  seed   0x5EEDC0FFEE\n"
-    "}\n"
-    "\n"
-    "channel pad {\n"
-    "  instrument synth\n"
-    "  mixer      1\n"
-    "  range      C3..C5\n"
-    "  velocity   72 +- 6\n"
-    "}\n"
-    "\n"
-    "channel lead { mixer 2 }\n"
-    "\n"
-    "voicing warm {\n"
-    "  size    4 voices\n"
-    "  spread  drop2\n"
-    "  motion  smooth\n"
-    "}\n"
-    "\n"
-    "rhythm pulse   { 1/4 1/4 1/2 }\n"
-    "rhythm running { 1/8 x4 - 1/8t ~ 1/2 }\n"
-    "\n"
-    "harmony lament {\n"
-    "  key F minor\n"
-    "  i x2 | bVI | bVII | i^1 x2 | iv | V7/iv\n"
-    "}\n"
-    "\n"
-    "section verse {\n"
-    "  length 8 bars\n"
-    "  harmony lament\n"
-    "  part pad {\n"
-    "    chords with warm\n"
-    "    rhythm { 1/2 1/2 }\n"
-    "  }\n"
-    "  part lead {\n"
-    "    melody {\n"
-    "      rhythm  pulse\n"
-    "      contour arch\n"
-    "      mute    1 of 4\n"
-    "    }\n"
-    "  }\n"
-    "}\n"
-    "\n"
-    "arrangement {\n"
-    "  verse\n"
-    "  verse x2\n"
-    "  verse as verse_b { part lead { variance 0.5 } }\n"
-    "  verse x2 identical\n"
-    "}\n";
+constexpr const char* kSource = "// amber.score\n"
+                                "song {\n"
+                                "  title  \"Amber\"\n"
+                                "  tempo  96 bpm\n"
+                                "  meter  4/4\n"
+                                "  key    F minor\n"
+                                "  seed   0x5EEDC0FFEE\n"
+                                "}\n"
+                                "\n"
+                                "channel pad {\n"
+                                "  instrument synth\n"
+                                "  mixer      1\n"
+                                "  range      C3..C5\n"
+                                "  velocity   72 +- 6\n"
+                                "}\n"
+                                "\n"
+                                "channel lead { mixer 2 }\n"
+                                "\n"
+                                "voicing warm {\n"
+                                "  size    4 voices\n"
+                                "  spread  drop2\n"
+                                "  motion  smooth\n"
+                                "}\n"
+                                "\n"
+                                "rhythm pulse   { 1/4 1/4 1/2 }\n"
+                                "rhythm running { 1/8 x4 - 1/8t ~ 1/2 }\n"
+                                "\n"
+                                "harmony lament {\n"
+                                "  key F minor\n"
+                                "  i x2 | bVI | bVII | i^1 x2 | iv | V7/iv\n"
+                                "}\n"
+                                "\n"
+                                "section verse {\n"
+                                "  length 8 bars\n"
+                                "  harmony lament\n"
+                                "  part pad {\n"
+                                "    chords with warm\n"
+                                "    rhythm { 1/2 1/2 }\n"
+                                "  }\n"
+                                "  part lead {\n"
+                                "    melody {\n"
+                                "      rhythm  pulse\n"
+                                "      contour arch\n"
+                                "      mute    1 of 4\n"
+                                "    }\n"
+                                "  }\n"
+                                "}\n"
+                                "\n"
+                                "arrangement {\n"
+                                "  verse\n"
+                                "  verse x2\n"
+                                "  verse as verse_b { part lead { variance 0.5 } }\n"
+                                "  verse x2 identical\n"
+                                "}\n";
 
 const Block* findBlock (const Document& document, std::string_view keyword,
                         std::string_view name = {})
@@ -170,8 +169,7 @@ TEST_CASE ("a chord entry is assembled from its several tokens", "[score][parser
     REQUIRE (findStatement (*harmony, "key") != nullptr);
 }
 
-TEST_CASE ("a rhythm body reads durations, rests, ties and repeats",
-           "[score][parser]")
+TEST_CASE ("a rhythm body reads durations, rests, ties and repeats", "[score][parser]")
 {
     const std::string_view source { kSource };
     DiagnosticBag bag { source };
@@ -196,8 +194,7 @@ TEST_CASE ("a rhythm body reads durations, rests, ties and repeats",
     REQUIRE (running->rhythm[2].text == "1/2");
 }
 
-TEST_CASE ("an arrangement entry carries its repeat, label and overrides",
-           "[score][parser]")
+TEST_CASE ("an arrangement entry carries its repeat, label and overrides", "[score][parser]")
 {
     const std::string_view source { kSource };
     DiagnosticBag bag { source };
@@ -261,11 +258,10 @@ TEST_CASE ("an unclosed brace is reported once, at the brace", "[score][parser]"
     // The cascade this replaces: an "unexpected token" on every line after the
     // brace, none of which names the cause. ONE unclosed brace here, so one
     // diagnostic - and crucially not one per following line.
-    const std::string_view source =
-        "song {\n"
-        "  tempo 96\n"
-        "  meter 4/4\n"
-        "  key   F minor\n";
+    const std::string_view source = "song {\n"
+                                    "  tempo 96\n"
+                                    "  meter 4/4\n"
+                                    "  key   F minor\n";
 
     DiagnosticBag bag { source };
     parse (source, bag);
@@ -285,12 +281,11 @@ TEST_CASE ("two unclosed braces are two facts, not a cascade", "[score][parser]"
 {
     // Each brace that was never closed is its own problem, and each is named
     // at the brace. What must NOT happen is a diagnostic per line between them.
-    const std::string_view source =
-        "song {\n"
-        "  tempo 96\n"
-        "\n"
-        "channel pad {\n"
-        "  mixer 1\n";
+    const std::string_view source = "song {\n"
+                                    "  tempo 96\n"
+                                    "\n"
+                                    "channel pad {\n"
+                                    "  mixer 1\n";
 
     DiagnosticBag bag { source };
     parse (source, bag);
@@ -312,12 +307,11 @@ TEST_CASE ("two unclosed braces are two facts, not a cascade", "[score][parser]"
 
 TEST_CASE ("one bad statement costs one line", "[score][parser]")
 {
-    const std::string_view source =
-        "song {\n"
-        "  tempo 96\n"
-        "  ]]] nonsense\n"
-        "  meter 4/4\n"
-        "}\n";
+    const std::string_view source = "song {\n"
+                                    "  tempo 96\n"
+                                    "  ]]] nonsense\n"
+                                    "  meter 4/4\n"
+                                    "}\n";
 
     DiagnosticBag bag { source };
     const auto document = parse (source, bag);
@@ -337,12 +331,11 @@ TEST_CASE ("a broken block costs at most that block", "[score][parser]")
 {
     // The top-level resync set at work: a keyword at the start of a line always
     // begins a new block, so the file after the damage still parses.
-    const std::string_view source =
-        "song {\n"
-        "  tempo 96\n"
-        "}\n"
-        "@@@ !!! ???\n"
-        "channel pad { mixer 1 }\n";
+    const std::string_view source = "song {\n"
+                                    "  tempo 96\n"
+                                    "}\n"
+                                    "@@@ !!! ???\n"
+                                    "channel pad { mixer 1 }\n";
 
     DiagnosticBag bag { source };
     const auto document = parse (source, bag);
@@ -365,8 +358,7 @@ TEST_CASE ("a chord shape that is not one is named", "[score][parser]")
     REQUIRE (bag.hasErrors());
 }
 
-TEST_CASE ("the parser terminates and stays in bounds on any input",
-           "[score][parser]")
+TEST_CASE ("the parser terminates and stays in bounds on any input", "[score][parser]")
 {
     // Deterministic, not a fuzzer: a fixed seed and a fixed corpus, so a failure
     // here is reproducible rather than a story about a build that once went red.

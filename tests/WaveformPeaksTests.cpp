@@ -14,7 +14,8 @@ juce::AudioBuffer<float> ramp (int numSamples, int numChannels = 1)
 
     for (int channel = 0; channel < numChannels; ++channel)
         for (int i = 0; i < numSamples; ++i)
-            buffer.setSample (channel, i, -1.0f + 2.0f * (float) i / (float) juce::jmax (1, numSamples - 1));
+            buffer.setSample (channel, i,
+                              -1.0f + 2.0f * (float) i / (float) juce::jmax (1, numSamples - 1));
 
     return buffer;
 }

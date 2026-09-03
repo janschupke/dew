@@ -18,12 +18,12 @@ namespace dew
 {
 
 MainComponent::MainComponent (bool openAudioDevice)
-    : audioHost (engine),
-      midiHost (audioHost.getDeviceManager(), engine),
-      transportBar (document, engine, editorState),
-      tabs (document, engine, editorState, &samplePool),
-      instrumentPanel (document, editorState, &samplePool),
-      statusBar (document, editorState, audioHost)
+    : audioHost (engine)
+    , midiHost (audioHost.getDeviceManager(), engine)
+    , transportBar (document, engine, editorState)
+    , tabs (document, engine, editorState, &samplePool)
+    , instrumentPanel (document, editorState, &samplePool)
+    , statusBar (document, editorState, audioHost)
 {
     // Every spec-built control's right-click, wired once here because this is
     // the only object that knows all three halves: the document, where the
@@ -80,11 +80,9 @@ MainComponent::MainComponent (bool openAudioDevice)
     // out of its tab. Errors surface in three places doing three jobs: the
     // squiggle says where, the list under the editor says what, and this says
     // whether the project was written to at all.
-    tabs.getScoreEditor().onMessage = [this] (const juce::String& message,
-                                              StatusBar::Severity severity)
-    {
-        statusBar.showMessage (message, severity);
-    };
+    tabs.getScoreEditor().onMessage =
+        [this] (const juce::String& message, StatusBar::Severity severity)
+    { statusBar.showMessage (message, severity); };
 
     transportBar.onToggleRecord = [this]
     {
@@ -199,8 +197,8 @@ void MainComponent::showLoadWarnings (const juce::StringArray& warnings)
         return;
 
     statusBar.showMessage (juce::String (warnings.size()) + " item"
-                           + (warnings.size() == 1 ? "" : "s")
-                           + " in this file were not understood: " + warnings[0],
+                               + (warnings.size() == 1 ? "" : "s")
+                               + " in this file were not understood: " + warnings[0],
                            StatusBar::Severity::warning);
 }
 
@@ -209,7 +207,8 @@ void MainComponent::paint (juce::Graphics& g)
     g.fillAll (tokens::colour::background);
 }
 
-MainComponent::PanelDivider::PanelDivider (MainComponent& o) : owner (o)
+MainComponent::PanelDivider::PanelDivider (MainComponent& o)
+    : owner (o)
 {
     setMouseCursor (juce::MouseCursor::LeftRightResizeCursor);
 
@@ -244,8 +243,8 @@ void MainComponent::PanelDivider::updateToggle()
 
 void MainComponent::PanelDivider::resized()
 {
-    toggleButton.setBounds (getLocalBounds().removeFromTop (tokens::size::iconButton)
-                                            .reduced (0, tokens::space::xxs));
+    toggleButton.setBounds (
+        getLocalBounds().removeFromTop (tokens::size::iconButton).reduced (0, tokens::space::xxs));
 }
 
 void MainComponent::PanelDivider::paint (juce::Graphics& g)
@@ -307,10 +306,19 @@ void MainComponent::showAdjacentTab (int delta)
     showTab (next);
 }
 
-int MainComponent::getActiveTab() const      { return tabs.getCurrentTabIndex(); }
-int MainComponent::getNumEditorTabs() const  { return tabs.getNumTabs(); }
+int MainComponent::getActiveTab() const
+{
+    return tabs.getCurrentTabIndex();
+}
+int MainComponent::getNumEditorTabs() const
+{
+    return tabs.getNumTabs();
+}
 
-void MainComponent::toggleInstrumentPanel()  { setPanelCollapsed (! panelCollapsed); }
+void MainComponent::toggleInstrumentPanel()
+{
+    setPanelCollapsed (! panelCollapsed);
+}
 
 void MainComponent::applySettings (const Settings& settings)
 {
@@ -407,14 +415,17 @@ juce::String MainComponent::toggleRecording()
     const auto file = document.getFile() == juce::File()
                           ? AssetPaths::nextTakeFile (AssetPaths::stagingFolder(),
                                                       channel[ids::name].toString())
-                          : AssetPaths::nextTakeFile (AssetPaths::sidecarFolderFor (document.getFile()),
-                                                      channel[ids::name].toString());
+                          : AssetPaths::nextTakeFile (
+                                AssetPaths::sidecarFolderFor (document.getFile()),
+                                channel[ids::name].toString());
 
-    const auto numInputs = juce::jlimit (1, 2, device->getActiveInputChannels().countNumberOfSetBits());
+    const auto numInputs = juce::jlimit (1, 2,
+                                         device->getActiveInputChannels().countNumberOfSetBits());
     const auto stepsPerBar = Meter::of (document.getState()).stepsPerBar();
     const auto punchInBar = (int) (engine.getPlayheadSteps() / (double) stepsPerBar);
 
-    if (const auto error = recorder.start (file, device->getCurrentSampleRate(), numInputs, punchInBar);
+    if (const auto error = recorder.start (file, device->getCurrentSampleRate(), numInputs,
+                                           punchInBar);
         error.isNotEmpty())
         return error;
 
@@ -452,7 +463,8 @@ void MainComponent::finishRecording()
 
     if (! entry.isValid())
     {
-        statusBar.showMessage ("The recording could not be read back.", StatusBar::Severity::warning);
+        statusBar.showMessage ("The recording could not be read back.",
+                               StatusBar::Severity::warning);
         return;
     }
 
@@ -467,15 +479,14 @@ void MainComponent::finishRecording()
 
     // Rounded up: a take that runs a hair past a bar line needs the whole next
     // bar, or its tail would be cut by the clip that contains it.
-    const auto lengthBars = juce::jmax (1, (int) std::ceil ((double) entry.audio->getNumSamples() / samplesPerBar));
+    const auto lengthBars = juce::jmax (
+        1, (int) std::ceil ((double) entry.audio->getNumSamples() / samplesPerBar));
 
     auto& undo = document.getUndoManager();
     undo.beginNewTransaction ("Record audio");
 
-    ProjectEdits::setSampleSource (channel,
-                                   AssetPaths::relativise (file, document.getFile()),
-                                   (int) entry.sourceSampleRate,
-                                   entry.audio->getNumSamples(),
+    ProjectEdits::setSampleSource (channel, AssetPaths::relativise (file, document.getFile()),
+                                   (int) entry.sourceSampleRate, entry.audio->getNumSamples(),
                                    &undo);
 
     // One clip, on the first playlist track that has room, so a take is visible
@@ -496,9 +507,12 @@ void MainComponent::finishRecording()
         break;
     }
 
-    statusBar.showMessage ("Recorded " + juce::String (entry.audio->getNumSamples() / juce::jmax (1.0, entry.sourceSampleRate), 1)
-                               + " s into " + channel[ids::name].toString() + ".",
-                           StatusBar::Severity::info);
+    statusBar.showMessage (
+        "Recorded "
+            + juce::String (entry.audio->getNumSamples() / juce::jmax (1.0, entry.sourceSampleRate),
+                            1)
+            + " s into " + channel[ids::name].toString() + ".",
+        StatusBar::Severity::info);
 }
 
 void MainComponent::updateLoopRange()
@@ -511,8 +525,8 @@ void MainComponent::updateLoopRange()
     if (steps.isEmpty())
         engine.clearLoopRange (Transport::Mode::pattern);
     else
-        engine.setLoopRangeSteps (Transport::Mode::pattern,
-                                  (double) steps.getStart(), (double) steps.getEnd());
+        engine.setLoopRangeSteps (Transport::Mode::pattern, (double) steps.getStart(),
+                                  (double) steps.getEnd());
 
     const auto bars = editorState.getSelectedBarRange();
 
@@ -524,8 +538,7 @@ void MainComponent::updateLoopRange()
 
     const auto stepsPerBar = Meter::of (document.getState()).stepsPerBar();
 
-    engine.setLoopRangeSteps (Transport::Mode::song,
-                              (double) (bars.getStart() * stepsPerBar),
+    engine.setLoopRangeSteps (Transport::Mode::song, (double) (bars.getStart() * stepsPerBar),
                               (double) (bars.getEnd() * stepsPerBar));
 }
 
@@ -545,9 +558,7 @@ void MainComponent::showMidiSettings()
     auto* panel = new MidiSettingsPanel (midiHost, nullptr);
 
     panel->onDevicesChanged = [this]
-    {
-        statusBar.showMessage (midiHost.describeInputs(), StatusBar::Severity::info);
-    };
+    { statusBar.showMessage (midiHost.describeInputs(), StatusBar::Severity::info); };
 
     juce::DialogWindow::LaunchOptions options;
     options.content.setOwned (panel);
@@ -563,8 +574,8 @@ void MainComponent::showMidiSettings()
 void MainComponent::startRender (const RenderPanel::Request& request, Settings* settingsToUpdate)
 {
     const auto startIn = settingsToUpdate != nullptr
-                           ? settingsToUpdate->getLastRenderDirectory()
-                           : juce::File::getSpecialLocation (juce::File::userMusicDirectory);
+                             ? settingsToUpdate->getLastRenderDirectory()
+                             : juce::File::getSpecialLocation (juce::File::userMusicDirectory);
 
     const auto extension = OfflineRenderer::extensionFor (request.options.format);
 
@@ -576,84 +587,88 @@ void MainComponent::startRender (const RenderPanel::Request& request, Settings* 
         startIn.getChildFile (request.suggestedName + (request.stems ? "" : extension)),
         request.stems ? juce::String() : "*" + extension);
 
-    const auto flags = request.stems
-                         ? (juce::FileBrowserComponent::saveMode
-                            | juce::FileBrowserComponent::canSelectDirectories)
-                         : (juce::FileBrowserComponent::saveMode
-                            | juce::FileBrowserComponent::warnAboutOverwriting);
+    const auto flags = request.stems ? (juce::FileBrowserComponent::saveMode
+                                        | juce::FileBrowserComponent::canSelectDirectories)
+                                     : (juce::FileBrowserComponent::saveMode
+                                        | juce::FileBrowserComponent::warnAboutOverwriting);
 
-    chooser->launchAsync (flags, [this, chooser, request, settingsToUpdate]
-                                 (const juce::FileChooser& result)
-    {
-        auto destination = result.getResult();
-
-        if (destination == juce::File())
-            return;
-
-        if (! request.stems && destination.getFileExtension().isEmpty())
-            destination = destination.withFileExtension (
-                OfflineRenderer::extensionFor (request.options.format));
-
-        if (settingsToUpdate != nullptr)
+    chooser->launchAsync (
+        flags,
+        [this, chooser, request, settingsToUpdate] (const juce::FileChooser& result)
         {
-            settingsToUpdate->setLastRenderDirectory (request.stems ? destination
-                                                                    : destination.getParentDirectory());
-            settingsToUpdate->setRenderFormat ((int) request.options.format);
-            settingsToUpdate->setRenderSampleRate ((int) request.options.sampleRate);
-            settingsToUpdate->setRenderBitDepth (request.options.bitDepth);
-            settingsToUpdate->setRenderTailSeconds (request.options.tailSeconds);
-            settingsToUpdate->setRenderNormalize (request.options.normalize);
-        }
+            auto destination = result.getResult();
 
-        if (renderJob == nullptr)
-            renderJob = std::make_unique<RenderJob>();
-
-        RenderJob::Request job;
-        job.project = document.getState();
-        job.destination = destination;
-        job.options = request.options;
-        job.stems = request.stems;
-
-        // Without this a song containing recordings exports as the synth parts
-        // alone, and says nothing about it. The pool outlives the job - see the
-        // declaration order in the header.
-        job.options.samplePool = &samplePool;
-
-        statusBar.showMessage ("Rendering " + destination.getFileName() + "...",
-                               StatusBar::Severity::info);
-
-        const auto started = renderJob->start (std::move (job), [this] (const RenderReport& report)
-        {
-            for (const auto& warning : report.warnings)
-                statusBar.showMessage (warning, StatusBar::Severity::warning);
-
-            if (report.cancelled)
-            {
-                // The user asked for this. Reporting it as an error would tell
-                // them their own click was a bug.
-                statusBar.showMessage ("Render cancelled.", StatusBar::Severity::info);
+            if (destination == juce::File())
                 return;
+
+            if (! request.stems && destination.getFileExtension().isEmpty())
+                destination = destination.withFileExtension (
+                    OfflineRenderer::extensionFor (request.options.format));
+
+            if (settingsToUpdate != nullptr)
+            {
+                settingsToUpdate->setLastRenderDirectory (
+                    request.stems ? destination : destination.getParentDirectory());
+                settingsToUpdate->setRenderFormat ((int) request.options.format);
+                settingsToUpdate->setRenderSampleRate ((int) request.options.sampleRate);
+                settingsToUpdate->setRenderBitDepth (request.options.bitDepth);
+                settingsToUpdate->setRenderTailSeconds (request.options.tailSeconds);
+                settingsToUpdate->setRenderNormalize (request.options.normalize);
             }
 
-            if (! report.ok())
-            {
-                statusBar.showMessage (report.result.getErrorMessage(), StatusBar::Severity::error);
-                return;
-            }
+            if (renderJob == nullptr)
+                renderJob = std::make_unique<RenderJob>();
 
-            const auto what = report.files.size() == 1
-                                ? report.files[0].getFileName()
-                                : juce::String (report.files.size()) + " files";
+            RenderJob::Request job;
+            job.project = document.getState();
+            job.destination = destination;
+            job.options = request.options;
+            job.stems = request.stems;
 
-            statusBar.showMessage ("Rendered " + what + "  ·  peak "
-                                       + juce::String (juce::Decibels::gainToDecibels (report.peak), 1)
-                                       + " dB",
-                                   StatusBar::Severity::success);
+            // Without this a song containing recordings exports as the synth parts
+            // alone, and says nothing about it. The pool outlives the job - see the
+            // declaration order in the header.
+            job.options.samplePool = &samplePool;
+
+            statusBar.showMessage ("Rendering " + destination.getFileName() + "...",
+                                   StatusBar::Severity::info);
+
+            const auto started = renderJob->start (
+                std::move (job),
+                [this] (const RenderReport& report)
+                {
+                    for (const auto& warning : report.warnings)
+                        statusBar.showMessage (warning, StatusBar::Severity::warning);
+
+                    if (report.cancelled)
+                    {
+                        // The user asked for this. Reporting it as an error would tell
+                        // them their own click was a bug.
+                        statusBar.showMessage ("Render cancelled.", StatusBar::Severity::info);
+                        return;
+                    }
+
+                    if (! report.ok())
+                    {
+                        statusBar.showMessage (report.result.getErrorMessage(),
+                                               StatusBar::Severity::error);
+                        return;
+                    }
+
+                    const auto what = report.files.size() == 1
+                                          ? report.files[0].getFileName()
+                                          : juce::String (report.files.size()) + " files";
+
+                    statusBar.showMessage (
+                        "Rendered " + what + "  ·  peak "
+                            + juce::String (juce::Decibels::gainToDecibels (report.peak), 1)
+                            + " dB",
+                        StatusBar::Severity::success);
+                });
+
+            if (! started)
+                statusBar.showMessage ("A render is already going.", StatusBar::Severity::warning);
         });
-
-        if (! started)
-            statusBar.showMessage ("A render is already going.", StatusBar::Severity::warning);
-    });
 }
 
 void MainComponent::showRenderDialog (Settings* settingsToUpdate)
@@ -704,9 +719,7 @@ void MainComponent::showAudioSettings()
     auto* panel = new AudioSettingsPanel (audioHost, engine);
 
     panel->onDeviceChanged = [this]
-    {
-        statusBar.showMessage (audioHost.describeDevice(), StatusBar::Severity::info);
-    };
+    { statusBar.showMessage (audioHost.describeDevice(), StatusBar::Severity::info); };
 
     juce::DialogWindow::LaunchOptions options;
     options.content.setOwned (panel);

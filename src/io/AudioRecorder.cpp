@@ -12,7 +12,7 @@ AudioRecorder::AudioRecorder()
 AudioRecorder::~AudioRecorder()
 {
     stop();
-    backgroundThread.stopThread(2000);
+    backgroundThread.stopThread (2000);
 }
 
 juce::String AudioRecorder::start (const juce::File& file, double sampleRate, int numChannels,
@@ -106,7 +106,8 @@ void AudioRecorder::writeBlock (const float* const* inputChannelData, int numInp
     for (int channel = 0; channel < numInputChannels; ++channel)
         if (inputChannelData[channel] != nullptr)
             peak = juce::jmax (peak, juce::FloatVectorOperations::findMinAndMax (
-                                         inputChannelData[channel], numSamples).getEnd());
+                                         inputChannelData[channel], numSamples)
+                                         .getEnd());
 
     // Latest-wins maximum, like the mixer meters - and now literally the same
     // code as the mixer meters.

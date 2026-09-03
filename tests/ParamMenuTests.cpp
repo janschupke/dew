@@ -29,7 +29,10 @@ struct MenuHarness
         return host.contextFor ([node] { return node; }, spec);
     }
 
-    juce::ValueTree channel() const { return document.getState().getChildWithName (ids::CHANNEL); }
+    juce::ValueTree channel() const
+    {
+        return document.getState().getChildWithName (ids::CHANNEL);
+    }
 
     ProjectDocument document;
     paramMenu::Host host;
@@ -51,8 +54,7 @@ juce::Component* findDescendantWithID (juce::Component& root, const juce::String
 
 } // namespace
 
-TEST_CASE ("an automatable control offers to make a curve, and others do not",
-           "[ui][paramMenu]")
+TEST_CASE ("an automatable control offers to make a curve, and others do not", "[ui][paramMenu]")
 {
     const juce::ScopedJuceInitialiser_GUI juceInit;
     MenuHarness h;
@@ -130,7 +132,8 @@ TEST_CASE ("a curve is placed even when every lane is taken", "[ui][paramMenu]")
         if (track.hasType (ids::PLAYLIST_TRACK))
             ProjectEdits::addClip (track, 1, 0, 1, &scratch);
 
-    const auto tracksBefore = h.document.getState().getChildWithName (ids::PLAYLIST).getNumChildren();
+    const auto
+        tracksBefore = h.document.getState().getChildWithName (ids::PLAYLIST).getNumChildren();
 
     paramMenu::apply ((int) paramMenu::Item::createClip,
                       h.contextFor (h.channel(), requireInstrumentParamSpec (ids::volume)));

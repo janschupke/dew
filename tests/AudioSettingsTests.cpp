@@ -16,7 +16,7 @@ TEST_CASE ("the audio panel is honest when there is no device", "[audio][ui]")
     const juce::ScopedJuceInitialiser_GUI juceInit;
 
     AudioEngine engine;
-    LiveAudioHost host { engine };      // deliberately not started
+    LiveAudioHost host { engine }; // deliberately not started
 
     AudioSettingsPanel panel { host, engine };
     panel.setSize (AudioSettingsPanel::preferredWidth, AudioSettingsPanel::preferredHeight);

@@ -9,11 +9,10 @@ using namespace dew::lang;
 namespace
 {
 
-constexpr const char* kSource =
-    "song {\n"
-    "  tempo 96\n"
-    "  meter 4/4\n"
-    "}\n";
+constexpr const char* kSource = "song {\n"
+                                "  tempo 96\n"
+                                "  meter 4/4\n"
+                                "}\n";
 
 /** The byte range of the first occurrence of `text`. */
 SourceRange rangeOf (std::string_view source, std::string_view text)
@@ -91,8 +90,7 @@ TEST_CASE ("only the first error on a line is reported", "[score][diagnostic]")
     REQUIRE (bag.size() == 2);
 }
 
-TEST_CASE ("warnings are not silenced by an error on the same line",
-           "[score][diagnostic]")
+TEST_CASE ("warnings are not silenced by an error on the same line", "[score][diagnostic]")
 {
     // Two rules relaxing at the same bar are two facts, not one repeated - so
     // the one-per-line rule is for errors only.
@@ -151,8 +149,7 @@ TEST_CASE ("a hundred errors is where it stops", "[score][diagnostic]")
     REQUIRE (bag.all().back().primary.isEmpty());
 }
 
-TEST_CASE ("a bag with no errors says so even when it holds warnings",
-           "[score][diagnostic]")
+TEST_CASE ("a bag with no errors says so even when it holds warnings", "[score][diagnostic]")
 {
     const std::string_view source { kSource };
     DiagnosticBag bag { source };
@@ -175,8 +172,9 @@ TEST_CASE ("a related range names the second witness", "[score][diagnostic]")
     const std::string source = "rhythm a { 1/32 }\nrhythm b { 1/8t }\n";
     DiagnosticBag bag { source };
 
-    auto& d = bag.error ("E402", "this score needs a grid of 24 steps per beat, "
-                                 "but dew stores at most 16",
+    auto& d = bag.error ("E402",
+                         "this score needs a grid of 24 steps per beat, "
+                         "but dew stores at most 16",
                          rangeOf (source, "1/32"), "requires 8");
     d.related.push_back ({ rangeOf (source, "1/8t"), "3 required by `1/8t`" });
     d.notes.push_back ("24 = lcm(8, 3)");

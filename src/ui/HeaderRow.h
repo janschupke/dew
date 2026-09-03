@@ -45,7 +45,10 @@ protected:
         the menu. One row needs it: a playlist header's bottom edge is a resize
         grip, and a grab there is a drag rather than a click on the track.
     */
-    virtual bool consumePress (const juce::MouseEvent&) { return false; }
+    virtual bool consumePress (const juce::MouseEvent&)
+    {
+        return false;
+    }
 
     /** Called on every press, before the menu opens. The rack selects its row
         here, so a menu always acts on the row that was clicked rather than on
@@ -71,8 +74,8 @@ private:
         auto menu = buildMenu();
 
         menu.setLookAndFeel (&getLookAndFeel());
-        menu.showMenuAsync (juce::PopupMenu::Options()
-                                .withTargetScreenArea ({ event.getScreenX(), event.getScreenY(), 1, 1 }),
+        menu.showMenuAsync (juce::PopupMenu::Options().withTargetScreenArea (
+                                { event.getScreenX(), event.getScreenY(), 1, 1 }),
                             [safe = juce::Component::SafePointer<HeaderRow> (this)] (int choice)
                             {
                                 if (safe != nullptr && choice > 0)
@@ -87,8 +90,14 @@ private:
                 label->showEditor();
     }
 
-    void mouseEnter (const juce::MouseEvent&) override { hover.enter(); }
-    void mouseExit (const juce::MouseEvent&) override  { hover.exit(); }
+    void mouseEnter (const juce::MouseEvent&) override
+    {
+        hover.enter();
+    }
+    void mouseExit (const juce::MouseEvent&) override
+    {
+        hover.exit();
+    }
 };
 
 } // namespace dew

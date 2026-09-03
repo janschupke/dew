@@ -18,7 +18,8 @@ namespace dew
 namespace
 {
 
-juce::ValueTree findChildWithId (const juce::ValueTree& parent, const juce::Identifier& type, int id)
+juce::ValueTree findChildWithId (const juce::ValueTree& parent, const juce::Identifier& type,
+                                 int id)
 {
     for (const auto& child : parent)
         if (child.hasType (type) && (int) child[ids::id] == id)
@@ -44,23 +45,22 @@ juce::ValueTree ProjectEdits::findMixerTrack (const juce::ValueTree& project, in
     return findChildWithId (project.getChildWithName (ids::MIXER), ids::MIXER_TRACK, mixerTrackId);
 }
 
-juce::ValueTree ProjectEdits::findNote (const juce::ValueTree& pattern, int channelId, int step, int pitch)
+juce::ValueTree ProjectEdits::findNote (const juce::ValueTree& pattern, int channelId, int step,
+                                        int pitch)
 {
     for (const auto& note : pattern)
-        if (note.hasType (ids::NOTE)
-            && (int) note[ids::ch] == channelId
-            && (int) note[ids::step] == step
-            && (int) note[ids::pitch] == pitch)
+        if (note.hasType (ids::NOTE) && (int) note[ids::ch] == channelId
+            && (int) note[ids::step] == step && (int) note[ids::pitch] == pitch)
             return note;
 
     return {};
 }
 
-juce::ValueTree ProjectEdits::findNoteAtStep (const juce::ValueTree& pattern, int channelId, int step)
+juce::ValueTree ProjectEdits::findNoteAtStep (const juce::ValueTree& pattern, int channelId,
+                                              int step)
 {
     for (const auto& note : pattern)
-        if (note.hasType (ids::NOTE)
-            && (int) note[ids::ch] == channelId
+        if (note.hasType (ids::NOTE) && (int) note[ids::ch] == channelId
             && (int) note[ids::step] == step)
             return note;
 
@@ -133,7 +133,8 @@ juce::ValueTree ProjectEdits::addNote (juce::ValueTree pattern, int channelId, i
     return note;
 }
 
-void ProjectEdits::removeNote (juce::ValueTree pattern, juce::ValueTree note, juce::UndoManager* undo)
+void ProjectEdits::removeNote (juce::ValueTree pattern, juce::ValueTree note,
+                               juce::UndoManager* undo)
 {
     const auto index = pattern.indexOf (note);
 
@@ -141,7 +142,8 @@ void ProjectEdits::removeNote (juce::ValueTree pattern, juce::ValueTree note, ju
         pattern.removeChild (index, undo);
 }
 
-void ProjectEdits::moveNote (juce::ValueTree note, int newStep, int newPitch, juce::UndoManager* undo)
+void ProjectEdits::moveNote (juce::ValueTree note, int newStep, int newPitch,
+                             juce::UndoManager* undo)
 {
     note.setProperty (ids::step, juce::jmax (0, newStep), undo);
     note.setProperty (ids::pitch, juce::jlimit (0, 127, newPitch), undo);
@@ -199,7 +201,8 @@ juce::ValueTree ProjectEdits::addChannel (juce::ValueTree project, const juce::S
 
     const auto id = nextFreeId (project, ids::CHANNEL);
     channel.setProperty (ids::id, id, nullptr);
-    channel.setProperty (ids::name, name.isNotEmpty() ? name : "Channel " + juce::String (id), nullptr);
+    channel.setProperty (ids::name, name.isNotEmpty() ? name : "Channel " + juce::String (id),
+                         nullptr);
 
     // Round the ramp rather than taking the schema default, which is one blue:
     // every channel a user added came out the same colour as the last, in an
@@ -250,7 +253,8 @@ bool ProjectEdits::isAudioChannel (const juce::ValueTree& channel)
 }
 
 void ProjectEdits::setSampleSource (juce::ValueTree channel, const juce::String& path,
-                                    int sourceSampleRate, int lengthSamples, juce::UndoManager* undo)
+                                    int sourceSampleRate, int lengthSamples,
+                                    juce::UndoManager* undo)
 {
     auto sample = channel.getChildWithName (ids::SAMPLE);
 
@@ -332,19 +336,18 @@ juce::ValueTree ProjectEdits::duplicatePattern (juce::ValueTree project, juce::V
     auto copy = pattern.createCopy();
 
     const auto sourceId = (int) pattern[ids::id];
-    const auto newId    = nextFreeId (project, ids::PATTERN);
+    const auto newId = nextFreeId (project, ids::PATTERN);
 
     copy.setProperty (ids::id, newId, nullptr);
 
     // An auto-named pattern gets the next auto name; a renamed one keeps the
     // name it was given, marked as a copy, because that name is information.
     const auto sourceName = pattern[ids::name].toString();
-    const auto autoName   = "Pattern " + juce::String (sourceId);
+    const auto autoName = "Pattern " + juce::String (sourceId);
 
-    copy.setProperty (ids::name,
-                      sourceName == autoName ? "Pattern " + juce::String (newId)
-                                             : sourceName + " copy",
-                      nullptr);
+    copy.setProperty (
+        ids::name,
+        sourceName == autoName ? "Pattern " + juce::String (newId) : sourceName + " copy", nullptr);
 
     // Next to the original, so the pattern list reads in the order it was built.
     project.addChild (copy, index + 1, undo);
@@ -475,7 +478,8 @@ juce::ValueTree ProjectEdits::addEffect (juce::ValueTree project, juce::ValueTre
     if (! owner.isValid() || countEffects (owner) >= kMaxEffectsPerChain)
         return {};
 
-    auto effect = defaultTreeFor (childSpecFor (childSpecFor (projectSpec(), "channels"), "effects"));
+    auto effect = defaultTreeFor (
+        childSpecFor (childSpecFor (projectSpec(), "channels"), "effects"));
     effect.setProperty (ids::type, type, nullptr);
 
     // Effect ids are unique across the whole project, not per chain: the engine
@@ -494,7 +498,8 @@ juce::ValueTree ProjectEdits::addEffect (juce::ValueTree project, juce::ValueTre
     return effect;
 }
 
-void ProjectEdits::removeEffect (juce::ValueTree owner, juce::ValueTree effect, juce::UndoManager* undo)
+void ProjectEdits::removeEffect (juce::ValueTree owner, juce::ValueTree effect,
+                                 juce::UndoManager* undo)
 {
     const auto index = owner.indexOf (effect);
 
@@ -553,16 +558,15 @@ juce::Array<juce::ValueTree> sortedPoints (const juce::ValueTree& automation)
 
     std::stable_sort (points.begin(), points.end(),
                       [] (const juce::ValueTree& a, const juce::ValueTree& b)
-                      {
-                          return (double) a[ids::step] < (double) b[ids::step];
-                      });
+                      { return (double) a[ids::step] < (double) b[ids::step]; });
 
     return points;
 }
 
 } // namespace
 
-juce::ValueTree ProjectEdits::addAutomation (juce::ValueTree project, const AutomationTarget& target,
+juce::ValueTree ProjectEdits::addAutomation (juce::ValueTree project,
+                                             const AutomationTarget& target,
                                              juce::UndoManager* undo)
 {
     auto automation = defaultTreeFor (automationSpecFor());
@@ -597,7 +601,8 @@ juce::ValueTree ProjectEdits::addAutomation (juce::ValueTree project, const Auto
     int insertAt = project.getNumChildren();
 
     for (int i = 0; i < project.getNumChildren(); ++i)
-        if (project.getChild (i).hasType (ids::PATTERN) || project.getChild (i).hasType (ids::AUTOMATION))
+        if (project.getChild (i).hasType (ids::PATTERN)
+            || project.getChild (i).hasType (ids::AUTOMATION))
             insertAt = i + 1;
 
     project.addChild (automation, insertAt, undo);
@@ -605,9 +610,8 @@ juce::ValueTree ProjectEdits::addAutomation (juce::ValueTree project, const Auto
 }
 
 juce::ValueTree ProjectEdits::addAutomationWithClip (juce::ValueTree project,
-                                                     const AutomationTarget& target,
-                                                     int startBar, int lengthBars,
-                                                     juce::UndoManager* undo)
+                                                     const AutomationTarget& target, int startBar,
+                                                     int lengthBars, juce::UndoManager* undo)
 {
     auto automation = addAutomation (project, target, undo);
 
@@ -624,7 +628,8 @@ juce::ValueTree ProjectEdits::addAutomationWithClip (juce::ValueTree project,
         if (findClipAtBar (track, startBar).isValid())
             continue;
 
-        auto clip = addAutomationClip (track, (int) automation[ids::id], startBar, lengthBars, undo);
+        auto clip = addAutomationClip (track, (int) automation[ids::id], startBar, lengthBars,
+                                       undo);
         growSongToFitClips (project, undo);
         return clip;
     }
@@ -633,7 +638,8 @@ juce::ValueTree ProjectEdits::addAutomationWithClip (juce::ValueTree project,
     // choose - undo the definition and return nothing - was a menu item that
     // did nothing at all, which is the worse of the two by a distance now that
     // every control offers it.
-    auto track = addPlaylistTrack (project, "Track " + juce::String (playlist.getNumChildren() + 1), undo);
+    auto track = addPlaylistTrack (project, "Track " + juce::String (playlist.getNumChildren() + 1),
+                                   undo);
 
     if (! track.isValid())
         return {};
@@ -780,12 +786,14 @@ void ProjectEdits::removeAutomationPoint (juce::ValueTree automation, juce::Valu
         automation.removeChild (index, undo);
 }
 
-juce::Array<juce::ValueTree> ProjectEdits::sortedAutomationPoints (const juce::ValueTree& automation)
+juce::Array<juce::ValueTree>
+ProjectEdits::sortedAutomationPoints (const juce::ValueTree& automation)
 {
     return sortedPoints (automation);
 }
 
-void ProjectEdits::setPointShape (juce::ValueTree point, SegmentShape shape, juce::UndoManager* undo)
+void ProjectEdits::setPointShape (juce::ValueTree point, SegmentShape shape,
+                                  juce::UndoManager* undo)
 {
     if (! point.isValid())
         return;
@@ -843,7 +851,8 @@ namespace
 
 const NodeSpec& clipSpecFor()
 {
-    return childSpecFor (childSpecFor (childSpecFor (projectSpec(), "playlist"), "tracks"), "clips");
+    return childSpecFor (childSpecFor (childSpecFor (projectSpec(), "playlist"), "tracks"),
+                         "clips");
 }
 
 } // namespace
@@ -867,8 +876,7 @@ juce::ValueTree ProjectEdits::addPlaylistTrack (juce::ValueTree project, const j
         if (child.hasType (ids::PLAYLIST_TRACK))
             ++existing;
 
-    track.setProperty (ids::name,
-                       name.isNotEmpty() ? name : "Track " + juce::String (existing + 1),
+    track.setProperty (ids::name, name.isNotEmpty() ? name : "Track " + juce::String (existing + 1),
                        nullptr);
 
     playlist.appendChild (track, undo);
@@ -906,7 +914,8 @@ juce::ValueTree ProjectEdits::addClip (juce::ValueTree playlistTrack, int patter
 }
 
 juce::ValueTree ProjectEdits::addAutomationClip (juce::ValueTree playlistTrack, int automationId,
-                                                 int startBar, int lengthBars, juce::UndoManager* undo)
+                                                 int startBar, int lengthBars,
+                                                 juce::UndoManager* undo)
 {
     auto clip = defaultTreeFor (clipSpecFor());
     clip.setProperty (ids::kind, "automation", nullptr);
@@ -1091,9 +1100,7 @@ void ProjectEdits::setMeter (juce::ValueTree project, int beatsPerBar, int beatU
     // this, and which bar is that now" rather than as a ratio, so there is one
     // place to read the intent and no ratio to get upside down.
     const auto barsForSteps = [newStepsPerBar] (int steps)
-    {
-        return juce::roundToInt ((double) steps / (double) newStepsPerBar);
-    };
+    { return juce::roundToInt ((double) steps / (double) newStepsPerBar); };
 
     auto exact = true;
 
@@ -1110,8 +1117,7 @@ void ProjectEdits::setMeter (juce::ValueTree project, int beatsPerBar, int beatU
             const auto startSteps = juce::jmax (0, (int) clip[ids::startBar]) * oldStepsPerBar;
             const auto lengthSteps = juce::jmax (1, (int) clip[ids::lengthBars]) * oldStepsPerBar;
 
-            exact = exact && startSteps % newStepsPerBar == 0
-                          && lengthSteps % newStepsPerBar == 0;
+            exact = exact && startSteps % newStepsPerBar == 0 && lengthSteps % newStepsPerBar == 0;
 
             clip.setProperty (ids::startBar, juce::jmax (0, barsForSteps (startSteps)), undo);
             clip.setProperty (ids::lengthBars, juce::jmax (1, barsForSteps (lengthSteps)), undo);
@@ -1226,8 +1232,8 @@ void writeParams (juce::ValueTree node, const juce::var& values, const ParamSpec
 
     for (int i = 0; i < numParams; ++i)
         ProjectEdits::setProperty (node, *params[i].property,
-                                   object->getProperty (*params[i].property), undo,
-                                   transactionName, /*continuingTransaction*/ true);
+                                   object->getProperty (*params[i].property), undo, transactionName,
+                                   /*continuingTransaction*/ true);
 }
 
 } // namespace

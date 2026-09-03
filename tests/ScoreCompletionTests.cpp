@@ -50,31 +50,30 @@ bool offers (const CompletionResult& result, const std::string& text)
 /** A file with something declared in it, so name completion has names. */
 std::string declared (const std::string& tail)
 {
-    return
-        "song {\n"
-        "  tempo 120\n"
-        "  meter 4/4\n"
-        "  key   F minor\n"
-        "}\n"
-        "channel pad { mixer 1 }\n"
-        "channel lead { mixer 2 }\n"
-        "voicing warm { size 4 voices }\n"
-        "rhythm pulse { 1/4 }\n"
-        "harmony lament { i | bVI }\n"
-        "section verse {\n  length 4 bars\n  harmony lament\n}\n"
-        + tail;
+    return "song {\n"
+           "  tempo 120\n"
+           "  meter 4/4\n"
+           "  key   F minor\n"
+           "}\n"
+           "channel pad { mixer 1 }\n"
+           "channel lead { mixer 2 }\n"
+           "voicing warm { size 4 voices }\n"
+           "rhythm pulse { 1/4 }\n"
+           "harmony lament { i | bVI }\n"
+           "section verse {\n  length 4 bars\n  harmony lament\n}\n"
+           + tail;
 }
 
 } // namespace
 
-TEST_CASE ("the top level offers the block keywords, and only those",
-           "[score][completion]")
+TEST_CASE ("the top level offers the block keywords, and only those", "[score][completion]")
 {
     const auto result = at ("$");
 
     REQUIRE (result.block == BlockKind::unknown);
-    REQUIRE (textsOf (result) == std::vector<std::string> {
-        "song", "channel", "voicing", "rhythm", "harmony", "section", "arrangement" });
+    REQUIRE (textsOf (result)
+             == std::vector<std::string> { "song", "channel", "voicing", "rhythm", "harmony",
+                                           "section", "arrangement" });
 }
 
 TEST_CASE ("a prefix filters, and says what it replaces", "[score][completion]")
@@ -94,8 +93,8 @@ TEST_CASE ("inside a block, the keys are that block's", "[score][completion]")
     const auto song = at ("song {\n  $\n}\n");
 
     REQUIRE (song.block == BlockKind::song);
-    REQUIRE (textsOf (song) == std::vector<std::string> {
-        "title", "tempo", "meter", "grid", "key", "seed" });
+    REQUIRE (textsOf (song)
+             == std::vector<std::string> { "title", "tempo", "meter", "grid", "key", "seed" });
 
     // And a channel's are a channel's, which is the whole claim.
     const auto channel = at ("channel pad {\n  $\n}\n");
@@ -129,8 +128,9 @@ TEST_CASE ("after a key, the values are that key's", "[score][completion]")
     {
         const auto result = at ("voicing warm {\n  spread $\n}\n");
 
-        REQUIRE (textsOf (result) == std::vector<std::string> {
-            "close", "open", "drop2", "drop3", "shell", "rootless" });
+        REQUIRE (
+            textsOf (result)
+            == std::vector<std::string> { "close", "open", "drop2", "drop3", "shell", "rootless" });
     }
 
     SECTION ("a contour")
@@ -138,8 +138,8 @@ TEST_CASE ("after a key, the values are that key's", "[score][completion]")
         const auto result = at ("section s {\n  part p {\n    melody {\n"
                                 "      contour $\n    }\n  }\n}\n");
 
-        REQUIRE (textsOf (result) == std::vector<std::string> {
-            "arch", "rise", "fall", "flat", "wave" });
+        REQUIRE (textsOf (result)
+                 == std::vector<std::string> { "arch", "rise", "fall", "flat", "wave" });
     }
 
     SECTION ("a key is two stages")
@@ -233,25 +233,22 @@ TEST_CASE ("an arrangement offers repeats after a section", "[score][completion]
     REQUIRE (offers (result, "as"));
 }
 
-TEST_CASE ("completion works in a file that does not compile",
-           "[score][completion]")
+TEST_CASE ("completion works in a file that does not compile", "[score][completion]")
 {
     // The only file anybody is ever editing. Names are collected by a resolve
     // that runs whether or not the parse produced errors, so a half-written
     // section below does not take the channel list away.
-    const auto result = at (
-        "channel pad { mixer 1 }\n"
-        "section verse {\n"
-        "  part $\n"
-        "  length\n"          // missing its value
-        "  nonsense here\n"   // not a key at all
-        "\n");                // and never closed
+    const auto result = at ("channel pad { mixer 1 }\n"
+                            "section verse {\n"
+                            "  part $\n"
+                            "  length\n"        // missing its value
+                            "  nonsense here\n" // not a key at all
+                            "\n");              // and never closed
 
     REQUIRE (textsOf (result) == std::vector<std::string> { "pad" });
 }
 
-TEST_CASE ("nothing is offered inside a comment or a string",
-           "[score][completion]")
+TEST_CASE ("nothing is offered inside a comment or a string", "[score][completion]")
 {
     // Offering `section` in the middle of a sentence is not help, it is
     // interference.
@@ -262,8 +259,7 @@ TEST_CASE ("nothing is offered inside a comment or a string",
     REQUIRE_FALSE (at ("// a note\n$\n").items.empty());
 }
 
-TEST_CASE ("an unknown key offers nothing rather than guessing",
-           "[score][completion]")
+TEST_CASE ("an unknown key offers nothing rather than guessing", "[score][completion]")
 {
     // `mixor 1` is a typo, not a key, and inventing values for it would be
     // pretending the schema said something it did not.
@@ -345,8 +341,7 @@ TEST_CASE ("every chord completion compiles", "[score][completion]")
     }
 }
 
-TEST_CASE ("a nested block is never offered at the top level",
-           "[score][completion]")
+TEST_CASE ("a nested block is never offered at the top level", "[score][completion]")
 {
     // The schema declares which blocks belong at the top level. A hand-written
     // exclusion list here offered `counterpoint` as a seventh top-level keyword

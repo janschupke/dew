@@ -92,55 +92,55 @@ namespace colour
 */
 namespace emphasis
 {
-    // Alphas, faintest to strongest.
-    inline constexpr float tint    = 0.08f;  ///< an accent behind a selected region
-    inline constexpr float wash    = 0.20f;  ///< a rubber band, a playhead's column
-    inline constexpr float hatch   = 0.25f;  ///< the lines of an inert area
-    inline constexpr float subdued = 0.35f;  ///< past the end, another channel, muted
-    inline constexpr float dimmed  = 0.55f;  ///< a stopped playhead, a scrim
-    inline constexpr float strong  = 0.85f;  ///< nearly opaque
+// Alphas, faintest to strongest.
+inline constexpr float tint = 0.08f;    ///< an accent behind a selected region
+inline constexpr float wash = 0.20f;    ///< a rubber band, a playhead's column
+inline constexpr float hatch = 0.25f;   ///< the lines of an inert area
+inline constexpr float subdued = 0.35f; ///< past the end, another channel, muted
+inline constexpr float dimmed = 0.55f;  ///< a stopped playhead, a scrim
+inline constexpr float strong = 0.85f;  ///< nearly opaque
 
-    /** How much lighter a surface gets when it is being touched.
+/** How much lighter a surface gets when it is being touched.
 
-        A large surface needs a subtler lift than a small one, or a hovered
-        mixer strip flares while a hovered button barely moves. That distinction
-        is real and is why there were 0.05 and 0.06 for strips and cards and
-        0.10 for buttons; the other six values were not.
-    */
-    inline constexpr float surfaceLift = 0.06f;  ///< a strip, a card, a row
-    inline constexpr float controlLift = 0.10f;  ///< a button under the cursor
-    inline constexpr float pressLift   = 0.22f;  ///< a button being held
-    inline constexpr float edgeLift    = 0.35f;  ///< a note's border against its own fill
+    A large surface needs a subtler lift than a small one, or a hovered
+    mixer strip flares while a hovered button barely moves. That distinction
+    is real and is why there were 0.05 and 0.06 for strips and cards and
+    0.10 for buttons; the other six values were not.
+*/
+inline constexpr float surfaceLift = 0.06f; ///< a strip, a card, a row
+inline constexpr float controlLift = 0.10f; ///< a button under the cursor
+inline constexpr float pressLift = 0.22f;   ///< a button being held
+inline constexpr float edgeLift = 0.35f;    ///< a note's border against its own fill
 
-    /** The same statement made of a colour rather than of an alpha.
+/** The same statement made of a colour rather than of an alpha.
 
-        Three of dew's surfaces say "this is here but not sounding" by draining
-        a colour rather than by fading it, because a faded clip on a dark well
-        disappears while a drained one still reads as a clip. That was written
-        out three times as `.withSaturation (0.1f).withMultipliedBrightness
-        (0.6f)`, and a fourth idea of "inactive" - 0.3 and 0.7 - lived in the
-        button primitive.
-    */
-    inline juce::Colour silenced (juce::Colour c)
-    {
-        return c.withSaturation (0.1f).withMultipliedBrightness (0.6f);
-    }
-
-    /** A control that cannot be used. Weaker than `silenced`: a disabled button
-        must still read as a button, where a muted clip may recede. */
-    inline juce::Colour disabled (juce::Colour c)
-    {
-        return c.withMultipliedSaturation (0.3f).withMultipliedBrightness (0.7f);
-    }
-
-    /** Present, usable, and not the one being talked about - a step off the
-        base pitch, a pattern that is not the current one. Hue intact so it is
-        still recognisably the same thing. */
-    inline juce::Colour secondary (juce::Colour c)
-    {
-        return c.withSaturation (0.3f);
-    }
+    Three of dew's surfaces say "this is here but not sounding" by draining
+    a colour rather than by fading it, because a faded clip on a dark well
+    disappears while a drained one still reads as a clip. That was written
+    out three times as `.withSaturation (0.1f).withMultipliedBrightness
+    (0.6f)`, and a fourth idea of "inactive" - 0.3 and 0.7 - lived in the
+    button primitive.
+*/
+inline juce::Colour silenced (juce::Colour c)
+{
+    return c.withSaturation (0.1f).withMultipliedBrightness (0.6f);
 }
+
+/** A control that cannot be used. Weaker than `silenced`: a disabled button
+    must still read as a button, where a muted clip may recede. */
+inline juce::Colour disabled (juce::Colour c)
+{
+    return c.withMultipliedSaturation (0.3f).withMultipliedBrightness (0.7f);
+}
+
+/** Present, usable, and not the one being talked about - a step off the
+    base pitch, a pattern that is not the current one. Hue intact so it is
+    still recognisably the same thing. */
+inline juce::Colour secondary (juce::Colour c)
+{
+    return c.withSaturation (0.3f);
+}
+} // namespace emphasis
 
 // clang-format on
 // --- spacing -----------------------------------------------------------------
@@ -158,46 +158,46 @@ namespace emphasis
 */
 namespace space
 {
-    inline constexpr int xxs = 2;
-    inline constexpr int xs  = 4;
-    inline constexpr int sm  = 6;
-    inline constexpr int md  = 8;
-    inline constexpr int lg  = 12;
-    inline constexpr int xl  = 16;
-    inline constexpr int xxl = 24;
-}
+inline constexpr int xxs = 2;
+inline constexpr int xs = 4;
+inline constexpr int sm = 6;
+inline constexpr int md = 8;
+inline constexpr int lg = 12;
+inline constexpr int xl = 16;
+inline constexpr int xxl = 24;
+} // namespace space
 
 // --- shape -------------------------------------------------------------------
 namespace radius
 {
-    /** The smallest rounding that still reads as rounded on something four
-        pixels tall - a note, a clip, a meter bar. Seven sites had reached for
-        1.5 or 2.0 by hand because sm was visibly too round at that size. */
-    inline constexpr float xs  = 2.0f;
+/** The smallest rounding that still reads as rounded on something four
+    pixels tall - a note, a clip, a meter bar. Seven sites had reached for
+    1.5 or 2.0 by hand because sm was visibly too round at that size. */
+inline constexpr float xs = 2.0f;
 
-    inline constexpr float sm  = 3.0f;
-    inline constexpr float md  = 5.0f;
-    inline constexpr float lg  = 8.0f;   ///< a dialog: a bigger surface rounds more
+inline constexpr float sm = 3.0f;
+inline constexpr float md = 5.0f;
+inline constexpr float lg = 8.0f; ///< a dialog: a bigger surface rounds more
 
-    // `pill` is retired. Nothing in a DAW is a pill, it had no references, and
-    // an unused token is a claim the code does not back.
-}
+// `pill` is retired. Nothing in a DAW is a pill, it had no references, and
+// an unused token is a claim the code does not back.
+} // namespace radius
 
 namespace stroke
 {
-    /** A hatch line, and the half-pixel inset that puts a one-pixel edge ON a
-        pixel rather than across two. */
-    inline constexpr float whisper  = 0.5f;
+/** A hatch line, and the half-pixel inset that puts a one-pixel edge ON a
+    pixel rather than across two. */
+inline constexpr float whisper = 0.5f;
 
-    inline constexpr float hairline = 1.0f;
+inline constexpr float hairline = 1.0f;
 
-    /** The same weight for JUCE's integer overloads - drawRect on an integer
-        rectangle takes an int, and a cast at the call site would only be
-        hiding that. */
-    inline constexpr int hairlinePx = 1;
-    inline constexpr float regular  = 1.5f;
-    inline constexpr float bold     = 2.0f;
-}
+/** The same weight for JUCE's integer overloads - drawRect on an integer
+    rectangle takes an int, and a cast at the call site would only be
+    hiding that. */
+inline constexpr int hairlinePx = 1;
+inline constexpr float regular = 1.5f;
+inline constexpr float bold = 2.0f;
+} // namespace stroke
 
 // clang-format on
 /** Stroke weights in the icons' own 0..1 space.
@@ -209,181 +209,182 @@ namespace stroke
 */
 namespace icon
 {
-    inline constexpr float hair    = 0.07f;  ///< a tick or a fine rule
-    inline constexpr float regular = 0.10f;  ///< the default
-    inline constexpr float bold    = 0.13f;  ///< a stem that must read at 16px
-    inline constexpr float ring    = 0.26f;  ///< the loop arrow's ring
-}
+inline constexpr float hair = 0.07f;    ///< a tick or a fine rule
+inline constexpr float regular = 0.10f; ///< the default
+inline constexpr float bold = 0.13f;    ///< a stem that must read at 16px
+inline constexpr float ring = 0.26f;    ///< the loop arrow's ring
+} // namespace icon
 
 // --- type --------------------------------------------------------------------
 namespace type
 {
-    /** The floor of this ladder used to be 10 and 11, which is a size you read
-        by leaning in. A control surface is dense, but nothing here is so dense
-        that a caption had to be smaller than the smallest comfortable size -
-        and the two smallest rungs are the ones almost every label in the
-        application lands on.
-    */
-    inline constexpr float caption = 11.0f;   ///< knob labels, ruler numbers
-    inline constexpr float small   = 12.0f;   ///< strip names, secondary text
-    inline constexpr float body    = 13.0f;   ///< default
-    inline constexpr float title   = 15.0f;   ///< panel headings
-    inline constexpr float display = 20.0f;
+/** The floor of this ladder used to be 10 and 11, which is a size you read
+    by leaning in. A control surface is dense, but nothing here is so dense
+    that a caption had to be smaller than the smallest comfortable size -
+    and the two smallest rungs are the ones almost every label in the
+    application lands on.
+*/
+inline constexpr float caption = 11.0f; ///< knob labels, ruler numbers
+inline constexpr float small = 12.0f;   ///< strip names, secondary text
+inline constexpr float body = 13.0f;    ///< default
+inline constexpr float title = 15.0f;   ///< panel headings
+inline constexpr float display = 20.0f;
 
-    /** The score tab's own rungs.
+/** The score tab's own rungs.
 
-        A document is READ, for minutes at a time; the rest of the application
-        is glanced at. That is a different job from the one the scale above
-        does, and it is the only text in dew whose size the reader chooses -
-        so it gets four rungs of its own rather than borrowing four that were
-        picked to make a dense panel legible.
-    */
-    inline constexpr float codeSmall = 12.0f;
-    inline constexpr float codeBody  = 14.0f;   ///< what the score tab opens at
-    inline constexpr float codeLarge = 17.0f;
-    inline constexpr float codeHuge  = 21.0f;
+    A document is READ, for minutes at a time; the rest of the application
+    is glanced at. That is a different job from the one the scale above
+    does, and it is the only text in dew whose size the reader chooses -
+    so it gets four rungs of its own rather than borrowing four that were
+    picked to make a dense panel legible.
+*/
+inline constexpr float codeSmall = 12.0f;
+inline constexpr float codeBody = 14.0f; ///< what the score tab opens at
+inline constexpr float codeLarge = 17.0f;
+inline constexpr float codeHuge = 21.0f;
 
-    juce::Font font (float height, bool bold = false);
-    juce::Font monospaced (float height);
-}
+juce::Font font (float height, bool bold = false);
+juce::Font monospaced (float height);
+} // namespace type
 
 // --- sizing ------------------------------------------------------------------
 namespace size
 {
-    inline constexpr int controlHeight   = 26;  ///< buttons, combo boxes, number fields
-    inline constexpr int controlHeightSm = 20;
-    inline constexpr int iconButton      = 24;
-    inline constexpr int knob            = 44;
-    inline constexpr int knobSm          = 26;  ///< a knob on a row, drawn without its caption
-    inline constexpr int rowHeight       = 34;  ///< channel rack and playlist rows
-    inline constexpr int rulerHeight     = 22;
-    inline constexpr int minTouchTarget  = 20;  ///< nothing clickable smaller than this
+inline constexpr int controlHeight = 26; ///< buttons, combo boxes, number fields
+inline constexpr int controlHeightSm = 20;
+inline constexpr int iconButton = 24;
+inline constexpr int knob = 44;
+inline constexpr int knobSm = 26;    ///< a knob on a row, drawn without its caption
+inline constexpr int rowHeight = 34; ///< channel rack and playlist rows
+inline constexpr int rulerHeight = 22;
+inline constexpr int minTouchTarget = 20; ///< nothing clickable smaller than this
 
-    /** Horizontal strips, shortest to tallest.
+/** Horizontal strips, shortest to tallest.
 
-        Six of these were declared in six files with nothing relating them: the
-        toolbars said 34, the tab bar 30, the transport bar 46, the status bar
-        24, the effect chain's heading 26 and a settings row 28. They are one
-        ladder, and they read as one only if they are declared as one.
-    */
-    inline constexpr int stripStatus    = 24;         ///< the status line
-    inline constexpr int stripHeading   = 26;         ///< a section heading with a button on it
-    inline constexpr int stripFormRow   = 28;         ///< a settings row: a control plus room
-    inline constexpr int stripTabs      = 30;         ///< the editor tab bar
-    inline constexpr int stripToolbar   = rowHeight;  ///< an editor's toolbar IS a row
-    inline constexpr int stripTransport = 46;         ///< the one strip that is loud
+    Six of these were declared in six files with nothing relating them: the
+    toolbars said 34, the tab bar 30, the transport bar 46, the status bar
+    24, the effect chain's heading 26 and a settings row 28. They are one
+    ladder, and they read as one only if they are declared as one.
+*/
+inline constexpr int stripStatus = 24;         ///< the status line
+inline constexpr int stripHeading = 26;        ///< a section heading with a button on it
+inline constexpr int stripFormRow = 28;        ///< a settings row: a control plus room
+inline constexpr int stripTabs = 30;           ///< the editor tab bar
+inline constexpr int stripToolbar = rowHeight; ///< an editor's toolbar IS a row
+inline constexpr int stripTransport = 46;      ///< the one strip that is loud
 
-    static_assert (stripFormRow >= controlHeight, "a form row must hold a control");
-    static_assert (stripToolbar >= controlHeight, "a toolbar must hold a control");
-    static_assert (stripHeading >= controlHeight, "a heading must hold its button");
+static_assert (stripFormRow >= controlHeight, "a form row must hold a control");
+static_assert (stripToolbar >= controlHeight, "a toolbar must hold a control");
+static_assert (stripHeading >= controlHeight, "a heading must hold its button");
 
-    /** Gutters: the fixed column beside a scrolling timeline.
+/** Gutters: the fixed column beside a scrolling timeline.
 
-        Three of them, of which one was a token and two were not.
-    */
-    inline constexpr int gutterChannel  = 264;  ///< the channel rack's header column
-    inline constexpr int gutterTrack    = 156;  ///< the playlist's track headers
-    inline constexpr int gutterKeyboard = 54;   ///< the piano roll's key strip
-    inline constexpr int gutterLabel    = 76;   ///< a settings form's label column
+    Three of them, of which one was a token and two were not.
+*/
+inline constexpr int gutterChannel = 264; ///< the channel rack's header column
+inline constexpr int gutterTrack = 156;   ///< the playlist's track headers
+inline constexpr int gutterKeyboard = 54; ///< the piano roll's key strip
+inline constexpr int gutterLabel = 76;    ///< a settings form's label column
 
-    /** Declared identically in three components, none of which knew. */
-    inline constexpr int scrollThickness = 10;
+/** Declared identically in three components, none of which knew. */
+inline constexpr int scrollThickness = 10;
 
-    /** A captioned knob. DewKnob hard-coded 13 and 14 in three places, and six
-        call sites independently spelled 68 for a row holding one. */
-    inline constexpr int knobCaption = 15;
-    inline constexpr int knobValue   = 16;
-    inline constexpr int knobRow     = 68;
+/** A captioned knob. DewKnob hard-coded 13 and 14 in three places, and six
+    call sites independently spelled 68 for a row holding one. */
+inline constexpr int knobCaption = 15;
+inline constexpr int knobValue = 16;
+inline constexpr int knobRow = 68;
 
-    static_assert (knobRow >= knobCaption + knobSm + knobValue,
-                   "a knob row must hold a compact knob and both its labels");
+static_assert (knobRow >= knobCaption + knobSm + knobValue,
+               "a knob row must hold a compact knob and both its labels");
 
-    /** How tall ONE playlist lane is: a range, not a rung.
+/** How tall ONE playlist lane is: a range, not a rung.
 
-        Header and lane are the same height by construction, which is the only
-        reason the two cannot drift. The range exists because an automation
-        curve drawn into a 34px lane has a 28px value axis, and the 7px grab
-        radius covers a fifth of it - the point editor is decorative at that
-        size, and there was no way to make the lane any taller.
+    Header and lane are the same height by construction, which is the only
+    reason the two cannot drift. The range exists because an automation
+    curve drawn into a 34px lane has a 28px value axis, and the 7px grab
+    radius covers a fifth of it - the point editor is decorative at that
+    size, and there was no way to make the lane any taller.
 
-        Multiples of the rung rather than bare numbers, so a change to rowHeight
-        carries the whole range with it. Declared HERE and nowhere else: a
-        component restating one of these would be exactly the duplication the
-        ladder gate exists to catch.
-    */
-    inline constexpr int trackHeightMin     = rowHeight;      ///< today's row, and the densest readable one
-    inline constexpr int trackHeightDefault = rowHeight;      ///< so nothing re-flows on upgrade
-    inline constexpr int trackHeightRoomy   = rowHeight * 2;  ///< past here a header has room for a second line
-    inline constexpr int trackHeightMax     = rowHeight * 6;  ///< an arrangement, not one lane
+    Multiples of the rung rather than bare numbers, so a change to rowHeight
+    carries the whole range with it. Declared HERE and nowhere else: a
+    component restating one of these would be exactly the duplication the
+    ladder gate exists to catch.
+*/
+inline constexpr int trackHeightMin = rowHeight;     ///< today's row, and the densest readable one
+inline constexpr int trackHeightDefault = rowHeight; ///< so nothing re-flows on upgrade
+inline constexpr int trackHeightRoomy = rowHeight
+                                        * 2; ///< past here a header has room for a second line
+inline constexpr int trackHeightMax = rowHeight * 6; ///< an arrangement, not one lane
 
-    /** How tall ONE piano-roll pitch row is: a range, like a lane's.
+/** How tall ONE piano-roll pitch row is: a range, like a lane's.
 
-        The roll had a fixed 14, which is a good density for writing a melody
-        and a bad one for reading a chord voicing across four octaves - and
-        there was no way to change it, in the one view whose vertical axis is
-        the material rather than a list.
+    The roll had a fixed 14, which is a good density for writing a melody
+    and a bad one for reading a chord voicing across four octaves - and
+    there was no way to change it, in the one view whose vertical axis is
+    the material rather than a list.
 
-        Not multiples of a rung: a pitch row is not a list row, and the numbers
-        that make a note readable have nothing to do with the ones that make a
-        channel header hold a knob.
-    */
-    inline constexpr int pianoRowMin     = 8;   ///< the densest a note still reads at
-    inline constexpr int pianoRowDefault = 14;  ///< so nothing re-flows on upgrade
-    inline constexpr int pianoRowRoomy   = 20;  ///< past here a key strip fits its note names
-    inline constexpr int pianoRowMax     = 40;
+    Not multiples of a rung: a pitch row is not a list row, and the numbers
+    that make a note readable have nothing to do with the ones that make a
+    channel header hold a knob.
+*/
+inline constexpr int pianoRowMin = 8;      ///< the densest a note still reads at
+inline constexpr int pianoRowDefault = 14; ///< so nothing re-flows on upgrade
+inline constexpr int pianoRowRoomy = 20;   ///< past here a key strip fits its note names
+inline constexpr int pianoRowMax = 40;
 
-    static_assert (pianoRowMin < pianoRowRoomy && pianoRowRoomy < pianoRowMax,
-                   "the roomy threshold has to sit inside the range");
-    static_assert (pianoRowMin <= pianoRowDefault && pianoRowDefault <= pianoRowMax,
-                   "the default has to be reachable");
+static_assert (pianoRowMin < pianoRowRoomy && pianoRowRoomy < pianoRowMax,
+               "the roomy threshold has to sit inside the range");
+static_assert (pianoRowMin <= pianoRowDefault && pianoRowDefault <= pianoRowMax,
+               "the default has to be reachable");
 
-    inline constexpr int letterToggle  = 22;  ///< the M and S on a row
-    inline constexpr int meterHeight   = 10;
+inline constexpr int letterToggle = 22; ///< the M and S on a row
+inline constexpr int meterHeight = 10;
 
-    static_assert (trackHeightMin >= letterToggle + 2 * space::xs,
-                   "a lane must hold its M and S with room around them");
-    static_assert (trackHeightMin < trackHeightRoomy && trackHeightRoomy < trackHeightMax,
-                   "the roomy threshold has to sit inside the range");
-    static_assert (trackHeightMin <= trackHeightDefault && trackHeightDefault <= trackHeightMax,
-                   "the default has to be reachable");
-    inline constexpr int waveformInset = 2;   ///< was -2, -2 and -3 in three painters
-}
+static_assert (trackHeightMin >= letterToggle + 2 * space::xs,
+               "a lane must hold its M and S with room around them");
+static_assert (trackHeightMin < trackHeightRoomy && trackHeightRoomy < trackHeightMax,
+               "the roomy threshold has to sit inside the range");
+static_assert (trackHeightMin <= trackHeightDefault && trackHeightDefault <= trackHeightMax,
+               "the default has to be reachable");
+inline constexpr int waveformInset = 2; ///< was -2, -2 and -3 in three painters
+} // namespace size
 
 // --- motion ------------------------------------------------------------------
 namespace motion
 {
-    inline constexpr int uiRefreshHz    = 30;  ///< list and panel refreshes
-    inline constexpr int playheadHz     = 60;  ///< anything tracking the transport
+inline constexpr int uiRefreshHz = 30; ///< list and panel refreshes
+inline constexpr int playheadHz = 60;  ///< anything tracking the transport
 
-    /** Durations, in milliseconds. Short enough that nothing feels laggy, long
-        enough that a change reads as movement rather than as a jump cut.
-    */
-    inline constexpr int selectMs       = 70;   ///< a selection, a playhead's state
-    inline constexpr int quickMs        = 90;   ///< hover and press feedback
-    inline constexpr int valueMs        = 120;  ///< a knob catching up with the document
-    inline constexpr int popupMs        = 130;  ///< menus and dropdowns opening
-    inline constexpr int panelMs        = 180;  ///< larger surfaces sliding in
+/** Durations, in milliseconds. Short enough that nothing feels laggy, long
+    enough that a change reads as movement rather than as a jump cut.
+*/
+inline constexpr int selectMs = 70; ///< a selection, a playhead's state
+inline constexpr int quickMs = 90;  ///< hover and press feedback
+inline constexpr int valueMs = 120; ///< a knob catching up with the document
+inline constexpr int popupMs = 130; ///< menus and dropdowns opening
+inline constexpr int panelMs = 180; ///< larger surfaces sliding in
 
-    /** How far a popup rises as it fades in. */
-    inline constexpr int popupRisePx    = 6;
+/** How far a popup rises as it fades in. */
+inline constexpr int popupRisePx = 6;
 
-    /** How long typing has to stop before the editor acts on what was typed.
+/** How long typing has to stop before the editor acts on what was typed.
 
-        Long enough that it does not run mid-word, short enough that a
-        diagnostic feels like a reaction rather than a report.
-    */
-    inline constexpr int typingPauseMs  = 250;
+    Long enough that it does not run mid-word, short enough that a
+    diagnostic feels like a reaction rather than a report.
+*/
+inline constexpr int typingPauseMs = 250;
 
-    /** How fast a meter falls, as a TIME constant rather than a per-tick
-        coefficient.
+/** How fast a meter falls, as a TIME constant rather than a per-tick
+    coefficient.
 
-        dew's three meters each multiplied by 0.82 or 0.8 per tick, which locks
-        a widget to the rate it was tuned at - SignalScope says so in a comment
-        rather than fixing it. A time constant reads the same at 30Hz and at
-        60Hz, and at a dropped frame.
-    */
-    inline constexpr int meterReleaseMs = 320;
-}
+    dew's three meters each multiplied by 0.82 or 0.8 per tick, which locks
+    a widget to the rate it was tuned at - SignalScope says so in a comment
+    rather than fixing it. A time constant reads the same at 30Hz and at
+    60Hz, and at a dropped frame.
+*/
+inline constexpr int meterReleaseMs = 320;
+} // namespace motion
 
 // clang-format on
 } // namespace dew::tokens

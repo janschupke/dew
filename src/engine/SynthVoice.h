@@ -41,15 +41,24 @@ public:
     void release() noexcept;
     void reset() noexcept;
 
-    bool isActive() const noexcept  { return active; }
+    bool isActive() const noexcept
+    {
+        return active;
+    }
 
     /** The pitch this voice is sounding, so a held note can be released by name
         rather than by index. -1 when idle.
     */
-    int getPitch() const noexcept { return active ? currentPitch : -1; }
+    int getPitch() const noexcept
+    {
+        return active ? currentPitch : -1;
+    }
 
     /** Age in samples since the note started - used for voice stealing. */
-    juce::int64 getAge() const noexcept { return samplesSinceStart; }
+    juce::int64 getAge() const noexcept
+    {
+        return samplesSinceStart;
+    }
 
     /** Pushes the CURRENT wavetable positions from a channel's bank into the
         voices already sounding.

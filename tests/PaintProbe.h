@@ -43,9 +43,9 @@ inline float coverageOf (const juce::Image& image, juce::Colour target)
         {
             const auto pixel = image.getPixelAt (x, y);
 
-            if (std::abs ((int) pixel.getRed()   - (int) target.getRed())   < 24
+            if (std::abs ((int) pixel.getRed() - (int) target.getRed()) < 24
                 && std::abs ((int) pixel.getGreen() - (int) target.getGreen()) < 24
-                && std::abs ((int) pixel.getBlue()  - (int) target.getBlue())  < 24
+                && std::abs ((int) pixel.getBlue() - (int) target.getBlue()) < 24
                 && pixel.getAlpha() > 200)
                 ++matching;
         }

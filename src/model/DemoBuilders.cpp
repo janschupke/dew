@@ -10,17 +10,47 @@ namespace dew::demo
 namespace
 {
 
-const NodeSpec& channelsSpec()  { return childSpecFor (projectSpec(), "channels"); }
-const NodeSpec& patternsSpec()  { return childSpecFor (projectSpec(), "patterns"); }
-const NodeSpec& playlistSpec()  { return childSpecFor (projectSpec(), "playlist"); }
-const NodeSpec& mixerSpec()     { return childSpecFor (projectSpec(), "mixer"); }
-const NodeSpec& automationSpec(){ return childSpecFor (projectSpec(), "automations"); }
+const NodeSpec& channelsSpec()
+{
+    return childSpecFor (projectSpec(), "channels");
+}
+const NodeSpec& patternsSpec()
+{
+    return childSpecFor (projectSpec(), "patterns");
+}
+const NodeSpec& playlistSpec()
+{
+    return childSpecFor (projectSpec(), "playlist");
+}
+const NodeSpec& mixerSpec()
+{
+    return childSpecFor (projectSpec(), "mixer");
+}
+const NodeSpec& automationSpec()
+{
+    return childSpecFor (projectSpec(), "automations");
+}
 
-const NodeSpec& tracksSpec()    { return childSpecFor (playlistSpec(), "tracks"); }
-const NodeSpec& clipsSpec()     { return childSpecFor (tracksSpec(), "clips"); }
-const NodeSpec& effectsSpec()   { return childSpecFor (channelsSpec(), "effects"); }
-const NodeSpec& notesSpec()     { return childSpecFor (patternsSpec(), "notes"); }
-const NodeSpec& pointsSpec()    { return childSpecFor (automationSpec(), "points"); }
+const NodeSpec& tracksSpec()
+{
+    return childSpecFor (playlistSpec(), "tracks");
+}
+const NodeSpec& clipsSpec()
+{
+    return childSpecFor (tracksSpec(), "clips");
+}
+const NodeSpec& effectsSpec()
+{
+    return childSpecFor (channelsSpec(), "effects");
+}
+const NodeSpec& notesSpec()
+{
+    return childSpecFor (patternsSpec(), "notes");
+}
+const NodeSpec& pointsSpec()
+{
+    return childSpecFor (automationSpec(), "points");
+}
 
 juce::ValueTree oscSlot (juce::ValueTree channel, int slot)
 {
@@ -30,9 +60,8 @@ juce::ValueTree oscSlot (juce::ValueTree channel, int slot)
 } // namespace
 
 juce::ValueTree makeChannel (int id, const juce::String& name, const juce::String& colour,
-                             int basePitch, const juce::String& wave, int octave,
-                             double attack, double decay, double sustain, double release,
-                             double volume)
+                             int basePitch, const juce::String& wave, int octave, double attack,
+                             double decay, double sustain, double release, double volume)
 {
     auto channel = defaultTreeFor (channelsSpec());
 
@@ -174,8 +203,9 @@ juce::ValueTree scaffold (int numChannels)
 
     for (int i = 1; i <= count; ++i)
         project.appendChild (makeChannel (i, "Channel " + juce::String (i),
-                                          entityColour::defaultHex (i - 1),
-                                          60, "saw", 0, 0.005, 0.120, 0.700, 0.150), nullptr);
+                                          entityColour::defaultHex (i - 1), 60, "saw", 0, 0.005,
+                                          0.120, 0.700, 0.150),
+                             nullptr);
 
     project.appendChild (makePattern (1, "Pattern 1", 16), nullptr);
 
@@ -203,15 +233,14 @@ juce::ValueTree channelWithId (const juce::ValueTree& project, int id)
 juce::ValueTree channelNamed (const juce::ValueTree& project, const juce::String& name)
 {
     for (const auto& channel : project)
-        if (channel.hasType (ids::CHANNEL)
-            && channel[ids::name].toString().equalsIgnoreCase (name))
+        if (channel.hasType (ids::CHANNEL) && channel[ids::name].toString().equalsIgnoreCase (name))
             return channel;
 
     return {};
 }
 
-void setClassicOsc (juce::ValueTree channel, int slot, const juce::String& wave,
-                    int octave, double gain, int detuneCents)
+void setClassicOsc (juce::ValueTree channel, int slot, const juce::String& wave, int octave,
+                    double gain, int detuneCents)
 {
     auto osc = oscSlot (channel, slot);
 
@@ -226,9 +255,9 @@ void setClassicOsc (juce::ValueTree channel, int slot, const juce::String& wave,
     osc.setProperty (ids::gain, gain, nullptr);
 }
 
-void setWavetableOsc (juce::ValueTree channel, int slot, const juce::String& table,
-                      double position, double mod, const juce::String& source, double rate,
-                      int unisonVoices, double unisonDetune, int octave, double gain)
+void setWavetableOsc (juce::ValueTree channel, int slot, const juce::String& table, double position,
+                      double mod, const juce::String& source, double rate, int unisonVoices,
+                      double unisonDetune, int octave, double gain)
 {
     auto osc = oscSlot (channel, slot);
 

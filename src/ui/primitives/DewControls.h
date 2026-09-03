@@ -28,7 +28,12 @@ namespace dew
 class ButtonLift
 {
 public:
-    explicit ButtonLift (juce::Button& b) : button (b), motion (b), toggled (b) {}
+    explicit ButtonLift (juce::Button& b)
+        : button (b)
+        , motion (b)
+        , toggled (b)
+    {
+    }
 
     /** Call from buttonStateChanged(), which JUCE sends for a change of toggle
         state as well as a change of mouse state. */
@@ -66,7 +71,13 @@ private:
 class DewButton : public juce::Button
 {
 public:
-    enum class Role { normal, primary, ghost, danger };
+    enum class Role
+    {
+        normal,
+        primary,
+        ghost,
+        danger
+    };
 
     explicit DewButton (const juce::String& text, Role = Role::normal);
 
@@ -89,7 +100,10 @@ public:
     void mouseDown (const juce::MouseEvent&) override;
 
 protected:
-    void buttonStateChanged() override { lift.update(); }
+    void buttonStateChanged() override
+    {
+        lift.update();
+    }
 
 private:
     ButtonLift lift { *this };
@@ -128,7 +142,10 @@ public:
     void mouseDown (const juce::MouseEvent&) override;
 
 protected:
-    void buttonStateChanged() override { lift.update(); }
+    void buttonStateChanged() override
+    {
+        lift.update();
+    }
 
 private:
     ButtonLift lift { *this };
@@ -162,7 +179,10 @@ public:
     void mouseDown (const juce::MouseEvent&) override;
 
 protected:
-    void buttonStateChanged() override { lift.update(); }
+    void buttonStateChanged() override
+    {
+        lift.update();
+    }
 
 private:
     ButtonLift lift { *this };
@@ -178,8 +198,7 @@ private:
 /** A rotary with its caption and value drawn as one unit, so knobs line up
     without every caller laying out a separate label.
 */
-class DewKnob : public juce::Component,
-                public juce::SettableTooltipClient
+class DewKnob : public juce::Component, public juce::SettableTooltipClient
 {
 public:
     DewKnob (const juce::String& caption, double minimum, double maximum, double interval);
@@ -194,7 +213,10 @@ public:
     explicit DewKnob (const ParamSpec&);
 
     void setValue (double, juce::NotificationType = juce::sendNotification);
-    double getValue() const noexcept { return slider.getValue(); }
+    double getValue() const noexcept
+    {
+        return slider.getValue();
+    }
 
     void setNumDecimalPlaces (int);
 
@@ -219,7 +241,10 @@ public:
     */
     void setTooltip (const juce::String&) override;
 
-    juce::Slider& getSlider() noexcept { return slider; }
+    juce::Slider& getSlider() noexcept
+    {
+        return slider;
+    }
 
     std::function<void()> onValueChange;
 
@@ -239,7 +264,6 @@ public:
         was built for, so it is the one that closes over it.
     */
     std::function<void()> onContextMenu;
-
 
     void paint (juce::Graphics&) override;
     void resized() override;
@@ -285,7 +309,6 @@ private:
 
 // -----------------------------------------------------------------------------
 
-
 // -----------------------------------------------------------------------------
 
 /** Shared drawing the editors use, so a bar line looks the same everywhere. */
@@ -313,97 +336,96 @@ void styleCaption (juce::Label&, const juce::String& text);
 
 namespace paint
 {
-    /** The rotary every knob in dew uses.
-        @param proportion  0..1 position within the range
-        @param bipolar     true for pan-like controls, where the arc fills out
-                           from the centre instead of from the left
-    */
-    void rotary (juce::Graphics&, juce::Rectangle<float>, float proportion,
-                 bool enabled, bool bipolar);
+/** The rotary every knob in dew uses.
+    @param proportion  0..1 position within the range
+    @param bipolar     true for pan-like controls, where the arc fills out
+                       from the centre instead of from the left
+*/
+void rotary (juce::Graphics&, juce::Rectangle<float>, float proportion, bool enabled, bool bipolar);
 
-    void surface (juce::Graphics&, juce::Rectangle<int>, juce::Colour);
-    void wellBackground (juce::Graphics&, juce::Rectangle<int>);
+void surface (juce::Graphics&, juce::Rectangle<int>, juce::Colour);
+void wellBackground (juce::Graphics&, juce::Rectangle<int>);
 
-    /** The card a group of controls sits on: a rounded surface with a hairline
-        edge.
+/** The card a group of controls sits on: a rounded surface with a hairline
+    edge.
 
-        The mixer strip and the effect card each hand-rolled this same fill and
-        border, and the panels that hold them drew nothing at all - so an effect
-        chain floated on the window background with no edge to say where it
-        began. There was a DewPanel class meant for this; nothing ever
-        instantiated it, so it had drifted into being a fourth opinion rather
-        than the shared one.
-    */
-    void container (juce::Graphics&, juce::Rectangle<int>);
+    The mixer strip and the effect card each hand-rolled this same fill and
+    border, and the panels that hold them drew nothing at all - so an effect
+    chain floated on the window background with no edge to say where it
+    began. There was a DewPanel class meant for this; nothing ever
+    instantiated it, so it had drifted into being a fourth opinion rather
+    than the shared one.
+*/
+void container (juce::Graphics&, juce::Rectangle<int>);
 
-    /** Fills the region beyond the content with a visibly inert texture, so an
-        empty area reads as "nothing here" rather than as a broken control.
+/** Fills the region beyond the content with a visibly inert texture, so an
+    empty area reads as "nothing here" rather than as a broken control.
 
-        For a region with nothing to continue into it - the panel below the last
-        channel row. Where the grid DOES continue, use beyondEnd() instead.
-    */
-    void inertArea (juce::Graphics&, juce::Rectangle<int>);
+    For a region with nothing to continue into it - the panel below the last
+    channel row. Where the grid DOES continue, use beyondEnd() instead.
+*/
+void inertArea (juce::Graphics&, juce::Rectangle<int>);
 
-    /** Marks the part of a timeline that is past the end of the material.
+/** Marks the part of a timeline that is past the end of the material.
 
-        Drawn OVER a grid that has already been painted across the full width,
-        so the rows and bar lines keep going and the region still reads as
-        out of bounds. Replacing the grid with a hatch, which is what this used
-        to do, left a dead rectangle wherever the view was wider than the music.
-    */
-    void beyondEnd (juce::Graphics&, juce::Rectangle<int>, float edgeX);
+    Drawn OVER a grid that has already been painted across the full width,
+    so the rows and bar lines keep going and the region still reads as
+    out of bounds. Replacing the grid with a hatch, which is what this used
+    to do, left a dead rectangle wherever the view was wider than the music.
+*/
+void beyondEnd (juce::Graphics&, juce::Rectangle<int>, float edgeX);
 
-    /** A control's caption - the word under a knob or beside a number field.
-        The smallest thing in the system, and deliberately so.
-    */
-    void caption (juce::Graphics&, juce::Rectangle<int>, const juce::String&,
-                  juce::Justification = juce::Justification::centredLeft);
+/** A control's caption - the word under a knob or beside a number field.
+    The smallest thing in the system, and deliberately so.
+*/
+void caption (juce::Graphics&, juce::Rectangle<int>, const juce::String&,
+              juce::Justification = juce::Justification::centredLeft);
 
-    /** A panel's heading. Distinct from caption(): "EFFECTS" is a heading and
-        "CUTOFF" is a caption, and drawing both at the same size was why the
-        effect chain's own title read as smaller than the things inside it.
-    */
-    void sectionHeading (juce::Graphics&, juce::Rectangle<int>, const juce::String&,
-                         juce::Justification = juce::Justification::centredLeft);
+/** A panel's heading. Distinct from caption(): "EFFECTS" is a heading and
+    "CUTOFF" is a caption, and drawing both at the same size was why the
+    effect chain's own title read as smaller than the things inside it.
+*/
+void sectionHeading (juce::Graphics&, juce::Rectangle<int>, const juce::String&,
+                     juce::Justification = juce::Justification::centredLeft);
 
-    /** Every "there is nothing here yet" message.
+/** Every "there is nothing here yet" message.
 
-        One function rather than five, because when each panel picked its own
-        size and colour the app ended up with the same kind of message drawn at
-        10, 11 and 13 point, in two different greys - and the 11pt textDisabled
-        one was unreadable against the hatch behind it.
-    */
-    void emptyState (juce::Graphics&, juce::Rectangle<int>, const juce::String&,
-                     juce::Justification = juce::Justification::centred);
+    One function rather than five, because when each panel picked its own
+    size and colour the app ended up with the same kind of message drawn at
+    10, 11 and 13 point, in two different greys - and the 11pt textDisabled
+    one was unreadable against the hatch behind it.
+*/
+void emptyState (juce::Graphics&, juce::Rectangle<int>, const juce::String&,
+                 juce::Justification = juce::Justification::centred);
 
-    /** A component's own rectangle, inset half a pixel.
+/** A component's own rectangle, inset half a pixel.
 
-        Written out ten times, because a one-pixel edge drawn on a whole
-        coordinate straddles two pixels and comes out two pixels wide and grey.
-        The half is stroke::whisper - half of the hairline it is making room
-        for - which is why that token exists.
-    */
-    juce::Rectangle<float> bodyRect (const juce::Component&);
+    Written out ten times, because a one-pixel edge drawn on a whole
+    coordinate straddles two pixels and comes out two pixels wide and grey.
+    The half is stroke::whisper - half of the hairline it is making room
+    for - which is why that token exists.
+*/
+juce::Rectangle<float> bodyRect (const juce::Component&);
 
-    /** A sample's waveform: one column of pixels per column of pixels, each
-        showing the extremes over the span it covers.
+/** A sample's waveform: one column of pixels per column of pixels, each
+    showing the extremes over the span it covers.
 
-        Picking a single bin per column instead makes a waveform shimmer as the
-        view resizes, which is why all three painters did it this way - and
-        having written it three times they had drifted to insets of 2, 2 and 3,
-        so the same audio was a pixel taller in the sequencer than in the
-        playlist.
+    Picking a single bin per column instead makes a waveform shimmer as the
+    view resizes, which is why all three painters did it this way - and
+    having written it three times they had drifted to insets of 2, 2 and 3,
+    so the same audio was a pixel taller in the sequencer than in the
+    playlist.
 
-        @param y        the full vertical extent; the trace is inset within it
-        @param span     where the whole file maps to horizontally, which may
-                        reach outside the visible area
-        @param painted  the columns actually to draw
-        @param colourAt the colour for a column, so a trim handle can dim what
-                        is outside it without a second loop
-    */
-    void waveform (juce::Graphics&, juce::Range<float> y, juce::Range<float> span,
-                   juce::Range<float> painted, const WaveformPeaks&,
-                   const std::function<juce::Colour (float x)>& colourAt);
-}
+    @param y        the full vertical extent; the trace is inset within it
+    @param span     where the whole file maps to horizontally, which may
+                    reach outside the visible area
+    @param painted  the columns actually to draw
+    @param colourAt the colour for a column, so a trim handle can dim what
+                    is outside it without a second loop
+*/
+void waveform (juce::Graphics&, juce::Range<float> y, juce::Range<float> span,
+               juce::Range<float> painted, const WaveformPeaks&,
+               const std::function<juce::Colour (float x)>& colourAt);
+} // namespace paint
 
 } // namespace dew

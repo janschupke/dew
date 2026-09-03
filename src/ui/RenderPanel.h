@@ -31,8 +31,7 @@ namespace dew
     this stays constructible with no message loop, no file system and no engine -
     which is what lets a test and dew_shot both build one.
 */
-class RenderPanel : public juce::Component,
-                    private juce::ChangeListener
+class RenderPanel : public juce::Component, private juce::ChangeListener
 {
 public:
     /** What the user asked for. The destination is the caller's problem. */
@@ -71,7 +70,10 @@ public:
     void refresh();
 
     // --- for tests -----------------------------------------------------------
-    juce::String getSummaryText() const  { return summaryText; }
+    juce::String getSummaryText() const
+    {
+        return summaryText;
+    }
     Request getRequest() const;
 
     /** Which rows are showing, so a test can assert that MIDI hides the ones
@@ -79,8 +81,14 @@ public:
     */
     bool isRowVisible (const juce::String& label) const;
 
-    int getNumFormats() const  { return formatBox.getNumItems(); }
-    int getNumScopes() const   { return scopeBox.getNumItems(); }
+    int getNumFormats() const
+    {
+        return formatBox.getNumItems();
+    }
+    int getNumScopes() const
+    {
+        return scopeBox.getNumItems();
+    }
 
     void setFormatForTesting (RenderFormat);
     void setScopeForTesting (int itemId);
@@ -101,7 +109,12 @@ public:
     /** Item ids for the scope box. Ids rather than indices, because which
         entries exist depends on whether there is a selection.
     */
-    enum ScopeId { songScope = 1, patternScope, selectionScope };
+    enum ScopeId
+    {
+        songScope = 1,
+        patternScope,
+        selectionScope
+    };
 
 private:
     void changeListenerCallback (juce::ChangeBroadcaster*) override;
@@ -123,7 +136,10 @@ private:
         // with -Werror, and -Wmissing-field-initializers objects to a braced
         // list that stops before the members with defaults.
         Row (juce::String rowLabel, juce::Component* rowControl)
-            : label (std::move (rowLabel)), control (rowControl) {}
+            : label (std::move (rowLabel))
+            , control (rowControl)
+        {
+        }
 
         juce::String label;
         juce::Component* control = nullptr;

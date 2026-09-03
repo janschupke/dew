@@ -50,27 +50,42 @@ public:
         holding, and unbends it - a channel left bent stays bent forever.
     */
     void setTargetChannel (int channelIndex) noexcept;
-    int getTargetChannel() const noexcept  { return targetChannel.load (std::memory_order_relaxed); }
+    int getTargetChannel() const noexcept
+    {
+        return targetChannel.load (std::memory_order_relaxed);
+    }
 
     /** 0 for omni, or 1..16 for a single MIDI channel. */
     void setChannelFilter (int midiChannel) noexcept;
-    int getChannelFilter() const noexcept  { return channelFilter.load (std::memory_order_relaxed); }
+    int getChannelFilter() const noexcept
+    {
+        return channelFilter.load (std::memory_order_relaxed);
+    }
 
     /** Semitones added to every incoming note. */
     void setTranspose (int semitones) noexcept;
-    int getTranspose() const noexcept  { return transpose.load (std::memory_order_relaxed); }
+    int getTranspose() const noexcept
+    {
+        return transpose.load (std::memory_order_relaxed);
+    }
 
     // --- what arrived, for the UI to show ------------------------------------
     /** Bumped on every message that passes the filter, so a panel can show that
         something is arriving without the MIDI thread touching a component.
     */
-    juce::uint32 getActivityCount() const noexcept { return activity.load (std::memory_order_relaxed); }
+    juce::uint32 getActivityCount() const noexcept
+    {
+        return activity.load (std::memory_order_relaxed);
+    }
 
     /** The last note that played, packed so it can be read in one atomic load:
         pitch in bits 0-7, velocity 8-15, MIDI channel 16-23. -1 when nothing
         has arrived yet.
     */
-    int getLastNote() const noexcept  { return lastNote.load (std::memory_order_relaxed); }
+    int getLastNote() const noexcept
+    {
+        return lastNote.load (std::memory_order_relaxed);
+    }
 
     static int packNote (int pitch, int velocity, int midiChannel) noexcept;
 

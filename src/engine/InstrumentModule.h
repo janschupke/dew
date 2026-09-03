@@ -26,19 +26,24 @@ struct TransportView
     const TempoMap* tempoMap = nullptr;
 
     bool playing = false;
-    bool arrangement = false;   ///< song mode, not pattern
+    bool arrangement = false; ///< song mode, not pattern
 };
 
 /** One thing that happens to a note, at a sample within the coming block. */
 struct NoteEvent
 {
-    enum class Kind { on, off, allOff };
+    enum class Kind
+    {
+        on,
+        off,
+        allOff
+    };
 
     Kind kind = Kind::on;
-    int sampleOffset = 0;       ///< within the block - see SynthVoice::start
+    int sampleOffset = 0; ///< within the block - see SynthVoice::start
     int pitch = 0;
     float velocity = 1.0f;
-    int durationSamples = 0;    ///< the voice releases itself when this runs out
+    int durationSamples = 0; ///< the voice releases itself when this runs out
 };
 
 /** Everything an instrument needs for one block.

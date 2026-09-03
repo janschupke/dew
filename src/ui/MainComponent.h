@@ -39,7 +39,10 @@ public:
     /** Folds the instrument panel away, and unfolds it. Public because the
         fold is animated, and there is nothing in a rendered image to measure a
         LAYOUT by - so a test drives it and reads the width back. */
-    void setPanelCollapsedForTesting (bool collapsed) { setPanelCollapsed (collapsed); }
+    void setPanelCollapsedForTesting (bool collapsed)
+    {
+        setPanelCollapsed (collapsed);
+    }
 
     /** The panel's width as laid out, which during a fold is neither the open
         width nor zero. */
@@ -54,12 +57,24 @@ public:
     void paint (juce::Graphics&) override;
     void resized() override;
 
-    ProjectDocument& getDocument() noexcept  { return document; }
-    AudioEngine& getEngine() noexcept        { return engine; }
-    EditorState& getEditorState() noexcept   { return editorState; }
+    ProjectDocument& getDocument() noexcept
+    {
+        return document;
+    }
+    AudioEngine& getEngine() noexcept
+    {
+        return engine;
+    }
+    EditorState& getEditorState() noexcept
+    {
+        return editorState;
+    }
 
     /** Shows the score tab and compiles what is in it into the project. */
-    void compileScore()                      { tabs.compileScore(); }
+    void compileScore()
+    {
+        tabs.compileScore();
+    }
 
     // --- navigation ----------------------------------------------------------
     /** Brings one editor to the front, by index, clamped to the tabs there are.
@@ -104,8 +119,14 @@ public:
     void applySettings (const Settings&);
     void captureSettings (Settings&) const;
 
-    LiveAudioHost& getAudioHost() noexcept { return audioHost; }
-    MidiInputHost& getMidiHost() noexcept  { return midiHost; }
+    LiveAudioHost& getAudioHost() noexcept
+    {
+        return audioHost;
+    }
+    MidiInputHost& getMidiHost() noexcept
+    {
+        return midiHost;
+    }
 
     // --- recording -----------------------------------------------------------
     /** Starts or stops a take on the armed channel.
@@ -121,7 +142,10 @@ public:
     /** The audio behind the project's audio channels. Shared with the engine,
         and with every view that draws a waveform.
     */
-    SamplePool& getSamplePool() noexcept  { return samplePool; }
+    SamplePool& getSamplePool() noexcept
+    {
+        return samplePool;
+    }
 
     /** Applies any pending snapshot rebuild immediately instead of waiting for
         the message loop. Edits are coalesced through an AsyncUpdater, so

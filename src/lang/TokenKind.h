@@ -21,7 +21,7 @@ enum class TokenKind
 {
     endOfFile,
 
-// clang-format off
+    // clang-format off
     word,           ///< song, verse, drop2, i, bVII, Cm7, F#dim7
     number,         ///< 96, 0.25, -1, +5, 0x5EEDC0FFEE
     ratio,          ///< 4/4, 1/8, 1/4., 1/8t - a meter OR a duration, by context

@@ -42,10 +42,16 @@ public:
     void paint (juce::Graphics&) override;
     void resized() override;
 
-    RollTool getTool() const noexcept { return tool; }
+    RollTool getTool() const noexcept
+    {
+        return tool;
+    }
     void setTool (RollTool, juce::NotificationType = juce::sendNotification);
 
-    SnapDivision getSnap() const noexcept { return snap; }
+    SnapDivision getSnap() const noexcept
+    {
+        return snap;
+    }
     void setSnap (SnapDivision, juce::NotificationType = juce::sendNotification);
 
     /** The channels the roll can be pointed at, and which one it is on.
@@ -63,17 +69,19 @@ public:
         the document. Relabels the box in place, keeping the current selection.
     */
     void setBeatUnit (int);
-    int getBeatUnit() const noexcept { return beatUnit; }
+    int getBeatUnit() const noexcept
+    {
+        return beatUnit;
+    }
 
-    std::function<void()>    onToolChanged;
-    std::function<void()>    onSnapChanged;
-    std::function<void (int)> onChannelChanged;   ///< channel id
-    std::function<void (double)> onZoom;          ///< factor, or 0 to fit
-    std::function<void (double)> onRowHeight;     ///< the other axis; same shape
-    std::function<void (int)> onTranspose;   ///< semitones, positive for up
-    std::function<void()>    onQuantize;
-    std::function<void()>    onRandomize;
-
+    std::function<void()> onToolChanged;
+    std::function<void()> onSnapChanged;
+    std::function<void (int)> onChannelChanged; ///< channel id
+    std::function<void (double)> onZoom;        ///< factor, or 0 to fit
+    std::function<void (double)> onRowHeight;   ///< the other axis; same shape
+    std::function<void (int)> onTranspose;      ///< semitones, positive for up
+    std::function<void()> onQuantize;
+    std::function<void()> onRandomize;
 
 private:
     void updateToolButtons();
@@ -86,7 +94,8 @@ private:
 
     DewIconButton selectButton { icons::pointer(), "Select tool (1)" };
     DewIconButton paintButton { icons::pencil(), "Paint tool - drag to write a run of notes (2)" };
-    DewIconButton sliceButton { icons::scissors(), "Slice tool - drag across notes to cut them (3)" };
+    DewIconButton sliceButton { icons::scissors(),
+                                "Slice tool - drag across notes to cut them (3)" };
 
     /** The two dropdowns in this strip said nothing about what they were: one
         showed a channel name and the other a fraction, and neither is

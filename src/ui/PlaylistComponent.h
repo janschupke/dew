@@ -76,7 +76,10 @@ public:
         return boundsForClip (clip, trackIndex);
     }
 
-    const TimelineView& getTimeline() const noexcept { return timeline; }
+    const TimelineView& getTimeline() const noexcept
+    {
+        return timeline;
+    }
     int getNumTracks() const;
 
     /** The ruler strip, in this component's coordinates, so a test can aim at
@@ -85,17 +88,26 @@ public:
     */
     juce::Rectangle<int> getRulerArea() const
     {
-        return { tokens::size::gutterTrack, rulerTop(),
-                 (int) contentWidth(), tokens::size::rulerHeight };
+        return { tokens::size::gutterTrack, rulerTop(), (int) contentWidth(),
+                 tokens::size::rulerHeight };
     }
 
     /** The tool strip, so a test can drive the tools and the zoom buttons
         through the same seam the user reaches them by.
     */
-    PlaylistToolbar& getToolbar() noexcept { return toolbar; }
+    PlaylistToolbar& getToolbar() noexcept
+    {
+        return toolbar;
+    }
 
-    PlaylistTool getTool() const noexcept { return toolbar.getTool(); }
-    void setTool (PlaylistTool tool) { toolbar.setTool (tool); }
+    PlaylistTool getTool() const noexcept
+    {
+        return toolbar.getTool();
+    }
+    void setTool (PlaylistTool tool)
+    {
+        toolbar.setTool (tool);
+    }
 
     /** Frames the whole song: all of it visible, scrolled to the start. */
     void zoomToFit();
@@ -156,12 +168,18 @@ public:
         precedent is PianoRollComponent's own pitchScrollPx and TimelineView's
         pixelsPerStep: view geometry lives on the view.
     */
-    int getTrackHeight() const noexcept { return trackHeight; }
+    int getTrackHeight() const noexcept
+    {
+        return trackHeight;
+    }
 
     /** How far the lanes are scrolled, in pixels. Public so a test can ask how
         far one wheel notch travelled without recomputing laneY and drifting
         from it. */
-    double getTrackScrollPx() const noexcept { return trackScrollPx; }
+    double getTrackScrollPx() const noexcept
+    {
+        return trackScrollPx;
+    }
 
     /** The one mutator. Clamps to the ladder, keeps the lane under the middle of
         the view where it is, and re-lays everything that depends on the height.
@@ -212,7 +230,15 @@ private:
 
     // Scrubbing and range-selecting are not here: the ruler's whole gesture
     // lives in ruler::Gesture, shared with the piano roll and the channel rack.
-    enum class Gesture { none, moving, resizing, draggingPoint, bendingSegment, painting };
+    enum class Gesture
+    {
+        none,
+        moving,
+        resizing,
+        draggingPoint,
+        bendingSegment,
+        painting
+    };
 
     void timerCallback() override;
     void valueTreePropertyChanged (juce::ValueTree&, const juce::Identifier&) override;
@@ -239,8 +265,14 @@ private:
 
         Still constexpr: neither depends on how tall a lane is.
     */
-    static constexpr int rulerTop() { return tokens::size::stripToolbar; }
-    static constexpr int lanesTop() { return tokens::size::stripToolbar + tokens::size::rulerHeight; }
+    static constexpr int rulerTop()
+    {
+        return tokens::size::stripToolbar;
+    }
+    static constexpr int lanesTop()
+    {
+        return tokens::size::stripToolbar + tokens::size::rulerHeight;
+    }
 
     /** The top of lane `index`, with the vertical scroll already applied.
 
@@ -264,8 +296,14 @@ private:
     /** Above the horizontal scrollbar's strip, which is reserved whether or not
         the bar is showing - the add-track button already assumed this.
     */
-    int viewBottom() const noexcept { return getHeight() - tokens::size::scrollThickness; }
-    int laneViewHeight() const noexcept { return juce::jmax (0, viewBottom() - lanesTop()); }
+    int viewBottom() const noexcept
+    {
+        return getHeight() - tokens::size::scrollThickness;
+    }
+    int laneViewHeight() const noexcept
+    {
+        return juce::jmax (0, viewBottom() - lanesTop());
+    }
 
     /** Lays a clip of the current pattern in the cell under this point, unless
         one is already there. Returns true if it wrote one, so a stroke can tell
@@ -319,7 +357,8 @@ private:
         and the menu all go through it, or the cursor promises something the
         press will not do.
     */
-    automationLane::Hit laneHit (const juce::ValueTree& clip, int trackIndex, juce::Point<int>) const;
+    automationLane::Hit laneHit (const juce::ValueTree& clip, int trackIndex,
+                                 juce::Point<int>) const;
 
     /** The automation point under this position, within grabbing distance. */
     juce::ValueTree pointAt (const juce::ValueTree& clip, int trackIndex, juce::Point<int>) const;
@@ -342,7 +381,6 @@ private:
         paint() whether to draw the empty state.
     */
     int paintLanes (juce::Graphics&, int bottom, bool anySolo);
-
 
     ProjectDocument& document;
     AudioEngine& engine;
@@ -404,7 +442,6 @@ private:
     // In the header column below the last track: the next empty row of the list,
     // where the track it adds will appear.
     DewButton addTrackButton { "+ Track", DewButton::Role::ghost };
-
 
     juce::ValueTree draggedClip;
     juce::ValueTree draggedClipTrack;

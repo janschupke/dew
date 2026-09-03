@@ -9,7 +9,12 @@ namespace dew
 /** One note the user asked to hear directly, outside the sequencer. */
 struct PreviewEvent
 {
-    enum class Kind { noteOn, noteOff, allOff };
+    enum class Kind
+    {
+        noteOn,
+        noteOff,
+        allOff
+    };
 
     Kind kind = Kind::noteOn;
     int channelIndex = 0;
@@ -50,7 +55,8 @@ public:
 
     bool isEmpty() const noexcept
     {
-        return readIndex.load (std::memory_order_acquire) == writeIndex.load (std::memory_order_acquire);
+        return readIndex.load (std::memory_order_acquire)
+               == writeIndex.load (std::memory_order_acquire);
     }
 
 private:

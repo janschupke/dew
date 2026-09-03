@@ -33,14 +33,10 @@ public:
         Adds rather than replaces, so two clips of the same channel that overlap
         sum instead of one silently winning. Never allocates, never locks.
     */
-    static void renderAdd (float* mono, int numSamples,
-                           const SampleSettings& settings,
+    static void renderAdd (float* mono, int numSamples, const SampleSettings& settings,
                            const juce::AudioBuffer<float>& audio,
-                           juce::Span<const ClipSnapshot> clips,
-                           int channelIndex,
-                           int stepsPerBar,
-                           juce::int64 positionSamples,
-                           const TempoMap& tempoMap,
+                           juce::Span<const ClipSnapshot> clips, int channelIndex, int stepsPerBar,
+                           juce::int64 positionSamples, const TempoMap& tempoMap,
                            double engineSampleRate) noexcept;
 
     /** The read position, in source frames from the region start, that output

@@ -28,8 +28,7 @@ namespace dew::lang
 
     `previous` may be empty, for the first chord.
 */
-std::vector<int> voiceChord (const Chord&, const VoicingSpec&,
-                             const std::vector<int>& previous);
+std::vector<int> voiceChord (const Chord&, const VoicingSpec&, const std::vector<int>& previous);
 
 /** The cost of moving from one voicing to another, exposed so a test can assert
     that smooth leading actually reduces it rather than merely running.

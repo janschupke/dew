@@ -15,8 +15,8 @@ namespace
 constexpr double rate = 48000.0;
 
 /** A snapshot with one audio channel holding `audio`, and one clip on it. */
-EngineSnapshot snapshotWith (std::shared_ptr<juce::AudioBuffer<float>> audio,
-                             int startBar = 0, int lengthBars = 1)
+EngineSnapshot snapshotWith (std::shared_ptr<juce::AudioBuffer<float>> audio, int startBar = 0,
+                             int lengthBars = 1)
 {
     EngineSnapshot snapshot;
     snapshot.tempoBpm = 120.0;
@@ -105,11 +105,10 @@ void renderChannel (float* out, int numSamples, const EngineSnapshot& snapshot, 
     // The tests speak in steps and a samples-per-step; the player now speaks in
     // samples and a map. Converting here keeps every existing expectation about
     // where a clip starts and what it plays exactly where it was.
-    SamplePlayer::renderAdd (out, numSamples, channel.sample, *channel.audio,
-                             { snapshot.clips.data(), snapshot.clips.size() },
-                             channelIndex, snapshot.stepsPerBar(),
-                             (juce::int64) std::llround (positionSteps * sps),
-                             *snapshot.tempoMap, engineRate);
+    SamplePlayer::renderAdd (
+        out, numSamples, channel.sample, *channel.audio,
+        { snapshot.clips.data(), snapshot.clips.size() }, channelIndex, snapshot.stepsPerBar(),
+        (juce::int64) std::llround (positionSteps * sps), *snapshot.tempoMap, engineRate);
 }
 
 } // namespace

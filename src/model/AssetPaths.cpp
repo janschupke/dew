@@ -8,8 +8,8 @@ juce::File AssetPaths::sidecarFolderFor (const juce::File& projectFile)
     if (projectFile == juce::File())
         return {};
 
-    return projectFile.getParentDirectory()
-                      .getChildFile (projectFile.getFileNameWithoutExtension() + " Assets");
+    return projectFile.getParentDirectory().getChildFile (projectFile.getFileNameWithoutExtension()
+                                                          + " Assets");
 }
 
 juce::File AssetPaths::stagingFolder()

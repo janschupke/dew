@@ -184,16 +184,17 @@ TEST_CASE ("what the lane draws is what the evaluator says", "[ui][automationLan
     int sampled = 0;
 
     for (int i = 0; i + 1 < (int) model.size(); ++i)
-        sampleSegment (lane, model, i, [&] (juce::Point<float> at)
-        {
-            ++sampled;
+        sampleSegment (lane, model, i,
+                       [&] (juce::Point<float> at)
+                       {
+                           ++sampled;
 
-            const auto step = lane.stepAt (at.x);
+                           const auto step = lane.stepAt (at.x);
 
-            INFO ("segment " << i << " at step " << step);
-            REQUIRE_THAT ((double) lane.valueAt (at.y),
-                          WithinAbs (curveValueAt (model, step), 0.02));
-        });
+                           INFO ("segment " << i << " at step " << step);
+                           REQUIRE_THAT ((double) lane.valueAt (at.y),
+                                         WithinAbs (curveValueAt (model, step), 0.02));
+                       });
 
     // A control case: a comparison over no samples is not a comparison.
     REQUIRE (sampled > 100);

@@ -20,11 +20,11 @@ namespace dew::lang
 
 struct Note
 {
-    int track = 0;              ///< an index into Score::tracks
-    int startStep = 0;          ///< relative to its pattern
+    int track = 0;     ///< an index into Score::tracks
+    int startStep = 0; ///< relative to its pattern
     int lengthSteps = 1;
     int pitch = 60;
-    float velocity = 0.75f;     ///< 0..1, as dew stores it
+    float velocity = 0.75f; ///< 0..1, as dew stores it
 };
 
 struct TrackDesc
@@ -39,7 +39,7 @@ struct PatternDesc
 {
     std::string name;
     int lengthSteps = 16;
-    std::vector<Note> notes;    ///< sorted by step, then track, then pitch
+    std::vector<Note> notes; ///< sorted by step, then track, then pitch
 
     /** What this pattern IS, independently of where it landed.
 
@@ -56,11 +56,11 @@ struct PatternDesc
 
 struct ClipDesc
 {
-    int pattern = 0;            ///< an index into Score::patterns
+    int pattern = 0; ///< an index into Score::patterns
     int startBar = 0;
     int lengthBars = 1;
-    std::string label;          ///< the instance it came from, for reporting
-    std::string key;            ///< as PatternDesc::key, plus which placement
+    std::string label; ///< the instance it came from, for reporting
+    std::string key;   ///< as PatternDesc::key, plus which placement
 };
 
 /** A chord and where it sounds, in steps from the start of the song. For the
@@ -90,7 +90,10 @@ struct Score
     std::vector<ClipDesc> clips;
     std::vector<ChordSpanOut> harmony;
 
-    int stepsPerBar() const noexcept { return stepsPerBeat * beatsPerBar; }
+    int stepsPerBar() const noexcept
+    {
+        return stepsPerBeat * beatsPerBar;
+    }
 
     /** Every note, at its absolute position in the song, with clip repeats
         expanded. What a golden file and a MIDI comparison want; the patterns

@@ -49,10 +49,10 @@ float weightOf (MetricStrength strength) noexcept
 {
     switch (strength)
     {
-        case MetricStrength::barStart:    return 1.0f;
-        case MetricStrength::strongBeat:  return 0.75f;
-        case MetricStrength::beat:        return 0.5f;
-        case MetricStrength::offbeat:     return 0.25f;
+        case MetricStrength::barStart: return 1.0f;
+        case MetricStrength::strongBeat: return 0.75f;
+        case MetricStrength::beat: return 0.5f;
+        case MetricStrength::offbeat: return 0.25f;
         case MetricStrength::subdivision: return 0.1f;
     }
 
@@ -74,8 +74,7 @@ MetricStrength strengthAt (int stepInSection, int stepsPerBar, int stepsPerBeat,
     {
         // Halfway through a beat is an offbeat; anything finer is a subdivision.
         const auto intoBeat = inBar % stepsPerBeat;
-        return intoBeat * 2 == stepsPerBeat ? MetricStrength::offbeat
-                                            : MetricStrength::subdivision;
+        return intoBeat * 2 == stepsPerBeat ? MetricStrength::offbeat : MetricStrength::subdivision;
     }
 
     // The middle of the bar is the secondary strong beat in any even metre.
@@ -164,8 +163,8 @@ std::vector<Onset> tileRhythm (const RhythmSpec& rhythm, int totalSteps, int ste
     return onsets;
 }
 
-void applyMuteBudget (std::vector<Onset>& onsets, int count, int window,
-                      const SeedPath& path, int stepsPerBar)
+void applyMuteBudget (std::vector<Onset>& onsets, int count, int window, const SeedPath& path,
+                      int stepsPerBar)
 {
     if (count <= 0 || window <= 0 || onsets.empty())
         return;
@@ -208,7 +207,7 @@ void applyMuteBudget (std::vector<Onset>& onsets, int count, int window,
         std::vector<Candidate> order;
 
         for (auto i = start; i < stop; ++i)
-            if (! onsets[i].isRest && i != 0)      // never the first onset of the line
+            if (! onsets[i].isRest && i != 0) // never the first onset of the line
                 order.push_back ({ weightOf (onsets[i].strength), rng.nextBits(), i });
 
         if (order.empty())
@@ -217,8 +216,10 @@ void applyMuteBudget (std::vector<Onset>& onsets, int count, int window,
         std::stable_sort (order.begin(), order.end(),
                           [] (const Candidate& a, const Candidate& b)
                           {
-                              if (a.weight < b.weight) return true;
-                              if (b.weight < a.weight) return false;
+                              if (a.weight < b.weight)
+                                  return true;
+                              if (b.weight < a.weight)
+                                  return false;
 
                               return a.tiebreak < b.tiebreak;
                           });
@@ -232,10 +233,8 @@ void applyMuteBudget (std::vector<Onset>& onsets, int count, int window,
 
 std::vector<MelodyNote> generateMelody (const std::vector<Onset>& onsets,
                                         const std::vector<ChordSpan>& spans,
-                                        const MelodySpec& melody,
-                                        int lowPitch, int highPitch,
-                                        const SeedPath& path,
-                                        int cadenceDegree)
+                                        const MelodySpec& melody, int lowPitch, int highPitch,
+                                        const SeedPath& path, int cadenceDegree)
 {
     std::vector<MelodyNote> notes;
 
@@ -279,7 +278,7 @@ std::vector<MelodyNote> generateMelody (const std::vector<Onset>& onsets,
             continue;
 
         const auto strong = onset.strength == MetricStrength::barStart
-                         || onset.strength == MetricStrength::strongBeat;
+                            || onset.strength == MetricStrength::strongBeat;
 
         // The cadence, applied by NARROWING the candidates rather than by
         // overwriting the result: the note it picks is still the best one of
@@ -290,8 +289,8 @@ std::vector<MelodyNote> generateMelody (const std::vector<Onset>& onsets,
 
             if (index < span->chord.intervals.size())
             {
-                const auto wanted = ((span->chord.rootPc
-                                      + span->chord.intervals[index]) % 12 + 12) % 12;
+                const auto wanted = ((span->chord.rootPc + span->chord.intervals[index]) % 12 + 12)
+                                    % 12;
 
                 std::vector<int> ending;
 
@@ -320,10 +319,9 @@ std::vector<MelodyNote> generateMelody (const std::vector<Onset>& onsets,
                 candidates = chordTones;
         }
 
-        const auto through = totalSteps > 0 ? (float) onset.startStep / (float) totalSteps
-                                            : 0.0f;
-        const auto target = contourTarget (melody.contour, through,
-                                           (float) lowPitch, (float) highPitch);
+        const auto through = totalSteps > 0 ? (float) onset.startStep / (float) totalSteps : 0.0f;
+        const auto target = contourTarget (melody.contour, through, (float) lowPitch,
+                                           (float) highPitch);
 
         auto rng = path.child ("onset", onsetIndex).rng();
 

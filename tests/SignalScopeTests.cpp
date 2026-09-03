@@ -25,9 +25,6 @@ using Catch::Approx;
 namespace
 {
 
-
-
-
 /** How much of `area`'s height the accent-coloured pixels span. A trace drawn at
     the wrong scale still puts pixels on screen; this says how tall it got.
 */
@@ -79,9 +76,10 @@ std::vector<float> sine (double frequency, double sampleRate, float amplitude = 
     std::vector<float> samples ((size_t) SignalScope::windowSamples, 0.0f);
 
     for (size_t i = 0; i < samples.size(); ++i)
-        samples[i] = amplitude * (float) std::sin (2.0 * juce::MathConstants<double>::pi
-                                                       * frequency * (double) i / sampleRate
-                                                   + phase);
+        samples[i] = amplitude
+                     * (float) std::sin (2.0 * juce::MathConstants<double>::pi * frequency
+                                             * (double) i / sampleRate
+                                         + phase);
 
     return samples;
 }
@@ -178,9 +176,8 @@ TEST_CASE ("a sine puts its energy in the band that contains its frequency", "[s
 
         const auto peak = loudestBand (scope);
 
-        INFO ("tone " << frequency << "Hz, loudest band " << peak
-                      << " (" << scope.getBandLowHz (peak) << ".."
-                      << scope.getBandHighHz (peak) << "Hz)");
+        INFO ("tone " << frequency << "Hz, loudest band " << peak << " ("
+                      << scope.getBandLowHz (peak) << ".." << scope.getBandHighHz (peak) << "Hz)");
 
         REQUIRE (scope.getBandLowHz (peak) <= frequency);
         REQUIRE (frequency < scope.getBandHighHz (peak));
@@ -198,7 +195,8 @@ TEST_CASE ("a sine puts its energy in the band that contains its frequency", "[s
         const auto median = levels[levels.size() / 2];
 
         REQUIRE (juce::Decibels::gainToDecibels (scope.getBandLevel (peak), -120.0f)
-                     - juce::Decibels::gainToDecibels (median, -120.0f) > 20.0f);
+                     - juce::Decibels::gainToDecibels (median, -120.0f)
+                 > 20.0f);
     }
 }
 
@@ -259,8 +257,7 @@ TEST_CASE ("the trace does not depend on where the window starts", "[signalscope
     constexpr double offset = 0.3;
 
     const auto aligned = sine (441.0, 44100.0, 0.8f, offset);
-    const auto shifted = sine (441.0, 44100.0, 0.8f,
-                               offset + juce::MathConstants<double>::halfPi);
+    const auto shifted = sine (441.0, 44100.0, 0.8f, offset + juce::MathConstants<double>::halfPi);
 
     first.pushFrame (aligned.data(), (int) aligned.size(), 44100.0);
     second.pushFrame (shifted.data(), (int) shifted.size(), 44100.0);
@@ -364,7 +361,10 @@ struct BarHarness
         bar.setVisible (true);
     }
 
-    ~BarHarness() { bar.setLookAndFeel (nullptr); }
+    ~BarHarness()
+    {
+        bar.setLookAndFeel (nullptr);
+    }
 
     juce::Component* findScope()
     {

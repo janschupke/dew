@@ -18,17 +18,19 @@ namespace
     adding a scope was a compile error in one direction and a silent
     misreading in the other.
 */
-struct ScopeName { AutomationScope scope; const char* id; };
-
-constexpr ScopeName scopeNames[] {
-    { AutomationScope::project,       "project" },
-    { AutomationScope::channel,       "channel" },
-    { AutomationScope::channelOsc,    "channelOsc" },
-    { AutomationScope::channelEffect, "channelEffect" },
-    { AutomationScope::mixerTrack,    "mixerTrack" },
-    { AutomationScope::mixerEffect,   "mixerEffect" },
-    { AutomationScope::master,        "master" }
+struct ScopeName
+{
+    AutomationScope scope;
+    const char* id;
 };
+
+constexpr ScopeName scopeNames[] { { AutomationScope::project, "project" },
+                                   { AutomationScope::channel, "channel" },
+                                   { AutomationScope::channelOsc, "channelOsc" },
+                                   { AutomationScope::channelEffect, "channelEffect" },
+                                   { AutomationScope::mixerTrack, "mixerTrack" },
+                                   { AutomationScope::mixerEffect, "mixerEffect" },
+                                   { AutomationScope::master, "master" } };
 
 } // namespace
 
@@ -64,8 +66,7 @@ double automationValueFor (const ParamSpec& spec, double normalised)
     {
         const auto index = juce::jlimit (0, steps - 1, (int) std::floor (t * (double) steps));
 
-        return spec.minimum + (spec.maximum - spec.minimum)
-                                  * (double) index / (double) (steps - 1);
+        return spec.minimum + (spec.maximum - spec.minimum) * (double) index / (double) (steps - 1);
     }
 
     if (spec.curve == ParamCurve::logarithmic && spec.minimum > 0.0 && spec.maximum > spec.minimum)
@@ -202,13 +203,13 @@ const ParamSpec* findParamSpec (AutomationScope scope, const juce::String& effec
 {
     switch (scope)
     {
-        case AutomationScope::project:       return findIn (projectParams(), property);
-        case AutomationScope::channel:       return findIn (channelParams(), property);
-        case AutomationScope::channelOsc:    return findIn (oscParams(), property);
-        case AutomationScope::mixerTrack:    return findIn (mixerTrackParams(), property);
-        case AutomationScope::master:        return findIn (masterParams(), property);
+        case AutomationScope::project: return findIn (projectParams(), property);
+        case AutomationScope::channel: return findIn (channelParams(), property);
+        case AutomationScope::channelOsc: return findIn (oscParams(), property);
+        case AutomationScope::mixerTrack: return findIn (mixerTrackParams(), property);
+        case AutomationScope::master: return findIn (masterParams(), property);
         case AutomationScope::channelEffect:
-        case AutomationScope::mixerEffect:   return findIn (effectParams (effectType), property);
+        case AutomationScope::mixerEffect: return findIn (effectParams (effectType), property);
     }
 
     return nullptr;
@@ -309,8 +310,8 @@ std::optional<AutomationTarget> automationTargetFor (const juce::ValueTree& proj
         target.scope = AutomationScope::channelOsc;
         target.targetId = (int) channel[ids::id];
         target.slot = slotOf (parent, node, ids::OSC);
-        target.displayName = channel[ids::name].toString()
-                                 + " > Osc " + juce::String (target.slot + 1);
+        target.displayName = channel[ids::name].toString() + " > Osc "
+                             + juce::String (target.slot + 1);
     }
     else if (node.hasType (ids::EFFECT))
     {
@@ -366,8 +367,8 @@ std::vector<AutomationTarget> availableAutomationTargets (const juce::ValueTree&
     // Both directions of one fact now, and a test asserts they agree.
     std::vector<AutomationTarget> targets;
 
-    const auto offer = [&targets, &project] (const juce::ValueTree& node,
-                                             const std::vector<ParamSpec>& specs)
+    const auto offer =
+        [&targets, &project] (const juce::ValueTree& node, const std::vector<ParamSpec>& specs)
     {
         for (const auto& spec : specs)
             if (auto target = automationTargetFor (project, node, *spec.property))

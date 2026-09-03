@@ -46,8 +46,7 @@ void collect (juce::Component& root, juce::Array<juce::Component*>& out)
     }
 }
 
-template <typename ComponentType>
-juce::Array<ComponentType*> findAll (juce::Component& root)
+template <typename ComponentType> juce::Array<ComponentType*> findAll (juce::Component& root)
 {
     juce::Array<juce::Component*> all;
     collect (root, all);
@@ -117,7 +116,7 @@ TEST_CASE ("a channel header has no click-swallowing dead zones", "[ui][selectio
     rack.resized();
 
     const auto buttons = findAll<juce::Button> (rack);
-    REQUIRE (buttons.size() >= 8);      // M and S per demo channel, plus the footer
+    REQUIRE (buttons.size() >= 8); // M and S per demo channel, plus the footer
 
     // By id. Counting the widgets on a row identified it only for as long as
     // every row had exactly one label and two buttons, and an audio channel's
@@ -145,7 +144,8 @@ TEST_CASE ("a channel header has no click-swallowing dead zones", "[ui][selectio
             allowed.add (slider);
 
         const auto dead = deadSpots (*header, allowed);
-        INFO ("dead spots on a channel header: " << dead.size()
+        INFO ("dead spots on a channel header: "
+              << dead.size()
               << (dead.isEmpty() ? "" : juce::String (" first at ") + dead[0].toString()));
         REQUIRE (dead.isEmpty());
     }
@@ -232,7 +232,8 @@ TEST_CASE ("a mixer strip has no click-swallowing dead zones", "[ui][selection]"
             allowed.add (button);
 
         const auto dead = deadSpots (*strip, allowed);
-        INFO ("dead spots on a mixer strip: " << dead.size()
+        INFO ("dead spots on a mixer strip: "
+              << dead.size()
               << (dead.isEmpty() ? "" : juce::String (" first at ") + dead[0].toString()));
         REQUIRE (dead.isEmpty());
     }
@@ -263,7 +264,7 @@ TEST_CASE ("hovering a channel's M or S does not select it", "[ui][selection]")
     rack.resized();
 
     const auto toggles = findAll<DewLetterToggle> (rack);
-    REQUIRE (toggles.size() >= 8);      // M and S on every channel
+    REQUIRE (toggles.size() >= 8); // M and S on every channel
 
     for (auto* toggle : toggles)
     {
@@ -521,7 +522,8 @@ TEST_CASE ("right-clicking a channel row selects it", "[ui][rack]")
     juce::Component* secondRow = nullptr;
 
     for (auto* child : holder->getChildren())
-        if (child->getY() == tokens::size::rowHeight && child->getWidth() == tokens::size::gutterChannel)
+        if (child->getY() == tokens::size::rowHeight
+            && child->getWidth() == tokens::size::gutterChannel)
             secondRow = child;
 
     REQUIRE (secondRow != nullptr);
@@ -529,10 +531,10 @@ TEST_CASE ("right-clicking a channel row selects it", "[ui][rack]")
     const juce::ModifierKeys rightButton { juce::ModifierKeys::rightButtonModifier };
     const juce::Point<float> at { 20.0f, (float) (tokens::size::rowHeight / 2) };
 
-    secondRow->mouseDown ({ juce::Desktop::getInstance().getMainMouseSource(),
-                            at, rightButton, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f,
-                            secondRow, secondRow, juce::Time::getCurrentTime(),
-                            at, juce::Time::getCurrentTime(), 1, false });
+    secondRow->mouseDown ({ juce::Desktop::getInstance().getMainMouseSource(), at, rightButton,
+                            1.0f, 0.0f, 0.0f, 0.0f, 0.0f, secondRow, secondRow,
+                            juce::Time::getCurrentTime(), at, juce::Time::getCurrentTime(), 1,
+                            false });
 
     REQUIRE (editorState.getSelectedChannelId() == 2);
 }

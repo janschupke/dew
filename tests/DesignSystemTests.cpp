@@ -21,9 +21,6 @@ using namespace dew;
 namespace
 {
 
-
-
-
 } // namespace
 
 TEST_CASE ("every icon draws something inside its bounds", "[design][icons]")
@@ -196,15 +193,54 @@ TEST_CASE ("the number field changes by dragging, and up means more", "[design][
         const auto source = juce::Desktop::getInstance().getMainMouseSource();
         const auto now = juce::Time::getCurrentTime();
 
-        field.mouseDown ({ source, start, {}, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f,
-                           &field, &field, now, start, now, 1, false });
+        field.mouseDown ({ source,
+                           start,
+                           {},
+                           1.0f,
+                           0.0f,
+                           0.0f,
+                           0.0f,
+                           0.0f,
+                           &field,
+                           &field,
+                           now,
+                           start,
+                           now,
+                           1,
+                           false });
 
         const juce::Point<float> moved (60.0f, 13.0f + (float) dy);
-        field.mouseDrag ({ source, moved, {}, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f,
-                           &field, &field, now, start, now, 1, true });
+        field.mouseDrag ({ source,
+                           moved,
+                           {},
+                           1.0f,
+                           0.0f,
+                           0.0f,
+                           0.0f,
+                           0.0f,
+                           &field,
+                           &field,
+                           now,
+                           start,
+                           now,
+                           1,
+                           true });
 
-        field.mouseUp ({ source, moved, {}, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f,
-                         &field, &field, now, start, now, 1, true });
+        field.mouseUp ({ source,
+                         moved,
+                         {},
+                         1.0f,
+                         0.0f,
+                         0.0f,
+                         0.0f,
+                         0.0f,
+                         &field,
+                         &field,
+                         now,
+                         start,
+                         now,
+                         1,
+                         true });
     };
 
     // Dragging UP increases, which is the convention everywhere and the opposite
@@ -231,7 +267,7 @@ TEST_CASE ("the gallery lays out and paints every section", "[design][gallery]")
 
     DewGallery gallery;
     gallery.setVisible (true);
-    gallery.setSize (1200, 400);        // deliberately too short
+    gallery.setSize (1200, 400); // deliberately too short
     gallery.setSize (1200, gallery.getRequiredHeight());
 
     REQUIRE (gallery.getRequiredHeight() > 400);
@@ -268,7 +304,8 @@ TEST_CASE ("a combo box is painted in the dew idiom, not JUCE's", "[design][drop
     REQUIRE (coverageOf (image, tokens::colour::surfaceRaised) > 0.5f);
 
     // The chevron lives in the right-hand end; there has to be ink there.
-    const auto chevronStrip = image.getClippedImage ({ image.getWidth() - 30, 0, 28, image.getHeight() });
+    const auto chevronStrip = image.getClippedImage (
+        { image.getWidth() - 30, 0, 28, image.getHeight() });
     INFO ("chevron ink: " << inkCoverage (chevronStrip));
     REQUIRE (inkCoverage (chevronStrip) > 0.02f);
 
@@ -317,8 +354,7 @@ TEST_CASE ("a dropdown's menu opens below the box, not over it", "[design][dropd
     box.setLookAndFeel (nullptr);
 }
 
-TEST_CASE ("a dropdown inside a dialog opens inside it, not as a window",
-           "[design][dropdown]")
+TEST_CASE ("a dropdown inside a dialog opens inside it, not as a window", "[design][dropdown]")
 {
     // Every dew dialog is a DialogWindow with a native title bar, so it is a
     // real system window with real system buttons. A PopupMenu on the desktop
@@ -349,8 +385,7 @@ TEST_CASE ("a dropdown inside a dialog opens inside it, not as a window",
     dialog.setContentOwned (content, false);
 
     REQUIRE (box.getTopLevelComponent() == &dialog);
-    CHECK (lookAndFeel.getOptionsForComboBoxPopupMenu (box, label).getParentComponent()
-             == &dialog);
+    CHECK (lookAndFeel.getOptionsForComboBoxPopupMenu (box, label).getParentComponent() == &dialog);
 
     // The control case, and the reason this is scoped to dialogs: the main
     // window's own boxes keep a desktop menu, which is free to overflow the
@@ -365,7 +400,7 @@ TEST_CASE ("a dropdown inside a dialog opens inside it, not as a window",
     plain.addAndMakeVisible (loose);
 
     CHECK (lookAndFeel.getOptionsForComboBoxPopupMenu (loose, label).getParentComponent()
-             == nullptr);
+           == nullptr);
 
     box.setLookAndFeel (nullptr);
     loose.setLookAndFeel (nullptr);
@@ -409,8 +444,8 @@ TEST_CASE ("a disabled dropdown reads as disabled", "[design][dropdown]")
         return sampled > 0 ? total / (double) sampled : 0.0;
     };
 
-    INFO ("brightness enabled " << meanBrightness (enabled)
-          << " disabled " << meanBrightness (disabled));
+    INFO ("brightness enabled " << meanBrightness (enabled) << " disabled "
+                                << meanBrightness (disabled));
     REQUIRE (meanBrightness (disabled) < meanBrightness (enabled));
 }
 
@@ -530,8 +565,9 @@ TEST_CASE ("the channel ramp says the same thing in both layers", "[design][mode
     // half of it that has to be paid: they are compared here, so a palette
     // change that touches one and not the other is a failing test rather than a
     // rack whose rows disagree with its grid.
-    REQUIRE (dew::entityColour::rampSize()
-             == (int) (sizeof (tokens::colour::channelRamp) / sizeof (tokens::colour::channelRamp[0])));
+    REQUIRE (
+        dew::entityColour::rampSize()
+        == (int) (sizeof (tokens::colour::channelRamp) / sizeof (tokens::colour::channelRamp[0])));
 
     for (int i = 0; i < dew::entityColour::rampSize(); ++i)
     {

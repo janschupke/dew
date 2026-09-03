@@ -12,10 +12,10 @@ std::unique_ptr<EffectModule> createEffectModule (EffectType type)
     {
         case EffectType::filter: return std::make_unique<FilterModule>();
         case EffectType::reverb: return std::make_unique<ReverbModule>();
-        case EffectType::delay:  return std::make_unique<DelayModule>();
-        case EffectType::drive:  return std::make_unique<DriveModule>();
+        case EffectType::delay: return std::make_unique<DelayModule>();
+        case EffectType::drive: return std::make_unique<DriveModule>();
         case EffectType::chorus: return std::make_unique<ChorusModule>();
-        case EffectType::eq:     return std::make_unique<EqModule>();
+        case EffectType::eq: return std::make_unique<EqModule>();
     }
 
     return {};
@@ -42,9 +42,8 @@ void processEffectSlot (EffectModule& module, const EffectParamBlock& params, Ef
     if (mix <= 0.0f)
         return;
 
-    const auto keepDry = mix < 1.0f
-                      && dryScratch.getNumChannels() >= 2
-                      && io.numSamples <= dryScratch.getNumSamples();
+    const auto keepDry = mix < 1.0f && dryScratch.getNumChannels() >= 2
+                         && io.numSamples <= dryScratch.getNumSamples();
 
     if (keepDry)
     {
@@ -61,10 +60,10 @@ void processEffectSlot (EffectModule& module, const EffectParamBlock& params, Ef
 
         juce::FloatVectorOperations::multiply (io.left, mix, io.numSamples);
         juce::FloatVectorOperations::multiply (io.right, mix, io.numSamples);
-        juce::FloatVectorOperations::addWithMultiply (io.left, dryScratch.getReadPointer (0),
-                                                      dry, io.numSamples);
-        juce::FloatVectorOperations::addWithMultiply (io.right, dryScratch.getReadPointer (1),
-                                                      dry, io.numSamples);
+        juce::FloatVectorOperations::addWithMultiply (io.left, dryScratch.getReadPointer (0), dry,
+                                                      io.numSamples);
+        juce::FloatVectorOperations::addWithMultiply (io.right, dryScratch.getReadPointer (1), dry,
+                                                      io.numSamples);
     }
 }
 

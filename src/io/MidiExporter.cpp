@@ -19,8 +19,10 @@ struct PlacedNote
 
     bool operator< (const PlacedNote& other) const noexcept
     {
-        if (step != other.step)                 return step < other.step;
-        if (channelIndex != other.channelIndex) return channelIndex < other.channelIndex;
+        if (step != other.step)
+            return step < other.step;
+        if (channelIndex != other.channelIndex)
+            return channelIndex < other.channelIndex;
         return pitch < other.pitch;
     }
 
@@ -41,8 +43,7 @@ struct PlacedNote
     this has to change with it, and MidiExportTests fails until it does.
 */
 std::vector<PlacedNote> collectNotes (const EngineSnapshot& snapshot,
-                                      const MidiExportOptions& options,
-                                      int patternIndex,
+                                      const MidiExportOptions& options, int patternIndex,
                                       juce::StringArray& warnings)
 {
     std::vector<PlacedNote> notes;
@@ -60,8 +61,8 @@ std::vector<PlacedNote> collectNotes (const EngineSnapshot& snapshot,
         // note.pitch is absolute. The channel's basePitch is where the piano roll
         // centres and what a lit step-grid cell writes; the engine never reads it,
         // so adding it here would transpose the MIDI away from the audio.
-        notes.push_back ({ note.channelIndex, step, juce::jmax (1, note.lengthSteps),
-                           note.pitch, note.velocity });
+        notes.push_back ({ note.channelIndex, step, juce::jmax (1, note.lengthSteps), note.pitch,
+                           note.velocity });
     };
 
     if (options.mode == Transport::Mode::pattern)
@@ -157,8 +158,7 @@ int MidiExporter::midiChannelFor (int channelIndex) noexcept
 }
 
 juce::MidiFile MidiExporter::build (const juce::ValueTree& project,
-                                    const MidiExportOptions& options,
-                                    juce::StringArray& warnings,
+                                    const MidiExportOptions& options, juce::StringArray& warnings,
                                     juce::int64& numNotes)
 {
     numNotes = 0;
@@ -169,7 +169,8 @@ juce::MidiFile MidiExporter::build (const juce::ValueTree& project,
 
     const auto stepsPerBar = snapshot.stepsPerBar();
     const auto ticksPerQuarter = ticksPerQuarterNoteFor (snapshot.stepsPerBeat);
-    const auto ticksPerStep = (double) ticksPerQuarter / (double) juce::jmax (1, snapshot.stepsPerBeat);
+    const auto ticksPerStep = (double) ticksPerQuarter
+                              / (double) juce::jmax (1, snapshot.stepsPerBeat);
 
     auto notes = collectNotes (snapshot, options, patternIndex, warnings);
 
@@ -225,14 +226,14 @@ juce::MidiFile MidiExporter::build (const juce::ValueTree& project,
 
         // One tick short, so two consecutive notes on the same pitch do not touch
         // - which many importers render as one long note, or as a stuck one.
-        const auto offTick = juce::jmax (onTick + 1,
-                                         (juce::int64) std::llround ((double) (step + length) * ticksPerStep) - 1);
+        const auto offTick = juce::jmax (
+            onTick + 1, (juce::int64) std::llround ((double) (step + length) * ticksPerStep) - 1);
 
         const auto midiChannel = midiChannelFor (note.channelIndex);
 
         // Velocity 0 IS a note-off, so a quiet note must not become one.
-        const auto velocity = (juce::uint8) juce::jlimit (1, 127,
-                                                          juce::roundToInt (note.velocity * 127.0f));
+        const auto velocity = (juce::uint8) juce::jlimit (
+            1, 127, juce::roundToInt (note.velocity * 127.0f));
 
         auto& sequence = sequences[note.channelIndex];
 
@@ -250,8 +251,8 @@ juce::MidiFile MidiExporter::build (const juce::ValueTree& project,
 
     const auto projectName = project[ids::name].toString();
 
-    conductor.addEvent (juce::MidiMessage::textMetaEvent (3, projectName.isNotEmpty() ? projectName
-                                                                                      : juce::String ("dew")),
+    conductor.addEvent (juce::MidiMessage::textMetaEvent (
+                            3, projectName.isNotEmpty() ? projectName : juce::String ("dew")),
                         0.0);
 
     // ONE event per run of equal tempo, from the same map the audio path uses,
@@ -289,7 +290,7 @@ juce::MidiFile MidiExporter::build (const juce::ValueTree& project,
 
         conductor.addEvent (tempoEvent (segment.bpm),
                             (double) std::llround ((segment.startStep - (double) firstStep)
-                                                       * (double) ticksPerStep));
+                                                   * (double) ticksPerStep));
     }
 
     // The denominator is NOTATIONAL. dew's beat is a quarter note's worth of
@@ -303,9 +304,8 @@ juce::MidiFile MidiExporter::build (const juce::ValueTree& project,
     //
     // juce::MidiMessage stores log2 of the denominator and rounds UP to the
     // next power of two, which is why beatUnit is constrained to one already.
-    conductor.addEvent (juce::MidiMessage::timeSignatureMetaEvent (snapshot.beatsPerBar,
-                                                                   snapshot.beatUnit),
-                        0.0);
+    conductor.addEvent (
+        juce::MidiMessage::timeSignatureMetaEvent (snapshot.beatsPerBar, snapshot.beatUnit), 0.0);
 
     if (sequences.size() > 15)
         warnings.add ("This project has more than fifteen channels, so some share a MIDI channel.");
@@ -320,8 +320,8 @@ juce::MidiFile MidiExporter::build (const juce::ValueTree& project,
             sequence.updateMatchedPairs();
 
             const auto name = juce::isPositiveAndBelow (channelIndex, names.size())
-                                ? names[channelIndex]
-                                : "Channel " + juce::String (channelIndex + 1);
+                                  ? names[channelIndex]
+                                  : "Channel " + juce::String (channelIndex + 1);
 
             juce::MidiMessageSequence named;
             named.addEvent (juce::MidiMessage::textMetaEvent (3, name), 0.0);
@@ -374,13 +374,15 @@ RenderReport MidiExporter::writeToFile (const juce::ValueTree& project,
 
         if (! stream.openedOk())
         {
-            report.result = juce::Result::fail ("Could not create " + destination.getFullPathName());
+            report.result = juce::Result::fail ("Could not create "
+                                                + destination.getFullPathName());
             return report;
         }
 
         if (! file.writeTo (stream, options.oneTrackPerChannel ? 1 : 0))
         {
-            report.result = juce::Result::fail ("Could not write MIDI to " + destination.getFullPathName());
+            report.result = juce::Result::fail ("Could not write MIDI to "
+                                                + destination.getFullPathName());
             return report;
         }
 

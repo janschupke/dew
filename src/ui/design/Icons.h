@@ -29,24 +29,24 @@ juce::Path minus();
 juce::Path trash();
 juce::Path duplicate();
 juce::Path pencil();
-juce::Path magnet();          ///< snap to grid
+juce::Path magnet(); ///< snap to grid
 juce::Path pointer();
 juce::Path eraser();
-juce::Path scissors();        ///< the slice tool
-juce::Path dice();            ///< randomize
-juce::Path quantize();        ///< align notes to the grid
+juce::Path scissors(); ///< the slice tool
+juce::Path dice();     ///< randomize
+juce::Path quantize(); ///< align notes to the grid
 
 // --- state -------------------------------------------------------------------
-juce::Path mute();            ///< speaker with a cross
-juce::Path solo();            ///< headphones
-juce::Path power();           ///< effect bypass
-juce::Path check();          ///< a ticked menu item
+juce::Path mute();  ///< speaker with a cross
+juce::Path solo();  ///< headphones
+juce::Path power(); ///< effect bypass
+juce::Path check(); ///< a ticked menu item
 juce::Path lock();
 juce::Path chevronUp();
 juce::Path chevronDown();
 juce::Path chevronLeft();
 juce::Path chevronRight();
-juce::Path grip();            ///< drag handle
+juce::Path grip(); ///< drag handle
 
 // --- waveforms ---------------------------------------------------------------
 juce::Path waveSine();
@@ -72,12 +72,12 @@ juce::Path fitToContent();
     pair on transposing a semitone, and two identical pairs meaning different
     things in one 34px strip is the drift the design system exists to stop.
 */
-juce::Path rowsShorter();     ///< three rules: denser rows
-juce::Path rowsTaller();      ///< two rules: roomier rows
-juce::Path fitRows();         ///< fitToContent, turned through a right angle
+juce::Path rowsShorter(); ///< three rules: denser rows
+juce::Path rowsTaller();  ///< two rules: roomier rows
+juce::Path fitRows();     ///< fitToContent, turned through a right angle
 
-juce::Path automation();      ///< a curve with points
-juce::Path preset();          ///< a saved sound to load
+juce::Path automation(); ///< a curve with points
+juce::Path preset();     ///< a saved sound to load
 
 /** Scales `path` to fit `bounds` while keeping its proportions and centring it. */
 juce::Path fitted (juce::Path path, juce::Rectangle<float> bounds);
@@ -91,7 +91,11 @@ void draw (juce::Graphics&, const juce::Path&, juce::Rectangle<float> bounds, ju
     Registering here is what puts an icon in the gallery, so an icon left out of
     this list is drawn by nothing and checked by nothing.
 */
-struct NamedIcon { const char* name; juce::Path (*make)(); };
+struct NamedIcon
+{
+    const char* name;
+    juce::Path (*make)();
+};
 std::vector<NamedIcon> all();
 
 } // namespace dew::icons

@@ -52,7 +52,8 @@ static_assert (juce::exactlyEqual (fontSteps[bodyStep], tokens::type::codeBody),
     It is NOT written into the project until it is edited or compiled, so
     opening the tab does not dirty a project nobody has touched.
 */
-const char* const starterScoreText = R"SCORE(// A score describes a whole song as text: its key, its chords, its sections,
+const char* const starterScoreText =
+    R"SCORE(// A score describes a whole song as text: its key, its chords, its sections,
 // and a rule per instrument for what to play over them. Press Compile, or
 // Command-R, and it becomes patterns and clips you can edit like any others.
 //
@@ -135,8 +136,7 @@ constexpr int diagnosticRows = 4;
 
 juce::Colour colourFor (lang::Severity severity)
 {
-    return severity == lang::Severity::error ? tokens::colour::danger
-                                             : tokens::colour::warning;
+    return severity == lang::Severity::error ? tokens::colour::danger : tokens::colour::warning;
 }
 
 /** A wavy line under a span, drawn in the language of the spacing scale so it
@@ -216,7 +216,7 @@ juce::Rectangle<int> DiagnosticsOverlay::boundsFor (const lang::Diagnostic& diag
                                : startBounds.withX (startBounds.getRight());
 
     return startBounds.getUnion (endBounds.translated (-endBounds.getWidth(), 0))
-                      .withRight (juce::jmax (startBounds.getRight(), endBounds.getX()));
+        .withRight (juce::jmax (startBounds.getRight(), endBounds.getX()));
 }
 
 void DiagnosticsOverlay::paint (juce::Graphics& g)
@@ -244,8 +244,7 @@ ScoreEditorComponent::ScoreEditorComponent (ProjectDocument& projectDocument)
     // CharPointer_UTF8, not a bare literal: juce::String's const char*
     // constructor decodes ASCII, so the control glyph came out as two mojibake
     // characters on screen.
-    heading.setText (juce::String (juce::CharPointer_UTF8 (
-                         "Score   \xe2\x8c\x83Space completes")),
+    heading.setText (juce::String (juce::CharPointer_UTF8 ("Score   \xe2\x8c\x83Space completes")),
                      juce::dontSendNotification);
     heading.setFont (tokens::type::font (tokens::type::title, true));
     heading.setColour (juce::Label::textColourId, tokens::colour::textPrimary);
@@ -305,7 +304,7 @@ void ScoreTextEditor::mouseWheelMove (const juce::MouseEvent& event,
     }
 
     lineRemainder += delta.y * gesture::wheelPixelsPerNotch
-                         / (double) juce::jmax (1, getLineHeight());
+                     / (double) juce::jmax (1, getLineHeight());
 
     const auto lines = (int) std::trunc (lineRemainder);
 
@@ -316,8 +315,14 @@ void ScoreTextEditor::mouseWheelMove (const juce::MouseEvent& event,
     scrollBy (-lines);
 }
 
-int ScoreEditorComponent::numFontSteps() noexcept    { return numSteps; }
-int ScoreEditorComponent::defaultFontStep() noexcept { return bodyStep; }
+int ScoreEditorComponent::numFontSteps() noexcept
+{
+    return numSteps;
+}
+int ScoreEditorComponent::defaultFontStep() noexcept
+{
+    return bodyStep;
+}
 
 void ScoreEditorComponent::setFontStep (int step)
 {
@@ -341,14 +346,13 @@ ScoreEditorComponent::~ScoreEditorComponent()
     source.removeListener (this);
 }
 
-int ScoreEditorComponent::characterIndexForByte (const std::string& utf8,
-                                                 std::uint32_t byteOffset)
+int ScoreEditorComponent::characterIndexForByte (const std::string& utf8, std::uint32_t byteOffset)
 {
     const auto limit = juce::jmin ((std::size_t) byteOffset, utf8.size());
     auto characters = 0;
 
     for (std::size_t i = 0; i < limit; ++i)
-        if (((unsigned char) utf8[i] & 0xC0u) != 0x80u)   // not a continuation byte
+        if (((unsigned char) utf8[i] & 0xC0u) != 0x80u) // not a continuation byte
             ++characters;
 
     return characters;
@@ -360,7 +364,7 @@ int ScoreEditorComponent::byteIndexForCharacter (const std::string& utf8, int ch
 
     for (std::size_t i = 0; i < utf8.size(); ++i)
     {
-        if (((unsigned char) utf8[i] & 0xC0u) != 0x80u)   // not a continuation byte
+        if (((unsigned char) utf8[i] & 0xC0u) != 0x80u) // not a continuation byte
         {
             if (characters == characterIndex)
                 return (int) i;
@@ -435,22 +439,19 @@ void ScoreEditorComponent::acceptCompletion()
     // The partial word is REPLACED, not appended to, or accepting `channel`
     // after `cha` spells `chachannel`.
     const juce::CodeDocument::Position from {
-        source, result.replacing.isEmpty()
-                    ? editor.getCaretPos().getPosition()
-                    : characterIndexForByte (text, result.replacing.begin)
+        source, result.replacing.isEmpty() ? editor.getCaretPos().getPosition()
+                                           : characterIndexForByte (text, result.replacing.begin)
     };
 
     const juce::CodeDocument::Position to { source, editor.getCaretPos().getPosition() };
 
     hideCompletions();
 
-    source.replaceSection (from.getPosition(), to.getPosition(),
-                           juce::String (selected->text));
+    source.replaceSection (from.getPosition(), to.getPosition(), juce::String (selected->text));
 
-    editor.moveCaretTo (juce::CodeDocument::Position (source,
-                                                      from.getPosition()
-                                                          + (int) selected->text.size()),
-                        false);
+    editor.moveCaretTo (
+        juce::CodeDocument::Position (source, from.getPosition() + (int) selected->text.size()),
+        false);
     editor.grabKeyboardFocus();
 }
 
@@ -458,8 +459,7 @@ bool ScoreEditorComponent::keyPressed (const juce::KeyPress& key, juce::Componen
 {
     // Control-Space asks, whether or not the popup is already open - asking
     // again after typing three more letters is the ordinary way to use it.
-    if (key.getKeyCode() == juce::KeyPress::spaceKey
-        && key.getModifiers().isCtrlDown())
+    if (key.getKeyCode() == juce::KeyPress::spaceKey && key.getModifiers().isCtrlDown())
     {
         showCompletions();
         return true;
@@ -471,9 +471,9 @@ bool ScoreEditorComponent::keyPressed (const juce::KeyPress& key, juce::Componen
     // too, where the other size is a row height.
     switch (hotkeys::viewCommandFor (key))
     {
-        case hotkeys::ViewCommand::sizeBigger:  setFontStep (fontStep + 1); return true;
+        case hotkeys::ViewCommand::sizeBigger: setFontStep (fontStep + 1); return true;
         case hotkeys::ViewCommand::sizeSmaller: setFontStep (fontStep - 1); return true;
-        case hotkeys::ViewCommand::sizeDefault: setFontStep (bodyStep);     return true;
+        case hotkeys::ViewCommand::sizeDefault: setFontStep (bodyStep); return true;
 
         // Everything else the timeline map knows is a key this editor must let
         // through: `1` is a digit somebody is typing, not the select tool.
@@ -486,8 +486,7 @@ bool ScoreEditorComponent::keyPressed (const juce::KeyPress& key, juce::Componen
         case hotkeys::ViewCommand::eraseTool:
         case hotkeys::ViewCommand::clearSelection:
         case hotkeys::ViewCommand::deleteSelection:
-        case hotkeys::ViewCommand::selectAll:
-            break;
+        case hotkeys::ViewCommand::selectAll: break;
     }
 
     if (! isCompletionVisible())
@@ -534,8 +533,8 @@ void ScoreEditorComponent::resized()
 {
     auto area = getLocalBounds();
 
-    auto strip = area.removeFromTop (tokens::size::stripToolbar).reduced (tokens::space::sm,
-                                                                         tokens::space::xs);
+    auto strip = area.removeFromTop (tokens::size::stripToolbar)
+                     .reduced (tokens::space::sm, tokens::space::xs);
     compileButton.setBounds (strip.removeFromRight (tokens::size::gutterLabel));
     strip.removeFromRight (tokens::space::md);
     heading.setBounds (strip);
@@ -626,8 +625,8 @@ void ScoreEditorComponent::checkNow()
     // Compile rather than parse-only: generation is microseconds for a piece
     // this size, and it is where the errors worth seeing live - an overfull
     // progression, a grid that cannot be represented. Nothing is written.
-    const auto result = lang::compile (text, ProjectEdits::scoreSourceName (document.getState())
-                                                 .toStdString());
+    const auto result = lang::compile (
+        text, ProjectEdits::scoreSourceName (document.getState()).toStdString());
 
     diagnostics = result.diagnostics;
 
@@ -662,8 +661,8 @@ void ScoreEditorComponent::storeSource()
     undo.beginNewTransaction ("Edit score");
 
     const auto name = ProjectEdits::scoreSourceName (document.getState());
-    ProjectEdits::setScoreSource (document.getState(), text,
-                                  name.isEmpty() ? "score" : name, &undo);
+    ProjectEdits::setScoreSource (document.getState(), text, name.isEmpty() ? "score" : name,
+                                  &undo);
 
     mirrored = text;
 }
@@ -700,12 +699,12 @@ void ScoreEditorComponent::compileIntoProject()
         return;
     }
 
-    juce::String message = "Score compiled: " + juce::String (report.patternsWritten)
-                         + " pattern" + (report.patternsWritten == 1 ? "" : "s") + ", "
-                         + juce::String (report.clipsWritten) + " clip"
-                         + (report.clipsWritten == 1 ? "" : "s") + ", "
-                         + juce::String (report.notesWritten) + " note"
-                         + (report.notesWritten == 1 ? "" : "s");
+    juce::String message = "Score compiled: " + juce::String (report.patternsWritten) + " pattern"
+                           + (report.patternsWritten == 1 ? "" : "s") + ", "
+                           + juce::String (report.clipsWritten) + " clip"
+                           + (report.clipsWritten == 1 ? "" : "s") + ", "
+                           + juce::String (report.notesWritten) + " note"
+                           + (report.notesWritten == 1 ? "" : "s");
 
     if (report.patternsKept > 0)
         message << " - " << report.patternsKept << " pattern"

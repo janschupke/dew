@@ -38,13 +38,20 @@ juce::MouseEvent eventOn (juce::Component& target, juce::Point<int> local,
     const auto position = local.toFloat();
 
     return { juce::Desktop::getInstance().getMainMouseSource(),
-             position, mods,
-             1.0f, 0.0f, 0.0f, 0.0f, 0.0f,
-             &target, &target,
+             position,
+             mods,
+             1.0f,
+             0.0f,
+             0.0f,
+             0.0f,
+             0.0f,
+             &target,
+             &target,
              juce::Time::getCurrentTime(),
              position,
              juce::Time::getCurrentTime(),
-             1, false };
+             1,
+             false };
 }
 
 /** How far one notch moves, whatever the view measures in, converted back to
@@ -127,9 +134,9 @@ TEST_CASE ("one wheel notch travels the same distance in every view", "[ui][gest
         {
             const auto before = roll.getTimeline().scrollOffsetSteps;
 
-            roll.mouseWheelMove (eventOn (roll, roll.getNoteArea().getCentre(),
-                                          juce::ModifierKeys::shiftModifier),
-                                 notch (-oneNotch));
+            roll.mouseWheelMove (
+                eventOn (roll, roll.getNoteArea().getCentre(), juce::ModifierKeys::shiftModifier),
+                notch (-oneNotch));
 
             return (roll.getTimeline().scrollOffsetSteps - before)
                    * roll.getTimeline().pixelsPerStep;
@@ -173,8 +180,7 @@ TEST_CASE ("the channel rack's viewport already agrees, and has to keep agreeing
     viewport.mouseWheelMove (eventOn (viewport, { 200, 200 }), notch (-oneNotch));
 
     INFO ("juce::Viewport moved " << viewport.getViewPositionY() << "px for one notch");
-    CHECK (juce::exactlyEqual ((double) viewport.getViewPositionY(),
-                               gesture::wheelPixelsPerNotch));
+    CHECK (juce::exactlyEqual ((double) viewport.getViewPositionY(), gesture::wheelPixelsPerNotch));
 }
 
 TEST_CASE ("the score's text scrolls in whole lines, and loses no fraction of one",
@@ -193,7 +199,7 @@ TEST_CASE ("the score's text scrolls in whole lines, and loses no fraction of on
     REQUIRE (text.getFirstLineOnScreen() == 0);
 
     const auto expectedLines = (int) std::trunc (gesture::wheelPixelsPerNotch
-                                                     / (double) text.getLineHeight());
+                                                 / (double) text.getLineHeight());
     REQUIRE (expectedLines > 0);
 
     text.mouseWheelMove (eventOn (text, { 400, 200 }), notch (-oneNotch));

@@ -18,8 +18,7 @@ using namespace dew;
 namespace
 {
 
-template <typename Type>
-void collectOfType (juce::Component& root, juce::Array<Type*>& out)
+template <typename Type> void collectOfType (juce::Component& root, juce::Array<Type*>& out)
 {
     for (auto* child : root.getChildren())
     {
@@ -132,8 +131,7 @@ TEST_CASE ("a channel row follows the channel it shows", "[ui][channelrack]")
     const auto headers = headersOf (h.rack);
     REQUIRE (! headers.isEmpty());
 
-    auto channel = ProjectEdits::findChannel (h.document.getState(),
-                                              (int) headers.size());
+    auto channel = ProjectEdits::findChannel (h.document.getState(), (int) headers.size());
     REQUIRE (channel.isValid());
 
     auto* header = headers[headers.size() - 1];

@@ -29,5 +29,4 @@ namespace dew
 */
 using EffectParamBlock = std::array<float, kMaxEffectParams>;
 
-
 } // namespace dew

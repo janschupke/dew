@@ -18,9 +18,10 @@ juce::AudioBuffer<float> tone (int numSamples, float amplitude = 0.5f)
 
     for (int channel = 0; channel < 2; ++channel)
         for (int i = 0; i < numSamples; ++i)
-            buffer.setSample (channel, i,
-                              amplitude * std::sin (juce::MathConstants<float>::twoPi
-                                                    * 440.0f * (float) i / 44100.0f));
+            buffer.setSample (
+                channel, i,
+                amplitude
+                    * std::sin (juce::MathConstants<float>::twoPi * 440.0f * (float) i / 44100.0f));
 
     return buffer;
 }
@@ -89,7 +90,8 @@ TEST_CASE ("normalize is a pure gain: it does not change the shape", "[render][p
     const auto ratio = buffer.getSample (0, 100) / before.getSample (0, 100);
 
     for (int i = 1; i < 500; ++i)
-        REQUIRE (buffer.getSample (0, i) == Approx (before.getSample (0, i) * ratio).margin (1.0e-6f));
+        REQUIRE (buffer.getSample (0, i)
+                 == Approx (before.getSample (0, i) * ratio).margin (1.0e-6f));
 }
 
 TEST_CASE ("normalize leaves silence alone rather than dividing by nothing", "[render][post]")
@@ -138,7 +140,9 @@ TEST_CASE ("dither puts noise into digital silence, bounded by one LSB", "[rende
 TEST_CASE ("dither is reproducible for a given seed", "[render][post]")
 {
     juce::AudioBuffer<float> a (2, 512), b (2, 512), c (2, 512);
-    a.clear(); b.clear(); c.clear();
+    a.clear();
+    b.clear();
+    c.clear();
 
     RenderPost::dither (a, 16, 99);
     RenderPost::dither (b, 16, 99);
@@ -150,7 +154,8 @@ TEST_CASE ("dither is reproducible for a given seed", "[render][post]")
     // A different seed is a different noise, or the seed is not doing anything.
     bool anyDifferent = false;
     for (int i = 0; i < 512; ++i)
-        anyDifferent = anyDifferent || ! juce::exactlyEqual (a.getSample (0, i), c.getSample (0, i));
+        anyDifferent = anyDifferent
+                       || ! juce::exactlyEqual (a.getSample (0, i), c.getSample (0, i));
 
     REQUIRE (anyDifferent);
 }
@@ -183,8 +188,7 @@ TEST_CASE ("dither cannot push a normalized peak over full scale", "[render][pos
 
 // --- through the renderer ----------------------------------------------------
 
-TEST_CASE ("normalizing a render lifts its peak to the asked-for level",
-           "[engine][render][post]")
+TEST_CASE ("normalizing a render lifts its peak to the asked-for level", "[engine][render][post]")
 {
     const auto project = dew::testing::fixtureProject();
 
@@ -210,8 +214,8 @@ TEST_CASE ("a render fades from silence when asked", "[engine][render][post]")
     options.fadeInSeconds = 0.05;
 
     juce::AudioBuffer<float> rendered;
-    const auto report = OfflineRenderer::renderToBuffer (dew::testing::fixtureProject(),
-                                                         rendered, options);
+    const auto report = OfflineRenderer::renderToBuffer (dew::testing::fixtureProject(), rendered,
+                                                         options);
 
     REQUIRE (report.ok());
     REQUIRE (rendered.getSample (0, 0) == Approx (0.0f).margin (1.0e-6f));

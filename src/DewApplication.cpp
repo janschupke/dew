@@ -54,8 +54,14 @@ private:
 DewApplication::DewApplication() = default;
 DewApplication::~DewApplication() = default;
 
-const juce::String DewApplication::getApplicationName()    { return "dew"; }
-const juce::String DewApplication::getApplicationVersion() { return BuildInfo::version(); }
+const juce::String DewApplication::getApplicationName()
+{
+    return "dew";
+}
+const juce::String DewApplication::getApplicationVersion()
+{
+    return BuildInfo::version();
+}
 
 void DewApplication::initialise (const juce::String&)
 {
@@ -180,11 +186,12 @@ void DewApplication::systemRequestedQuit()
     // Async: a modal loop here would block the message thread the audio device
     // callbacks and the UI both depend on.
     // JUCEApplication::quit() is static, so this lambda captures nothing.
-    document->saveIfNeededAndUserAgreesAsync ([] (juce::FileBasedDocument::SaveResult result)
-    {
-        if (result == juce::FileBasedDocument::savedOk)
-            quit();
-    });
+    document->saveIfNeededAndUserAgreesAsync (
+        [] (juce::FileBasedDocument::SaveResult result)
+        {
+            if (result == juce::FileBasedDocument::savedOk)
+                quit();
+        });
 }
 
 // --- commands ----------------------------------------------------------------
@@ -217,20 +224,15 @@ void DewApplication::getCommandInfo (juce::CommandID id, juce::ApplicationComman
             info.setActive (document != nullptr && document->getUndoManager().canRedo());
             break;
 
-        case CommandIDs::fileRender:
-            info.setActive (document != nullptr && main != nullptr);
-            break;
+        case CommandIDs::fileRender: info.setActive (document != nullptr && main != nullptr); break;
 
         case CommandIDs::fileSave:
         case CommandIDs::fileSaveAs:
         case CommandIDs::addChannel:
-        case CommandIDs::addPattern:
-            info.setActive (document != nullptr);
-            break;
+        case CommandIDs::addPattern: info.setActive (document != nullptr); break;
 
         case CommandIDs::fileNew:
-        case CommandIDs::fileOpen:
-            break;
+        case CommandIDs::fileOpen: break;
 
         case CommandIDs::viewUiScaleFirst:
         case CommandIDs::viewUiScale125:
@@ -242,10 +244,9 @@ void DewApplication::getCommandInfo (juce::CommandID id, juce::ApplicationComman
             const auto step = (int) (id - CommandIDs::viewUiScaleFirst);
 
             info.setActive (settings != nullptr);
-            info.setTicked (settings != nullptr
-                            && step >= 0 && step < Settings::numUiScaleSteps
-                            && juce::approximatelyEqual (settings->getUiScale(),
-                                                         Settings::uiScaleSteps[step]));
+            info.setTicked (
+                settings != nullptr && step >= 0 && step < Settings::numUiScaleSteps
+                && juce::approximatelyEqual (settings->getUiScale(), Settings::uiScaleSteps[step]));
             break;
         }
 
@@ -267,7 +268,6 @@ void DewApplication::applyUiScale (double scale)
     if (auto* main = getMainComponent())
         main->resized();
 }
-
 
 bool DewApplication::perform (const InvocationInfo& info)
 {
@@ -306,7 +306,8 @@ bool DewApplication::perform (const InvocationInfo& info)
                     if (result != juce::FileBasedDocument::savedOk)
                         return;
 
-                    document->loadFromUserSpecifiedFileAsync (true,
+                    document->loadFromUserSpecifiedFileAsync (
+                        true,
                         [document, main, refreshAfterReplace] (juce::Result loadResult)
                         {
                             if (loadResult.failed())
@@ -320,16 +321,12 @@ bool DewApplication::perform (const InvocationInfo& info)
 
         case CommandIDs::fileSave:
             document->saveAsync (true, true, [this] (juce::FileBasedDocument::SaveResult)
-            {
-                updateWindowTitle();
-            });
+                                 { updateWindowTitle(); });
             return true;
 
         case CommandIDs::fileSaveAs:
             document->saveAsInteractiveAsync (true, [this] (juce::FileBasedDocument::SaveResult)
-            {
-                updateWindowTitle();
-            });
+                                              { updateWindowTitle(); });
             return true;
 
         case CommandIDs::editUndo:
@@ -356,9 +353,7 @@ bool DewApplication::perform (const InvocationInfo& info)
             return true;
         }
 
-        case CommandIDs::transportRewind:
-            main->getEngine().rewind();
-            return true;
+        case CommandIDs::transportRewind: main->getEngine().rewind(); return true;
 
         case CommandIDs::transportToggleMode:
         {
@@ -385,37 +380,27 @@ bool DewApplication::perform (const InvocationInfo& info)
             return true;
         }
 
-        case CommandIDs::fileRender:
-            main->showRenderDialog (settings.get());
-            return true;
+        case CommandIDs::fileRender: main->showRenderDialog (settings.get()); return true;
 
-        case CommandIDs::audioSettings:
-            main->showAudioSettings();
-            return true;
+        case CommandIDs::audioSettings: main->showAudioSettings(); return true;
 
-        case CommandIDs::midiSettings:
-            main->showMidiSettings();
-            return true;
+        case CommandIDs::midiSettings: main->showMidiSettings(); return true;
 
-        case CommandIDs::compileScore:
-            main->compileScore();
-            return true;
+        case CommandIDs::compileScore: main->compileScore(); return true;
 
         // The editors, by number. These reach here at all only because the
         // timeline map now compares modifiers: it used to match a bare digit
         // and swallow cmd-1 in whichever view had focus.
         case CommandIDs::viewChannelRack: main->showTab (0); return true;
-        case CommandIDs::viewPianoRoll:   main->showTab (1); return true;
-        case CommandIDs::viewPlaylist:    main->showTab (2); return true;
-        case CommandIDs::viewMixer:       main->showTab (3); return true;
-        case CommandIDs::viewScore:       main->showTab (4); return true;
+        case CommandIDs::viewPianoRoll: main->showTab (1); return true;
+        case CommandIDs::viewPlaylist: main->showTab (2); return true;
+        case CommandIDs::viewMixer: main->showTab (3); return true;
+        case CommandIDs::viewScore: main->showTab (4); return true;
 
-        case CommandIDs::viewNextTab:     main->showAdjacentTab (1);  return true;
+        case CommandIDs::viewNextTab: main->showAdjacentTab (1); return true;
         case CommandIDs::viewPreviousTab: main->showAdjacentTab (-1); return true;
 
-        case CommandIDs::viewToggleInstrumentPanel:
-            main->toggleInstrumentPanel();
-            return true;
+        case CommandIDs::viewToggleInstrumentPanel: main->toggleInstrumentPanel(); return true;
 
         case CommandIDs::viewUiScaleFirst:
         case CommandIDs::viewUiScale125:
@@ -444,8 +429,7 @@ bool DewApplication::perform (const InvocationInfo& info)
             return true;
         }
 
-        default:
-            break;
+        default: break;
     }
 
     return false;
@@ -542,7 +526,6 @@ void DewApplication::menuItemSelected (int menuItemID, int topLevelMenuIndex)
     if (topLevelMenuIndex == getMenuBarNames().indexOf ("Demos"))
         openDemo (menuItemID - demoMenuBaseId);
 }
-
 
 void DewApplication::openDemo (int index)
 {

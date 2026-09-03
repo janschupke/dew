@@ -29,9 +29,15 @@ void FilterModule::process (ParamBlock p, StereoView io) noexcept
 {
     switch ((FilterMode) p.choice (kMode, 3))
     {
-        case FilterMode::highpass: filter.setType (juce::dsp::StateVariableTPTFilterType::highpass); break;
-        case FilterMode::bandpass: filter.setType (juce::dsp::StateVariableTPTFilterType::bandpass); break;
-        case FilterMode::lowpass:  filter.setType (juce::dsp::StateVariableTPTFilterType::lowpass); break;
+        case FilterMode::highpass:
+            filter.setType (juce::dsp::StateVariableTPTFilterType::highpass);
+            break;
+        case FilterMode::bandpass:
+            filter.setType (juce::dsp::StateVariableTPTFilterType::bandpass);
+            break;
+        case FilterMode::lowpass:
+            filter.setType (juce::dsp::StateVariableTPTFilterType::lowpass);
+            break;
     }
 
     // Not a range: what the device can represent. Cutoff is declared up to
@@ -42,7 +48,7 @@ void FilterModule::process (ParamBlock p, StereoView io) noexcept
 
     for (int i = 0; i < io.numSamples; ++i)
     {
-        io.left[i]  = filter.processSample (0, io.left[i]);
+        io.left[i] = filter.processSample (0, io.left[i]);
         io.right[i] = filter.processSample (1, io.right[i]);
     }
 }
@@ -138,7 +144,7 @@ void DriveModule::process (ParamBlock p, StereoView io) noexcept
 
     for (int i = 0; i < io.numSamples; ++i)
     {
-        io.left[i]  = std::tanh (io.left[i] * drive) * normalise * gain;
+        io.left[i] = std::tanh (io.left[i] * drive) * normalise * gain;
         io.right[i] = std::tanh (io.right[i] * drive) * normalise * gain;
     }
 }
@@ -203,8 +209,10 @@ void EqModule::process (ParamBlock p, StereoView io) noexcept
 
     for (int i = 0; i < io.numSamples; ++i)
     {
-        io.left[i]  = high[0].processSample (mid[0].processSample (low[0].processSample (io.left[i])));
-        io.right[i] = high[1].processSample (mid[1].processSample (low[1].processSample (io.right[i])));
+        io.left[i] = high[0].processSample (
+            mid[0].processSample (low[0].processSample (io.left[i])));
+        io.right[i] = high[1].processSample (
+            mid[1].processSample (low[1].processSample (io.right[i])));
     }
 }
 

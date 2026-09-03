@@ -16,16 +16,16 @@ namespace dew::lang
 */
 enum class CompletionKind
 {
-    block,   ///< a block keyword: song, channel, section
-    key,     ///< a key inside the current block
-    value,   ///< a member of a closed set, a duration, a chord
-    name     ///< something declared elsewhere in this file
+    block, ///< a block keyword: song, channel, section
+    key,   ///< a key inside the current block
+    value, ///< a member of a closed set, a duration, a chord
+    name   ///< something declared elsewhere in this file
 };
 
 struct Completion
 {
-    std::string text;     ///< what gets inserted
-    std::string detail;   ///< the schema's own doc, or what kind of thing it is
+    std::string text;   ///< what gets inserted
+    std::string detail; ///< the schema's own doc, or what kind of thing it is
     CompletionKind kind = CompletionKind::value;
 };
 

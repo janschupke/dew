@@ -99,10 +99,16 @@ public:
     float at (float position, int mip, double phase) const noexcept;
 
     /** The stored name, which is what a .dew carries. */
-    const juce::String& getName() const noexcept        { return name; }
+    const juce::String& getName() const noexcept
+    {
+        return name;
+    }
 
     /** What the panel's dropdown shows. */
-    const juce::String& getDisplayName() const noexcept { return displayName; }
+    const juce::String& getDisplayName() const noexcept
+    {
+        return displayName;
+    }
 
 private:
     float sampleAt (int frame, int mip, double phase) const noexcept;

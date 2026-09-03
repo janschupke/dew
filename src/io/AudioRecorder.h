@@ -31,25 +31,36 @@ public:
         `punchInBar` is remembered, not used: it is what the clip needs when the
         take is over, and the transport will have moved on by then.
     */
-    juce::String start (const juce::File& file, double sampleRate, int numChannels,
-                        int punchInBar);
+    juce::String start (const juce::File& file, double sampleRate, int numChannels, int punchInBar);
 
     /** Message thread. Finishes the file and returns it, or an invalid File if
         nothing was recorded.
     */
     juce::File stop();
 
-    bool isRecording() const noexcept  { return recording.load(); }
+    bool isRecording() const noexcept
+    {
+        return recording.load();
+    }
 
     /** The bar the take started on. Meaningful once stop() has returned. */
-    int getPunchInBar() const noexcept  { return punchInBar; }
+    int getPunchInBar() const noexcept
+    {
+        return punchInBar;
+    }
 
-    juce::File getFile() const  { return destination; }
+    juce::File getFile() const
+    {
+        return destination;
+    }
 
     /** How many frames have been captured. Message thread, for a duration
         readout while a take is running.
     */
-    juce::int64 getNumSamplesRecorded() const noexcept  { return samplesRecorded.load(); }
+    juce::int64 getNumSamplesRecorded() const noexcept
+    {
+        return samplesRecorded.load();
+    }
 
     /** Audio thread. Pushes one block of input, and updates the meter.
 

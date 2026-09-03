@@ -23,7 +23,10 @@ struct DemoLibrary
         juce::String description;
     };
 
-    static const std::vector<ProjectFactory::Demo>& entries() { return ProjectFactory::demos(); }
+    static const std::vector<ProjectFactory::Demo>& entries()
+    {
+        return ProjectFactory::demos();
+    }
 
     /** The embedded bytes of one demo, or an empty string if it is not there. */
     static juce::String jsonFor (const juce::String& fileName);

@@ -17,7 +17,7 @@ namespace
     a registry.
 */
 constexpr int firstCommand = CommandIDs::fileNew;
-constexpr int lastCommand  = CommandIDs::viewUiScale175;
+constexpr int lastCommand = CommandIDs::viewUiScale175;
 
 bool sameStroke (const hotkeys::Stroke& a, const hotkeys::Stroke& b) noexcept
 {
@@ -32,8 +32,7 @@ bool sameStroke (const hotkeys::Stroke& a, const hotkeys::Stroke& b) noexcept
 
 } // namespace
 
-TEST_CASE ("every command dew declares has a binding, and every binding a command",
-           "[ui][hotkeys]")
+TEST_CASE ("every command dew declares has a binding, and every binding a command", "[ui][hotkeys]")
 {
     // The drift gate. The application used to enumerate its commands in one
     // place, name them in a second and bind them in a third, and nothing
@@ -96,9 +95,9 @@ TEST_CASE ("a modified digit is not a timeline command", "[ui][hotkeys]")
     for (const auto digit : { '0', '1', '2', '3', '4', '5' })
     {
         INFO ("cmd-" << juce::String::charToString ((juce::juce_wchar) digit));
-        CHECK (hotkeys::viewCommandFor (
-                   juce::KeyPress (digit, juce::ModifierKeys::commandModifier, 0))
-               == ViewCommand::none);
+        CHECK (
+            hotkeys::viewCommandFor (juce::KeyPress (digit, juce::ModifierKeys::commandModifier, 0))
+            == ViewCommand::none);
     }
 
     // And the application binds those, which is what the digits were being
@@ -177,8 +176,7 @@ TEST_CASE ("record stays bare and the score compiles on a modifier", "[ui][hotke
     CHECK (record->stroke.modifiers == 0);
 
     // And shift-r is not a timeline command either, so the roll can have it.
-    CHECK (hotkeys::viewCommandFor (
-               juce::KeyPress ('r', juce::ModifierKeys::shiftModifier, 'R'))
+    CHECK (hotkeys::viewCommandFor (juce::KeyPress ('r', juce::ModifierKeys::shiftModifier, 'R'))
            == ViewCommand::none);
 }
 
@@ -193,8 +191,7 @@ TEST_CASE ("the editors are reachable from the keyboard", "[ui][hotkeys]")
 
     // One command per tab, and nothing points past the end.
     const int perTab[] { CommandIDs::viewChannelRack, CommandIDs::viewPianoRoll,
-                         CommandIDs::viewPlaylist, CommandIDs::viewMixer,
-                         CommandIDs::viewScore };
+                         CommandIDs::viewPlaylist, CommandIDs::viewMixer, CommandIDs::viewScore };
 
     REQUIRE ((int) std::size (perTab) == Settings::numTabs);
 

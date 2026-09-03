@@ -74,9 +74,9 @@ void EffectChainHost::paint (juce::Graphics& g)
     // panel belonging to the selected one.
     paint::container (g, getLocalBounds());
 
-    paint::sectionHeading (g, { space::md, 0, getWidth() - size::iconButton - space::md,
-                                tokens::size::stripHeading },
-                           ownerName.isEmpty() ? "EFFECTS" : "EFFECTS - " + ownerName);
+    paint::sectionHeading (
+        g, { space::md, 0, getWidth() - size::iconButton - space::md, tokens::size::stripHeading },
+        ownerName.isEmpty() ? "EFFECTS" : "EFFECTS - " + ownerName);
 
     // Between the heading and the cards, the way every other heading in the
     // app is separated from what it names.

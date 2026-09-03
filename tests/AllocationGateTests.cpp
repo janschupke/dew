@@ -36,7 +36,7 @@ namespace
 {
 
 std::atomic<bool> counting { false };
-std::atomic<int>  allocations { 0 };
+std::atomic<int> allocations { 0 };
 
 inline void noteAllocation() noexcept
 {
@@ -60,7 +60,10 @@ struct ScopedAllocationCount
         counting.store (false, std::memory_order_relaxed);
     }
 
-    int count() const noexcept { return allocations.load (std::memory_order_relaxed); }
+    int count() const noexcept
+    {
+        return allocations.load (std::memory_order_relaxed);
+    }
 };
 
 } // namespace
@@ -78,7 +81,10 @@ void* operator new (std::size_t size)
     throw std::bad_alloc();
 }
 
-void* operator new[] (std::size_t size) { return ::operator new (size); }
+void* operator new[] (std::size_t size)
+{
+    return ::operator new (size);
+}
 
 void* operator new (std::size_t size, const std::nothrow_t&) noexcept
 {
@@ -114,16 +120,46 @@ void* operator new[] (std::size_t size, std::align_val_t alignment)
     return ::operator new (size, alignment);
 }
 
-void operator delete (void* p) noexcept                      { std::free (p); }
-void operator delete[] (void* p) noexcept                    { std::free (p); }
-void operator delete (void* p, std::size_t) noexcept         { std::free (p); }
-void operator delete[] (void* p, std::size_t) noexcept       { std::free (p); }
-void operator delete (void* p, const std::nothrow_t&) noexcept   { std::free (p); }
-void operator delete[] (void* p, const std::nothrow_t&) noexcept { std::free (p); }
-void operator delete (void* p, std::align_val_t) noexcept    { std::free (p); }
-void operator delete[] (void* p, std::align_val_t) noexcept  { std::free (p); }
-void operator delete (void* p, std::size_t, std::align_val_t) noexcept   { std::free (p); }
-void operator delete[] (void* p, std::size_t, std::align_val_t) noexcept { std::free (p); }
+void operator delete (void* p) noexcept
+{
+    std::free (p);
+}
+void operator delete[] (void* p) noexcept
+{
+    std::free (p);
+}
+void operator delete (void* p, std::size_t) noexcept
+{
+    std::free (p);
+}
+void operator delete[] (void* p, std::size_t) noexcept
+{
+    std::free (p);
+}
+void operator delete (void* p, const std::nothrow_t&) noexcept
+{
+    std::free (p);
+}
+void operator delete[] (void* p, const std::nothrow_t&) noexcept
+{
+    std::free (p);
+}
+void operator delete (void* p, std::align_val_t) noexcept
+{
+    std::free (p);
+}
+void operator delete[] (void* p, std::align_val_t) noexcept
+{
+    std::free (p);
+}
+void operator delete (void* p, std::size_t, std::align_val_t) noexcept
+{
+    std::free (p);
+}
+void operator delete[] (void* p, std::size_t, std::align_val_t) noexcept
+{
+    std::free (p);
+}
 
 namespace
 {
@@ -181,9 +217,8 @@ juce::ValueTree maximalProject()
     {
         auto track = ProjectEdits::addPlaylistTrack (project, "A" + juce::String (i), nullptr);
 
-        ProjectEdits::addAutomationClip (track,
-                                         automationIds[(size_t) i % automationIds.size()],
-                                         0, 4, nullptr);
+        ProjectEdits::addAutomationClip (track, automationIds[(size_t) i % automationIds.size()], 0,
+                                         4, nullptr);
     }
 
     return project;
@@ -338,10 +373,9 @@ TEST_CASE ("the sequencer refuses at its trigger bound rather than growing",
     const auto capacityBefore = out.capacity();
 
     // One block spanning the whole pattern.
-    Sequencer::collect (snapshot, Transport::Mode::pattern, 0,
-                        (int) (samplesPerStep * patternSteps),
-                        TempoMap::constant (60.0 * sampleRate / samplesPerStep, 1),
-                        sampleRate, 0, out);
+    Sequencer::collect (
+        snapshot, Transport::Mode::pattern, 0, (int) (samplesPerStep * patternSteps),
+        TempoMap::constant (60.0 * sampleRate / samplesPerStep, 1), sampleRate, 0, out);
 
     INFO ("triggers collected: " << out.size());
     CHECK ((int) out.size() == kMaxTriggersPerBlock);

@@ -11,22 +11,21 @@ using namespace dew::lang;
 namespace
 {
 
-constexpr const char* kSource =
-    "// amber.score\n"
-    "song {\n"
-    "  title  \"Amber\"\n"
-    "  tempo  96 bpm\n"
-    "  meter  4/4\n"
-    "  seed   0x5EEDC0FFEE\n"
-    "}\n"
-    "\n"
-    "channel pad { colour #4C6EF5  range C3..C5  velocity 72 +- 6 }\n"
-    "\n"
-    "rhythm running { 1/8 1/8 1/4. - 1/8t ~ 1/2 }\n"
-    "\n"
-    "harmony lament {\n"
-    "  i x2 | bVI | bVII | i^1 x2 | iv | V7/iv\n"
-    "}\n";
+constexpr const char* kSource = "// amber.score\n"
+                                "song {\n"
+                                "  title  \"Amber\"\n"
+                                "  tempo  96 bpm\n"
+                                "  meter  4/4\n"
+                                "  seed   0x5EEDC0FFEE\n"
+                                "}\n"
+                                "\n"
+                                "channel pad { colour #4C6EF5  range C3..C5  velocity 72 +- 6 }\n"
+                                "\n"
+                                "rhythm running { 1/8 1/8 1/4. - 1/8t ~ 1/2 }\n"
+                                "\n"
+                                "harmony lament {\n"
+                                "  i x2 | bVI | bVII | i^1 x2 | iv | V7/iv\n"
+                                "}\n";
 
 /** The lexemes of every non-trivia, non-EOF token. */
 std::vector<std::string> lexemes (std::string_view source)
@@ -142,7 +141,7 @@ TEST_CASE ("line endings do not move a token", "[score][lexer]")
     // Token 2 is `tempo` - token 1 is the opening brace.
     const auto c = positions (tabs);
     REQUIRE (a.size() == c.size());
-    REQUIRE (a[2].first == c[2].first);      // same line
+    REQUIRE (a[2].first == c[2].first); // same line
     REQUIRE (a[2].second == 3);
     REQUIRE (c[2].second == 2);
 }
@@ -170,33 +169,37 @@ TEST_CASE ("a column counts characters, not bytes", "[score][lexer]")
 
 TEST_CASE ("the shapes the language actually needs each lex as one token", "[score][lexer]")
 {
-    struct Case { const char* source; TokenKind kind; };
+    struct Case
+    {
+        const char* source;
+        TokenKind kind;
+    };
 
     const Case cases[] = {
-        { "1/4",          TokenKind::ratio },     // a note value
-        { "4/4",          TokenKind::ratio },     // and a meter - context decides
-        { "1/4.",         TokenKind::ratio },     // dotted
-        { "1/8t",         TokenKind::ratio },     // triplet
-        { "96",           TokenKind::number },
-        { "0.25",         TokenKind::number },
-        { "-1",           TokenKind::number },
-        { "+5",           TokenKind::number },
+        { "1/4", TokenKind::ratio },  // a note value
+        { "4/4", TokenKind::ratio },  // and a meter - context decides
+        { "1/4.", TokenKind::ratio }, // dotted
+        { "1/8t", TokenKind::ratio }, // triplet
+        { "96", TokenKind::number },
+        { "0.25", TokenKind::number },
+        { "-1", TokenKind::number },
+        { "+5", TokenKind::number },
         { "0x5EEDC0FFEE", TokenKind::number },
-        { "x2",           TokenKind::repeat },
-        { "\"Amber\"",    TokenKind::text },
-        { "#4C6EF5",      TokenKind::colour },
-        { "bVII",         TokenKind::word },
-        { "F#dim7",       TokenKind::word },      // '#' is a sharp inside a word
-        { "verse_b",      TokenKind::word },
-        { "root-fifth",   TokenKind::word },      // a hyphen between letters
+        { "x2", TokenKind::repeat },
+        { "\"Amber\"", TokenKind::text },
+        { "#4C6EF5", TokenKind::colour },
+        { "bVII", TokenKind::word },
+        { "F#dim7", TokenKind::word }, // '#' is a sharp inside a word
+        { "verse_b", TokenKind::word },
+        { "root-fifth", TokenKind::word }, // a hyphen between letters
         { "harmonic-minor", TokenKind::word },
         { "root-third-fifth", TokenKind::word },
         { "// a comment", TokenKind::comment },
-        { "..",           TokenKind::range },
-        { "+-",           TokenKind::plusMinus },
-        { "|",            TokenKind::bar },
-        { "^",            TokenKind::caret },
-        { "/",            TokenKind::slash },
+        { "..", TokenKind::range },
+        { "+-", TokenKind::plusMinus },
+        { "|", TokenKind::bar },
+        { "^", TokenKind::caret },
+        { "/", TokenKind::slash },
     };
 
     for (const auto& c : cases)
@@ -204,7 +207,7 @@ TEST_CASE ("the shapes the language actually needs each lex as one token", "[sco
         INFO ("source " << c.source << " expected " << nameOf (c.kind));
 
         const auto tokens = tokenize (c.source);
-        REQUIRE (tokens.size() == 2);           // the token, then end of file
+        REQUIRE (tokens.size() == 2); // the token, then end of file
         REQUIRE (tokens[0].kind == c.kind);
         REQUIRE (tokens[0].textIn (c.source) == c.source);
     }
@@ -267,15 +270,15 @@ TEST_CASE ("a range is not a decimal point and a sharp is not a comment", "[scor
     }
 }
 
-TEST_CASE ("a rhythm and a progression lex into the pieces the parser expects",
-           "[score][lexer]")
+TEST_CASE ("a rhythm and a progression lex into the pieces the parser expects", "[score][lexer]")
 {
-    REQUIRE (lexemes ("{ 1/8 1/8 1/4. - 1/8t ~ 1/2 }")
-             == std::vector<std::string> { "{", "1/8", "1/8", "1/4.", "-", "1/8t", "~", "1/2", "}" });
+    REQUIRE (
+        lexemes ("{ 1/8 1/8 1/4. - 1/8t ~ 1/2 }")
+        == std::vector<std::string> { "{", "1/8", "1/8", "1/4.", "-", "1/8t", "~", "1/2", "}" });
 
     REQUIRE (lexemes ("i x2 | bVI | i^1 | V7/iv")
-             == std::vector<std::string> { "i", "x2", "|", "bVI", "|", "i", "^", "1", "|",
-                                           "V7", "/", "iv" });
+             == std::vector<std::string> { "i", "x2", "|", "bVI", "|", "i", "^", "1", "|", "V7",
+                                           "/", "iv" });
 }
 
 TEST_CASE ("comments are tokens for the editor and gone for the parser", "[score][lexer]")

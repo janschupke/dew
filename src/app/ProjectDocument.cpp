@@ -9,10 +9,7 @@ namespace dew
 {
 
 ProjectDocument::ProjectDocument()
-    : FileBasedDocument (fileExtension,
-                         fileWildcard,
-                         "Open a dew project",
-                         "Save dew project")
+    : FileBasedDocument (fileExtension, fileWildcard, "Open a dew project", "Save dew project")
 {
     setState (ProjectFactory::createDefault(), true);
 }
@@ -149,10 +146,25 @@ void ProjectDocument::noteChange()
         onProjectChanged();
 }
 
-void ProjectDocument::valueTreePropertyChanged (juce::ValueTree&, const juce::Identifier&) { noteChange(); }
-void ProjectDocument::valueTreeChildAdded (juce::ValueTree&, juce::ValueTree&)             { noteChange(); }
-void ProjectDocument::valueTreeChildRemoved (juce::ValueTree&, juce::ValueTree&, int)      { noteChange(); }
-void ProjectDocument::valueTreeChildOrderChanged (juce::ValueTree&, int, int)              { noteChange(); }
-void ProjectDocument::valueTreeParentChanged (juce::ValueTree&)                            { noteChange(); }
+void ProjectDocument::valueTreePropertyChanged (juce::ValueTree&, const juce::Identifier&)
+{
+    noteChange();
+}
+void ProjectDocument::valueTreeChildAdded (juce::ValueTree&, juce::ValueTree&)
+{
+    noteChange();
+}
+void ProjectDocument::valueTreeChildRemoved (juce::ValueTree&, juce::ValueTree&, int)
+{
+    noteChange();
+}
+void ProjectDocument::valueTreeChildOrderChanged (juce::ValueTree&, int, int)
+{
+    noteChange();
+}
+void ProjectDocument::valueTreeParentChanged (juce::ValueTree&)
+{
+    noteChange();
+}
 
 } // namespace dew

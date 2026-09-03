@@ -141,10 +141,18 @@ public:
     /** True between a press this took and its release, so a host can tell a
         ruler drag from one of its own without keeping a second flag.
     */
-    bool isActive() const noexcept { return mode != Mode::none; }
+    bool isActive() const noexcept
+    {
+        return mode != Mode::none;
+    }
 
 private:
-    enum class Mode { none, scrubbing, selecting };
+    enum class Mode
+    {
+        none,
+        scrubbing,
+        selecting
+    };
 
     GestureContext contextOrDefault() const;
     double unitAt (int x) const;
@@ -183,8 +191,7 @@ private:
     piano roll and the playlist draw theirs inline, because they already own
     the whole of their own bounds.
 */
-class RulerStrip : public juce::Component,
-                   private juce::Timer
+class RulerStrip : public juce::Component, private juce::Timer
 {
 public:
     RulerStrip();

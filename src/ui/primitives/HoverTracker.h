@@ -30,15 +30,27 @@ namespace dew
 class HoverTracker
 {
 public:
-    explicit HoverTracker (juce::Component& c) : owner (c) {}
+    explicit HoverTracker (juce::Component& c)
+        : owner (c)
+    {
+    }
 
     /** Call from the owner's mouseEnter. */
-    void enter() { set (true); }
+    void enter()
+    {
+        set (true);
+    }
 
     /** Call from the owner's mouseExit - the pointer may have landed on a child. */
-    void exit() { set (owner.isMouseOver (true)); }
+    void exit()
+    {
+        set (owner.isMouseOver (true));
+    }
 
-    bool isHovered() const noexcept { return hovered; }
+    bool isHovered() const noexcept
+    {
+        return hovered;
+    }
 
     /** Run when the state changes. Repaints if nothing is attached, which is
         what all three call sites did; a widget that animates its hover sets
@@ -51,7 +63,10 @@ public:
         would is why emphasis has two lift rungs. Reading it is free, so paint()
         pulls a number rather than branching on a bool.
     */
-    float lift() const noexcept { return motion.get(); }
+    float lift() const noexcept
+    {
+        return motion.get();
+    }
 
 private:
     void set (bool shouldBeHovered)
@@ -59,8 +74,7 @@ private:
         if (std::exchange (hovered, shouldBeHovered) == shouldBeHovered)
             return;
 
-        motion.animateTo (hovered ? tokens::emphasis::surfaceLift : 0.0f,
-                          tokens::motion::quickMs);
+        motion.animateTo (hovered ? tokens::emphasis::surfaceLift : 0.0f, tokens::motion::quickMs);
 
         if (onChange != nullptr)
             onChange();

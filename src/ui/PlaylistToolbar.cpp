@@ -25,10 +25,18 @@ PlaylistToolbar::PlaylistToolbar()
     addTool (selectButton, PlaylistTool::select);
     addTool (paintButton, PlaylistTool::paint);
 
-    zoomButtons.onZoom = [this] (double factor) { if (onZoom) onZoom (factor); };
+    zoomButtons.onZoom = [this] (double factor)
+    {
+        if (onZoom)
+            onZoom (factor);
+    };
     addAndMakeVisible (zoomButtons);
 
-    heightButtons.onHeightChange = [this] (double factor) { if (onTrackHeight) onTrackHeight (factor); };
+    heightButtons.onHeightChange = [this] (double factor)
+    {
+        if (onTrackHeight)
+            onTrackHeight (factor);
+    };
     addAndMakeVisible (heightButtons);
 
     updateToolButtons();

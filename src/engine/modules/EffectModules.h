@@ -26,7 +26,12 @@ namespace dew
 class FilterModule final : public EffectModule
 {
 public:
-    enum { kMode = 0, kCutoff = 1, kResonance = 2 };
+    enum
+    {
+        kMode = 0,
+        kCutoff = 1,
+        kResonance = 2
+    };
 
     void prepare (double sampleRate, int maximumBlockSize) override;
     void reset() noexcept override;
@@ -40,7 +45,12 @@ private:
 class ReverbModule final : public EffectModule
 {
 public:
-    enum { kRoomSize = 0, kDamping = 1, kWidth = 2 };
+    enum
+    {
+        kRoomSize = 0,
+        kDamping = 1,
+        kWidth = 2
+    };
 
     void prepare (double sampleRate, int maximumBlockSize) override;
     void reset() noexcept override;
@@ -53,7 +63,11 @@ private:
 class DelayModule final : public EffectModule
 {
 public:
-    enum { kDelayMs = 0, kFeedback = 1 };
+    enum
+    {
+        kDelayMs = 0,
+        kFeedback = 1
+    };
 
     /** Longest delay the line can be set to. Fixed so it is allocated once. */
     static constexpr float maxDelayMs = 1000.0f;
@@ -71,7 +85,11 @@ private:
 class DriveModule final : public EffectModule
 {
 public:
-    enum { kDrive = 0, kOutputGain = 1 };
+    enum
+    {
+        kDrive = 0,
+        kOutputGain = 1
+    };
 
     void prepare (double, int) override {}
     void reset() noexcept override {}
@@ -81,7 +99,11 @@ public:
 class ChorusModule final : public EffectModule
 {
 public:
-    enum { kRate = 0, kDepth = 1 };
+    enum
+    {
+        kRate = 0,
+        kDepth = 1
+    };
 
     void prepare (double sampleRate, int maximumBlockSize) override;
     void reset() noexcept override;
@@ -94,7 +116,13 @@ private:
 class EqModule final : public EffectModule
 {
 public:
-    enum { kLowGainDb = 0, kMidGainDb = 1, kMidFreq = 2, kHighGainDb = 3 };
+    enum
+    {
+        kLowGainDb = 0,
+        kMidGainDb = 1,
+        kMidFreq = 2,
+        kHighGainDb = 3
+    };
 
     void prepare (double sampleRate, int maximumBlockSize) override;
     void reset() noexcept override;

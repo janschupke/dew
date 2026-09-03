@@ -29,7 +29,10 @@ std::optional<int> parsePitch (std::string_view) noexcept;
 std::string pitchName (int pitch);
 
 /** 0..11, from a pitch. */
-constexpr int pitchClassOf (int pitch) noexcept { return ((pitch % 12) + 12) % 12; }
+constexpr int pitchClassOf (int pitch) noexcept
+{
+    return ((pitch % 12) + 12) % 12;
+}
 
 // ------------------------------------------------------------------------------
 
@@ -90,8 +93,8 @@ struct Chord
     int rootPc = 0;
     int bassPc = 0;
     int inversion = 0;
-    std::vector<int> intervals;   ///< semitones above the root, ascending from 0
-    std::string label;            ///< "Fm7", for the UI and for diagnostics
+    std::vector<int> intervals; ///< semitones above the root, ascending from 0
+    std::string label;          ///< "Fm7", for the UI and for diagnostics
 
     /** The distinct pitch classes, root first. */
     std::vector<int> pitchClasses() const;
@@ -104,9 +107,9 @@ struct Chord
 */
 struct ChordSymbol
 {
-    std::string_view root;      ///< "i", "bVII", "V7", "Cm7", "F#dim7"
-    int inversion = 0;          ///< from `^N`
-    std::string_view of;        ///< from `/X` - a numeral, for tonicisation
+    std::string_view root; ///< "i", "bVII", "V7", "Cm7", "F#dim7"
+    int inversion = 0;     ///< from `^N`
+    std::string_view of;   ///< from `/X` - a numeral, for tonicisation
 };
 
 struct ResolvedChord

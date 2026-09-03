@@ -15,28 +15,27 @@ namespace
 /** A score that resolves cleanly, for tests that want to change one thing. */
 std::string wellFormed (const std::string& extra = {})
 {
-    return
-        "song {\n"
-        "  tempo 96 bpm\n"
-        "  meter 4/4\n"
-        "  key   F minor\n"
-        "  seed  0x51A9\n"
-        "}\n"
-        "channel pad { mixer 1 }\n"
-        "voicing warm { size 4 voices }\n"
-        "rhythm pulse { 1/4 1/4 1/2 }\n"
-        "harmony lament { i x2 | bVI | bVII }\n"
-        "section verse {\n"
-        "  length 8 bars\n"
-        "  harmony lament\n"
-        "  part pad {\n"
-        "    chords with warm\n"
-        "  }\n"
-        "}\n"
-        "arrangement {\n"
-        "  verse\n"
-        "}\n"
-        + extra;
+    return "song {\n"
+           "  tempo 96 bpm\n"
+           "  meter 4/4\n"
+           "  key   F minor\n"
+           "  seed  0x51A9\n"
+           "}\n"
+           "channel pad { mixer 1 }\n"
+           "voicing warm { size 4 voices }\n"
+           "rhythm pulse { 1/4 1/4 1/2 }\n"
+           "harmony lament { i x2 | bVI | bVII }\n"
+           "section verse {\n"
+           "  length 8 bars\n"
+           "  harmony lament\n"
+           "  part pad {\n"
+           "    chords with warm\n"
+           "  }\n"
+           "}\n"
+           "arrangement {\n"
+           "  verse\n"
+           "}\n"
+           + extra;
 }
 
 struct Resolved
@@ -52,8 +51,8 @@ struct Resolved
 */
 std::unique_ptr<Resolved> resolveText (std::string source)
 {
-    auto out = std::make_unique<Resolved> (Resolved { DiagnosticBag { source }, {}, {},
-                                                      std::move (source) });
+    auto out = std::make_unique<Resolved> (
+        Resolved { DiagnosticBag { source }, {}, {}, std::move (source) });
 
     // The bag was built over the moved-from string, so rebuild it over the kept one.
     out->bag = DiagnosticBag { out->text };
@@ -67,7 +66,10 @@ std::unique_ptr<Resolved> resolveText (std::string source)
 /** The ci preset builds with -Wfloat-equal as an error, and Catch2's decomposer
     trips it, so a double is compared through here rather than with ==.
 */
-bool same (double a, double b) { return std::abs (a - b) < 1e-9; }
+bool same (double a, double b)
+{
+    return std::abs (a - b) < 1e-9;
+}
 
 bool hasCode (const DiagnosticBag& bag, std::string_view code)
 {
@@ -115,17 +117,15 @@ TEST_CASE ("a well-formed score resolves with nothing to say", "[score][resolver
     REQUIRE (r->model.sections.front().parts.front().kind == PartKind::chords);
 }
 
-TEST_CASE ("the symbol table is filled even when resolution fails",
-           "[score][resolver]")
+TEST_CASE ("the symbol table is filled even when resolution fails", "[score][resolver]")
 {
     // Completion in a file that does not yet compile is the only case that
     // matters, so pass one runs regardless of what pass two finds.
-    const auto r = resolveText (
-        "channel pad { mixer 1 }\n"
-        "voicing warm { size 4 voices }\n"
-        "rhythm pulse { 1/4 }\n"
-        "harmony lament { i }\n"
-        "section verse { !!! }\n");
+    const auto r = resolveText ("channel pad { mixer 1 }\n"
+                                "voicing warm { size 4 voices }\n"
+                                "rhythm pulse { 1/4 }\n"
+                                "harmony lament { i }\n"
+                                "section verse { !!! }\n");
 
     REQUIRE (r->bag.hasErrors());
 
@@ -136,17 +136,15 @@ TEST_CASE ("the symbol table is filled even when resolution fails",
     REQUIRE (r->symbols.sections == std::vector<std::string> { "verse" });
 }
 
-TEST_CASE ("an unknown key is named, with a suggestion when one is close",
-           "[score][resolver]")
+TEST_CASE ("an unknown key is named, with a suggestion when one is close", "[score][resolver]")
 {
-    const auto r = resolveText (
-        "song {\n"
-        "  tempo 96\n"
-        "  meter 4/4\n"
-        "  key   C major\n"
-        "  tempoo 120\n"
-        "}\n"
-        "channel pad { mixor 1 }\n");
+    const auto r = resolveText ("song {\n"
+                                "  tempo 96\n"
+                                "  meter 4/4\n"
+                                "  key   C major\n"
+                                "  tempoo 120\n"
+                                "}\n"
+                                "channel pad { mixor 1 }\n");
 
     const auto* unknown = diagnosticWith (r->bag, "E204");
     REQUIRE (unknown != nullptr);
@@ -163,13 +161,12 @@ TEST_CASE ("an unknown key is named, with a suggestion when one is close",
 TEST_CASE ("a suggestion is offered only when it is close", "[score][resolver]")
 {
     // A "did you mean" that proposes something unrelated is worse than none.
-    const auto r = resolveText (
-        "song {\n"
-        "  tempo 96\n"
-        "  meter 4/4\n"
-        "  key   C major\n"
-        "  wobbleflange 3\n"
-        "}\n");
+    const auto r = resolveText ("song {\n"
+                                "  tempo 96\n"
+                                "  meter 4/4\n"
+                                "  key   C major\n"
+                                "  wobbleflange 3\n"
+                                "}\n");
 
     const auto text = renderAll (r->bag, r->text, "x.score");
     INFO (text);
@@ -182,34 +179,33 @@ TEST_CASE ("a reference is reported where it is written", "[score][resolver]")
 {
     // Not at any definition: the reference is the mistake, and pointing
     // elsewhere sends you to the wrong line.
-    const auto r = resolveText (wellFormed() + "\n"
-        "section bridge {\n"
-        "  length 4 bars\n"
-        "  harmony missing\n"
-        "  part pad { chords with warm }\n"
-        "}\n");
+    const auto r = resolveText (wellFormed()
+                                + "\n"
+                                  "section bridge {\n"
+                                  "  length 4 bars\n"
+                                  "  harmony missing\n"
+                                  "  part pad { chords with warm }\n"
+                                  "}\n");
 
     const auto* d = diagnosticWith (r->bag, "E224");
     REQUIRE (d != nullptr);
     REQUIRE (d->primary.textIn (r->text) == "missing");
 }
 
-TEST_CASE ("an unknown section in the arrangement is caught at the reference",
-           "[score][resolver]")
+TEST_CASE ("an unknown section in the arrangement is caught at the reference", "[score][resolver]")
 {
-    const auto r = resolveText (
-        "song { tempo 96\n  meter 4/4\n  key C major\n}\n"
-        "channel pad { mixer 1 }\n"
-        "voicing warm { size 4 }\n"
-        "harmony h { I }\n"
-        "section verse {\n"
-        "  length 4 bars\n"
-        "  harmony h\n"
-        "  part pad { chords with warm }\n"
-        "}\n"
-        "arrangement {\n"
-        "  verssse\n"
-        "}\n");
+    const auto r = resolveText ("song { tempo 96\n  meter 4/4\n  key C major\n}\n"
+                                "channel pad { mixer 1 }\n"
+                                "voicing warm { size 4 }\n"
+                                "harmony h { I }\n"
+                                "section verse {\n"
+                                "  length 4 bars\n"
+                                "  harmony h\n"
+                                "  part pad { chords with warm }\n"
+                                "}\n"
+                                "arrangement {\n"
+                                "  verssse\n"
+                                "}\n");
 
     const auto* d = diagnosticWith (r->bag, "E236");
     REQUIRE (d != nullptr);
@@ -220,8 +216,7 @@ TEST_CASE ("an unknown section in the arrangement is caught at the reference",
     REQUIRE (text.find ("did you mean `verse`?") != std::string::npos);
 }
 
-TEST_CASE ("a name declared twice is flagged at the second one",
-           "[score][resolver]")
+TEST_CASE ("a name declared twice is flagged at the second one", "[score][resolver]")
 {
     const auto r = resolveText (wellFormed() + "\nchannel pad { mixer 2 }\n");
 
@@ -248,38 +243,33 @@ TEST_CASE ("a required key that is missing is named", "[score][resolver]")
     REQUIRE (text.find ("`song` needs `tempo`, `meter` and `key`") != std::string::npos);
 }
 
-TEST_CASE ("a value of the wrong shape lists what was expected",
-           "[score][resolver]")
+TEST_CASE ("a value of the wrong shape lists what was expected", "[score][resolver]")
 {
-    const auto r = resolveText (
-        "song {\n"
-        "  tempo 96\n"
-        "  meter 4/4\n"
-        "  key   C major\n"
-        "}\n"
-        "voicing warm { spread wobbly }\n");
+    const auto r = resolveText ("song {\n"
+                                "  tempo 96\n"
+                                "  meter 4/4\n"
+                                "  key   C major\n"
+                                "}\n"
+                                "voicing warm { spread wobbly }\n");
 
     const auto text = renderAll (r->bag, r->text, "x.score");
     INFO (text);
 
     REQUIRE (hasCode (r->bag, "E207"));
-    REQUIRE (text.find ("one of: close, open, drop2, drop3, shell, rootless")
-             != std::string::npos);
+    REQUIRE (text.find ("one of: close, open, drop2, drop3, shell, rootless") != std::string::npos);
 }
 
 TEST_CASE ("an enum typo gets its own suggestion", "[score][resolver]")
 {
-    const auto r = resolveText (
-        "song {\n  tempo 96\n  meter 4/4\n  key C major\n}\n"
-        "voicing warm { spread drop22 }\n");
+    const auto r = resolveText ("song {\n  tempo 96\n  meter 4/4\n  key C major\n}\n"
+                                "voicing warm { spread drop22 }\n");
 
     const auto text = renderAll (r->bag, r->text, "x.score");
     INFO (text);
     REQUIRE (text.find ("did you mean `drop2`?") != std::string::npos);
 }
 
-TEST_CASE ("the host's own limits are refused in the language's words",
-           "[score][resolver]")
+TEST_CASE ("the host's own limits are refused in the language's words", "[score][resolver]")
 {
     SECTION ("a grid past 16 cannot be stored")
     {
@@ -294,8 +284,7 @@ TEST_CASE ("the host's own limits are refused in the language's words",
 
     SECTION ("a beat unit has to be a power of two")
     {
-        const auto r = resolveText (
-            "song {\n  tempo 96\n  meter 4/6\n  key C major\n}\n");
+        const auto r = resolveText ("song {\n  tempo 96\n  meter 4/6\n  key C major\n}\n");
 
         const auto text = renderAll (r->bag, r->text, "x.score");
         INFO (text);
@@ -305,9 +294,8 @@ TEST_CASE ("the host's own limits are refused in the language's words",
 
     SECTION ("velocity zero is a note-off, not a quiet note")
     {
-        const auto r = resolveText (
-            "song {\n  tempo 96\n  meter 4/4\n  key C major\n}\n"
-            "channel pad { velocity 0 }\n");
+        const auto r = resolveText ("song {\n  tempo 96\n  meter 4/4\n  key C major\n}\n"
+                                    "channel pad { velocity 0 }\n");
 
         const auto text = renderAll (r->bag, r->text, "x.score");
         INFO (text);
@@ -316,20 +304,20 @@ TEST_CASE ("the host's own limits are refused in the language's words",
     }
 }
 
-TEST_CASE ("a mute budget that would silence a window is refused",
-           "[score][resolver]")
+TEST_CASE ("a mute budget that would silence a window is refused", "[score][resolver]")
 {
-    const auto r = resolveText (wellFormed() + "\n"
-        "section quiet {\n"
-        "  length 4 bars\n"
-        "  harmony lament\n"
-        "  part pad {\n"
-        "    melody {\n"
-        "      rhythm pulse\n"
-        "      mute   4 of 4\n"
-        "    }\n"
-        "  }\n"
-        "}\n");
+    const auto r = resolveText (wellFormed()
+                                + "\n"
+                                  "section quiet {\n"
+                                  "  length 4 bars\n"
+                                  "  harmony lament\n"
+                                  "  part pad {\n"
+                                  "    melody {\n"
+                                  "      rhythm pulse\n"
+                                  "      mute   4 of 4\n"
+                                  "    }\n"
+                                  "  }\n"
+                                  "}\n");
 
     const auto text = renderAll (r->bag, r->text, "x.score");
     INFO (text);
@@ -338,12 +326,10 @@ TEST_CASE ("a mute budget that would silence a window is refused",
     REQUIRE (text.find ("would silence every window") != std::string::npos);
 }
 
-TEST_CASE ("a bad chord is reported at the chord, in the harmony's key",
-           "[score][resolver]")
+TEST_CASE ("a bad chord is reported at the chord, in the harmony's key", "[score][resolver]")
 {
-    const auto r = resolveText (
-        "song {\n  tempo 96\n  meter 4/4\n  key C major\n}\n"
-        "harmony h { I | Vsplendid | vi }\n");
+    const auto r = resolveText ("song {\n  tempo 96\n  meter 4/4\n  key C major\n}\n"
+                                "harmony h { I | Vsplendid | vi }\n");
 
     const auto* d = diagnosticWith (r->bag, "E218");
     REQUIRE (d != nullptr);
@@ -354,12 +340,10 @@ TEST_CASE ("a bad chord is reported at the chord, in the harmony's key",
     REQUIRE (r->model.harmonies.front().chords.size() == 2);
 }
 
-TEST_CASE ("a harmony's own key overrides the song's for its numerals",
-           "[score][resolver]")
+TEST_CASE ("a harmony's own key overrides the song's for its numerals", "[score][resolver]")
 {
-    const auto r = resolveText (
-        "song {\n  tempo 96\n  meter 4/4\n  key C major\n}\n"
-        "harmony h {\n  key A minor\n  i | VI | VII\n}\n");
+    const auto r = resolveText ("song {\n  tempo 96\n  meter 4/4\n  key C major\n}\n"
+                                "harmony h {\n  key A minor\n  i | VI | VII\n}\n");
 
     INFO (renderAll (r->bag, r->text, "x.score"));
     REQUIRE_FALSE (r->bag.hasErrors());
@@ -368,17 +352,15 @@ TEST_CASE ("a harmony's own key overrides the song's for its numerals",
     REQUIRE (r->model.harmonies.front().key->tonicPc == 9);
 }
 
-TEST_CASE ("every duration written anywhere is collected for the grid",
-           "[score][resolver]")
+TEST_CASE ("every duration written anywhere is collected for the grid", "[score][resolver]")
 {
     // The grid is a property of the WHOLE file, so the resolver has to gather
     // literals from rhythms and from chord lengths alike rather than one block
     // at a time.
-    const auto r = resolveText (
-        "song {\n  tempo 96\n  meter 4/4\n  key C major\n}\n"
-        "rhythm a { 1/16 1/16 }\n"
-        "rhythm b { 1/8t }\n"
-        "harmony h { I 1/2 }\n");
+    const auto r = resolveText ("song {\n  tempo 96\n  meter 4/4\n  key C major\n}\n"
+                                "rhythm a { 1/16 1/16 }\n"
+                                "rhythm b { 1/8t }\n"
+                                "harmony h { I 1/2 }\n");
 
     REQUIRE (r->model.durationUses.size() == 4);
 
@@ -388,9 +370,8 @@ TEST_CASE ("every duration written anywhere is collected for the grid",
 
 TEST_CASE ("a rhythm repeat becomes that many steps", "[score][resolver]")
 {
-    const auto r = resolveText (
-        "song {\n  tempo 96\n  meter 4/4\n  key C major\n}\n"
-        "rhythm a { 1/8 x4 - 1/4 }\n");
+    const auto r = resolveText ("song {\n  tempo 96\n  meter 4/4\n  key C major\n}\n"
+                                "rhythm a { 1/8 x4 - 1/4 }\n");
 
     INFO (renderAll (r->bag, r->text, "x.score"));
 
@@ -406,29 +387,26 @@ TEST_CASE ("a rhythm repeat becomes that many steps", "[score][resolver]")
 
 TEST_CASE ("a section with nothing to play is refused", "[score][resolver]")
 {
-    const auto r = resolveText (
-        "song {\n  tempo 96\n  meter 4/4\n  key C major\n}\n"
-        "harmony h { I }\n"
-        "section verse {\n  length 4 bars\n  harmony h\n}\n"
-        "arrangement { verse }\n");
+    const auto r = resolveText ("song {\n  tempo 96\n  meter 4/4\n  key C major\n}\n"
+                                "harmony h { I }\n"
+                                "section verse {\n  length 4 bars\n  harmony h\n}\n"
+                                "arrangement { verse }\n");
 
     const auto text = renderAll (r->bag, r->text, "x.score");
     INFO (text);
     REQUIRE (hasCode (r->bag, "E242"));
 }
 
-TEST_CASE ("a part that says nothing about what to play is refused",
-           "[score][resolver]")
+TEST_CASE ("a part that says nothing about what to play is refused", "[score][resolver]")
 {
-    const auto r = resolveText (
-        "song {\n  tempo 96\n  meter 4/4\n  key C major\n}\n"
-        "channel pad { mixer 1 }\n"
-        "harmony h { I }\n"
-        "section verse {\n"
-        "  length 4 bars\n"
-        "  harmony h\n"
-        "  part pad { octave 1 }\n"
-        "}\n");
+    const auto r = resolveText ("song {\n  tempo 96\n  meter 4/4\n  key C major\n}\n"
+                                "channel pad { mixer 1 }\n"
+                                "harmony h { I }\n"
+                                "section verse {\n"
+                                "  length 4 bars\n"
+                                "  harmony h\n"
+                                "  part pad { octave 1 }\n"
+                                "}\n");
 
     const auto text = renderAll (r->bag, r->text, "x.score");
     INFO (text);
@@ -437,25 +415,24 @@ TEST_CASE ("a part that says nothing about what to play is refused",
 
 TEST_CASE ("a range that runs backwards is caught", "[score][resolver]")
 {
-    const auto r = resolveText (
-        "song {\n  tempo 96\n  meter 4/4\n  key C major\n}\n"
-        "channel pad { range C5..C3 }\n");
+    const auto r = resolveText ("song {\n  tempo 96\n  meter 4/4\n  key C major\n}\n"
+                                "channel pad { range C5..C3 }\n");
 
     const auto text = renderAll (r->bag, r->text, "x.score");
     INFO (text);
     REQUIRE (hasCode (r->bag, "E208"));
 }
 
-TEST_CASE ("an arrangement entry keeps its label, repeat and identical flag",
-           "[score][resolver]")
+TEST_CASE ("an arrangement entry keeps its label, repeat and identical flag", "[score][resolver]")
 {
-    const auto r = resolveText (wellFormed() + "\n"
-        "arrangement {\n"
-        "  verse\n"
-        "  verse x2\n"
-        "  verse as verse_b\n"
-        "  verse x3 identical\n"
-        "}\n");
+    const auto r = resolveText (wellFormed()
+                                + "\n"
+                                  "arrangement {\n"
+                                  "  verse\n"
+                                  "  verse x2\n"
+                                  "  verse as verse_b\n"
+                                  "  verse x3 identical\n"
+                                  "}\n");
 
     INFO (renderAll (r->bag, r->text, "x.score"));
 

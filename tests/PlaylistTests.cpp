@@ -66,19 +66,25 @@ struct PlaylistHarness
 };
 
 juce::MouseEvent eventAt (juce::Component& target, juce::Point<int> local, int clickCount = 1,
-                          juce::ModifierKeys mods = juce::ModifierKeys(),
-                          bool wasDragged = false)
+                          juce::ModifierKeys mods = juce::ModifierKeys(), bool wasDragged = false)
 {
     const auto position = local.toFloat();
 
     return { juce::Desktop::getInstance().getMainMouseSource(),
-             position, mods,
-             1.0f, 0.0f, 0.0f, 0.0f, 0.0f,
-             &target, &target,
+             position,
+             mods,
+             1.0f,
+             0.0f,
+             0.0f,
+             0.0f,
+             0.0f,
+             &target,
+             &target,
              juce::Time::getCurrentTime(),
              position,
              juce::Time::getCurrentTime(),
-             clickCount, wasDragged };
+             clickCount,
+             wasDragged };
 }
 
 /** The centre of a bar on a track, asked of the component rather than
@@ -170,7 +176,7 @@ TEST_CASE ("a clip can be dragged onto another track", "[ui][playlist]")
 
     const auto moved = h.track (2).getChild (0);
     REQUIRE ((int) moved[ids::startBar] == 2);
-    REQUIRE ((int) moved[ids::lengthBars] == 2);   // it kept its length
+    REQUIRE ((int) moved[ids::lengthBars] == 2); // it kept its length
 }
 
 TEST_CASE ("a drag across several tracks keeps following the clip", "[ui][playlist]")
@@ -332,12 +338,14 @@ juce::ValueTree firstPointOf (const juce::ValueTree& automation)
 
 } // namespace
 
-TEST_CASE ("choosing a target creates an automation and a clip for it", "[ui][playlist][automation]")
+TEST_CASE ("choosing a target creates an automation and a clip for it",
+           "[ui][playlist][automation]")
 {
     const juce::ScopedJuceInitialiser_GUI juceInit;
     PlaylistHarness h;
 
-    const auto target = targetNamed (h.document.getState(), firstChannelVolumeTarget (h.document.getState()));
+    const auto target = targetNamed (h.document.getState(),
+                                     firstChannelVolumeTarget (h.document.getState()));
     const auto clip = h.playlist.createAutomationClip (target, 0, 4);
 
     REQUIRE (clip.isValid());
@@ -360,11 +368,13 @@ TEST_CASE ("a bend is drawn, not straightened", "[ui][playlist][automation]")
     const juce::ScopedJuceInitialiser_GUI juceInit;
     PlaylistHarness h;
 
-    const auto target = targetNamed (h.document.getState(), firstChannelVolumeTarget (h.document.getState()));
+    const auto target = targetNamed (h.document.getState(),
+                                     firstChannelVolumeTarget (h.document.getState()));
     const auto clip = h.playlist.createAutomationClip (target, 0, 4);
     REQUIRE (clip.isValid());
 
-    auto automation = ProjectEdits::findAutomation (h.document.getState(), (int) clip[ids::automationId]);
+    auto automation = ProjectEdits::findAutomation (h.document.getState(),
+                                                    (int) clip[ids::automationId]);
     REQUIRE (automation.isValid());
 
     // A rising line across the clip, so a bend has somewhere to bulge.
@@ -416,7 +426,8 @@ TEST_CASE ("an automation point can be dragged, added and removed", "[ui][playli
     const juce::ScopedJuceInitialiser_GUI juceInit;
     PlaylistHarness h;
 
-    const auto target = targetNamed (h.document.getState(), firstChannelVolumeTarget (h.document.getState()));
+    const auto target = targetNamed (h.document.getState(),
+                                     firstChannelVolumeTarget (h.document.getState()));
     const auto clip = h.playlist.createAutomationClip (target, 0, 4);
     REQUIRE (clip.isValid());
 
@@ -475,7 +486,8 @@ TEST_CASE ("an automation point can be dragged, added and removed", "[ui][playli
     h.playlist.mouseUp (eventAt (h.playlist, added, 1, alt));
 
     REQUIRE (countPoints() == 2);
-    REQUIRE (ProjectEdits::findAutomation (h.document.getState(), (int) clip[ids::automationId]).isValid());
+    REQUIRE (ProjectEdits::findAutomation (h.document.getState(), (int) clip[ids::automationId])
+                 .isValid());
 }
 
 namespace
@@ -486,7 +498,8 @@ namespace
 */
 struct CurveHarness
 {
-    explicit CurveHarness (PlaylistHarness& harness) : h (harness)
+    explicit CurveHarness (PlaylistHarness& harness)
+        : h (harness)
     {
         h.playlist.setTrackHeight (tokens::size::trackHeightMax);
 
@@ -495,7 +508,8 @@ struct CurveHarness
         clip = h.playlist.createAutomationClip (target, 0, 4);
         REQUIRE (clip.isValid());
 
-        automation = ProjectEdits::findAutomation (h.document.getState(), (int) clip[ids::automationId]);
+        automation = ProjectEdits::findAutomation (h.document.getState(),
+                                                   (int) clip[ids::automationId]);
         REQUIRE (automation.isValid());
 
         auto points = ProjectEdits::sortedAutomationPoints (automation);
@@ -505,7 +519,10 @@ struct CurveHarness
         points.getLast().setProperty (ids::value, 0.8, nullptr);
     }
 
-    juce::ValueTree leftPoint() const { return ProjectEdits::sortedAutomationPoints (automation).getFirst(); }
+    juce::ValueTree leftPoint() const
+    {
+        return ProjectEdits::sortedAutomationPoints (automation).getFirst();
+    }
 
     /** A point on the drawn curve, halfway along the first segment. */
     juce::Point<int> midSegment (int trackIndex = 0) const
@@ -531,7 +548,6 @@ TEST_CASE ("dragging a segment bends it, and does not move the clip", "[ui][play
 
     const auto startBar = (int) c.clip[ids::startBar];
     const auto at = c.midSegment();
-
 
     h.playlist.mouseDown (eventAt (h.playlist, at));
     h.playlist.mouseDrag (eventAt (h.playlist, at.translated (0, -60), 1, {}, true));
@@ -658,14 +674,15 @@ TEST_CASE ("dragging a point past its neighbour stops at it", "[ui][playlist][au
     const auto points = ProjectEdits::sortedAutomationPoints (c.automation);
 
     const auto from = lane.positionOf ((double) points.getFirst()[ids::step],
-                                       (double) points.getFirst()[ids::value]).toInt();
+                                       (double) points.getFirst()[ids::value])
+                          .toInt();
 
     // Drag the first point far past the last one.
     h.playlist.mouseDown (eventAt (h.playlist, from));
-    h.playlist.mouseDrag (eventAt (h.playlist, { (int) lane.bounds.getRight() + 200, from.y },
-                                   1, {}, true));
-    h.playlist.mouseUp (eventAt (h.playlist, { (int) lane.bounds.getRight() + 200, from.y },
-                                 1, {}, true));
+    h.playlist.mouseDrag (
+        eventAt (h.playlist, { (int) lane.bounds.getRight() + 200, from.y }, 1, {}, true));
+    h.playlist.mouseUp (
+        eventAt (h.playlist, { (int) lane.bounds.getRight() + 200, from.y }, 1, {}, true));
 
     const auto after = ProjectEdits::sortedAutomationPoints (c.automation);
     REQUIRE (after.size() == 2);
@@ -723,7 +740,8 @@ TEST_CASE ("the menu on a point still offers Delete point", "[ui][playlist][auto
 
     const auto lane = h.playlist.laneGeometryFor (c.clip, 0);
     const auto onPoint = lane.positionOf ((double) c.leftPoint()[ids::step],
-                                          (double) c.leftPoint()[ids::value]).toInt();
+                                          (double) c.leftPoint()[ids::value])
+                             .toInt();
 
     const auto items = h.playlist.clipMenuItemsAt (onPoint);
 
@@ -732,12 +750,14 @@ TEST_CASE ("the menu on a point still offers Delete point", "[ui][playlist][auto
     REQUIRE (items.contains ("Step"));
 }
 
-TEST_CASE ("an automation clip can still be moved and deleted like any other", "[ui][playlist][automation]")
+TEST_CASE ("an automation clip can still be moved and deleted like any other",
+           "[ui][playlist][automation]")
 {
     const juce::ScopedJuceInitialiser_GUI juceInit;
     PlaylistHarness h;
 
-    const auto target = targetNamed (h.document.getState(), firstChannelVolumeTarget (h.document.getState()));
+    const auto target = targetNamed (h.document.getState(),
+                                     firstChannelVolumeTarget (h.document.getState()));
     const auto clip = h.playlist.createAutomationClip (target, 0, 2);
     REQUIRE (clip.isValid());
 
@@ -810,8 +830,7 @@ TEST_CASE ("shift-clicking the ruler without dragging clears the selection",
     REQUIRE_FALSE (h.editorState.hasBarSelection());
 }
 
-TEST_CASE ("a plain ruler drag still scrubs instead of selecting",
-           "[ui][playlist][selection]")
+TEST_CASE ("a plain ruler drag still scrubs instead of selecting", "[ui][playlist][selection]")
 {
     const juce::ScopedJuceInitialiser_GUI juceInit;
     PlaylistHarness h;
@@ -849,8 +868,7 @@ TEST_CASE ("selecting a span never touches the document or the undo stack",
     REQUIRE_FALSE (h.document.getUndoManager().canUndo());
 }
 
-TEST_CASE ("a selection survives an edit elsewhere in the arrangement",
-           "[ui][playlist][selection]")
+TEST_CASE ("a selection survives an edit elsewhere in the arrangement", "[ui][playlist][selection]")
 {
     const juce::ScopedJuceInitialiser_GUI juceInit;
     PlaylistHarness h;
@@ -896,8 +914,7 @@ TEST_CASE ("the selected span is painted", "[ui][playlist][selection]")
     REQUIRE (changed > 1000);
 }
 
-TEST_CASE ("double-clicking the playlist ruler clears the selection",
-           "[ui][playlist][selection]")
+TEST_CASE ("double-clicking the playlist ruler clears the selection", "[ui][playlist][selection]")
 {
     const juce::ScopedJuceInitialiser_GUI juceInit;
     PlaylistHarness h;
@@ -910,8 +927,7 @@ TEST_CASE ("double-clicking the playlist ruler clears the selection",
     REQUIRE_FALSE (h.editorState.hasBarSelection());
 }
 
-TEST_CASE ("mod-clicking the playlist ruler spans from the playhead",
-           "[ui][playlist][selection]")
+TEST_CASE ("mod-clicking the playlist ruler spans from the playhead", "[ui][playlist][selection]")
 {
     const juce::ScopedJuceInitialiser_GUI juceInit;
     PlaylistHarness h;
@@ -919,7 +935,7 @@ TEST_CASE ("mod-clicking the playlist ruler spans from the playhead",
     const juce::ModifierKeys mod { juce::ModifierKeys::commandModifier };
 
     h.playlist.mouseDown (eventAt (h.playlist, rulerPointFor (h, 3), 1, mod));
-    h.playlist.mouseUp   (eventAt (h.playlist, rulerPointFor (h, 3), 1, mod));
+    h.playlist.mouseUp (eventAt (h.playlist, rulerPointFor (h, 3), 1, mod));
 
     REQUIRE (h.editorState.hasBarSelection());
 
@@ -940,7 +956,7 @@ TEST_CASE ("a mod-click on the playlist ruler does not move the transport",
     const juce::ModifierKeys mod { juce::ModifierKeys::commandModifier };
 
     h.playlist.mouseDown (eventAt (h.playlist, rulerPointFor (h, 3), 1, mod));
-    h.playlist.mouseUp   (eventAt (h.playlist, rulerPointFor (h, 3), 1, mod));
+    h.playlist.mouseUp (eventAt (h.playlist, rulerPointFor (h, 3), 1, mod));
 
     // It selects instead of scrubbing, or the span would always start where the
     // click landed and "from the playhead" would mean nothing.
@@ -1044,7 +1060,7 @@ TEST_CASE ("the paint tool does not stack a clip on one already there", "[ui][pl
     h.playlist.mouseDown (eventAt (h.playlist, pointFor (h, 1, 0)));
     h.playlist.mouseDrag (eventAt (h.playlist, pointFor (h, 2, 0), 1, {}, true));
     h.playlist.mouseDrag (eventAt (h.playlist, pointFor (h, 3, 0), 1, {}, true));
-    h.playlist.mouseUp   (eventAt (h.playlist, pointFor (h, 3, 0), 1, {}, true));
+    h.playlist.mouseUp (eventAt (h.playlist, pointFor (h, 3, 0), 1, {}, true));
 
     // Three bars crossed, one of them already occupied.
     CHECK (h.countClips (0) == 3);
@@ -1063,7 +1079,7 @@ TEST_CASE ("a mod-drag copies a clip and leaves the original", "[ui][playlist]")
 
     h.playlist.mouseDown (eventAt (h.playlist, pointFor (h, 1, 0), 1, mod));
     h.playlist.mouseDrag (eventAt (h.playlist, pointFor (h, 5, 0), 1, mod, true));
-    h.playlist.mouseUp   (eventAt (h.playlist, pointFor (h, 5, 0), 1, mod, true));
+    h.playlist.mouseUp (eventAt (h.playlist, pointFor (h, 5, 0), 1, mod, true));
 
     INFO ("clips on track 0: " << h.countClips (0));
     CHECK (h.countClips (0) == 2);
@@ -1089,7 +1105,7 @@ TEST_CASE ("a mod-drag that never moves makes no copy", "[ui][playlist]")
     const juce::ModifierKeys mod { juce::ModifierKeys::commandModifier };
 
     h.playlist.mouseDown (eventAt (h.playlist, pointFor (h, 1, 0), 1, mod));
-    h.playlist.mouseUp   (eventAt (h.playlist, pointFor (h, 1, 0), 1, mod));
+    h.playlist.mouseUp (eventAt (h.playlist, pointFor (h, 1, 0), 1, mod));
 
     // Otherwise a mod-press litters a copy directly on top of its own original.
     CHECK (h.countClips (0) == 1);
@@ -1109,11 +1125,11 @@ TEST_CASE ("a mod-shift-drag gives the copy a pattern of its own", "[ui][playlis
     ProjectEdits::addNote (pattern, 1, 3, 1, 64, 0.8f, &setup);
 
     const juce::ModifierKeys modShift { juce::ModifierKeys::commandModifier
-                                          | juce::ModifierKeys::shiftModifier };
+                                        | juce::ModifierKeys::shiftModifier };
 
     h.playlist.mouseDown (eventAt (h.playlist, pointFor (h, 1, 0), 1, modShift));
     h.playlist.mouseDrag (eventAt (h.playlist, pointFor (h, 5, 0), 1, modShift, true));
-    h.playlist.mouseUp   (eventAt (h.playlist, pointFor (h, 5, 0), 1, modShift, true));
+    h.playlist.mouseUp (eventAt (h.playlist, pointFor (h, 5, 0), 1, modShift, true));
 
     auto copy = ProjectEdits::findClipAtBar (h.track (0), 5);
     REQUIRE (copy.isValid());
@@ -1302,7 +1318,8 @@ TEST_CASE ("the last track is reachable when the tracks overflow", "[ui][playlis
     REQUIRE (h.countClips (11) == 1);
 }
 
-TEST_CASE ("the add-track button is still reachable when the tracks overflow", "[ui][playlist][height]")
+TEST_CASE ("the add-track button is still reachable when the tracks overflow",
+           "[ui][playlist][height]")
 {
     const juce::ScopedJuceInitialiser_GUI juceInit;
     PlaylistHarness h;
@@ -1329,16 +1346,19 @@ TEST_CASE ("the add-track button is still reachable when the tracks overflow", "
     REQUIRE (holder->getBottom() <= h.playlist.getHeight());
 }
 
-TEST_CASE ("a taller track gives the automation curve the whole lane", "[ui][playlist][height][automation]")
+TEST_CASE ("a taller track gives the automation curve the whole lane",
+           "[ui][playlist][height][automation]")
 {
     const juce::ScopedJuceInitialiser_GUI juceInit;
     PlaylistHarness h;
 
-    const auto target = targetNamed (h.document.getState(), firstChannelVolumeTarget (h.document.getState()));
+    const auto target = targetNamed (h.document.getState(),
+                                     firstChannelVolumeTarget (h.document.getState()));
     const auto clip = h.playlist.createAutomationClip (target, 0, 4);
     REQUIRE (clip.isValid());
 
-    auto automation = ProjectEdits::findAutomation (h.document.getState(), (int) clip[ids::automationId]);
+    auto automation = ProjectEdits::findAutomation (h.document.getState(),
+                                                    (int) clip[ids::automationId]);
     const auto points = ProjectEdits::sortedAutomationPoints (automation);
     REQUIRE (points.size() == 2);
 
@@ -1366,8 +1386,7 @@ TEST_CASE ("the header lays out at every height", "[ui][playlist][height]")
     const juce::ScopedJuceInitialiser_GUI juceInit;
     PlaylistHarness h;
 
-    for (const auto height : { tokens::size::trackHeightMin,
-                               tokens::size::trackHeightRoomy,
+    for (const auto height : { tokens::size::trackHeightMin, tokens::size::trackHeightRoomy,
                                tokens::size::trackHeightMax })
     {
         h.playlist.setTrackHeight (height);
@@ -1463,7 +1482,7 @@ TEST_CASE ("right-clicking a clip offers a menu rather than deleting it", "[ui][
     const juce::ModifierKeys rightButton { juce::ModifierKeys::rightButtonModifier };
 
     h.playlist.mouseDown (eventAt (h.playlist, at, 1, rightButton));
-    h.playlist.mouseUp   (eventAt (h.playlist, at, 1, rightButton));
+    h.playlist.mouseUp (eventAt (h.playlist, at, 1, rightButton));
 
     // The clip is still there: deleting is now something you choose from the
     // menu rather than something that happens on the way past.
@@ -1491,7 +1510,7 @@ TEST_CASE ("alt-clicking a clip still deletes it outright", "[ui][playlist]")
     const juce::ModifierKeys alt { juce::ModifierKeys::altModifier };
 
     h.playlist.mouseDown (eventAt (h.playlist, at, 1, alt));
-    h.playlist.mouseUp   (eventAt (h.playlist, at, 1, alt));
+    h.playlist.mouseUp (eventAt (h.playlist, at, 1, alt));
 
     // The sweep-to-clear gesture the piano roll and step grid share survives.
     REQUIRE (h.countClips (0) == 0);
@@ -1689,10 +1708,10 @@ TEST_CASE ("each wheel modifier moves a different axis", "[ui][playlist][height]
 
     // Zoom plus shift is the OTHER axis, and it has to be checked before zoom -
     // which it also satisfies.
-    h.playlist.mouseWheelMove (eventAt (h.playlist, at, 1,
-                                        juce::ModifierKeys::commandModifier
-                                            | juce::ModifierKeys::shiftModifier),
-                               wheel (0.5f));
+    h.playlist.mouseWheelMove (
+        eventAt (h.playlist, at, 1,
+                 juce::ModifierKeys::commandModifier | juce::ModifierKeys::shiftModifier),
+        wheel (0.5f));
 
     CHECK (h.playlist.getTrackHeight() > heightBefore);
     CHECK (juce::exactlyEqual (h.playlist.getTimeline().pixelsPerStep, zoomBefore));

@@ -11,7 +11,9 @@ namespace dew
 using namespace tokens;
 
 StatusBar::StatusBar (ProjectDocument& d, EditorState& s, LiveAudioHost& h)
-    : document (d), editorState (s), audioHost (h)
+    : document (d)
+    , editorState (s)
+    , audioHost (h)
 {
     setComponentID ("statusBar");
 
@@ -129,7 +131,8 @@ void StatusBar::timerCallback()
     }
     else if (dropoutFlashMs > 0)
     {
-        dropoutFlashMs = juce::jmax (0, dropoutFlashMs - 1000 / juce::jmax (1, motion::uiRefreshHz));
+        dropoutFlashMs = juce::jmax (0,
+                                     dropoutFlashMs - 1000 / juce::jmax (1, motion::uiRefreshHz));
     }
 
     // getXRunCount returns -1 when the device cannot report them at all, which
@@ -147,9 +150,18 @@ void StatusBar::changeListenerCallback (juce::ChangeBroadcaster*)
     updateContext();
 }
 
-void StatusBar::valueTreePropertyChanged (juce::ValueTree&, const juce::Identifier&) { updateContext(); }
-void StatusBar::valueTreeChildAdded (juce::ValueTree&, juce::ValueTree&)             { updateContext(); }
-void StatusBar::valueTreeChildRemoved (juce::ValueTree&, juce::ValueTree&, int)      { updateContext(); }
+void StatusBar::valueTreePropertyChanged (juce::ValueTree&, const juce::Identifier&)
+{
+    updateContext();
+}
+void StatusBar::valueTreeChildAdded (juce::ValueTree&, juce::ValueTree&)
+{
+    updateContext();
+}
+void StatusBar::valueTreeChildRemoved (juce::ValueTree&, juce::ValueTree&, int)
+{
+    updateContext();
+}
 
 juce::Colour StatusBar::colourFor (Severity severity) const
 {
@@ -157,8 +169,8 @@ juce::Colour StatusBar::colourFor (Severity severity) const
     {
         case Severity::success: return colour::success;
         case Severity::warning: return colour::warning;
-        case Severity::error:   return colour::danger;
-        case Severity::info:    break;
+        case Severity::error: return colour::danger;
+        case Severity::info: break;
     }
 
     return colour::textSecondary;
@@ -203,8 +215,7 @@ void StatusBar::paint (juce::Graphics& g)
         const auto remaining = messageLifetimeMs - messageAgeMs;
         const auto leaving = juce::jlimit (0.0f, 1.0f, (float) remaining / 1000.0f);
 
-        g.setColour (colourFor (messageSeverity)
-                         .withAlpha (juce::jmin (arrival.get(), leaving)));
+        g.setColour (colourFor (messageSeverity).withAlpha (juce::jmin (arrival.get(), leaving)));
         g.drawText (messageText, messageBounds, juce::Justification::centredLeft, true);
     }
     else if (hoverText.isNotEmpty())
@@ -226,7 +237,8 @@ void StatusBar::paint (juce::Graphics& g)
         right << "  -  " << dropouts << (dropouts == 1 ? " drop" : " drops");
 
     g.setColour (dropoutFlashMs > 0 ? colour::danger
-                                    : percent > 80 ? colour::warning : colour::textDisabled);
+                 : percent > 80     ? colour::warning
+                                    : colour::textDisabled);
     g.drawText (right, loadBounds, juce::Justification::centredRight, false);
 }
 

@@ -62,9 +62,18 @@ private:
 
     static constexpr State dirtyBit = 1u << 6;
 
-    static constexpr size_t frontOf (State s) noexcept { return (size_t) ( s        & 0x3u); }
-    static constexpr size_t readyOf (State s) noexcept { return (size_t) ((s >> 2)  & 0x3u); }
-    static constexpr size_t backOf  (State s) noexcept { return (size_t) ((s >> 4)  & 0x3u); }
+    static constexpr size_t frontOf (State s) noexcept
+    {
+        return (size_t) (s & 0x3u);
+    }
+    static constexpr size_t readyOf (State s) noexcept
+    {
+        return (size_t) ((s >> 2) & 0x3u);
+    }
+    static constexpr size_t backOf (State s) noexcept
+    {
+        return (size_t) ((s >> 4) & 0x3u);
+    }
 
     static constexpr State pack (size_t front, size_t ready, size_t back, bool dirty) noexcept
     {

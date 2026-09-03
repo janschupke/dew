@@ -10,10 +10,11 @@ namespace
 {
 /** Half the width of a trim handle's grab area, in pixels. */
 constexpr float handleGrabRadius = 6.0f;
-}
+} // namespace
 
 SampleSection::SampleSection (ProjectDocument& d, SamplePool* p)
-    : document (d), pool (p)
+    : document (d)
+    , pool (p)
 {
     setComponentID ("sampleSection");
 
@@ -56,8 +57,8 @@ void SampleSection::setParamMenuHost (const paramMenu::Host* host)
 
     const std::function<juce::ValueTree()> self = [this] { return sample; };
 
-    paramMenu::attachTo (host, fadeInKnob,    self, requireInstrumentParamSpec (ids::fadeInMs));
-    paramMenu::attachTo (host, fadeOutKnob,   self, requireInstrumentParamSpec (ids::fadeOutMs));
+    paramMenu::attachTo (host, fadeInKnob, self, requireInstrumentParamSpec (ids::fadeInMs));
+    paramMenu::attachTo (host, fadeOutKnob, self, requireInstrumentParamSpec (ids::fadeOutMs));
     paramMenu::attachTo (host, transposeKnob, self, requireInstrumentParamSpec (ids::transpose));
 }
 
@@ -72,8 +73,16 @@ void SampleSection::attachKnob (DewKnob& knob, const juce::Identifier& property,
     // Driven by the knob's own drag callbacks rather than by the mouse: the
     // pointer state reads as "not down" in every headless harness, so a guard
     // built on it would be one no test could ever see working.
-    knob.onEditStart = [this] { inDrag = true; gestureActive = false; };
-    knob.onEditEnd = [this] { inDrag = false; gestureActive = false; };
+    knob.onEditStart = [this]
+    {
+        inDrag = true;
+        gestureActive = false;
+    };
+    knob.onEditEnd = [this]
+    {
+        inDrag = false;
+        gestureActive = false;
+    };
 
     knob.onValueChange = [this, &knob, property, transactionName]
     {
@@ -93,8 +102,8 @@ void SampleSection::attachKnob (DewKnob& knob, const juce::Identifier& property,
 void SampleSection::write (const juce::Identifier& property, const juce::var& value,
                            const juce::String& transactionName)
 {
-    ProjectEdits::setProperty (sample, property, value, &document.getUndoManager(),
-                               transactionName, gestureActive);
+    ProjectEdits::setProperty (sample, property, value, &document.getUndoManager(), transactionName,
+                               gestureActive);
 }
 
 void SampleSection::setOwner (juce::ValueTree sampleNode)
@@ -170,7 +179,8 @@ void SampleSection::resized()
     area.removeFromTop (waveformHeight);
     area.removeFromTop (space::sm);
 
-    const auto placeKnob = [] (juce::Rectangle<int> bounds, DewKnob& knob) { knob.setBounds (bounds); };
+    const auto placeKnob = [] (juce::Rectangle<int> bounds, DewKnob& knob)
+    { knob.setBounds (bounds); };
 
     auto fades = area.removeFromTop (68);
     placeKnob (fades.removeFromLeft (fades.getWidth() / 2), fadeInKnob);
@@ -184,7 +194,8 @@ void SampleSection::resized()
     // The two toggles stack in the space one knob would take, centred against
     // the knob beside them rather than filling the row - a full-width button
     // next to a 44px knob reads as the more important control, and it is not.
-    auto toggles = bottom.withSizeKeepingCentre (size::iconButton, size::iconButton * 2 + space::xs);
+    auto toggles = bottom.withSizeKeepingCentre (size::iconButton,
+                                                 size::iconButton * 2 + space::xs);
     reverseButton.setBounds (toggles.removeFromTop (size::iconButton));
     toggles.removeFromTop (space::xs);
     loopButton.setBounds (toggles.removeFromTop (size::iconButton));
@@ -270,8 +281,8 @@ void SampleSection::mouseDrag (const juce::MouseEvent& event)
         const auto end = stored <= 0 ? length : stored;
 
         ProjectEdits::setProperty (sample, ids::startSample,
-                                   juce::jlimit (0, juce::jmax (0, end - 1), frame),
-                                   &undo, "Trim sample", gestureActive);
+                                   juce::jlimit (0, juce::jmax (0, end - 1), frame), &undo,
+                                   "Trim sample", gestureActive);
     }
     else
     {
@@ -280,8 +291,8 @@ void SampleSection::mouseDrag (const juce::MouseEvent& event)
 
         // Storing the full length as 0 keeps "untrimmed" one value rather than
         // two, so a sample replaced by a longer one still plays to its end.
-        ProjectEdits::setProperty (sample, ids::endSample, clamped >= length ? 0 : clamped,
-                                   &undo, "Trim sample", gestureActive);
+        ProjectEdits::setProperty (sample, ids::endSample, clamped >= length ? 0 : clamped, &undo,
+                                   "Trim sample", gestureActive);
     }
 
     // The whole sweep of a handle is one undo step, the same as a knob's.

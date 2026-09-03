@@ -103,9 +103,7 @@ Hit hitTest (const Geometry& geometry, const juce::Array<juce::ValueTree>& point
         auto near = false;
 
         sampleSegment (geometry, model, i, [&near, position] (juce::Point<float> at)
-        {
-            near = near || at.getDistanceFrom (position) <= segmentGrabRadius;
-        });
+                       { near = near || at.getDistanceFrom (position) <= segmentGrabRadius; });
 
         if (near)
             return { Hit::Kind::segment, points[i], i };
@@ -175,13 +173,14 @@ void paintCurve (juce::Graphics& g, const Geometry& geometry,
         juce::Path segment;
         auto started = false;
 
-        sampleSegment (geometry, model, i, [&segment, &started] (juce::Point<float> at)
-        {
-            if (std::exchange (started, true))
-                segment.lineTo (at);
-            else
-                segment.startNewSubPath (at);
-        });
+        sampleSegment (geometry, model, i,
+                       [&segment, &started] (juce::Point<float> at)
+                       {
+                           if (std::exchange (started, true))
+                               segment.lineTo (at);
+                           else
+                               segment.startNewSubPath (at);
+                       });
 
         if (! started)
             continue;
@@ -189,8 +188,8 @@ void paintCurve (juce::Graphics& g, const Geometry& geometry,
         // The right endpoint EXACTLY, which sampling deliberately never reaches.
         // It is what puts the last pixel of every shape where its handle is, and
         // what makes a stepped segment jump rather than lean.
-        segment.lineTo (geometry.positionOf (model[(size_t) i + 1].step,
-                                             model[(size_t) i + 1].value));
+        segment.lineTo (
+            geometry.positionOf (model[(size_t) i + 1].step, model[(size_t) i + 1].value));
 
         const auto hovered = style.hoveredSegment == i;
 

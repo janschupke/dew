@@ -120,8 +120,8 @@ TEST_CASE ("saving gathers a staged recording into the sidecar", "[assets][docum
 
     REQUIRE (! juce::File::isAbsolutePath (stored));
     REQUIRE (AssetPaths::resolve (stored, projectFile).existsAsFile());
-    REQUIRE (AssetPaths::sidecarFolderFor (projectFile)
-                 .getChildFile ("Take 001.wav").existsAsFile());
+    REQUIRE (
+        AssetPaths::sidecarFolderFor (projectFile).getChildFile ("Take 001.wav").existsAsFile());
 
     // The staged original is left alone: gathering copies, and a take that is
     // still being written elsewhere must not be moved out from under anything.

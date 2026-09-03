@@ -214,7 +214,10 @@ public:
     static constexpr int numUiScaleSteps = (int) (sizeof (uiScaleSteps) / sizeof (uiScaleSteps[0]));
 
 private:
-    juce::PropertiesFile& file() const { return *properties; }
+    juce::PropertiesFile& file() const
+    {
+        return *properties;
+    }
 
     std::unique_ptr<juce::PropertiesFile> properties;
 

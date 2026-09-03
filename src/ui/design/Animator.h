@@ -10,10 +10,10 @@ namespace dew
 /** How a value gets from where it is to where it was told to go. */
 enum class Ease
 {
-    linear,      ///< a crossfade, and very little else
-    standard,    ///< cubic in-out: anything that both starts and stops on screen
-    decelerate,  ///< cubic out: anything ARRIVING - a panel, a value catching up
-    accelerate   ///< cubic in: anything LEAVING
+    linear,     ///< a crossfade, and very little else
+    standard,   ///< cubic in-out: anything that both starts and stops on screen
+    decelerate, ///< cubic out: anything ARRIVING - a panel, a value catching up
+    accelerate  ///< cubic in: anything LEAVING
 };
 
 /** Pure, and unit-testable on its own. `t` is 0..1. */
@@ -44,9 +44,18 @@ public:
         document does with the first value it is ever given. */
     void snapTo (float) noexcept;
 
-    float get() const noexcept       { return current; }
-    float getTarget() const noexcept { return target; }
-    bool  isMoving() const noexcept  { return elapsedMs < durationMs; }
+    float get() const noexcept
+    {
+        return current;
+    }
+    float getTarget() const noexcept
+    {
+        return target;
+    }
+    bool isMoving() const noexcept
+    {
+        return elapsedMs < durationMs;
+    }
 
     /** Advances by a wall-clock delta; true if the value changed, so a caller
         repaints only what moved.
@@ -102,7 +111,7 @@ public:
     };
 
     void addClient (Client&);
-    void removeClient (Client&);   ///< every Client MUST call this in its destructor
+    void removeClient (Client&); ///< every Client MUST call this in its destructor
 
     /** Animation is OPT-IN, and off unless the application turns it on.
 
@@ -114,15 +123,24 @@ public:
         running application, not of a widget.
     */
     void setEnabled (bool);
-    bool isEnabled() const noexcept { return enabled; }
+    bool isEnabled() const noexcept
+    {
+        return enabled;
+    }
 
     /** Turns every transition instant. Not "slower": off. A duration of zero
         makes animateTo identical to snapTo, so no call site needs a branch. */
     void setReduceMotion (bool);
-    bool getReduceMotion() const noexcept { return reduceMotion; }
+    bool getReduceMotion() const noexcept
+    {
+        return reduceMotion;
+    }
 
     /** What MotionValue asks before it decides to move at all. */
-    bool motionIsOn() const noexcept { return enabled && ! reduceMotion; }
+    bool motionIsOn() const noexcept
+    {
+        return enabled && ! reduceMotion;
+    }
 
     /** THE TEST SEAM.
 
@@ -133,12 +151,18 @@ public:
     */
     void advance (int deltaMs);
 
-    bool isAnimating() const noexcept { return ! clients.isEmpty() && anyMoving; }
+    bool isAnimating() const noexcept
+    {
+        return ! clients.isEmpty() && anyMoving;
+    }
 
     /** Stops the clock without disabling motion, so a test drives time itself.
         A headless test has no message loop for the timer to tick on anyway;
         this makes that explicit rather than accidental. */
-    void stopTimerForTesting() { stopTimer(); }
+    void stopTimerForTesting()
+    {
+        stopTimer();
+    }
 
 private:
     void timerCallback() override;
@@ -178,9 +202,18 @@ public:
         built from a document must not sweep every knob up from zero. */
     void snapTo (float);
 
-    float get() const noexcept       { return value.get(); }
-    float getTarget() const noexcept { return value.getTarget(); }
-    bool  isMoving() const noexcept  { return value.isMoving(); }
+    float get() const noexcept
+    {
+        return value.get();
+    }
+    float getTarget() const noexcept
+    {
+        return value.getTarget();
+    }
+    bool isMoving() const noexcept
+    {
+        return value.isMoving();
+    }
 
     /** What to do when the number moves. Repaints the owner if unset, which is
         what a painted value wants; a value that drives a LAYOUT sets this to

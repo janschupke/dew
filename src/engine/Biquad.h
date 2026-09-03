@@ -14,7 +14,10 @@ namespace dew
 class Biquad
 {
 public:
-    void reset() noexcept { z1 = z2 = 0.0f; }
+    void reset() noexcept
+    {
+        z1 = z2 = 0.0f;
+    }
 
     void setLowShelf (double sampleRate, float frequency, float gainDb) noexcept;
     void setPeak (double sampleRate, float frequency, float q, float gainDb) noexcept;
@@ -29,7 +32,8 @@ public:
     }
 
 private:
-    void setCoefficients (double b0n, double b1n, double b2n, double a0n, double a1n, double a2n) noexcept;
+    void setCoefficients (double b0n, double b1n, double b2n, double a0n, double a1n,
+                          double a2n) noexcept;
 
     float b0 = 1.0f, b1 = 0.0f, b2 = 0.0f, a1 = 0.0f, a2 = 0.0f;
     float z1 = 0.0f, z2 = 0.0f;

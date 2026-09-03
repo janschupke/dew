@@ -10,9 +10,8 @@ namespace dew::lang
 namespace
 {
 
-constexpr std::string_view topLevelKeywords[] = {
-    "song", "channel", "voicing", "rhythm", "harmony", "section", "arrangement"
-};
+constexpr std::string_view topLevelKeywords[] = { "song",    "channel", "voicing",    "rhythm",
+                                                  "harmony", "section", "arrangement" };
 
 /** How deep a block may nest before the parser gives up.
 
@@ -26,7 +25,9 @@ class Parser
 {
 public:
     Parser (std::string_view src, DiagnosticBag& bag)
-        : source (src), diagnostics (bag), tokens (tokenizeWithoutTrivia (src))
+        : source (src)
+        , diagnostics (bag)
+        , tokens (tokenizeWithoutTrivia (src))
     {
         lineOfToken.reserve (tokens.size());
 
@@ -51,8 +52,7 @@ public:
                 diagnostics.error ("E101",
                                    "expected one of song, channel, voicing, rhythm, "
                                    "harmony, section or arrangement",
-                                   peek().range,
-                                   "not a block keyword");
+                                   peek().range, "not a block keyword");
                 resyncToTopLevel();
             }
 
@@ -73,9 +73,15 @@ private:
         return tokens[at];
     }
 
-    std::string_view textOf (const Token& token) const { return token.textIn (source); }
+    std::string_view textOf (const Token& token) const
+    {
+        return token.textIn (source);
+    }
 
-    bool atEnd() const { return peek().kind == TokenKind::endOfFile; }
+    bool atEnd() const
+    {
+        return peek().kind == TokenKind::endOfFile;
+    }
 
     void advance()
     {
@@ -114,8 +120,8 @@ private:
                 ++depth;
             else if (token.kind == TokenKind::braceClose)
                 depth = std::max (0, depth - 1);
-            else if (depth == 0 && token.kind == TokenKind::word
-                     && startsNewLine() && isTopLevelKeyword (textOf (token)))
+            else if (depth == 0 && token.kind == TokenKind::word && startsNewLine()
+                     && isTopLevelKeyword (textOf (token)))
                 return;
 
             advance();
@@ -138,8 +144,7 @@ private:
                 --depth;
 
             advance();
-        }
-        while (! atEnd() && depth > 0);
+        } while (! atEnd() && depth > 0);
     }
 
     Value valueOf (const Token& token) const
@@ -162,8 +167,7 @@ private:
         // at the line end matters: a `harmony lament` reference with no body is
         // a statement, and without the line rule it would swallow whatever
         // block came next as its header.
-        while (! atEnd() && peek().kind != TokenKind::braceOpen
-               && lineAt (position) == headerLine)
+        while (! atEnd() && peek().kind != TokenKind::braceOpen && lineAt (position) == headerLine)
         {
             block.header.push_back (valueOf (peek()));
             advance();
@@ -171,8 +175,7 @@ private:
 
         if (peek().kind != TokenKind::braceOpen)
         {
-            diagnostics.error ("E102",
-                               "`" + std::string (block.keyword) + "` needs a body",
+            diagnostics.error ("E102", "`" + std::string (block.keyword) + "` needs a body",
                                block.range, "expected `{` after this");
 
             block.range.end = block.header.empty() ? block.range.end
@@ -280,8 +283,7 @@ private:
         const auto line = lineAt (position);
         advance();
 
-        while (! atEnd() && lineAt (position) == line
-               && peek().kind != TokenKind::braceClose)
+        while (! atEnd() && lineAt (position) == line && peek().kind != TokenKind::braceClose)
         {
             statement.values.push_back (valueOf (peek()));
             statement.range.end = peek().range.end;
@@ -311,8 +313,7 @@ private:
                 if (! block.chords.empty())
                     block.chords.back().barCheckAfter = true;
                 else
-                    diagnostics.error ("E106", "a bar check needs a chord before it",
-                                       peek().range);
+                    diagnostics.error ("E106", "a bar check needs a chord before it", peek().range);
 
                 advance();
                 continue;
@@ -320,8 +321,7 @@ private:
 
             if (peek().kind != TokenKind::word)
             {
-                diagnostics.error ("E107", "expected a chord", peek().range,
-                                   "not a chord symbol");
+                diagnostics.error ("E107", "expected a chord", peek().range, "not a chord symbol");
                 skipToEndOfLine();
 
                 if (position == before)
@@ -359,8 +359,7 @@ private:
             }
             else
             {
-                diagnostics.error ("E108", "`^` needs an inversion number", caretRange,
-                                   "try `^1`");
+                diagnostics.error ("E108", "`^` needs an inversion number", caretRange, "try `^1`");
             }
         }
 
@@ -377,8 +376,7 @@ private:
             }
             else
             {
-                diagnostics.error ("E109", "`/` needs a chord to tonicise", slashRange,
-                                   "try `/V`");
+                diagnostics.error ("E109", "`/` needs a chord to tonicise", slashRange, "try `/V`");
             }
         }
 
@@ -443,13 +441,12 @@ private:
 
                 if (peek().kind != TokenKind::ratio)
                 {
-                    diagnostics.error ("E114",
-                                       entry.kind == RhythmEntry::Kind::rest
-                                           ? "a rest needs a length"
-                                           : "a tie needs a length",
-                                       markRange,
-                                       entry.kind == RhythmEntry::Kind::rest
-                                           ? "try `- 1/4`" : "try `~ 1/2`");
+                    diagnostics.error (
+                        "E114",
+                        entry.kind == RhythmEntry::Kind::rest ? "a rest needs a length"
+                                                              : "a tie needs a length",
+                        markRange,
+                        entry.kind == RhythmEntry::Kind::rest ? "try `- 1/4`" : "try `~ 1/2`");
                     continue;
                 }
 
@@ -512,8 +509,7 @@ private:
             // Stops at the closing brace as well as at the line end, so
             // `arrangement { verse }` reads as one entry rather than as an
             // entry followed by something unexpected.
-            while (! atEnd() && lineAt (position) == line
-                   && peek().kind != TokenKind::braceClose)
+            while (! atEnd() && lineAt (position) == line && peek().kind != TokenKind::braceClose)
             {
                 if (peek().kind == TokenKind::repeat)
                 {
@@ -555,8 +551,7 @@ private:
                 }
                 else
                 {
-                    diagnostics.error ("E113", "unexpected in an arrangement entry",
-                                       peek().range);
+                    diagnostics.error ("E113", "unexpected in an arrangement entry", peek().range);
                     skipToEndOfLine();
                     break;
                 }
@@ -635,12 +630,21 @@ private:
 bool isTopLevelKeyword (std::string_view text) noexcept
 {
     return std::find (std::begin (topLevelKeywords), std::end (topLevelKeywords), text)
-         != std::end (topLevelKeywords);
+           != std::end (topLevelKeywords);
 }
 
-bool hasChordBody (std::string_view keyword) noexcept { return keyword == "harmony"; }
-bool hasRhythmBody (std::string_view keyword) noexcept { return keyword == "rhythm"; }
-bool hasArrangementBody (std::string_view keyword) noexcept { return keyword == "arrangement"; }
+bool hasChordBody (std::string_view keyword) noexcept
+{
+    return keyword == "harmony";
+}
+bool hasRhythmBody (std::string_view keyword) noexcept
+{
+    return keyword == "rhythm";
+}
+bool hasArrangementBody (std::string_view keyword) noexcept
+{
+    return keyword == "arrangement";
+}
 
 Document parse (std::string_view source, DiagnosticBag& diagnostics)
 {

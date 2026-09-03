@@ -130,8 +130,9 @@ void LiveAudioHost::stop()
 juce::String LiveAudioHost::describeDevice() const
 {
     if (auto* device = deviceManager.getCurrentAudioDevice())
-        return device->getName() + "  ·  " + juce::String (device->getCurrentSampleRate(), 0) + " Hz"
-             + "  ·  " + juce::String (device->getCurrentBufferSizeSamples()) + " samples";
+        return device->getName() + "  ·  " + juce::String (device->getCurrentSampleRate(), 0)
+               + " Hz" + "  ·  " + juce::String (device->getCurrentBufferSizeSamples())
+               + " samples";
 
     return "no audio device";
 }
@@ -153,8 +154,7 @@ void LiveAudioHost::audioDeviceStopped()
 void LiveAudioHost::audioDeviceIOCallbackWithContext (const float* const* inputChannelData,
                                                       int numInputChannels,
                                                       float* const* outputChannelData,
-                                                      int numOutputChannels,
-                                                      int numSamples,
+                                                      int numOutputChannels, int numSamples,
                                                       const juce::AudioIODeviceCallbackContext&)
 {
     // Before the render, so a take captures the input that arrived with this
@@ -173,7 +173,7 @@ void LiveAudioHost::audioDeviceIOCallbackWithContext (const float* const* inputC
             if (outputChannelData[channel] != nullptr)
                 juce::FloatVectorOperations::clear (outputChannelData[channel], numSamples);
 
-        return;   // cannot allocate here; the next prepare() will size it
+        return; // cannot allocate here; the next prepare() will size it
     }
 
     juce::AudioBuffer<float> view (scratch.getArrayOfWritePointers(), 2, 0, numSamples);
@@ -185,8 +185,7 @@ void LiveAudioHost::audioDeviceIOCallbackWithContext (const float* const* inputC
             continue;
 
         const auto source = juce::jmin (channel, 1);
-        juce::FloatVectorOperations::copy (outputChannelData[channel],
-                                           view.getReadPointer (source),
+        juce::FloatVectorOperations::copy (outputChannelData[channel], view.getReadPointer (source),
                                            numSamples);
     }
 }

@@ -31,8 +31,8 @@ juce::String throughAFile (const juce::String& text)
     auto project = ProjectFactory::createDefault();
     ProjectEdits::setScoreSource (project, text, "t.score", nullptr);
 
-    const auto loaded =
-        ProjectSerializer::fromJsonString (ProjectSerializer::toJsonString (project));
+    const auto loaded = ProjectSerializer::fromJsonString (
+        ProjectSerializer::toJsonString (project));
 
     REQUIRE (loaded.ok());
     INFO ("warnings: " << loaded.warnings.joinIntoString ("; "));
@@ -111,8 +111,7 @@ TEST_CASE ("score text survives a save and a load exactly", "[score][schema]")
     }
 }
 
-TEST_CASE ("writing a score twice replaces it rather than appending",
-           "[score][schema]")
+TEST_CASE ("writing a score twice replaces it rather than appending", "[score][schema]")
 {
     auto project = ProjectFactory::createDefault();
 

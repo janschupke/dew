@@ -26,8 +26,7 @@ class AudioEngine;
     screenshot tool and every test drive this with a signal they generated, with
     no engine, no audio device and no clock.
 */
-class SignalScope : public juce::Component,
-                    private juce::Timer
+class SignalScope : public juce::Component, private juce::Timer
 {
 public:
     /** The engine is optional, exactly as the mixer's is. */
@@ -71,12 +70,27 @@ public:
     void pushFrame (const float* mono, int numSamples, double sampleRate);
 
     // --- read-only, for the tests and the gallery ----------------------------
-    bool isIdle() const noexcept       { return idle; }
-    bool isTriggered() const noexcept  { return triggered; }
-    int getTriggerOffset() const noexcept { return triggerOffset; }
-    int getDisplaySamples() const noexcept { return displaySamples; }
+    bool isIdle() const noexcept
+    {
+        return idle;
+    }
+    bool isTriggered() const noexcept
+    {
+        return triggered;
+    }
+    int getTriggerOffset() const noexcept
+    {
+        return triggerOffset;
+    }
+    int getDisplaySamples() const noexcept
+    {
+        return displaySamples;
+    }
 
-    int getNumBands() const noexcept { return numBands; }
+    int getNumBands() const noexcept
+    {
+        return numBands;
+    }
 
     /** Low and high as well as centre, so a test can assert "the band that
         CONTAINS this frequency is the loudest" without reconstructing the band
@@ -86,12 +100,18 @@ public:
     double getBandCentreHz (int band) const noexcept;
     double getBandHighHz (int band) const noexcept;
 
-    float getBandLevel (int band) const noexcept;  ///< 0..1, after ballistics
+    float getBandLevel (int band) const noexcept; ///< 0..1, after ballistics
     float getBandDb (int band) const noexcept;
 
     /** So a test can assert the wells do not move when sound starts. */
-    juce::Rectangle<int> getScopeBounds() const noexcept    { return scopeBounds; }
-    juce::Rectangle<int> getSpectrumBounds() const noexcept { return spectrumBounds; }
+    juce::Rectangle<int> getScopeBounds() const noexcept
+    {
+        return scopeBounds;
+    }
+    juce::Rectangle<int> getSpectrumBounds() const noexcept
+    {
+        return spectrumBounds;
+    }
 
 private:
     void timerCallback() override;

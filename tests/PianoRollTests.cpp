@@ -76,7 +76,8 @@ TEST_CASE ("a note drawn past the end grows the pattern to hold it", "[ui][piano
     // The note runs to step 15, so the pattern must reach it - it grew rather
     // than clipping the note or refusing the click.
     REQUIRE ((int) h.pattern()[ids::lengthSteps] == 15);
-    REQUIRE (ProjectEdits::lengthNeededForNotes (h.pattern()) <= (int) h.pattern()[ids::lengthSteps]);
+    REQUIRE (ProjectEdits::lengthNeededForNotes (h.pattern())
+             <= (int) h.pattern()[ids::lengthSteps]);
 
     // Growing is one-way: a pattern left longer than its notes is a rest at the
     // end, and must not be silently trimmed.
@@ -101,7 +102,7 @@ TEST_CASE ("a rubber band selects the notes it covers, and delete removes them",
 
     const auto mods = juce::ModifierKeys (juce::ModifierKeys::commandModifier);
     const auto from = pointFor (h, 0, 72);
-    const auto to   = pointFor (h, 6, 68);
+    const auto to = pointFor (h, 6, 68);
 
     h.roll.mouseDown (eventAt (h.roll, from, mods));
     h.roll.mouseDrag (eventAt (h.roll, to, mods));
@@ -123,11 +124,12 @@ TEST_CASE ("moving a selection keeps its shape", "[ui][pianoroll]")
     RollHarness h;
 
     juce::UndoManager& undo = h.document.getUndoManager();
-    ProjectEdits::addNote (h.pattern(), 1, 2, 1, 60, 1.0f, &undo);   // a third apart
+    ProjectEdits::addNote (h.pattern(), 1, 2, 1, 60, 1.0f, &undo); // a third apart
     ProjectEdits::addNote (h.pattern(), 1, 2, 1, 64, 1.0f, &undo);
     ProjectEdits::addNote (h.pattern(), 1, 2, 1, 67, 1.0f, &undo);
 
-    REQUIRE (h.roll.keyPressed (juce::KeyPress ('a', juce::ModifierKeys (juce::ModifierKeys::commandModifier), 'a')));
+    REQUIRE (h.roll.keyPressed (
+        juce::KeyPress ('a', juce::ModifierKeys (juce::ModifierKeys::commandModifier), 'a')));
     REQUIRE (h.roll.getNumSelectedNotes() == 3);
 
     // Grab the middle note of the chord and move it up two steps and a tone.
@@ -165,7 +167,8 @@ TEST_CASE ("a selection cannot be dragged off the start of the pattern", "[ui][p
     ProjectEdits::addNote (h.pattern(), 1, 0, 1, 60, 1.0f, &undo);
     ProjectEdits::addNote (h.pattern(), 1, 4, 1, 64, 1.0f, &undo);
 
-    REQUIRE (h.roll.keyPressed (juce::KeyPress ('a', juce::ModifierKeys (juce::ModifierKeys::commandModifier), 'a')));
+    REQUIRE (h.roll.keyPressed (
+        juce::KeyPress ('a', juce::ModifierKeys (juce::ModifierKeys::commandModifier), 'a')));
 
     // Drag the later note four steps left: the earlier one is already at 0, so
     // the group must not move at all rather than collapsing onto step 0.
@@ -213,7 +216,7 @@ TEST_CASE ("a velocity bar is grabbed and dragged", "[ui][pianoroll]")
     const auto quiet = (double) note[ids::velocity];
     INFO ("after dragging to the floor: " << quiet);
     REQUIRE (quiet < 0.15);
-    REQUIRE (quiet >= 0.05);       // never silent, which would read as a bug
+    REQUIRE (quiet >= 0.05); // never silent, which would read as a bug
 
     // And back to the top.
     const auto low = h.roll.getVelocityBarBounds (note);
@@ -232,7 +235,7 @@ TEST_CASE ("the bar you grab is the one that moves", "[ui][pianoroll]")
     RollHarness h;
 
     juce::UndoManager& undo = h.document.getUndoManager();
-    auto first  = ProjectEdits::addNote (h.pattern(), 1, 2, 1, 72, 0.9f, &undo);
+    auto first = ProjectEdits::addNote (h.pattern(), 1, 2, 1, 72, 0.9f, &undo);
     auto second = ProjectEdits::addNote (h.pattern(), 1, 9, 1, 72, 0.9f, &undo);
 
     const auto lane = h.roll.getVelocityArea();
@@ -268,14 +271,13 @@ TEST_CASE ("clicking empty lane space does nothing at all", "[ui][pianoroll]")
     REQUIRE (undo.getNumberOfUnitsTakenUpByStoredCommands() == before);
 }
 
-TEST_CASE ("a velocity drag that misses a bar still paints the ones it crosses",
-           "[ui][pianoroll]")
+TEST_CASE ("a velocity drag that misses a bar still paints the ones it crosses", "[ui][pianoroll]")
 {
     const juce::ScopedJuceInitialiser_GUI juceInit;
     RollHarness h;
 
     juce::UndoManager& undo = h.document.getUndoManager();
-    auto first  = ProjectEdits::addNote (h.pattern(), 1, 2, 1, 72, 0.9f, &undo);
+    auto first = ProjectEdits::addNote (h.pattern(), 1, 2, 1, 72, 0.9f, &undo);
     auto second = ProjectEdits::addNote (h.pattern(), 1, 9, 1, 72, 0.9f, &undo);
 
     const auto lane = h.roll.getVelocityArea();
@@ -294,10 +296,10 @@ TEST_CASE ("a velocity drag that misses a bar still paints the ones it crosses",
     h.roll.mouseDown (eventAt (h.roll, { startX, y }));
     h.roll.mouseDrag (eventAt (h.roll, { (int) firstBar.getCentreX(), y }, {}, 1, true));
     h.roll.mouseDrag (eventAt (h.roll, { (int) secondBar.getCentreX(), y }, {}, 1, true));
-    h.roll.mouseUp   (eventAt (h.roll, { (int) secondBar.getCentreX(), y }, {}, 1, true));
+    h.roll.mouseUp (eventAt (h.roll, { (int) secondBar.getCentreX(), y }, {}, 1, true));
 
-    INFO ("first " << (double) first[ids::velocity]
-          << " second " << (double) second[ids::velocity]);
+    INFO ("first " << (double) first[ids::velocity] << " second "
+                   << (double) second[ids::velocity]);
     CHECK ((double) first[ids::velocity] < 0.3);
     CHECK ((double) second[ids::velocity] < 0.3);
 }
@@ -356,7 +358,7 @@ TEST_CASE ("clicking a piano key auditions it", "[ui][pianoroll]")
     // Sliding down the keyboard plays what it passes over.
     h.roll.mouseDrag (eventAt (h.roll, { onAKey.x, onAKey.y + 60 }));
     REQUIRE (h.roll.getAuditionPitch() != pitch);
-    REQUIRE (h.roll.getAuditionPitch() < pitch);      // further down is lower
+    REQUIRE (h.roll.getAuditionPitch() < pitch); // further down is lower
 
     // Letting go releases it.
     h.roll.mouseUp (eventAt (h.roll, { onAKey.x, onAKey.y + 60 }));
@@ -388,8 +390,8 @@ TEST_CASE ("pinching zooms around the pointer", "[ui][pianoroll]")
     const auto anchor = juce::Point<int> (area.getCentreX(), area.getCentreY());
 
     const auto before = h.roll.getTimeline().pixelsPerStep;
-    const auto stepUnderAnchor = h.roll.getTimeline()
-                                     .stepForX ((float) (anchor.x - h.roll.getKeyboardArea().getWidth()));
+    const auto stepUnderAnchor = h.roll.getTimeline().stepForX (
+        (float) (anchor.x - h.roll.getKeyboardArea().getWidth()));
 
     h.roll.mouseMagnify (eventAt (h.roll, anchor), 2.0f);
 
@@ -397,12 +399,13 @@ TEST_CASE ("pinching zooms around the pointer", "[ui][pianoroll]")
     REQUIRE (h.roll.getTimeline().pixelsPerStep > before);
 
     // And the music did not walk out from under the fingers doing the pinching.
-    const auto after = h.roll.getTimeline()
-                            .stepForX ((float) (anchor.x - h.roll.getKeyboardArea().getWidth()));
+    const auto after = h.roll.getTimeline().stepForX (
+        (float) (anchor.x - h.roll.getKeyboardArea().getWidth()));
     REQUIRE (std::abs (after - stepUnderAnchor) < 1.0e-6);
 }
 
-TEST_CASE ("the roll frames the pattern rather than opening at an arbitrary zoom", "[ui][pianoroll]")
+TEST_CASE ("the roll frames the pattern rather than opening at an arbitrary zoom",
+           "[ui][pianoroll]")
 {
     const juce::ScopedJuceInitialiser_GUI juceInit;
     RollHarness h;
@@ -444,7 +447,8 @@ TEST_CASE ("the roll scrolls to the notes rather than opening on empty keys", "[
         int visible = 0;
 
         for (const auto& note : pattern)
-            if (note.hasType (ids::NOTE) && (int) note[ids::ch] == editorState.getSelectedChannelId()
+            if (note.hasType (ids::NOTE)
+                && (int) note[ids::ch] == editorState.getSelectedChannelId()
                 && roll.getNoteArea().toFloat().intersects (roll.getBoundsForNote (note)))
                 ++visible;
 
@@ -490,7 +494,8 @@ TEST_CASE ("a view that already shows the notes is left alone", "[ui][pianoroll]
     h.roll.scrollToNotesIfOffscreen();
 
     // The note was already on screen, so nothing moved under the user's hands.
-    REQUIRE (juce::exactlyEqual (h.roll.getBoundsForNote (h.pattern().getChild (0)).getY(), before));
+    REQUIRE (
+        juce::exactlyEqual (h.roll.getBoundsForNote (h.pattern().getChild (0)).getY(), before));
 }
 
 TEST_CASE ("notes never paint over the keyboard", "[ui][pianoroll]")
@@ -512,7 +517,8 @@ TEST_CASE ("notes never paint over the keyboard", "[ui][pianoroll]")
     // Fitting first would clamp the scroll to zero and prove nothing.
     for (int i = 0; i < 6; ++i)
         h.roll.mouseMagnify (eventAt (h.roll, { h.roll.getNoteArea().getRight() - 4,
-                                                h.roll.getNoteArea().getCentreY() }), 2.0f);
+                                                h.roll.getNoteArea().getCentreY() }),
+                             2.0f);
 
     INFO ("scroll offset " << h.roll.getTimeline().scrollOffsetSteps);
     REQUIRE (h.roll.getTimeline().scrollOffsetSteps > 1.0);
@@ -534,9 +540,9 @@ TEST_CASE ("notes never paint over the keyboard", "[ui][pianoroll]")
         {
             const auto pixel = image.getPixelAt (x, y);
 
-            if (std::abs ((int) pixel.getRed()   - (int) rampColour.getRed())   < 24
-             && std::abs ((int) pixel.getGreen() - (int) rampColour.getGreen()) < 24
-             && std::abs ((int) pixel.getBlue()  - (int) rampColour.getBlue())  < 24)
+            if (std::abs ((int) pixel.getRed() - (int) rampColour.getRed()) < 24
+                && std::abs ((int) pixel.getGreen() - (int) rampColour.getGreen()) < 24
+                && std::abs ((int) pixel.getBlue() - (int) rampColour.getBlue()) < 24)
                 ++bleeding;
         }
 
@@ -558,8 +564,7 @@ TEST_CASE ("the grid keeps drawing past the end of a short pattern", "[pianoroll
     h.roll.zoomToFit();
 
     const auto notes = h.roll.getNoteArea();
-    const auto endX = (float) notes.getX()
-                    + (float) h.roll.getTimeline().xForStep (4.0);
+    const auto endX = (float) notes.getX() + (float) h.roll.getTimeline().xForStep (4.0);
 
     REQUIRE (endX < (float) notes.getRight() - 100.0f);
 
@@ -597,8 +602,8 @@ TEST_CASE ("the grid keeps drawing past the end of a short pattern", "[pianoroll
         if (value > background * 1.15 + 0.002)
             ++verticalLines;
 
-    INFO ("vertical grid lines past the pattern end: " << verticalLines
-          << " (background column mean " << background << ")");
+    INFO ("vertical grid lines past the pattern end: "
+          << verticalLines << " (background column mean " << background << ")");
     REQUIRE (verticalLines >= 3);
 }
 
@@ -668,13 +673,13 @@ TEST_CASE ("a right-drag sweeps notes away, as one undo step", "[pianoroll][eras
     REQUIRE (notesBefore >= 8);
 
     const auto from = pointFor (h, 0, 66);
-    const auto to   = pointFor (h, 7, 66);
+    const auto to = pointFor (h, 7, 66);
 
     const juce::ModifierKeys rightButton { juce::ModifierKeys::rightButtonModifier };
 
     h.roll.mouseDown (eventAt (h.roll, from, rightButton));
     h.roll.mouseDrag (eventAt (h.roll, to, rightButton));
-    h.roll.mouseUp   (eventAt (h.roll, to, rightButton));
+    h.roll.mouseUp (eventAt (h.roll, to, rightButton));
 
     INFO ("notes left after the sweep: " << h.countNotes());
     REQUIRE (h.countNotes() == notesBefore - 8);
@@ -705,13 +710,13 @@ TEST_CASE ("a fast sweep does not step over notes between drag samples", "[piano
     // produces. Only sampling where the pointer was reported would leave the
     // six notes in between untouched.
     const auto from = pointFor (h, 0, 66);
-    const auto to   = pointFor (h, 7, 66);
+    const auto to = pointFor (h, 7, 66);
 
     const juce::ModifierKeys rightButton { juce::ModifierKeys::rightButtonModifier };
 
     h.roll.mouseDown (eventAt (h.roll, from, rightButton));
     h.roll.mouseDrag (eventAt (h.roll, to, rightButton));
-    h.roll.mouseUp   (eventAt (h.roll, to, rightButton));
+    h.roll.mouseUp (eventAt (h.roll, to, rightButton));
 
     INFO ("notes left after a two-sample sweep: " << h.countNotes());
     REQUIRE (h.countNotes() == notesBefore - 8);
@@ -736,13 +741,13 @@ TEST_CASE ("a sweep can start on empty space and run into notes", "[pianoroll][e
     // Step 0 is empty. Pressing there used to do nothing at all, so there was
     // no way to begin a sweep anywhere but exactly on a note.
     const auto from = pointFor (h, 0, 66);
-    const auto to   = pointFor (h, 7, 66);
+    const auto to = pointFor (h, 7, 66);
 
     const juce::ModifierKeys rightButton { juce::ModifierKeys::rightButtonModifier };
 
     h.roll.mouseDown (eventAt (h.roll, from, rightButton));
     h.roll.mouseDrag (eventAt (h.roll, to, rightButton));
-    h.roll.mouseUp   (eventAt (h.roll, to, rightButton));
+    h.roll.mouseUp (eventAt (h.roll, to, rightButton));
 
     REQUIRE (h.countNotes() == notesBefore - 4);
 }
@@ -763,7 +768,7 @@ TEST_CASE ("alt-drag erases too, and a plain drag still does not", "[pianoroll][
 
     const auto notesBefore = h.countNotes();
     const auto from = pointFor (h, 0, 66);
-    const auto to   = pointFor (h, 5, 66);
+    const auto to = pointFor (h, 5, 66);
 
     SECTION ("alt")
     {
@@ -771,7 +776,7 @@ TEST_CASE ("alt-drag erases too, and a plain drag still does not", "[pianoroll][
 
         h.roll.mouseDown (eventAt (h.roll, from, alt));
         h.roll.mouseDrag (eventAt (h.roll, to, alt));
-        h.roll.mouseUp   (eventAt (h.roll, to, alt));
+        h.roll.mouseUp (eventAt (h.roll, to, alt));
 
         REQUIRE (h.countNotes() == notesBefore - 6);
     }
@@ -782,7 +787,7 @@ TEST_CASE ("alt-drag erases too, and a plain drag still does not", "[pianoroll][
 
         h.roll.mouseDown (eventAt (h.roll, from, left));
         h.roll.mouseDrag (eventAt (h.roll, to, left));
-        h.roll.mouseUp   (eventAt (h.roll, to, left));
+        h.roll.mouseUp (eventAt (h.roll, to, left));
 
         REQUIRE (h.countNotes() == notesBefore);
     }
@@ -811,7 +816,8 @@ TEST_CASE ("an unrelated editor-state change leaves the selection alone", "[ui][
     const auto selectAll = [&h, &pump]
     {
         h.roll.grabKeyboardFocus();
-        h.roll.keyPressed (juce::KeyPress ('a', juce::ModifierKeys (juce::ModifierKeys::commandModifier), 'a'));
+        h.roll.keyPressed (
+            juce::KeyPress ('a', juce::ModifierKeys (juce::ModifierKeys::commandModifier), 'a'));
         pump();
     };
 
@@ -869,7 +875,7 @@ juce::Point<int> rulerPointForStep (dew::testing::RollHarness& h, int step)
     return point;
 }
 
-constexpr int stepsPerBar = 16;   // the default project: 4 steps per beat, 4 beats
+constexpr int stepsPerBar = 16; // the default project: 4 steps per beat, 4 beats
 
 /** Gives the harness a four-bar pattern, so snapping to a BAR is a visible
     thing rather than always rounding to the whole of a one-bar pattern.
@@ -894,7 +900,7 @@ TEST_CASE ("shift-dragging the piano roll ruler selects a span of bars", "[ui][p
 
     h.roll.mouseDown (eventAt (h.roll, rulerPointForStep (h, 0), shift));
     h.roll.mouseDrag (eventAt (h.roll, rulerPointForStep (h, 2 * stepsPerBar), shift, 1, true));
-    h.roll.mouseUp   (eventAt (h.roll, rulerPointForStep (h, 2 * stepsPerBar), shift, 1, true));
+    h.roll.mouseUp (eventAt (h.roll, rulerPointForStep (h, 2 * stepsPerBar), shift, 1, true));
 
     REQUIRE (h.editorState.hasStepSelection());
 
@@ -918,7 +924,7 @@ TEST_CASE ("a plain drag on the piano roll ruler still scrubs", "[ui][pianoroll]
 
     h.roll.mouseDown (eventAt (h.roll, rulerPointForStep (h, 0)));
     h.roll.mouseDrag (eventAt (h.roll, rulerPointForStep (h, 8), {}, 1, true));
-    h.roll.mouseUp   (eventAt (h.roll, rulerPointForStep (h, 8), {}, 1, true));
+    h.roll.mouseUp (eventAt (h.roll, rulerPointForStep (h, 8), {}, 1, true));
 
     // Scrubbing was on the ruler first; selecting had to fit around it.
     REQUIRE_FALSE (h.editorState.hasStepSelection());
@@ -941,7 +947,7 @@ TEST_CASE ("shift-clicking the piano roll ruler without dragging clears the span
     const auto at = rulerPointForStep (h, 0);
 
     h.roll.mouseDown (eventAt (h.roll, at, shift));
-    h.roll.mouseUp   (eventAt (h.roll, at, shift));
+    h.roll.mouseUp (eventAt (h.roll, at, shift));
 
     REQUIRE_FALSE (h.editorState.hasStepSelection());
 }
@@ -962,8 +968,7 @@ TEST_CASE ("double-clicking the piano roll ruler clears the span", "[ui][pianoro
     REQUIRE_FALSE (h.editorState.hasStepSelection());
 }
 
-TEST_CASE ("double-clicking a piano key does not throw the view away",
-           "[ui][pianoroll][zoom]")
+TEST_CASE ("double-clicking a piano key does not throw the view away", "[ui][pianoroll][zoom]")
 {
     const juce::ScopedJuceInitialiser_GUI juceInit;
     RollHarness h;
@@ -1053,7 +1058,7 @@ TEST_CASE ("mod-clicking the piano roll ruler spans from the playhead", "[ui][pi
     const juce::ModifierKeys mod { juce::ModifierKeys::commandModifier };
 
     h.roll.mouseDown (eventAt (h.roll, rulerPointForStep (h, 2 * stepsPerBar), mod));
-    h.roll.mouseUp   (eventAt (h.roll, rulerPointForStep (h, 2 * stepsPerBar), mod));
+    h.roll.mouseUp (eventAt (h.roll, rulerPointForStep (h, 2 * stepsPerBar), mod));
 
     REQUIRE (h.editorState.hasStepSelection());
 
@@ -1064,8 +1069,7 @@ TEST_CASE ("mod-clicking the piano roll ruler spans from the playhead", "[ui][pi
     REQUIRE (selection.getEnd() > 0);
 }
 
-TEST_CASE ("selecting a span never touches the document or the undo stack",
-           "[ui][pianoroll][loop]")
+TEST_CASE ("selecting a span never touches the document or the undo stack", "[ui][pianoroll][loop]")
 {
     const juce::ScopedJuceInitialiser_GUI juceInit;
     RollHarness h;
@@ -1076,7 +1080,7 @@ TEST_CASE ("selecting a span never touches the document or the undo stack",
     const juce::ModifierKeys shift { juce::ModifierKeys::shiftModifier };
     h.roll.mouseDown (eventAt (h.roll, rulerPointForStep (h, 0), shift));
     h.roll.mouseDrag (eventAt (h.roll, rulerPointForStep (h, 2 * stepsPerBar), shift, 1, true));
-    h.roll.mouseUp   (eventAt (h.roll, rulerPointForStep (h, 2 * stepsPerBar), shift, 1, true));
+    h.roll.mouseUp (eventAt (h.roll, rulerPointForStep (h, 2 * stepsPerBar), shift, 1, true));
 
     REQUIRE (h.editorState.hasStepSelection());
 
@@ -1100,7 +1104,8 @@ TEST_CASE ("right-clicking empty space clears the note selection", "[ui][pianoro
     h.roll.refresh();
 
     h.roll.grabKeyboardFocus();
-    h.roll.keyPressed (juce::KeyPress ('a', juce::ModifierKeys (juce::ModifierKeys::commandModifier), 'a'));
+    h.roll.keyPressed (
+        juce::KeyPress ('a', juce::ModifierKeys (juce::ModifierKeys::commandModifier), 'a'));
     REQUIRE (h.roll.getNumSelectedNotes() == 4);
 
     const auto notesBefore = h.countNotes();
@@ -1112,14 +1117,13 @@ TEST_CASE ("right-clicking empty space clears the note selection", "[ui][pianoro
     const auto empty = pointFor (h, 0, 72);
 
     h.roll.mouseDown (eventAt (h.roll, empty, rightButton));
-    h.roll.mouseUp   (eventAt (h.roll, empty, rightButton));
+    h.roll.mouseUp (eventAt (h.roll, empty, rightButton));
 
     REQUIRE (h.roll.getNumSelectedNotes() == 0);
     REQUIRE (h.countNotes() == notesBefore);
 }
 
-TEST_CASE ("a right-drag that erases does not also clear the selection",
-           "[ui][pianoroll][erase]")
+TEST_CASE ("a right-drag that erases does not also clear the selection", "[ui][pianoroll][erase]")
 {
     const juce::ScopedJuceInitialiser_GUI juceInit;
     RollHarness h;
@@ -1137,7 +1141,8 @@ TEST_CASE ("a right-drag that erases does not also clear the selection",
     h.roll.refresh();
 
     h.roll.grabKeyboardFocus();
-    h.roll.keyPressed (juce::KeyPress ('a', juce::ModifierKeys (juce::ModifierKeys::commandModifier), 'a'));
+    h.roll.keyPressed (
+        juce::KeyPress ('a', juce::ModifierKeys (juce::ModifierKeys::commandModifier), 'a'));
     REQUIRE (h.roll.getNumSelectedNotes() == 8);
 
     const juce::ModifierKeys rightButton { juce::ModifierKeys::rightButtonModifier };
@@ -1185,8 +1190,7 @@ TEST_CASE ("the selected span is painted on the piano roll ruler", "[ui][pianoro
     REQUIRE (changed > 1000);
 }
 
-TEST_CASE ("the channel rack ruler shows the same span as the piano roll",
-           "[ui][pianoroll][loop]")
+TEST_CASE ("the channel rack ruler shows the same span as the piano roll", "[ui][pianoroll][loop]")
 {
     const juce::ScopedJuceInitialiser_GUI juceInit;
 
@@ -1270,10 +1274,7 @@ TEST_CASE ("a taller row keeps the pitch you were looking at", "[ui][pianoroll][
     // from under whatever was in the middle of the view. The playlist's lane
     // height had exactly this, and the curve tests caught it there.
     const auto area = h.roll.getNoteArea();
-    const auto pitchInTheMiddle = [&h, &area]
-    {
-        return h.roll.getPitchAtY (area.getCentreY());
-    };
+    const auto pitchInTheMiddle = [&h, &area] { return h.roll.getPitchAtY (area.getCentreY()); };
 
     const auto before = pitchInTheMiddle();
 

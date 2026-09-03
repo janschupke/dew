@@ -80,7 +80,10 @@ struct LoopHarness
         return peak;
     }
 
-    double playhead() { return engine.getPlayheadSteps(); }
+    double playhead()
+    {
+        return engine.getPlayheadSteps();
+    }
 
     ProjectDocument document;
     AudioEngine engine;
@@ -177,8 +180,7 @@ TEST_CASE ("clearing a loop region returns the playhead to the material", "[loop
     REQUIRE (escaped);
 }
 
-TEST_CASE ("a loop dragged backwards means the same as one dragged forwards",
-           "[loop][engine]")
+TEST_CASE ("a loop dragged backwards means the same as one dragged forwards", "[loop][engine]")
 {
     LoopHarness h;
     h.engine.setLoopRangeSteps (Transport::Mode::song, 32.0, 16.0);
@@ -293,8 +295,7 @@ TEST_CASE ("the loop region moves when the material shrinks under it", "[loop][e
     }
 }
 
-TEST_CASE ("a seek past the loop end reports the folded position at once",
-           "[loop][engine]")
+TEST_CASE ("a seek past the loop end reports the folded position at once", "[loop][engine]")
 {
     // The seeker flickering. setPlayheadSteps stored the RAW position for
     // instant feedback and the next audio block folded it, so a click landing

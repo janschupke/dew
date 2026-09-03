@@ -18,7 +18,6 @@ namespace dew::lang
     `symbols` is always populated. `Model` is only meaningful when the bag has
     no errors.
 */
-Model resolve (const Document&, std::string_view source, DiagnosticBag&,
-               SymbolTable& symbols);
+Model resolve (const Document&, std::string_view source, DiagnosticBag&, SymbolTable& symbols);
 
 } // namespace dew::lang

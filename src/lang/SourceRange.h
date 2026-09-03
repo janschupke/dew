@@ -24,8 +24,14 @@ struct SourceRange
     std::uint32_t begin = 0;
     std::uint32_t end = 0;
 
-    constexpr bool isEmpty() const noexcept { return end <= begin; }
-    constexpr std::uint32_t length() const noexcept { return isEmpty() ? 0u : end - begin; }
+    constexpr bool isEmpty() const noexcept
+    {
+        return end <= begin;
+    }
+    constexpr std::uint32_t length() const noexcept
+    {
+        return isEmpty() ? 0u : end - begin;
+    }
 
     constexpr bool operator== (const SourceRange& other) const noexcept
     {
@@ -69,7 +75,10 @@ public:
     */
     std::string_view lineTextAt (std::uint32_t byteOffset) const noexcept;
 
-    int lineCount() const noexcept { return (int) lineStarts.size(); }
+    int lineCount() const noexcept
+    {
+        return (int) lineStarts.size();
+    }
 
 private:
     std::string_view text;

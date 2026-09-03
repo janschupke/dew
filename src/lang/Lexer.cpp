@@ -19,7 +19,7 @@ public:
 
     char peek() const noexcept { return pos < text.size() ? text[pos] : '\0'; }
 
-// clang-format on
+    // clang-format on
     char peekAt (int ahead) const noexcept
     {
         const auto at = pos + (std::size_t) ahead;
@@ -32,12 +32,12 @@ public:
             ++pos;
     }
 
-// clang-format off
+    // clang-format off
     bool isEOF() const noexcept { return pos >= text.size(); }
 
     std::size_t offset() const noexcept { return pos; }
 
-// clang-format on
+    // clang-format on
 private:
     std::string_view text;
     std::size_t pos = 0;
@@ -74,7 +74,7 @@ const char* nameOf (TokenKind kind) noexcept
         case TokenKind::unknown:      return "unknown";
     }
 
-// clang-format on
+    // clang-format on
     return "unknown";
 }
 

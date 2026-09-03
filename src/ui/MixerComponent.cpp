@@ -25,12 +25,13 @@ using namespace tokens;
 /** One mixer strip. Master has no pan, mute or solo, so it is the same class
     with those controls hidden rather than a second nearly-identical one.
 */
-class MixerComponent::Strip : public juce::Component,
-                              private juce::ValueTree::Listener
+class MixerComponent::Strip : public juce::Component, private juce::ValueTree::Listener
 {
 public:
     Strip (ProjectDocument& d, juce::ValueTree t, bool isMasterStrip)
-        : document (d), track (std::move (t)), isMaster (isMasterStrip)
+        : document (d)
+        , track (std::move (t))
+        , isMaster (isMasterStrip)
     {
         nameLabel.setText (isMaster ? "Master" : track[ids::name].toString(),
                            juce::dontSendNotification);
@@ -50,12 +51,22 @@ public:
         addAndMakeVisible (nameLabel);
 
         gainSlider.setSliderStyle (juce::Slider::LinearVertical);
-        gainSlider.setTextBoxStyle (juce::Slider::TextBoxBelow, false, 60, tokens::size::controlHeightSm);
+        gainSlider.setTextBoxStyle (juce::Slider::TextBoxBelow, false, 60,
+                                    tokens::size::controlHeightSm);
         const auto& gainSpec = requireMixerTrackParamSpec (ids::gain);
         gainSlider.setRange (gainSpec.minimum, gainSpec.maximum, gainSpec.interval);
         gainSlider.setValue ((double) track[ids::gain], juce::dontSendNotification);
-        gainSlider.onDragStart = [this] { select(); inDrag = true; gestureActive = false; };
-        gainSlider.onDragEnd = [this] { inDrag = false; gestureActive = false; };
+        gainSlider.onDragStart = [this]
+        {
+            select();
+            inDrag = true;
+            gestureActive = false;
+        };
+        gainSlider.onDragEnd = [this]
+        {
+            inDrag = false;
+            gestureActive = false;
+        };
         gainSlider.onValueChange = [this]
         {
             ProjectEdits::setProperty (track, ids::gain, gainSlider.getValue(),
@@ -73,8 +84,17 @@ public:
             panKnob.setCompact (true);
             panKnob.setTooltip ("Pan");
             panKnob.setValue ((double) track[ids::pan], juce::dontSendNotification);
-            panKnob.onEditStart = [this] { select(); inDrag = true; gestureActive = false; };
-            panKnob.onEditEnd = [this] { inDrag = false; gestureActive = false; };
+            panKnob.onEditStart = [this]
+            {
+                select();
+                inDrag = true;
+                gestureActive = false;
+            };
+            panKnob.onEditEnd = [this]
+            {
+                inDrag = false;
+                gestureActive = false;
+            };
             panKnob.onValueChange = [this]
             {
                 ProjectEdits::setProperty (track, ids::pan, panKnob.getValue(),
@@ -148,8 +168,14 @@ public:
 
     std::function<void (int channelId)> onChannelClicked;
 
-    bool isMasterStrip() const noexcept { return isMaster; }
-    int getTrackId() const { return (int) track[ids::id]; }
+    bool isMasterStrip() const noexcept
+    {
+        return isMaster;
+    }
+    int getTrackId() const
+    {
+        return (int) track[ids::id];
+    }
 
     std::function<void()> onSelected;
 
@@ -165,8 +191,14 @@ public:
             nameLabel.showEditor();
     }
 
-    void mouseEnter (const juce::MouseEvent&) override { hover.enter(); }
-    void mouseExit (const juce::MouseEvent&) override  { hover.exit(); }
+    void mouseEnter (const juce::MouseEvent&) override
+    {
+        hover.enter();
+    }
+    void mouseExit (const juce::MouseEvent&) override
+    {
+        hover.exit();
+    }
 
     void mouseDown (const juce::MouseEvent& event) override
     {
@@ -184,7 +216,8 @@ public:
         // A routing row names a channel; clicking it should go there.
         if (routingBounds.contains (event.getPosition()) && onChannelClicked != nullptr)
         {
-            const auto row = (event.getPosition().y - routingBounds.getY() - tokens::space::xs) / 12;
+            const auto row = (event.getPosition().y - routingBounds.getY() - tokens::space::xs)
+                             / 12;
 
             if (juce::isPositiveAndBelow (row, routedIds.size()))
                 onChannelClicked (routedIds[row]);
@@ -197,7 +230,10 @@ public:
     // driven headlessly, so a test reads the built menu instead. A strip is not
     // a HeaderRow - it holds a fader rather than a name and two toggles - so it
     // states the three lines rather than inheriting them.
-    enum class MenuItem { rename = 1 };
+    enum class MenuItem
+    {
+        rename = 1
+    };
 
     static constexpr int colourBaseId = (int) MenuItem::rename + 1;
 
@@ -236,8 +272,8 @@ private:
         // overrides do not apply, and a SafePointer because a menu outlives a
         // rebuild of the strips.
         menu.setLookAndFeel (&getLookAndFeel());
-        menu.showMenuAsync (juce::PopupMenu::Options()
-                                .withTargetScreenArea ({ event.getScreenX(), event.getScreenY(), 1, 1 }),
+        menu.showMenuAsync (juce::PopupMenu::Options().withTargetScreenArea (
+                                { event.getScreenX(), event.getScreenY(), 1, 1 }),
                             [safe = juce::Component::SafePointer<Strip> (this)] (int choice)
                             {
                                 if (safe != nullptr && choice > 0)
@@ -246,7 +282,6 @@ private:
     }
 
 public:
-
     void paint (juce::Graphics& g) override
     {
         const auto body = getLocalBounds().toFloat().reduced (2.0f);
@@ -290,7 +325,8 @@ public:
 
         if (effectCount > 0)
         {
-            const auto badge = juce::Rectangle<float> ((float) getWidth() - 22.0f, 5.0f, 16.0f, 12.0f);
+            const auto badge = juce::Rectangle<float> ((float) getWidth() - 22.0f, 5.0f, 16.0f,
+                                                       12.0f);
 
             g.setColour (tokens::colour::accent);
             g.fillRoundedRectangle (badge, tokens::radius::sm);
@@ -320,7 +356,8 @@ public:
             area.removeFromTop (space::xs);
 
             auto buttons = area.removeFromTop (size::minTouchTarget);
-            muteButton.setBounds (buttons.removeFromLeft (buttons.getWidth() / 2).reduced (space::xxs));
+            muteButton.setBounds (
+                buttons.removeFromLeft (buttons.getWidth() / 2).reduced (space::xxs));
             soloButton.setBounds (buttons.reduced (space::xxs));
             area.removeFromTop (space::xs);
         }
@@ -328,7 +365,8 @@ public:
         // The routing list sits at the bottom; the fader and its meter take
         // what is left.
         routingBounds = isMaster ? juce::Rectangle<int>()
-                                 : area.removeFromBottom (juce::jmin (routingHeight, area.getHeight() / 3));
+                                 : area.removeFromBottom (
+                                       juce::jmin (routingHeight, area.getHeight() / 3));
 
         meterBounds = area.removeFromRight (meterWidth).reduced (0, space::xxs);
         area.removeFromRight (space::xs);
@@ -413,9 +451,9 @@ private:
 
         auto bar = well.withTop (well.getBottom() - proportion * well.getHeight());
 
-        g.setColour (level >= 1.0f ? colour::danger
-                                   : proportion > meter::hotProportion ? colour::warning
-                                                                       : colour::success);
+        g.setColour (level >= 1.0f                       ? colour::danger
+                     : proportion > meter::hotProportion ? colour::warning
+                                                         : colour::success);
         g.fillRoundedRectangle (bar, radius::xs);
     }
 
@@ -511,8 +549,10 @@ void MixerComponent::setParamMenuHost (const paramMenu::Host* host)
 }
 
 MixerComponent::MixerComponent (ProjectDocument& d, EditorState& s, AudioEngine* e)
-    : document (d), editorState (s), engine (e),
-      chainHost (d, s, EffectChainHost::Orientation::horizontal)
+    : document (d)
+    , editorState (s)
+    , engine (e)
+    , chainHost (d, s, EffectChainHost::Orientation::horizontal)
 {
     setComponentID ("mixer");
 
@@ -611,10 +651,10 @@ void MixerComponent::pointChainAtSelectedTrack()
             if (track.hasType (ids::MIXER_TRACK) && (int) track[ids::id] == selectedId)
                 selectedTrack = track;
 
-    chainHost.setOwner (selectedTrack,
-                        ! selectedTrack.isValid() ? juce::String()
-                        : selectedId == masterTrackId ? "Master"
-                                                      : selectedTrack[ids::name].toString());
+    chainHost.setOwner (selectedTrack, ! selectedTrack.isValid() ? juce::String()
+                                       : selectedId == masterTrackId
+                                           ? "Master"
+                                           : selectedTrack[ids::name].toString());
 
     for (auto* strip : strips)
         strip->setSelected (strip->isMasterStrip() ? selectedId == masterTrackId

@@ -44,9 +44,8 @@ public:
         allowed and means "nothing has moved", which is what every caller that
         predates automated positions passes.
     */
-    void renderAdd (float* buffer, int numSamples,
-                    float bendSemitones = 0.0f, float modulation = 0.0f,
-                    const OscBankSnapshot* live = nullptr) noexcept;
+    void renderAdd (float* buffer, int numSamples, float bendSemitones = 0.0f,
+                    float modulation = 0.0f, const OscBankSnapshot* live = nullptr) noexcept;
 
     int countActiveVoices() const noexcept;
 

@@ -44,9 +44,8 @@ std::vector<juce::ValueTree> nodesFor (const juce::ValueTree& channel, const Par
         return { channel };
 
     // OSC and AMP hang off the INSTRUMENT child; SAMPLE off the channel itself.
-    const auto parent = (*group.node == ids::SAMPLE)
-                            ? channel
-                            : channel.getChildWithName (ids::INSTRUMENT);
+    const auto parent = (*group.node == ids::SAMPLE) ? channel
+                                                     : channel.getChildWithName (ids::INSTRUMENT);
 
     if (group.count <= 1)
         return { parent.getChildWithName (*group.node) };
@@ -111,7 +110,8 @@ juce::var validateObject (const juce::var& value, const ParamSpec* params, int n
     auto* object = new juce::DynamicObject();
 
     for (int i = 0; i < numParams; ++i)
-        object->setProperty (*params[i].property, validateParam (source, params[i], path, warnings));
+        object->setProperty (*params[i].property,
+                             validateParam (source, params[i], path, warnings));
 
     // Anything the type does not declare is dropped and said so, the way the
     // schema reports a key it does not know.
@@ -210,8 +210,9 @@ juce::var validateState (const InstrumentDescriptor& descriptor, const juce::var
             // volume was written against a different idea of what a preset is,
             // and loading it silently would move a fader in a finished mix.
             if (source != nullptr && source->hasProperty (key))
-                warnings.add (path + ": a preset does not carry the channel's own parameters"
-                                     " - dropped");
+                warnings.add (path
+                              + ": a preset does not carry the channel's own parameters"
+                                " - dropped");
 
             continue;
         }
@@ -220,8 +221,8 @@ juce::var validateState (const InstrumentDescriptor& descriptor, const juce::var
 
         if (group.count <= 1)
         {
-            object->setProperty (key, validateObject (value, group.params, group.numParams,
-                                                      path, warnings));
+            object->setProperty (
+                key, validateObject (value, group.params, group.numParams, path, warnings));
             continue;
         }
 
@@ -253,8 +254,7 @@ juce::var validateState (const InstrumentDescriptor& descriptor, const juce::var
         // the other two sounding, which is the opposite of loading a sound.
         while (slots.size() < group.count)
             slots.add (validateObject ({}, group.params, group.numParams,
-                                       path + "[" + juce::String (slots.size()) + "]",
-                                       warnings));
+                                       path + "[" + juce::String (slots.size()) + "]", warnings));
 
         object->setProperty (key, slots);
     }

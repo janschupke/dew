@@ -63,7 +63,8 @@ TEST_CASE ("the render is as long as the music", "[engine][render]")
     options.tailSeconds = 1.0;
 
     juce::AudioBuffer<float> rendered;
-    const auto report = OfflineRenderer::renderToBuffer (dew::testing::fixtureProject(), rendered, options);
+    const auto report = OfflineRenderer::renderToBuffer (dew::testing::fixtureProject(), rendered,
+                                                         options);
 
     REQUIRE (report.ok());
 
@@ -80,13 +81,15 @@ TEST_CASE ("the tail after the music is a decay, not the song starting again", "
     options.tailSeconds = 1.0;
 
     juce::AudioBuffer<float> rendered;
-    const auto report = OfflineRenderer::renderToBuffer (dew::testing::fixtureProject(), rendered, options);
+    const auto report = OfflineRenderer::renderToBuffer (dew::testing::fixtureProject(), rendered,
+                                                         options);
     REQUIRE (report.ok());
 
     const auto musicEnds = 16.0 * 60.0 / 124.0;
 
     const auto duringMusic = peakBetween (rendered, 0.0, musicEnds, options.sampleRate);
-    const auto lateTail = peakBetween (rendered, musicEnds + 0.5, report.seconds, options.sampleRate);
+    const auto lateTail = peakBetween (rendered, musicEnds + 0.5, report.seconds,
+                                       options.sampleRate);
 
     REQUIRE (duringMusic > 0.05f);
     REQUIRE (lateTail < duringMusic * 0.05f);
@@ -100,7 +103,8 @@ TEST_CASE ("an explicit length renders exactly that long and keeps looping", "[e
     options.patternId = 1;
 
     juce::AudioBuffer<float> rendered;
-    const auto report = OfflineRenderer::renderToBuffer (dew::testing::fixtureProject(), rendered, options);
+    const auto report = OfflineRenderer::renderToBuffer (dew::testing::fixtureProject(), rendered,
+                                                         options);
 
     REQUIRE (report.ok());
     REQUIRE (report.seconds == Approx (4.0));
@@ -111,7 +115,8 @@ TEST_CASE ("an explicit length renders exactly that long and keeps looping", "[e
     REQUIRE (peakBetween (rendered, 3.5, 4.0, options.sampleRate) > 0.01f);
 }
 
-TEST_CASE ("a project with nothing to play is refused rather than rendered silent", "[engine][render]")
+TEST_CASE ("a project with nothing to play is refused rather than rendered silent",
+           "[engine][render]")
 {
     // A default project has channels and a pattern, but no notes and no clips.
     juce::AudioBuffer<float> rendered;
@@ -164,8 +169,9 @@ TEST_CASE ("soloing one mixer track silences the others", "[engine][render]")
     OfflineRenderer::renderToBuffer (dew::testing::fixtureProject(), everything);
 
     // Quieter than the full mix, because three channels are gone.
-    REQUIRE (report.rms < 0.9f * 0.5f * (everything.getRMSLevel (0, 0, everything.getNumSamples())
-                                         + everything.getRMSLevel (1, 0, everything.getNumSamples())));
+    REQUIRE (report.rms < 0.9f * 0.5f
+                              * (everything.getRMSLevel (0, 0, everything.getNumSamples())
+                                 + everything.getRMSLevel (1, 0, everything.getNumSamples())));
 }
 
 TEST_CASE ("a project saved and reloaded renders identically", "[engine][render][io]")
@@ -269,8 +275,8 @@ TEST_CASE ("a render is the same audio at any block size", "[engine][render][tim
         {
             if (! juce::exactlyEqual (left[i], right[i]))
             {
-                INFO ("channel " << channel << ", sample " << i
-                                 << ": " << left[i] << " vs " << right[i]);
+                INFO ("channel " << channel << ", sample " << i << ": " << left[i] << " vs "
+                                 << right[i]);
                 REQUIRE (juce::exactlyEqual (left[i], right[i]));
             }
         }

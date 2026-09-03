@@ -12,8 +12,7 @@ namespace
     immediately distinguishable from its neighbours without anyone choosing.
 */
 const char* const ramp[] = {
-    "ffe4572e", "ff29a19c", "ff4fa3ff", "fff2c14e",
-    "ffb388eb", "ff3ecf8e", "ffff7eb6", "ff76c7c0",
+    "ffe4572e", "ff29a19c", "ff4fa3ff", "fff2c14e", "ffb388eb", "ff3ecf8e", "ffff7eb6", "ff76c7c0",
 };
 
 constexpr int rampCount = (int) (sizeof (ramp) / sizeof (ramp[0]));
@@ -22,8 +21,7 @@ constexpr int rampCount = (int) (sizeof (ramp) / sizeof (ramp[0]));
     read at a glance, and nobody has to agree about what "Sage" is.
 */
 const char* const rampNames[] = {
-    "Red", "Teal", "Blue", "Amber",
-    "Violet", "Green", "Pink", "Aqua",
+    "Red", "Teal", "Blue", "Amber", "Violet", "Green", "Pink", "Aqua",
 };
 
 static_assert ((int) (sizeof (rampNames) / sizeof (rampNames[0])) == rampCount,
@@ -45,8 +43,8 @@ juce::String sixHexDigits (const juce::ValueTree& node)
     const auto digits = node[ids::colour].toString().getLastCharacters (6);
 
     return (digits.length() == 6 && digits.containsOnly ("0123456789abcdefABCDEF"))
-             ? digits
-             : juce::String();
+               ? digits
+               : juce::String();
 }
 
 } // namespace

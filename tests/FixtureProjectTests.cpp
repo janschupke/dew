@@ -71,7 +71,8 @@ TEST_CASE ("the fixture round-trips through the serializer", "[fixture]")
     // was not would make every save-then-load test fail for a reason that had
     // nothing to do with what it was testing.
     const auto project = dew::testing::fixtureProject();
-    const auto loaded = ProjectSerializer::fromJsonString (ProjectSerializer::toJsonString (project));
+    const auto loaded = ProjectSerializer::fromJsonString (
+        ProjectSerializer::toJsonString (project));
 
     REQUIRE (loaded.ok());
     REQUIRE (loaded.warnings.isEmpty());

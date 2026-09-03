@@ -11,23 +11,24 @@ namespace
 /** Strokes are drawn as outlines so an icon is one filled path - it scales and
     recolours as a unit, and callers never have to know a stroke width.
 */
-juce::Path strokedLine (float x1, float y1, float x2, float y2, float thickness = tokens::icon::regular)
+juce::Path strokedLine (float x1, float y1, float x2, float y2,
+                        float thickness = tokens::icon::regular)
 {
     juce::Path line;
     line.startNewSubPath (x1, y1);
     line.lineTo (x2, y2);
 
     juce::Path stroked;
-    juce::PathStrokeType (thickness, juce::PathStrokeType::curved,
-                          juce::PathStrokeType::rounded).createStrokedPath (stroked, line);
+    juce::PathStrokeType (thickness, juce::PathStrokeType::curved, juce::PathStrokeType::rounded)
+        .createStrokedPath (stroked, line);
     return stroked;
 }
 
 juce::Path strokeOf (const juce::Path& source, float thickness = tokens::icon::regular)
 {
     juce::Path stroked;
-    juce::PathStrokeType (thickness, juce::PathStrokeType::curved,
-                          juce::PathStrokeType::rounded).createStrokedPath (stroked, source);
+    juce::PathStrokeType (thickness, juce::PathStrokeType::curved, juce::PathStrokeType::rounded)
+        .createStrokedPath (stroked, source);
     return stroked;
 }
 
@@ -75,8 +76,7 @@ juce::Path record()
 juce::Path loop()
 {
     juce::Path arc;
-    arc.addCentredArc (0.5f, 0.5f, 0.32f, 0.32f, 0.0f,
-                       juce::MathConstants<float>::pi * 0.35f,
+    arc.addCentredArc (0.5f, 0.5f, 0.32f, 0.32f, 0.0f, juce::MathConstants<float>::pi * 0.35f,
                        juce::MathConstants<float>::pi * 1.85f, true);
 
     auto p = strokeOf (arc, tokens::icon::regular);
@@ -135,8 +135,7 @@ juce::Path magnet()
     // A horseshoe opening downwards with blunt poles. Deliberately not an arc
     // with two thin legs, which is the headphone silhouette used for solo.
     juce::Path outer;
-    outer.addCentredArc (0.5f, 0.52f, 0.34f, 0.34f, 0.0f,
-                         -juce::MathConstants<float>::halfPi,
+    outer.addCentredArc (0.5f, 0.52f, 0.34f, 0.34f, 0.0f, -juce::MathConstants<float>::halfPi,
                          juce::MathConstants<float>::halfPi, true);
 
     auto p = strokeOf (outer, tokens::icon::ring);
@@ -199,14 +198,17 @@ juce::Path dice()
     // die rather than a framed picture, and a diagonal row merges with the
     // border once the icon is small.
     juce::Path p;
-    p.addPath (strokeOf ([]
-    {
-        juce::Path body;
-        body.addRoundedRectangle (0.12f, 0.12f, 0.76f, 0.76f, 0.16f);
-        return body;
-    }(), 0.09f));
+    p.addPath (strokeOf (
+        []
+        {
+            juce::Path body;
+            body.addRoundedRectangle (0.12f, 0.12f, 0.76f, 0.76f, 0.16f);
+            return body;
+        }(),
+        0.09f));
 
-    const auto pip = [&p] (float x, float y) { p.addEllipse (x - 0.075f, y - 0.075f, 0.15f, 0.15f); };
+    const auto pip = [&p] (float x, float y)
+    { p.addEllipse (x - 0.075f, y - 0.075f, 0.15f, 0.15f); };
 
     pip (0.32f, 0.32f);
     pip (0.68f, 0.32f);
@@ -256,8 +258,7 @@ juce::Path mute()
 juce::Path solo()
 {
     juce::Path band;
-    band.addCentredArc (0.5f, 0.52f, 0.32f, 0.32f, 0.0f,
-                        -juce::MathConstants<float>::halfPi * 1.6f,
+    band.addCentredArc (0.5f, 0.52f, 0.32f, 0.32f, 0.0f, -juce::MathConstants<float>::halfPi * 1.6f,
                         juce::MathConstants<float>::halfPi * 1.6f, true);
 
     auto p = strokeOf (band, tokens::icon::regular);
@@ -269,8 +270,7 @@ juce::Path solo()
 juce::Path power()
 {
     juce::Path arc;
-    arc.addCentredArc (0.5f, 0.55f, 0.3f, 0.3f, 0.0f,
-                       juce::MathConstants<float>::pi * 0.25f,
+    arc.addCentredArc (0.5f, 0.55f, 0.3f, 0.3f, 0.0f, juce::MathConstants<float>::pi * 0.25f,
                        juce::MathConstants<float>::pi * 1.75f, true);
 
     auto p = strokeOf (arc, tokens::icon::regular);
@@ -281,8 +281,7 @@ juce::Path power()
 juce::Path lock()
 {
     juce::Path shackle;
-    shackle.addCentredArc (0.5f, 0.42f, 0.2f, 0.22f, 0.0f,
-                           -juce::MathConstants<float>::halfPi,
+    shackle.addCentredArc (0.5f, 0.42f, 0.2f, 0.22f, 0.0f, -juce::MathConstants<float>::halfPi,
                            juce::MathConstants<float>::halfPi, true);
 
     auto p = strokeOf (shackle, tokens::icon::regular);
@@ -473,8 +472,10 @@ juce::Path effectChorus()
         {
             const auto t = (float) i / 24.0f;
             wave.lineTo (0.08f + t * 0.84f,
-                         0.5f + offset - 0.2f * std::sin ((t + (float) line * 0.3f)
-                                                          * juce::MathConstants<float>::twoPi));
+                         0.5f + offset
+                             - 0.2f
+                                   * std::sin ((t + (float) line * 0.3f)
+                                               * juce::MathConstants<float>::twoPi));
         }
     }
 
@@ -625,27 +626,56 @@ juce::Path preset()
 std::vector<NamedIcon> all()
 {
     return {
-        { "play", play }, { "pause", pause }, { "stop", stop }, { "rewind", rewind },
-        { "record", record }, { "loop", loop },
+        { "play", play },
+        { "pause", pause },
+        { "stop", stop },
+        { "rewind", rewind },
+        { "record", record },
+        { "loop", loop },
 
-        { "plus", plus }, { "minus", minus }, { "trash", trash }, { "duplicate", duplicate },
-        { "pencil", pencil }, { "magnet", magnet }, { "pointer", pointer }, { "eraser", eraser },
-        { "scissors", scissors }, { "dice", dice }, { "quantize", quantize },
+        { "plus", plus },
+        { "minus", minus },
+        { "trash", trash },
+        { "duplicate", duplicate },
+        { "pencil", pencil },
+        { "magnet", magnet },
+        { "pointer", pointer },
+        { "eraser", eraser },
+        { "scissors", scissors },
+        { "dice", dice },
+        { "quantize", quantize },
 
-        { "mute", mute }, { "solo", solo }, { "power", power }, { "lock", lock },
-        { "check", check }, { "chevronUp", chevronUp }, { "chevronDown", chevronDown },
-        { "chevronLeft", chevronLeft }, { "chevronRight", chevronRight }, { "grip", grip },
+        { "mute", mute },
+        { "solo", solo },
+        { "power", power },
+        { "lock", lock },
+        { "check", check },
+        { "chevronUp", chevronUp },
+        { "chevronDown", chevronDown },
+        { "chevronLeft", chevronLeft },
+        { "chevronRight", chevronRight },
+        { "grip", grip },
 
-        { "waveSine", waveSine }, { "waveSaw", waveSaw }, { "waveSquare", waveSquare },
+        { "waveSine", waveSine },
+        { "waveSaw", waveSaw },
+        { "waveSquare", waveSquare },
         { "waveTriangle", waveTriangle },
 
-        { "effectFilter", effectFilter }, { "effectReverb", effectReverb },
-        { "effectDelay", effectDelay }, { "effectDrive", effectDrive },
-        { "effectChorus", effectChorus }, { "effectEq", effectEq },
+        { "effectFilter", effectFilter },
+        { "effectReverb", effectReverb },
+        { "effectDelay", effectDelay },
+        { "effectDrive", effectDrive },
+        { "effectChorus", effectChorus },
+        { "effectEq", effectEq },
 
-        { "zoomIn", zoomIn }, { "zoomOut", zoomOut }, { "fitToContent", fitToContent },
-        { "rowsShorter", rowsShorter }, { "rowsTaller", rowsTaller }, { "fitRows", fitRows },
-        { "automation", automation }, { "preset", preset },
+        { "zoomIn", zoomIn },
+        { "zoomOut", zoomOut },
+        { "fitToContent", fitToContent },
+        { "rowsShorter", rowsShorter },
+        { "rowsTaller", rowsTaller },
+        { "fitRows", fitRows },
+        { "automation", automation },
+        { "preset", preset },
     };
 }
 

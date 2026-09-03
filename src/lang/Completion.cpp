@@ -14,8 +14,7 @@ namespace dew::lang
 namespace
 {
 
-void add (std::vector<Completion>& out, std::string text, std::string detail,
-          CompletionKind kind)
+void add (std::vector<Completion>& out, std::string text, std::string detail, CompletionKind kind)
 {
     out.push_back ({ std::move (text), std::move (detail), kind });
 }
@@ -41,21 +40,22 @@ void addAll (std::vector<Completion>& out, const std::vector<std::string>& names
 */
 const std::vector<std::string_view>& numeralsFor (Mode mode)
 {
-    static const std::vector<std::string_view> major {
-        "I", "V", "vi", "IV", "ii", "iii", "V7", "I^1", "V^1", "ii7", "IVmaj7",
-        "viidim", "V7/V", "V7/vi", "V7/ii", "V7/IV", "bVII", "iv" };
+    static const std::vector<std::string_view> major { "I",      "V",      "vi",   "IV",    "ii",
+                                                       "iii",    "V7",     "I^1",  "V^1",   "ii7",
+                                                       "IVmaj7", "viidim", "V7/V", "V7/vi", "V7/ii",
+                                                       "V7/IV",  "bVII",   "iv" };
 
-    static const std::vector<std::string_view> minor {
-        "i", "iv", "v", "bVI", "bVII", "bIII", "V7", "i^1", "iv^1", "iidim",
-        "V7/iv", "V7/bVI", "V7/bVII", "bII", "V" };
+    static const std::vector<std::string_view> minor { "i",       "iv",    "v",     "bVI",
+                                                       "bVII",    "bIII",  "V7",    "i^1",
+                                                       "iv^1",    "iidim", "V7/iv", "V7/bVI",
+                                                       "V7/bVII", "bII",   "V" };
 
     switch (mode)
     {
         case Mode::major:
         case Mode::lydian:
         case Mode::mixolydian:
-        case Mode::majorPentatonic:
-            return major;
+        case Mode::majorPentatonic: return major;
 
         case Mode::minor:
         case Mode::dorian:
@@ -65,8 +65,7 @@ const std::vector<std::string_view>& numeralsFor (Mode mode)
         case Mode::melodicMinor:
         case Mode::minorPentatonic:
         case Mode::blues:
-        case Mode::chromatic:
-            break;
+        case Mode::chromatic: break;
     }
 
     return minor;
@@ -112,22 +111,26 @@ std::string spell (std::string_view numeral, const Key& key)
 /** Durations, plus the two things that are not notes. */
 void addDurations (std::vector<Completion>& out)
 {
-    struct Entry { const char* text; const char* detail; };
+    struct Entry
+    {
+        const char* text;
+        const char* detail;
+    };
 
     static const Entry entries[] = {
-        { "1/4",   "a quarter" },
-        { "1/8",   "an eighth" },
-        { "1/2",   "a half" },
-        { "1/1",   "a whole bar in 4/4" },
-        { "1/16",  "a sixteenth" },
-        { "1/4.",  "a dotted quarter" },
-        { "1/8.",  "a dotted eighth" },
-        { "1/8t",  "an eighth-note triplet - needs a grid divisible by 3" },
+        { "1/4", "a quarter" },
+        { "1/8", "an eighth" },
+        { "1/2", "a half" },
+        { "1/1", "a whole bar in 4/4" },
+        { "1/16", "a sixteenth" },
+        { "1/4.", "a dotted quarter" },
+        { "1/8.", "a dotted eighth" },
+        { "1/8t", "an eighth-note triplet - needs a grid divisible by 3" },
         { "1/16t", "a sixteenth-note triplet" },
-        { "1/32",  "a thirty-second - will not fit with any triplet" },
-        { "-",     "a rest; give it a length, as in `- 1/4`" },
-        { "~",     "tie to the note before; give it a length" },
-        { "x2",    "repeat the entry before this one" },
+        { "1/32", "a thirty-second - will not fit with any triplet" },
+        { "-", "a rest; give it a length, as in `- 1/4`" },
+        { "~", "tie to the note before; give it a length" },
+        { "x2", "repeat the entry before this one" },
     };
 
     for (const auto& entry : entries)
@@ -136,16 +139,15 @@ void addDurations (std::vector<Completion>& out)
 
 void addRoots (std::vector<Completion>& out)
 {
-    for (const auto* root : { "C", "C#", "Db", "D", "Eb", "E", "F", "F#",
-                              "Gb", "G", "Ab", "A", "Bb", "B" })
+    for (const auto* root :
+         { "C", "C#", "Db", "D", "Eb", "E", "F", "F#", "Gb", "G", "Ab", "A", "Bb", "B" })
         add (out, root, "a root", CompletionKind::value);
 }
 
 void addModes (std::vector<Completion>& out)
 {
-    for (const auto* mode : { "major", "minor", "dorian", "phrygian", "lydian",
-                              "mixolydian", "locrian", "harmonic-minor",
-                              "melodic-minor", "major-pentatonic",
+    for (const auto* mode : { "major", "minor", "dorian", "phrygian", "lydian", "mixolydian",
+                              "locrian", "harmonic-minor", "melodic-minor", "major-pentatonic",
                               "minor-pentatonic", "blues", "chromatic" })
         add (out, mode, "a mode", CompletionKind::value);
 }
@@ -182,10 +184,10 @@ void addForKind (std::vector<Completion>& out, ValueKind kind, int wordsAlready,
                 add (out, n, "steps per beat", CompletionKind::value);
             break;
 
-        case ValueKind::rhythmRef:   addAll (out, symbols.rhythms, "a rhythm"); break;
-        case ValueKind::voicingRef:  addAll (out, symbols.voicings, "a voicing"); break;
-        case ValueKind::harmonyRef:  addAll (out, symbols.harmonies, "a harmony"); break;
-        case ValueKind::channelRef:  addAll (out, symbols.channels, "a channel"); break;
+        case ValueKind::rhythmRef: addAll (out, symbols.rhythms, "a rhythm"); break;
+        case ValueKind::voicingRef: addAll (out, symbols.voicings, "a voicing"); break;
+        case ValueKind::harmonyRef: addAll (out, symbols.harmonies, "a harmony"); break;
+        case ValueKind::channelRef: addAll (out, symbols.channels, "a channel"); break;
 
         case ValueKind::meter:
             for (const auto* m : { "4/4", "3/4", "6/8", "5/4", "7/8" })
@@ -236,11 +238,10 @@ void addForKind (std::vector<Completion>& out, ValueKind kind, int wordsAlready,
         case ValueKind::articulation:
         case ValueKind::lineSource:
         case ValueKind::instrument:
-        case ValueKind::scope:       // handled above: membersOf lists them
+        case ValueKind::scope: // handled above: membersOf lists them
         case ValueKind::bassRule:
         case ValueKind::alignment:
-        case ValueKind::transposeMode:
-            break;
+        case ValueKind::transposeMode: break;
 
         case ValueKind::leapRule:
             if (wordsAlready == 0)
@@ -321,9 +322,8 @@ CompletionResult completionsAt (std::string_view source, std::uint32_t byteOffse
         }
     }
 
-    const auto prefix = result.replacing.isEmpty()
-                            ? std::string_view {}
-                            : result.replacing.textIn (source);
+    const auto prefix = result.replacing.isEmpty() ? std::string_view {}
+                                                   : result.replacing.textIn (source);
 
     // --- which block, and where in a statement --------------------------------
     const LineIndex index { source };
@@ -435,8 +435,7 @@ CompletionResult completionsAt (std::string_view source, std::uint32_t byteOffse
         }
         else
         {
-            add (items, "x2", "play it twice, re-rolling what is random",
-                 CompletionKind::value);
+            add (items, "x2", "play it twice, re-rolling what is random", CompletionKind::value);
             add (items, "identical", "play the SAME notes again, as one pattern",
                  CompletionKind::value);
             add (items, "as", "name this instance so inserting before it cannot move it",
@@ -452,14 +451,12 @@ CompletionResult completionsAt (std::string_view source, std::uint32_t byteOffse
             // as a top-level keyword the day one was added.
             for (const auto& spec : schema())
                 if (spec.topLevel)
-                    add (items, nameOf (spec.kind), std::string (spec.doc),
-                         CompletionKind::block);
+                    add (items, nameOf (spec.kind), std::string (spec.doc), CompletionKind::block);
         }
         else if (const auto* spec = specFor (result.block); spec != nullptr)
         {
             for (const auto& key : spec->keys)
-                add (items, std::string (key.name), std::string (key.doc),
-                     CompletionKind::key);
+                add (items, std::string (key.name), std::string (key.doc), CompletionKind::key);
 
             for (const auto child : spec->children)
                 if (const auto* childSpec = specFor (child); childSpec != nullptr)

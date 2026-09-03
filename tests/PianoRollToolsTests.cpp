@@ -71,13 +71,12 @@ TEST_CASE ("a note is painted where the grid says it is, with the strip in place
 
 // --- snapping ----------------------------------------------------------------
 
-TEST_CASE ("at a coarse grid a note is written at the start of the cell clicked",
-           "[ui][rolltools]")
+TEST_CASE ("at a coarse grid a note is written at the start of the cell clicked", "[ui][rolltools]")
 {
     const juce::ScopedJuceInitialiser_GUI juceInit;
     RollHarness h;
 
-    h.roll.setSnap (SnapDivision::quarter);   // four steps per cell
+    h.roll.setSnap (SnapDivision::quarter); // four steps per cell
 
     clickAndRelease (h.roll, pointFor (h, 6, 66));
 
@@ -111,13 +110,14 @@ TEST_CASE ("a dragged chord keeps its offsets while the grabbed note lands on th
 
     auto& undo = h.document.getUndoManager();
     auto anchor = ProjectEdits::addNote (h.pattern(), 1, 2, 1, 66, 1.0f, &undo);
-    auto other  = ProjectEdits::addNote (h.pattern(), 1, 3, 1, 69, 1.0f, &undo);
+    auto other = ProjectEdits::addNote (h.pattern(), 1, 3, 1, 69, 1.0f, &undo);
 
     h.roll.setSnap (SnapDivision::quarter);
 
     // Select both, then drag the lower one to around step 9.
     clickAndRelease (h.roll, pointFor (h, 2, 66));
-    clickAndRelease (h.roll, pointFor (h, 3, 69), juce::ModifierKeys (juce::ModifierKeys::shiftModifier));
+    clickAndRelease (h.roll, pointFor (h, 3, 69),
+                     juce::ModifierKeys (juce::ModifierKeys::shiftModifier));
     REQUIRE (h.roll.getNumSelectedNotes() == 2);
 
     dragBetween (h.roll, pointFor (h, 2, 66), pointFor (h, 9, 66));
@@ -140,7 +140,7 @@ TEST_CASE ("shift suspends the grid for the length of a drag", "[ui][rolltools]"
     auto& undo = h.document.getUndoManager();
     auto note = ProjectEdits::addNote (h.pattern(), 1, 0, 1, 66, 1.0f, &undo);
 
-    h.roll.setSnap (SnapDivision::bar);   // sixteen steps per cell
+    h.roll.setSnap (SnapDivision::bar); // sixteen steps per cell
 
     // Press without shift, so the press selects rather than toggling selection,
     // then drag with it held.
@@ -196,15 +196,17 @@ TEST_CASE ("painting back over a cell does not stack a second note in it", "[ui]
         for (int i = 0; i <= 16; ++i)
         {
             const auto t = (float) i / 16.0f;
-            h.roll.mouseDrag (eventAt (h.roll, { juce::roundToInt ((float) from.x + t * (float) (to.x - from.x)),
-                                                 from.y }));
+            h.roll.mouseDrag (
+                eventAt (h.roll, { juce::roundToInt ((float) from.x + t * (float) (to.x - from.x)),
+                                   from.y }));
         }
 
         for (int i = 16; i >= 0; --i)
         {
             const auto t = (float) i / 16.0f;
-            h.roll.mouseDrag (eventAt (h.roll, { juce::roundToInt ((float) from.x + t * (float) (to.x - from.x)),
-                                                 from.y }));
+            h.roll.mouseDrag (
+                eventAt (h.roll, { juce::roundToInt ((float) from.x + t * (float) (to.x - from.x)),
+                                   from.y }));
         }
     }
 
@@ -359,9 +361,7 @@ TEST_CASE ("the arrow keys transpose by a semitone and an octave", "[ui][rolltoo
     auto note = ProjectEdits::addNote (h.pattern(), 1, 0, 1, 66, 1.0f, &undo);
 
     const auto press = [&h] (int keyCode, juce::ModifierKeys mods = juce::ModifierKeys())
-    {
-        return h.roll.keyPressed (juce::KeyPress (keyCode, mods, 0));
-    };
+    { return h.roll.keyPressed (juce::KeyPress (keyCode, mods, 0)); };
 
     REQUIRE (press (juce::KeyPress::upKey));
     CHECK ((int) note[ids::pitch] == 67);
@@ -372,7 +372,8 @@ TEST_CASE ("the arrow keys transpose by a semitone and an octave", "[ui][rolltoo
     REQUIRE (press (juce::KeyPress::upKey, juce::ModifierKeys (juce::ModifierKeys::shiftModifier)));
     CHECK ((int) note[ids::pitch] == 78);
 
-    REQUIRE (press (juce::KeyPress::downKey, juce::ModifierKeys (juce::ModifierKeys::shiftModifier)));
+    REQUIRE (
+        press (juce::KeyPress::downKey, juce::ModifierKeys (juce::ModifierKeys::shiftModifier)));
     CHECK ((int) note[ids::pitch] == 66);
 }
 
@@ -455,12 +456,11 @@ TEST_CASE ("cancelling the randomize panel applies nothing", "[ui][rolltools]")
 
 // --- persistence -------------------------------------------------------------
 
-TEST_CASE ("the snap grid survives a session, and a corrupt one falls back",
-           "[ui][rolltools]")
+TEST_CASE ("the snap grid survives a session, and a corrupt one falls back", "[ui][rolltools]")
 {
     juce::TemporaryFile temp;
-    const auto directory = temp.getFile().getParentDirectory()
-                               .getChildFile ("dew-snap-" + juce::String (juce::Random().nextInt (99999)));
+    const auto directory = temp.getFile().getParentDirectory().getChildFile (
+        "dew-snap-" + juce::String (juce::Random().nextInt (99999)));
     directory.createDirectory();
 
     {

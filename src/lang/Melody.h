@@ -47,8 +47,8 @@ struct Onset
     nothing is dropped - a note running past its section would retrigger on the
     next repeat of the pattern.
 */
-std::vector<Onset> tileRhythm (const RhythmSpec&, int totalSteps, int stepsPerBar,
-                               int beatUnit, int stepsPerBeat, bool alignBar = true);
+std::vector<Onset> tileRhythm (const RhythmSpec&, int totalSteps, int stepsPerBar, int beatUnit,
+                               int stepsPerBeat, bool alignBar = true);
 
 struct MelodyNote
 {
@@ -74,12 +74,9 @@ struct MelodyNote
     arrives already CHOSEN: the caller draws it at whatever scope the score
     declared, so nothing in here has to know about seeds or scopes.
 */
-std::vector<MelodyNote> generateMelody (const std::vector<Onset>&,
-                                        const std::vector<ChordSpan>&,
-                                        const MelodySpec&,
-                                        int lowPitch, int highPitch,
-                                        const SeedPath&,
-                                        int cadenceDegree = 0);
+std::vector<MelodyNote> generateMelody (const std::vector<Onset>&, const std::vector<ChordSpan>&,
+                                        const MelodySpec&, int lowPitch, int highPitch,
+                                        const SeedPath&, int cadenceDegree = 0);
 
 /** Applies a mute budget, in place.
 
@@ -91,7 +88,6 @@ std::vector<MelodyNote> generateMelody (const std::vector<Onset>&,
     first onset of the span is never muted either, because a line that starts
     with a rest reads as a mistake rather than as a choice.
 */
-void applyMuteBudget (std::vector<Onset>&, int count, int window, const SeedPath&,
-                      int stepsPerBar);
+void applyMuteBudget (std::vector<Onset>&, int count, int window, const SeedPath&, int stepsPerBar);
 
 } // namespace dew::lang

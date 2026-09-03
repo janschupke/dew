@@ -31,9 +31,8 @@ juce::ValueTree makeNote (int channelId, int step, int lengthSteps, int pitch, d
 
 juce::ValueTree makeClip (int patternId, int startBar, int lengthBars)
 {
-    auto clip = defaultTreeFor (childSpecFor (childSpecFor (childSpecFor (projectSpec(), "playlist"),
-                                                            "tracks"),
-                                              "clips"));
+    auto clip = defaultTreeFor (
+        childSpecFor (childSpecFor (childSpecFor (projectSpec(), "playlist"), "tracks"), "clips"));
     clip.setProperty (ids::kind, "pattern", nullptr);
     clip.setProperty (ids::patternId, patternId, nullptr);
     clip.setProperty (ids::startBar, startBar, nullptr);
@@ -68,9 +67,9 @@ juce::ValueTree fixtureProject()
 
     // A lead phrase with held notes, so release and sustain are audible - and
     // so the four distinct note lengths the piano roll tests want are here.
-    pattern.appendChild (makeNote (4, 0,  3, 72, 0.8), nullptr);
-    pattern.appendChild (makeNote (4, 4,  2, 76, 0.75), nullptr);
-    pattern.appendChild (makeNote (4, 8,  3, 79, 0.8), nullptr);
+    pattern.appendChild (makeNote (4, 0, 3, 72, 0.8), nullptr);
+    pattern.appendChild (makeNote (4, 4, 2, 76, 0.75), nullptr);
+    pattern.appendChild (makeNote (4, 8, 3, 79, 0.8), nullptr);
     pattern.appendChild (makeNote (4, 12, 4, 74, 0.7), nullptr);
 
     // One clip on the first playlist track, looping the pattern for four bars.

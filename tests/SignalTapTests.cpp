@@ -139,20 +139,21 @@ TEST_CASE ("a reader never accepts a window the writer overtook", "[signaltap]")
     std::atomic<bool> running { true };
     std::atomic<int> accepted { 0 }, refused { 0 };
 
-    std::thread writer ([&tap, &running, rampAt]
-    {
-        std::vector<float> block (512, 0.0f);
-        juce::int64 position = 0;
-
-        while (running.load())
+    std::thread writer (
+        [&tap, &running, rampAt]
         {
-            for (int i = 0; i < 512; ++i)
-                block[(size_t) i] = rampAt (position + i);
+            std::vector<float> block (512, 0.0f);
+            juce::int64 position = 0;
 
-            tap.write (block.data(), block.data(), 512);
-            position += 512;
-        }
-    });
+            while (running.load())
+            {
+                for (int i = 0; i < 512; ++i)
+                    block[(size_t) i] = rampAt (position + i);
+
+                tap.write (block.data(), block.data(), 512);
+                position += 512;
+            }
+        });
 
     std::vector<float> window ((size_t) SignalTap::maxWindow, 0.0f);
     const auto until = juce::Time::getMillisecondCounter() + 200;
@@ -180,10 +181,10 @@ TEST_CASE ("a reader never accepts a window the writer overtook", "[signaltap]")
             // Exact equality on purpose: these are small whole numbers, written
             // and read back without arithmetic, so anything but the exact value
             // is the tear this is looking for.
-            consistent = juce::exactlyEqual (step, 1.0f)                     // the ramp
-                         || juce::exactlyEqual (step, (float) (1 - cycle))   // its wrap
-                         || (juce::exactlyEqual (previous, 0.0f)             // history it
-                             && juce::exactlyEqual (current, 0.0f));         // does not have yet
+            consistent = juce::exactlyEqual (step, 1.0f)                   // the ramp
+                         || juce::exactlyEqual (step, (float) (1 - cycle)) // its wrap
+                         || (juce::exactlyEqual (previous, 0.0f)           // history it
+                             && juce::exactlyEqual (current, 0.0f));       // does not have yet
         }
 
         REQUIRE (consistent);
@@ -239,7 +240,7 @@ TEST_CASE ("the tap sees the finished master output", "[signaltap][engine]")
 
     for (int i = 0; i < 512; ++i)
         REQUIRE (window[(size_t) (SignalTap::maxWindow - 512 + i)]
-                     == Approx (expected[(size_t) i]).margin (1.0e-6));
+                 == Approx (expected[(size_t) i]).margin (1.0e-6));
 
     // And the project actually made a sound, so none of that passed vacuously.
     REQUIRE (peakOf (window) > 0.01f);
@@ -254,8 +255,8 @@ TEST_CASE ("the master fader moves what the tap sees", "[signaltap][engine]")
     {
         auto project = dew::testing::fixtureProject();
         project.getChildWithName (ids::MIXER)
-               .getChildWithName (ids::MASTER)
-               .setProperty (ids::gain, gain, nullptr);
+            .getChildWithName (ids::MASTER)
+            .setProperty (ids::gain, gain, nullptr);
 
         AudioEngine engine;
         engine.prepare (44100.0, 512);

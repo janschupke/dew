@@ -18,7 +18,7 @@ namespace dew
 */
 struct TimelineView
 {
-    double pixelsPerStep     = 24.0;
+    double pixelsPerStep = 24.0;
     double scrollOffsetSteps = 0.0;
 
     static constexpr double minPixelsPerStep = 3.0;
@@ -63,8 +63,10 @@ struct TimelineView
     */
     juce::Range<int> visibleStepRange (float contentWidth, int totalSteps) const noexcept
     {
-        const auto first = juce::jlimit (0, juce::jmax (0, totalSteps - 1), (int) std::floor (scrollOffsetSteps));
-        const auto last  = juce::jlimit (first, totalSteps, (int) std::ceil (stepForX (contentWidth)) + 1);
+        const auto first = juce::jlimit (0, juce::jmax (0, totalSteps - 1),
+                                         (int) std::floor (scrollOffsetSteps));
+        const auto last = juce::jlimit (first, totalSteps,
+                                        (int) std::ceil (stepForX (contentWidth)) + 1);
 
         return { first, last };
     }
@@ -80,7 +82,7 @@ struct TimelineView
     juce::Range<int> visibleStepRange (float contentWidth) const noexcept
     {
         const auto first = juce::jmax (0, (int) std::floor (scrollOffsetSteps));
-        const auto last  = juce::jmax (first, (int) std::ceil (stepForX (contentWidth)) + 1);
+        const auto last = juce::jmax (first, (int) std::ceil (stepForX (contentWidth)) + 1);
 
         return { first, last };
     }
@@ -91,7 +93,8 @@ struct TimelineView
     void zoomAround (double factor, float anchorX) noexcept
     {
         const auto stepUnderAnchor = stepForX (anchorX);
-        const auto wanted = juce::jlimit (minPixelsPerStep, maxPixelsPerStep, pixelsPerStep * factor);
+        const auto wanted = juce::jlimit (minPixelsPerStep, maxPixelsPerStep,
+                                          pixelsPerStep * factor);
 
         if (juce::exactlyEqual (wanted, pixelsPerStep))
             return;

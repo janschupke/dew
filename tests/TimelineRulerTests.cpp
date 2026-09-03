@@ -23,8 +23,8 @@ namespace
 {
 
 juce::MouseEvent eventAt (juce::Component& target, juce::Point<int> local,
-                          juce::ModifierKeys mods = juce::ModifierKeys(),
-                          int clickCount = 1, bool wasDragged = false)
+                          juce::ModifierKeys mods = juce::ModifierKeys(), int clickCount = 1,
+                          bool wasDragged = false)
 {
     const auto position = local.toFloat();
 
@@ -32,13 +32,20 @@ juce::MouseEvent eventAt (juce::Component& target, juce::Point<int> local,
     // event can report as a drag: mouseWasDraggedSinceMouseDown asks the mouse
     // source, which nothing in a headless test ever pressed.
     return { juce::Desktop::getInstance().getMainMouseSource(),
-             position, mods,
-             1.0f, 0.0f, 0.0f, 0.0f, 0.0f,
-             &target, &target,
+             position,
+             mods,
+             1.0f,
+             0.0f,
+             0.0f,
+             0.0f,
+             0.0f,
+             &target,
+             &target,
              juce::Time::getCurrentTime(),
              position,
              juce::Time::getCurrentTime(),
-             clickCount, wasDragged };
+             clickCount,
+             wasDragged };
 }
 
 const juce::ModifierKeys shift { juce::ModifierKeys::shiftModifier };
@@ -224,8 +231,8 @@ TEST_CASE ("clicking the playlist ruler moves the transport, in bars", "[ruler]"
     const auto strip = playlist.getRulerArea();
     playlist.mouseDown (eventAt (playlist, { strip.getX() + 200, strip.getCentreY() }));
 
-    INFO ("playhead in steps: " << engine.getPlayheadSteps()
-          << " (a bar is " << stepsPerBar << " steps)");
+    INFO ("playhead in steps: " << engine.getPlayheadSteps() << " (a bar is " << stepsPerBar
+                                << " steps)");
     REQUIRE (engine.getPlayheadSteps() > 0.0);
 
     // Whole bars, because this timeline counts bars.
@@ -426,8 +433,8 @@ TEST_CASE ("the sequencer ruler can select a span and clear it", "[ruler]")
     CHECK (range.getStart() % beat == 0);
     CHECK (range.getEnd() % beat == 0);
 
-    strip->mouseDoubleClick (eventAt (*strip, { strip->getWidth() / 2, y },
-                                      juce::ModifierKeys(), 2));
+    strip->mouseDoubleClick (
+        eventAt (*strip, { strip->getWidth() / 2, y }, juce::ModifierKeys(), 2));
     CHECK_FALSE (editorState.hasStepSelection());
 }
 
@@ -449,9 +456,7 @@ TEST_CASE ("the playlist ruler selects whole bars, and double-click clears", "[r
     const auto strip = playlist.getRulerArea();
     const auto y = strip.getCentreY();
     const auto x = [&] (double bar)
-    {
-        return strip.getX() + (int) playlist.getTimeline().xForStep (bar);
-    };
+    { return strip.getX() + (int) playlist.getTimeline().xForStep (bar); };
 
     playlist.mouseDown (eventAt (playlist, { x (1.5), y }, shift));
     playlist.mouseDrag (eventAt (playlist, { x (3.5), y }, shift, 1, true));

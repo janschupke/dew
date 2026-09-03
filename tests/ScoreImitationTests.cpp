@@ -14,26 +14,27 @@ namespace
 
 std::string canon (const std::string& imitation, const std::string& lead = "")
 {
-    return
-        "song {\n"
-        "  tempo 100\n"
-        "  meter 4/4\n"
-        "  key   C major\n"
-        "  seed  0xCA10\n"
-        "}\n"
-        "channel lead {\n  mixer 1\n  range C4..C6\n}\n"
-        "channel echo {\n  mixer 2\n  range C3..C6\n}\n"
-        "rhythm walk { 1/4 }\n"
-        "harmony h { I | IV | V | I }\n"
-        "section round {\n"
-        "  length 4 bars\n"
-        "  harmony h\n"
-        "  part lead {\n    melody {\n      rhythm walk\n"
-        + lead +
-        "    }\n  }\n"
-        "  part echo {\n    imitate lead {\n" + imitation + "    }\n  }\n"
-        "}\n"
-        "arrangement {\n  round\n}\n";
+    return "song {\n"
+           "  tempo 100\n"
+           "  meter 4/4\n"
+           "  key   C major\n"
+           "  seed  0xCA10\n"
+           "}\n"
+           "channel lead {\n  mixer 1\n  range C4..C6\n}\n"
+           "channel echo {\n  mixer 2\n  range C3..C6\n}\n"
+           "rhythm walk { 1/4 }\n"
+           "harmony h { I | IV | V | I }\n"
+           "section round {\n"
+           "  length 4 bars\n"
+           "  harmony h\n"
+           "  part lead {\n    melody {\n      rhythm walk\n"
+           + lead
+           + "    }\n  }\n"
+             "  part echo {\n    imitate lead {\n"
+           + imitation
+           + "    }\n  }\n"
+             "}\n"
+             "arrangement {\n  round\n}\n";
 }
 
 CompileResult compileScore (const std::string& source)
@@ -88,8 +89,7 @@ TEST_CASE ("an imitation is the same line, later", "[score][imitation]")
     }
 }
 
-TEST_CASE ("what would fall past the end is dropped, not wrapped",
-           "[score][imitation]")
+TEST_CASE ("what would fall past the end is dropped, not wrapped", "[score][imitation]")
 {
     // A canon that wrapped would answer itself from the future.
     const auto score = compileOk (canon ("      delay 1 bar\n"));
@@ -121,8 +121,8 @@ TEST_CASE ("a diatonic answer stays in the key", "[score][imitation]")
     {
         const auto degree = ((pitch % 12) + 12) % 12;
         INFO ("echo at step " << step << " pitch " << pitch);
-        REQUIRE ((degree == 0 || degree == 2 || degree == 4 || degree == 5
-                  || degree == 7 || degree == 9 || degree == 11));
+        REQUIRE ((degree == 0 || degree == 2 || degree == 4 || degree == 5 || degree == 7
+                  || degree == 9 || degree == 11));
     }
 }
 
@@ -178,39 +178,35 @@ TEST_CASE ("an imitation does not imitate itself", "[score][imitation]")
     }
 }
 
-TEST_CASE ("imitation needs a voice that exists, and not itself",
-           "[score][imitation]")
+TEST_CASE ("imitation needs a voice that exists, and not itself", "[score][imitation]")
 {
-    const auto source =
-        "song {\n  tempo 100\n  meter 4/4\n  key C major\n}\n"
-        "channel lead {\n  mixer 1\n  range C4..C6\n}\n"
-        "rhythm walk { 1/4 }\n"
-        "harmony h { I | V }\n"
-        "section round {\n  length 2 bars\n  harmony h\n"
-        "  part lead {\n    imitate lead {\n      delay 1 bar\n    }\n  }\n}\n"
-        "arrangement {\n  round\n}\n";
+    const auto source = "song {\n  tempo 100\n  meter 4/4\n  key C major\n}\n"
+                        "channel lead {\n  mixer 1\n  range C4..C6\n}\n"
+                        "rhythm walk { 1/4 }\n"
+                        "harmony h { I | V }\n"
+                        "section round {\n  length 2 bars\n  harmony h\n"
+                        "  part lead {\n    imitate lead {\n      delay 1 bar\n    }\n  }\n}\n"
+                        "arrangement {\n  round\n}\n";
 
     const auto itself = compileScore (source);
     REQUIRE_FALSE (itself.ok());
     REQUIRE (itself.diagnostics.front().code == "E249");
 }
 
-TEST_CASE ("imitating a voice that has not been written says so",
-           "[score][imitation]")
+TEST_CASE ("imitating a voice that has not been written says so", "[score][imitation]")
 {
     // Parts are written in declaration order, so a voice copied before it is
     // written has nothing to copy - and a silent part is the failure that looks
     // like success.
-    const auto source =
-        "song {\n  tempo 100\n  meter 4/4\n  key C major\n}\n"
-        "channel lead {\n  mixer 1\n  range C4..C6\n}\n"
-        "channel echo {\n  mixer 2\n  range C3..C6\n}\n"
-        "rhythm walk { 1/4 }\n"
-        "harmony h { I | V }\n"
-        "section round {\n  length 2 bars\n  harmony h\n"
-        "  part echo {\n    imitate lead {\n      delay 1 bar\n    }\n  }\n"
-        "  part lead {\n    melody {\n      rhythm walk\n    }\n  }\n}\n"
-        "arrangement {\n  round\n}\n";
+    const auto source = "song {\n  tempo 100\n  meter 4/4\n  key C major\n}\n"
+                        "channel lead {\n  mixer 1\n  range C4..C6\n}\n"
+                        "channel echo {\n  mixer 2\n  range C3..C6\n}\n"
+                        "rhythm walk { 1/4 }\n"
+                        "harmony h { I | V }\n"
+                        "section round {\n  length 2 bars\n  harmony h\n"
+                        "  part echo {\n    imitate lead {\n      delay 1 bar\n    }\n  }\n"
+                        "  part lead {\n    melody {\n      rhythm walk\n    }\n  }\n}\n"
+                        "arrangement {\n  round\n}\n";
 
     const auto result = compileScore (source);
     REQUIRE (result.ok());

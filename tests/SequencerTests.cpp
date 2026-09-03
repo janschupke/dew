@@ -22,7 +22,6 @@ dew::TempoMap mapFor (double samplesPerStep)
     return dew::TempoMap::constant (60.0 * kTestSampleRate / samplesPerStep, 1);
 }
 
-
 /** A snapshot with one channel and one pattern whose notes are at the given steps. */
 EngineSnapshot snapshotWithSteps (const std::vector<int>& steps, int patternLength = 16,
                                   int noteLengthSteps = 1)
@@ -59,9 +58,8 @@ EngineSnapshot snapshotWithSteps (const std::vector<int>& steps, int patternLeng
 }
 
 std::vector<NoteTrigger> collectOver (const EngineSnapshot& snapshot, Transport::Mode mode,
-                                      juce::int64 fromSample, juce::int64 toSample,
-                                      int blockSize, double samplesPerStep,
-                                      int patternIndex,
+                                      juce::int64 fromSample, juce::int64 toSample, int blockSize,
+                                      double samplesPerStep, int patternIndex,
                                       std::vector<juce::int64>& absoluteOffsets)
 {
     std::vector<NoteTrigger> all;
@@ -89,11 +87,11 @@ std::vector<NoteTrigger> collectOver (const EngineSnapshot& snapshot, Transport:
 TEST_CASE ("notes fire at their step boundary", "[sequencer]")
 {
     const auto snapshot = snapshotWithSteps ({ 0, 4, 8, 12 });
-    const auto samplesPerStep = 6000.0;   // 120 bpm, 16ths, 48 kHz
+    const auto samplesPerStep = 6000.0; // 120 bpm, 16ths, 48 kHz
 
     std::vector<juce::int64> offsets;
-    const auto triggers = collectOver (snapshot, Transport::Mode::pattern,
-                                       0, 16 * 6000, 512, samplesPerStep, 0, offsets);
+    const auto triggers = collectOver (snapshot, Transport::Mode::pattern, 0, 16 * 6000, 512,
+                                       samplesPerStep, 0, offsets);
 
     REQUIRE (triggers.size() == 4);
     REQUIRE (offsets == std::vector<juce::int64> { 0, 24000, 48000, 72000 });
@@ -101,11 +99,12 @@ TEST_CASE ("notes fire at their step boundary", "[sequencer]")
 
 TEST_CASE ("a note landing inside a block gets the right offset", "[sequencer]")
 {
-    const auto snapshot = snapshotWithSteps ({ 1 });   // step 1 = sample 6000
+    const auto snapshot = snapshotWithSteps ({ 1 }); // step 1 = sample 6000
     std::vector<NoteTrigger> out;
 
     // Block 5900..6412 contains sample 6000 at offset 100.
-    Sequencer::collect (snapshot, Transport::Mode::pattern, 5900, 512, mapFor (6000.0), kTestSampleRate, 0, out);
+    Sequencer::collect (snapshot, Transport::Mode::pattern, 5900, 512, mapFor (6000.0),
+                        kTestSampleRate, 0, out);
 
     REQUIRE (out.size() == 1);
     REQUIRE (out[0].sampleOffset == 100);
@@ -113,14 +112,15 @@ TEST_CASE ("a note landing inside a block gets the right offset", "[sequencer]")
 
 TEST_CASE ("no note is fired twice or dropped across block boundaries", "[sequencer]")
 {
-    const auto snapshot = snapshotWithSteps ({ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15 });
+    const auto snapshot = snapshotWithSteps (
+        { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15 });
 
     // Deliberately awkward block sizes that do not divide the step length.
     for (int blockSize : { 1, 7, 64, 333, 512, 1024, 8192 })
     {
         std::vector<juce::int64> offsets;
-        const auto triggers = collectOver (snapshot, Transport::Mode::pattern,
-                                           0, 16 * 6000, blockSize, 6000.0, 0, offsets);
+        const auto triggers = collectOver (snapshot, Transport::Mode::pattern, 0, 16 * 6000,
+                                           blockSize, 6000.0, 0, offsets);
 
         INFO ("block size " << blockSize);
         REQUIRE (triggers.size() == 16);
@@ -136,8 +136,8 @@ TEST_CASE ("a pattern repeats when the transport passes its end", "[sequencer]")
 
     std::vector<juce::int64> offsets;
     // Three pattern lengths' worth of time.
-    const auto triggers = collectOver (snapshot, Transport::Mode::pattern,
-                                       0, 3 * 16 * 6000, 512, 6000.0, 0, offsets);
+    const auto triggers = collectOver (snapshot, Transport::Mode::pattern, 0, 3 * 16 * 6000, 512,
+                                       6000.0, 0, offsets);
 
     REQUIRE (triggers.size() == 3);
     REQUIRE (offsets == std::vector<juce::int64> { 0, 96000, 192000 });
@@ -148,7 +148,8 @@ TEST_CASE ("a note carries its duration so the voice can release itself", "[sequ
     const auto snapshot = snapshotWithSteps ({ 0 }, 16, 4);
     std::vector<NoteTrigger> out;
 
-    Sequencer::collect (snapshot, Transport::Mode::pattern, 0, 512, mapFor (6000.0), kTestSampleRate, 0, out);
+    Sequencer::collect (snapshot, Transport::Mode::pattern, 0, 512, mapFor (6000.0),
+                        kTestSampleRate, 0, out);
 
     REQUIRE (out.size() == 1);
     REQUIRE (out[0].durationSamples == 4 * 6000);
@@ -157,15 +158,21 @@ TEST_CASE ("a note carries its duration so the voice can release itself", "[sequ
 TEST_CASE ("song mode plays clips at their bar positions", "[sequencer]")
 {
     auto snapshot = snapshotWithSteps ({ 0 }, 16);
-    snapshot.stepsPerBeat = 4;   // 16 steps per bar
+    snapshot.stepsPerBeat = 4; // 16 steps per bar
 
-    ClipSnapshot first;  first.patternIndex = 0; first.startBar = 0; first.lengthBars = 1;
-    ClipSnapshot third;  third.patternIndex = 0; third.startBar = 2; third.lengthBars = 1;
+    ClipSnapshot first;
+    first.patternIndex = 0;
+    first.startBar = 0;
+    first.lengthBars = 1;
+    ClipSnapshot third;
+    third.patternIndex = 0;
+    third.startBar = 2;
+    third.lengthBars = 1;
     snapshot.clips = { first, third };
 
     std::vector<juce::int64> offsets;
-    const auto triggers = collectOver (snapshot, Transport::Mode::song,
-                                       0, 4 * 16 * 6000, 512, 6000.0, -1, offsets);
+    const auto triggers = collectOver (snapshot, Transport::Mode::song, 0, 4 * 16 * 6000, 512,
+                                       6000.0, -1, offsets);
 
     // Bar 0 and bar 2 only; nothing in bar 1 or 3.
     REQUIRE (triggers.size() == 2);
@@ -179,12 +186,12 @@ TEST_CASE ("a clip longer than its pattern repeats the pattern to fill", "[seque
     ClipSnapshot clip;
     clip.patternIndex = 0;
     clip.startBar = 0;
-    clip.lengthBars = 3;         // three bars of a one-bar pattern
+    clip.lengthBars = 3; // three bars of a one-bar pattern
     snapshot.clips = { clip };
 
     std::vector<juce::int64> offsets;
-    const auto triggers = collectOver (snapshot, Transport::Mode::song,
-                                       0, 3 * 16 * 6000, 512, 6000.0, -1, offsets);
+    const auto triggers = collectOver (snapshot, Transport::Mode::song, 0, 3 * 16 * 6000, 512,
+                                       6000.0, -1, offsets);
 
     REQUIRE (triggers.size() == 3);
     REQUIRE (offsets == std::vector<juce::int64> { 0, 96000, 192000 });

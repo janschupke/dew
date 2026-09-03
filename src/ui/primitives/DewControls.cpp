@@ -21,8 +21,8 @@ void ButtonLift::update()
     toggled.animateTo (button.getToggleState() ? 1.0f : 0.0f, motion::quickMs);
 
     const auto target = ! button.isEnabled() ? 0.0f
-                      : button.isDown()      ? emphasis::pressLift
-                      : button.isOver()      ? emphasis::controlLift
+                        : button.isDown()    ? emphasis::pressLift
+                        : button.isOver()    ? emphasis::controlLift
                                              : 0.0f;
 
     // A press is quicker to arrive than to leave, which is what makes a button
@@ -53,7 +53,8 @@ juce::Colour ButtonLift::cross (juce::Colour off, juce::Colour on) const
 // --- DewButton ---------------------------------------------------------------
 
 DewButton::DewButton (const juce::String& text, Role r)
-    : juce::Button (text), role (r)
+    : juce::Button (text)
+    , role (r)
 {
     setButtonText (text);
 }
@@ -86,7 +87,8 @@ void DewButton::paintButton (juce::Graphics& g, bool highlighted, bool down)
             break;
 
         case Role::ghost:
-            background = highlighted || down ? colour::surfaceRaised : juce::Colours::transparentBlack;
+            background = highlighted || down ? colour::surfaceRaised
+                                             : juce::Colours::transparentBlack;
             text = colour::textSecondary;
             border = juce::Colours::transparentBlack;
             break;
@@ -116,7 +118,8 @@ void DewButton::paintButton (juce::Graphics& g, bool highlighted, bool down)
 // --- DewIconButton -----------------------------------------------------------
 
 DewIconButton::DewIconButton (juce::Path i, const juce::String& tooltipText)
-    : juce::Button (tooltipText), icon (std::move (i))
+    : juce::Button (tooltipText)
+    , icon (std::move (i))
 {
     setTooltip (tooltipText);
 }
@@ -147,10 +150,7 @@ void DewIconButton::paintButton (juce::Graphics& g, bool highlighted, bool down)
     // that was perfectly usable looked disabled. emphasis::disabled is the
     // system's word for "cannot be used", and it is deliberately weaker than
     // silenced: a disabled button must still read as a button.
-    const auto drain = [this] (juce::Colour c)
-    {
-        return isEnabled() ? c : emphasis::disabled (c);
-    };
+    const auto drain = [this] (juce::Colour c) { return isEnabled() ? c : emphasis::disabled (c); };
 
     g.setColour (drain (lift.apply (off, onColour)));
     g.fillRoundedRectangle (bounds, radius::sm);
@@ -168,7 +168,9 @@ void DewIconButton::paintButton (juce::Graphics& g, bool highlighted, bool down)
 
 DewLetterToggle::DewLetterToggle (const juce::String& l, juce::Colour c,
                                   const juce::String& tooltipText)
-    : juce::Button (tooltipText), letter (l), onColour (c)
+    : juce::Button (tooltipText)
+    , letter (l)
+    , onColour (c)
 {
     setClickingTogglesState (true);
     setTooltip (tooltipText);
@@ -202,7 +204,9 @@ class InvisibleRotaryLookAndFeel : public juce::LookAndFeel_V4
 {
 public:
     void drawRotarySlider (juce::Graphics&, int, int, int, int, float, float, float,
-                           juce::Slider&) override {}
+                           juce::Slider&) override
+    {
+    }
 };
 
 InvisibleRotaryLookAndFeel& invisibleRotary()
@@ -232,8 +236,18 @@ DewKnob::DewKnob (const juce::String& c, double minimum, double maximum, double 
         repaint();
     };
 
-    slider.onDragStart = [this] { dragging = true; if (onEditStart != nullptr) onEditStart(); };
-    slider.onDragEnd = [this] { dragging = false; if (onEditEnd != nullptr) onEditEnd(); };
+    slider.onDragStart = [this]
+    {
+        dragging = true;
+        if (onEditStart != nullptr)
+            onEditStart();
+    };
+    slider.onDragEnd = [this]
+    {
+        dragging = false;
+        if (onEditEnd != nullptr)
+            onEditEnd();
+    };
 
     // The slider is what the pointer is actually over, so the knob listens to
     // it rather than to itself.
@@ -241,7 +255,6 @@ DewKnob::DewKnob (const juce::String& c, double minimum, double maximum, double 
 
     addAndMakeVisible (slider);
 }
-
 
 /** One rule for all four controls: a right-click that has somewhere to go opens
     the menu and consumes the press.
@@ -288,7 +301,8 @@ void DewKnob::mouseDown (const juce::MouseEvent& event)
         return;
 
     const auto pixels = gesture::isFine (event.mods)
-                            ? (int) ((double) gesture::dragPixelsForFullRange / gesture::fineMultiplier)
+                            ? (int) ((double) gesture::dragPixelsForFullRange
+                                     / gesture::fineMultiplier)
                             : gesture::dragPixelsForFullRange;
 
     slider.setMouseDragSensitivity (pixels);
@@ -313,9 +327,9 @@ DewKnob::DewKnob (const ParamSpec& spec)
     // usable value lives in the first one per cent of the travel.
     if (spec.curve == ParamCurve::logarithmic && spec.minimum > 0.0)
     {
-        const auto skew = std::log (0.5) / std::log ((std::sqrt (spec.minimum * spec.maximum)
-                                                      - spec.minimum)
-                                                     / (spec.maximum - spec.minimum));
+        const auto skew = std::log (0.5)
+                          / std::log ((std::sqrt (spec.minimum * spec.maximum) - spec.minimum)
+                                      / (spec.maximum - spec.minimum));
 
         slider.setNormalisableRange ({ spec.minimum, spec.maximum, spec.interval, skew });
     }
@@ -367,8 +381,8 @@ void DewKnob::resized()
 
     if (! compact)
     {
-        area.removeFromTop (size::knobCaption);   // caption
-        area.removeFromBottom (size::knobValue);  // value
+        area.removeFromTop (size::knobCaption);  // caption
+        area.removeFromBottom (size::knobValue); // value
     }
 
     slider.setBounds (area);
@@ -422,7 +436,8 @@ void DewKnob::paint (juce::Graphics& g)
 
     g.setColour (colour::textSecondary);
     g.setFont (type::font (type::caption));
-    g.drawText (caption, area.removeFromTop (size::knobCaption), juce::Justification::centred, false);
+    g.drawText (caption, area.removeFromTop (size::knobCaption), juce::Justification::centred,
+                false);
 
     auto valueArea = area.removeFromBottom (size::knobValue);
 
@@ -433,7 +448,6 @@ void DewKnob::paint (juce::Graphics& g)
     g.drawText (juce::String (slider.getValue(), decimalPlaces), valueArea,
                 juce::Justification::centred, false);
 }
-
 
 // --- shared painting ---------------------------------------------------------
 
@@ -458,16 +472,16 @@ void forwardChildMouseEventsTo (juce::Component& parent)
 namespace paint
 {
 
-void rotary (juce::Graphics& g, juce::Rectangle<float> bounds, float proportion,
-             bool enabled, bool bipolar)
+void rotary (juce::Graphics& g, juce::Rectangle<float> bounds, float proportion, bool enabled,
+             bool bipolar)
 {
     constexpr auto startAngle = juce::MathConstants<float>::pi * 1.2f;
-    constexpr auto endAngle   = juce::MathConstants<float>::pi * 2.8f;
+    constexpr auto endAngle = juce::MathConstants<float>::pi * 2.8f;
 
-    const auto square = bounds.withSizeKeepingCentre (juce::jmin (bounds.getWidth(),
-                                                                  bounds.getHeight()),
-                                                      juce::jmin (bounds.getWidth(),
-                                                                  bounds.getHeight()))
+    const auto square = bounds
+                            .withSizeKeepingCentre (
+                                juce::jmin (bounds.getWidth(), bounds.getHeight()),
+                                juce::jmin (bounds.getWidth(), bounds.getHeight()))
                             .reduced (2.0f);
 
     const auto radius = square.getWidth() * 0.5f;
@@ -477,8 +491,8 @@ void rotary (juce::Graphics& g, juce::Rectangle<float> bounds, float proportion,
     const auto angle = startAngle + juce::jlimit (0.0f, 1.0f, proportion) * (endAngle - startAngle);
 
     juce::Path track;
-    track.addCentredArc (centre.x, centre.y, arcRadius, arcRadius, 0.0f,
-                         startAngle, endAngle, true);
+    track.addCentredArc (centre.x, centre.y, arcRadius, arcRadius, 0.0f, startAngle, endAngle,
+                         true);
     // The track has to read as a control even when the value arc is empty. It
     // used to be `well`, which on a `surface` panel is nearly invisible, so a
     // knob at the bottom of its range looked like a stray tick mark rather than
@@ -559,8 +573,8 @@ void inertArea (juce::Graphics& g, juce::Rectangle<int> bounds)
     for (float offset = 0.0f; offset < span; offset += spacing)
     {
         const auto x = (float) bounds.getX() + offset;
-        g.drawLine (x, (float) bounds.getY(),
-                    x - (float) bounds.getHeight(), (float) bounds.getBottom(), 0.5f);
+        g.drawLine (x, (float) bounds.getY(), x - (float) bounds.getHeight(),
+                    (float) bounds.getBottom(), 0.5f);
     }
 }
 
@@ -577,8 +591,8 @@ void beyondEnd (juce::Graphics& g, juce::Rectangle<int> bounds, float edgeX)
 
     // The edge itself carries the meaning, so it is drawn at full strength.
     g.setColour (colour::dividerStrong);
-    g.fillRect (juce::Rectangle<float> (edgeX - 1.0f, (float) bounds.getY(),
-                                        2.0f, (float) bounds.getHeight()));
+    g.fillRect (juce::Rectangle<float> (edgeX - 1.0f, (float) bounds.getY(), 2.0f,
+                                        (float) bounds.getHeight()));
 }
 
 void caption (juce::Graphics& g, juce::Rectangle<int> bounds, const juce::String& text,

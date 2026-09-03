@@ -16,9 +16,8 @@ class DewLookAndFeel : public juce::LookAndFeel_V4
 public:
     DewLookAndFeel();
 
-    void drawRotarySlider (juce::Graphics&, int x, int y, int width, int height,
-                           float sliderPos, float rotaryStartAngle, float rotaryEndAngle,
-                           juce::Slider&) override;
+    void drawRotarySlider (juce::Graphics&, int x, int y, int width, int height, float sliderPos,
+                           float rotaryStartAngle, float rotaryEndAngle, juce::Slider&) override;
 
     void drawButtonBackground (juce::Graphics&, juce::Button&, const juce::Colour& backgroundColour,
                                bool shouldDrawButtonAsHighlighted,
@@ -40,8 +39,7 @@ public:
         scale is to draw the tooltip ourselves.
     */
     void drawTooltip (juce::Graphics&, const juce::String& text, int width, int height) override;
-    juce::Rectangle<int> getTooltipBounds (const juce::String& tipText,
-                                           juce::Point<int> screenPos,
+    juce::Rectangle<int> getTooltipBounds (const juce::String& tipText, juce::Point<int> screenPos,
                                            juce::Rectangle<int> parentArea) override;
 
     /** The Label a Slider makes for its own text box never gets a setFont, so
@@ -52,20 +50,19 @@ public:
     /** Tabs fell through to LookAndFeel_V4, which meant no dew hover treatment
         and a tab bar that did not look like the rest of the application.
     */
-    void drawTabButton (juce::TabBarButton&, juce::Graphics&,
-                        bool isMouseOver, bool isMouseDown) override;
+    void drawTabButton (juce::TabBarButton&, juce::Graphics&, bool isMouseOver,
+                        bool isMouseDown) override;
 
     int getTabButtonBestWidth (juce::TabBarButton&, int tabDepth) override;
 
-    void drawTabAreaBehindFrontButton (juce::TabbedButtonBar&, juce::Graphics&,
-                                       int width, int height) override;
+    void drawTabAreaBehindFrontButton (juce::TabbedButtonBar&, juce::Graphics&, int width,
+                                       int height) override;
 
     // --- combo boxes and menus ----------------------------------------------
     // These had no overrides at all, so a dropdown was a stock JUCE widget
     // sitting next to hand-painted dew primitives.
-    void drawComboBox (juce::Graphics&, int width, int height, bool isButtonDown,
-                       int buttonX, int buttonY, int buttonW, int buttonH,
-                       juce::ComboBox&) override;
+    void drawComboBox (juce::Graphics&, int width, int height, bool isButtonDown, int buttonX,
+                       int buttonY, int buttonW, int buttonH, juce::ComboBox&) override;
 
     void positionComboBoxText (juce::ComboBox&, juce::Label&) override;
     juce::Font getComboBoxFont (juce::ComboBox&) override;
@@ -73,19 +70,19 @@ public:
     /** Where a dropdown's menu opens. LookAndFeel_V2's version is why a menu
         covered the select it belongs to.
     */
-    juce::PopupMenu::Options getOptionsForComboBoxPopupMenu (juce::ComboBox&, juce::Label&) override;
+    juce::PopupMenu::Options getOptionsForComboBoxPopupMenu (juce::ComboBox&,
+                                                             juce::Label&) override;
 
     void drawPopupMenuBackground (juce::Graphics&, int width, int height) override;
 
-    void drawPopupMenuItem (juce::Graphics&, const juce::Rectangle<int>& area,
-                            bool isSeparator, bool isActive, bool isHighlighted,
-                            bool isTicked, bool hasSubMenu,
+    void drawPopupMenuItem (juce::Graphics&, const juce::Rectangle<int>& area, bool isSeparator,
+                            bool isActive, bool isHighlighted, bool isTicked, bool hasSubMenu,
                             const juce::String& text, const juce::String& shortcutKeyText,
                             const juce::Drawable* icon, const juce::Colour* textColour) override;
 
     void getIdealPopupMenuItemSize (const juce::String& text, bool isSeparator,
-                                    int standardMenuItemHeight,
-                                    int& idealWidth, int& idealHeight) override;
+                                    int standardMenuItemHeight, int& idealWidth,
+                                    int& idealHeight) override;
 
     int getPopupMenuBorderSize() override;
 

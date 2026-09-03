@@ -78,8 +78,8 @@ struct ScoreBake
         project sits at four steps per beat while almost every score needs
         twelve. Refusing there would make Compile do nothing on a new project.
     */
-    static BakeReport into (juce::ValueTree project, const lang::Score&,
-                            juce::UndoManager*, Policy = Policy::keepHandEdits);
+    static BakeReport into (juce::ValueTree project, const lang::Score&, juce::UndoManager*,
+                            Policy = Policy::keepHandEdits);
 
     /** A fresh project holding only this score. What the CLI writes. */
     static juce::ValueTree toNewProject (const lang::Score&, BakeReport& report);
@@ -88,7 +88,10 @@ struct ScoreBake
         PATTERN already holds every channel's notes for its span - which is
         exactly what a section is.
     */
-    static const char* generatedTrackName() noexcept { return "Score"; }
+    static const char* generatedTrackName() noexcept
+    {
+        return "Score";
+    }
 
     /** A fingerprint of what a pattern SOUNDS like: its length and its notes,
         in a fixed order so that reordering the children does not read as an

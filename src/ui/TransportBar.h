@@ -140,7 +140,10 @@ private:
         beat unit; anything else is reachable only by editing the file, and is
         clamped and shown as the nearest entry.
     */
-    struct MeterChoice { int beatsPerBar, beatUnit; };
+    struct MeterChoice
+    {
+        int beatsPerBar, beatUnit;
+    };
     static const MeterChoice meterChoices[];
     static const int numMeterChoices;
     juce::Array<int> groupDividers;

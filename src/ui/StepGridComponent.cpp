@@ -18,8 +18,12 @@ namespace dew
 
 using namespace tokens;
 
-StepGridComponent::StepGridComponent (ProjectDocument& d, AudioEngine& e, EditorState& s, SamplePool* p)
-    : document (d), engine (e), editorState (s), samplePool (p)
+StepGridComponent::StepGridComponent (ProjectDocument& d, AudioEngine& e, EditorState& s,
+                                      SamplePool* p)
+    : document (d)
+    , engine (e)
+    , editorState (s)
+    , samplePool (p)
 {
     setComponentID ("stepGrid");
 
@@ -82,8 +86,8 @@ void StepGridComponent::updateZoom()
 
     const juce::ScopedValueSetter<bool> quiet (updatingScrollBar, true);
     horizontalScroll.setRangeLimits (0.0, (double) steps, juce::dontSendNotification);
-    horizontalScroll.setCurrentRange (timeline.scrollOffsetSteps,
-                                      timeline.visibleSteps (width), juce::dontSendNotification);
+    horizontalScroll.setCurrentRange (timeline.scrollOffsetSteps, timeline.visibleSteps (width),
+                                      juce::dontSendNotification);
 
     if (onTimelineChanged != nullptr)
         onTimelineChanged();
@@ -96,7 +100,8 @@ bool StepGridComponent::isScrollable() const
 
 void StepGridComponent::resized()
 {
-    horizontalScroll.setBounds (0, getHeight() - size::scrollThickness, getWidth(), size::scrollThickness);
+    horizontalScroll.setBounds (0, getHeight() - size::scrollThickness, getWidth(),
+                                size::scrollThickness);
     updateZoom();
 }
 
@@ -113,7 +118,7 @@ void StepGridComponent::scrollBarMoved (juce::ScrollBar*, double start)
 }
 
 void StepGridComponent::mouseWheelMove (const juce::MouseEvent& event,
-                                       const juce::MouseWheelDetails& wheel)
+                                        const juce::MouseWheelDetails& wheel)
 {
     const auto delta = gesture::deltaOf (wheel);
 
@@ -127,7 +132,7 @@ void StepGridComponent::mouseWheelMove (const juce::MouseEvent& event,
         return;
 
     timeline.scrollOffsetSteps -= timeline.stepsForPixels (delta.along()
-                                                               * gesture::wheelPixelsPerNotch);
+                                                           * gesture::wheelPixelsPerNotch);
     updateZoom();
     repaint();
 }
@@ -172,9 +177,7 @@ bool StepGridComponent::keyPressed (const juce::KeyPress& key)
             zoomBy (1.0 / ZoomButtons::zoomFactor, (float) getWidth() * 0.5f);
             return true;
 
-        case hotkeys::ViewCommand::zoomToFit:
-            zoomToFit();
-            return true;
+        case hotkeys::ViewCommand::zoomToFit: zoomToFit(); return true;
 
         // The sequencer has no tools, no note selection and no select-all: a
         // step is toggled, not selected. Nor a second size: a row here is a
@@ -190,8 +193,7 @@ bool StepGridComponent::keyPressed (const juce::KeyPress& key)
         case hotkeys::ViewCommand::clearSelection:
         case hotkeys::ViewCommand::deleteSelection:
         case hotkeys::ViewCommand::selectAll:
-        case hotkeys::ViewCommand::none:
-            break;
+        case hotkeys::ViewCommand::none: break;
     }
 
     return false;
@@ -349,8 +351,8 @@ void StepGridComponent::paint (juce::Graphics& g)
         if (beatInBar % 2 == 0)
         {
             g.setColour (isBarStart ? colour::barShade : colour::beatShade);
-            g.fillRect (juce::Rectangle<float> (timeline.xForStep ((double) step), 0.0f,
-                                                width, (float) rowsHeight));
+            g.fillRect (juce::Rectangle<float> (timeline.xForStep ((double) step), 0.0f, width,
+                                                (float) rowsHeight));
         }
     }
 
@@ -361,7 +363,8 @@ void StepGridComponent::paint (juce::Graphics& g)
         const auto channelId = (int) channel[ids::id];
         const auto colourValue = entityColour::of (channel);
 
-        const juce::Rectangle<int> rowBounds (0, row * size::rowHeight, getWidth(), size::rowHeight);
+        const juce::Rectangle<int> rowBounds (0, row * size::rowHeight, getWidth(),
+                                              size::rowHeight);
 
         if (channelId == editorState.getSelectedChannelId())
         {
@@ -385,8 +388,8 @@ void StepGridComponent::paint (juce::Graphics& g)
         for (int step = visible.getStart(); step < visible.getEnd(); ++step)
         {
             const auto cell = juce::Rectangle<float> (timeline.xForStep ((double) step),
-                                                      (float) (row * size::rowHeight),
-                                                      width, (float) size::rowHeight)
+                                                      (float) (row * size::rowHeight), width,
+                                                      (float) size::rowHeight)
                                   .reduced (2.0f, 4.0f);
 
             // Hover: show where a click would land, so an empty grid still
@@ -396,8 +399,8 @@ void StepGridComponent::paint (juce::Graphics& g)
             if (hoverCell.x == step && hoverCell.y == row)
             {
                 const auto full = juce::Rectangle<float> (timeline.xForStep ((double) step),
-                                                          (float) (row * size::rowHeight),
-                                                          width, (float) size::rowHeight);
+                                                          (float) (row * size::rowHeight), width,
+                                                          (float) size::rowHeight);
 
                 g.setColour (colour::surfaceRaised.withAlpha (emphasis::strong));
                 g.fillRect (full.reduced (stroke::whisper));
@@ -431,8 +434,7 @@ void StepGridComponent::paint (juce::Graphics& g)
     }
 
     // --- grid lines ----------------------------------------------------------
-    timelinePaint::verticalGrid (g, timeline, painted,
-                                 meter.stepsPerBar(), meter.stepsPerBeat,
+    timelinePaint::verticalGrid (g, timeline, painted, meter.stepsPerBar(), meter.stepsPerBeat,
                                  0.0f, { 0.0f, (float) rowsHeight }, (float) getWidth());
 
     for (int row = 0; row <= rows; ++row)
@@ -501,8 +503,7 @@ void StepGridComponent::repaintCell (juce::Point<int> cell)
 
     repaint (juce::Rectangle<int> ((int) timeline.xForStep ((double) cell.x),
                                    cell.y * size::rowHeight,
-                                   (int) std::ceil (timeline.pixelsPerStep) + 2,
-                                   size::rowHeight)
+                                   (int) std::ceil (timeline.pixelsPerStep) + 2, size::rowHeight)
                  .expanded (space::xxs));
 }
 
@@ -546,7 +547,7 @@ void StepGridComponent::applyPaint (const juce::MouseEvent& event)
     // survivors behind it. A change of row starts a new run.
     const auto continuing = row == lastPaintedRow && lastPaintedStep >= 0;
     const auto firstStep = continuing ? juce::jmin (lastPaintedStep, step) : step;
-    const auto lastStep  = continuing ? juce::jmax (lastPaintedStep, step) : step;
+    const auto lastStep = continuing ? juce::jmax (lastPaintedStep, step) : step;
 
     lastPaintedStep = step;
     lastPaintedRow = row;
@@ -560,10 +561,8 @@ void StepGridComponent::applyPaint (const juce::MouseEvent& event)
 
         if (dragPaintsOn && ! existing.isValid())
         {
-            ProjectEdits::addNote (pattern, channelId, s, 1,
-                                   (int) channel[ids::basePitch],
-                                   (float) editorState.getLastNoteVelocity(),
-                                   &undo);
+            ProjectEdits::addNote (pattern, channelId, s, 1, (int) channel[ids::basePitch],
+                                   (float) editorState.getLastNoteVelocity(), &undo);
         }
         else if (! dragPaintsOn && existing.isValid())
         {
@@ -616,9 +615,9 @@ void StepGridComponent::mouseDown (const juce::MouseEvent& event)
     dragPaintsOn = ! dragErasing;
     dragging = true;
 
-    document.getUndoManager().beginNewTransaction (dragErasing ? "Erase steps"
-                                                              : dragPaintsOn ? "Add steps"
-                                                                             : "Clear steps");
+    document.getUndoManager().beginNewTransaction (dragErasing    ? "Erase steps"
+                                                   : dragPaintsOn ? "Add steps"
+                                                                  : "Clear steps");
 
     // Once per gesture, not once per painted cell - a sweep across a row used
     // to re-select the same channel on every step it touched.

@@ -43,15 +43,12 @@ struct MidiExportOptions
 */
 struct MidiExporter
 {
-    static RenderReport writeToFile (const juce::ValueTree& project,
-                                     const juce::File& destination,
+    static RenderReport writeToFile (const juce::ValueTree& project, const juce::File& destination,
                                      const MidiExportOptions& options = {});
 
     /** Exposed so a test can round-trip through memory without touching a disk. */
-    static juce::MidiFile build (const juce::ValueTree& project,
-                                 const MidiExportOptions& options,
-                                 juce::StringArray& warnings,
-                                 juce::int64& numNotes);
+    static juce::MidiFile build (const juce::ValueTree& project, const MidiExportOptions& options,
+                                 juce::StringArray& warnings, juce::int64& numNotes);
 
     /** Ticks per quarter note for a given grid.
 

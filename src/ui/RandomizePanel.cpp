@@ -13,7 +13,8 @@ RandomizePanel::RandomizePanel (NoteTools::RandomizeOptions initial, juce::Strin
     velocityField.setRange (0.0, 1.0, 0.01);
     velocityField.setNumDecimalPlaces (2);
     velocityField.setCaption ("VELOCITY");
-    velocityField.setTooltip ("How far a velocity can move, up or down. Zero leaves velocity alone");
+    velocityField.setTooltip (
+        "How far a velocity can move, up or down. Zero leaves velocity alone");
     addAndMakeVisible (velocityField);
 
     stepField.setRange (0.0, 8.0, 1.0);
@@ -95,9 +96,10 @@ void RandomizePanel::paint (juce::Graphics& g)
     g.setColour (colour::textDisabled);
     g.setFont (type::font (type::caption));
     g.drawText ("Zero leaves a property untouched.",
-                getLocalBounds().reduced (space::xl)
-                                .withTop (getHeight() - space::xl - size::controlHeight * 2 - space::sm)
-                                .withHeight (size::controlHeight),
+                getLocalBounds()
+                    .reduced (space::xl)
+                    .withTop (getHeight() - space::xl - size::controlHeight * 2 - space::sm)
+                    .withHeight (size::controlHeight),
                 juce::Justification::centredLeft, true);
 }
 
@@ -107,7 +109,7 @@ void RandomizePanel::resized()
 
     auto area = getLocalBounds().reduced (space::xl);
 
-    area.removeFromTop (size::controlHeight);   // the scope sentence, painted
+    area.removeFromTop (size::controlHeight); // the scope sentence, painted
     area.removeFromTop (space::md);
 
     auto fields = area.removeFromTop (size::controlHeight + (int) type::caption + space::xs);

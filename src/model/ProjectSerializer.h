@@ -25,7 +25,10 @@ struct ProjectSerializer
         */
         juce::StringArray warnings;
 
-        bool ok() const { return result.wasOk(); }
+        bool ok() const
+        {
+            return result.wasOk();
+        }
     };
 
     static juce::String toJsonString (const juce::ValueTree& project);

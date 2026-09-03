@@ -50,8 +50,9 @@ TEST_CASE ("a project round-trips through JSON unchanged", "[schema]")
 
 TEST_CASE ("round-tripping twice is stable", "[schema]")
 {
-    const auto once  = ProjectSerializer::toJsonString (dew::testing::fixtureProject());
-    const auto twice = ProjectSerializer::toJsonString (ProjectSerializer::fromJsonString (once).tree);
+    const auto once = ProjectSerializer::toJsonString (dew::testing::fixtureProject());
+    const auto twice = ProjectSerializer::toJsonString (
+        ProjectSerializer::fromJsonString (once).tree);
 
     REQUIRE (once == twice);
 }
@@ -188,7 +189,8 @@ TEST_CASE ("a file that is not a dew project is refused", "[schema][compat]")
 {
     SECTION ("valid JSON, wrong format tag")
     {
-        const auto loaded = ProjectSerializer::fromJsonString (R"({"format":"ableton","formatVersion":1})");
+        const auto loaded = ProjectSerializer::fromJsonString (
+            R"({"format":"ableton","formatVersion":1})");
         REQUIRE (! loaded.ok());
         REQUIRE (loaded.result.getErrorMessage().contains ("not a dew project"));
     }
@@ -216,16 +218,16 @@ TEST_CASE ("nested structure survives the round trip", "[schema]")
 {
     const auto original = dew::testing::fixtureProject();
     const auto loaded = ProjectSerializer::fromJsonString (
-        ProjectSerializer::toJsonString (original)).tree;
+                            ProjectSerializer::toJsonString (original))
+                            .tree;
 
     const auto channel = loaded.getChildWithName (ids::CHANNEL);
     const auto osc = channel.getChildWithName (ids::INSTRUMENT).getChildWithName (ids::OSC);
     REQUIRE (osc.isValid());
     REQUIRE (osc[ids::wave].toString() == "sine");
 
-    const auto clip = loaded.getChildWithName (ids::PLAYLIST)
-                            .getChild (0)
-                            .getChildWithName (ids::CLIP);
+    const auto
+        clip = loaded.getChildWithName (ids::PLAYLIST).getChild (0).getChildWithName (ids::CLIP);
     REQUIRE (clip.isValid());
     REQUIRE ((int) clip[ids::lengthBars] == 4);
 
@@ -251,8 +253,7 @@ TEST_CASE ("children are ordered by the schema, however the tree was assembled",
     // The score comes LAST in the spec, so putting it first is the strongest
     // scramble available - and this list has to name every grouping the schema
     // has, or a new one goes unchecked.
-    for (const auto& type : { ids::SCORE, ids::PLAYLIST, ids::MIXER,
-                              ids::CHANNEL, ids::PATTERN })
+    for (const auto& type : { ids::SCORE, ids::PLAYLIST, ids::MIXER, ids::CHANNEL, ids::PATTERN })
         for (const auto& child : canonical)
             if (child.hasType (type))
                 scrambled.appendChild (child.createCopy(), nullptr);
@@ -300,7 +301,8 @@ TEST_CASE ("loading a document replaces its contents and clears undo", "[documen
     const juce::ScopedJuceInitialiser_GUI juceInit;
 
     juce::TemporaryFile temp (".dew");
-    REQUIRE (ProjectSerializer::writeToFile (dew::testing::fixtureProject(), temp.getFile()).wasOk());
+    REQUIRE (
+        ProjectSerializer::writeToFile (dew::testing::fixtureProject(), temp.getFile()).wasOk());
 
     ProjectDocument document;
     auto& undo = document.getUndoManager();

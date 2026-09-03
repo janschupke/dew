@@ -73,20 +73,17 @@ double SamplePlayer::readOffsetFor (const SampleSettings& settings, double elaps
     // device. Folding them together on the message thread would have made the
     // stored pitch depend on whatever device was open when it was saved.
     const auto rate = (double) settings.pitchRatio
-                    * (engineSampleRate > 0.0 ? settings.sourceSampleRate / engineSampleRate : 1.0);
+                      * (engineSampleRate > 0.0 ? settings.sourceSampleRate / engineSampleRate
+                                                : 1.0);
 
     return elapsedOutputSamples * rate;
 }
 
-void SamplePlayer::renderAdd (float* mono, int numSamples,
-                              const SampleSettings& settings,
+void SamplePlayer::renderAdd (float* mono, int numSamples, const SampleSettings& settings,
                               const juce::AudioBuffer<float>& audio,
-                              juce::Span<const ClipSnapshot> clips,
-                              int channelIndex,
-                              int stepsPerBarIn,
-                              juce::int64 positionSamples,
-                              const TempoMap& tempoMap,
-                              double engineSampleRate) noexcept
+                              juce::Span<const ClipSnapshot> clips, int channelIndex,
+                              int stepsPerBarIn, juce::int64 positionSamples,
+                              const TempoMap& tempoMap, double engineSampleRate) noexcept
 {
     if (mono == nullptr || numSamples <= 0 || engineSampleRate <= 0.0)
         return;
@@ -106,9 +103,7 @@ void SamplePlayer::renderAdd (float* mono, int numSamples,
     // whole reason this function now takes both a sample position and a map
     // rather than deriving one from a single samples-per-step.
     const auto samplesAtStep = [&tempoMap, engineSampleRate] (double step)
-    {
-        return tempoMap.secondsForSteps (step) * engineSampleRate;
-    };
+    { return tempoMap.secondsForSteps (step) * engineSampleRate; };
 
     const auto blockStart = (double) positionSamples;
     const auto blockEnd = blockStart + (double) numSamples;
@@ -135,13 +130,11 @@ void SamplePlayer::renderAdd (float* mono, int numSamples,
         // Where in this block the clip starts and stops sounding. A clip that
         // began before the block starts at output sample 0, which is what makes
         // seeking into the middle of one work without a special case.
-        const auto firstOffset = blockStart >= clipStart
-                                     ? 0
-                                     : (int) std::ceil (clipStart - blockStart);
+        const auto firstOffset = blockStart >= clipStart ? 0
+                                                         : (int) std::ceil (clipStart - blockStart);
 
-        const auto lastOffset = blockEnd <= clipEnd
-                                    ? numSamples
-                                    : (int) std::ceil (clipEnd - blockStart);
+        const auto lastOffset = blockEnd <= clipEnd ? numSamples
+                                                    : (int) std::ceil (clipEnd - blockStart);
 
         const auto from = juce::jlimit (0, numSamples, firstOffset);
         const auto to = juce::jlimit (from, numSamples, lastOffset);
@@ -175,9 +168,8 @@ void SamplePlayer::renderAdd (float* mono, int numSamples,
 
             const auto gain = fadeGainAt (settings, position, region);
 
-            const auto frame = settings.reverse
-                                   ? (double) (settings.endSample - 1) - position
-                                   : (double) settings.startSample + position;
+            const auto frame = settings.reverse ? (double) (settings.endSample - 1) - position
+                                                : (double) settings.startSample + position;
 
             mono[i] += sampleAt (audio, frame) * gain;
         }

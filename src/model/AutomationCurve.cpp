@@ -19,7 +19,7 @@ juce::String segmentShapeToString (SegmentShape shape)
 {
     switch (shape)
     {
-        case SegmentShape::step:  return "step";
+        case SegmentShape::step: return "step";
         case SegmentShape::curve: break;
     }
 

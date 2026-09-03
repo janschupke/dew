@@ -5,9 +5,8 @@
 namespace dew
 {
 
-int Sequencer::materialLengthSteps (const EngineSnapshot& snapshot,
-                                Transport::Mode mode,
-                                int patternIndex)
+int Sequencer::materialLengthSteps (const EngineSnapshot& snapshot, Transport::Mode mode,
+                                    int patternIndex)
 {
     if (mode == Transport::Mode::pattern)
     {
@@ -20,13 +19,9 @@ int Sequencer::materialLengthSteps (const EngineSnapshot& snapshot,
     return snapshot.songLengthSteps();
 }
 
-void Sequencer::collect (const EngineSnapshot& snapshot,
-                         Transport::Mode mode,
-                         juce::int64 positionSamples,
-                         int numSamples,
-                         const TempoMap& tempoMap,
-                         double sampleRate,
-                         int patternIndexForPatternMode,
+void Sequencer::collect (const EngineSnapshot& snapshot, Transport::Mode mode,
+                         juce::int64 positionSamples, int numSamples, const TempoMap& tempoMap,
+                         double sampleRate, int patternIndexForPatternMode,
                          std::vector<NoteTrigger>& out)
 {
     out.clear();
@@ -44,14 +39,10 @@ void Sequencer::collect (const EngineSnapshot& snapshot,
     // counter - which is the one drift this codebase's timing design exists to
     // prevent. Constant, the map is the same multiply it always was.
     const auto samplesAtStep = [&tempoMap, sampleRate] (double step)
-    {
-        return tempoMap.secondsForSteps (step) * sampleRate;
-    };
+    { return tempoMap.secondsForSteps (step) * sampleRate; };
 
     const auto stepAtSample = [&tempoMap, sampleRate] (double samples)
-    {
-        return tempoMap.stepsForSeconds (samples / sampleRate);
-    };
+    { return tempoMap.stepsForSeconds (samples / sampleRate); };
 
     // Step boundaries falling inside [blockStart, blockEnd). At a typical tempo
     // and block size this is zero or one step, so the loop below is short.
@@ -77,9 +68,9 @@ void Sequencer::collect (const EngineSnapshot& snapshot,
         trigger.velocity = note.velocity;
         // The span, not a rate times a length: a note that runs through a tempo
         // change lasts the musical length it was written with.
-        trigger.durationSamples = (int) std::llround (samplesAtStep ((double) currentStep
-                                                                        + (double) note.lengthSteps)
-                                                      - samplesAtStep ((double) currentStep));
+        trigger.durationSamples = (int) std::llround (
+            samplesAtStep ((double) currentStep + (double) note.lengthSteps)
+            - samplesAtStep ((double) currentStep));
 
         // At the bound rather than growing: `out` is reserved once and reused by
         // the audio thread, so push_back on a full vector allocates. Same

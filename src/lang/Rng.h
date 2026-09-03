@@ -71,7 +71,8 @@ class Rng
 {
 public:
     explicit constexpr Rng (std::uint64_t seed) noexcept
-        : state (0), increment ((seed << 1u) | 1u)
+        : state (0)
+        , increment ((seed << 1u) | 1u)
     {
         nextBits();
         state += splitmix64 (seed);
@@ -159,9 +160,15 @@ public:
                                       + 0x1000193ULL) };
     }
 
-    constexpr std::uint64_t value() const noexcept { return key; }
+    constexpr std::uint64_t value() const noexcept
+    {
+        return key;
+    }
 
-    constexpr Rng rng() const noexcept { return Rng { key }; }
+    constexpr Rng rng() const noexcept
+    {
+        return Rng { key };
+    }
 
 private:
     constexpr SeedPath (std::uint64_t parent, std::string_view label) noexcept

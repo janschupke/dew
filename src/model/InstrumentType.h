@@ -16,7 +16,11 @@ namespace dew
     code that could say whether a stored `source` string was legal was code
     that also had to be able to render it.
 */
-enum class InstrumentType { synth, audio };
+enum class InstrumentType
+{
+    synth,
+    audio
+};
 
 // clang-format on
 inline constexpr int kNumInstrumentTypes = 2;

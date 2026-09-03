@@ -12,7 +12,7 @@ namespace dew::lang
 struct ChordSpan
 {
     int startStep = 0;
-    int endStep = 0;        ///< half-open
+    int endStep = 0; ///< half-open
     Chord chord;
 
     /** The key a melody should draw scale tones from here - the home key,
@@ -41,12 +41,8 @@ struct ChordSpan
     A `|` written after an entry asserts that the running position is a bar
     line, and is checked once the shares are known.
 */
-std::vector<ChordSpan> layOutHarmony (const HarmonySpec&,
-                                      const Key& songKey,
-                                      int totalSteps,
-                                      int stepsPerBar,
-                                      int beatUnit,
-                                      int stepsPerBeat,
+std::vector<ChordSpan> layOutHarmony (const HarmonySpec&, const Key& songKey, int totalSteps,
+                                      int stepsPerBar, int beatUnit, int stepsPerBeat,
                                       DiagnosticBag&);
 
 } // namespace dew::lang

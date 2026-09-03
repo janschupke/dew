@@ -21,7 +21,8 @@ TEST_CASE ("a step is the expected number of samples", "[transport]")
     REQUIRE (Transport::samplesPerStepFor (60.0, 4, 48000.0) == Approx (12000.0));
 
     // 44.1 kHz, 124 bpm - the demo project's settings.
-    REQUIRE (Transport::samplesPerStepFor (124.0, 4, 44100.0) == Approx (5334.677).epsilon (0.0001));
+    REQUIRE (Transport::samplesPerStepFor (124.0, 4, 44100.0)
+             == Approx (5334.677).epsilon (0.0001));
 }
 
 TEST_CASE ("degenerate tempos and step divisions do not produce nonsense", "[transport]")
@@ -53,8 +54,8 @@ TEST_CASE ("the playhead wraps at the loop point", "[transport]")
 {
     Transport transport;
     transport.prepare (48000.0);
-    transport.setTempo (120.0, 4);      // 6000 samples per step
-    transport.setLoopLengthSteps (16);  // 96000 samples per loop
+    transport.setTempo (120.0, 4);     // 6000 samples per step
+    transport.setLoopLengthSteps (16); // 96000 samples per loop
 
     transport.advance (96000);
     REQUIRE (transport.getPositionSamples() == 0);
@@ -68,7 +69,7 @@ TEST_CASE ("a block longer than the loop still lands in range", "[transport]")
     Transport transport;
     transport.prepare (48000.0);
     transport.setTempo (120.0, 4);
-    transport.setLoopLengthSteps (4);   // 24000 samples
+    transport.setLoopLengthSteps (4); // 24000 samples
 
     transport.advance (24000 * 5 + 7);
 
@@ -83,8 +84,8 @@ TEST_CASE ("a loop range wraps back to its start, not to zero", "[transport][loo
 {
     Transport transport;
     transport.prepare (48000.0);
-    transport.setTempo (120.0, 4);      // 6000 samples per step
-    transport.setLoopRange (4.0, 8.0);  // [24000, 48000)
+    transport.setTempo (120.0, 4);     // 6000 samples per step
+    transport.setLoopRange (4.0, 8.0); // [24000, 48000)
 
     transport.setPositionSamples (24000);
     transport.advance (24000);
@@ -209,13 +210,13 @@ TEST_CASE ("the loop ends round where the ruler draws them", "[transport][loop]"
 {
     Transport transport;
     transport.prepare (44100.0);
-    transport.setTempo (124.0, 4);   // ~5334.677 samples per step: not a whole number
+    transport.setTempo (124.0, 4); // ~5334.677 samples per step: not a whole number
 
     transport.setLoopRange (4.0, 8.0);
 
     const auto sps = transport.samplesPerStep();
     const auto expected = (juce::int64) std::llround (sps * 8.0)
-                        - (juce::int64) std::llround (sps * 4.0);
+                          - (juce::int64) std::llround (sps * 4.0);
 
     // NOT llround (sps * (8 - 4)). The two differ by a sample here, and only
     // this one puts the loop's ends where the ruler puts its bar lines.

@@ -7,12 +7,12 @@ namespace dew
 
 EditorTabs::EditorTabs (ProjectDocument& document, AudioEngine& engine, EditorState& editorState,
                         SamplePool* pool)
-    : juce::TabbedComponent (juce::TabbedButtonBar::TabsAtTop),
-      channelRack (document, engine, editorState, pool),
-      pianoRoll (document, engine, editorState),
-      playlist (document, engine, editorState, pool),
-      mixer (document, editorState, &engine),
-      scoreEditor (document)
+    : juce::TabbedComponent (juce::TabbedButtonBar::TabsAtTop)
+    , channelRack (document, engine, editorState, pool)
+    , pianoRoll (document, engine, editorState)
+    , playlist (document, engine, editorState, pool)
+    , mixer (document, editorState, &engine)
+    , scoreEditor (document)
 {
     setComponentID ("editorTabs");
     setTabBarDepth (tokens::size::stripTabs);

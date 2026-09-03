@@ -24,20 +24,35 @@ namespace
 */
 struct CountingListener : private juce::ValueTree::Listener
 {
-    void listenTo (juce::ValueTree& tree) { tree.addListener (this); }
-    void stopListening (juce::ValueTree& tree) { tree.removeListener (this); }
+    void listenTo (juce::ValueTree& tree)
+    {
+        tree.addListener (this);
+    }
+    void stopListening (juce::ValueTree& tree)
+    {
+        tree.removeListener (this);
+    }
 
     int propertyChanges = 0;
     int childrenAdded = 0;
     int redirections = 0;
 
 private:
-    void valueTreeRedirected (juce::ValueTree&) override { ++redirections; }
-    void valueTreePropertyChanged (juce::ValueTree&, const juce::Identifier&) override { ++propertyChanges; }
-    void valueTreeChildAdded (juce::ValueTree&, juce::ValueTree&) override             { ++childrenAdded; }
-    void valueTreeChildRemoved (juce::ValueTree&, juce::ValueTree&, int) override      {}
-    void valueTreeChildOrderChanged (juce::ValueTree&, int, int) override              {}
-    void valueTreeParentChanged (juce::ValueTree&) override                            {}
+    void valueTreeRedirected (juce::ValueTree&) override
+    {
+        ++redirections;
+    }
+    void valueTreePropertyChanged (juce::ValueTree&, const juce::Identifier&) override
+    {
+        ++propertyChanges;
+    }
+    void valueTreeChildAdded (juce::ValueTree&, juce::ValueTree&) override
+    {
+        ++childrenAdded;
+    }
+    void valueTreeChildRemoved (juce::ValueTree&, juce::ValueTree&, int) override {}
+    void valueTreeChildOrderChanged (juce::ValueTree&, int, int) override {}
+    void valueTreeParentChanged (juce::ValueTree&) override {}
 };
 
 /** Component::findChildWithID only looks at direct children. */
@@ -83,7 +98,8 @@ juce::ComboBox* findPatternSelector (juce::Component& parent)
 
 } // namespace
 
-TEST_CASE ("a listener registered once keeps working after the document is replaced", "[document][identity]")
+TEST_CASE ("a listener registered once keeps working after the document is replaced",
+           "[document][identity]")
 {
     // juce::ValueTree::operator= migrates listeners to the new object and fires
     // valueTreeRedirected, so a component that registered on document.getState()
@@ -152,7 +168,8 @@ TEST_CASE ("the pattern dropdown offers a way to make one", "[ui][transport]")
     CHECK (box->getSelectedId() > 0);
 }
 
-TEST_CASE ("the transport bar still tracks the project after New and Open", "[document][identity][ui]")
+TEST_CASE ("the transport bar still tracks the project after New and Open",
+           "[document][identity][ui]")
 {
     // Guards the path behind "patterns - can't add more": open a file, add a
     // pattern, and the selector must show it. It does, which is how we know
@@ -215,8 +232,13 @@ juce::MouseEvent clickAt (juce::Component& target, juce::Point<int> local, int c
     return { juce::Desktop::getInstance().getMainMouseSource(),
              position,
              mods,
-             1.0f, 0.0f, 0.0f, 0.0f, 0.0f,
-             &target, &target,
+             1.0f,
+             0.0f,
+             0.0f,
+             0.0f,
+             0.0f,
+             &target,
+             &target,
              juce::Time::getCurrentTime(),
              position,
              juce::Time::getCurrentTime(),
@@ -252,8 +274,7 @@ TEST_CASE ("clicks land on the step grid across window sizes", "[ui][hittest]")
     // reports nothing under the cursor and the test proves nothing.
     component.setVisible (true);
 
-    for (auto size : { juce::Point<int> { 1000, 640 },
-                       juce::Point<int> { 1280, 800 },
+    for (auto size : { juce::Point<int> { 1000, 640 }, juce::Point<int> { 1280, 800 },
                        juce::Point<int> { 1920, 1200 } })
     {
         component.setSize (size.x, size.y);
@@ -274,8 +295,9 @@ TEST_CASE ("clicks land on the step grid across window sizes", "[ui][hittest]")
 
                 auto* hit = component.getComponentAt (component.getLocalPoint (grid, local));
 
-                INFO ("row " << row << " step " << step << " -> "
-                      << (hit != nullptr ? hit->getComponentID() : juce::String ("nullptr")));
+                INFO (
+                    "row " << row << " step " << step << " -> "
+                           << (hit != nullptr ? hit->getComponentID() : juce::String ("nullptr")));
                 REQUIRE (hit == grid);
             }
         }
@@ -316,7 +338,7 @@ TEST_CASE ("clicking a step writes a note, and right-clicking clears it", "[ui][
     REQUIRE (countNotes (pattern) == 1);
 
     // Taking a step back is a right-click, the way it is over the piano roll.
-    grid->mouseDown (clickAt (*grid, local, 1,
-                              juce::ModifierKeys (juce::ModifierKeys::rightButtonModifier)));
+    grid->mouseDown (
+        clickAt (*grid, local, 1, juce::ModifierKeys (juce::ModifierKeys::rightButtonModifier)));
     REQUIRE (countNotes (pattern) == 0);
 }

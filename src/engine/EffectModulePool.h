@@ -50,7 +50,10 @@ public:
     EffectModule* acquire (int poolIndex, EffectType);
 
     /** How many modules exist. For the test that pins the laziness. */
-    int materialisedCount() const noexcept { return (int) owned.size(); }
+    int materialisedCount() const noexcept
+    {
+        return (int) owned.size();
+    }
 
 private:
     struct Entry

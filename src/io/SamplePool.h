@@ -41,7 +41,10 @@ public:
         double sourceSampleRate = kDefaultSampleRate;
         WaveformPeaks peaks;
 
-        bool isValid() const noexcept  { return audio != nullptr && audio->getNumSamples() > 0; }
+        bool isValid() const noexcept
+        {
+            return audio != nullptr && audio->getNumSamples() > 0;
+        }
     };
 
     /** The document the stored paths are relative to.
@@ -53,7 +56,10 @@ public:
     */
     void setProjectFile (const juce::File&);
 
-    const juce::File& getProjectFile() const noexcept  { return projectFile; }
+    const juce::File& getProjectFile() const noexcept
+    {
+        return projectFile;
+    }
 
     /** A path as stored in a SAMPLE node, resolved and loaded. */
     const Entry& loadReference (const juce::String& storedPath);
@@ -71,12 +77,15 @@ public:
     void clear();
 
     /** How many files are cached. For tests. */
-    int size() const noexcept  { return (int) entries.size(); }
+    int size() const noexcept
+    {
+        return (int) entries.size();
+    }
 
     /** SampleProvider. What the snapshot builder needs, and nothing else - the
         peaks stay behind loadReference, because they are for drawing. */
-    std::shared_ptr<const juce::AudioBuffer<float>>
-        audioFor (const juce::String& storedPath, double& sourceSampleRate) override
+    std::shared_ptr<const juce::AudioBuffer<float>> audioFor (const juce::String& storedPath,
+                                                              double& sourceSampleRate) override
     {
         const auto& entry = loadReference (storedPath);
 

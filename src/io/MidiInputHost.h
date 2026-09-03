@@ -59,7 +59,10 @@ public:
     /** True if it is actually open and delivering. */
     bool isDeviceConnected (const juce::String& identifier) const;
 
-    int getNumWantedDevices() const  { return wanted.size(); }
+    int getNumWantedDevices() const
+    {
+        return wanted.size();
+    }
 
     /** True if at least one wanted device is actually open and delivering.
 
@@ -73,8 +76,14 @@ public:
     /** Describes what is listening, for the status line. */
     juce::String describeInputs() const;
 
-    MidiRouter& getRouter() noexcept              { return router; }
-    const MidiRouter& getRouter() const noexcept  { return router; }
+    MidiRouter& getRouter() noexcept
+    {
+        return router;
+    }
+    const MidiRouter& getRouter() const noexcept
+    {
+        return router;
+    }
 
     /** Called after the device list is reconciled, so a panel can rebuild. */
     std::function<void()> onDevicesChanged;
@@ -86,15 +95,20 @@ public:
         provable only on a machine with a controller plugged in - which CI is
         not. Here it can be checked exhaustively with no hardware at all.
     */
-    enum class Action { none, open, close };
+    enum class Action
+    {
+        none,
+        open,
+        close
+    };
 
     static Action actionFor (bool present, bool enabled) noexcept
     {
         if (present && ! enabled)
-            return Action::open;    // back again, or newly ticked
+            return Action::open; // back again, or newly ticked
 
         if (! present && enabled)
-            return Action::close;   // gone: drop the dead port, keep the choice
+            return Action::close; // gone: drop the dead port, keep the choice
 
         return Action::none;
     }
@@ -113,7 +127,10 @@ private:
     */
     struct Callback : public juce::MidiInputCallback
     {
-        explicit Callback (MidiRouter& r) : router (r) {}
+        explicit Callback (MidiRouter& r)
+            : router (r)
+        {
+        }
 
         void handleIncomingMidiMessage (juce::MidiInput*, const juce::MidiMessage& message) override
         {

@@ -41,10 +41,16 @@ public:
     NoteTools::RandomizeOptions getOptions() const;
     void setOptions (const NoteTools::RandomizeOptions&);
 
-    juce::Button& getApplyButton() noexcept  { return applyButton; }
-    juce::Button& getCancelButton() noexcept { return cancelButton; }
+    juce::Button& getApplyButton() noexcept
+    {
+        return applyButton;
+    }
+    juce::Button& getCancelButton() noexcept
+    {
+        return cancelButton;
+    }
 
-    static constexpr int preferredWidth  = 320;
+    static constexpr int preferredWidth = 320;
     static constexpr int preferredHeight = 186;
 
 private:

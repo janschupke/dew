@@ -10,8 +10,8 @@ juce::Font font (float height, bool bold)
 
 juce::Font monospaced (float height)
 {
-    return juce::Font (juce::FontOptions (juce::Font::getDefaultMonospacedFontName(),
-                                          height, juce::Font::plain));
+    return juce::Font (
+        juce::FontOptions (juce::Font::getDefaultMonospacedFontName(), height, juce::Font::plain));
 }
 
 } // namespace dew::tokens::type

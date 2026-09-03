@@ -45,8 +45,7 @@ public:
         @param fitTooltip      what "fit" fits, which is the only one that has
                                to name the material rather than the row.
     */
-    VerticalZoomButtons (const juce::String& shorterTooltip,
-                         const juce::String& tallerTooltip,
+    VerticalZoomButtons (const juce::String& shorterTooltip, const juce::String& tallerTooltip,
                          const juce::String& fitTooltip)
     {
         shorterButton.setTooltip (shorterTooltip);
@@ -56,7 +55,11 @@ public:
         const auto wire = [this] (DewIconButton& button, double factor)
         {
             button.setWantsKeyboardFocus (false);
-            button.onClick = [this, factor] { if (onHeightChange) onHeightChange (factor); };
+            button.onClick = [this, factor]
+            {
+                if (onHeightChange)
+                    onHeightChange (factor);
+            };
             addAndMakeVisible (button);
         };
 

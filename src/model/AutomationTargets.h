@@ -35,12 +35,12 @@ enum class AutomationScope
     */
     project,
 
-    channel,        ///< a channel's own volume or pan
-    channelOsc,     ///< a parameter of one oscillator slot on a channel
-    channelEffect,  ///< a parameter of one slot in a channel's chain
-    mixerTrack,     ///< a mixer track's gain or pan
-    mixerEffect,    ///< a parameter of one slot in a mixer track's chain
-    master          ///< the master gain
+    channel,       ///< a channel's own volume or pan
+    channelOsc,    ///< a parameter of one oscillator slot on a channel
+    channelEffect, ///< a parameter of one slot in a channel's chain
+    mixerTrack,    ///< a mixer track's gain or pan
+    mixerEffect,   ///< a parameter of one slot in a mixer track's chain
+    master         ///< the master gain
 };
 
 AutomationScope automationScopeFromString (const juce::String&);
@@ -102,10 +102,10 @@ const ParamSpec* findParamSpec (AutomationScope, const juce::String& effectType,
 struct AutomationTarget
 {
     AutomationScope scope = AutomationScope::channel;
-    int targetId = 0;       ///< channel id or mixer track id; 0 for master
-    int slot = -1;          ///< effect or oscillator slot index, -1 when the scope has none
+    int targetId = 0; ///< channel id or mixer track id; 0 for master
+    int slot = -1;    ///< effect or oscillator slot index, -1 when the scope has none
     juce::Identifier property;
-    juce::String displayName;   ///< "Kick > Filter > Cutoff"
+    juce::String displayName; ///< "Kick > Filter > Cutoff"
 
     /** What the parameter IS, rather than four fields copied out of it.
 

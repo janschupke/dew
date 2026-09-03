@@ -74,7 +74,10 @@ public:
     */
     int getNumSteps() const;
 
-    const TimelineView& getTimeline() const noexcept { return timeline; }
+    const TimelineView& getTimeline() const noexcept
+    {
+        return timeline;
+    }
     bool isScrollable() const;
 
     /** Fired whenever the zoom or the scroll offset changes.
@@ -94,8 +97,7 @@ private:
         inside a loop that runs per step.
     */
     void paintWaveformRow (juce::Graphics&, const juce::ValueTree& channel,
-                           juce::Rectangle<int> rowBounds, juce::Colour channelColour,
-                           bool muted);
+                           juce::Rectangle<int> rowBounds, juce::Colour channelColour, bool muted);
 
     void timerCallback() override;
     void scrollBarMoved (juce::ScrollBar*, double) override;

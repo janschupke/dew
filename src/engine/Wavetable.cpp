@@ -34,8 +34,8 @@ int orderFor (int n) noexcept
     (0, -a) and bin n-k its conjugate, which reconstructs 2a*sin(theta). The
     convention is pinned by a test - a saw built out of cosines is not a saw.
 */
-void synthesiseCycle (const std::vector<float>& amplitudes, int maxHarmonic,
-                      int n, std::vector<float>& dest)
+void synthesiseCycle (const std::vector<float>& amplitudes, int maxHarmonic, int n,
+                      std::vector<float>& dest)
 {
     const juce::dsp::FFT fft (orderFor (n));
 
@@ -46,8 +46,8 @@ void synthesiseCycle (const std::vector<float>& amplitudes, int maxHarmonic,
     for (int k = 1; k <= limit; ++k)
     {
         const auto a = amplitudes[(size_t) k];
-        spectrum[(size_t) k]       = { 0.0f, -a };
-        spectrum[(size_t) (n - k)] = { 0.0f,  a };
+        spectrum[(size_t) k] = { 0.0f, -a };
+        spectrum[(size_t) (n - k)] = { 0.0f, a };
     }
 
     fft.perform (spectrum.data(), time.data(), true);
@@ -100,8 +100,8 @@ void analyseCycle (const std::vector<float>& cycle, std::vector<float>& amplitud
     const auto n = (int) cycle.size();
     const juce::dsp::FFT fft (orderFor (n));
 
-    const auto transform = [&fft, n] (const std::vector<float>& input,
-                                      std::vector<juce::dsp::Complex<float>>& output)
+    const auto transform =
+        [&fft, n] (const std::vector<float>& input, std::vector<juce::dsp::Complex<float>>& output)
     {
         std::vector<juce::dsp::Complex<float>> in ((size_t) n);
 
@@ -115,8 +115,8 @@ void analyseCycle (const std::vector<float>& cycle, std::vector<float>& amplitud
     std::vector<float> reference ((size_t) n);
 
     for (int i = 0; i < n; ++i)
-        reference[(size_t) i] = std::sin (juce::MathConstants<float>::twoPi
-                                          * (float) i / (float) n);
+        reference[(size_t) i] = std::sin (juce::MathConstants<float>::twoPi * (float) i
+                                          / (float) n);
 
     std::vector<juce::dsp::Complex<float>> referenceSpectrum, spectrum;
     transform (reference, referenceSpectrum);
@@ -150,11 +150,11 @@ float shapeHarmonic (int shape, int k) noexcept
 {
     switch (shape)
     {
-        case 0:  return k == 1 ? 1.0f : 0.0f;
-        case 1:  return (k % 2 == 1)
-                     ? ((((k - 1) / 2) % 2 == 0) ? 1.0f : -1.0f) / (float) (k * k)
-                     : 0.0f;
-        case 2:  return (k % 2 == 1) ? 1.0f / (float) k : 0.0f;
+        case 0: return k == 1 ? 1.0f : 0.0f;
+        case 1:
+            return (k % 2 == 1) ? ((((k - 1) / 2) % 2 == 0) ? 1.0f : -1.0f) / (float) (k * k)
+                                : 0.0f;
+        case 2: return (k % 2 == 1) ? 1.0f / (float) k : 0.0f;
         default: return 1.0f / (float) k;
     }
 }
@@ -167,7 +167,7 @@ void basicSpectrum (int frame, std::vector<float>& a)
 
     for (int k = 1; k < (int) a.size(); ++k)
         a[(size_t) k] = (1.0f - blend) * shapeHarmonic (index, k)
-                      + blend * shapeHarmonic (index + 1, k);
+                        + blend * shapeHarmonic (index + 1, k);
 }
 
 void pulseSpectrum (int frame, std::vector<float>& a)
@@ -178,7 +178,7 @@ void pulseSpectrum (int frame, std::vector<float>& a)
 
     for (int k = 1; k < (int) a.size(); ++k)
         a[(size_t) k] = 2.0f / ((float) k * juce::MathConstants<float>::pi)
-                      * std::sin ((float) k * juce::MathConstants<float>::pi * duty);
+                        * std::sin ((float) k * juce::MathConstants<float>::pi * duty);
 }
 
 void harmonicsSpectrum (int frame, std::vector<float>& a)
@@ -199,7 +199,7 @@ void harmonicsSpectrum (int frame, std::vector<float>& a)
 void formantSpectrum (int frame, std::vector<float>& a)
 {
     const auto centre = 2.0f * std::pow (48.0f, morphPosition (frame));
-    const auto width = 0.35f;   // octaves
+    const auto width = 0.35f; // octaves
 
     for (int k = 1; k < (int) a.size(); ++k)
     {
@@ -207,8 +207,7 @@ void formantSpectrum (int frame, std::vector<float>& a)
 
         // A saw under a resonant peak that slides up the series - which is
         // what a vowel is, near enough for an oscillator.
-        a[(size_t) k] = (0.25f + 4.0f * std::exp (-0.5f * octaves * octaves))
-                      / (float) k;
+        a[(size_t) k] = (0.25f + 4.0f * std::exp (-0.5f * octaves * octaves)) / (float) k;
     }
 }
 
@@ -220,8 +219,9 @@ void foldSpectrum (int frame, std::vector<float>& a)
 
     for (int i = 0; i < kWavetableSize; ++i)
     {
-        auto value = drive * std::sin (juce::MathConstants<float>::twoPi
-                                       * (float) i / (float) kWavetableSize);
+        auto value = drive
+                     * std::sin (juce::MathConstants<float>::twoPi * (float) i
+                                 / (float) kWavetableSize);
 
         // Reflect back inside [-1, 1] rather than clipping at it. Folding is
         // odd-symmetric, so the result is still a pure sine series and the
@@ -241,11 +241,11 @@ const std::vector<Wavetable>& bank()
     {
         std::vector<Wavetable> built;
         built.reserve (5);
-        built.emplace_back ("basic",     "Basic Shapes", basicSpectrum);
-        built.emplace_back ("pulse",     "Pulse",        pulseSpectrum);
-        built.emplace_back ("harmonics", "Harmonics",    harmonicsSpectrum);
-        built.emplace_back ("formant",   "Formant",      formantSpectrum);
-        built.emplace_back ("fold",      "Fold",         foldSpectrum);
+        built.emplace_back ("basic", "Basic Shapes", basicSpectrum);
+        built.emplace_back ("pulse", "Pulse", pulseSpectrum);
+        built.emplace_back ("harmonics", "Harmonics", harmonicsSpectrum);
+        built.emplace_back ("formant", "Formant", formantSpectrum);
+        built.emplace_back ("fold", "Fold", foldSpectrum);
         return built;
     }();
 
@@ -267,14 +267,15 @@ int wavetableMipFor (double phaseIncrement) noexcept
 
 Wavetable::Wavetable (juce::String tableName, juce::String tableDisplayName,
                       const FrameSpectrum& spectrum)
-    : name (std::move (tableName)), displayName (std::move (tableDisplayName))
+    : name (std::move (tableName))
+    , displayName (std::move (tableDisplayName))
 {
     int offset = 0;
 
     for (int m = 0; m < kWavetableMips; ++m)
     {
         mipOffset[(size_t) m] = offset;
-        offset += wavetableMipSize (m) + 1;   // the +1 is the wrapped guard sample
+        offset += wavetableMipSize (m) + 1; // the +1 is the wrapped guard sample
     }
 
     frameStride = offset;
@@ -287,7 +288,7 @@ Wavetable::Wavetable (juce::String tableName, juce::String tableDisplayName,
     {
         std::fill (amplitudes.begin(), amplitudes.end(), 0.0f);
         spectrum (frame, amplitudes);
-        amplitudes[0] = 0.0f;   // DC never travels: an offset frame clicks
+        amplitudes[0] = 0.0f; // DC never travels: an offset frame clicks
 
         float peak = 0.0f;
 
@@ -298,7 +299,7 @@ Wavetable::Wavetable (juce::String tableName, juce::String tableDisplayName,
 
             const auto gain = sineReferenceGain (m);
             auto* dest = storage.data() + (size_t) frame * (size_t) frameStride
-                       + (size_t) mipOffset[(size_t) m];
+                         + (size_t) mipOffset[(size_t) m];
 
             for (int i = 0; i < n; ++i)
                 dest[i] = cycle[(size_t) i] * gain;
@@ -317,7 +318,7 @@ Wavetable::Wavetable (juce::String tableName, juce::String tableDisplayName,
         {
             const auto n = wavetableMipSize (m);
             auto* dest = storage.data() + (size_t) frame * (size_t) frameStride
-                       + (size_t) mipOffset[(size_t) m];
+                         + (size_t) mipOffset[(size_t) m];
 
             for (int i = 0; i < n; ++i)
                 dest[i] *= norm;
@@ -332,8 +333,7 @@ const float* Wavetable::frameData (int frame, int mip) const noexcept
     const auto f = juce::jlimit (0, kWavetableFrames - 1, frame);
     const auto m = juce::jlimit (0, kWavetableMips - 1, mip);
 
-    return storage.data() + (size_t) f * (size_t) frameStride
-         + (size_t) mipOffset[(size_t) m];
+    return storage.data() + (size_t) f * (size_t) frameStride + (size_t) mipOffset[(size_t) m];
 }
 
 float Wavetable::sampleAt (int frame, int mip, double phase) const noexcept

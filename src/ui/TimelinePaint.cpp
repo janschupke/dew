@@ -17,8 +17,7 @@ juce::Colour playheadColour (float brightness)
 {
     // Between dimmed and opaque rather than between two colours: a stopped
     // playhead is the same yellow, stated less strongly.
-    const auto alpha = juce::jmap (juce::jlimit (0.0f, 1.0f, brightness),
-                                   emphasis::dimmed, 1.0f);
+    const auto alpha = juce::jmap (juce::jlimit (0.0f, 1.0f, brightness), emphasis::dimmed, 1.0f);
 
     return colour::playhead.withAlpha (alpha);
 }
@@ -26,10 +25,10 @@ juce::Colour playheadColour (float brightness)
 } // namespace
 
 void verticalGrid (juce::Graphics& g, const TimelineView& timeline, juce::Range<int> steps,
-                   int stepsPerBar, int stepsPerBeat,
-                   float originX, juce::Range<float> y, float rightEdge)
+                   int stepsPerBar, int stepsPerBeat, float originX, juce::Range<float> y,
+                   float rightEdge)
 {
-    const auto bar  = juce::jmax (1, stepsPerBar);
+    const auto bar = juce::jmax (1, stepsPerBar);
     const auto beat = juce::jmax (1, stepsPerBeat);
 
     for (int step = steps.getStart(); step <= steps.getEnd(); ++step)
@@ -73,8 +72,7 @@ void playheadHead (juce::Graphics& g, float x, float baselineY, float brightness
 
     juce::Path head;
     head.addTriangle (x - playheadHeadHalfWidth, baselineY - playheadHeadHeight,
-                      x + playheadHeadHalfWidth, baselineY - playheadHeadHeight,
-                      x, baselineY);
+                      x + playheadHeadHalfWidth, baselineY - playheadHeadHeight, x, baselineY);
     g.fillPath (head);
 }
 

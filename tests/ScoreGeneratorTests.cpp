@@ -74,10 +74,9 @@ TEST_CASE ("weights split exactly the space that is left", "[score][harmony]")
     DiagnosticBag bag { source };
 
     // Two bars of 16 steps = 32 steps, shared 2:1:1.
-    const auto spans = layOutHarmony (harmonyOf ({ chordFrom ("I", 2),
-                                                   chordFrom ("V", 1),
-                                                   chordFrom ("vi", 1) }),
-                                      Key { 0, Mode::major }, 32, 16, 4, 4, bag);
+    const auto spans = layOutHarmony (
+        harmonyOf ({ chordFrom ("I", 2), chordFrom ("V", 1), chordFrom ("vi", 1) }),
+        Key { 0, Mode::major }, 32, 16, 4, 4, bag);
 
     REQUIRE_FALSE (bag.hasErrors());
     REQUIRE (lengthsOf (spans) == std::vector<int> { 16, 8, 8 });
@@ -94,9 +93,9 @@ TEST_CASE ("an uneven split loses no steps and gains none", "[score][harmony]")
     const std::string source = "x";
     DiagnosticBag bag { source };
 
-    const auto spans = layOutHarmony (harmonyOf ({ chordFrom ("I"), chordFrom ("IV"),
-                                                   chordFrom ("V") }),
-                                      Key { 0, Mode::major }, 16, 16, 4, 4, bag);
+    const auto spans = layOutHarmony (
+        harmonyOf ({ chordFrom ("I"), chordFrom ("IV"), chordFrom ("V") }), Key { 0, Mode::major },
+        16, 16, 4, 4, bag);
 
     REQUIRE_FALSE (bag.hasErrors());
 
@@ -105,24 +104,21 @@ TEST_CASE ("an uneven split loses no steps and gains none", "[score][harmony]")
     REQUIRE (lengths == std::vector<int> { 6, 5, 5 });
 }
 
-TEST_CASE ("absolute lengths are taken out before the weights share",
-           "[score][harmony]")
+TEST_CASE ("absolute lengths are taken out before the weights share", "[score][harmony]")
 {
     const std::string source = "x";
     DiagnosticBag bag { source };
 
     // 4 bars = 64 steps. `I` takes 2 bars outright; the rest share 32.
-    const auto spans = layOutHarmony (harmonyOf ({ chordFrom ("I", 0, 2),
-                                                   chordFrom ("IV", 1),
-                                                   chordFrom ("V", 1) }),
-                                      Key { 0, Mode::major }, 64, 16, 4, 4, bag);
+    const auto spans = layOutHarmony (
+        harmonyOf ({ chordFrom ("I", 0, 2), chordFrom ("IV", 1), chordFrom ("V", 1) }),
+        Key { 0, Mode::major }, 64, 16, 4, 4, bag);
 
     REQUIRE_FALSE (bag.hasErrors());
     REQUIRE (lengthsOf (spans) == std::vector<int> { 32, 16, 16 });
 }
 
-TEST_CASE ("a harmony longer than its section names the chord that overran",
-           "[score][harmony]")
+TEST_CASE ("a harmony longer than its section names the chord that overran", "[score][harmony]")
 {
     const std::string source = "I IV V";
     DiagnosticBag bag { source };
@@ -134,8 +130,8 @@ TEST_CASE ("a harmony longer than its section names the chord that overran",
     chords[2].range = { 5, 6 };
 
     // Three bars of chords in a two-bar section.
-    const auto spans = layOutHarmony (harmonyOf (chords), Key { 0, Mode::major },
-                                      32, 16, 4, 4, bag);
+    const auto spans = layOutHarmony (harmonyOf (chords), Key { 0, Mode::major }, 32, 16, 4, 4,
+                                      bag);
 
     REQUIRE (bag.hasErrors());
     REQUIRE (spans.empty());
@@ -147,16 +143,15 @@ TEST_CASE ("a harmony longer than its section names the chord that overran",
     REQUIRE (d.primary == SourceRange { 5, 6 });
 }
 
-TEST_CASE ("a harmony that leaves a gap is an error, not silent padding",
-           "[score][harmony]")
+TEST_CASE ("a harmony that leaves a gap is an error, not silent padding", "[score][harmony]")
 {
     // Trailing silence nobody asked for is the most expensive kind of bug in
     // generated music, because it sounds plausible.
     const std::string source = "x";
     DiagnosticBag bag { source };
 
-    const auto spans = layOutHarmony (harmonyOf ({ chordFrom ("I", 0, 1) }),
-                                      Key { 0, Mode::major }, 64, 16, 4, 4, bag);
+    const auto spans = layOutHarmony (harmonyOf ({ chordFrom ("I", 0, 1) }), Key { 0, Mode::major },
+                                      64, 16, 4, 4, bag);
 
     REQUIRE (bag.hasErrors());
     REQUIRE (spans.empty());
@@ -175,16 +170,14 @@ TEST_CASE ("a chord that would round to nothing is refused", "[score][harmony]")
     for (int i = 0; i < 5; ++i)
         chords.push_back (chordFrom ("I"));
 
-    const auto spans = layOutHarmony (harmonyOf (chords), Key { 0, Mode::major },
-                                      4, 16, 4, 4, bag);
+    const auto spans = layOutHarmony (harmonyOf (chords), Key { 0, Mode::major }, 4, 16, 4, 4, bag);
 
     REQUIRE (bag.hasErrors());
     REQUIRE (spans.empty());
     REQUIRE (bag.all().front().code == "E303");
 }
 
-TEST_CASE ("a bar check that is not on a bar line says where it landed",
-           "[score][harmony]")
+TEST_CASE ("a bar check that is not on a bar line says where it landed", "[score][harmony]")
 {
     // The highest-value error catcher in the harmony syntax: it turns "the
     // section length changed and everything shifted" into one message.
@@ -193,7 +186,7 @@ TEST_CASE ("a bar check that is not on a bar line says where it landed",
 
     auto chords = std::vector<ChordSpec> { chordFrom ("I", 1), chordFrom ("V", 1) };
     chords[0].range = { 0, 1 };
-    chords[0].barCheckAfter = true;     // asserts a bar line after the first chord
+    chords[0].barCheckAfter = true; // asserts a bar line after the first chord
     chords[1].range = { 2, 3 };
 
     // Three bars shared 1:1 puts the boundary in the middle of bar two.
@@ -219,8 +212,7 @@ TEST_CASE ("a bar check that holds says nothing", "[score][harmony]")
     REQUIRE_FALSE (bag.hasErrors());
 }
 
-TEST_CASE ("a tonicised span carries the key its melody should use",
-           "[score][harmony]")
+TEST_CASE ("a tonicised span carries the key its melody should use", "[score][harmony]")
 {
     const std::string source = "x";
     DiagnosticBag bag { source };
@@ -237,7 +229,7 @@ TEST_CASE ("a tonicised span carries the key its melody should use",
     REQUIRE (spans.size() == 2);
 
     REQUIRE (spans[0].localKey.tonicPc == 0);
-    REQUIRE (spans[1].localKey.tonicPc == 9);       // A, tonicised by V7/vi
+    REQUIRE (spans[1].localKey.tonicPc == 9); // A, tonicised by V7/vi
     REQUIRE (spans[1].localKey.mode == Mode::harmonicMinor);
 }
 
@@ -356,8 +348,7 @@ TEST_CASE ("drop2 lowers the second voice from the top", "[score][voicing]")
     REQUIRE (droppedSpan > closeSpan);
 }
 
-TEST_CASE ("a shell voicing keeps the notes that name the chord",
-           "[score][voicing]")
+TEST_CASE ("a shell voicing keeps the notes that name the chord", "[score][voicing]")
 {
     VoicingSpec spec;
     spec.voices = 3;
@@ -384,17 +375,16 @@ TEST_CASE ("a shell voicing keeps the notes that name the chord",
 TEST_CASE ("a rhythm tiles to the onsets it names", "[score][melody]")
 {
     // quarter, quarter, half in 4/4 at 4 steps per beat: one bar exactly.
-    const auto onsets = tileRhythm (rhythmOf ({ { 1, 4 }, { 1, 4 }, { 1, 2 } }),
-                                    32, 16, 4, 4);
+    const auto onsets = tileRhythm (rhythmOf ({ { 1, 4 }, { 1, 4 }, { 1, 2 } }), 32, 16, 4, 4);
 
-    REQUIRE (onsets.size() == 6);           // two bars of the three-onset cycle
+    REQUIRE (onsets.size() == 6); // two bars of the three-onset cycle
 
     REQUIRE (onsets[0].startStep == 0);
     REQUIRE (onsets[0].lengthSteps == 4);
     REQUIRE (onsets[1].startStep == 4);
     REQUIRE (onsets[2].startStep == 8);
     REQUIRE (onsets[2].lengthSteps == 8);
-    REQUIRE (onsets[3].startStep == 16);    // the cycle restarts on the bar
+    REQUIRE (onsets[3].startStep == 16); // the cycle restarts on the bar
 }
 
 TEST_CASE ("a note is never left running past its section", "[score][melody]")
@@ -412,18 +402,17 @@ TEST_CASE ("a note is never left running past its section", "[score][melody]")
     }
 }
 
-TEST_CASE ("a tie holds the note before it rather than starting one",
-           "[score][melody]")
+TEST_CASE ("a tie holds the note before it rather than starting one", "[score][melody]")
 {
     RhythmSpec rhythm;
     rhythm.name = "r";
     rhythm.steps.push_back ({ { 1, 4 }, false, false, {} });
-    rhythm.steps.push_back ({ { 1, 4 }, false, true, {} });    // ~ 1/4
+    rhythm.steps.push_back ({ { 1, 4 }, false, true, {} }); // ~ 1/4
 
     const auto onsets = tileRhythm (rhythm, 16, 16, 4, 4, false);
 
     REQUIRE (onsets.size() == 2);
-    REQUIRE (onsets[0].lengthSteps == 8);     // 4 + 4, held
+    REQUIRE (onsets[0].lengthSteps == 8); // 4 + 4, held
     REQUIRE (onsets[0].startStep == 0);
 }
 
@@ -431,7 +420,7 @@ TEST_CASE ("metric strength follows the metre", "[score][melody]")
 {
     // 4/4 at four steps per beat.
     REQUIRE (strengthAt (0, 16, 4, 4) == MetricStrength::barStart);
-    REQUIRE (strengthAt (8, 16, 4, 4) == MetricStrength::strongBeat);   // beat 3
+    REQUIRE (strengthAt (8, 16, 4, 4) == MetricStrength::strongBeat); // beat 3
     REQUIRE (strengthAt (4, 16, 4, 4) == MetricStrength::beat);
     REQUIRE (strengthAt (2, 16, 4, 4) == MetricStrength::offbeat);
     REQUIRE (strengthAt (1, 16, 4, 4) == MetricStrength::subdivision);
@@ -443,8 +432,7 @@ TEST_CASE ("metric strength follows the metre", "[score][melody]")
     REQUIRE (weightOf (MetricStrength::offbeat) > weightOf (MetricStrength::subdivision));
 }
 
-TEST_CASE ("a mute budget drops the weakest onsets and never a whole window",
-           "[score][melody]")
+TEST_CASE ("a mute budget drops the weakest onsets and never a whole window", "[score][melody]")
 {
     auto onsets = tileRhythm (rhythmOf ({ { 1, 8 } }), 32, 16, 4, 4);
     REQUIRE (onsets.size() == 16);
@@ -470,8 +458,7 @@ TEST_CASE ("a mute budget drops the weakest onsets and never a whole window",
     REQUIRE_FALSE (onsets.front().isRest);
 }
 
-TEST_CASE ("a mute budget takes the weak beats, never the strong ones",
-           "[score][melody]")
+TEST_CASE ("a mute budget takes the weak beats, never the strong ones", "[score][melody]")
 {
     // "Weakest first" is the whole claim, and until this test nothing checked
     // WHICH onsets went quiet - only how many. A budget that silenced the
@@ -493,8 +480,7 @@ TEST_CASE ("a mute budget takes the weak beats, never the strong ones",
     }
 }
 
-TEST_CASE ("a mute budget draws the same notes every time it is asked",
-           "[score][melody]")
+TEST_CASE ("a mute budget draws the same notes every time it is asked", "[score][melody]")
 {
     // The same seed and the same onsets, over and over inside one process.
     // This is what an inconsistent sort comparator failed: it read past the end
@@ -543,8 +529,7 @@ TEST_CASE ("a budget wider than its window still leaves a note", "[score][melody
     REQUIRE (sounding >= (int) total / 4);
 }
 
-TEST_CASE ("a melody puts a chord tone on every strong beat when told to",
-           "[score][melody]")
+TEST_CASE ("a melody puts a chord tone on every strong beat when told to", "[score][melody]")
 {
     const std::string source = "x";
     DiagnosticBag bag { source };
@@ -688,8 +673,7 @@ TEST_CASE ("variance above zero explores, and still reproduces", "[score][melody
     REQUIRE (seedDifferences > 0);
 }
 
-TEST_CASE ("an inversion written in the harmony reaches the bass",
-           "[score][voicing]")
+TEST_CASE ("an inversion written in the harmony reaches the bass", "[score][voicing]")
 {
     // `i^1` parsed, resolved and then changed nothing that could be heard: the
     // voicer enumerated every inversion and chose on cost alone. Writing an
@@ -747,7 +731,7 @@ TEST_CASE ("a declared leap limit is a wall, not a cost", "[score][melody]")
 
     MelodySpec melody;
     melody.maxLeap = 4;
-    melody.variance = 0.8f;      // enough jitter to want a leap if it could
+    melody.variance = 0.8f; // enough jitter to want a leap if it could
 
     const auto line = generateMelody (onsets, spans, melody, 48, 84, SeedPath { 5 });
 
@@ -779,8 +763,7 @@ TEST_CASE ("a rhythm can be told to phase against the bar", "[score][melody]")
     for (const auto bar : { 0, 16, 32, 48 })
     {
         const auto onBarLine = std::any_of (aligned.begin(), aligned.end(),
-                                            [bar] (const Onset& o)
-                                            { return o.startStep == bar; });
+                                            [bar] (const Onset& o) { return o.startStep == bar; });
         INFO ("bar line at step " << bar);
         REQUIRE (onBarLine);
     }

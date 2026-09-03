@@ -26,9 +26,7 @@ namespace dew
     tells LiveAudioHost to reopen with input channels. The meter beside it is
     the confirmation that both worked, which a combo box alone cannot give.
 */
-class AudioSettingsPanel : public juce::Component,
-                           private juce::ChangeListener,
-                           private juce::Timer
+class AudioSettingsPanel : public juce::Component, private juce::ChangeListener, private juce::Timer
 {
 public:
     AudioSettingsPanel (LiveAudioHost&, AudioEngine&);
@@ -44,14 +42,26 @@ public:
     std::function<void()> onDeviceChanged;
 
     // --- for tests -----------------------------------------------------------
-    juce::String getSummaryText() const { return summaryText; }
-    int getNumDeviceOptions() const     { return outputBox.getNumItems(); }
+    juce::String getSummaryText() const
+    {
+        return summaryText;
+    }
+    int getNumDeviceOptions() const
+    {
+        return outputBox.getNumItems();
+    }
 
     /** Whether an input is selected. The meter is only meaningful when it is. */
-    bool isInputSelected() const        { return inputBox.getSelectedId() > 1; }
+    bool isInputSelected() const
+    {
+        return inputBox.getSelectedId() > 1;
+    }
 
     /** The last input level drawn, 0..1. */
-    float getInputLevel() const noexcept { return inputLevel; }
+    float getInputLevel() const noexcept
+    {
+        return inputLevel;
+    }
 
     static constexpr int preferredWidth = 420;
 

@@ -24,7 +24,7 @@ namespace dew::paramMenu
 */
 enum class Item
 {
-    createClip     = 1,
+    createClip = 1,
     resetToDefault = 2
 };
 
@@ -129,8 +129,7 @@ private:
 
 /** Wires build+apply onto a control's own hook. ONE call site per control rather
     than eleven copies of the same lambda. */
-template <typename Control>
-void attach (Control& control, Context context)
+template <typename Control> void attach (Control& control, Context context)
 {
     control.onContextMenu = [&control, context] { show (control, context); };
 }

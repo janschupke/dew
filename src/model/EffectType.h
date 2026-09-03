@@ -12,11 +12,24 @@ namespace dew
     picker and the effect editor all need to name a type, and none of them
     should have to link the DSP to do it.
 */
-enum class EffectType { filter, reverb, delay, drive, chorus, eq };
+enum class EffectType
+{
+    filter,
+    reverb,
+    delay,
+    drive,
+    chorus,
+    eq
+};
 
 inline constexpr int kNumEffectTypes = 6;
 
-enum class FilterMode { lowpass, highpass, bandpass };
+enum class FilterMode
+{
+    lowpass,
+    highpass,
+    bandpass
+};
 
 // clang-format on
 FilterMode filterModeFromString (const juce::String&);

@@ -47,15 +47,27 @@ public:
     */
     juce::String setInputEnabled (bool shouldHaveInput);
 
-    bool isInputEnabled() const noexcept  { return inputEnabled; }
+    bool isInputEnabled() const noexcept
+    {
+        return inputEnabled;
+    }
 
-    juce::AudioDeviceManager& getDeviceManager() noexcept  { return deviceManager; }
+    juce::AudioDeviceManager& getDeviceManager() noexcept
+    {
+        return deviceManager;
+    }
 
     /** Where captured input goes. The host owns it because the device callback
         is the only place input samples exist.
     */
-    AudioRecorder& getRecorder() noexcept              { return recorder; }
-    const AudioRecorder& getRecorder() const noexcept  { return recorder; }
+    AudioRecorder& getRecorder() noexcept
+    {
+        return recorder;
+    }
+    const AudioRecorder& getRecorder() const noexcept
+    {
+        return recorder;
+    }
 
     /** Describes the running device, for the status line. */
     juce::String describeDevice() const;
@@ -67,10 +79,8 @@ public:
 
 private:
     void audioDeviceIOCallbackWithContext (const float* const* inputChannelData,
-                                           int numInputChannels,
-                                           float* const* outputChannelData,
-                                           int numOutputChannels,
-                                           int numSamples,
+                                           int numInputChannels, float* const* outputChannelData,
+                                           int numOutputChannels, int numSamples,
                                            const juce::AudioIODeviceCallbackContext&) override;
 
     void audioDeviceAboutToStart (juce::AudioIODevice*) override;

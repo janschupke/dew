@@ -57,11 +57,8 @@ struct CounterpointResult
 CounterpointResult generateCounterpoint (const std::vector<Onset>& onsets,
                                          const std::vector<ChordSpan>& spans,
                                          const std::vector<std::vector<int>>& against,
-                                         const CounterpointSpec&,
-                                         int lowPitch, int highPitch,
-                                         bool ownIsAbove,
-                                         int stepsPerBar,
-                                         const SeedPath&);
+                                         const CounterpointSpec&, int lowPitch, int highPitch,
+                                         bool ownIsAbove, int stepsPerBar, const SeedPath&);
 
 /** The order hard rules are given up in when they leave nothing to sing.
 

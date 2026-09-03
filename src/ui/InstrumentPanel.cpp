@@ -21,8 +21,11 @@ namespace
 } // namespace
 
 InstrumentPanel::InstrumentPanel (ProjectDocument& d, EditorState& s, SamplePool* pool)
-    : document (d), editorState (s), oscSection (d, s), sampleSection (d, pool),
-      chainHost (d, s, EffectChainHost::Orientation::vertical)
+    : document (d)
+    , editorState (s)
+    , oscSection (d, s)
+    , sampleSection (d, pool)
+    , chainHost (d, s, EffectChainHost::Orientation::vertical)
 {
     addChildComponent (sampleSection);
 
@@ -63,21 +66,21 @@ InstrumentPanel::InstrumentPanel (ProjectDocument& d, EditorState& s, SamplePool
     styleCaption (mixerLabel, "MIXER");
     addAndMakeVisible (mixerLabel);
 
-    const auto ampOf = [this] { return selectedChannel().getChildWithName (ids::INSTRUMENT)
-                                                        .getChildWithName (ids::AMP); };
+    const auto ampOf = [this]
+    { return selectedChannel().getChildWithName (ids::INSTRUMENT).getChildWithName (ids::AMP); };
     const auto channelOf = [this] { return selectedChannel(); };
 
     basePitchSlider.setSliderStyle (juce::Slider::IncDecButtons);
     attachStepper (basePitchSlider, basePitchLabel, "PITCH", channelOf, ids::basePitch,
                    "Change base pitch");
 
-    attachKnob (attackKnob,  ampOf, ids::attack, "Change attack");
-    attachKnob (decayKnob,   ampOf, ids::decay, "Change decay");
+    attachKnob (attackKnob, ampOf, ids::attack, "Change attack");
+    attachKnob (decayKnob, ampOf, ids::decay, "Change decay");
     attachKnob (sustainKnob, ampOf, ids::sustain, "Change sustain");
     attachKnob (releaseKnob, ampOf, ids::release, "Change release");
 
     attachKnob (volumeKnob, channelOf, ids::volume, "Change volume");
-    attachKnob (panKnob,    channelOf, ids::pan, "Change pan");
+    attachKnob (panKnob, channelOf, ids::pan, "Change pan");
 
     editorState.addChangeListener (this);
     document.getState().addListener (this);
@@ -123,9 +126,8 @@ void InstrumentPanel::setParamMenuHost (const paramMenu::Host* host)
         if (bound.knob != nullptr)
             paramMenu::attachTo (host, *bound.knob, bound.owner, spec);
         else
-            paramMenuTriggers.push_back (
-                std::make_unique<paramMenu::Trigger> (
-                    *bound.slider, host->contextFor (bound.owner, spec)));
+            paramMenuTriggers.push_back (std::make_unique<paramMenu::Trigger> (
+                *bound.slider, host->contextFor (bound.owner, spec)));
     }
 }
 
@@ -138,8 +140,16 @@ void InstrumentPanel::bindRotary (juce::Slider& slider, DewKnob* knob,
 
     // One transaction per gesture, so dragging a knob is a single undo step
     // rather than several hundred.
-    slider.onDragStart = [this] { inDrag = true; gestureActive = false; };
-    slider.onDragEnd = [this] { inDrag = false; gestureActive = false; };
+    slider.onDragStart = [this]
+    {
+        inDrag = true;
+        gestureActive = false;
+    };
+    slider.onDragEnd = [this]
+    {
+        inDrag = false;
+        gestureActive = false;
+    };
 
     slider.onValueChange = [this, &slider, &spec, owner, property, transactionName]
     {
@@ -155,7 +165,7 @@ void InstrumentPanel::bindRotary (juce::Slider& slider, DewKnob* knob,
         // double would change the JSON from `0` to `0.0` and, worse, make the
         // schema's type coercion do the rounding instead of this code.
         const juce::var value = spec.integral ? juce::var ((int) slider.getValue())
-                                             : juce::var (slider.getValue());
+                                              : juce::var (slider.getValue());
 
         ProjectEdits::setProperty (tree, property, value, &document.getUndoManager(),
                                    transactionName, gestureActive);
@@ -210,8 +220,7 @@ void InstrumentPanel::valueTreePropertyChanged (juce::ValueTree& tree, const juc
 {
     // Not ids::OSC: the oscillator section listens for its own nodes, by
     // identity rather than by type - this filter would fire for every channel's.
-    if (tree.hasType (ids::CHANNEL) || tree.hasType (ids::AMP)
-        || tree.hasType (ids::MIXER_TRACK))
+    if (tree.hasType (ids::CHANNEL) || tree.hasType (ids::AMP) || tree.hasType (ids::MIXER_TRACK))
         refresh();
 }
 
@@ -239,17 +248,17 @@ void InstrumentPanel::refresh()
 
     // Base pitch and the amplitude envelope belong to the oscillators. Leaving
     // them on screen for a recording would offer four controls that do nothing.
-    const std::initializer_list<juce::Component*> synthOnly {
-        &basePitchSlider, &basePitchLabel,
-        &attackKnob, &decayKnob, &sustainKnob, &releaseKnob };
+    const std::initializer_list<juce::Component*> synthOnly { &basePitchSlider, &basePitchLabel,
+                                                              &attackKnob,      &decayKnob,
+                                                              &sustainKnob,     &releaseKnob };
 
     for (auto* c : synthOnly)
         c->setVisible (! showingAudio);
 
     resized();
 
-    chainHost.setOwner (channel, channel.isValid() ? channel[ids::name].toString()
-                                                   : juce::String());
+    chainHost.setOwner (channel,
+                        channel.isValid() ? channel[ids::name].toString() : juce::String());
 
     if (! valid)
     {
@@ -356,7 +365,12 @@ void InstrumentPanel::resized()
 
     area.removeFromTop (space::sm);
 
-    const auto row = [&area] (int height) { auto r = area.removeFromTop (height); area.removeFromTop (space::sm); return r; };
+    const auto row = [&area] (int height)
+    {
+        auto r = area.removeFromTop (height);
+        area.removeFromTop (space::sm);
+        return r;
+    };
 
     if (showingAudio)
         sampleSection.setBounds (row (SampleSection::requiredHeight));
@@ -367,7 +381,6 @@ void InstrumentPanel::resized()
     // about 120px more than the single wave combo it replaces, and at the
     // smallest window the app opens at that was the whole effect chain.
     auto routingRow = row (size::knob);
-
 
     if (! showingAudio)
     {
@@ -385,8 +398,7 @@ void InstrumentPanel::resized()
     // knobRow, like every other row of knobs in the application. It was 86,
     // which is the height the JUCE text box under each one needed - a fifth
     // dimension, in the panel that sits beside the four that use the rung.
-    const auto placeKnobs = [] (juce::Rectangle<int> bounds,
-                                std::initializer_list<DewKnob*> knobs)
+    const auto placeKnobs = [] (juce::Rectangle<int> bounds, std::initializer_list<DewKnob*> knobs)
     {
         const auto cell = bounds.getWidth() / (int) knobs.size();
 

@@ -40,7 +40,10 @@ public:
     void paint (juce::Graphics&) override;
     void resized() override;
 
-    PlaylistTool getTool() const noexcept { return tool; }
+    PlaylistTool getTool() const noexcept
+    {
+        return tool;
+    }
     void setTool (PlaylistTool, juce::NotificationType = juce::sendNotification);
 
     std::function<void()> onToolChanged;
@@ -55,7 +58,6 @@ public:
         both groups states one idea on two axes rather than two ideas once.
     */
     std::function<void (double)> onTrackHeight;
-
 
 private:
     void updateToolButtons();

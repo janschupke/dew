@@ -42,7 +42,8 @@ TEST_CASE ("a wheel notch is read the way the system reports it", "[ui][gesture]
     CHECK (diagonal.y < 0.0);
 
     // A view that scrolls one way from both axes adds them.
-    CHECK (juce::approximatelyEqual (gesture::deltaOf (wheelOf (0.25f, 0.5f, false)).along(), 0.75));
+    CHECK (
+        juce::approximatelyEqual (gesture::deltaOf (wheelOf (0.25f, 0.5f, false)).along(), 0.75));
 }
 
 TEST_CASE ("shift is finer wherever a drag changes a value", "[ui][gesture]")
@@ -76,7 +77,8 @@ TEST_CASE ("a press becomes a drag only once it has travelled", "[ui][gesture]")
     const juce::Point<int> origin { 40, 40 };
 
     CHECK_FALSE (gesture::passedThreshold (origin, origin));
-    CHECK_FALSE (gesture::passedThreshold (origin, origin.translated (gesture::dragThresholdPx - 1, 0)));
+    CHECK_FALSE (
+        gesture::passedThreshold (origin, origin.translated (gesture::dragThresholdPx - 1, 0)));
     CHECK (gesture::passedThreshold (origin, origin.translated (gesture::dragThresholdPx, 0)));
 
     // In any direction, not only along an axis.

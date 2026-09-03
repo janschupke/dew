@@ -32,25 +32,24 @@ std::string exampleSource()
 /** A short score that compiles, so a test can vary one line of it. */
 std::string workingSource()
 {
-    return
-        "song {\n"
-        "  tempo 120\n"
-        "  meter 4/4\n"
-        "  key   C major\n"
-        "}\n"
-        "channel pad { mixer 1 }\n"
-        "voicing warm { size 3 voices }\n"
-        "rhythm held { 1/1 }\n"
-        "harmony h { I | vi | IV | V }\n"
-        "section verse {\n"
-        "  length 4 bars\n"
-        "  harmony h\n"
-        "  part pad {\n"
-        "    chords with warm\n"
-        "    rhythm held\n"
-        "  }\n"
-        "}\n"
-        "arrangement {\n  verse\n}\n";
+    return "song {\n"
+           "  tempo 120\n"
+           "  meter 4/4\n"
+           "  key   C major\n"
+           "}\n"
+           "channel pad { mixer 1 }\n"
+           "voicing warm { size 3 voices }\n"
+           "rhythm held { 1/1 }\n"
+           "harmony h { I | vi | IV | V }\n"
+           "section verse {\n"
+           "  length 4 bars\n"
+           "  harmony h\n"
+           "  part pad {\n"
+           "    chords with warm\n"
+           "    rhythm held\n"
+           "  }\n"
+           "}\n"
+           "arrangement {\n  verse\n}\n";
 }
 
 /** A score needing a finer grid than a project starts with: a sixteenth needs
@@ -59,18 +58,17 @@ std::string workingSource()
 */
 std::string finerGridSource()
 {
-    return
-        "song {\n"
-        "  tempo 120\n"
-        "  meter 4/4\n"
-        "  key   C major\n"
-        "}\n"
-        "channel lead {\n  mixer 1\n  range C4..C6\n}\n"
-        "rhythm swung { 1/16 1/16 1/8t 1/8t 1/8t }\n"
-        "harmony h { I | vi | IV | V }\n"
-        "section verse {\n  length 4 bars\n  harmony h\n"
-        "  part lead {\n    melody {\n      rhythm swung\n    }\n  }\n}\n"
-        "arrangement {\n  verse\n}\n";
+    return "song {\n"
+           "  tempo 120\n"
+           "  meter 4/4\n"
+           "  key   C major\n"
+           "}\n"
+           "channel lead {\n  mixer 1\n  range C4..C6\n}\n"
+           "rhythm swung { 1/16 1/16 1/8t 1/8t 1/8t }\n"
+           "harmony h { I | vi | IV | V }\n"
+           "section verse {\n  length 4 bars\n  harmony h\n"
+           "  part lead {\n    melody {\n      rhythm swung\n    }\n  }\n}\n"
+           "arrangement {\n  verse\n}\n";
 }
 
 /** The kinds the EDITOR's cursor produces, walking a CodeDocument. */
@@ -127,8 +125,8 @@ TEST_CASE ("the editor and the compiler read the same tokens", "[score][editor]"
 
     for (std::size_t i = 0; i < throughCompiler.size(); ++i)
     {
-        INFO ("token " << i << ": editor " << lang::nameOf (throughEditor[i])
-                       << ", compiler " << lang::nameOf (throughCompiler[i]));
+        INFO ("token " << i << ": editor " << lang::nameOf (throughEditor[i]) << ", compiler "
+                       << lang::nameOf (throughCompiler[i]));
         REQUIRE (throughEditor[i] == throughCompiler[i]);
     }
 }
@@ -145,18 +143,13 @@ TEST_CASE ("a keyword is coloured because the schema declares it", "[score][edit
     REQUIRE_FALSE (ScoreTokeniser::isSchemaWord ("verse"));
     REQUIRE_FALSE (ScoreTokeniser::isSchemaWord ("lament"));
 
-    REQUIRE (ScoreTokeniser::colourFor (lang::TokenKind::word, "song")
-             == ScoreTokeniser::keyword);
-    REQUIRE (ScoreTokeniser::colourFor (lang::TokenKind::word, "verse")
-             == ScoreTokeniser::plain);
-    REQUIRE (ScoreTokeniser::colourFor (lang::TokenKind::ratio, "1/8t")
-             == ScoreTokeniser::literal);
-    REQUIRE (ScoreTokeniser::colourFor (lang::TokenKind::unknown, "\\")
-             == ScoreTokeniser::invalid);
+    REQUIRE (ScoreTokeniser::colourFor (lang::TokenKind::word, "song") == ScoreTokeniser::keyword);
+    REQUIRE (ScoreTokeniser::colourFor (lang::TokenKind::word, "verse") == ScoreTokeniser::plain);
+    REQUIRE (ScoreTokeniser::colourFor (lang::TokenKind::ratio, "1/8t") == ScoreTokeniser::literal);
+    REQUIRE (ScoreTokeniser::colourFor (lang::TokenKind::unknown, "\\") == ScoreTokeniser::invalid);
 }
 
-TEST_CASE ("a byte offset becomes the character index the editor means",
-           "[score][editor]")
+TEST_CASE ("a byte offset becomes the character index the editor means", "[score][editor]")
 {
     // The compiler counts bytes, which is right for a caret printed under a
     // line; CodeDocument::Position counts characters. One em dash in a comment
@@ -179,8 +172,8 @@ TEST_CASE ("the score tab shows what the project holds", "[score][editor]")
     const juce::ScopedJuceInitialiser_GUI juceInit;
 
     ProjectDocument document;
-    ProjectEdits::setScoreSource (document.getState(), juce::String (workingSource()),
-                                  "t.score", nullptr);
+    ProjectEdits::setScoreSource (document.getState(), juce::String (workingSource()), "t.score",
+                                  nullptr);
 
     ScoreEditorComponent editor { document };
     editor.setSize (900, 600);
@@ -220,8 +213,7 @@ TEST_CASE ("typing is checked once, after it stops", "[score][editor]")
     REQUIRE_FALSE (editor.isCheckPending());
 }
 
-TEST_CASE ("typing a score stores it in the project without compiling it",
-           "[score][editor]")
+TEST_CASE ("typing a score stores it in the project without compiling it", "[score][editor]")
 {
     const juce::ScopedJuceInitialiser_GUI juceInit;
 
@@ -243,8 +235,7 @@ TEST_CASE ("typing a score stores it in the project without compiling it",
             REQUIRE (child.getNumChildren() == 0);
 }
 
-TEST_CASE ("compiling from the editor writes the notes and says so",
-           "[score][editor]")
+TEST_CASE ("compiling from the editor writes the notes and says so", "[score][editor]")
 {
     const juce::ScopedJuceInitialiser_GUI juceInit;
 
@@ -279,8 +270,7 @@ TEST_CASE ("compiling from the editor writes the notes and says so",
     REQUIRE (ProjectEdits::scoreSource (document.getState()).toStdString() == workingSource());
 }
 
-TEST_CASE ("compiling a broken score changes nothing and says why",
-           "[score][editor]")
+TEST_CASE ("compiling a broken score changes nothing and says why", "[score][editor]")
 {
     const juce::ScopedJuceInitialiser_GUI juceInit;
 
@@ -360,10 +350,9 @@ TEST_CASE ("a squiggle lands on the character it is about", "[score][editor]")
     const auto marked = overlay.boundsFor (diagnostic);
 
     const auto text = editor.getSourceDocument().getAllContent().toStdString();
-    const juce::CodeDocument::Position start {
-        editor.getSourceDocument(),
-        ScoreEditorComponent::characterIndexForByte (text, diagnostic.primary.begin)
-    };
+    const juce::CodeDocument::Position start { editor.getSourceDocument(),
+                                               ScoreEditorComponent::characterIndexForByte (
+                                                   text, diagnostic.primary.begin) };
 
     const auto character = editor.getEditor().getCharacterBounds (start);
 
@@ -468,7 +457,7 @@ TEST_CASE ("a project with music in it keeps its own grid", "[score][editor][bak
 
     const auto result = lang::compile (finerGridSource(), "t.score");
     REQUIRE (result.ok());
-    REQUIRE (result.score->stepsPerBeat == 12);   // or the test proves nothing
+    REQUIRE (result.score->stepsPerBeat == 12); // or the test proves nothing
 
     const auto report = ScoreBake::into (project, *result.score, nullptr);
 
@@ -532,14 +521,13 @@ TEST_CASE ("the starter is offered, not stored", "[score][editor]")
     REQUIRE (ProjectEdits::scoreSource (document.getState()).startsWith ("// mine"));
 }
 
-TEST_CASE ("a project that has a score shows that, not the starter",
-           "[score][editor]")
+TEST_CASE ("a project that has a score shows that, not the starter", "[score][editor]")
 {
     const juce::ScopedJuceInitialiser_GUI juceInit;
 
     ProjectDocument document;
-    ProjectEdits::setScoreSource (document.getState(), juce::String (workingSource()),
-                                  "t.score", nullptr);
+    ProjectEdits::setScoreSource (document.getState(), juce::String (workingSource()), "t.score",
+                                  nullptr);
 
     ScoreEditorComponent editor { document };
     editor.setSize (900, 600);
@@ -575,8 +563,7 @@ TEST_CASE ("completion offers, filters and inserts", "[score][editor][completion
     REQUIRE_FALSE (editor.isCompletionVisible());
 }
 
-TEST_CASE ("the completion popup is a component, not a menu",
-           "[score][editor][completion]")
+TEST_CASE ("the completion popup is a component, not a menu", "[score][editor][completion]")
 {
     // A juce::PopupMenu is modal, which a headless test cannot drive, and its
     // MenuItemIterator holds a reference to a menu that may already be gone.
@@ -687,11 +674,9 @@ TEST_CASE ("a caret after a multi-byte character still completes the right thing
     // And it is exactly the inverse of the conversion the squiggles use.
     for (auto character = 0; character < 20; ++character)
     {
-        const auto bytes = ScoreEditorComponent::byteIndexForCharacter (source,
-                                                                        character);
+        const auto bytes = ScoreEditorComponent::byteIndexForCharacter (source, character);
         INFO ("character " << character << " -> byte " << bytes);
-        REQUIRE (ScoreEditorComponent::characterIndexForByte (source,
-                                                              (std::uint32_t) bytes)
+        REQUIRE (ScoreEditorComponent::characterIndexForByte (source, (std::uint32_t) bytes)
                  == character);
     }
 }
@@ -710,8 +695,7 @@ TEST_CASE ("the score's text size steps, and stops at both ends", "[score][edito
     // The tab opens on the rung the ladder names for a document, and the
     // editor is actually drawing at it - a step nothing applied would pass a
     // round-trip test and change nothing on screen.
-    CHECK (juce::exactlyEqual (editor.getEditor().getFont().getHeight(),
-                               tokens::type::codeBody));
+    CHECK (juce::exactlyEqual (editor.getEditor().getFont().getHeight(), tokens::type::codeBody));
 
     editor.setFontStep (opensAt + 1);
     CHECK (editor.getFontStep() == opensAt + 1);
@@ -721,13 +705,11 @@ TEST_CASE ("the score's text size steps, and stops at both ends", "[score][edito
     // cannot check it, so this is the only place that can.
     editor.setFontStep (100);
     CHECK (editor.getFontStep() == ScoreEditorComponent::numFontSteps() - 1);
-    CHECK (juce::exactlyEqual (editor.getEditor().getFont().getHeight(),
-                               tokens::type::codeHuge));
+    CHECK (juce::exactlyEqual (editor.getEditor().getFont().getHeight(), tokens::type::codeHuge));
 
     editor.setFontStep (-100);
     CHECK (editor.getFontStep() == 0);
-    CHECK (juce::exactlyEqual (editor.getEditor().getFont().getHeight(),
-                               tokens::type::codeSmall));
+    CHECK (juce::exactlyEqual (editor.getEditor().getFont().getHeight(), tokens::type::codeSmall));
 }
 
 TEST_CASE ("alt and the zoom keys size the score's text", "[score][editor][type]")

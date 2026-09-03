@@ -32,7 +32,8 @@ TempoMap TempoMap::constant (double bpm, int stepsPerBeat) noexcept
 
 TempoMap TempoMap::build (const EngineSnapshot& snapshot, juce::StringArray* warnings)
 {
-    const auto fallback = [&snapshot] { return constant (snapshot.tempoBpm, snapshot.stepsPerBeat); };
+    const auto fallback = [&snapshot]
+    { return constant (snapshot.tempoBpm, snapshot.stepsPerBeat); };
 
     // Which clips drive the tempo. An audible automation clip whose automation
     // is scoped to the project and points at tempoBpm - nothing else can make
@@ -68,7 +69,8 @@ TempoMap TempoMap::build (const EngineSnapshot& snapshot, juce::StringArray* war
     for (const auto& clip : snapshot.clips)
         if (clip.automationIndex >= 0 && clip.trackAudible
             && snapshot.automations[(size_t) clip.automationIndex].scope == AutomationScope::project
-            && snapshot.automations[(size_t) clip.automationIndex].param == AutomationParam::tempoBpm)
+            && snapshot.automations[(size_t) clip.automationIndex].param
+                   == AutomationParam::tempoBpm)
             anyTempoClip = true;
 
     if (! anyTempoClip)
@@ -116,7 +118,7 @@ TempoMap TempoMap::build (const EngineSnapshot& snapshot, juce::StringArray* war
         }
 
         map.stepStartSeconds.push_back (map.stepStartSeconds.back()
-                                            + secondsPerStepAtTempo (bpm, snapshot.stepsPerBeat));
+                                        + secondsPerStepAtTempo (bpm, snapshot.stepsPerBeat));
     }
 
     return map;
@@ -147,7 +149,7 @@ double TempoMap::secondsForSteps (double steps) const noexcept
     const auto within = steps - (double) index;
 
     return stepStartSeconds[index]
-             + within * (stepStartSeconds[index + 1] - stepStartSeconds[index]);
+           + within * (stepStartSeconds[index + 1] - stepStartSeconds[index]);
 }
 
 double TempoMap::stepsForSeconds (double seconds) const noexcept
@@ -168,9 +170,8 @@ double TempoMap::stepsForSeconds (double seconds) const noexcept
     {
         const auto tail = stepStartSeconds[(size_t) last] - stepStartSeconds[(size_t) last - 1];
 
-        return tail > 0.0
-                 ? (double) last + (seconds - stepStartSeconds[(size_t) last]) / tail
-                 : (double) last;
+        return tail > 0.0 ? (double) last + (seconds - stepStartSeconds[(size_t) last]) / tail
+                          : (double) last;
     }
 
     // The same entry the forward direction interpolates within, found by binary
@@ -190,7 +191,8 @@ double TempoMap::secondsPerStepAt (double steps) const noexcept
         return constantSecondsPerStep;
 
     const auto last = (int) stepStartSeconds.size() - 1;
-    const auto index = (size_t) juce::jlimit (0, last - 1, (int) std::floor (juce::jmax (0.0, steps)));
+    const auto index = (size_t) juce::jlimit (0, last - 1,
+                                              (int) std::floor (juce::jmax (0.0, steps)));
 
     return stepStartSeconds[index + 1] - stepStartSeconds[index];
 }

@@ -43,14 +43,23 @@ public:
         any one project and because the offline renderer and every engine test
         build snapshots with no audio at all. Null leaves audio channels silent.
     */
-    void setSamplePool (SampleProvider* provider) noexcept  { samplePool = provider; }
+    void setSamplePool (SampleProvider* provider) noexcept
+    {
+        samplePool = provider;
+    }
 
-    SampleProvider* getSamplePool() const noexcept          { return samplePool; }
+    SampleProvider* getSamplePool() const noexcept
+    {
+        return samplePool;
+    }
 
     /** How many effect modules exist. For the test that pins the laziness: the
         pool used to build every type in every unit up front, whether or not a
         project used one. */
-    int getMaterialisedEffectModuleCount() const noexcept { return modulePool.materialisedCount(); }
+    int getMaterialisedEffectModuleCount() const noexcept
+    {
+        return modulePool.materialisedCount();
+    }
 
     /** How many instrument modules exist, by kind. For the test that pins the
         laziness: sixty-four SynthChannels - a thousand and twenty-four voices -
@@ -63,14 +72,23 @@ public:
         different capacity afterwards, which is what turns "something allocated"
         into "this allocated". Both are reserved in the constructor and again in
         prepare(), and nothing on the render path may push past the bound. */
-    std::size_t getTriggerCapacity() const noexcept          { return triggers.capacity(); }
-    std::size_t getActiveAutomationCapacity() const noexcept { return activeAutomation.capacity(); }
+    std::size_t getTriggerCapacity() const noexcept
+    {
+        return triggers.capacity();
+    }
+    std::size_t getActiveAutomationCapacity() const noexcept
+    {
+        return activeAutomation.capacity();
+    }
 
     /** How many automation entries the last block actually collected.
 
         The gate's fixture has to prove it loaded this vector past its reserve,
         or "nothing allocated" only means "nothing was asked to". */
-    std::size_t getActiveAutomationCount() const noexcept    { return activeAutomation.size(); }
+    std::size_t getActiveAutomationCount() const noexcept
+    {
+        return activeAutomation.size();
+    }
 
     /** Message thread: hand over a prebuilt snapshot. */
     void publish (EngineSnapshot snapshot);
@@ -127,9 +145,12 @@ public:
     struct LoopRegion
     {
         float startSteps = 0.0f;
-        float endSteps   = 0.0f;
+        float endSteps = 0.0f;
 
-        bool isEmpty() const noexcept  { return endSteps <= startSteps; }
+        bool isEmpty() const noexcept
+        {
+            return endSteps <= startSteps;
+        }
 
         bool operator== (const LoopRegion& other) const noexcept
         {
@@ -137,7 +158,7 @@ public:
             // arithmetic'd, so bit equality is what "the same region" means -
             // and the CI preset builds with -Werror on -Wfloat-equal.
             return juce::exactlyEqual (startSteps, other.startSteps)
-                && juce::exactlyEqual (endSteps, other.endSteps);
+                   && juce::exactlyEqual (endSteps, other.endSteps);
         }
     };
 
@@ -155,8 +176,14 @@ public:
     bool hasLoopRegion (Transport::Mode) const noexcept;
 
     void setMode (Transport::Mode);
-    Transport::Mode getMode() const noexcept  { return requestedMode.load(); }
-    bool isPlaying() const noexcept           { return playing.load(); }
+    Transport::Mode getMode() const noexcept
+    {
+        return requestedMode.load();
+    }
+    bool isPlaying() const noexcept
+    {
+        return playing.load();
+    }
 
     // --- preview, for auditioning a note outside the sequencer ---------------
     /** Message thread. Sounds a note on a channel until previewNoteOff, so
@@ -225,11 +252,20 @@ public:
         peaks above this is NOT read-and-clear, so any number of displays can
         watch it without stealing from each other.
     */
-    const SignalTap& getSignalTap() const noexcept  { return signalTap; }
+    const SignalTap& getSignalTap() const noexcept
+    {
+        return signalTap;
+    }
 
     /** Which pattern plays in pattern mode, by pattern id. */
-    void setCurrentPatternId (int patternId) noexcept  { requestedPatternId.store (patternId); }
-    int getCurrentPatternId() const noexcept           { return requestedPatternId.load(); }
+    void setCurrentPatternId (int patternId) noexcept
+    {
+        requestedPatternId.store (patternId);
+    }
+    int getCurrentPatternId() const noexcept
+    {
+        return requestedPatternId.load();
+    }
 
     /** Playhead in steps, for drawing. Written by the audio thread. */
     double getPlayheadSteps() const noexcept;
@@ -237,7 +273,10 @@ public:
     /** Audio thread: renders one block. `buffer` must be stereo. */
     void processBlock (juce::AudioBuffer<float>& buffer) noexcept;
 
-    double getSampleRate() const noexcept  { return currentSampleRate; }
+    double getSampleRate() const noexcept
+    {
+        return currentSampleRate;
+    }
 
 private:
     void applySnapshotIfChanged (const EngineSnapshot&) noexcept;
@@ -335,7 +374,7 @@ private:
         int targetIndex = -1;
         int slotIndex = -1;
         AutomationParam param = AutomationParam::none;
-        int paramIndex = -1;      ///< into the effect slot's block; -1 for other scopes
+        int paramIndex = -1; ///< into the effect slot's block; -1 for other scopes
         float value = 0.0f;
     };
 

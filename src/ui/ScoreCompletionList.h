@@ -20,15 +20,17 @@ namespace dew
     It draws and it selects. It does not decide what goes in it and it does not
     insert anything - the editor owns both, because both are about the document.
 */
-class ScoreCompletionList : public juce::Component,
-                            private juce::ListBoxModel
+class ScoreCompletionList : public juce::Component, private juce::ListBoxModel
 {
 public:
     ScoreCompletionList();
 
     void setItems (std::vector<lang::Completion>);
 
-    const std::vector<lang::Completion>& getItems() const { return items; }
+    const std::vector<lang::Completion>& getItems() const
+    {
+        return items;
+    }
 
     /** The candidate that Return would insert, or nullptr when empty. */
     const lang::Completion* getSelected() const;

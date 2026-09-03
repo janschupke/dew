@@ -20,7 +20,7 @@ void SignalTap::write (const float* left, const float* right, int numSamples) no
 
     for (int i = 0; i < kept; ++i)
         samples[(size_t) ((count + skip + i) & mask)].store (0.5f * (left[i] + right[i]),
-                                                            std::memory_order_relaxed);
+                                                             std::memory_order_relaxed);
 
     // The one release in the class: every store above is visible to any reader
     // that observes this count.

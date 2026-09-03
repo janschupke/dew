@@ -38,8 +38,14 @@ struct Preset
         grouped the way the project file groups them for an instrument. */
     juce::var state;
 
-    bool isInstrument() const { return kind == "instrument"; }
-    bool isEffect() const     { return kind == "effect"; }
+    bool isInstrument() const
+    {
+        return kind == "instrument";
+    }
+    bool isEffect() const
+    {
+        return kind == "effect";
+    }
 };
 
 } // namespace dew

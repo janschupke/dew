@@ -43,21 +43,22 @@ TEST_CASE ("the render path takes no snapshot entry by value", "[realtime][snaps
     // The other half of the guarantee: the types are right, and nothing copies
     // the one that owns something. `auto x = snapshot.channels[i]` is a copy;
     // `const auto& x = ...` is not, and the difference is one character.
-    const auto found = offenders ([] (const juce::String& line)
-    {
-        const auto trimmed = line.trim();
+    const auto found = offenders (
+        [] (const juce::String& line)
+        {
+            const auto trimmed = line.trim();
 
-        if (! trimmed.startsWith ("auto "))
-            return false;
+            if (! trimmed.startsWith ("auto "))
+                return false;
 
-        return trimmed.contains ("snapshot.channels[")
-               || trimmed.contains ("snapshot.mixerTracks[");
-    }, {});
+            return trimmed.contains ("snapshot.channels[")
+                   || trimmed.contains ("snapshot.mixerTracks[");
+        },
+        {});
 
     INFO ("snapshot entries copied rather than referenced:\n" << found.joinIntoString ("\n"));
     CHECK (found.isEmpty());
 }
-
 
 TEST_CASE ("instruments are built only for the channels that have them", "[realtime][instruments]")
 {

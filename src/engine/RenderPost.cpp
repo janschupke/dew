@@ -3,9 +3,7 @@
 namespace dew::RenderPost
 {
 
-void applyFades (juce::AudioBuffer<float>& buffer,
-                 double sampleRate,
-                 double fadeInSeconds,
+void applyFades (juce::AudioBuffer<float>& buffer, double sampleRate, double fadeInSeconds,
                  double fadeOutSeconds) noexcept
 {
     const auto numSamples = buffer.getNumSamples();
@@ -17,8 +15,7 @@ void applyFades (juce::AudioBuffer<float>& buffer,
     // overlapping into a dip.
     const auto longest = numSamples / 2;
 
-    const auto fadeIn = juce::jlimit (0, longest,
-                                      (int) std::llround (fadeInSeconds * sampleRate));
+    const auto fadeIn = juce::jlimit (0, longest, (int) std::llround (fadeInSeconds * sampleRate));
     const auto fadeOut = juce::jlimit (0, longest,
                                        (int) std::llround (fadeOutSeconds * sampleRate));
 

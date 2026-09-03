@@ -219,8 +219,8 @@ TEST_CASE ("editing through the UI's edit API changes what the engine plays", "[
     undo.beginNewTransaction ("Add steps");
 
     for (int step = 0; step < 16; step += 4)
-        dew::ProjectEdits::addNote (pattern, 1, step, 1, (int) channel[dew::ids::basePitch],
-                                    1.0f, &undo);
+        dew::ProjectEdits::addNote (pattern, 1, step, 1, (int) channel[dew::ids::basePitch], 1.0f,
+                                    &undo);
 
     // The editor coalesces snapshot rebuilds through an AsyncUpdater, so the
     // pending rebuild has to be applied before the engine sees the change.
@@ -279,7 +279,8 @@ TEST_CASE ("every tab is painted, not only the active one", "[ui][smoke]")
     {
         for (auto* child : parent.getChildren())
         {
-            if (auto* tabbed = dynamic_cast<juce::TabbedComponent*> (child); tabbed != nullptr && bar == nullptr)
+            if (auto* tabbed = dynamic_cast<juce::TabbedComponent*> (child);
+                tabbed != nullptr && bar == nullptr)
                 bar = &tabbed->getTabbedButtonBar();
             else
                 findBar (*child);
@@ -293,7 +294,7 @@ TEST_CASE ("every tab is painted, not only the active one", "[ui][smoke]")
     // Paint the whole editor, then look only at the tab strip.
     const auto image = render (component);
     const auto strip = bar->getLocalArea (&component, bar->getLocalBounds())
-                          .withPosition (bar->getScreenPosition() - component.getScreenPosition());
+                           .withPosition (bar->getScreenPosition() - component.getScreenPosition());
 
     // Ink under each tab: one label apiece.
     auto* tabBar = dynamic_cast<juce::TabbedButtonBar*> (bar);
@@ -306,8 +307,8 @@ TEST_CASE ("every tab is painted, not only the active one", "[ui][smoke]")
         REQUIRE (button != nullptr);
         REQUIRE (button->getWidth() > 20);
 
-        const auto area = juce::Rectangle<int> (button->getX(), strip.getY(),
-                                                button->getWidth(), button->getHeight())
+        const auto area = juce::Rectangle<int> (button->getX(), strip.getY(), button->getWidth(),
+                                                button->getHeight())
                               .getIntersection (image.getBounds());
         REQUIRE (! area.isEmpty());
 
@@ -347,12 +348,18 @@ TEST_CASE ("a span selected in the editor loops the editor's own engine", "[ui][
     component.getEditorState().dispatchPendingMessages();
 
     REQUIRE (engine.hasLoopRegion (dew::Transport::Mode::song));
-    REQUIRE (juce::exactlyEqual (engine.getLoopRegion (dew::Transport::Mode::song).startSteps, 16.0f));
-    REQUIRE (juce::exactlyEqual (engine.getLoopRegion (dew::Transport::Mode::song).endSteps, 48.0f));
+    REQUIRE (
+        juce::exactlyEqual (engine.getLoopRegion (dew::Transport::Mode::song).startSteps, 16.0f));
+    REQUIRE (
+        juce::exactlyEqual (engine.getLoopRegion (dew::Transport::Mode::song).endSteps, 48.0f));
 
     juce::AudioBuffer<float> block (2, 512);
 
-    const auto render = [&] { block.clear(); engine.processBlock (block); };
+    const auto render = [&]
+    {
+        block.clear();
+        engine.processBlock (block);
+    };
 
     // Into the region - a playhead before a loop plays into it rather than being
     // snapped, so this is not instant.

@@ -25,9 +25,9 @@ namespace dew
     anything a prototype project reaches; buildSnapshot() clamps to them and
     reports what it dropped rather than silently truncating.
 */
-inline constexpr int kMaxChannels          = 64;
-inline constexpr int kMaxMixerTracks       = 32;
-inline constexpr int kMaxVoicesPerChannel  = 16;
+inline constexpr int kMaxChannels = 64;
+inline constexpr int kMaxMixerTracks = 32;
+inline constexpr int kMaxVoicesPerChannel = 16;
 
 /** How many effect slots in the whole project can hold live DSP state.
 
@@ -45,10 +45,10 @@ inline constexpr int kMaxVoicesPerChannel  = 16;
     default was nullptr. Raising it costs nothing now that modules are made on
     first use rather than all at once.
 */
-inline constexpr int kMaxEffectUnits       = kMaxChannels * kMaxEffectsPerChain
-                                             + kMaxMixerTracks * kMaxEffectsPerChain
-                                             + kMaxEffectsPerChain;
-inline constexpr int kMaxAutomations       = 32;
+inline constexpr int kMaxEffectUnits = kMaxChannels * kMaxEffectsPerChain
+                                       + kMaxMixerTracks * kMaxEffectsPerChain
+                                       + kMaxEffectsPerChain;
+inline constexpr int kMaxAutomations = 32;
 
 /** How many note-ons one block may start, across every channel.
 
@@ -60,7 +60,7 @@ inline constexpr int kMaxAutomations       = 32;
     Same contract as maxEventsPerChannel: refuse at the bound. A block that drops
     a note is honest; one that allocates to keep it is not realtime.
 */
-inline constexpr int kMaxTriggersPerBlock  = 512;
+inline constexpr int kMaxTriggersPerBlock = 512;
 
 /** One oscillator slot, resolved.
 
@@ -80,12 +80,12 @@ struct OscSettings
     Waveform wave = Waveform::saw;
 
     int table = 0;
-    float position = 0.0f;         ///< 0..1 through the table's frames
-    float positionMod = 0.0f;      ///< -1..1, added to position over the note
+    float position = 0.0f;    ///< 0..1 through the table's frames
+    float positionMod = 0.0f; ///< -1..1, added to position over the note
     PositionSource positionSource = PositionSource::envelope;
-    float positionRate = 1.0f;     ///< Hz, when the source is the LFO
+    float positionRate = 1.0f; ///< Hz, when the source is the LFO
     int unisonVoices = 1;
-    float unisonDetune = 0.0f;     ///< cents, edge to edge
+    float unisonDetune = 0.0f; ///< cents, edge to edge
 
     int octave = 0;
     float detuneCents = 0.0f;
@@ -103,7 +103,7 @@ struct OscBankSnapshot
 {
     std::array<OscSettings, kMaxOscillators> slots;
     int numSlots = 0;
-    bool anyEnabled = false;   ///< precomputed, so nothing downstream has to scan
+    bool anyEnabled = false; ///< precomputed, so nothing downstream has to scan
 };
 
 struct AmpSettings
@@ -120,7 +120,7 @@ struct AmpSettings
 */
 struct EffectSnapshot
 {
-    int id = 0;                ///< the document's effect id, which keys the DSP pool
+    int id = 0; ///< the document's effect id, which keys the DSP pool
     EffectType type = EffectType::filter;
     bool enabled = true;
     int unitIndex = -1;
@@ -176,7 +176,7 @@ struct EffectChainSnapshot
 struct SampleSettings
 {
     int startSample = 0;
-    int endSample = 0;          ///< exclusive; the buffer length when the document says 0
+    int endSample = 0; ///< exclusive; the buffer length when the document says 0
     int fadeInSamples = 0;
     int fadeOutSamples = 0;
     float pitchRatio = 1.0f;
@@ -188,7 +188,7 @@ struct SampleSettings
 struct ChannelSnapshot
 {
     int id = 0;
-    int mixerTrackIndex = 0;   ///< resolved to an index, so the audio thread never searches
+    int mixerTrackIndex = 0; ///< resolved to an index, so the audio thread never searches
     float volume = 0.8f;
     float pan = 0.0f;
     bool muted = false;
@@ -218,7 +218,7 @@ struct ChannelSnapshot
 
 struct NoteSnapshot
 {
-    int channelIndex = -1;     ///< resolved; -1 means the note referenced a missing channel
+    int channelIndex = -1; ///< resolved; -1 means the note referenced a missing channel
     int step = 0;
     int lengthSteps = 1;
     int pitch = 60;
@@ -239,20 +239,35 @@ struct PatternSnapshot
 enum class AutomationParam
 {
     none,
-    volume, pan, gain,
+    volume,
+    pan,
+    gain,
     position,
-    cutoff, resonance, mix, roomSize, damping, width,
-    delayMs, feedback, drive, outputGain, rate, depth,
-    lowGainDb, midGainDb, midFreq, highGainDb,
+    cutoff,
+    resonance,
+    mix,
+    roomSize,
+    damping,
+    width,
+    delayMs,
+    feedback,
+    drive,
+    outputGain,
+    rate,
+    depth,
+    lowGainDb,
+    midGainDb,
+    midFreq,
+    highGainDb,
 
     /** Discrete ones. filterMode needs an enumerator even though it travels
         through paramIndex like any other block parameter, because buildSnapshot
         DROPS an automation whose param is `none` - so without a row here a
         filter-mode curve would be silently ignored. */
     filterMode,
-    enabled,        ///< an effect slot's bypass
-    oscEnabled,     ///< an oscillator slot's on/off
-    muted,          ///< a channel's or a mixer track's mute
+    enabled,    ///< an effect slot's bypass
+    oscEnabled, ///< an oscillator slot's on/off
+    muted,      ///< a channel's or a mixer track's mute
 
     /** The arrangement's own tempo. Not applied through an override like the
         rest: it changes how STEPS become time, which is the TempoMap's job. */
@@ -263,8 +278,8 @@ enum class AutomationParam
 struct AutomationSnapshot
 {
     AutomationScope scope = AutomationScope::channel;
-    int targetIndex = -1;      ///< channel index or mixer track index; -1 for master
-    int slotIndex = -1;        ///< effect slot in the chain, -1 when not an effect
+    int targetIndex = -1; ///< channel index or mixer track index; -1 for master
+    int slotIndex = -1;   ///< effect slot in the chain, -1 when not an effect
     AutomationParam param = AutomationParam::none;
 
     /** Where this parameter sits in the slot's block, for effect scopes.
@@ -300,9 +315,9 @@ struct AutomationSnapshot
 
 struct ClipSnapshot
 {
-    int patternIndex = -1;     ///< resolved
-    int automationIndex = -1;  ///< resolved; >= 0 makes this an automation clip
-    int channelIndex = -1;     ///< resolved; >= 0 makes this an audio clip
+    int patternIndex = -1;    ///< resolved
+    int automationIndex = -1; ///< resolved; >= 0 makes this an automation clip
+    int channelIndex = -1;    ///< resolved; >= 0 makes this an audio clip
     int startBar = 0;
     int lengthBars = 1;
 
@@ -364,7 +379,7 @@ struct EngineSnapshot
 
     std::vector<ChannelSnapshot> channels;
     std::vector<PatternSnapshot> patterns;
-    std::vector<ClipSnapshot> clips;          ///< flattened across all playlist tracks
+    std::vector<ClipSnapshot> clips; ///< flattened across all playlist tracks
     std::vector<MixerTrackSnapshot> mixerTracks;
     std::vector<AutomationSnapshot> automations;
 
@@ -374,8 +389,8 @@ struct EngineSnapshot
     // Solo is a property of the whole mixer, not of one track: one track soloed
     // silences every track that is not. Precomputed per scope so neither the
     // sequencer nor the mixer has to scan.
-    bool anySolo = false;            ///< any mixer track soloed
-    bool anyChannelSolo = false;     ///< any channel soloed
+    bool anySolo = false;        ///< any mixer track soloed
+    bool anyChannelSolo = false; ///< any channel soloed
     bool anyPlaylistTrackSolo = false;
 
     /** Incremented on every build. The stress test uses it to tell snapshots
@@ -383,7 +398,10 @@ struct EngineSnapshot
     */
     juce::uint64 generation = 0;
 
-    int stepsPerBar() const { return stepsPerBeat * beatsPerBar; }
+    int stepsPerBar() const
+    {
+        return stepsPerBeat * beatsPerBar;
+    }
 
     int patternIndexForId (int patternId) const;
     int channelIndexForId (int channelId) const;
@@ -430,8 +448,7 @@ struct SampleProvider;
     every snapshot test predate audio entirely. A null pool leaves audio
     channels silent rather than reading files from the render path.
 */
-EngineSnapshot buildSnapshot (const juce::ValueTree& project,
-                              juce::StringArray* warnings = nullptr,
+EngineSnapshot buildSnapshot (const juce::ValueTree& project, juce::StringArray* warnings = nullptr,
                               SampleProvider* samples = nullptr);
 
 } // namespace dew

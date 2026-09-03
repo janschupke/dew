@@ -80,8 +80,7 @@ juce::ValueTree findGeneratedTrack (const juce::ValueTree& project)
 juce::ValueTree findChannelByName (const juce::ValueTree& project, const juce::String& name)
 {
     for (const auto& channel : project)
-        if (channel.hasType (ids::CHANNEL)
-            && channel[ids::name].toString().equalsIgnoreCase (name))
+        if (channel.hasType (ids::CHANNEL) && channel[ids::name].toString().equalsIgnoreCase (name))
             return channel;
 
     return {};
@@ -151,10 +150,9 @@ int writeNotes (juce::ValueTree pattern, const lang::PatternDesc& desc,
         if (note.track < 0 || note.track >= (int) channelIdForTrack.size())
             continue;
 
-        auto added = ProjectEdits::addNote (pattern,
-                                            channelIdForTrack[(std::size_t) note.track],
-                                            note.startStep, note.lengthSteps,
-                                            note.pitch, note.velocity, undo);
+        auto added = ProjectEdits::addNote (pattern, channelIdForTrack[(std::size_t) note.track],
+                                            note.startStep, note.lengthSteps, note.pitch,
+                                            note.velocity, undo);
 
         added.setProperty (ids::velocity, storedVelocity (note.velocity), undo);
         ++written;

@@ -390,7 +390,8 @@ TEST_CASE ("a bar range trims the notes and rebases them to zero", "[midi][expor
 
         for (int i = 0; i < sequence->getNumEvents(); ++i)
             if (sequence->getEventPointer (i)->message.isNoteOn())
-                earliest = juce::jmin (earliest, sequence->getEventPointer (i)->message.getTimeStamp());
+                earliest = juce::jmin (earliest,
+                                       sequence->getEventPointer (i)->message.getTimeStamp());
     }
 
     REQUIRE (earliest < (double) ticksPerBar);
@@ -435,7 +436,8 @@ TEST_CASE ("format 0 is exactly one track", "[midi][export]")
 
     juce::StringArray warnings;
     juce::int64 numNotes = 0;
-    const auto file = MidiExporter::build (dew::testing::fixtureProject(), flat, warnings, numNotes);
+    const auto file = MidiExporter::build (dew::testing::fixtureProject(), flat, warnings,
+                                           numNotes);
 
     // The header records the track count, so more than one here is a malformed file.
     REQUIRE (file.getNumTracks() == 1);
@@ -489,7 +491,8 @@ TEST_CASE ("renderToFile writes MIDI when asked for it", "[engine][render][midi]
     RenderOptions options;
     options.format = RenderFormat::midi;
 
-    const auto report = OfflineRenderer::renderToFile (dew::testing::fixtureProject(), target, options);
+    const auto report = OfflineRenderer::renderToFile (dew::testing::fixtureProject(), target,
+                                                       options);
 
     INFO (report.result.getErrorMessage());
     REQUIRE (report.ok());

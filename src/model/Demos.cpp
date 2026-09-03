@@ -33,9 +33,9 @@ juce::ValueTree ProjectFactory::createDemo()
     // deliberately small: this is the first thing anybody opens, and every part
     // of it should be readable at a glance in the step grid it was written in.
     auto groove = patternIn (project, 1, "Groove", 16);
-    auto intro  = patternIn (project, 2, "Intro",  16);
-    auto brk    = patternIn (project, 3, "Break",  16);
-    auto fill   = patternIn (project, 4, "Fill",   16);
+    auto intro = patternIn (project, 2, "Intro", 16);
+    auto brk = patternIn (project, 3, "Break", 16);
+    auto fill = patternIn (project, 4, "Fill", 16);
 
     // Kick on every beat.
     for (int step = 0; step < 16; step += 4)
@@ -51,9 +51,9 @@ juce::ValueTree ProjectFactory::createDemo()
         groove.appendChild (makeNote (3, i * 2 + 1, 1, bassPitches[i], 0.85), nullptr);
 
     // A lead phrase with held notes, so release and sustain are audible.
-    groove.appendChild (makeNote (4, 0,  3, 72, 0.8), nullptr);
-    groove.appendChild (makeNote (4, 4,  2, 76, 0.75), nullptr);
-    groove.appendChild (makeNote (4, 8,  3, 79, 0.8), nullptr);
+    groove.appendChild (makeNote (4, 0, 3, 72, 0.8), nullptr);
+    groove.appendChild (makeNote (4, 4, 2, 76, 0.75), nullptr);
+    groove.appendChild (makeNote (4, 8, 3, 79, 0.8), nullptr);
     groove.appendChild (makeNote (4, 12, 4, 74, 0.7), nullptr);
 
     // Intro: the pulse and the root, and nothing else yet.
@@ -68,9 +68,9 @@ juce::ValueTree ProjectFactory::createDemo()
     for (int step = 4; step < 16; step += 8)
         brk.appendChild (makeNote (2, step, 1, 60, 0.7), nullptr);
 
-    brk.appendChild (makeNote (4, 0,  3, 84, 0.7), nullptr);
-    brk.appendChild (makeNote (4, 4,  2, 88, 0.65), nullptr);
-    brk.appendChild (makeNote (4, 8,  3, 91, 0.7), nullptr);
+    brk.appendChild (makeNote (4, 0, 3, 84, 0.7), nullptr);
+    brk.appendChild (makeNote (4, 4, 2, 88, 0.65), nullptr);
+    brk.appendChild (makeNote (4, 8, 3, 91, 0.7), nullptr);
     brk.appendChild (makeNote (4, 12, 4, 86, 0.6), nullptr);
 
     // Fill: a snare roll that gets louder, landing back on the groove.
@@ -107,9 +107,9 @@ juce::ValueTree ProjectFactory::createMelodyDemo()
     // A softer set of voices than the default: this demo is about notes, not
     // drums. The melody is channel 1 deliberately - that is the channel the
     // piano roll opens on, and it should be the line the demo is about.
-    auto melodyCh  = channelWithId (project, 1);
-    auto chordsCh  = channelWithId (project, 2);
-    auto bassCh    = channelWithId (project, 3);
+    auto melodyCh = channelWithId (project, 1);
+    auto chordsCh = channelWithId (project, 2);
+    auto bassCh = channelWithId (project, 3);
     auto counterCh = channelWithId (project, 4);
 
     melodyCh.setProperty (ids::name, "Melody", nullptr);
@@ -136,38 +136,60 @@ juce::ValueTree ProjectFactory::createMelodyDemo()
         const char* name;
         int roots[4];
         int triads[4][3];
-        int melody[14][4];   // step, length, pitch, velocity per cent; pitch 0 ends it
+        int melody[14][4]; // step, length, pitch, velocity per cent; pitch 0 ends it
         int counterTop;
     };
 
     static const Section sections[] {
-        { 1, "Am - F - C - G",
+        { 1,
+          "Am - F - C - G",
           { 45, 41, 48, 43 },
           { { 57, 60, 64 }, { 53, 57, 60 }, { 60, 64, 67 }, { 55, 59, 62 } },
-          { {  0, 3, 76,  95 }, {  4, 2, 74,  70 }, {  6, 2, 72,  60 }, {  8, 6, 69,  85 },
-            { 16, 3, 72,  90 }, { 20, 2, 74,  65 }, { 22, 2, 76,  75 }, { 24, 6, 77,  95 },
-            { 32, 4, 79, 100 }, { 38, 2, 76,  60 }, { 40, 6, 74,  80 },
-            { 48, 3, 71,  85 }, { 52, 3, 74,  70 }, { 56, 8, 69,  90 } },
+          { { 0, 3, 76, 95 },
+            { 4, 2, 74, 70 },
+            { 6, 2, 72, 60 },
+            { 8, 6, 69, 85 },
+            { 16, 3, 72, 90 },
+            { 20, 2, 74, 65 },
+            { 22, 2, 76, 75 },
+            { 24, 6, 77, 95 },
+            { 32, 4, 79, 100 },
+            { 38, 2, 76, 60 },
+            { 40, 6, 74, 80 },
+            { 48, 3, 71, 85 },
+            { 52, 3, 74, 70 },
+            { 56, 8, 69, 90 } },
           88 },
 
-        { 2, "Dm - Bb - F - C",
+        { 2,
+          "Dm - Bb - F - C",
           { 50, 46, 53, 48 },
           { { 62, 65, 69 }, { 58, 62, 65 }, { 57, 60, 65 }, { 60, 64, 67 } },
-          { {  0, 4, 81,  90 }, {  6, 2, 79,  65 }, {  8, 6, 77,  85 },
-            { 16, 3, 74,  85 }, { 20, 2, 77,  70 }, { 22, 2, 79,  80 }, { 24, 6, 81,  95 },
-            { 32, 5, 77,  90 }, { 38, 3, 74,  65 }, { 42, 4, 72,  75 },
-            { 48, 4, 76,  85 }, { 54, 2, 74,  60 }, { 56, 8, 72,  85 },
-            {  0, 0,  0,   0 } },
+          { { 0, 4, 81, 90 },
+            { 6, 2, 79, 65 },
+            { 8, 6, 77, 85 },
+            { 16, 3, 74, 85 },
+            { 20, 2, 77, 70 },
+            { 22, 2, 79, 80 },
+            { 24, 6, 81, 95 },
+            { 32, 5, 77, 90 },
+            { 38, 3, 74, 65 },
+            { 42, 4, 72, 75 },
+            { 48, 4, 76, 85 },
+            { 54, 2, 74, 60 },
+            { 56, 8, 72, 85 },
+            { 0, 0, 0, 0 } },
           93 },
 
-        { 3, "Bridge",
+        { 3,
+          "Bridge",
           { 43, 43, 41, 41 },
           { { 55, 59, 62 }, { 55, 62, 67 }, { 53, 57, 60 }, { 53, 60, 65 } },
-          { {  8, 8, 67,  70 },
-            { 24, 8, 71,  75 },
-            { 40, 8, 74,  80 },
-            { 56, 8, 76,  85 },
-            {  0, 0,  0,   0 } },
+          { { 8, 8, 67, 70 },
+            { 24, 8, 71, 75 },
+            { 40, 8, 74, 80 },
+            { 56, 8, 76, 85 },
+            { 0, 0, 0, 0 } },
           0 },
     };
 
@@ -181,7 +203,8 @@ juce::ValueTree ProjectFactory::createMelodyDemo()
 
             // Bass: root on the downbeat, held, then an octave lift.
             pattern.appendChild (makeNote (3, start, 6, section.roots[bar], 0.9), nullptr);
-            pattern.appendChild (makeNote (3, start + 8, 4, section.roots[bar] + 12, 0.55), nullptr);
+            pattern.appendChild (makeNote (3, start + 8, 4, section.roots[bar] + 12, 0.55),
+                                 nullptr);
 
             // Chords: three notes at once, which is the thing a step grid cannot do.
             for (const auto pitch : section.triads[bar])
@@ -202,8 +225,8 @@ juce::ValueTree ProjectFactory::createMelodyDemo()
         // taking a voice away is as much a section as adding one.
         if (section.counterTop > 0)
             for (int step = 2; step < 64; step += 8)
-                pattern.appendChild (makeNote (4, step, 1, section.counterTop - (step / 16) * 2, 0.35),
-                                     nullptr);
+                pattern.appendChild (
+                    makeNote (4, step, 1, section.counterTop - (step / 16) * 2, 0.35), nullptr);
     }
 
     // A A' B A B' bridge A - the shape of most songs anybody has ever hummed,
@@ -228,10 +251,10 @@ juce::ValueTree ProjectFactory::createEffectsDemo()
     project.setProperty (ids::tempoBpm, 110.0, nullptr);
     project.setProperty (ids::barsInSong, 32, nullptr);
 
-    auto pad   = channelWithId (project, 1);
+    auto pad = channelWithId (project, 1);
     auto pluck = channelWithId (project, 2);
-    auto bass  = channelWithId (project, 3);
-    auto kick  = channelWithId (project, 4);
+    auto bass = channelWithId (project, 3);
+    auto kick = channelWithId (project, 4);
 
     pad.setProperty (ids::name, "Pad", nullptr);
     pad.setProperty (ids::volume, 0.26, nullptr);
@@ -258,23 +281,24 @@ juce::ValueTree ProjectFactory::createEffectsDemo()
     // Order is the point: the filter shapes the saw, the drive works on what
     // is left, the chorus widens THAT, and the delay repeats the finished
     // sound. Put the drive last and it distorts the delay's tail instead.
-    pad.appendChild (makeEffect (1, "filter", { { ids::cutoff, 1400.0 },
-                                                { ids::resonance, 1.6 } }), nullptr);
-    pad.appendChild (makeEffect (2, "drive", { { ids::drive, 3.5 },
-                                               { ids::outputGain, 0.75 },
-                                               { ids::mix, 0.55 } }), nullptr);
-    pad.appendChild (makeEffect (3, "chorus", { { ids::rate, 0.6 },
-                                                { ids::depth, 0.45 },
-                                                { ids::mix, 0.60 } }), nullptr);
-    pad.appendChild (makeEffect (4, "delay", { { ids::delayMs, 545.0 },
-                                               { ids::feedback, 0.30 },
-                                               { ids::mix, 0.22 } }), nullptr);
+    pad.appendChild (makeEffect (1, "filter", { { ids::cutoff, 1400.0 }, { ids::resonance, 1.6 } }),
+                     nullptr);
+    pad.appendChild (
+        makeEffect (2, "drive",
+                    { { ids::drive, 3.5 }, { ids::outputGain, 0.75 }, { ids::mix, 0.55 } }),
+        nullptr);
+    pad.appendChild (
+        makeEffect (3, "chorus", { { ids::rate, 0.6 }, { ids::depth, 0.45 }, { ids::mix, 0.60 } }),
+        nullptr);
+    pad.appendChild (
+        makeEffect (4, "delay",
+                    { { ids::delayMs, 545.0 }, { ids::feedback, 0.30 }, { ids::mix, 0.22 } }),
+        nullptr);
 
     // BANDPASS, and on the channel whose sound is nothing but transient: every
     // filterMode in every file the library shipped was lowpass, so two thirds
     // of the control had never been heard.
-    auto banded = makeEffect (5, "filter", { { ids::cutoff, 1800.0 },
-                                             { ids::resonance, 2.4 } });
+    auto banded = makeEffect (5, "filter", { { ids::cutoff, 1800.0 }, { ids::resonance, 2.4 } });
     banded.setProperty (ids::filterMode, "bandpass", nullptr);
     pluck.appendChild (banded, nullptr);
 
@@ -282,18 +306,16 @@ juce::ValueTree ProjectFactory::createEffectsDemo()
     // than removed is how anyone actually works - it is an A/B, not a decision
     // - and the engine skips a chain with nothing enabled bit-exactly, which is
     // a path no shipped project exercised.
-    auto bypassed = makeEffect (6, "eq", { { ids::lowGainDb, -6.0 },
-                                           { ids::highGainDb, 4.5 } });
+    auto bypassed = makeEffect (6, "eq", { { ids::lowGainDb, -6.0 }, { ids::highGainDb, 4.5 } });
     bypassed.setProperty (ids::enabled, false, nullptr);
     pluck.appendChild (bypassed, nullptr);
 
-    bass.appendChild (makeEffect (7, "drive", { { ids::drive, 6.0 },
-                                                { ids::outputGain, 0.9 } }), nullptr);
+    bass.appendChild (makeEffect (7, "drive", { { ids::drive, 6.0 }, { ids::outputGain, 0.9 } }),
+                      nullptr);
 
     // HIGHPASS, to keep the bass out of the kick's octave. The third mode, and
     // the reason a filter is not just a tone control.
-    auto rumble = makeEffect (8, "filter", { { ids::cutoff, 55.0 },
-                                             { ids::resonance, 0.5 } });
+    auto rumble = makeEffect (8, "filter", { { ids::cutoff, 55.0 }, { ids::resonance, 0.5 } });
     rumble.setProperty (ids::filterMode, "highpass", nullptr);
     bass.appendChild (rumble, nullptr);
 
@@ -312,21 +334,27 @@ juce::ValueTree ProjectFactory::createEffectsDemo()
         // Insert 2 carries the delay the pluck feeds; insert 1 gets the reverb
         // the pad sits in, so both places a chain can live are demonstrated.
         if (trackIndex == 0)
-            track.appendChild (makeEffect (9, "reverb", { { ids::roomSize, 0.85 },
-                                                          { ids::damping, 0.25 },
-                                                          { ids::width, 0.65 },
-                                                          { ids::mix, 0.4 } }), nullptr);
+            track.appendChild (makeEffect (9, "reverb",
+                                           { { ids::roomSize, 0.85 },
+                                             { ids::damping, 0.25 },
+                                             { ids::width, 0.65 },
+                                             { ids::mix, 0.4 } }),
+                               nullptr);
 
         if (trackIndex == 1)
-            track.appendChild (makeEffect (10, "delay", { { ids::delayMs, 340.0 },
-                                                          { ids::feedback, 0.45 },
-                                                          { ids::mix, 0.35 } }), nullptr);
+            track.appendChild (
+                makeEffect (
+                    10, "delay",
+                    { { ids::delayMs, 340.0 }, { ids::feedback, 0.45 }, { ids::mix, 0.35 } }),
+                nullptr);
 
         if (trackIndex == 2)
-            track.appendChild (makeEffect (11, "eq", { { ids::lowGainDb, 5.0 },
-                                                       { ids::midGainDb, -4.0 },
-                                                       { ids::midFreq, 700.0 },
-                                                       { ids::highGainDb, -3.0 } }), nullptr);
+            track.appendChild (makeEffect (11, "eq",
+                                           { { ids::lowGainDb, 5.0 },
+                                             { ids::midGainDb, -4.0 },
+                                             { ids::midFreq, 700.0 },
+                                             { ids::highGainDb, -3.0 } }),
+                               nullptr);
 
         ++trackIndex;
     }
@@ -338,14 +366,18 @@ juce::ValueTree ProjectFactory::createEffectsDemo()
     if (auto master = mixer.getChildWithName (ids::MASTER); master.isValid())
     {
         master.setProperty (ids::gain, 0.85, nullptr);
-        master.appendChild (makeEffect (12, "eq", { { ids::lowGainDb, -2.5 },
-                                                    { ids::midGainDb, 1.5 },
-                                                    { ids::midFreq, 2200.0 },
-                                                    { ids::highGainDb, 2.0 } }), nullptr);
-        master.appendChild (makeEffect (13, "reverb", { { ids::roomSize, 0.55 },
-                                                        { ids::damping, 0.45 },
-                                                        { ids::width, 1.0 },
-                                                        { ids::mix, 0.18 } }), nullptr);
+        master.appendChild (makeEffect (12, "eq",
+                                        { { ids::lowGainDb, -2.5 },
+                                          { ids::midGainDb, 1.5 },
+                                          { ids::midFreq, 2200.0 },
+                                          { ids::highGainDb, 2.0 } }),
+                            nullptr);
+        master.appendChild (makeEffect (13, "reverb",
+                                        { { ids::roomSize, 0.55 },
+                                          { ids::damping, 0.45 },
+                                          { ids::width, 1.0 },
+                                          { ids::mix, 0.18 } }),
+                            nullptr);
     }
 
     // --- the music ------------------------------------------------------------
@@ -355,10 +387,10 @@ juce::ValueTree ProjectFactory::createEffectsDemo()
     const int chords[4][3] = { { 57, 60, 64 }, { 53, 57, 60 }, { 52, 55, 60 }, { 50, 55, 59 } };
     const int roots[4] = { 45, 41, 48, 43 };
 
-    auto intro  = patternIn (project, 1, "Intro",  64);
+    auto intro = patternIn (project, 1, "Intro", 64);
     auto groove = patternIn (project, 2, "Groove", 64);
-    auto swellP = patternIn (project, 3, "Swell",  64);
-    auto outro  = patternIn (project, 4, "Outro",  64);
+    auto swellP = patternIn (project, 3, "Swell", 64);
+    auto outro = patternIn (project, 4, "Outro", 64);
 
     for (int bar = 0; bar < 4; ++bar)
     {
@@ -413,7 +445,7 @@ juce::ValueTree ProjectFactory::createAutomationDemo()
     project.setProperty (ids::tempoBpm, 126.0, nullptr);
     project.setProperty (ids::barsInSong, 32, nullptr);
 
-    auto arp  = channelWithId (project, 1);
+    auto arp = channelWithId (project, 1);
     auto kick = channelWithId (project, 2);
     auto bass = channelWithId (project, 3);
     auto stab = channelWithId (project, 4);
@@ -441,11 +473,11 @@ juce::ValueTree ProjectFactory::createAutomationDemo()
 
     // The filter this demo sweeps. Wide open to start with, so the sweep has
     // somewhere to travel from.
-    arp.appendChild (makeEffect (1, "filter", { { ids::cutoff, 16000.0 },
-                                                { ids::resonance, 2.2 } }), nullptr);
-    stab.appendChild (makeEffect (2, "chorus", { { ids::rate, 0.9 },
-                                                 { ids::depth, 0.25 },
-                                                 { ids::mix, 0.5 } }), nullptr);
+    arp.appendChild (
+        makeEffect (1, "filter", { { ids::cutoff, 16000.0 }, { ids::resonance, 2.2 } }), nullptr);
+    stab.appendChild (
+        makeEffect (2, "chorus", { { ids::rate, 0.9 }, { ids::depth, 0.25 }, { ids::mix, 0.5 } }),
+        nullptr);
 
     auto mixer = project.getChildWithName (ids::MIXER);
 
@@ -457,16 +489,16 @@ juce::ValueTree ProjectFactory::createAutomationDemo()
     // channel deliberately: mixerEffect was the one scope in the enum that no
     // shipped project pointed a curve at.
     if (auto stabTrack = ProjectEdits::findMixerTrack (project, 4); stabTrack.isValid())
-        stabTrack.appendChild (makeEffect (3, "delay", { { ids::delayMs, 357.0 },
-                                                         { ids::feedback, 0.20 },
-                                                         { ids::mix, 0.30 } }), nullptr);
+        stabTrack.appendChild (
+            makeEffect (3, "delay",
+                        { { ids::delayMs, 357.0 }, { ids::feedback, 0.20 }, { ids::mix, 0.30 } }),
+            nullptr);
 
     // --- the music ------------------------------------------------------------
-    const int arpNotes[16] = { 57, 60, 64, 69, 64, 60, 64, 69,
-                               57, 60, 64, 72, 69, 64, 60, 64 };
+    const int arpNotes[16] = { 57, 60, 64, 69, 64, 60, 64, 69, 57, 60, 64, 72, 69, 64, 60, 64 };
 
-    auto main = patternIn (project, 1, "Main",  64);
-    auto brk  = patternIn (project, 2, "Break", 64);
+    auto main = patternIn (project, 1, "Main", 64);
+    auto brk = patternIn (project, 2, "Break", 64);
 
     for (int bar = 0; bar < 4; ++bar)
     {
@@ -475,10 +507,10 @@ juce::ValueTree ProjectFactory::createAutomationDemo()
 
         for (int i = 0; i < 16; ++i)
         {
-            main.appendChild (makeNote (1, at + i, 1, arpNotes[i] + lift,
-                                        i % 4 == 0 ? 0.9 : 0.6), nullptr);
-            brk.appendChild (makeNote (1, at + i, 1, arpNotes[i] + lift + 12,
-                                       i % 4 == 0 ? 0.7 : 0.4), nullptr);
+            main.appendChild (makeNote (1, at + i, 1, arpNotes[i] + lift, i % 4 == 0 ? 0.9 : 0.6),
+                              nullptr);
+            brk.appendChild (
+                makeNote (1, at + i, 1, arpNotes[i] + lift + 12, i % 4 == 0 ? 0.7 : 0.4), nullptr);
         }
 
         for (int step = at; step < at + 16; step += 4)
@@ -501,53 +533,59 @@ juce::ValueTree ProjectFactory::createAutomationDemo()
     // Bent, not straight. A positive bend holds the low end of the sweep longer,
     // which is what makes a filter opening sound like it accelerates - a
     // straight line through the same two points arrives too early and sits.
-    project.appendChild (makeAutomation (1, "Arp > Filter > Cutoff",
-                                         AutomationScope::channelEffect, 1, 0, ids::cutoff,
-                                         { { 0.0, 0.35, 0.55 },
-                                           { 96.0, 0.62, 0.30 },
-                                           { 192.0, 1.00 } }), nullptr);
+    project.appendChild (
+        makeAutomation (1, "Arp > Filter > Cutoff", AutomationScope::channelEffect, 1, 0,
+                        ids::cutoff,
+                        { { 0.0, 0.35, 0.55 }, { 96.0, 0.62, 0.30 }, { 192.0, 1.00 } }),
+        nullptr);
 
     // 0.6, not 0.9: a point's value is normalised into the target's range, and
     // the master fader spans 0..1.5.
-    project.appendChild (makeAutomation (2, "Master > Gain",
-                                         AutomationScope::master, 0, -1, ids::gain,
-                                         { { 0.0, 0.60 }, { 32.0, 0.60 }, { 64.0, 0.0 } }), nullptr);
+    project.appendChild (makeAutomation (2, "Master > Gain", AutomationScope::master, 0, -1,
+                                         ids::gain,
+                                         { { 0.0, 0.60 }, { 32.0, 0.60 }, { 64.0, 0.0 } }),
+                         nullptr);
 
     // The pump. Ducked on the beat and recovering across it, four bars of it,
     // and the DUCK is a step while the recovery is a curve - because the duck
     // is an event and the recovery is a motion.
-    project.appendChild (makeAutomation (3, "Bass > Volume",
-                                         AutomationScope::channel, 3, -1, ids::volume,
-                                         { { 0.0,  0.32, 0.0, "step" }, { 4.0,  0.90, -0.45 },
-                                           { 16.0, 0.32, 0.0, "step" }, { 20.0, 0.90, -0.45 },
-                                           { 32.0, 0.32, 0.0, "step" }, { 36.0, 0.90, -0.45 },
-                                           { 48.0, 0.32, 0.0, "step" }, { 52.0, 0.90, -0.45 },
-                                           { 64.0, 0.32 } }), nullptr);
+    project.appendChild (makeAutomation (3, "Bass > Volume", AutomationScope::channel, 3, -1,
+                                         ids::volume,
+                                         { { 0.0, 0.32, 0.0, "step" },
+                                           { 4.0, 0.90, -0.45 },
+                                           { 16.0, 0.32, 0.0, "step" },
+                                           { 20.0, 0.90, -0.45 },
+                                           { 32.0, 0.32, 0.0, "step" },
+                                           { 36.0, 0.90, -0.45 },
+                                           { 48.0, 0.32, 0.0, "step" },
+                                           { 52.0, 0.90, -0.45 },
+                                           { 64.0, 0.32 } }),
+                         nullptr);
 
-    project.appendChild (makeAutomation (4, "Insert 4 > Delay > Feedback",
-                                         AutomationScope::mixerEffect, 4, 0, ids::feedback,
-                                         { { 0.0, 0.20 },
-                                           { 48.0, 0.85, 0.40 },
-                                           { 64.0, 0.25, 0.0, "step" } }), nullptr);
+    project.appendChild (
+        makeAutomation (4, "Insert 4 > Delay > Feedback", AutomationScope::mixerEffect, 4, 0,
+                        ids::feedback,
+                        { { 0.0, 0.20 }, { 48.0, 0.85, 0.40 }, { 64.0, 0.25, 0.0, "step" } }),
+        nullptr);
 
     // The tempo itself, which is a scope of its own because it belongs to the
     // arrangement rather than to anything in it. Logarithmic, like cutoff: the
     // values below are 126, 120 and 132 bpm through that mapping.
-    project.appendChild (makeAutomation (5, "Tempo",
-                                         AutomationScope::project, 0, -1, ids::tempoBpm,
+    project.appendChild (makeAutomation (5, "Tempo", AutomationScope::project, 0, -1, ids::tempoBpm,
                                          { { 0.0, 0.4706 },
                                            { 192.0, 0.4706 },
                                            { 256.0, 0.4581, 0.0, "step" },
                                            { 320.0, 0.4825, 0.35 },
-                                           { 512.0, 0.4825 } }), nullptr);
+                                           { 512.0, 0.4825 } }),
+                         nullptr);
 
     auto playlist = project.getChildWithName (ids::PLAYLIST);
 
     // Six lanes, because six things are happening at once and a lane per idea
     // is what makes that readable rather than a stack of overlapping boxes.
     while (playlist.getNumChildren() < 6)
-        playlist.appendChild (makePlaylistTrack ("Track " + juce::String (playlist.getNumChildren() + 1)),
-                              nullptr);
+        playlist.appendChild (
+            makePlaylistTrack ("Track " + juce::String (playlist.getNumChildren() + 1)), nullptr);
 
     auto lane = [&playlist] (int index, const char* name)
     {
@@ -631,10 +669,10 @@ juce::ValueTree ProjectFactory::createWavetableDemo()
     pruneUnplayedChannels (project);
     rebuildInserts (project);
 
-    auto pad    = channelNamed (project, "pad");
-    auto swell  = channelNamed (project, "swell");
-    auto sub    = channelNamed (project, "sub");
-    auto bell   = channelNamed (project, "bell");
+    auto pad = channelNamed (project, "pad");
+    auto swell = channelNamed (project, "swell");
+    auto sub = channelNamed (project, "sub");
+    auto bell = channelNamed (project, "bell");
     auto answer = channelNamed (project, "answer");
 
     // All five factory tables, one per voice, so the demo is a tour of the bank
@@ -671,11 +709,11 @@ juce::ValueTree ProjectFactory::createWavetableDemo()
     setWavetableOsc (answer, 0, "basic", 0.25, 0.40, "lfo", 0.30, 5, 11.0, 0, 0.7);
     setAmp (answer, 0.400, 0.400, 0.600, 1.100);
 
-    pad.appendChild (makeEffect (1, "filter", { { ids::cutoff, 2200.0 },
-                                                { ids::resonance, 0.9 } }), nullptr);
-    pad.appendChild (makeEffect (2, "chorus", { { ids::rate, 0.25 },
-                                                { ids::depth, 0.60 },
-                                                { ids::mix, 0.50 } }), nullptr);
+    pad.appendChild (makeEffect (1, "filter", { { ids::cutoff, 2200.0 }, { ids::resonance, 0.9 } }),
+                     nullptr);
+    pad.appendChild (
+        makeEffect (2, "chorus", { { ids::rate, 0.25 }, { ids::depth, 0.60 }, { ids::mix, 0.50 } }),
+        nullptr);
 
     auto mixer = project.getChildWithName (ids::MIXER);
 
@@ -688,19 +726,22 @@ juce::ValueTree ProjectFactory::createWavetableDemo()
 
     if (auto bellTrack = ProjectEdits::findMixerTrack (project, (int) bell[ids::mixerTrackId]);
         bellTrack.isValid())
-        bellTrack.appendChild (makeEffect (3, "delay", { { ids::delayMs, 444.0 },
-                                                         { ids::feedback, 0.42 },
-                                                         { ids::mix, 0.32 } }), nullptr);
+        bellTrack.appendChild (
+            makeEffect (3, "delay",
+                        { { ids::delayMs, 444.0 }, { ids::feedback, 0.42 }, { ids::mix, 0.32 } }),
+            nullptr);
 
     // On the MASTER, which every demo before this one left empty even though
     // the master has carried a chain as long as an insert has.
     if (auto master = mixer.getChildWithName (ids::MASTER); master.isValid())
     {
         master.setProperty (ids::gain, 0.90, nullptr);
-        master.appendChild (makeEffect (4, "reverb", { { ids::roomSize, 0.90 },
-                                                       { ids::damping, 0.20 },
-                                                       { ids::width, 1.00 },
-                                                       { ids::mix, 0.35 } }), nullptr);
+        master.appendChild (makeEffect (4, "reverb",
+                                        { { ids::roomSize, 0.90 },
+                                          { ids::damping, 0.20 },
+                                          { ids::width, 1.00 },
+                                          { ids::mix, 0.35 } }),
+                            nullptr);
     }
 
     // The morph, drawn. `channelOsc` is the scope nothing shipped had ever
@@ -708,23 +749,22 @@ juce::ValueTree ProjectFactory::createWavetableDemo()
     // waveform somebody picked once.
     //
     // Sixteen steps to a bar, so the arrangement's 32 bars are 512 steps.
-    project.appendChild (makeAutomation (1, "Pad > Osc 1 > Position",
-                                         AutomationScope::channelOsc, (int) pad[ids::id], 0,
-                                         ids::wavePosition,
-                                         { { 0.0, 0.10 },
-                                           { 160.0, 0.45, 0.35 },
-                                           { 320.0, 0.85 },
-                                           { 512.0, 0.20, -0.30 } }), nullptr);
+    project.appendChild (
+        makeAutomation (
+            1, "Pad > Osc 1 > Position", AutomationScope::channelOsc, (int) pad[ids::id], 0,
+            ids::wavePosition,
+            { { 0.0, 0.10 }, { 160.0, 0.45, 0.35 }, { 320.0, 0.85 }, { 512.0, 0.20, -0.30 } }),
+        nullptr);
 
     // Held flat and then jumped, rather than swept: a "step" segment is a
     // change of timbre you hear arrive, and the bell is struck often enough
     // that a slow sweep across it would read as drift rather than as a change.
-    project.appendChild (makeAutomation (2, "Bell > Osc 1 > Position",
-                                         AutomationScope::channelOsc, (int) bell[ids::id], 0,
-                                         ids::wavePosition,
-                                         { { 0.0, 0.90, 0.0, "step" },
-                                           { 128.0, 0.35, 0.0, "step" },
-                                           { 256.0, 0.70 } }), nullptr);
+    project.appendChild (
+        makeAutomation (
+            2, "Bell > Osc 1 > Position", AutomationScope::channelOsc, (int) bell[ids::id], 0,
+            ids::wavePosition,
+            { { 0.0, 0.90, 0.0, "step" }, { 128.0, 0.35, 0.0, "step" }, { 256.0, 0.70 } }),
+        nullptr);
 
     auto playlist = project.getChildWithName (ids::PLAYLIST);
 
@@ -760,17 +800,17 @@ juce::ValueTree ProjectFactory::createLayersDemo()
     rebuildInserts (project);
 
     auto lead = channelNamed (project, "lead");
-    auto pad  = channelNamed (project, "pad");
+    auto pad = channelNamed (project, "pad");
     auto bass = channelNamed (project, "bass");
-    auto arp  = channelNamed (project, "arp");
+    auto arp = channelNamed (project, "arp");
 
     // Two saws a few cents apart and a square an octave up. The detune is what
     // makes it wide - two oscillators at exactly the same pitch are one louder
     // oscillator - and nine cents is about as far as it goes before the beating
     // is heard as two notes rather than as one thick one.
     lead.setProperty (ids::volume, 0.28, nullptr);
-    setClassicOsc (lead, 0, "saw",    0, 0.75,  0);
-    setClassicOsc (lead, 1, "saw",    0, 0.65,  9);
+    setClassicOsc (lead, 0, "saw", 0, 0.75, 0);
+    setClassicOsc (lead, 1, "saw", 0, 0.65, 9);
     setClassicOsc (lead, 2, "square", 1, 0.28, -4);
     setAmp (lead, 0.012, 0.220, 0.650, 0.320);
 
@@ -779,8 +819,8 @@ juce::ValueTree ProjectFactory::createLayersDemo()
     // mode is a property of the slot, not of the channel - and which nothing
     // shipped had ever put in front of anyone.
     pad.setProperty (ids::volume, 0.22, nullptr);
-    setClassicOsc (pad, 0, "triangle", 0, 0.60,  0);
-    setClassicOsc (pad, 1, "saw",      0, 0.45, -7);
+    setClassicOsc (pad, 0, "triangle", 0, 0.60, 0);
+    setClassicOsc (pad, 1, "saw", 0, 0.45, -7);
     setWavetableOsc (pad, 2, "harmonics", 0.30, 0.20, "lfo", 0.12, 5, 12.0, -1, 0.35);
     setAmp (pad, 0.450, 0.700, 0.800, 1.100);
 
@@ -788,22 +828,22 @@ juce::ValueTree ProjectFactory::createLayersDemo()
     // under a saw is a low end you can hear on a speaker that cannot reproduce
     // the saw's fundamental at all.
     bass.setProperty (ids::volume, 0.35, nullptr);
-    setClassicOsc (bass, 0, "sine",   -1, 0.90, 0);
-    setClassicOsc (bass, 1, "saw",     0, 0.55, 0);
-    setClassicOsc (bass, 2, "square",  0, 0.25, 5);
+    setClassicOsc (bass, 0, "sine", -1, 0.90, 0);
+    setClassicOsc (bass, 1, "saw", 0, 0.55, 0);
+    setClassicOsc (bass, 2, "square", 0, 0.25, 5);
     setAmp (bass, 0.004, 0.260, 0.550, 0.140);
 
     arp.setProperty (ids::volume, 0.20, nullptr);
-    setClassicOsc (arp, 0, "square",    0, 0.60,   0);
-    setClassicOsc (arp, 1, "square",    1, 0.30, -12);
-    setClassicOsc (arp, 2, "triangle", -1, 0.40,   0);
+    setClassicOsc (arp, 0, "square", 0, 0.60, 0);
+    setClassicOsc (arp, 1, "square", 1, 0.30, -12);
+    setClassicOsc (arp, 2, "triangle", -1, 0.40, 0);
     setAmp (arp, 0.002, 0.140, 0.000, 0.090);
 
-    lead.appendChild (makeEffect (1, "filter", { { ids::cutoff, 5200.0 },
-                                                 { ids::resonance, 1.1 } }), nullptr);
-    pad.appendChild (makeEffect (2, "chorus", { { ids::rate, 0.45 },
-                                                { ids::depth, 0.35 },
-                                                { ids::mix, 0.45 } }), nullptr);
+    lead.appendChild (
+        makeEffect (1, "filter", { { ids::cutoff, 5200.0 }, { ids::resonance, 1.1 } }), nullptr);
+    pad.appendChild (
+        makeEffect (2, "chorus", { { ids::rate, 0.45 }, { ids::depth, 0.35 }, { ids::mix, 0.45 } }),
+        nullptr);
 
     auto mixer = project.getChildWithName (ids::MIXER);
 
@@ -813,19 +853,18 @@ juce::ValueTree ProjectFactory::createLayersDemo()
 
     if (auto arpTrack = ProjectEdits::findMixerTrack (project, (int) arp[ids::mixerTrackId]);
         arpTrack.isValid())
-        arpTrack.appendChild (makeEffect (3, "delay", { { ids::delayMs, 278.0 },
-                                                        { ids::feedback, 0.38 },
-                                                        { ids::mix, 0.28 } }), nullptr);
+        arpTrack.appendChild (
+            makeEffect (3, "delay",
+                        { { ids::delayMs, 278.0 }, { ids::feedback, 0.38 }, { ids::mix, 0.28 } }),
+            nullptr);
 
     // The one curve here, and it is pointed at the wavetable slot inside the
     // classic stack: the pad's timbre opens over the arrangement while the two
     // oscillators beside it hold still.
-    project.appendChild (makeAutomation (1, "Pad > Osc 3 > Position",
-                                         AutomationScope::channelOsc, (int) pad[ids::id], 2,
-                                         ids::wavePosition,
-                                         { { 0.0, 0.12 },
-                                           { 256.0, 0.55, 0.40 },
-                                           { 512.0, 0.90 } }), nullptr);
+    project.appendChild (makeAutomation (1, "Pad > Osc 3 > Position", AutomationScope::channelOsc,
+                                         (int) pad[ids::id], 2, ids::wavePosition,
+                                         { { 0.0, 0.12 }, { 256.0, 0.55, 0.40 }, { 512.0, 0.90 } }),
+                         nullptr);
 
     auto playlist = project.getChildWithName (ids::PLAYLIST);
     playlist.getChild (0).setProperty (ids::name, "Pad morph", nullptr);
@@ -863,14 +902,14 @@ juce::ValueTree ProjectFactory::createArrangementDemo()
     };
 
     static const Voice voices[] {
-        { 1, "Kick",  1, 36, "sine",     0.95, 0.001, 0.150, 0.00, 0.060 },
-        { 2, "Clap",  1, 62, "square",   0.42, 0.001, 0.090, 0.00, 0.070 },
-        { 3, "Hat",   1, 84, "square",   0.16, 0.001, 0.030, 0.00, 0.025 },
-        { 4, "Perc",  1, 70, "triangle", 0.24, 0.001, 0.070, 0.00, 0.050 },
-        { 5, "Bass",  2, 33, "saw",      0.55, 0.003, 0.200, 0.55, 0.100 },
-        { 6, "Pad",   3, 57, "saw",      0.18, 0.400, 0.600, 0.80, 0.900 },
-        { 7, "Lead",  4, 76, "square",   0.22, 0.008, 0.200, 0.45, 0.250 },
-        { 8, "Stab",  5, 69, "saw",      0.20, 0.004, 0.140, 0.20, 0.180 },
+        { 1, "Kick", 1, 36, "sine", 0.95, 0.001, 0.150, 0.00, 0.060 },
+        { 2, "Clap", 1, 62, "square", 0.42, 0.001, 0.090, 0.00, 0.070 },
+        { 3, "Hat", 1, 84, "square", 0.16, 0.001, 0.030, 0.00, 0.025 },
+        { 4, "Perc", 1, 70, "triangle", 0.24, 0.001, 0.070, 0.00, 0.050 },
+        { 5, "Bass", 2, 33, "saw", 0.55, 0.003, 0.200, 0.55, 0.100 },
+        { 6, "Pad", 3, 57, "saw", 0.18, 0.400, 0.600, 0.80, 0.900 },
+        { 7, "Lead", 4, 76, "square", 0.22, 0.008, 0.200, 0.45, 0.250 },
+        { 8, "Stab", 5, 69, "saw", 0.20, 0.004, 0.140, 0.20, 0.180 },
     };
 
     for (const auto& voice : voices)
@@ -897,30 +936,33 @@ juce::ValueTree ProjectFactory::createArrangementDemo()
     // On the bus, so it treats the kit as one sound rather than four. Glue on a
     // drum bus is the reason a bus exists.
     if (auto drums = ProjectEdits::findMixerTrack (project, 1); drums.isValid())
-        drums.appendChild (makeEffect (1, "drive", { { ids::drive, 2.2 },
-                                                     { ids::outputGain, 0.85 },
-                                                     { ids::mix, 0.35 } }), nullptr);
+        drums.appendChild (
+            makeEffect (1, "drive",
+                        { { ids::drive, 2.2 }, { ids::outputGain, 0.85 }, { ids::mix, 0.35 } }),
+            nullptr);
 
     if (auto pad = ProjectEdits::findMixerTrack (project, 3); pad.isValid())
-        pad.appendChild (makeEffect (2, "reverb", { { ids::roomSize, 0.75 },
-                                                    { ids::damping, 0.35 },
-                                                    { ids::mix, 0.30 } }), nullptr);
+        pad.appendChild (
+            makeEffect (2, "reverb",
+                        { { ids::roomSize, 0.75 }, { ids::damping, 0.35 }, { ids::mix, 0.30 } }),
+            nullptr);
 
     if (auto lead = ProjectEdits::findMixerTrack (project, 4); lead.isValid())
-        lead.appendChild (makeEffect (3, "delay", { { ids::delayMs, 234.0 },
-                                                    { ids::feedback, 0.40 },
-                                                    { ids::mix, 0.26 } }), nullptr);
+        lead.appendChild (
+            makeEffect (3, "delay",
+                        { { ids::delayMs, 234.0 }, { ids::feedback, 0.40 }, { ids::mix, 0.26 } }),
+            nullptr);
 
     // --- the patterns ---------------------------------------------------------
     // Each holds only the channels its LANE is about, which is what makes three
     // lanes independent: a pattern carrying every channel would put the whole
     // song in one clip and there would be nothing to arrange.
-    auto beatA  = patternIn (project, 1, "Beat A",   64);
-    auto beatB  = patternIn (project, 2, "Beat B",   64);
-    auto bassA  = patternIn (project, 3, "Bassline", 64);
-    auto bassB  = patternIn (project, 4, "Bass Drop", 64);
-    auto chords = patternIn (project, 5, "Chords",   64);
-    auto lead   = patternIn (project, 6, "Lead",     64);
+    auto beatA = patternIn (project, 1, "Beat A", 64);
+    auto beatB = patternIn (project, 2, "Beat B", 64);
+    auto bassA = patternIn (project, 3, "Bassline", 64);
+    auto bassB = patternIn (project, 4, "Bass Drop", 64);
+    auto chords = patternIn (project, 5, "Chords", 64);
+    auto lead = patternIn (project, 6, "Lead", 64);
 
     const int roots[4] = { 33, 33, 29, 31 };
     const int triads[4][3] = { { 57, 60, 64 }, { 57, 60, 64 }, { 53, 56, 60 }, { 55, 58, 62 } };

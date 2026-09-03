@@ -26,7 +26,10 @@ namespace dew::lang
     the end, which is what stops a malformed file spinning the parser forever.
 */
 
-constexpr bool isDigit (char c) noexcept { return c >= '0' && c <= '9'; }
+constexpr bool isDigit (char c) noexcept
+{
+    return c >= '0' && c <= '9';
+}
 
 constexpr bool isLetter (char c) noexcept
 {
@@ -58,16 +61,14 @@ constexpr bool isSpace (char c) noexcept
 /** Skips whitespace. Comments are NOT skipped - they are a token, because the
     editor colours them from this same scan.
 */
-template <typename Cursor>
-void skipSpace (Cursor& c)
+template <typename Cursor> void skipSpace (Cursor& c)
 {
     while (! c.isEOF() && isSpace (c.peek()))
         c.skip();
 }
 
 /** Consumes one token and says what it was. Assumes leading whitespace is gone. */
-template <typename Cursor>
-TokenKind scanOne (Cursor& c)
+template <typename Cursor> TokenKind scanOne (Cursor& c)
 {
     if (c.isEOF())
         return TokenKind::endOfFile;
@@ -244,7 +245,7 @@ TokenKind scanOne (Cursor& c)
         case '/': return TokenKind::slash;
         case '^': return TokenKind::caret;
         case '%': return TokenKind::percent;
-        default:  break;
+        default: break;
     }
 
     return TokenKind::unknown;

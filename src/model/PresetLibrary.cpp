@@ -19,7 +19,8 @@ juce::String PresetLibrary::jsonFor (const juce::String& fileName)
 
         int size = 0;
 
-        if (const auto* data = PresetData::getNamedResource (PresetData::namedResourceList[i], size);
+        if (const auto* data = PresetData::getNamedResource (PresetData::namedResourceList[i],
+                                                             size);
             data != nullptr && size > 0)
             return juce::String::fromUTF8 (data, size);
     }

@@ -12,35 +12,36 @@ namespace
 {
 
 /** Two voices: a melody, and a line answering it under the rules given. */
-std::string duet (const std::string& rules,
-                  const std::string& arrangement = "  duet\n",
+std::string duet (const std::string& rules, const std::string& arrangement = "  duet\n",
                   const std::string& seed = "0xC0FFEE")
 {
-    return
-        "song {\n"
-        "  tempo 96\n"
-        "  meter 4/4\n"
-        "  key   D minor\n"
-        "  seed  " + seed + "\n"
-        "}\n"
-        "channel lead {\n  mixer 1\n  range D4..D6\n}\n"
-        "channel alto {\n  mixer 2\n  range D3..D5\n}\n"
-        "rhythm walk { 1/4 }\n"
-        "harmony h { i | bVII | bVI | V }\n"
-        "section duet {\n"
-        "  length 4 bars\n"
-        "  harmony h\n"
-        "  part lead {\n"
-        "    melody {\n      rhythm walk\n      variance 0.2\n    }\n"
-        "  }\n"
-        "  part alto {\n"
-        "    counterpoint against lead {\n"
-        "      rhythm walk\n"
-        + rules +
-        "    }\n"
-        "  }\n"
-        "}\n"
-        "arrangement {\n" + arrangement + "}\n";
+    return "song {\n"
+           "  tempo 96\n"
+           "  meter 4/4\n"
+           "  key   D minor\n"
+           "  seed  "
+           + seed
+           + "\n"
+             "}\n"
+             "channel lead {\n  mixer 1\n  range D4..D6\n}\n"
+             "channel alto {\n  mixer 2\n  range D3..D5\n}\n"
+             "rhythm walk { 1/4 }\n"
+             "harmony h { i | bVII | bVI | V }\n"
+             "section duet {\n"
+             "  length 4 bars\n"
+             "  harmony h\n"
+             "  part lead {\n"
+             "    melody {\n      rhythm walk\n      variance 0.2\n    }\n"
+             "  }\n"
+             "  part alto {\n"
+             "    counterpoint against lead {\n"
+             "      rhythm walk\n"
+           + rules
+           + "    }\n"
+             "  }\n"
+             "}\n"
+             "arrangement {\n"
+           + arrangement + "}\n";
 }
 
 CompileResult compileScore (const std::string& source)
@@ -57,7 +58,12 @@ Score compileOk (const std::string& source)
 }
 
 /** The two voices' pitches at each step they both sound on. */
-struct Pair { int step; int lead; int alto; };
+struct Pair
+{
+    int step;
+    int lead;
+    int alto;
+};
 
 std::vector<Pair> pairsIn (const Score& score, const std::string& pattern)
 {
@@ -103,11 +109,9 @@ int parallelsOf (const std::vector<Pair>& pairs, int interval)
         const auto leadStep = pairs[i].lead - pairs[i - 1].lead;
         const auto altoStep = pairs[i].alto - pairs[i - 1].alto;
 
-        const auto together = leadStep != 0 && ((leadStep > 0) == (altoStep > 0))
-                           && altoStep != 0;
+        const auto together = leadStep != 0 && ((leadStep > 0) == (altoStep > 0)) && altoStep != 0;
 
-        if (together
-            && within (pairs[i].lead - pairs[i].alto) == interval
+        if (together && within (pairs[i].lead - pairs[i].alto) == interval
             && within (pairs[i - 1].lead - pairs[i - 1].alto) == interval)
             ++count;
     }
@@ -117,8 +121,7 @@ int parallelsOf (const std::vector<Pair>& pairs, int interval)
 
 } // namespace
 
-TEST_CASE ("a counterpoint voice answers one already written",
-           "[score][counterpoint]")
+TEST_CASE ("a counterpoint voice answers one already written", "[score][counterpoint]")
 {
     const auto score = compileOk (duet ("      parallel-fifths  forbid\n"
                                         "      parallel-octaves forbid\n"));
@@ -167,7 +170,8 @@ TEST_CASE ("the rules actually change the line", "[score][counterpoint]")
     // its rules entirely would still produce a line without parallels most of
     // the time.
     const auto strict = pairsIn (compileOk (duet ("      leaps  forbid\n"
-                                                  "      repeats forbid\n")), "duet");
+                                                  "      repeats forbid\n")),
+                                 "duet");
 
     const auto loose = pairsIn (compileOk (duet ("      leaps  soft 0.1\n")), "duet");
 
@@ -216,23 +220,22 @@ TEST_CASE ("a part that writes nothing says so", "[score][counterpoint]")
     // The failure this exists to catch: `rhythmFor` did not know about a
     // counterpoint's rhythm, so an entire voice vanished and the compile
     // reported complete success.
-    const auto source =
-        "song {\n  tempo 96\n  meter 4/4\n  key D minor\n}\n"
-        "channel lead {\n  mixer 1\n  range D4..D6\n}\n"
-        "channel alto {\n  mixer 2\n  range D3..D5\n}\n"
-        "rhythm walk { 1/4 }\n"
-        "harmony h { i | V }\n"
-        "section duet {\n  length 2 bars\n  harmony h\n"
-        "  part lead {\n    melody {\n      rhythm walk\n    }\n  }\n"
-        "  part alto {\n    counterpoint against lead {\n"
-        "    }\n  }\n"      // no rhythm at all
-        "}\n"
-        "arrangement {\n  duet\n}\n";
+    const auto source = "song {\n  tempo 96\n  meter 4/4\n  key D minor\n}\n"
+                        "channel lead {\n  mixer 1\n  range D4..D6\n}\n"
+                        "channel alto {\n  mixer 2\n  range D3..D5\n}\n"
+                        "rhythm walk { 1/4 }\n"
+                        "harmony h { i | V }\n"
+                        "section duet {\n  length 2 bars\n  harmony h\n"
+                        "  part lead {\n    melody {\n      rhythm walk\n    }\n  }\n"
+                        "  part alto {\n    counterpoint against lead {\n"
+                        "    }\n  }\n" // no rhythm at all
+                        "}\n"
+                        "arrangement {\n  duet\n}\n";
 
     const auto result = compileScore (source);
 
     INFO (result.report (source, "t.score"));
-    REQUIRE (result.ok());          // a warning, not an error
+    REQUIRE (result.ok()); // a warning, not an error
 
     auto warned = false;
 
@@ -243,20 +246,20 @@ TEST_CASE ("a part that writes nothing says so", "[score][counterpoint]")
     REQUIRE (warned);
 }
 
-TEST_CASE ("counterpoint needs a voice that exists, and not itself",
-           "[score][counterpoint]")
+TEST_CASE ("counterpoint needs a voice that exists, and not itself", "[score][counterpoint]")
 {
     const auto with = [] (const std::string& against)
     {
-        return
-            "song {\n  tempo 96\n  meter 4/4\n  key D minor\n}\n"
-            "channel lead {\n  mixer 1\n  range D4..D6\n}\n"
-            "rhythm walk { 1/4 }\n"
-            "harmony h { i | V }\n"
-            "section duet {\n  length 2 bars\n  harmony h\n"
-            "  part lead {\n    counterpoint against " + against + " {\n"
-            "      rhythm walk\n    }\n  }\n}\n"
-            "arrangement {\n  duet\n}\n";
+        return "song {\n  tempo 96\n  meter 4/4\n  key D minor\n}\n"
+               "channel lead {\n  mixer 1\n  range D4..D6\n}\n"
+               "rhythm walk { 1/4 }\n"
+               "harmony h { i | V }\n"
+               "section duet {\n  length 2 bars\n  harmony h\n"
+               "  part lead {\n    counterpoint against "
+               + against
+               + " {\n"
+                 "      rhythm walk\n    }\n  }\n}\n"
+                 "arrangement {\n  duet\n}\n";
     };
 
     const auto missing = compileScore (with ("nobody"));

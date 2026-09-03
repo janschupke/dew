@@ -9,12 +9,15 @@ float applyEase (Ease ease, float t) noexcept
 
     switch (ease)
     {
-        case Ease::linear:     return x;
+        case Ease::linear: return x;
         case Ease::accelerate: return x * x * x;
-        case Ease::decelerate: { const auto inv = 1.0f - x; return 1.0f - inv * inv * inv; }
+        case Ease::decelerate:
+        {
+            const auto inv = 1.0f - x;
+            return 1.0f - inv * inv * inv;
+        }
         case Ease::standard:
-            return x < 0.5f ? 4.0f * x * x * x
-                            : 1.0f - std::pow (-2.0f * x + 2.0f, 3.0f) * 0.5f;
+            return x < 0.5f ? 4.0f * x * x * x : 1.0f - std::pow (-2.0f * x + 2.0f, 3.0f) * 0.5f;
     }
 
     return x;
@@ -23,7 +26,9 @@ float applyEase (Ease ease, float t) noexcept
 // -----------------------------------------------------------------------------
 
 MotionValue::MotionValue (float initial) noexcept
-    : from (initial), current (initial), target (initial)
+    : from (initial)
+    , current (initial)
+    , target (initial)
 {
 }
 
@@ -71,8 +76,7 @@ bool MotionValue::advance (int deltaMs) noexcept
     // Exactly the target at the end. An ease that lands a hair short would
     // leave a knob reading 0.9997 forever, which a test comparing exactly - and
     // a person reading the number under it - would both notice.
-    current = elapsedMs >= durationMs ? target
-                                      : from + (target - from) * applyEase (ease, t);
+    current = elapsedMs >= durationMs ? target : from + (target - from) * applyEase (ease, t);
 
     return ! juce::exactlyEqual (current, previous);
 }
@@ -153,7 +157,8 @@ void Animator::timerCallback()
 // --- ComponentMotion ---------------------------------------------------------
 
 ComponentMotion::ComponentMotion (juce::Component& c, float initial)
-    : owner (c), value (initial)
+    : owner (c)
+    , value (initial)
 {
     Animator::shared().addClient (*this);
 }

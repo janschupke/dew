@@ -9,7 +9,9 @@ namespace dew
 using namespace tokens;
 
 AudioSettingsPanel::AudioSettingsPanel (LiveAudioHost& host, AudioEngine& e)
-    : audioHost (host), deviceManager (host.getDeviceManager()), engine (e)
+    : audioHost (host)
+    , deviceManager (host.getDeviceManager())
+    , engine (e)
 {
     setComponentID ("audioSettings");
     setSize (preferredWidth, preferredHeight);
@@ -39,9 +41,12 @@ AudioSettingsPanel::AudioSettingsPanel (LiveAudioHost& host, AudioEngine& e)
 
         switch (inputChannelBox.getSelectedId())
         {
-            case 1:  setup.inputChannels.setBit (0); break;
-            case 2:  setup.inputChannels.setBit (1); break;
-            default: setup.inputChannels.setBit (0); setup.inputChannels.setBit (1); break;
+            case 1: setup.inputChannels.setBit (0); break;
+            case 2: setup.inputChannels.setBit (1); break;
+            default:
+                setup.inputChannels.setBit (0);
+                setup.inputChannels.setBit (1);
+                break;
         }
 
         applySetup (setup);
@@ -238,9 +243,8 @@ void AudioSettingsPanel::updateSummary()
 
     // Latency in milliseconds, because that is the number a buffer size is
     // actually chosen for.
-    summaryText = juce::String (juce::roundToInt (rate)) + " Hz  -  "
-                + juce::String (block) + " samples  -  "
-                + juce::String (latencyMs, 1) + " ms";
+    summaryText = juce::String (juce::roundToInt (rate)) + " Hz  -  " + juce::String (block)
+                  + " samples  -  " + juce::String (latencyMs, 1) + " ms";
 }
 
 void AudioSettingsPanel::changeListenerCallback (juce::ChangeBroadcaster*)
@@ -262,8 +266,8 @@ void AudioSettingsPanel::resized()
     auto area = getLocalBounds().reduced (space::xl);
     labelBounds.clearQuick();
 
-    juce::ComboBox* boxes[] { &typeBox, &outputBox, &inputBox, &inputChannelBox,
-                              &rateBox, &bufferBox };
+    juce::ComboBox* boxes[] { &typeBox,         &outputBox, &inputBox,
+                              &inputChannelBox, &rateBox,   &bufferBox };
 
     for (auto* box : boxes)
     {
@@ -283,8 +287,7 @@ void AudioSettingsPanel::resized()
     // from the row height and the row count: the meter used to state that
     // arithmetic a second time, in a const method called from paint(), and
     // adding a seventh row would have moved the boxes and left the meter.
-    meterArea = area.withHeight (size::meterHeight)
-                    .withTrimmedLeft (size::gutterLabel + space::md);
+    meterArea = area.withHeight (size::meterHeight).withTrimmedLeft (size::gutterLabel + space::md);
     testButton.setBounds (area.removeFromBottom (size::controlHeight).removeFromRight (110));
 }
 
@@ -329,8 +332,10 @@ void AudioSettingsPanel::paint (juce::Graphics& g)
                 juce::Justification::centredLeft, false);
 
     // The live state, under the controls: what the choices above added up to.
-    const auto summary = getLocalBounds().reduced (space::xl)
-                             .withTop (getHeight() - space::xl - size::controlHeight * 2 - space::md)
+    const auto summary = getLocalBounds()
+                             .reduced (space::xl)
+                             .withTop (getHeight() - space::xl - size::controlHeight * 2
+                                       - space::md)
                              .withHeight (size::controlHeight);
 
     const auto open = deviceManager.getCurrentAudioDevice() != nullptr;
@@ -340,8 +345,8 @@ void AudioSettingsPanel::paint (juce::Graphics& g)
 
     g.setColour (open ? colour::textPrimary : colour::danger);
     g.setFont (type::font (type::small));
-    g.drawText (summaryText, summary.withTrimmedLeft (space::lg),
-                juce::Justification::centredLeft, true);
+    g.drawText (summaryText, summary.withTrimmedLeft (space::lg), juce::Justification::centredLeft,
+                true);
 }
 
 void AudioSettingsPanel::show (LiveAudioHost& host, AudioEngine& engine, juce::Component* parent)

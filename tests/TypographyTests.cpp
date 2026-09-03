@@ -30,9 +30,6 @@ bool isOnTheScale (float height)
     return false;
 }
 
-
-
-
 /** A component whose only job is to run one paint:: helper, so a helper can be
     measured without dragging a whole panel and its document into the test.
 */
@@ -98,16 +95,16 @@ TEST_CASE ("a tooltip is not drawn in JUCE's hard-coded bold", "[design][type]")
 {
     DewLookAndFeel lnf;
 
-    const auto bounds = lnf.getTooltipBounds ("Play from the start",
-                                              { 100, 100 }, { 0, 0, 1200, 800 });
+    const auto bounds = lnf.getTooltipBounds ("Play from the start", { 100, 100 },
+                                              { 0, 0, 1200, 800 });
 
     CHECK (bounds.getWidth() > 0);
     CHECK (bounds.getHeight() > 0);
     CHECK (juce::Rectangle<int> (0, 0, 1200, 800).contains (bounds));
 
     // Long text wraps rather than running off the screen.
-    const auto longBounds = lnf.getTooltipBounds (juce::String::repeatedString ("a very long tip ", 20),
-                                                  { 100, 100 }, { 0, 0, 1200, 800 });
+    const auto longBounds = lnf.getTooltipBounds (
+        juce::String::repeatedString ("a very long tip ", 20), { 100, 100 }, { 0, 0, 1200, 800 });
     CHECK (longBounds.getHeight() > bounds.getHeight());
 }
 
@@ -163,7 +160,8 @@ TEST_CASE ("no source file constructs a font outside the design system", "[desig
             const auto& line = lines[i];
 
             if (line.contains ("FontOptions") || line.contains ("juce::Font ("))
-                offenders.add (file.getFileName() + ":" + juce::String (i + 1) + "  " + line.trim());
+                offenders.add (file.getFileName() + ":" + juce::String (i + 1) + "  "
+                               + line.trim());
         }
     }
 

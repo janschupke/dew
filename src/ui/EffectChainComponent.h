@@ -49,7 +49,11 @@ public:
         chain had before the mixer needed the other one, and the instrument
         panel still depends on every part of it.
     */
-    enum class Orientation { vertical, horizontal };
+    enum class Orientation
+    {
+        vertical,
+        horizontal
+    };
 
     EffectChainComponent (ProjectDocument&, EditorState&);
 
@@ -59,7 +63,10 @@ public:
         node a knob was built for and nothing about the playhead or the tabs.
         Null means no menus, which is what a test building one panel gets.
     */
-    void setParamMenuHost (const paramMenu::Host* host) { paramMenuHost = host; }
+    void setParamMenuHost (const paramMenu::Host* host)
+    {
+        paramMenuHost = host;
+    }
     ~EffectChainComponent() override;
 
     void paint (juce::Graphics&) override;
@@ -70,13 +77,19 @@ public:
     bool keyPressed (const juce::KeyPress&) override;
 
     void setOrientation (Orientation);
-    bool isHorizontal() const noexcept { return orientation == Orientation::horizontal; }
+    bool isHorizontal() const noexcept
+    {
+        return orientation == Orientation::horizontal;
+    }
 
     /** Points the editor at a channel or mixer track. An invalid tree shows the
         empty state rather than the previous owner's chain.
     */
     void setOwner (juce::ValueTree owner);
-    const juce::ValueTree& getOwner() const noexcept { return chainOwner; }
+    const juce::ValueTree& getOwner() const noexcept
+    {
+        return chainOwner;
+    }
 
     /** Whether another effect would fit. The add button lives on the host, so
         the host asks rather than the chain reaching out to enable it.
@@ -111,8 +124,14 @@ public:
     int slotAtPosition (juce::Point<int> position) const;
 
     // --- for tests -----------------------------------------------------------
-    int getNumSlotRows() const { return cards.size(); }
-    int getSelectedSlot() const noexcept { return selectedSlot; }
+    int getNumSlotRows() const
+    {
+        return cards.size();
+    }
+    int getSelectedSlot() const noexcept
+    {
+        return selectedSlot;
+    }
     void selectSlot (int index);
     void addEffectOfType (const juce::String& type);
 
@@ -152,15 +171,24 @@ public:
     */
     void endReorder (bool commit);
 
-    bool isReordering() const noexcept { return reorder.active; }
+    bool isReordering() const noexcept
+    {
+        return reorder.active;
+    }
 
     /** Where the dragged card would land, or -1 when nothing is being dragged.
         A FINAL index - what moveSlot would be given. */
-    int getReorderInsertion() const noexcept { return reorder.active ? reorder.insertAt : -1; }
+    int getReorderInsertion() const noexcept
+    {
+        return reorder.active ? reorder.insertAt : -1;
+    }
 
     /** The gap the other cards have opened for it, in the chain's coordinates.
         Empty unless a drag is in progress. */
-    juce::Rectangle<int> getDropArea() const noexcept { return dropArea; }
+    juce::Rectangle<int> getDropArea() const noexcept
+    {
+        return dropArea;
+    }
 
     /** Where one card is, by its position in the chain.
 
@@ -184,9 +212,9 @@ private:
     */
     struct Reorder
     {
-        bool active = false;         ///< past the threshold
-        int source = -1;             ///< the slot pressed, or -1 for no gesture
-        int insertAt = -1;           ///< the final index it would land at
+        bool active = false; ///< past the threshold
+        int source = -1;     ///< the slot pressed, or -1 for no gesture
+        int insertAt = -1;   ///< the final index it would land at
         juce::Point<int> pressedAt, cursor, grabOffset;
         juce::Array<juce::Rectangle<int>> frozen;
     };

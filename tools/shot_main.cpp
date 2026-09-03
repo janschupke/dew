@@ -51,7 +51,7 @@ juce::Rectangle<int> parseSize (const juce::String& text)
     const auto h = text.fromLastOccurrenceOf ("x", false, true).getIntValue();
 
     return { 0, 0, juce::jlimit (320, 8000, w > 0 ? w : 1440),
-                   juce::jlimit (240, 8000, h > 0 ? h : 900) };
+             juce::jlimit (240, 8000, h > 0 ? h : 900) };
 }
 
 juce::Component* findDescendantWithID (juce::Component& parent, const juce::String& id)
@@ -70,11 +70,16 @@ juce::Component* findDescendantWithID (juce::Component& parent, const juce::Stri
 
 int tabIndexFor (const juce::String& name)
 {
-    if (name == "channel-rack") return 0;
-    if (name == "piano-roll")   return 1;
-    if (name == "playlist")     return 2;
-    if (name == "mixer")        return 3;
-    if (name == "score")        return 4;
+    if (name == "channel-rack")
+        return 0;
+    if (name == "piano-roll")
+        return 1;
+    if (name == "playlist")
+        return 2;
+    if (name == "mixer")
+        return 3;
+    if (name == "score")
+        return 4;
     return -1;
 }
 
@@ -132,7 +137,10 @@ int main (int argc, char* argv[])
 
     const struct ClearLookAndFeel
     {
-        ~ClearLookAndFeel() { juce::Desktop::getInstance().setDefaultLookAndFeel (nullptr); }
+        ~ClearLookAndFeel()
+        {
+            juce::Desktop::getInstance().setDefaultLookAndFeel (nullptr);
+        }
     } clearLookAndFeel;
 
     const auto size = parseSize (args.value ("--size", "1440x900"));
@@ -141,16 +149,17 @@ int main (int argc, char* argv[])
     {
         dew::DewGallery gallery;
         gallery.setVisible (true);
-        gallery.setSize (size.getWidth(), juce::jmax (size.getHeight(), gallery.getRequiredHeight()));
+        gallery.setSize (size.getWidth(),
+                         juce::jmax (size.getHeight(), gallery.getRequiredHeight()));
 
-        const auto destination = juce::File::getCurrentWorkingDirectory()
-                                     .getChildFile (args.positional[1]);
+        const auto destination = juce::File::getCurrentWorkingDirectory().getChildFile (
+            args.positional[1]);
 
         if (const auto result = writePng (gallery, destination); result.failed())
             return fail (result.getErrorMessage());
 
-        std::cout << "wrote " << destination.getFullPathName()
-                  << "  (" << gallery.getWidth() << "x" << gallery.getHeight() << ")" << std::endl;
+        std::cout << "wrote " << destination.getFullPathName() << "  (" << gallery.getWidth() << "x"
+                  << gallery.getHeight() << ")" << std::endl;
         return 0;
     }
 
@@ -166,14 +175,14 @@ int main (int argc, char* argv[])
         panel.setSize (dew::AudioSettingsPanel::preferredWidth,
                        dew::AudioSettingsPanel::preferredHeight);
 
-        const auto destination = juce::File::getCurrentWorkingDirectory()
-                                     .getChildFile (args.positional[1]);
+        const auto destination = juce::File::getCurrentWorkingDirectory().getChildFile (
+            args.positional[1]);
 
         if (const auto result = writePng (panel, destination); result.failed())
             return fail (result.getErrorMessage());
 
-        std::cout << "wrote " << destination.getFullPathName()
-                  << "  (" << panel.getWidth() << "x" << panel.getHeight() << ")" << std::endl;
+        std::cout << "wrote " << destination.getFullPathName() << "  (" << panel.getWidth() << "x"
+                  << panel.getHeight() << ")" << std::endl;
         return 0;
     }
 
@@ -218,25 +227,30 @@ int main (int argc, char* argv[])
 
         if (wanted.isNotEmpty())
         {
-            if (wanted == "wav")       panel.setFormatForTesting (dew::RenderFormat::wav);
-            else if (wanted == "flac") panel.setFormatForTesting (dew::RenderFormat::flac);
-            else if (wanted == "mp3")  panel.setFormatForTesting (dew::RenderFormat::mp3);
-            else if (wanted == "midi") panel.setFormatForTesting (dew::RenderFormat::midi);
-            else return fail ("unknown --format '" + wanted + "'");
+            if (wanted == "wav")
+                panel.setFormatForTesting (dew::RenderFormat::wav);
+            else if (wanted == "flac")
+                panel.setFormatForTesting (dew::RenderFormat::flac);
+            else if (wanted == "mp3")
+                panel.setFormatForTesting (dew::RenderFormat::mp3);
+            else if (wanted == "midi")
+                panel.setFormatForTesting (dew::RenderFormat::midi);
+            else
+                return fail ("unknown --format '" + wanted + "'");
 
             // Which rows show has just changed, and with them the height.
             panel.setSize (dew::RenderPanel::preferredWidth, panel.getRequiredHeight());
             panel.resized();
         }
 
-        const auto destination = juce::File::getCurrentWorkingDirectory()
-                                     .getChildFile (args.positional[1]);
+        const auto destination = juce::File::getCurrentWorkingDirectory().getChildFile (
+            args.positional[1]);
 
         if (const auto result = writePng (panel, destination); result.failed())
             return fail (result.getErrorMessage());
 
-        std::cout << "wrote " << destination.getFullPathName()
-                  << "  (" << panel.getWidth() << "x" << panel.getHeight() << ")" << std::endl;
+        std::cout << "wrote " << destination.getFullPathName() << "  (" << panel.getWidth() << "x"
+                  << panel.getHeight() << ")" << std::endl;
         return 0;
     }
 
@@ -253,14 +267,14 @@ int main (int argc, char* argv[])
         panel.setSize (dew::MidiSettingsPanel::preferredWidth,
                        dew::MidiSettingsPanel::preferredHeight);
 
-        const auto destination = juce::File::getCurrentWorkingDirectory()
-                                     .getChildFile (args.positional[1]);
+        const auto destination = juce::File::getCurrentWorkingDirectory().getChildFile (
+            args.positional[1]);
 
         if (const auto result = writePng (panel, destination); result.failed())
             return fail (result.getErrorMessage());
 
-        std::cout << "wrote " << destination.getFullPathName()
-                  << "  (" << panel.getWidth() << "x" << panel.getHeight() << ")" << std::endl;
+        std::cout << "wrote " << destination.getFullPathName() << "  (" << panel.getWidth() << "x"
+                  << panel.getHeight() << ")" << std::endl;
         return 0;
     }
 
@@ -270,17 +284,16 @@ int main (int argc, char* argv[])
         // is why the dialog's content sizes itself and says so publicly.
         dew::RandomizePanel panel { {}, "Applies to the 12 selected notes" };
         panel.setVisible (true);
-        panel.setSize (dew::RandomizePanel::preferredWidth,
-                       dew::RandomizePanel::preferredHeight);
+        panel.setSize (dew::RandomizePanel::preferredWidth, dew::RandomizePanel::preferredHeight);
 
-        const auto destination = juce::File::getCurrentWorkingDirectory()
-                                     .getChildFile (args.positional[1]);
+        const auto destination = juce::File::getCurrentWorkingDirectory().getChildFile (
+            args.positional[1]);
 
         if (const auto result = writePng (panel, destination); result.failed())
             return fail (result.getErrorMessage());
 
-        std::cout << "wrote " << destination.getFullPathName()
-                  << "  (" << panel.getWidth() << "x" << panel.getHeight() << ")" << std::endl;
+        std::cout << "wrote " << destination.getFullPathName() << "  (" << panel.getWidth() << "x"
+                  << panel.getHeight() << ")" << std::endl;
         return 0;
     }
 
@@ -311,7 +324,8 @@ int main (int argc, char* argv[])
 
     component.setSize (size.getWidth(), size.getHeight());
 
-    auto* tabs = dynamic_cast<juce::TabbedComponent*> (findDescendantWithID (component, "editorTabs"));
+    auto* tabs = dynamic_cast<juce::TabbedComponent*> (
+        findDescendantWithID (component, "editorTabs"));
 
     if (tabs == nullptr)
         return fail ("could not find the editor tabs");
@@ -349,16 +363,15 @@ int main (int argc, char* argv[])
         if (const auto result = writePng (component, destination); result.failed())
             return fail (result.getErrorMessage());
 
-        std::cout << "wrote " << destination.getFullPathName()
-                  << "  (" << component.getWidth() << "x" << component.getHeight() << ")"
-                  << std::endl;
+        std::cout << "wrote " << destination.getFullPathName() << "  (" << component.getWidth()
+                  << "x" << component.getHeight() << ")" << std::endl;
         return 0;
     };
 
     if (mode == "editor")
     {
-        const auto destination = juce::File::getCurrentWorkingDirectory()
-                                     .getChildFile (args.positional[1]);
+        const auto destination = juce::File::getCurrentWorkingDirectory().getChildFile (
+            args.positional[1]);
 
         const auto tabIndex = tabIndexFor (args.value ("--tab", "channel-rack"));
 
@@ -379,8 +392,8 @@ int main (int argc, char* argv[])
 
         for (int i = 0; i < names.size(); ++i)
         {
-            const auto destination = juce::File::getCurrentWorkingDirectory()
-                                         .getChildFile (args.positional[1] + "-" + names[i] + ".png");
+            const auto destination = juce::File::getCurrentWorkingDirectory().getChildFile (
+                args.positional[1] + "-" + names[i] + ".png");
 
             if (const auto code = shoot (i, destination); code != 0)
                 return code;

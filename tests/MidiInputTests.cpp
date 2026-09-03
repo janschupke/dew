@@ -31,7 +31,10 @@ struct TempSettings
         directory.createDirectory();
     }
 
-    ~TempSettings() { directory.deleteRecursively(); }
+    ~TempSettings()
+    {
+        directory.deleteRecursively();
+    }
 
     juce::File directory;
 };
@@ -107,36 +110,38 @@ TEST_CASE ("the two queues do not lose events when both are written at once",
     std::atomic<bool> draining { true };
 
     // The audio thread, draining both rings.
-    std::thread audio ([&]
-    {
-        juce::AudioBuffer<float> block (2, blockSize);
-
-        while (draining.load())
+    std::thread audio (
+        [&]
         {
-            block.clear();
-            engine.processBlock (block);
-            std::this_thread::yield();
-        }
+            juce::AudioBuffer<float> block (2, blockSize);
 
-        for (int i = 0; i < 32; ++i)
-        {
-            block.clear();
-            engine.processBlock (block);
-        }
-    });
+            while (draining.load())
+            {
+                block.clear();
+                engine.processBlock (block);
+                std::this_thread::yield();
+            }
+
+            for (int i = 0; i < 32; ++i)
+            {
+                block.clear();
+                engine.processBlock (block);
+            }
+        });
 
     // The MIDI thread.
-    std::thread midi ([&]
-    {
-        for (int i = 0; i < perProducer; ++i)
+    std::thread midi (
+        [&]
         {
-            if (engine.midiNoteOn (0, 60 + (i % 12), 0.5f))
-                ++midiAccepted;
+            for (int i = 0; i < perProducer; ++i)
+            {
+                if (engine.midiNoteOn (0, 60 + (i % 12), 0.5f))
+                    ++midiAccepted;
 
-            engine.midiNoteOff (0, 60 + (i % 12));
-            std::this_thread::yield();
-        }
-    });
+                engine.midiNoteOff (0, 60 + (i % 12));
+                std::this_thread::yield();
+            }
+        });
 
     // And this, the message thread, on the preview ring at the same time.
     int previewAccepted = 0;
@@ -205,34 +210,36 @@ TEST_CASE ("the router survives a message thread resetting under a live MIDI str
 
     std::atomic<bool> running { true };
 
-    std::thread midi ([&]
-    {
-        int pitch = 48;
-
-        while (running.load())
+    std::thread midi (
+        [&]
         {
-            router.handleMessage (juce::MidiMessage::noteOn (1, pitch, (juce::uint8) 100));
-            router.handleMessage (juce::MidiMessage::controllerEvent (1, 64, 127));
-            router.handleMessage (juce::MidiMessage::noteOff (1, pitch));
-            router.handleMessage (juce::MidiMessage::pitchWheel (1, 12000));
-            router.handleMessage (juce::MidiMessage::controllerEvent (1, 1, 90));
+            int pitch = 48;
 
-            pitch = 48 + ((pitch - 47) % 24);
-            std::this_thread::yield();
-        }
-    });
+            while (running.load())
+            {
+                router.handleMessage (juce::MidiMessage::noteOn (1, pitch, (juce::uint8) 100));
+                router.handleMessage (juce::MidiMessage::controllerEvent (1, 64, 127));
+                router.handleMessage (juce::MidiMessage::noteOff (1, pitch));
+                router.handleMessage (juce::MidiMessage::pitchWheel (1, 12000));
+                router.handleMessage (juce::MidiMessage::controllerEvent (1, 1, 90));
 
-    std::thread audio ([&]
-    {
-        juce::AudioBuffer<float> block (2, blockSize);
+                pitch = 48 + ((pitch - 47) % 24);
+                std::this_thread::yield();
+            }
+        });
 
-        while (running.load())
+    std::thread audio (
+        [&]
         {
-            block.clear();
-            engine.processBlock (block);
-            std::this_thread::yield();
-        }
-    });
+            juce::AudioBuffer<float> block (2, blockSize);
+
+            while (running.load())
+            {
+                block.clear();
+                engine.processBlock (block);
+                std::this_thread::yield();
+            }
+        });
 
     // The message thread, doing exactly what the editor does.
     for (int i = 0; i < 500; ++i)
@@ -300,8 +307,7 @@ TEST_CASE ("a device the user wants is remembered even when it is not here", "[m
     REQUIRE_FALSE (host.isDeviceWanted (phantom));
 }
 
-TEST_CASE ("the reconcile rule opens what came back and drops what went away",
-           "[midi][devices]")
+TEST_CASE ("the reconcile rule opens what came back and drops what went away", "[midi][devices]")
 {
     // The whole of the JUCE gap this class exists for, as a truth table.
     // AudioDeviceManager only re-opens devices from the list it built out of a

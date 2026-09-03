@@ -27,13 +27,9 @@ void SynthInstrument::processAdd (const InstrumentContext& ctx, float* out, int 
                                 event.durationSamples, event.sampleOffset);
                 break;
 
-            case NoteEvent::Kind::off:
-                channel.noteOff (event.pitch);
-                break;
+            case NoteEvent::Kind::off: channel.noteOff (event.pitch); break;
 
-            case NoteEvent::Kind::allOff:
-                channel.allNotesOff();
-                break;
+            case NoteEvent::Kind::allOff: channel.allNotesOff(); break;
         }
     }
 
@@ -42,7 +38,8 @@ void SynthInstrument::processAdd (const InstrumentContext& ctx, float* out, int 
     channel.renderAdd (out, numSamples, ctx.bendSemitones, ctx.modulation, ctx.osc);
 }
 
-void SampleInstrument::processAdd (const InstrumentContext& ctx, float* out, int numSamples) noexcept
+void SampleInstrument::processAdd (const InstrumentContext& ctx, float* out,
+                                   int numSamples) noexcept
 {
     // Audio clips live in the arrangement, so they sound in song mode only -
     // the same rule automation follows, and for the same reason: pattern mode
@@ -53,10 +50,9 @@ void SampleInstrument::processAdd (const InstrumentContext& ctx, float* out, int
     if (ctx.sample == nullptr || ctx.audio == nullptr)
         return;
 
-    SamplePlayer::renderAdd (out, numSamples, *ctx.sample, *ctx.audio, ctx.clips,
-                             ctx.channelIndex, ctx.stepsPerBar,
-                             ctx.transport.positionSamples, *ctx.transport.tempoMap,
-                             ctx.transport.sampleRate);
+    SamplePlayer::renderAdd (out, numSamples, *ctx.sample, *ctx.audio, ctx.clips, ctx.channelIndex,
+                             ctx.stepsPerBar, ctx.transport.positionSamples,
+                             *ctx.transport.tempoMap, ctx.transport.sampleRate);
 }
 
 } // namespace dew

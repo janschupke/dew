@@ -13,7 +13,6 @@ using namespace dew;
 namespace
 {
 
-
 /** Feeds `numBlocks` blocks of a constant value straight to the audio-thread
     entry point. No device is opened anywhere in this file: the recorder's
     contract is a pointer and a count, which is exactly what makes it testable.
@@ -159,8 +158,8 @@ TEST_CASE ("a recorder refuses a file it cannot write", "[audio][record]")
 {
     AudioRecorder recorder;
 
-    const auto error = recorder.start (juce::File ("/this/path/does/not/exist/take.wav"),
-                                       44100.0, 1, 0);
+    const auto error = recorder.start (juce::File ("/this/path/does/not/exist/take.wav"), 44100.0,
+                                       1, 0);
 
     REQUIRE (error.isNotEmpty());
     REQUIRE (! recorder.isRecording());

@@ -36,9 +36,8 @@ namespace dew::timelinePaint
     @param originX    the caller's content origin (a keyboard or header gutter)
     @param rightEdge  stop here; a component may be narrower than its range
 */
-void verticalGrid (juce::Graphics&, const TimelineView&, juce::Range<int> steps,
-                   int stepsPerBar, int stepsPerBeat,
-                   float originX, juce::Range<float> y, float rightEdge);
+void verticalGrid (juce::Graphics&, const TimelineView&, juce::Range<int> steps, int stepsPerBar,
+                   int stepsPerBeat, float originX, juce::Range<float> y, float rightEdge);
 
 /** The column of the step the transport is inside. Drawn under everything, and
     only while playing: a stopped transport highlighting a step reads as a
@@ -70,17 +69,23 @@ inline constexpr float playheadPlaying = 1.0f;
 class PlayheadState
 {
 public:
-    explicit PlayheadState (juce::Component& c) : motion (c, playheadStopped) {}
+    explicit PlayheadState (juce::Component& c)
+        : motion (c, playheadStopped)
+    {
+    }
 
     /** Call whenever the transport state is polled - it is a no-op unless the
         state actually changed. */
     void set (bool playing)
     {
-        motion.animateTo (playing ? playheadPlaying : playheadStopped,
-                          tokens::motion::selectMs, Ease::decelerate);
+        motion.animateTo (playing ? playheadPlaying : playheadStopped, tokens::motion::selectMs,
+                          Ease::decelerate);
     }
 
-    float brightness() const noexcept { return motion.get(); }
+    float brightness() const noexcept
+    {
+        return motion.get();
+    }
 
 private:
     ComponentMotion motion;
@@ -89,6 +94,6 @@ private:
 /** How far either side of the head a click still counts, and how far outside a
     view the head is still worth drawing. */
 inline constexpr float playheadHeadHalfWidth = 5.0f;
-inline constexpr float playheadHeadHeight    = 8.0f;
+inline constexpr float playheadHeadHeight = 8.0f;
 
 } // namespace dew::timelinePaint

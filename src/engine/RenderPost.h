@@ -25,9 +25,7 @@ namespace dew::RenderPost
     click; a fade-out does the same for a tail cut short. Each is clamped to
     half the buffer so that two long fades cannot overlap and cancel.
 */
-void applyFades (juce::AudioBuffer<float>& buffer,
-                 double sampleRate,
-                 double fadeInSeconds,
+void applyFades (juce::AudioBuffer<float>& buffer, double sampleRate, double fadeInSeconds,
                  double fadeOutSeconds) noexcept;
 
 /** Scales the buffer so its peak sits at `targetPeak` (linear, 0..1).
@@ -38,8 +36,7 @@ void applyFades (juce::AudioBuffer<float>& buffer,
     is capped: without a cap, "normalize" on a near-silent render is a command
     to amplify its own noise floor by however many dB it takes.
 */
-float normalize (juce::AudioBuffer<float>& buffer,
-                 float targetPeak,
+float normalize (juce::AudioBuffer<float>& buffer, float targetPeak,
                  float maxBoostDb = 40.0f) noexcept;
 
 /** Adds triangular (TPDF) noise at +/-1 LSB of `bitDepth`.

@@ -27,15 +27,11 @@ const NamedChoice waveChoices[] {
     { "sine", "Sine" }, { "saw", "Saw" }, { "square", "Square" }, { "triangle", "Triangle" }
 };
 
-const NamedChoice modeChoices[] {
-    { "classic", "Classic" }, { "wavetable", "Wavetable" }
-};
+const NamedChoice modeChoices[] { { "classic", "Classic" }, { "wavetable", "Wavetable" } };
 
 // "LFO", not "Lfo": capitalising the stored name works for every other box here
 // and would be wrong for exactly this one.
-const NamedChoice sourceChoices[] {
-    { "envelope", "Envelope" }, { "lfo", "LFO" }
-};
+const NamedChoice sourceChoices[] { { "envelope", "Envelope" }, { "lfo", "LFO" } };
 
 /** The 1-based combo id of a stored name, falling back to the schema default.
 
@@ -56,15 +52,13 @@ int idFor (const NamedChoice (&choices)[N], const juce::String& name, const char
     return 1;
 }
 
-template <size_t N>
-void fill (juce::ComboBox& box, const NamedChoice (&choices)[N])
+template <size_t N> void fill (juce::ComboBox& box, const NamedChoice (&choices)[N])
 {
     for (size_t i = 0; i < N; ++i)
         box.addItem (choices[i].display, (int) i + 1);
 }
 
-template <size_t N>
-const char* valueOf (const NamedChoice (&choices)[N], int selectedId)
+template <size_t N> const char* valueOf (const NamedChoice (&choices)[N], int selectedId)
 {
     return choices[(size_t) juce::jlimit (0, (int) N - 1, selectedId - 1)].value;
 }
@@ -81,13 +75,22 @@ class OscillatorSection::SlotButton : public juce::Button
 {
 public:
     explicit SlotButton (int i)
-        : juce::Button ("OSC " + juce::String (i + 1)), index (i)
+        : juce::Button ("OSC " + juce::String (i + 1))
+        , index (i)
     {
         setTooltip ("Edit oscillator " + juce::String (i + 1));
     }
 
-    void setSelected (bool s)    { if (std::exchange (selected, s) != s) repaint(); }
-    void setSlotEnabled (bool e) { if (std::exchange (slotEnabled, e) != e) repaint(); }
+    void setSelected (bool s)
+    {
+        if (std::exchange (selected, s) != s)
+            repaint();
+    }
+    void setSlotEnabled (bool e)
+    {
+        if (std::exchange (slotEnabled, e) != e)
+            repaint();
+    }
 
     void paintButton (juce::Graphics& g, bool highlighted, bool /*down*/) override
     {
@@ -99,8 +102,7 @@ public:
         g.fillRoundedRectangle (body, radius::sm);
 
         g.setColour (selected ? colour::accent : colour::outline);
-        g.drawRoundedRectangle (body, radius::sm,
-                                selected ? stroke::regular : stroke::hairline);
+        g.drawRoundedRectangle (body, radius::sm, selected ? stroke::regular : stroke::hairline);
 
         // A dot rather than a second word: three of these share the panel's
         // width, and "OSC 1 ON" at a size that still reads does not fit.
@@ -125,7 +127,8 @@ private:
 // -----------------------------------------------------------------------------
 
 OscillatorSection::OscillatorSection (ProjectDocument& d, EditorState& s)
-    : document (d), editorState (s)
+    : document (d)
+    , editorState (s)
 {
     setComponentID ("oscillatorSection");
 
@@ -158,9 +161,7 @@ OscillatorSection::OscillatorSection (ProjectDocument& d, EditorState& s)
 
     fill (waveBox, waveChoices);
     waveBox.onChange = [this]
-    {
-        write (ids::wave, valueOf (waveChoices, waveBox.getSelectedId()), "Change waveform");
-    };
+    { write (ids::wave, valueOf (waveChoices, waveBox.getSelectedId()), "Change waveform"); };
     waveBox.setTooltip ("The waveform this oscillator plays");
     addAndMakeVisible (waveBox);
 
@@ -199,8 +200,16 @@ OscillatorSection::OscillatorSection (ProjectDocument& d, EditorState& s)
     }
 
     octaveSlider.setTextBoxStyle (juce::Slider::TextBoxLeft, false, 44, size::controlHeightSm);
-    octaveSlider.onDragStart = [this] { inDrag = true; gestureActive = false; };
-    octaveSlider.onDragEnd = [this] { inDrag = false; gestureActive = false; };
+    octaveSlider.onDragStart = [this]
+    {
+        inDrag = true;
+        gestureActive = false;
+    };
+    octaveSlider.onDragEnd = [this]
+    {
+        inDrag = false;
+        gestureActive = false;
+    };
     octaveSlider.onValueChange = [this]
     {
         // Integer-valued in the file: writing a double would change the JSON
@@ -262,20 +271,28 @@ void OscillatorSection::setParamMenuHost (const paramMenu::Host* host)
     // happened to be selected when the host arrived.
     const auto slot = [this] { return selectedSlotTree(); };
 
-    paramMenu::attachTo (host, detuneKnob,   slot, requireInstrumentParamSpec (ids::detuneCents));
-    paramMenu::attachTo (host, gainKnob,     slot, requireInstrumentParamSpec (ids::gain));
+    paramMenu::attachTo (host, detuneKnob, slot, requireInstrumentParamSpec (ids::detuneCents));
+    paramMenu::attachTo (host, gainKnob, slot, requireInstrumentParamSpec (ids::gain));
     paramMenu::attachTo (host, positionKnob, slot, requireInstrumentParamSpec (ids::wavePosition));
-    paramMenu::attachTo (host, modKnob,      slot, requireInstrumentParamSpec (ids::wavePositionMod));
-    paramMenu::attachTo (host, rateKnob,     slot, requireInstrumentParamSpec (ids::wavePositionRate));
-    paramMenu::attachTo (host, unisonKnob,   slot, requireInstrumentParamSpec (ids::unisonVoices));
-    paramMenu::attachTo (host, spreadKnob,   slot, requireInstrumentParamSpec (ids::unisonDetune));
+    paramMenu::attachTo (host, modKnob, slot, requireInstrumentParamSpec (ids::wavePositionMod));
+    paramMenu::attachTo (host, rateKnob, slot, requireInstrumentParamSpec (ids::wavePositionRate));
+    paramMenu::attachTo (host, unisonKnob, slot, requireInstrumentParamSpec (ids::unisonVoices));
+    paramMenu::attachTo (host, spreadKnob, slot, requireInstrumentParamSpec (ids::unisonDetune));
 }
 
 void OscillatorSection::attachKnob (DewKnob& knob, const juce::Identifier& property,
                                     const juce::String& transactionName, bool integral)
 {
-    knob.onEditStart = [this] { inDrag = true; gestureActive = false; };
-    knob.onEditEnd = [this] { inDrag = false; gestureActive = false; };
+    knob.onEditStart = [this]
+    {
+        inDrag = true;
+        gestureActive = false;
+    };
+    knob.onEditEnd = [this]
+    {
+        inDrag = false;
+        gestureActive = false;
+    };
     knob.onValueChange = [this, &knob, property, transactionName, integral]
     {
         if (integral)
@@ -348,8 +365,8 @@ void OscillatorSection::setSlotEnabled (int index, bool shouldBeEnabled)
     if (! slot.isValid() || isSlotEnabled (index) == shouldBeEnabled)
         return;
 
-    ProjectEdits::setProperty (slot, ids::enabled, shouldBeEnabled,
-                               &document.getUndoManager(), shouldBeEnabled ? "Enable oscillator" : "Disable oscillator");
+    ProjectEdits::setProperty (slot, ids::enabled, shouldBeEnabled, &document.getUndoManager(),
+                               shouldBeEnabled ? "Enable oscillator" : "Disable oscillator");
 }
 
 juce::Button& OscillatorSection::getSlotButton (int index) const
@@ -368,8 +385,8 @@ void OscillatorSection::write (const juce::Identifier& property, const juce::var
     if (! slot.isValid())
         return;
 
-    ProjectEdits::setProperty (slot, property, value, &document.getUndoManager(),
-                               transactionName, gestureActive);
+    ProjectEdits::setProperty (slot, property, value, &document.getUndoManager(), transactionName,
+                               gestureActive);
 
     gestureActive = inDrag;
 }
@@ -453,7 +470,8 @@ void OscillatorSection::refreshControls()
     waveBox.setVisible (valid && ! showingWavetable);
 
     const std::initializer_list<juce::Component*> wavetableOnly {
-        &tableBox, &sourceBox, &positionKnob, &modKnob, &rateKnob, &unisonKnob, &spreadKnob };
+        &tableBox, &sourceBox, &positionKnob, &modKnob, &rateKnob, &unisonKnob, &spreadKnob
+    };
 
     for (auto* c : wavetableOnly)
         c->setVisible (valid && showingWavetable);
@@ -476,18 +494,17 @@ void OscillatorSection::refreshControls()
 
     enableButton.setToggleState (enabled, juce::dontSendNotification);
     repaint();
-    enableButton.setTooltip (enabled ? "Turn oscillator " + juce::String (selectedSlot + 1)
-                                           + " off"
-                                     : "Turn oscillator " + juce::String (selectedSlot + 1)
-                                           + " on");
+    enableButton.setTooltip (enabled
+                                 ? "Turn oscillator " + juce::String (selectedSlot + 1) + " off"
+                                 : "Turn oscillator " + juce::String (selectedSlot + 1) + " on");
 
     modeBox.setSelectedId (idFor (modeChoices, slot[ids::mode].toString(), "classic"),
                            juce::dontSendNotification);
     waveBox.setSelectedId (idFor (waveChoices, slot[ids::wave].toString(), "saw"),
                            juce::dontSendNotification);
-    sourceBox.setSelectedId (idFor (sourceChoices, slot[ids::wavePositionSource].toString(),
-                                    "envelope"),
-                             juce::dontSendNotification);
+    sourceBox.setSelectedId (
+        idFor (sourceChoices, slot[ids::wavePositionSource].toString(), "envelope"),
+        juce::dontSendNotification);
 
     // A table name this build does not know shows as the first one, which is
     // also what the engine falls back to - the panel must not disagree with
@@ -570,8 +587,7 @@ void OscillatorSection::resized()
 
     for (int i = 0; i < slotButtons.size(); ++i)
     {
-        auto cell = i == slotButtons.size() - 1 ? selector
-                                                : selector.removeFromLeft (slotWidth);
+        auto cell = i == slotButtons.size() - 1 ? selector : selector.removeFromLeft (slotWidth);
         slotButtons[i]->setBounds (cell.reduced (space::xxs, 0));
     }
 

@@ -21,7 +21,7 @@ struct PresetFactory
 {
     struct Entry
     {
-        const char* fileName;    ///< "warm-pad.dewpreset"
+        const char* fileName; ///< "warm-pad.dewpreset"
         Preset (*build)();
     };
 

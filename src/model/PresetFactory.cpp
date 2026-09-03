@@ -42,12 +42,12 @@ Preset effectPreset (const char* typeId, const char* name, const char* descripti
     from their defaults - which switches them OFF, because that is what a fresh
     slot is. So a one-oscillator preset really is one oscillator.
 */
-Preset synthPreset (const char* name, const char* description,
-                    std::vector<juce::var> oscillators, std::initializer_list<Value> amp)
+Preset synthPreset (const char* name, const char* description, std::vector<juce::var> oscillators,
+                    std::initializer_list<Value> amp)
 {
     juce::Array<juce::var> slots;
 
-// clang-format on
+    // clang-format on
     for (auto& osc : oscillators)
         slots.add (osc);
 
@@ -65,7 +65,7 @@ Preset audioPreset (const char* name, const char* description,
     auto* state = new juce::DynamicObject();
     state->setProperty ("sample", objectOf (sample));
 
-// clang-format on
+    // clang-format on
     return { "instrument", "audio", name, description, juce::var (state) };
 }
 
@@ -233,7 +233,7 @@ Preset morphingSweep()
                            { &ids::unisonVoices, 5 },
                            { &ids::unisonDetune, 14.0 } });
 
-// clang-format off
+    // clang-format off
     return synthPreset ("Morphing Sweep",
                         "Five unison voices morphing across the table over the note.",
                         { osc, oscOff(), oscOff() },
@@ -285,7 +285,7 @@ const std::vector<PresetFactory::Entry>& PresetFactory::presets()
         { "reverse-swell.dewpreset",  &reverseSwell },
     };
 
-// clang-format on
+    // clang-format on
     return all;
 }
 

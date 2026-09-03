@@ -85,7 +85,8 @@ TEST_CASE ("bending up raises the pitch of a note already sounding", "[engine][b
     // The point of the whole exercise: before this, phaseIncrement was latched
     // at note-on and a sounding voice could not change pitch at all.
     const auto plain = renderHeldNote (nullptr);
-    const auto bent = renderHeldNote ([] (AudioEngine& e) { e.setChannelBend (channelIndex, 2.0f); });
+    const auto bent = renderHeldNote ([] (AudioEngine& e)
+                                      { e.setChannelBend (channelIndex, 2.0f); });
 
     const auto plainCrossings = upwardCrossings (plain);
     const auto bentCrossings = upwardCrossings (bent);
@@ -102,7 +103,8 @@ TEST_CASE ("bending up raises the pitch of a note already sounding", "[engine][b
 TEST_CASE ("bending down lowers it", "[engine][bend]")
 {
     const auto plain = renderHeldNote (nullptr);
-    const auto bent = renderHeldNote ([] (AudioEngine& e) { e.setChannelBend (channelIndex, -2.0f); });
+    const auto bent = renderHeldNote ([] (AudioEngine& e)
+                                      { e.setChannelBend (channelIndex, -2.0f); });
 
     REQUIRE (upwardCrossings (bent) < upwardCrossings (plain));
 }
@@ -113,7 +115,8 @@ TEST_CASE ("a centred wheel renders exactly what no wheel renders", "[engine][be
     // the engine produced before there was one, which is what lets every
     // existing render test stand unchanged.
     const auto plain = renderHeldNote (nullptr);
-    const auto centred = renderHeldNote ([] (AudioEngine& e) { e.setChannelBend (channelIndex, 0.0f); });
+    const auto centred = renderHeldNote ([] (AudioEngine& e)
+                                         { e.setChannelBend (channelIndex, 0.0f); });
 
     REQUIRE (plain.getNumSamples() == centred.getNumSamples());
 
@@ -124,7 +127,8 @@ TEST_CASE ("a centred wheel renders exactly what no wheel renders", "[engine][be
 TEST_CASE ("a mod wheel at rest adds no vibrato at all", "[engine][bend]")
 {
     const auto plain = renderHeldNote (nullptr);
-    const auto zeroed = renderHeldNote ([] (AudioEngine& e) { e.setChannelModulation (channelIndex, 0.0f); });
+    const auto zeroed = renderHeldNote ([] (AudioEngine& e)
+                                        { e.setChannelModulation (channelIndex, 0.0f); });
 
     for (int i = 0; i < plain.getNumSamples(); ++i)
         REQUIRE (juce::exactlyEqual (plain.getReadPointer (0)[i], zeroed.getReadPointer (0)[i]));
@@ -132,8 +136,8 @@ TEST_CASE ("a mod wheel at rest adds no vibrato at all", "[engine][bend]")
 
 TEST_CASE ("the mod wheel makes the pitch move within one render", "[engine][bend]")
 {
-    const auto modulated = renderHeldNote ([] (AudioEngine& e) { e.setChannelModulation (channelIndex, 1.0f); },
-                                           64);
+    const auto modulated = renderHeldNote ([] (AudioEngine& e)
+                                           { e.setChannelModulation (channelIndex, 1.0f); }, 64);
 
     // Split it into thirds and compare crossing counts: vibrato means they
     // differ, where a steady note would give the same figure each time.
@@ -156,10 +160,10 @@ TEST_CASE ("the mod wheel makes the pitch move within one render", "[engine][ben
     // And it stays a vibrato rather than becoming a siren: half a semitone
     // either way is a ratio of at most 2^(0.5/12), about 1.03.
     const auto ratio = (double) juce::jmax (crossingsA, crossingsB)
-                     / (double) juce::jmax (1, juce::jmin (crossingsA, crossingsB));
+                       / (double) juce::jmax (1, juce::jmin (crossingsA, crossingsB));
 
-    INFO ("ratio " << ratio << " for a max depth of "
-                   << SynthVoice::maxVibratoSemitones << " semitones");
+    INFO ("ratio " << ratio << " for a max depth of " << SynthVoice::maxVibratoSemitones
+                   << " semitones");
     REQUIRE (ratio < 1.10);
 }
 

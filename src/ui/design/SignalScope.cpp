@@ -24,7 +24,8 @@ float applyBallistics (float current, float incoming, float floorGain) noexcept
 }
 } // namespace
 
-SignalScope::SignalScope (AudioEngine* e) : engine (e)
+SignalScope::SignalScope (AudioEngine* e)
+    : engine (e)
 {
     setComponentID ("signalScope");
 
@@ -48,7 +49,8 @@ SignalScope::~SignalScope() = default;
 double SignalScope::getBandLowHz (int band) const noexcept
 {
     const auto ratio = bandHighHz / bandLowHz;
-    return bandLowHz * std::pow (ratio, (double) juce::jlimit (0, numBands, band) / (double) numBands);
+    return bandLowHz
+           * std::pow (ratio, (double) juce::jlimit (0, numBands, band) / (double) numBands);
 }
 
 double SignalScope::getBandHighHz (int band) const noexcept
@@ -187,8 +189,8 @@ void SignalScope::rebuildColumns()
     for (int x = 0; x < width; ++x)
     {
         const auto from = triggerOffset + (int) ((juce::int64) x * displaySamples / width);
-        const auto to = juce::jmax (from + 1,
-                                    triggerOffset + (int) ((juce::int64) (x + 1) * displaySamples / width));
+        const auto to = juce::jmax (
+            from + 1, triggerOffset + (int) ((juce::int64) (x + 1) * displaySamples / width));
 
         auto lowest = window[(size_t) from];
         auto highest = lowest;
@@ -225,7 +227,8 @@ void SignalScope::pushFrame (const float* mono, int numSamples, double sampleRat
 
     const auto kept = juce::jmin (numSamples, windowSamples);
     std::fill (window.begin(), window.end(), 0.0f);
-    std::copy (mono + numSamples - kept, mono + numSamples, window.begin() + (windowSamples - kept));
+    std::copy (mono + numSamples - kept, mono + numSamples,
+               window.begin() + (windowSamples - kept));
 
     auto peak = 0.0f;
 
@@ -318,8 +321,8 @@ void SignalScope::paintScope (juce::Graphics& g) const
     // Drawn whether or not there is a signal, so the well reads as present and
     // silent rather than broken, and so nothing moves when sound starts.
     g.setColour (colour::divider);
-    g.drawHorizontalLine (juce::roundToInt (well.getCentreY()),
-                          well.getX() + 1.0f, well.getRight() - 1.0f);
+    g.drawHorizontalLine (juce::roundToInt (well.getCentreY()), well.getX() + 1.0f,
+                          well.getRight() - 1.0f);
 
     if (columnTop.empty())
         return;
@@ -387,8 +390,7 @@ void SignalScope::paintSpectrum (juce::Graphics& g) const
 
         g.fillRect (juce::Rectangle<float> (inner.getX() + (float) band * bandWidth,
                                             inner.getBottom() - height,
-                                            juce::jmax (1.0f, bandWidth - 1.0f),
-                                            height));
+                                            juce::jmax (1.0f, bandWidth - 1.0f), height));
     }
 }
 

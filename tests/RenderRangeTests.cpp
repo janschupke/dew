@@ -16,7 +16,8 @@ double samplesPerBar (const juce::ValueTree& project, const RenderOptions& optio
 {
     const auto snapshot = buildSnapshot (project, nullptr);
 
-    return Transport::samplesPerStepFor (snapshot.tempoBpm, snapshot.stepsPerBeat, options.sampleRate)
+    return Transport::samplesPerStepFor (snapshot.tempoBpm, snapshot.stepsPerBeat,
+                                         options.sampleRate)
            * (double) snapshot.stepsPerBar();
 }
 
@@ -88,7 +89,7 @@ TEST_CASE ("an empty bar range renders the whole material", "[engine][render][ra
     const auto a = OfflineRenderer::renderToBuffer (project, byDefault, {});
 
     RenderOptions explicitlyEmpty;
-    explicitlyEmpty.barRange = { 2, 2 };   // isEmpty(): lastBar <= firstBar
+    explicitlyEmpty.barRange = { 2, 2 }; // isEmpty(): lastBar <= firstBar
 
     juce::AudioBuffer<float> asked;
     const auto b = OfflineRenderer::renderToBuffer (project, asked, explicitlyEmpty);
@@ -123,8 +124,8 @@ TEST_CASE ("a render reports progress and finishes at one", "[engine][render][pr
     RenderProgress progress;
 
     juce::AudioBuffer<float> rendered;
-    const auto report = OfflineRenderer::renderToBuffer (dew::testing::fixtureProject(),
-                                                         rendered, {}, &progress);
+    const auto report = OfflineRenderer::renderToBuffer (dew::testing::fixtureProject(), rendered,
+                                                         {}, &progress);
 
     REQUIRE (report.ok());
     REQUIRE_FALSE (report.cancelled);
@@ -137,8 +138,8 @@ TEST_CASE ("a cancelled render stops, and is not an error", "[engine][render][pr
     progress.cancelled.store (true);
 
     juce::AudioBuffer<float> rendered;
-    const auto report = OfflineRenderer::renderToBuffer (dew::testing::fixtureProject(),
-                                                         rendered, {}, &progress);
+    const auto report = OfflineRenderer::renderToBuffer (dew::testing::fixtureProject(), rendered,
+                                                         {}, &progress);
 
     // Cancelling is something the user asked for. Reporting it as a failure
     // tells them their own click was a bug.
@@ -157,8 +158,8 @@ TEST_CASE ("a cancelled render leaves an existing file alone", "[engine][render]
     RenderProgress progress;
     progress.cancelled.store (true);
 
-    const auto report = OfflineRenderer::renderToFile (dew::testing::fixtureProject(),
-                                                        target, {}, &progress);
+    const auto report = OfflineRenderer::renderToFile (dew::testing::fixtureProject(), target, {},
+                                                       &progress);
 
     REQUIRE (report.cancelled);
     REQUIRE (target.existsAsFile());
@@ -177,7 +178,8 @@ TEST_CASE ("a completed render replaces the file at its destination", "[engine][
     RenderOptions options;
     options.seconds = 0.25;
 
-    const auto report = OfflineRenderer::renderToFile (dew::testing::fixtureProject(), target, options);
+    const auto report = OfflineRenderer::renderToFile (dew::testing::fixtureProject(), target,
+                                                       options);
 
     REQUIRE (report.ok());
     REQUIRE (report.files.size() == 1);

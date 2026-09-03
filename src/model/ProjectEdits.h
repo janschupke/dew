@@ -27,7 +27,8 @@ struct ProjectEdits
     static juce::ValueTree findMixerTrack (const juce::ValueTree& project, int mixerTrackId);
 
     /** The note at exactly this channel/step/pitch, or an invalid tree. */
-    static juce::ValueTree findNote (const juce::ValueTree& pattern, int channelId, int step, int pitch);
+    static juce::ValueTree findNote (const juce::ValueTree& pattern, int channelId, int step,
+                                     int pitch);
 
     /** Any note on this channel covering this step, whatever its pitch - what
         the step grid shows as a lit cell.
@@ -53,8 +54,7 @@ struct ProjectEdits
                             juce::UndoManager*);
 
     static juce::ValueTree addNote (juce::ValueTree pattern, int channelId, int step,
-                                    int lengthSteps, int pitch, float velocity,
-                                    juce::UndoManager*);
+                                    int lengthSteps, int pitch, float velocity, juce::UndoManager*);
 
     static void removeNote (juce::ValueTree pattern, juce::ValueTree note, juce::UndoManager*);
 
@@ -120,10 +120,12 @@ struct ProjectEdits
         audio has been read, and because a missing file should still draw as the
         right width rather than collapsing to nothing.
     */
-    static void setSampleSource (juce::ValueTree channel, const juce::String& relativeOrAbsolutePath,
-                                 int sourceSampleRate, int lengthSamples, juce::UndoManager*);
+    static void setSampleSource (juce::ValueTree channel,
+                                 const juce::String& relativeOrAbsolutePath, int sourceSampleRate,
+                                 int lengthSamples, juce::UndoManager*);
 
-    static void removeChannel (juce::ValueTree project, juce::ValueTree channel, juce::UndoManager*);
+    static void removeChannel (juce::ValueTree project, juce::ValueTree channel,
+                               juce::UndoManager*);
 
     // --- patterns ------------------------------------------------------------
     static juce::ValueTree addPattern (juce::ValueTree project, juce::UndoManager*);
@@ -226,8 +228,7 @@ struct ProjectEdits
         menu item that silently does nothing is worse than one more lane.
     */
     static juce::ValueTree addAutomationWithClip (juce::ValueTree project, const AutomationTarget&,
-                                                  int startBar, int lengthBars,
-                                                  juce::UndoManager*);
+                                                  int startBar, int lengthBars, juce::UndoManager*);
 
     /** Removes an automation and every clip that referred to it. */
     static bool removeAutomation (juce::ValueTree project, juce::ValueTree automation,
@@ -252,8 +253,8 @@ struct ProjectEdits
         landing on a neighbour would make a pair the rest of the model regards as
         single, and a zero-width segment whose bend means nothing.
     */
-    static void moveAutomationPoint (juce::ValueTree automation, juce::ValueTree point,
-                                     double step, double value, juce::UndoManager*);
+    static void moveAutomationPoint (juce::ValueTree automation, juce::ValueTree point, double step,
+                                     double value, juce::UndoManager*);
 
     /** The smallest gap between two automation points, in steps.
 
@@ -297,8 +298,7 @@ struct ProjectEdits
         is what makes "Default" a real menu item rather than a fifth colour that
         happens to look like the fourth.
     */
-    static void setColour (juce::ValueTree node, const juce::String& hex,
-                           juce::UndoManager*);
+    static void setColour (juce::ValueTree node, const juce::String& hex, juce::UndoManager*);
 
     /** What the editor's "Line" means: shape `curve`, bend zero, one undo step.
 
@@ -350,8 +350,8 @@ struct ProjectEdits
                                               int startBar, int lengthBars, juce::UndoManager*);
 
     /** A clip that plays an audio channel's sample. */
-    static juce::ValueTree addAudioClip (juce::ValueTree playlistTrack, int channelId,
-                                         int startBar, int lengthBars, juce::UndoManager*);
+    static juce::ValueTree addAudioClip (juce::ValueTree playlistTrack, int channelId, int startBar,
+                                         int lengthBars, juce::UndoManager*);
 
     static bool isAutomationClip (const juce::ValueTree& clip);
 
@@ -362,7 +362,8 @@ struct ProjectEdits
     */
     static bool isMidiClip (const juce::ValueTree& clip);
 
-    static void removeClip (juce::ValueTree playlistTrack, juce::ValueTree clip, juce::UndoManager*);
+    static void removeClip (juce::ValueTree playlistTrack, juce::ValueTree clip,
+                            juce::UndoManager*);
 
     static void moveClip (juce::ValueTree clip, int newStartBar, juce::UndoManager*);
 

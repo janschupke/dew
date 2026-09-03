@@ -20,8 +20,8 @@ Duration reduced (int numerator, int denominator) noexcept
     false on anything else, including a trailing character the language does not
     define - a lexeme is either a whole note value or it is not one.
 */
-bool readRatio (std::string_view lexeme, int& numerator, int& denominator,
-                bool& dotted, bool& triplet) noexcept
+bool readRatio (std::string_view lexeme, int& numerator, int& denominator, bool& dotted,
+                bool& triplet) noexcept
 {
     numerator = 0;
     denominator = 0;

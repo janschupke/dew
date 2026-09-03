@@ -28,8 +28,8 @@ struct MixerBus
     static void panGains (float pan, float& leftGain, float& rightGain) noexcept;
 
     /** Adds `mono` into a stereo pair, applying gain and pan. */
-    static void addPanned (const float* mono, int numSamples, float gain, float pan,
-                           float* left, float* right) noexcept;
+    static void addPanned (const float* mono, int numSamples, float gain, float pan, float* left,
+                           float* right) noexcept;
 
     /** What a mixer track contributes to the master, and what its meter shows.
 
@@ -44,7 +44,10 @@ struct MixerBus
         the pre-fader buffer's scale, because the buffers hold the track before
         its gain is applied.
     */
-    struct TrackGains { float left, right, meter; };
+    struct TrackGains
+    {
+        float left, right, meter;
+    };
 
     static TrackGains trackGains (float pan, float gain) noexcept;
 };

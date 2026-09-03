@@ -44,13 +44,13 @@ struct ChordEntry
 {
     SourceRange range;
 
-    std::string_view root;          ///< "i", "bVII", "V7", "Cm7"
+    std::string_view root; ///< "i", "bVII", "V7", "Cm7"
     SourceRange rootRange;
 
     bool hasInversion = false;
     int inversion = 0;
 
-    std::string_view of;            ///< the target of a `/` tonicisation
+    std::string_view of; ///< the target of a `/` tonicisation
 
     /** `x2` - a share of what is left over. Mutually exclusive with `duration`. */
     bool hasWeight = false;
@@ -77,8 +77,8 @@ struct RhythmEntry
 
     SourceRange range;
     Kind kind = Kind::duration;
-    std::string_view text;          ///< the ratio lexeme, for a duration
-    int repeat = 1;                 ///< from a following `xN`
+    std::string_view text; ///< the ratio lexeme, for a duration
+    int repeat = 1;        ///< from a following `xN`
 };
 
 struct Block;

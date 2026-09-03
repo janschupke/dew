@@ -6,7 +6,8 @@ namespace dew
 {
 
 HoverHelp::HoverHelp (juce::Component& r, StatusBar& s)
-    : root (r), statusBar (s)
+    : root (r)
+    , statusBar (s)
 {
     root.addMouseListener (this, true);
 }
@@ -28,18 +29,26 @@ juce::String HoverHelp::helpFor (juce::Component& component)
 
 void HoverHelp::report (const juce::MouseEvent& event)
 {
-    statusBar.setHoverHelp (event.eventComponent != nullptr
-                                ? helpFor (*event.eventComponent)
-                                : juce::String());
+    statusBar.setHoverHelp (event.eventComponent != nullptr ? helpFor (*event.eventComponent)
+                                                            : juce::String());
 }
 
-void HoverHelp::mouseMove (const juce::MouseEvent& event)  { report (event); }
-void HoverHelp::mouseEnter (const juce::MouseEvent& event) { report (event); }
+void HoverHelp::mouseMove (const juce::MouseEvent& event)
+{
+    report (event);
+}
+void HoverHelp::mouseEnter (const juce::MouseEvent& event)
+{
+    report (event);
+}
 
 // A press changes what is under the pointer often enough to matter - a tab, a
 // row that rebuilds - and the strip would otherwise keep describing whatever
 // was there before the click.
-void HoverHelp::mouseDown (const juce::MouseEvent& event) { report (event); }
+void HoverHelp::mouseDown (const juce::MouseEvent& event)
+{
+    report (event);
+}
 
 void HoverHelp::mouseExit (const juce::MouseEvent& event)
 {

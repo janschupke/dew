@@ -39,7 +39,10 @@ public:
         the constant form when there is none. */
     static TempoMap build (const EngineSnapshot&, juce::StringArray* warnings);
 
-    bool isConstant() const noexcept { return constantTempo; }
+    bool isConstant() const noexcept
+    {
+        return constantTempo;
+    }
 
     double secondsForSteps (double steps) const noexcept;
     double stepsForSeconds (double seconds) const noexcept;
@@ -56,7 +59,10 @@ public:
         double bpm = 128.0;
     };
 
-    juce::Span<const Segment> segments() const noexcept { return { tempoSegments.data(), tempoSegments.size() }; }
+    juce::Span<const Segment> segments() const noexcept
+    {
+        return { tempoSegments.data(), tempoSegments.size() };
+    }
 
     /** How long a map may get before it is refused.
 

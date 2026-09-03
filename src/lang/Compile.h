@@ -26,7 +26,10 @@ struct CompileResult
     */
     SymbolTable symbols;
 
-    bool ok() const noexcept { return score.has_value(); }
+    bool ok() const noexcept
+    {
+        return score.has_value();
+    }
 
     int errorCount() const noexcept;
 

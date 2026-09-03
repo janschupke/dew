@@ -112,13 +112,14 @@ void AudioEngine::publish (EngineSnapshot snapshot)
 bool AudioEngine::previewNoteOn (int channelIndex, int pitch, float velocity) noexcept
 {
     return previewQueue.push ({ PreviewEvent::Kind::noteOn, channelIndex,
-                                juce::jlimit (0, 127, pitch), juce::jlimit (0.0f, 1.0f, velocity) });
+                                juce::jlimit (0, 127, pitch),
+                                juce::jlimit (0.0f, 1.0f, velocity) });
 }
 
 bool AudioEngine::previewNoteOff (int channelIndex, int pitch) noexcept
 {
-    return previewQueue.push ({ PreviewEvent::Kind::noteOff, channelIndex,
-                                juce::jlimit (0, 127, pitch), 0.0f });
+    return previewQueue.push (
+        { PreviewEvent::Kind::noteOff, channelIndex, juce::jlimit (0, 127, pitch), 0.0f });
 }
 
 bool AudioEngine::previewAllOff() noexcept
@@ -128,14 +129,14 @@ bool AudioEngine::previewAllOff() noexcept
 
 bool AudioEngine::midiNoteOn (int channelIndex, int pitch, float velocity) noexcept
 {
-    return midiQueue.push ({ PreviewEvent::Kind::noteOn, channelIndex,
-                             juce::jlimit (0, 127, pitch), juce::jlimit (0.0f, 1.0f, velocity) });
+    return midiQueue.push ({ PreviewEvent::Kind::noteOn, channelIndex, juce::jlimit (0, 127, pitch),
+                             juce::jlimit (0.0f, 1.0f, velocity) });
 }
 
 bool AudioEngine::midiNoteOff (int channelIndex, int pitch) noexcept
 {
-    return midiQueue.push ({ PreviewEvent::Kind::noteOff, channelIndex,
-                             juce::jlimit (0, 127, pitch), 0.0f });
+    return midiQueue.push (
+        { PreviewEvent::Kind::noteOff, channelIndex, juce::jlimit (0, 127, pitch), 0.0f });
 }
 
 bool AudioEngine::midiAllOff() noexcept
@@ -218,7 +219,7 @@ void AudioEngine::applyPreviewEvent (const EngineSnapshot& snapshot, const Previ
     // through. Not worth an untestable behaviour change.
     juce::ignoreUnused (snapshot);
     pushNoteEvent (event.channelIndex, { NoteEvent::Kind::on, 0, event.pitch, event.velocity,
-                                        std::numeric_limits<int>::max() });
+                                         std::numeric_limits<int>::max() });
 }
 
 void AudioEngine::drainPreviewQueue (const EngineSnapshot& snapshot) noexcept
@@ -301,8 +302,7 @@ void AudioEngine::setPlayheadSteps (double steps)
     // should follow the pointer, not the next audio block - and a device that
     // is not calling back would otherwise never move at all.
     const auto sps = Transport::samplesPerStepFor (transport.getTempo(),
-                                                   transport.getStepsPerBeat(),
-                                                   currentSampleRate);
+                                                   transport.getStepsPerBeat(), currentSampleRate);
 
     if (sps <= 0.0)
         return;
@@ -332,14 +332,15 @@ void AudioEngine::setPlayheadSteps (double steps)
     const auto wrap = appliedWrap.load (std::memory_order_relaxed);
 
     if (! wrap.isEmpty())
-        position = Transport::wrappedIntoLoop (position,
-                                               (juce::int64) std::llround (samplesAt ((double) wrap.startSteps)),
-                                               (juce::int64) std::llround (samplesAt ((double) wrap.endSteps)));
+        position = Transport::wrappedIntoLoop (
+            position, (juce::int64) std::llround (samplesAt ((double) wrap.startSteps)),
+            (juce::int64) std::llround (samplesAt ((double) wrap.endSteps)));
 
     playheadSamples.store (position);
 }
 
-void AudioEngine::setLoopRangeSteps (Transport::Mode mode, double startSteps, double endSteps) noexcept
+void AudioEngine::setLoopRangeSteps (Transport::Mode mode, double startSteps,
+                                     double endSteps) noexcept
 {
     // Ordered here rather than in Transport: which end of a drag came first is a
     // fact about a mouse, not about time.
@@ -380,11 +381,10 @@ double AudioEngine::getPlayheadSteps() const noexcept
 
     if (map != nullptr && ! map->isConstant())
         return map->stepsForSeconds ((double) playheadSamples.load()
-                                         / juce::jmax (1.0, currentSampleRate));
+                                     / juce::jmax (1.0, currentSampleRate));
 
     const auto sps = Transport::samplesPerStepFor (transport.getTempo(),
-                                                   transport.getStepsPerBeat(),
-                                                   currentSampleRate);
+                                                   transport.getStepsPerBeat(), currentSampleRate);
 
     return sps > 0.0 ? (double) playheadSamples.load() / sps : 0.0;
 }
@@ -436,8 +436,7 @@ void AudioEngine::collectAutomation (const EngineSnapshot& snapshot, double posi
         // The curve is drawn relative to the clip, so it plays wherever the
         // clip is placed rather than only at bar one.
         activeAutomation.push_back ({ automation.scope, automation.targetIndex,
-                                      automation.slotIndex, automation.param,
-                                      automation.paramIndex,
+                                      automation.slotIndex, automation.param, automation.paramIndex,
                                       automation.valueAt (positionSteps - start) });
     }
 }
@@ -461,8 +460,8 @@ void writeEffectParam (EffectSnapshot& slot, int paramIndex, float value) noexce
 
 } // namespace
 
-const AudioEngine::ChannelOverrides*
-AudioEngine::overridesFor (const ChannelSnapshot& channel, int channelIndex) noexcept
+const AudioEngine::ChannelOverrides* AudioEngine::overridesFor (const ChannelSnapshot& channel,
+                                                                int channelIndex) noexcept
 {
     auto automated = false;
 
@@ -504,14 +503,14 @@ AudioEngine::overridesFor (const ChannelSnapshot& channel, int channelIndex) noe
                 // under the CI preset.
                 overrides.muted = active.value > 0.5f;
         }
-        else if (active.scope == AutomationScope::channelOsc
-                 && active.slotIndex >= 0 && active.slotIndex < overrides.osc.numSlots)
+        else if (active.scope == AutomationScope::channelOsc && active.slotIndex >= 0
+                 && active.slotIndex < overrides.osc.numSlots)
         {
             if (active.param == AutomationParam::position)
                 overrides.osc.slots[(size_t) active.slotIndex].position = active.value;
         }
-        else if (active.scope == AutomationScope::channelEffect
-                 && active.slotIndex >= 0 && active.slotIndex < overrides.effects.numSlots)
+        else if (active.scope == AutomationScope::channelEffect && active.slotIndex >= 0
+                 && active.slotIndex < overrides.effects.numSlots)
         {
             if (active.param == AutomationParam::enabled)
                 overrides.effects.slots[(size_t) active.slotIndex].enabled = active.value > 0.5f;
@@ -524,8 +523,8 @@ AudioEngine::overridesFor (const ChannelSnapshot& channel, int channelIndex) noe
     return &overrides;
 }
 
-const AudioEngine::MixerTrackOverrides*
-AudioEngine::overridesFor (const MixerTrackSnapshot& track, int trackIndex) noexcept
+const AudioEngine::MixerTrackOverrides* AudioEngine::overridesFor (const MixerTrackSnapshot& track,
+                                                                   int trackIndex) noexcept
 {
     auto automated = false;
 
@@ -562,8 +561,8 @@ AudioEngine::overridesFor (const MixerTrackSnapshot& track, int trackIndex) noex
             else if (active.param == AutomationParam::muted)
                 overrides.mute = active.value > 0.5f;
         }
-        else if (active.scope == AutomationScope::mixerEffect
-                 && active.slotIndex >= 0 && active.slotIndex < overrides.effects.numSlots)
+        else if (active.scope == AutomationScope::mixerEffect && active.slotIndex >= 0
+                 && active.slotIndex < overrides.effects.numSlots)
         {
             if (active.param == AutomationParam::enabled)
                 overrides.effects.slots[(size_t) active.slotIndex].enabled = active.value > 0.5f;
@@ -608,8 +607,8 @@ void AudioEngine::runChain (const EffectChainSnapshot& chain, float* left, float
             slot.module->reset();
         }
 
-        processEffectSlot (*slot.module, slot.params, slot.type,
-                           { left, right, numSamples }, dryScratch);
+        processEffectSlot (*slot.module, slot.params, slot.type, { left, right, numSamples },
+                           dryScratch);
     }
 }
 
@@ -738,17 +737,19 @@ void AudioEngine::processBlock (juce::AudioBuffer<float>& buffer) noexcept
     lastAppliedLoop = userLoop;
 
     auto wrapStart = 0.0;
-    auto wrapEnd   = (double) materialSteps;
+    auto wrapEnd = (double) materialSteps;
 
     if (materialSteps > 0 && ! userLoop.isEmpty())
     {
-        const auto clampedStart = juce::jlimit (0.0, (double) materialSteps, (double) userLoop.startSteps);
-        const auto clampedEnd   = juce::jlimit (0.0, (double) materialSteps, (double) userLoop.endSteps);
+        const auto clampedStart = juce::jlimit (0.0, (double) materialSteps,
+                                                (double) userLoop.startSteps);
+        const auto clampedEnd = juce::jlimit (0.0, (double) materialSteps,
+                                              (double) userLoop.endSteps);
 
         if (clampedEnd > clampedStart)
         {
             wrapStart = clampedStart;
-            wrapEnd   = clampedEnd;
+            wrapEnd = clampedEnd;
         }
     }
 
@@ -762,9 +763,8 @@ void AudioEngine::processBlock (juce::AudioBuffer<float>& buffer) noexcept
 
     if (seekRequested.exchange (false))
     {
-        const auto sps = Transport::samplesPerStepFor (transport.getTempo(),
-                                                       transport.getStepsPerBeat(),
-                                                       currentSampleRate);
+        const auto sps = Transport::samplesPerStepFor (
+            transport.getTempo(), transport.getStepsPerBeat(), currentSampleRate);
 
         transport.setPositionSamples ((juce::int64) (seekToSteps.load() * sps));
 
@@ -827,7 +827,8 @@ void AudioEngine::processBlock (juce::AudioBuffer<float>& buffer) noexcept
     // Automation is a property of the arrangement, so it only applies in song
     // mode - pattern mode has no playlist position for a clip to cover.
     if (mode == Transport::Mode::song && isPlayingNow)
-        collectAutomation (snapshot, transport.getPositionSamples() / juce::jmax (1.0, transport.samplesPerStep()));
+        collectAutomation (snapshot, transport.getPositionSamples()
+                                         / juce::jmax (1.0, transport.samplesPerStep()));
     else
         activeAutomation.clear();
 
@@ -859,17 +860,18 @@ void AudioEngine::processBlock (juce::AudioBuffer<float>& buffer) noexcept
             continue;
 
         pushNoteEvent (trigger.channelIndex,
-                       { NoteEvent::Kind::on, trigger.sampleOffset, trigger.pitch,
-                         trigger.velocity, trigger.durationSamples });
+                       { NoteEvent::Kind::on, trigger.sampleOffset, trigger.pitch, trigger.velocity,
+                         trigger.durationSamples });
     }
 
     // --- render channels into their mixer tracks -----------------------------
     // Everything an instrument needs that does not vary by channel.
     InstrumentContext blockContext;
-    blockContext.transport = { transport.getPositionInSteps(),
-                               transport.samplesPerStep(), currentSampleRate,
-                               transport.getPositionSamples(), snapshot.tempoMap.get(),
-                               isPlayingNow, mode == Transport::Mode::song };
+    blockContext.transport = {
+        transport.getPositionInSteps(), transport.samplesPerStep(), currentSampleRate,
+        transport.getPositionSamples(), snapshot.tempoMap.get(),    isPlayingNow,
+        mode == Transport::Mode::song
+    };
     blockContext.clips = { snapshot.clips.data(), snapshot.clips.size() };
     blockContext.stepsPerBar = snapshot.stepsPerBar();
 
@@ -888,10 +890,10 @@ void AudioEngine::processBlock (juce::AudioBuffer<float>& buffer) noexcept
         // case reads the snapshot straight through and copies nothing at all.
         const auto* automated = overridesFor (channel, i);
 
-        const auto volume  = automated != nullptr ? automated->volume  : channel.volume;
-        const auto pan     = automated != nullptr ? automated->pan     : channel.pan;
-        const auto& osc    = automated != nullptr ? automated->osc     : channel.osc;
-        const auto& chain  = automated != nullptr ? automated->effects : channel.effects;
+        const auto volume = automated != nullptr ? automated->volume : channel.volume;
+        const auto pan = automated != nullptr ? automated->pan : channel.pan;
+        const auto& osc = automated != nullptr ? automated->osc : channel.osc;
+        const auto& chain = automated != nullptr ? automated->effects : channel.effects;
 
         // One dispatch, not a branch on the kind of channel. It was an `if` on
         // an enum, with the two arms taking different arguments and sharing
@@ -908,7 +910,8 @@ void AudioEngine::processBlock (juce::AudioBuffer<float>& buffer) noexcept
 
             // One read of each controller per block, like the transport's atomics.
             blockContext.bendSemitones = channelBend[(size_t) i].load (std::memory_order_relaxed);
-            blockContext.modulation = channelModulation[(size_t) i].load (std::memory_order_relaxed);
+            blockContext.modulation = channelModulation[(size_t) i].load (
+                std::memory_order_relaxed);
 
             blockContext.osc = &osc;
             blockContext.amp = &channel.amp;
@@ -930,7 +933,7 @@ void AudioEngine::processBlock (juce::AudioBuffer<float>& buffer) noexcept
         if (mixerIndex < 0 || mixerIndex >= numMixerTracks)
             continue;
 
-        auto* trackLeft  = mixerBuffers.getWritePointer (mixerIndex * 2);
+        auto* trackLeft = mixerBuffers.getWritePointer (mixerIndex * 2);
         auto* trackRight = mixerBuffers.getWritePointer (mixerIndex * 2 + 1);
 
         // anyEnabled rather than numSlots: a chain whose slots are all switched
@@ -946,7 +949,7 @@ void AudioEngine::processBlock (juce::AudioBuffer<float>& buffer) noexcept
 
         // Effects are stereo, so a channel with a chain gets panned into a
         // scratch pair first and summed into its track afterwards.
-        auto* scratchLeft  = channelStereo.getWritePointer (0);
+        auto* scratchLeft = channelStereo.getWritePointer (0);
         auto* scratchRight = channelStereo.getWritePointer (1);
 
         juce::FloatVectorOperations::clear (scratchLeft, numSamples);
@@ -974,9 +977,9 @@ void AudioEngine::processBlock (juce::AudioBuffer<float>& buffer) noexcept
                                    automated != nullptr ? automated->mute : track.mute))
             continue;
 
-        const auto trackGain = automated != nullptr ? automated->gain    : track.gain;
-        const auto trackPan  = automated != nullptr ? automated->pan     : track.pan;
-        const auto& chain    = automated != nullptr ? automated->effects : track.effects;
+        const auto trackGain = automated != nullptr ? automated->gain : track.gain;
+        const auto trackPan = automated != nullptr ? automated->pan : track.pan;
+        const auto& chain = automated != nullptr ? automated->effects : track.effects;
 
         // Before gain and pan, so a track's fader rides the processed signal
         // rather than the effects riding the fader.
@@ -985,14 +988,10 @@ void AudioEngine::processBlock (juce::AudioBuffer<float>& buffer) noexcept
 
         const auto gains = MixerBus::trackGains (trackPan, trackGain);
 
-        juce::FloatVectorOperations::addWithMultiply (outLeft,
-                                                      mixerBuffers.getReadPointer (i * 2),
-                                                      gains.left,
-                                                      numSamples);
-        juce::FloatVectorOperations::addWithMultiply (outRight,
-                                                      mixerBuffers.getReadPointer (i * 2 + 1),
-                                                      gains.right,
-                                                      numSamples);
+        juce::FloatVectorOperations::addWithMultiply (outLeft, mixerBuffers.getReadPointer (i * 2),
+                                                      gains.left, numSamples);
+        juce::FloatVectorOperations::addWithMultiply (
+            outRight, mixerBuffers.getReadPointer (i * 2 + 1), gains.right, numSamples);
 
         // The buffers hold the track PRE-fader - the gain is applied during the
         // add above - so the meter has to scale by what the fader is doing, or

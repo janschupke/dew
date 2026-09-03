@@ -5,9 +5,8 @@
 namespace dew
 {
 
-
-void Biquad::setCoefficients (double b0n, double b1n, double b2n,
-                              double a0n, double a1n, double a2n) noexcept
+void Biquad::setCoefficients (double b0n, double b1n, double b2n, double a0n, double a1n,
+                              double a2n) noexcept
 {
     // a0 of zero would be a division by zero rather than a filter; it cannot
     // happen for the shapes below, but the guard costs nothing on the audio
@@ -24,7 +23,8 @@ void Biquad::setCoefficients (double b0n, double b1n, double b2n,
 void Biquad::setLowShelf (double sampleRate, float frequency, float gainDb) noexcept
 {
     const auto A = std::pow (10.0, (double) gainDb / 40.0);
-    const auto w = juce::MathConstants<double>::twoPi * juce::jlimit (10.0, sampleRate * 0.49, (double) frequency) / sampleRate;
+    const auto w = juce::MathConstants<double>::twoPi
+                   * juce::jlimit (10.0, sampleRate * 0.49, (double) frequency) / sampleRate;
     const auto cosw = std::cos (w), sinw = std::sin (w);
     const auto alpha = sinw / 2.0 * std::sqrt ((A + 1.0 / A) * (1.0 / 0.9 - 1.0) + 2.0);
     const auto twoSqrtAAlpha = 2.0 * std::sqrt (A) * alpha;
@@ -40,7 +40,8 @@ void Biquad::setLowShelf (double sampleRate, float frequency, float gainDb) noex
 void Biquad::setHighShelf (double sampleRate, float frequency, float gainDb) noexcept
 {
     const auto A = std::pow (10.0, (double) gainDb / 40.0);
-    const auto w = juce::MathConstants<double>::twoPi * juce::jlimit (10.0, sampleRate * 0.49, (double) frequency) / sampleRate;
+    const auto w = juce::MathConstants<double>::twoPi
+                   * juce::jlimit (10.0, sampleRate * 0.49, (double) frequency) / sampleRate;
     const auto cosw = std::cos (w), sinw = std::sin (w);
     const auto alpha = sinw / 2.0 * std::sqrt ((A + 1.0 / A) * (1.0 / 0.9 - 1.0) + 2.0);
     const auto twoSqrtAAlpha = 2.0 * std::sqrt (A) * alpha;
@@ -56,15 +57,12 @@ void Biquad::setHighShelf (double sampleRate, float frequency, float gainDb) noe
 void Biquad::setPeak (double sampleRate, float frequency, float q, float gainDb) noexcept
 {
     const auto A = std::pow (10.0, (double) gainDb / 40.0);
-    const auto w = juce::MathConstants<double>::twoPi * juce::jlimit (10.0, sampleRate * 0.49, (double) frequency) / sampleRate;
+    const auto w = juce::MathConstants<double>::twoPi
+                   * juce::jlimit (10.0, sampleRate * 0.49, (double) frequency) / sampleRate;
     const auto cosw = std::cos (w), sinw = std::sin (w);
     const auto alpha = sinw / (2.0 * juce::jmax (0.05, (double) q));
 
-    setCoefficients (1.0 + alpha * A,
-                     -2.0 * cosw,
-                     1.0 - alpha * A,
-                     1.0 + alpha / A,
-                     -2.0 * cosw,
+    setCoefficients (1.0 + alpha * A, -2.0 * cosw, 1.0 - alpha * A, 1.0 + alpha / A, -2.0 * cosw,
                      1.0 - alpha / A);
 }
 

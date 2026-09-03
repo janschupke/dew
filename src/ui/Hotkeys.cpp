@@ -13,8 +13,8 @@ namespace
     matches() in the header.
 */
 constexpr int comparedModifiers = juce::ModifierKeys::commandModifier
-                                | juce::ModifierKeys::ctrlModifier
-                                | juce::ModifierKeys::altModifier;
+                                  | juce::ModifierKeys::ctrlModifier
+                                  | juce::ModifierKeys::altModifier;
 
 // clang-format on
 int lowerCase (int character) noexcept
@@ -117,7 +117,7 @@ const std::vector<Binding<juce::CommandID>>& application()
           "MIDI Settings...", "Choose which MIDI controllers play", "Audio" },
     };
 
-// clang-format on
+    // clang-format on
     return table;
 }
 
@@ -171,7 +171,7 @@ const std::vector<Binding<ViewCommand>>& timeline()
           "Default Size", "Return this view's rows, or its text, to the default size", "View" },
     };
 
-// clang-format on
+    // clang-format on
     return table;
 }
 

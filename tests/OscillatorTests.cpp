@@ -107,8 +107,7 @@ TEST_CASE ("a channel always carries every oscillator slot, however it was built
     }
 }
 
-TEST_CASE ("every oscillator keeps its own settings across a round trip",
-           "[schema][oscillator]")
+TEST_CASE ("every oscillator keeps its own settings across a round trip", "[schema][oscillator]")
 {
     auto project = dew::testing::fixtureProject();
     auto channel = firstChannel (project);
@@ -284,8 +283,8 @@ juce::AudioBuffer<float> renderOneNote (const OscBankSnapshot& bank, int numSamp
 TEST_CASE ("a second oscillator adds to the first", "[engine][oscillator]")
 {
     const auto alone = renderOneNote (bankOf ({ slotSettings (Waveform::sine) }));
-    const auto doubled = renderOneNote (bankOf ({ slotSettings (Waveform::sine),
-                                                  slotSettings (Waveform::sine) }));
+    const auto doubled = renderOneNote (
+        bankOf ({ slotSettings (Waveform::sine), slotSettings (Waveform::sine) }));
 
     REQUIRE (peakOf (alone) > 0.05f);
 
@@ -328,10 +327,10 @@ TEST_CASE ("each oscillator carries its own settings into the render", "[engine]
 {
     SECTION ("its own waveform")
     {
-        const auto sines = renderOneNote (bankOf ({ slotSettings (Waveform::sine),
-                                                    slotSettings (Waveform::sine) }));
-        const auto mixed = renderOneNote (bankOf ({ slotSettings (Waveform::sine),
-                                                    slotSettings (Waveform::square) }));
+        const auto sines = renderOneNote (
+            bankOf ({ slotSettings (Waveform::sine), slotSettings (Waveform::sine) }));
+        const auto mixed = renderOneNote (
+            bankOf ({ slotSettings (Waveform::sine), slotSettings (Waveform::square) }));
 
         bool differs = false;
 
@@ -345,17 +344,15 @@ TEST_CASE ("each oscillator carries its own settings into the render", "[engine]
 
     SECTION ("its own octave")
     {
-        const auto unison = renderOneNote (bankOf ({ slotSettings (Waveform::sine),
-                                                     slotSettings (Waveform::sine) }));
+        const auto unison = renderOneNote (
+            bankOf ({ slotSettings (Waveform::sine), slotSettings (Waveform::sine) }));
         const auto anOctaveUp = renderOneNote (
-            bankOf ({ slotSettings (Waveform::sine),
-                      slotSettings (Waveform::sine, 0.8f, 1) }));
+            bankOf ({ slotSettings (Waveform::sine), slotSettings (Waveform::sine, 0.8f, 1) }));
 
         bool differs = false;
 
         for (int i = 0; i < unison.getNumSamples() && ! differs; ++i)
-            differs = ! juce::exactlyEqual (unison.getSample (0, i),
-                                            anOctaveUp.getSample (0, i));
+            differs = ! juce::exactlyEqual (unison.getSample (0, i), anOctaveUp.getSample (0, i));
 
         REQUIRE (differs);
     }
@@ -363,8 +360,8 @@ TEST_CASE ("each oscillator carries its own settings into the render", "[engine]
     SECTION ("its own detune, which two slots apart beat against each other")
     {
         const auto beating = renderOneNote (
-            bankOf ({ slotSettings (Waveform::sine),
-                      slotSettings (Waveform::sine, 0.8f, 0, 8.0f) }),
+            bankOf (
+                { slotSettings (Waveform::sine), slotSettings (Waveform::sine, 0.8f, 0, 8.0f) }),
             44100);
 
         // Two sines eight cents apart cancel and reinforce over the beat
@@ -385,8 +382,7 @@ TEST_CASE ("each oscillator carries its own settings into the render", "[engine]
         for (int i = 0; i < alone.getNumSamples(); ++i)
         {
             INFO ("sample " << i);
-            REQUIRE (juce::exactlyEqual (alone.getSample (0, i),
-                                         withSilentSlot.getSample (0, i)));
+            REQUIRE (juce::exactlyEqual (alone.getSample (0, i), withSilentSlot.getSample (0, i)));
         }
     }
 }
@@ -427,8 +423,14 @@ struct OscHarness
         section.setOwner (channel().getChildWithName (ids::INSTRUMENT));
     }
 
-    juce::ValueTree channel() { return firstChannel (document.getState()); }
-    juce::ValueTree slot (int i) { return ProjectEdits::oscillatorAt (channel(), i); }
+    juce::ValueTree channel()
+    {
+        return firstChannel (document.getState());
+    }
+    juce::ValueTree slot (int i)
+    {
+        return ProjectEdits::oscillatorAt (channel(), i);
+    }
 
     ProjectDocument document;
     EditorState editorState;

@@ -32,7 +32,11 @@ public:
         const auto wire = [this] (DewIconButton& button, double factor)
         {
             button.setWantsKeyboardFocus (false);
-            button.onClick = [this, factor] { if (onZoom) onZoom (factor); };
+            button.onClick = [this, factor]
+            {
+                if (onZoom)
+                    onZoom (factor);
+            };
             addAndMakeVisible (button);
         };
 

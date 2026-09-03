@@ -12,7 +12,7 @@ using namespace tokens;
 namespace
 {
 
-constexpr int rateIdBase = 1000;   ///< sample rate in Hz IS the item id
+constexpr int rateIdBase = 1000; ///< sample rate in Hz IS the item id
 
 /** The rates every format takes, and the two more that only uncompressed ones do. */
 const juce::Array<int> allRates { 44100, 48000, 88200, 96000 };
@@ -32,7 +32,9 @@ juce::String describeSeconds (double seconds)
 } // namespace
 
 RenderPanel::RenderPanel (ProjectDocument& d, EditorState& state, Settings* settingsToUpdate)
-    : document (d), editorState (state), settings (settingsToUpdate)
+    : document (d)
+    , editorState (state)
+    , settings (settingsToUpdate)
 {
     setComponentID ("renderPanel");
     setSize (preferredWidth, preferredHeight);
@@ -66,7 +68,8 @@ RenderPanel::RenderPanel (ProjectDocument& d, EditorState& state, Settings* sett
     depthBox.setSelectedId (24, juce::dontSendNotification);
 
     ditherToggle.setToggleState (true, juce::dontSendNotification);
-    ditherToggle.setTooltip ("Adds inaudible noise so 16-bit truncation does not distort quiet passages");
+    ditherToggle.setTooltip (
+        "Adds inaudible noise so 16-bit truncation does not distort quiet passages");
 
     rebuildFormats();
     rebuildScopes();
@@ -139,17 +142,10 @@ RenderPanel::RenderPanel (ProjectDocument& d, EditorState& state, Settings* sett
     };
 
     rows = {
-        { "SCOPE",  &scopeBox },
-        { "FORMAT", &formatBox },
-        { "RATE",   &rateBox },
-        { "DEPTH",  &depthBox },
-        { "QUALITY", &mp3QualityBox },
-        { "TAIL",   &tailField },
-        { "PEAK",   &peakField },
-        { "",       &normalizeToggle },
-        { "",       &fadeToggle },
-        { "",       &ditherToggle },
-        { "",       &stemsToggle },
+        { "SCOPE", &scopeBox }, { "FORMAT", &formatBox },      { "RATE", &rateBox },
+        { "DEPTH", &depthBox }, { "QUALITY", &mp3QualityBox }, { "TAIL", &tailField },
+        { "PEAK", &peakField }, { "", &normalizeToggle },      { "", &fadeToggle },
+        { "", &ditherToggle },  { "", &stemsToggle },
     };
 
     editorState.addChangeListener (this);
@@ -168,10 +164,8 @@ int RenderPanel::getRequiredHeight() const
             ++visibleRows;
 
     // Mirrors resized(), which is the only way the two can be trusted to agree.
-    return space::xl * 2
-           + visibleRows * (size::controlHeight + space::sm)
-           + space::md + size::controlHeight * 2
-           + space::lg + size::controlHeight;
+    return space::xl * 2 + visibleRows * (size::controlHeight + space::sm) + space::md
+           + size::controlHeight * 2 + space::lg + size::controlHeight;
 }
 
 void RenderPanel::applyRequiredHeight()
@@ -221,13 +215,13 @@ void RenderPanel::rebuildFormats()
     const juce::ScopedValueSetter<bool> guard (updating, true);
 
     const auto wanted = formatBox.getSelectedId() > 0 ? formatBox.getSelectedId()
-                                                       : (int) RenderFormat::wav + 1;
+                                                      : (int) RenderFormat::wav + 1;
 
     formatBox.clear (juce::dontSendNotification);
     unavailableNote.clear();
 
-    for (const auto format : { RenderFormat::wav, RenderFormat::flac,
-                               RenderFormat::mp3, RenderFormat::midi })
+    for (const auto format :
+         { RenderFormat::wav, RenderFormat::flac, RenderFormat::mp3, RenderFormat::midi })
     {
         const auto id = (int) format + 1;
         formatBox.addItem (OfflineRenderer::nameFor (format), id);
@@ -287,8 +281,8 @@ void RenderPanel::rebuildScopes()
     {
         const auto selection = editorState.getSelectedBarRange();
 
-        scopeBox.addItem ("Selection: bars " + juce::String (selection.getStart() + 1)
-                              + " to " + juce::String (selection.getEnd()),
+        scopeBox.addItem ("Selection: bars " + juce::String (selection.getStart() + 1) + " to "
+                              + juce::String (selection.getEnd()),
                           selectionScope);
     }
 
@@ -338,7 +332,8 @@ void RenderPanel::updateSummary()
     const auto snapshot = buildSnapshot (document.getState(), nullptr);
     const auto patternIndex = snapshot.patternIndexForId (request.options.patternId);
 
-    const auto materialSteps = Sequencer::materialLengthSteps (snapshot, request.options.mode, patternIndex);
+    const auto materialSteps = Sequencer::materialLengthSteps (snapshot, request.options.mode,
+                                                               patternIndex);
 
     // The snapshot's own map, which is already in seconds - so the summary of a
     // render with a tempo curve says how long it will actually be, rather than
@@ -352,7 +347,7 @@ void RenderPanel::updateSummary()
         const auto stepsPerBar = (double) snapshot.stepsPerBar();
 
         seconds = map.secondsForSteps ((double) request.options.barRange.lastBar * stepsPerBar)
-                    - map.secondsForSteps ((double) request.options.barRange.firstBar * stepsPerBar);
+                  - map.secondsForSteps ((double) request.options.barRange.firstBar * stepsPerBar);
     }
 
     if (request.options.format != RenderFormat::midi)
@@ -365,20 +360,19 @@ void RenderPanel::updateSummary()
     }
 
     summaryText = describeSeconds (seconds) + "  ·  "
-                  + OfflineRenderer::nameFor (request.options.format)
-                  + "  ·  " + juce::String (request.options.sampleRate, 0) + " Hz";
+                  + OfflineRenderer::nameFor (request.options.format) + "  ·  "
+                  + juce::String (request.options.sampleRate, 0) + " Hz";
 
     // Note the shape of these appends. juce::String's constructor from a
     // const char* reads it as ASCII, while operator+= reads it as UTF-8 - so
     // `someString + "  ·  "` is right and `"  ·  " + someString` turns the
     // separator into two mojibake characters. Always append to a String.
-    if (request.options.format == RenderFormat::wav
-        || request.options.format == RenderFormat::flac)
+    if (request.options.format == RenderFormat::wav || request.options.format == RenderFormat::flac)
     {
         summaryText += "  ·  ";
         summaryText += request.options.floatingPoint
-                         ? juce::String ("32-bit float")
-                         : juce::String (request.options.bitDepth) + "-bit";
+                           ? juce::String ("32-bit float")
+                           : juce::String (request.options.bitDepth) + "-bit";
     }
 
     if (request.stems)
@@ -434,9 +428,7 @@ RenderPanel::Request RenderPanel::getRequest() const
         }
 
         case songScope:
-        default:
-            request.options.mode = Transport::Mode::song;
-            break;
+        default: request.options.mode = Transport::Mode::song; break;
     }
 
     request.stems = stemsToggle.getToggleState() && request.options.format != RenderFormat::midi;
@@ -449,8 +441,8 @@ RenderPanel::Request RenderPanel::getRequest() const
     if (request.options.mode == Transport::Mode::pattern)
         name += " pattern " + juce::String (request.options.patternId);
     else if (! request.options.barRange.isEmpty())
-        name += " bars " + juce::String (request.options.barRange.firstBar + 1)
-                + "-" + juce::String (request.options.barRange.lastBar);
+        name += " bars " + juce::String (request.options.barRange.firstBar + 1) + "-"
+                + juce::String (request.options.barRange.lastBar);
 
     request.suggestedName = juce::File::createLegalFileName (name);
 
@@ -503,9 +495,7 @@ void RenderPanel::resized()
         line.removeFromLeft (space::md);
 
         // A toggle carries its own text, so it gets the whole row.
-        row.control->setBounds (row.label.isEmpty()
-                                  ? row.labelBounds.getUnion (line)
-                                  : line);
+        row.control->setBounds (row.label.isEmpty() ? row.labelBounds.getUnion (line) : line);
 
         area.removeFromTop (space::sm);
     }

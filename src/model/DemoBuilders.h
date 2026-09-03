@@ -41,9 +41,8 @@ struct Point
 using Params = std::initializer_list<std::pair<const juce::Identifier&, double>>;
 
 juce::ValueTree makeChannel (int id, const juce::String& name, const juce::String& colour,
-                             int basePitch, const juce::String& wave, int octave,
-                             double attack, double decay, double sustain, double release,
-                             double volume = 0.8);
+                             int basePitch, const juce::String& wave, int octave, double attack,
+                             double decay, double sustain, double release, double volume = 0.8);
 
 juce::ValueTree makeMixerTrack (int id, const juce::String& name);
 juce::ValueTree makePlaylistTrack (const juce::String& name);
@@ -85,8 +84,8 @@ juce::ValueTree channelWithId (const juce::ValueTree& project, int id);
 juce::ValueTree channelNamed (const juce::ValueTree& project, const juce::String& name);
 
 /** Points one oscillator slot at a classic waveform and switches it on. */
-void setClassicOsc (juce::ValueTree channel, int slot, const juce::String& wave,
-                    int octave, double gain, int detuneCents = 0);
+void setClassicOsc (juce::ValueTree channel, int slot, const juce::String& wave, int octave,
+                    double gain, int detuneCents = 0);
 
 /** Points one oscillator slot at a wavetable and switches it on.
 
@@ -94,10 +93,9 @@ void setClassicOsc (juce::ValueTree channel, int slot, const juce::String& wave,
     length of a note, the second runs free at `rate`. A pad wants the second and
     a struck sound wants the first, which is why both are in the demo.
 */
-void setWavetableOsc (juce::ValueTree channel, int slot, const juce::String& table,
-                      double position, double mod, const juce::String& source, double rate,
-                      int unisonVoices, double unisonDetune,
-                      int octave = 0, double gain = 0.8);
+void setWavetableOsc (juce::ValueTree channel, int slot, const juce::String& table, double position,
+                      double mod, const juce::String& source, double rate, int unisonVoices,
+                      double unisonDetune, int octave = 0, double gain = 0.8);
 
 /** Silences an oscillator slot without removing it - a slot is always there. */
 void disableOsc (juce::ValueTree channel, int slot);

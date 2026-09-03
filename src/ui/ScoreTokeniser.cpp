@@ -50,20 +50,16 @@ int ScoreTokeniser::colourFor (lang::TokenKind kind, const std::string& lexeme)
 {
     switch (kind)
     {
-        case lang::TokenKind::word:
-            return isSchemaWord (lexeme) ? keyword : plain;
+        case lang::TokenKind::word: return isSchemaWord (lexeme) ? keyword : plain;
 
         case lang::TokenKind::number:
         case lang::TokenKind::ratio:
         case lang::TokenKind::repeat:
-        case lang::TokenKind::colour:
-            return literal;
+        case lang::TokenKind::colour: return literal;
 
-        case lang::TokenKind::text:
-            return stringText;
+        case lang::TokenKind::text: return stringText;
 
-        case lang::TokenKind::comment:
-            return comment;
+        case lang::TokenKind::comment: return comment;
 
         case lang::TokenKind::braceOpen:
         case lang::TokenKind::braceClose:
@@ -77,14 +73,11 @@ int ScoreTokeniser::colourFor (lang::TokenKind kind, const std::string& lexeme)
         case lang::TokenKind::tie:
         case lang::TokenKind::slash:
         case lang::TokenKind::caret:
-        case lang::TokenKind::percent:
-            return punctuation;
+        case lang::TokenKind::percent: return punctuation;
 
-        case lang::TokenKind::unknown:
-            return invalid;
+        case lang::TokenKind::unknown: return invalid;
 
-        case lang::TokenKind::endOfFile:
-            break;
+        case lang::TokenKind::endOfFile: break;
     }
 
     return plain;

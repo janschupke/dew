@@ -7,7 +7,10 @@ using namespace dew;
 namespace
 {
 
-CliArgs parse (const juce::StringArray& args) { return CliArgs { args }; }
+CliArgs parse (const juce::StringArray& args)
+{
+    return CliArgs { args };
+}
 
 } // namespace
 

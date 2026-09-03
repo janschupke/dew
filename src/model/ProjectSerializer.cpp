@@ -112,8 +112,11 @@ ProjectSerializer::LoadResult ProjectSerializer::fromJsonString (const juce::Str
     if (version > kFormatVersion)
     {
         loaded.result = juce::Result::fail ("This project was saved by a newer version of dew "
-                                            "(format " + juce::String (version) + ", this build "
-                                            "reads up to " + juce::String (kFormatVersion) + ").");
+                                            "(format "
+                                            + juce::String (version)
+                                            + ", this build "
+                                              "reads up to "
+                                            + juce::String (kFormatVersion) + ").");
         return loaded;
     }
 

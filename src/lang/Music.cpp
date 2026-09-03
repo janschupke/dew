@@ -10,7 +10,7 @@ namespace dew::lang
 namespace
 {
 
-constexpr int letterOffsets[7] = { 9, 11, 0, 2, 4, 5, 7 };   // A B C D E F G
+constexpr int letterOffsets[7] = { 9, 11, 0, 2, 4, 5, 7 }; // A B C D E F G
 
 std::optional<int> letterToPitchClass (char c) noexcept
 {
@@ -67,25 +67,44 @@ const std::vector<int>& intervalsForSuffix (std::string_view suffix, bool minorB
         return minorBase ? minorTriad : majorTriad;
 
     // Quality words first, so "dim7" is not read as "dim" with a stray 7.
-    if (suffix == "dim7" || suffix == "o7")            return dim7;
-    if (suffix == "dim" || suffix == "o")              return dimTriad;
-    if (suffix == "m7b5" || suffix == "hdim")          return halfDim7;
-    if (suffix == "aug7" || suffix == "+7")            return aug7;
-    if (suffix == "aug" || suffix == "+")              return augTriad;
-    if (suffix == "maj7" || suffix == "M7")            return minorBase ? minMaj7 : maj7;
-    if (suffix == "maj9" || suffix == "M9")            return maj9;
-    if (suffix == "sus2")                              return sus2;
-    if (suffix == "sus4" || suffix == "sus")           return sus4;
-    if (suffix == "7sus4")                             return sevenSus4;
-    if (suffix == "add9")                              return add9;
-    if (suffix == "6")                                 return minorBase ? minSix : six;
-    if (suffix == "m6")                                return minSix;
-    if (suffix == "m7")                                return min7;
-    if (suffix == "m9")                                return min9;
-    if (suffix == "7")                                 return minorBase ? min7 : dom7;
-    if (suffix == "9")                                 return minorBase ? min9 : dom9;
-    if (suffix == "11")                                return dom11;
-    if (suffix == "13")                                return dom13;
+    if (suffix == "dim7" || suffix == "o7")
+        return dim7;
+    if (suffix == "dim" || suffix == "o")
+        return dimTriad;
+    if (suffix == "m7b5" || suffix == "hdim")
+        return halfDim7;
+    if (suffix == "aug7" || suffix == "+7")
+        return aug7;
+    if (suffix == "aug" || suffix == "+")
+        return augTriad;
+    if (suffix == "maj7" || suffix == "M7")
+        return minorBase ? minMaj7 : maj7;
+    if (suffix == "maj9" || suffix == "M9")
+        return maj9;
+    if (suffix == "sus2")
+        return sus2;
+    if (suffix == "sus4" || suffix == "sus")
+        return sus4;
+    if (suffix == "7sus4")
+        return sevenSus4;
+    if (suffix == "add9")
+        return add9;
+    if (suffix == "6")
+        return minorBase ? minSix : six;
+    if (suffix == "m6")
+        return minSix;
+    if (suffix == "m7")
+        return min7;
+    if (suffix == "m9")
+        return min9;
+    if (suffix == "7")
+        return minorBase ? min7 : dom7;
+    if (suffix == "9")
+        return minorBase ? min9 : dom9;
+    if (suffix == "11")
+        return dom11;
+    if (suffix == "13")
+        return dom13;
 
     *recognised = false;
     return minorBase ? minorTriad : majorTriad;
@@ -103,11 +122,14 @@ std::optional<Numeral> readNumeral (std::string_view text, std::size_t from) noe
 {
     // Longest first, so "iii" is not read as "ii" with a trailing "i" and "vii"
     // is not read as "v".
-    struct Entry { const char* text; int degree; };
+    struct Entry
+    {
+        const char* text;
+        int degree;
+    };
 
     static const Entry entries[] = {
-        { "vii", 6 }, { "iii", 2 }, { "vi", 5 }, { "iv", 3 },
-        { "ii", 1 }, { "v", 4 }, { "i", 0 },
+        { "vii", 6 }, { "iii", 2 }, { "vi", 5 }, { "iv", 3 }, { "ii", 1 }, { "v", 4 }, { "i", 0 },
     };
 
     for (const auto& entry : entries)
@@ -140,10 +162,12 @@ std::optional<Numeral> readNumeral (std::string_view text, std::size_t from) noe
 
 std::string describePitchClass (int pc, bool preferFlat)
 {
-    static const char* sharps[] = { "C", "C#", "D", "D#", "E", "F",
-                                    "F#", "G", "G#", "A", "A#", "B" };
-    static const char* flats[] = { "C", "Db", "D", "Eb", "E", "F",
-                                   "Gb", "G", "Ab", "A", "Bb", "B" };
+    static const char* sharps[] = {
+        "C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"
+    };
+    static const char* flats[] = {
+        "C", "Db", "D", "Eb", "E", "F", "Gb", "G", "Ab", "A", "Bb", "B"
+    };
 
     const auto index = ((pc % 12) + 12) % 12;
     return preferFlat ? flats[index] : sharps[index];
@@ -184,8 +208,7 @@ std::optional<RootAndShape> resolveRoot (std::string_view text, const Key& key,
     if (const auto numeral = readNumeral (text, i))
     {
         if (! supportsRomanNumerals (key.mode))
-            return fail (std::string ("`") + std::string (text)
-                         + "` names a scale degree, which "
+            return fail (std::string ("`") + std::string (text) + "` names a scale degree, which "
                          + nameOf (key.mode) + " does not have seven of");
 
         // AN ACCIDENTAL IS RELATIVE TO THE MAJOR SCALE. A bare numeral is
@@ -214,16 +237,15 @@ std::optional<RootAndShape> resolveRoot (std::string_view text, const Key& key,
         const auto& intervals = intervalsForSuffix (suffix, ! numeral->upper, &recognised);
 
         if (! recognised)
-            return fail (std::string ("`") + std::string (suffix)
-                         + "` is not a chord quality");
+            return fail (std::string ("`") + std::string (suffix) + "` is not a chord quality");
 
         RootAndShape out;
         out.rootPc = rootPc;
         out.intervals = intervals;
         out.minorBase = ! numeral->upper;
         out.label = describePitchClass (rootPc, prefix < 0 || key.mode == Mode::minor)
-                  + std::string (suffix.empty() && ! numeral->upper ? "m" : "")
-                  + std::string (suffix);
+                    + std::string (suffix.empty() && ! numeral->upper ? "m" : "")
+                    + std::string (suffix);
 
         return out;
     }
@@ -245,9 +267,8 @@ std::optional<RootAndShape> resolveRoot (std::string_view text, const Key& key,
     auto minorBase = false;
 
     // "Cm7" is minor; "Cmaj7" is not. Longest-match on the quality words first.
-    if (suffix.size() >= 1 && suffix[0] == 'm'
-        && suffix != "maj7" && suffix != "maj9" && suffix != "m7b5"
-        && suffix != "m7" && suffix != "m9" && suffix != "m6")
+    if (suffix.size() >= 1 && suffix[0] == 'm' && suffix != "maj7" && suffix != "maj9"
+        && suffix != "m7b5" && suffix != "m7" && suffix != "m9" && suffix != "m6")
     {
         minorBase = true;
         suffix = suffix.substr (1);
@@ -328,19 +349,28 @@ std::string pitchName (int pitch)
 
 std::optional<Mode> parseMode (std::string_view text) noexcept
 {
-    struct Entry { const char* text; Mode mode; };
+    struct Entry
+    {
+        const char* text;
+        Mode mode;
+    };
 
     static const Entry entries[] = {
-        { "major", Mode::major },       { "ionian", Mode::major },
-        { "minor", Mode::minor },       { "aeolian", Mode::minor },
-        { "dorian", Mode::dorian },     { "phrygian", Mode::phrygian },
-        { "lydian", Mode::lydian },     { "mixolydian", Mode::mixolydian },
+        { "major", Mode::major },
+        { "ionian", Mode::major },
+        { "minor", Mode::minor },
+        { "aeolian", Mode::minor },
+        { "dorian", Mode::dorian },
+        { "phrygian", Mode::phrygian },
+        { "lydian", Mode::lydian },
+        { "mixolydian", Mode::mixolydian },
         { "locrian", Mode::locrian },
         { "harmonic-minor", Mode::harmonicMinor },
         { "melodic-minor", Mode::melodicMinor },
         { "major-pentatonic", Mode::majorPentatonic },
         { "minor-pentatonic", Mode::minorPentatonic },
-        { "blues", Mode::blues },       { "chromatic", Mode::chromatic },
+        { "blues", Mode::blues },
+        { "chromatic", Mode::chromatic },
     };
 
     for (const auto& entry : entries)
@@ -354,19 +384,19 @@ const char* nameOf (Mode mode) noexcept
 {
     switch (mode)
     {
-        case Mode::major:           return "major";
-        case Mode::minor:           return "minor";
-        case Mode::dorian:          return "dorian";
-        case Mode::phrygian:        return "phrygian";
-        case Mode::lydian:          return "lydian";
-        case Mode::mixolydian:      return "mixolydian";
-        case Mode::locrian:         return "locrian";
-        case Mode::harmonicMinor:   return "harmonic-minor";
-        case Mode::melodicMinor:    return "melodic-minor";
+        case Mode::major: return "major";
+        case Mode::minor: return "minor";
+        case Mode::dorian: return "dorian";
+        case Mode::phrygian: return "phrygian";
+        case Mode::lydian: return "lydian";
+        case Mode::mixolydian: return "mixolydian";
+        case Mode::locrian: return "locrian";
+        case Mode::harmonicMinor: return "harmonic-minor";
+        case Mode::melodicMinor: return "melodic-minor";
         case Mode::majorPentatonic: return "major-pentatonic";
         case Mode::minorPentatonic: return "minor-pentatonic";
-        case Mode::blues:           return "blues";
-        case Mode::chromatic:       return "chromatic";
+        case Mode::blues: return "blues";
+        case Mode::chromatic: return "chromatic";
     }
 
     return "major";
@@ -390,19 +420,19 @@ const std::vector<int>& degreesOf (Mode mode)
 
     switch (mode)
     {
-        case Mode::major:           return major;
-        case Mode::minor:           return minor;
-        case Mode::dorian:          return dorian;
-        case Mode::phrygian:        return phrygian;
-        case Mode::lydian:          return lydian;
-        case Mode::mixolydian:      return mixolydian;
-        case Mode::locrian:         return locrian;
-        case Mode::harmonicMinor:   return harmonicMinor;
-        case Mode::melodicMinor:    return melodicMinor;
+        case Mode::major: return major;
+        case Mode::minor: return minor;
+        case Mode::dorian: return dorian;
+        case Mode::phrygian: return phrygian;
+        case Mode::lydian: return lydian;
+        case Mode::mixolydian: return mixolydian;
+        case Mode::locrian: return locrian;
+        case Mode::harmonicMinor: return harmonicMinor;
+        case Mode::melodicMinor: return melodicMinor;
         case Mode::majorPentatonic: return majorPentatonic;
         case Mode::minorPentatonic: return minorPentatonic;
-        case Mode::blues:           return blues;
-        case Mode::chromatic:       return chromatic;
+        case Mode::blues: return blues;
+        case Mode::chromatic: return chromatic;
     }
 
     return major;
@@ -513,8 +543,7 @@ std::optional<ResolvedChord> resolveChord (const ChordSymbol& symbol, const Key&
         // does not have one - in C major, V7/vi is E7, whose G# is the leading
         // tone of A. A melody handed A aeolian over that chord would keep
         // choosing G natural and fight the very note that makes it a dominant.
-        localKey = Key { target->rootPc,
-                         target->minorBase ? Mode::harmonicMinor : Mode::major };
+        localKey = Key { target->rootPc, target->minorBase ? Mode::harmonicMinor : Mode::major };
     }
 
     const auto shape = resolveRoot (symbol.root, localKey, failureReason);
@@ -532,7 +561,7 @@ std::optional<ResolvedChord> resolveChord (const ChordSymbol& symbol, const Key&
     {
         if (failureReason != nullptr)
             *failureReason = "`" + shape->label + "` has no inversion "
-                           + std::to_string (symbol.inversion);
+                             + std::to_string (symbol.inversion);
 
         return std::nullopt;
     }

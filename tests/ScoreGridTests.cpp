@@ -10,19 +10,18 @@ using namespace dew::lang;
 
 TEST_CASE ("a duration literal reduces to an exact rational", "[score][grid]")
 {
-    struct Case { const char* text; int numerator; int denominator; };
+    struct Case
+    {
+        const char* text;
+        int numerator;
+        int denominator;
+    };
 
     const Case cases[] = {
-        { "1/4",   1, 4 },
-        { "1/8",   1, 8 },
-        { "1/1",   1, 1 },
-        { "3/8",   3, 8 },
-        { "1/4.",  3, 8 },     // dotted quarter is three eighths
-        { "1/2.",  3, 4 },
-        { "1/8t",  1, 12 },    // eighth triplet is a twelfth - no double says so
-        { "1/16t", 1, 24 },
-        { "1/4t",  1, 6 },
-        { "2/4",   1, 2 },     // reduced
+        { "1/4", 1, 4 },    { "1/8", 1, 8 },   { "1/1", 1, 1 },
+        { "3/8", 3, 8 },    { "1/4.", 3, 8 },  // dotted quarter is three eighths
+        { "1/2.", 3, 4 },   { "1/8t", 1, 12 }, // eighth triplet is a twelfth - no double says so
+        { "1/16t", 1, 24 }, { "1/4t", 1, 6 },  { "2/4", 1, 2 }, // reduced
     };
 
     for (const auto& c : cases)
@@ -37,8 +36,8 @@ TEST_CASE ("a duration literal reduces to an exact rational", "[score][grid]")
 
 TEST_CASE ("what is not a duration is refused rather than guessed", "[score][grid]")
 {
-    for (const auto* text : { "", "1", "/4", "1/", "1/0", "0/4", "1/4x", "a/4", "1/4.t.",
-                              "1..4", "-1/4" })
+    for (const auto* text :
+         { "", "1", "/4", "1/", "1/0", "0/4", "1/4x", "a/4", "1/4.t.", "1..4", "-1/4" })
     {
         INFO ("text " << text);
         REQUIRE_FALSE (parseDuration (text).has_value());
@@ -71,18 +70,15 @@ TEST_CASE ("a meter is a ratio but never dotted or tripleted", "[score][grid]")
 TEST_CASE ("the grid one duration needs is the published table", "[score][grid]")
 {
     // The table the whole quantisation story rests on, at beatUnit 4.
-    struct Case { const char* text; int needed; };
+    struct Case
+    {
+        const char* text;
+        int needed;
+    };
 
     const Case cases[] = {
-        { "1/4",   1 },
-        { "1/8",   2 },
-        { "1/4.",  2 },
-        { "1/8t",  3 },
-        { "1/16",  4 },
-        { "1/16t", 6 },
-        { "1/32",  8 },
-        { "1/1",   1 },
-        { "1/2",   1 },
+        { "1/4", 1 },   { "1/8", 2 },  { "1/4.", 2 }, { "1/8t", 3 }, { "1/16", 4 },
+        { "1/16t", 6 }, { "1/32", 8 }, { "1/1", 1 },  { "1/2", 1 },
     };
 
     for (const auto& c : cases)
@@ -112,19 +108,18 @@ TEST_CASE ("sixteenths and eighth triplets meet at twelve", "[score][grid]")
     // And at 12 both are whole numbers of steps.
     REQUIRE (stepsFor (*parseDuration ("1/16"), 4, 12) == 3);
     REQUIRE (stepsFor (*parseDuration ("1/8t"), 4, 12) == 4);
-    REQUIRE (stepsFor (*parseDuration ("1/4"),  4, 12) == 12);
-    REQUIRE (stepsFor (*parseDuration ("1/8"),  4, 12) == 6);
+    REQUIRE (stepsFor (*parseDuration ("1/4"), 4, 12) == 12);
+    REQUIRE (stepsFor (*parseDuration ("1/8"), 4, 12) == 6);
     REQUIRE (stepsFor (*parseDuration ("1/16t"), 4, 12) == 2);
 }
 
-TEST_CASE ("a thirty-second against a triplet does not fit and says why",
-           "[score][grid]")
+TEST_CASE ("a thirty-second against a triplet does not fit and says why", "[score][grid]")
 {
     // 1/32 wants 8, 1/8t wants 3, lcm is 24 - and dew stores at most 16.
     // The message has to name BOTH durations, because the conflict is between
     // them and either one alone would have been fine.
     const std::vector<DurationUse> uses {
-        { *parseDuration ("1/8"),  { 0, 3 } },
+        { *parseDuration ("1/8"), { 0, 3 } },
         { *parseDuration ("1/32"), { 10, 14 } },
         { *parseDuration ("1/8t"), { 40, 44 } },
     };
@@ -143,11 +138,10 @@ TEST_CASE ("a thirty-second against a triplet does not fit and says why",
     REQUIRE (resolved.secondWitness->range == SourceRange { 40, 44 });
 }
 
-TEST_CASE ("a single duration can be the whole requirement on its own",
-           "[score][grid]")
+TEST_CASE ("a single duration can be the whole requirement on its own", "[score][grid]")
 {
     const std::vector<DurationUse> uses {
-        { *parseDuration ("1/4"),   { 0, 3 } },
+        { *parseDuration ("1/4"), { 0, 3 } },
         { *parseDuration ("1/16t"), { 10, 15 } },
     };
 
@@ -242,8 +236,7 @@ TEST_CASE ("a unit float stays inside its half-open range", "[score][rng]")
     }
 }
 
-TEST_CASE ("a seed path depends on its ancestors and its own label only",
-           "[score][rng]")
+TEST_CASE ("a seed path depends on its ancestors and its own label only", "[score][rng]")
 {
     const SeedPath song { 0x5EEDC0FFEEULL };
 

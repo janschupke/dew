@@ -204,8 +204,7 @@ TEST_CASE ("the summary's separators are not mangled", "[ui][render]")
     REQUIRE_FALSE (h.panel.getSummaryText().containsChar (juce::juce_wchar (0xc2)));
 }
 
-TEST_CASE ("Render hands the caller a request rather than touching a file",
-           "[ui][render]")
+TEST_CASE ("Render hands the caller a request rather than touching a file", "[ui][render]")
 {
     const juce::ScopedJuceInitialiser_GUI juceInit;
     PanelHarness h;

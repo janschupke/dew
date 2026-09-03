@@ -17,9 +17,18 @@ namespace dew
 class EditorState : public juce::ChangeBroadcaster
 {
 public:
-    int getSelectedChannelId() const noexcept    { return selectedChannelId; }
-    int getCurrentPatternId() const noexcept     { return currentPatternId; }
-    int getSelectedMixerTrackId() const noexcept { return selectedMixerTrackId; }
+    int getSelectedChannelId() const noexcept
+    {
+        return selectedChannelId;
+    }
+    int getCurrentPatternId() const noexcept
+    {
+        return currentPatternId;
+    }
+    int getSelectedMixerTrackId() const noexcept
+    {
+        return selectedMixerTrackId;
+    }
 
     void setSelectedChannelId (int id)
     {
@@ -49,7 +58,10 @@ public:
         records one input, and two armed channels would have to mean one of them
         silently loses.
     */
-    int getArmedChannelId() const noexcept  { return armedChannelId; }
+    int getArmedChannelId() const noexcept
+    {
+        return armedChannelId;
+    }
 
     void setArmedChannelId (int id)
     {
@@ -98,7 +110,10 @@ public:
         Clamped by the panel rather than here, so this header does not have to
         know how many oscillators the schema declares.
     */
-    int getSelectedOscillator() const noexcept { return selectedOscillator; }
+    int getSelectedOscillator() const noexcept
+    {
+        return selectedOscillator;
+    }
 
     void setSelectedOscillator (int index)
     {
@@ -114,21 +129,30 @@ public:
         stack. An empty range means nothing is selected, which is also what a
         click on the ruler leaves behind.
     */
-    juce::Range<int> getSelectedBarRange() const noexcept  { return selectedBars; }
-    bool hasBarSelection() const noexcept                  { return ! selectedBars.isEmpty(); }
+    juce::Range<int> getSelectedBarRange() const noexcept
+    {
+        return selectedBars;
+    }
+    bool hasBarSelection() const noexcept
+    {
+        return ! selectedBars.isEmpty();
+    }
 
     void setSelectedBarRange (juce::Range<int> range)
     {
         const auto clamped = range.getLength() > 0
-                               ? juce::Range<int> (juce::jmax (0, range.getStart()),
-                                                   juce::jmax (1, range.getEnd()))
-                               : juce::Range<int>();
+                                 ? juce::Range<int> (juce::jmax (0, range.getStart()),
+                                                     juce::jmax (1, range.getEnd()))
+                                 : juce::Range<int>();
 
         if (std::exchange (selectedBars, clamped) != clamped)
             sendChangeMessage();
     }
 
-    void clearBarSelection()  { setSelectedBarRange ({}); }
+    void clearBarSelection()
+    {
+        setSelectedBarRange ({});
+    }
 
     // --- the selected span of a pattern --------------------------------------
     /** Which steps are selected in the piano roll, half-open and 0-based.
@@ -139,25 +163,40 @@ public:
         in different transport modes. Folding them into one would mean a span
         picked out in the roll silently moving when the mode changed.
     */
-    juce::Range<int> getSelectedStepRange() const noexcept  { return selectedSteps; }
-    bool hasStepSelection() const noexcept                  { return ! selectedSteps.isEmpty(); }
+    juce::Range<int> getSelectedStepRange() const noexcept
+    {
+        return selectedSteps;
+    }
+    bool hasStepSelection() const noexcept
+    {
+        return ! selectedSteps.isEmpty();
+    }
 
     void setSelectedStepRange (juce::Range<int> range)
     {
         const auto clamped = range.getLength() > 0
-                               ? juce::Range<int> (juce::jmax (0, range.getStart()),
-                                                   juce::jmax (1, range.getEnd()))
-                               : juce::Range<int>();
+                                 ? juce::Range<int> (juce::jmax (0, range.getStart()),
+                                                     juce::jmax (1, range.getEnd()))
+                                 : juce::Range<int>();
 
         if (std::exchange (selectedSteps, clamped) != clamped)
             sendChangeMessage();
     }
 
-    void clearStepSelection()  { setSelectedStepRange ({}); }
+    void clearStepSelection()
+    {
+        setSelectedStepRange ({});
+    }
 
     // --- last placed note ----------------------------------------------------
-    int getLastNoteLengthSteps() const noexcept { return lastNoteLengthSteps; }
-    double getLastNoteVelocity() const noexcept { return lastNoteVelocity; }
+    int getLastNoteLengthSteps() const noexcept
+    {
+        return lastNoteLengthSteps;
+    }
+    double getLastNoteVelocity() const noexcept
+    {
+        return lastNoteVelocity;
+    }
 
     /** Records the shape of a note the user just drew, so the next one matches. */
     void rememberNote (int lengthSteps, double velocity)
@@ -170,7 +209,10 @@ public:
         playlist's paint tool lays a run of clips at the length being worked in
         rather than one bar at a time.
     */
-    int getLastClipLengthBars() const noexcept { return lastClipLengthBars; }
+    int getLastClipLengthBars() const noexcept
+    {
+        return lastClipLengthBars;
+    }
 
     void rememberClip (int lengthBars)
     {

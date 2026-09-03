@@ -23,7 +23,10 @@ namespace dew
 */
 struct CodeDocumentCursor
 {
-    explicit CodeDocumentCursor (juce::CodeDocument::Iterator& iterator) : source (iterator) {}
+    explicit CodeDocumentCursor (juce::CodeDocument::Iterator& iterator)
+        : source (iterator)
+    {
+    }
 
     /** Anything outside ASCII is reported as one fixed byte that no rule
         matches, so it classifies as `unknown` and is consumed one character at
@@ -61,8 +64,14 @@ struct CodeDocumentCursor
         return c > 0 && c < 128 ? (char) c : nonAscii;
     }
 
-    char peek() const { return at (0); }
-    char peekAt (int offset) const { return at (offset); }
+    char peek() const
+    {
+        return at (0);
+    }
+    char peekAt (int offset) const
+    {
+        return at (offset);
+    }
 
     /** Out of characters, which is not the same question as
         `juce::CodeDocument::Iterator::isEOF()`.
@@ -73,7 +82,10 @@ struct CodeDocumentCursor
         never saw - an `unknown` past the end of every file. A NUL cannot appear
         in source text, so "nothing left to read" is the honest test.
     */
-    bool isEOF() const { return source.isEOF() || at (0) == 0; }
+    bool isEOF() const
+    {
+        return source.isEOF() || at (0) == 0;
+    }
 
     void skip()
     {
@@ -103,13 +115,13 @@ class ScoreTokeniser : public juce::CodeTokeniser
 public:
     enum Colour
     {
-        plain = 0,    ///< a name: a section, a channel, a chord
-        keyword,      ///< a word the schema declares - a block or a key
-        literal,      ///< a number, a duration, a repeat, a colour
-        stringText,   ///< "Amber"
+        plain = 0,  ///< a name: a section, a channel, a chord
+        keyword,    ///< a word the schema declares - a block or a key
+        literal,    ///< a number, a duration, a repeat, a colour
+        stringText, ///< "Amber"
         comment,
-        punctuation,  ///< braces, bars, ranges
-        invalid       ///< a byte the language has no meaning for
+        punctuation, ///< braces, bars, ranges
+        invalid      ///< a byte the language has no meaning for
     };
 
     int readNextToken (juce::CodeDocument::Iterator&) override;

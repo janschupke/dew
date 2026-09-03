@@ -28,8 +28,8 @@ bool isConsonant (int semitones)
 {
     const auto interval = ((semitones % 12) + 12) % 12;
 
-    return interval == 0 || interval == 3 || interval == 4
-        || interval == 7 || interval == 8 || interval == 9;
+    return interval == 0 || interval == 3 || interval == 4 || interval == 7 || interval == 8
+           || interval == 9;
 }
 
 bool isPerfectFifth (int semitones)
@@ -81,30 +81,28 @@ bool breaks (CounterpointRule rule, const Move& move)
     const auto ownStep = haveHistory ? move.own - move.previousOwn : 0;
     const auto otherStep = haveHistory ? move.other - move.previousOther : 0;
     const auto together = haveHistory && signOf (ownStep) != 0
-                       && signOf (ownStep) == signOf (otherStep);
+                          && signOf (ownStep) == signOf (otherStep);
 
     switch (rule)
     {
         case CounterpointRule::parallelFifths:
-            return haveHistory && together
-                && isPerfectFifth (interval) && isPerfectFifth (before);
+            return haveHistory && together && isPerfectFifth (interval) && isPerfectFifth (before);
 
         case CounterpointRule::parallelOctaves:
-            return haveHistory && together
-                && isOctaveOrUnison (interval) && isOctaveOrUnison (before);
+            return haveHistory && together && isOctaveOrUnison (interval)
+                   && isOctaveOrUnison (before);
 
         case CounterpointRule::directFifths:
             // Both voices moving the SAME way into a perfect interval, with
             // this voice getting there by leap. Not parallel - the interval
             // before may be anything - and audible for the same reason.
             return haveHistory && together && std::abs (ownStep) > 2
-                && (isPerfectFifth (interval) || isOctaveOrUnison (interval));
+                   && (isPerfectFifth (interval) || isOctaveOrUnison (interval));
 
         case CounterpointRule::voiceCrossing:
             // Measured against which side this voice started on, so a line
             // written below stays below.
-            return haveBoth && (move.ownIsAbove ? move.own < move.other
-                                                : move.own > move.other);
+            return haveBoth && (move.ownIsAbove ? move.own < move.other : move.own > move.other);
 
         case CounterpointRule::dissonanceOnStrong:
             return haveBoth && move.strong && ! isConsonant (interval);
@@ -139,13 +137,13 @@ const char* nameOf (CounterpointRule rule) noexcept
 {
     switch (rule)
     {
-        case CounterpointRule::parallelFifths:     return "parallel-fifths";
-        case CounterpointRule::parallelOctaves:    return "parallel-octaves";
-        case CounterpointRule::directFifths:       return "direct-fifths";
-        case CounterpointRule::voiceCrossing:      return "voice-crossing";
+        case CounterpointRule::parallelFifths: return "parallel-fifths";
+        case CounterpointRule::parallelOctaves: return "parallel-octaves";
+        case CounterpointRule::directFifths: return "direct-fifths";
+        case CounterpointRule::voiceCrossing: return "voice-crossing";
         case CounterpointRule::dissonanceOnStrong: return "dissonance-on-strong";
-        case CounterpointRule::leaps:              return "leaps";
-        case CounterpointRule::repeats:            return "repeats";
+        case CounterpointRule::leaps: return "leaps";
+        case CounterpointRule::repeats: return "repeats";
     }
 
     return "a rule";
@@ -157,12 +155,9 @@ const std::vector<CounterpointRule>& relaxationOrder()
     // an order that depended on which rules a score happened to write would
     // make one score's failure mode depend on another's.
     static const std::vector<CounterpointRule> order {
-        CounterpointRule::directFifths,
-        CounterpointRule::dissonanceOnStrong,
-        CounterpointRule::voiceCrossing,
-        CounterpointRule::parallelFifths,
-        CounterpointRule::parallelOctaves,
-        CounterpointRule::leaps,
+        CounterpointRule::directFifths,    CounterpointRule::dissonanceOnStrong,
+        CounterpointRule::voiceCrossing,   CounterpointRule::parallelFifths,
+        CounterpointRule::parallelOctaves, CounterpointRule::leaps,
         CounterpointRule::repeats
     };
 
@@ -172,11 +167,8 @@ const std::vector<CounterpointRule>& relaxationOrder()
 CounterpointResult generateCounterpoint (const std::vector<Onset>& onsets,
                                          const std::vector<ChordSpan>& spans,
                                          const std::vector<std::vector<int>>& against,
-                                         const CounterpointSpec& spec,
-                                         int lowPitch, int highPitch,
-                                         bool ownIsAbove,
-                                         int stepsPerBar,
-                                         const SeedPath& path)
+                                         const CounterpointSpec& spec, int lowPitch, int highPitch,
+                                         bool ownIsAbove, int stepsPerBar, const SeedPath& path)
 {
     CounterpointResult result;
 
@@ -230,7 +222,7 @@ CounterpointResult generateCounterpoint (const std::vector<Onset>& onsets,
         const auto other = otherAt (i);
         const auto previousOther = i > 0 ? otherAt (i - 1) : -1;
         const auto strong = onset.strength == MetricStrength::barStart
-                         || onset.strength == MetricStrength::strongBeat;
+                            || onset.strength == MetricStrength::strongBeat;
 
         auto rng = path.child ("onset", onsetIndex).rng();
 
@@ -326,8 +318,8 @@ CounterpointResult generateCounterpoint (const std::vector<Onset>& onsets,
                 return result;
             }
 
-            result.relaxations.push_back ({ relaxationOrder()[relaxed],
-                                            onset.startStep / std::max (1, stepsPerBar) + 1 });
+            result.relaxations.push_back (
+                { relaxationOrder()[relaxed], onset.startStep / std::max (1, stepsPerBar) + 1 });
             ++relaxed;
         }
 
