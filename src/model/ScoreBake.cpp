@@ -1,7 +1,11 @@
 #include "model/ScoreBake.h"
 
+#include <algorithm>
+#include <array>
 #include <cmath>
+#include <vector>
 
+#include "lang/Rng.h"
 #include "model/Ids.h"
 #include "model/Meter.h"
 #include "model/ProjectEdits.h"
@@ -14,15 +18,55 @@ namespace dew
 namespace
 {
 
+/** The identity a compiled node carries, so a later compile can find it again.
+
+    Prefixed by what it is, because the four kinds live in one document and a
+    channel called `verse#0` and a pattern called `verse#0` are not the same
+    thing.
+*/
+juce::String channelGenId (const juce::String& trackName)
+{
+    return "channel:" + trackName.toLowerCase();
+}
+
+juce::String laneGenId()
+{
+    return "lane:score";
+}
+
 juce::ValueTree playlistOf (const juce::ValueTree& project)
 {
     return project.getChildWithName (ids::PLAYLIST);
 }
 
-/** The lane a previous bake wrote to, or an invalid tree. */
+/** The first child of `parent` of this type whose `genId` matches. */
+juce::ValueTree findByGenId (const juce::ValueTree& parent, const juce::Identifier& type,
+                             const juce::String& id)
+{
+    if (id.isEmpty())
+        return {};
+
+    for (const auto& child : parent)
+        if (child.hasType (type) && child[ids::genId].toString() == id)
+            return child;
+
+    return {};
+}
+
+/** The lane a previous bake wrote to.
+
+    By provenance first and by name second, so renaming the lane does not make
+    the next compile create a second one - and so a lane a user happened to call
+    "Score" is adopted rather than duplicated.
+*/
 juce::ValueTree findGeneratedTrack (const juce::ValueTree& project)
 {
-    for (const auto& track : playlistOf (project))
+    const auto playlist = playlistOf (project);
+
+    if (auto owned = findByGenId (playlist, ids::PLAYLIST_TRACK, laneGenId()); owned.isValid())
+        return owned;
+
+    for (const auto& track : playlist)
         if (track.hasType (ids::PLAYLIST_TRACK)
             && track[ids::name].toString() == ScoreBake::generatedTrackName())
             return track;
@@ -43,10 +87,84 @@ juce::ValueTree findChannelByName (const juce::ValueTree& project, const juce::S
     return {};
 }
 
+/** Velocity as the document stores it: an exact three-decimal double.
+
+    Not fussiness. ProjectEdits::addNote takes a float, and 0.535f widens to
+    0.53500001430511475; the serializer writes six decimal places, so the file
+    says "0.535" and reading it back gives a DIFFERENT double. The JSON compares
+    equal either way - it is the tree that stops round-tripping, which is the
+    kind of difference no amount of staring at the file reveals.
+*/
+double storedVelocity (float velocity)
+{
+    return std::round ((double) velocity * 1000.0) / 1000.0;
+}
+
+/** Replaces a pattern's notes with the score's, and reports how many.
+
+    Whole-payload replacement rather than a diff: the notes ARE the compiler's
+    output, and a diff would only be a slower way to reach the same tree while
+    adding a second place for the two to disagree.
+*/
+int writeNotes (juce::ValueTree pattern, const lang::PatternDesc& desc,
+                const std::vector<int>& channelIdForTrack, juce::UndoManager* undo)
+{
+    pattern.setProperty (ids::name, juce::String (desc.name), undo);
+    pattern.setProperty (ids::lengthSteps, desc.lengthSteps, undo);
+
+    while (pattern.getNumChildren() > 0)
+        pattern.removeChild (pattern.getNumChildren() - 1, undo);
+
+    auto written = 0;
+
+    for (const auto& note : desc.notes)
+    {
+        if (note.track < 0 || note.track >= (int) channelIdForTrack.size())
+            continue;
+
+        auto added = ProjectEdits::addNote (pattern,
+                                            channelIdForTrack[(std::size_t) note.track],
+                                            note.startStep, note.lengthSteps,
+                                            note.pitch, note.velocity, undo);
+
+        added.setProperty (ids::velocity, storedVelocity (note.velocity), undo);
+        ++written;
+    }
+
+    return written;
+}
+
 } // namespace
 
+juce::String ScoreBake::patternHash (const juce::ValueTree& pattern)
+{
+    if (! pattern.isValid())
+        return {};
+
+    // Sorted, so the order the notes happen to sit in is not part of the
+    // fingerprint. Moving a note in the piano roll changes what a pattern
+    // sounds like; the order its children were appended in does not.
+    std::vector<std::array<int, 5>> notes;
+
+    for (const auto& note : pattern)
+        if (note.hasType (ids::NOTE))
+            notes.push_back ({ (int) note[ids::ch], (int) note[ids::step],
+                               (int) note[ids::lengthSteps], (int) note[ids::pitch],
+                               (int) std::lround ((double) note[ids::velocity] * 1000.0) });
+
+    std::sort (notes.begin(), notes.end());
+
+    juce::String payload { (int) pattern[ids::lengthSteps] };
+
+    for (const auto& note : notes)
+        for (const auto field : note)
+            payload << ":" << field;
+
+    return juce::String::toHexString ((juce::int64) lang::fnv1a64 (payload.toStdString()));
+}
+
 BakeReport ScoreBake::into (juce::ValueTree project, const lang::Score& score,
-                            juce::UndoManager* undo)
+                            juce::UndoManager* undo, Policy policy)
 {
     BakeReport report;
 
@@ -92,101 +210,163 @@ BakeReport ScoreBake::into (juce::ValueTree project, const lang::Score& score,
 
     project.setProperty (ids::tempoBpm, score.tempoBpm, undo);
 
-    // --- channels: adopt by name, create what is missing ---------------------
+    // --- channels: by provenance, then by name, then create -------------------
     std::vector<int> channelIdForTrack;
     channelIdForTrack.reserve (score.tracks.size());
 
     for (const auto& track : score.tracks)
     {
-        auto channel = findChannelByName (project, track.name);
+        const auto name = juce::String (track.name);
+        const auto gen = channelGenId (name);
+
+        // By provenance first: a channel this score made before is found again
+        // even though it has been renamed since, and renaming a generated
+        // channel must not spawn a duplicate. Then by name, which is how a
+        // channel the user made joins the score in the first place.
+        auto channel = findByGenId (project, ids::CHANNEL, gen);
+
+        if (! channel.isValid())
+            channel = findChannelByName (project, name);
 
         if (channel.isValid())
         {
             // ADOPTED, not overwritten. The language owns notes; the user owns
-            // the sound. Nothing but the name is read here.
+            // the sound. Nothing but the name and the provenance is read or
+            // written here.
             ++report.channelsAdopted;
         }
         else
         {
-            channel = ProjectEdits::addChannel (project, track.name, undo);
+            channel = ProjectEdits::addChannel (project, name, undo);
             ++report.channelsCreated;
         }
 
+        channel.setProperty (ids::genId, gen, undo);
         channelIdForTrack.push_back ((int) channel[ids::id]);
     }
 
-    // --- clear what a previous bake left -------------------------------------
+    // --- what a previous bake left --------------------------------------------
+    // Sorted into the three buckets before anything is written, because the
+    // decision about a pattern depends on its state BEFORE this compile
+    // touches it.
+    struct Existing
+    {
+        juce::String key;
+        juce::ValueTree tree;
+        bool handEdited = false;
+        bool claimed = false;
+    };
+
+    // A list rather than a map keyed on genId, because duplicating a generated
+    // pattern in the pattern list copies its provenance too - and a map would
+    // silently forget one of the two, leaving a stray that no later compile
+    // could ever see again.
+    std::vector<Existing> generated;
+
+    for (const auto& pattern : project)
+    {
+        if (! pattern.hasType (ids::PATTERN))
+            continue;
+
+        const auto gen = pattern[ids::genId].toString();
+
+        if (gen.isEmpty())
+            continue; // somebody made this by hand; it is not ours to touch
+
+        generated.push_back ({ gen, pattern,
+                               policy == Policy::keepHandEdits
+                                   && patternHash (pattern) != pattern[ids::genHash].toString(),
+                               false });
+    }
+
     auto lane = findGeneratedTrack (project);
 
-    if (lane.isValid())
-    {
-        // Every clip on the lane we own, and every pattern only those clips
-        // referred to. Patterns a user made are never touched, and their ids
-        // are never renumbered.
-        std::vector<int> ownedPatterns;
-
-        for (const auto& clip : lane)
-            if (clip.hasType (ids::CLIP) && ProjectEdits::isMidiClip (clip))
-                ownedPatterns.push_back ((int) clip[ids::patternId]);
-
-        while (lane.getNumChildren() > 0)
-            lane.removeChild (lane.getNumChildren() - 1, undo);
-
-        for (const auto patternId : ownedPatterns)
-            if (auto pattern = ProjectEdits::findPattern (project, patternId);
-                pattern.isValid())
-                ProjectEdits::removePattern (project, pattern, undo);
-    }
-    else
-    {
+    if (! lane.isValid())
         lane = ProjectEdits::addPlaylistTrack (project, generatedTrackName(), undo);
-    }
+
+    lane.setProperty (ids::genId, laneGenId(), undo);
+
+    // The lane's clips are rebuilt wholesale. A clip carries nothing a person
+    // can have put into it - where a section sits is the arrangement's to say -
+    // so there is nothing here to preserve. A generated clip DRAGGED to another
+    // lane is a different matter: it is not on this lane, so it is left alone.
+    while (lane.getNumChildren() > 0)
+        lane.removeChild (lane.getNumChildren() - 1, undo);
 
     // --- patterns -------------------------------------------------------------
     std::vector<int> patternIds;
     patternIds.reserve (score.patterns.size());
 
-    for (const auto& pattern : score.patterns)
+    for (const auto& desc : score.patterns)
     {
-        auto tree = ProjectEdits::addPattern (project, undo);
-        tree.setProperty (ids::name, juce::String (pattern.name), undo);
-        tree.setProperty (ids::lengthSteps, pattern.lengthSteps, undo);
+        const auto key = juce::String (desc.key);
 
-        for (const auto& note : pattern.notes)
+        const auto found = std::find_if (generated.begin(), generated.end(),
+                                         [&key] (const Existing& e)
+                                         { return ! e.claimed && e.key == key; });
+
+        if (found != generated.end())
         {
-            if (note.track < 0 || note.track >= (int) channelIdForTrack.size())
+            found->claimed = true;
+
+            if (found->handEdited)
+            {
+                // Kept exactly as it is, notes and hash alike. Refreshing the
+                // hash here would quietly adopt the edit and let the NEXT
+                // compile overwrite it - the bug that makes "your edits are
+                // safe" true only once.
+                patternIds.push_back ((int) found->tree[ids::id]);
+                ++report.patternsKept;
                 continue;
+            }
 
-            auto added = ProjectEdits::addNote (tree,
-                                                channelIdForTrack[(std::size_t) note.track],
-                                                note.startStep, note.lengthSteps,
-                                                note.pitch, note.velocity, undo);
+            auto pattern = found->tree;
+            report.notesWritten += writeNotes (pattern, desc, channelIdForTrack, undo);
+            pattern.setProperty (ids::genHash, patternHash (pattern), undo);
 
-            // Rewritten as an exact three-decimal DOUBLE, which is not fussiness.
-            // addNote takes a float, and 0.535f widens to 0.53500001430511475;
-            // the serializer writes six decimals, so the file says "0.535" and
-            // reading it back gives a different double. The JSON compares equal
-            // either way - it is the TREE that stops round-tripping, which is
-            // the kind of difference no amount of staring at the file reveals.
-            added.setProperty (ids::velocity,
-                               std::round ((double) note.velocity * 1000.0) / 1000.0,
-                               undo);
-
-            ++report.notesWritten;
+            patternIds.push_back ((int) pattern[ids::id]);
+            ++report.patternsWritten;
+            continue;
         }
 
-        patternIds.push_back ((int) tree[ids::id]);
+        auto pattern = ProjectEdits::addPattern (project, undo);
+        pattern.setProperty (ids::genId, key, undo);
+
+        report.notesWritten += writeNotes (pattern, desc, channelIdForTrack, undo);
+        pattern.setProperty (ids::genHash, patternHash (pattern), undo);
+
+        patternIds.push_back ((int) pattern[ids::id]);
         ++report.patternsWritten;
     }
 
-    // --- clips ---------------------------------------------------------------
+    // --- what the score no longer produces ------------------------------------
+    for (auto& existing : generated)
+    {
+        if (existing.claimed)
+            continue;
+
+        if (existing.handEdited)
+        {
+            // An orphan somebody has worked on. Removing it would throw that
+            // work away over a section rename, so it stays - without a clip,
+            // in the pattern list, where it can be found.
+            ++report.patternsKept;
+            continue;
+        }
+
+        if (ProjectEdits::removePattern (project, existing.tree, undo))
+            ++report.patternsRemoved;
+    }
+
+    // --- clips ----------------------------------------------------------------
     for (const auto& clip : score.clips)
     {
         if (clip.pattern < 0 || clip.pattern >= (int) patternIds.size())
             continue;
 
-        ProjectEdits::addClip (lane, patternIds[(std::size_t) clip.pattern],
-                               clip.startBar, clip.lengthBars, undo);
+        auto added = ProjectEdits::addClip (lane, patternIds[(std::size_t) clip.pattern],
+                                            clip.startBar, clip.lengthBars, undo);
+        added.setProperty (ids::genId, juce::String (clip.key), undo);
         ++report.clipsWritten;
     }
 

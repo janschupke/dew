@@ -12,6 +12,19 @@ struct BakeReport
     int channelsCreated = 0;
     int channelsAdopted = 0;
     int patternsWritten = 0;
+
+    /** Generated patterns somebody has edited since, left exactly as they are.
+
+        Worth counting and worth saying out loud: silently keeping them looks
+        like a compiler that ignored an edit to the score, and silently
+        replacing them destroys work. The only honest option is to do one and
+        report it.
+    */
+    int patternsKept = 0;
+
+    /** Generated patterns the score no longer produces, removed. */
+    int patternsRemoved = 0;
+
     int clipsWritten = 0;
     int notesWritten = 0;
 
@@ -37,7 +50,23 @@ struct BakeReport
 */
 struct ScoreBake
 {
+    /** What a recompile does with a generated pattern somebody has since
+        edited by hand.
+    */
+    enum class Policy
+    {
+        keepHandEdits,   ///< leave it alone and report it. The default.
+        discardHandEdits ///< replace it with what the score says. Explicit only.
+    };
+
     /** Bakes into `project`, replacing what a previous bake left behind.
+
+        Idempotent: baking the same score twice leaves the same document, with
+        the same pattern ids, rather than a second copy of everything. Each
+        compiled node carries a `genId` naming which part of the score produced
+        it, so the second compile recognises its own work; a pattern also
+        carries the hash its notes had when they were written, so an edit made
+        in the piano roll since is visible and can be respected.
 
         Refuses, changing nothing, when the score's grid or meter disagrees with
         the project's - `stepsPerBeat` owns how long a step is, and
@@ -45,7 +74,7 @@ struct ScoreBake
         either silently would move the user's existing arrangement.
     */
     static BakeReport into (juce::ValueTree project, const lang::Score&,
-                            juce::UndoManager*);
+                            juce::UndoManager*, Policy = Policy::keepHandEdits);
 
     /** A fresh project holding only this score. What the CLI writes. */
     static juce::ValueTree toNewProject (const lang::Score&, BakeReport& report);
@@ -55,6 +84,14 @@ struct ScoreBake
         exactly what a section is.
     */
     static const char* generatedTrackName() noexcept { return "Score"; }
+
+    /** A fingerprint of what a pattern SOUNDS like: its length and its notes,
+        in a fixed order so that reordering the children does not read as an
+        edit. The name is deliberately excluded - renaming a pattern is not a
+        musical change, and a compile should not have to give up updating one
+        because somebody labelled it.
+    */
+    static juce::String patternHash (const juce::ValueTree& pattern);
 };
 
 } // namespace dew

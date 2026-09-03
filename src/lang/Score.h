@@ -40,6 +40,18 @@ struct PatternDesc
     std::string name;
     int lengthSteps = 16;
     std::vector<Note> notes;    ///< sorted by step, then track, then pitch
+
+    /** What this pattern IS, independently of where it landed.
+
+        The same identity the RNG draws from - a section name plus either an
+        occurrence ordinal or an explicit label - so a recompile can recognise
+        the pattern it wrote last time even though the arrangement moved, and
+        so `as <label>` pins the document node exactly as it pins the music.
+
+        Not the name: two instances labelled the same way can hold different
+        notes, and a name is something a user may edit.
+    */
+    std::string key;
 };
 
 struct ClipDesc
@@ -48,6 +60,7 @@ struct ClipDesc
     int startBar = 0;
     int lengthBars = 1;
     std::string label;          ///< the instance it came from, for reporting
+    std::string key;            ///< as PatternDesc::key, plus which placement
 };
 
 /** A chord and where it sounds, in steps from the start of the song. For the

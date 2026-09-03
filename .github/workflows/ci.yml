@@ -71,6 +71,26 @@ jobs:
           ./build/ci/tools/dew_render_artefacts/RelWithDebInfo/dew_render \
             "${RUNNER_TEMP}/amber.dew" "${RUNNER_TEMP}/amber.wav" --seconds 4
 
+      # A separate PROCESS, which is the part a unit test cannot do. Two
+      # compiles inside one process read the same memory and agree even when
+      # something is reading memory it should not; a fresh process does not.
+      # That is how a mute budget sorting with an inconsistent comparator - and
+      # so running off the end of its range - stayed invisible: the same score
+      # compiled to different music about one run in four.
+      #
+      # The second half is the promise the stored score makes: compiling into a
+      # project that already holds the result is an update, not a second copy.
+      - name: A score compiles to the same thing every time
+        run: |
+          SCORE=./build/ci/tools/dew_score_artefacts/RelWithDebInfo/dew_score
+          "${SCORE}" examples/amber.score "${RUNNER_TEMP}/again.dew"
+          cmp "${RUNNER_TEMP}/amber.dew" "${RUNNER_TEMP}/again.dew"
+
+          cp "${RUNNER_TEMP}/amber.dew" "${RUNNER_TEMP}/base.dew"
+          "${SCORE}" examples/amber.score "${RUNNER_TEMP}/rebaked.dew" \
+            --into "${RUNNER_TEMP}/base.dew"
+          cmp "${RUNNER_TEMP}/amber.dew" "${RUNNER_TEMP}/rebaked.dew"
+
       # The manifest is generated at configure time; if it differs from what is
       # committed, the two have drifted.
       - name: Dependency manifest is up to date

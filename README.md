@@ -459,6 +459,34 @@ would need it. The language owns notes, patterns and clips; the user owns channe
 instruments, effects and the mixer — a track adopts a channel by name and reads nothing
 from it but the name, so a sound you dialled in survives a recompile.
 
+### Recompiling, and what happens to what you changed
+
+The source lives **inside** the `.dew`, one node per line so it reads as a diff rather than
+as one enormous string. A project and the score it came from are one document; the moment
+they can travel separately, "which of these two files is current" becomes a question
+somebody has to answer.
+
+So compiling twice is an update, not a second copy. Every node a compile writes carries a
+`genId` naming the part of the score that produced it — a section plus either its
+occurrence number or its `as` label, the same identity the random draws use, so what pins
+an instance's music also pins its document node. A pattern also carries the hash its notes
+had when they were written. Recompiling hashes them again, which sorts every generated
+pattern into three:
+
+| State | What happens |
+|---|---|
+| hash matches | nobody has touched it — replaced |
+| hash differs | edited in the piano roll — **kept**, counted, and reported |
+| no longer produced | removed, unless it was edited, in which case it stays without a clip |
+
+`dew_score --discard-edits` takes the other branch. Both are one undo transaction either
+way. The hash covers the length and the notes and deliberately not the name: renaming a
+pattern is not a musical change, and letting it read as one would mean labelling a pattern
+quietly stopped the compiler ever updating it again.
+
+The honest limit: a clip on the generated lane is rebuilt every time, because where a
+section sits is the arrangement's to say. Drag one to another lane and it is yours.
+
 ## The project file
 
 One JSON file, `formatVersion`-stamped. The schema is declared once in

@@ -207,6 +207,15 @@ private:
             {
                 const auto ordinal = ordinals[item.section]++;
 
+                // The same two components the seed path is built from, written
+                // out so the document can carry them. Keeping them in step is
+                // the point: what pins an instance's music must be what pins
+                // its pattern, or a recompile would preserve one and not the
+                // other.
+                const auto instanceKey =
+                    item.label.empty() ? item.section + "#" + std::to_string (ordinal)
+                                       : item.section + "@" + item.label;
+
                 const auto instancePath =
                     item.label.empty()
                         ? SeedPath { model.song.seed }.child ("section:" + item.section)
@@ -218,7 +227,8 @@ private:
                 sortNotes (notes);
 
                 const auto lengthSteps = section->bars * stepsPerBar;
-                const auto pattern = patternFor (item, *section, notes, lengthSteps, ordinal);
+                const auto pattern = patternFor (item, *section, notes, lengthSteps,
+                                                 ordinal, instanceKey);
 
                 for (auto p = 0; p < placements; ++p)
                 {
@@ -227,6 +237,7 @@ private:
                     clip.startBar = bar;
                     clip.lengthBars = section->bars;
                     clip.label = item.label.empty() ? item.section : item.label;
+                    clip.key = instanceKey + "/" + std::to_string (p);
 
                     score.clips.push_back (clip);
                     bar += section->bars;
@@ -247,16 +258,21 @@ private:
         notes" in dew's document.
     */
     int patternFor (const ArrangementItem& item, const SectionSpec& section,
-                    const std::vector<Note>& notes, int lengthSteps, int ordinal)
+                    const std::vector<Note>& notes, int lengthSteps, int ordinal,
+                    const std::string& instanceKey)
     {
         const auto key = keyOf (notes);
 
+        // A reused pattern keeps the identity of the instance that FIRST
+        // produced it, so its document node does not change hands when an
+        // earlier instance is deleted.
         if (const auto found = patternsByContent.find (key); found != patternsByContent.end())
             return found->second;
 
         PatternDesc pattern;
         pattern.lengthSteps = lengthSteps;
         pattern.notes = notes;
+        pattern.key = instanceKey;
         pattern.name = item.label.empty()
                            ? (ordinal == 0 ? section.name
                                            : section.name + " " + std::to_string (ordinal + 1))
