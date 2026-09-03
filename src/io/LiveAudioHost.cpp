@@ -165,7 +165,16 @@ void LiveAudioHost::audioDeviceIOCallbackWithContext (const float* const* inputC
     // The engine always renders stereo. A device with a different channel count
     // gets the stereo pair spread across it rather than silence.
     if (scratch.getNumSamples() < numSamples)
+    {
+        // Silence, not whatever the driver left in the buffer. Returning without
+        // writing hands the device its own stale memory, so a block the engine
+        // could not fill came out as a click rather than as a gap.
+        for (int channel = 0; channel < numOutputChannels; ++channel)
+            if (outputChannelData[channel] != nullptr)
+                juce::FloatVectorOperations::clear (outputChannelData[channel], numSamples);
+
         return;   // cannot allocate here; the next prepare() will size it
+    }
 
     juce::AudioBuffer<float> view (scratch.getArrayOfWritePointers(), 2, 0, numSamples);
     engine.processBlock (view);
