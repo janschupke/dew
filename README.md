@@ -89,7 +89,7 @@ picture and nearly invisible in code.
 ## Test
 
 ```sh
-ctest --preset release        # 859 tests
+ctest --preset release        # 1041 tests
 ```
 
 The gate, which is what CI runs and what a change has to pass:
@@ -117,10 +117,18 @@ licence question. Without it the format reports itself unavailable and the rest 
   takes the length and velocity of the last one drawn. Tools: select, paint and slice, a
   snap grid from 1/16 to a bar, quantize, transpose, and a randomize dialog. Everything
   except the tools acts on **the selection if there is one, and the whole channel
-  otherwise**.
+  otherwise**. Pitch rows stretch, and past a threshold the key strip names every key
+  rather than only the Cs — which is the difference between writing a melody and reading
+  a voicing across four octaves.
 - **Playlist** — pattern clips on tracks along a bar timeline; a clip longer than its
   pattern repeats it. Drag clips between tracks, double-click to open a pattern, mute or
-  solo a lane.
+  solo a lane. Lanes stretch — by the toolbar, by ⌥`=`, or by dragging a header's bottom
+  edge — because an automation curve drawn into a 34px lane has a 28px value axis and a
+  7px grab radius.
+- **Colour** — a channel, a playlist track and a mixer strip each carry one, from an
+  eight-entry ramp, on their right-click menu. Leaving it unset means *inherit*, which is
+  what all three did before they could choose: a lane took the colour of its position in
+  the list and a strip the colours of the channels routed into it.
 - **Automation** — clips on the playlist driving a declared set of targets: channel and
   track volume and pan, master gain, and any effect parameter. Drag points, double-click
   to add, alt-click to remove.
@@ -172,8 +180,9 @@ licence question. Without it the format reports itself unavailable and the rest 
   thread. **File**, or ⌘E.
 - **Audio settings** — driver, output, input, input channels, sample rate and buffer
   size, with the resulting latency, an input meter and a test tone. **Audio**, or ⌘,.
-- **It remembers** — window geometry, active tab, selections, the piano roll's zoom,
-  scroll and snap, panel width and chosen device. The piano roll's *tool* deliberately
+- **It remembers** — window geometry, interface scale, active tab, selections, the piano
+  roll's zoom, scroll, row height and snap, the playlist's lane height, the score's text
+  size, panel width and chosen device. The piano roll's *tool* deliberately
   does not: restoring into paint or slice would mean the first click of a session cuts
   something nobody asked for.
 - **Score** — a fifth tab holding a text description of the whole song: key, meter, chord
@@ -209,17 +218,45 @@ promise that every view has every command.
 The step grid takes keyboard focus when you click it, which it never used to: its zoom
 keys were live in the tests and nowhere else.
 
-| | step grid | piano roll | playlist |
-|---|---|---|---|
-| `+` `-` `0` zoom | ✓ | ✓ | ✓ |
-| `1` `2` `3` tools | — | select · paint · slice | select · paint |
-| `esc` clear selection | — | ✓ | ✓ |
-| `del` delete selection | — | ✓ | — |
-| ⌘A select all | — | ✓ | — |
+| | step grid | piano roll | playlist | score |
+|---|---|---|---|---|
+| `+` `-` `0` zoom | ✓ | ✓ | ✓ | — |
+| ⌥`+` ⌥`-` ⌥`0` the other size | — | pitch rows | lanes | text |
+| `1` `2` `3` tools | — | select · paint · slice | select · paint | — |
+| `esc` clear selection | — | ✓ | ✓ | — |
+| `del` delete selection | — | ✓ | — | — |
+| ⌘A select all | — | ✓ | — | — |
 
 Scrolling and zooming: wheel to scroll, ⌘-wheel or a trackpad pinch to zoom around the
-pointer, shift-wheel to scroll in time. Natural scrolling is honoured, because the system
-reports it rather than applying it.
+pointer, shift-wheel to scroll in time, ⌘⇧-wheel to zoom the OTHER axis — lane height in
+the playlist, pitch-row height in the piano roll. Natural scrolling is honoured, because
+the system reports it rather than applying it.
+
+**A notch is a fixed number of pixels, everywhere.** It used to be six *steps*
+horizontally, which is 18px zoomed out and 720px zoomed in; one *lane* down the playlist,
+which is 34px or 204px; three *rows* down the piano roll, which is 42px; and whatever
+JUCE picked in the channel rack and the score tab, which handled the wheel not at all.
+Six defensible speeds that disagreed with each other, and about five times slower than
+the rest of the machine. Pixels is the only unit all six share, so `wheelPixelsPerNotch`
+is the number and each view divides into its own at the point of use.
+
+Zoom is horizontal in every timeline dew has, because time is. **⌥`=`, ⌥`-` and ⌥`0`
+size the other axis**: a lane in the playlist, a pitch row in the piano roll, and the
+text in the score tab, which has a second size precisely because it has no timeline. One
+trio rather than two, on the modifier that leaves a bare `=` free to be an `=` somebody
+is typing. Each editor also has the three buttons on its toolbar, and a playlist lane can
+be dragged by the bottom edge of its header — one height for every lane, so the edge you
+grabbed is only the one the pointer was nearest.
+
+**View → UI Scale** draws the whole interface 100%, 125%, 150% or 175% larger. A
+multiplier on the window rather than on the type scale: dew's layout is a ladder of pixel
+sizes that a font has to fit inside, so scaling only the text is how a caption ends up
+clipped by the box it was measured for.
+
+**Every control says what it is.** The status bar names whatever is under the pointer at
+once, and the floating tooltip still arrives after 600ms for anyone who stops — one help
+string, two surfaces, both read from the control's own tooltip. A test walks all five
+tabs and fails on any control with nothing to say.
 
 Dragging a value: **shift is finer**, on every knob, fader and number field. Shift means
 five other things in dew — suspend snap, extend a selection, make a copy unique, transpose
@@ -361,7 +398,7 @@ and a passing render says something about the real engine.
 ## Design system
 
 `src/ui/design/` holds the vocabulary — colour roles, spacing, type, a size ladder, an
-*emphasis* scale, motion durations, and thirty-odd icons drawn as `juce::Path` rather
+*emphasis* scale, motion durations, and forty-odd icons drawn as `juce::Path` rather
 than shipped as assets. `src/ui/primitives/` holds the controls built on it.
 
 `dew_shot gallery out.png` renders every token, icon and primitive in every state onto one
@@ -373,6 +410,15 @@ bare number, no radius or stroke as a bare number, no gap or inset off the spaci
 no component redeclaring a dimension the ladder already names, no timer picking its own
 refresh rate, no font built outside `Tokens.cpp` — and one that refuses the opposite
 mistake, a token nothing refers to.
+
+Two more hold coverage rather than vocabulary, and both exist because a control added to
+a panel without them is exactly the omission nobody notices: every spec-built knob in the
+window has a right-click menu, and every control in all five tabs has help text. The
+second found thirty of sixty-three silent when it was written.
+
+`dew_shot gallery` earns its place the same way. The icon grid's height was a hard-coded
+two rows, so three new icons drew straight over the section below — on the one page whose
+whole job is to show what the design system looks like.
 
 ### Motion
 
@@ -664,7 +710,9 @@ drift out of step with a hand-written parser.
 - A property absent from the file takes its default, so older files load.
 - A property of the wrong type takes its default and warns, rather than failing.
 - A key the schema does not know is dropped and reported.
-- A newer `formatVersion` is refused outright instead of half-read.
+- A newer `formatVersion` is refused outright instead of half-read. v12 is current: it
+  gave a playlist track and a mixer strip a `colour`, additively, with the empty string
+  as the declared default so an earlier file loads looking exactly as it did.
 
 Saving writes to a temporary and swaps, so an interrupted save cannot destroy the project
 it was overwriting.
