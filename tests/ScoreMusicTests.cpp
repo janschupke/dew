@@ -299,3 +299,37 @@ TEST_CASE ("every seven-note mode supports numerals and the others do not",
         REQUIRE (degrees.back() < 12);
     }
 }
+
+TEST_CASE ("an accidental on a numeral is read against the major scale",
+           "[score][music]")
+{
+    // The rule, and the bug it fixes. Flattening the MODE's own degree is right
+    // in major and wrong in minor: the sixth of natural minor is already flat,
+    // so `bVI` flattened again lands a semitone below the chord everybody
+    // writing `i bVI bVII` means. Every minor-key score in this repo rendered a
+    // semitone low and sounded plausible enough that nobody heard it.
+    const Key aMinor { 9, Mode::minor };
+
+    // A minor: bVI is F, bVII is G, bIII is C.
+    REQUIRE (chordOf ("bVI", aMinor).rootPc == 5);
+    REQUIRE (chordOf ("bVII", aMinor).rootPc == 7);
+    REQUIRE (chordOf ("bIII", aMinor).rootPc == 0);
+
+    // A bare numeral is still relative to the MODE, so the minor scale's own
+    // degrees are unchanged.
+    REQUIRE (chordOf ("i", aMinor).rootPc == 9);
+    REQUIRE (chordOf ("iv", aMinor).rootPc == 2);
+    REQUIRE (chordOf ("v", aMinor).rootPc == 4);
+
+    // `VI` and `bVI` naming the same chord in minor is correct rather than a
+    // collision: both spellings are written and both mean F.
+    REQUIRE (chordOf ("VI", aMinor).rootPc == chordOf ("bVI", aMinor).rootPc);
+
+    // And major is unchanged, which is what the rule has to preserve.
+    const Key cMajor { 0, Mode::major };
+
+    REQUIRE (chordOf ("bVII", cMajor).rootPc == 10);
+    REQUIRE (chordOf ("bVI", cMajor).rootPc == 8);
+    REQUIRE (chordOf ("bIII", cMajor).rootPc == 3);
+    REQUIRE (chordOf ("#iv", cMajor).rootPc == 6);
+}

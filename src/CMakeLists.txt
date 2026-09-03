@@ -90,6 +90,7 @@ add_library(dew_lang STATIC
   lang/Voicing.cpp
   lang/Melody.cpp
   lang/Generator.cpp
+  lang/Completion.cpp
   lang/Compile.cpp
 )
 
@@ -265,6 +266,7 @@ add_library(dew_ui STATIC
   ui/PlaylistToolbar.cpp
   ui/MixerComponent.cpp
   ui/ScoreTokeniser.cpp
+  ui/ScoreCompletionList.cpp
   ui/ScoreEditorComponent.cpp
   ui/InstrumentPanel.cpp
   ui/EditorTabs.cpp

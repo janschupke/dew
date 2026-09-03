@@ -188,7 +188,23 @@ std::optional<RootAndShape> resolveRoot (std::string_view text, const Key& key,
                          + "` names a scale degree, which "
                          + nameOf (key.mode) + " does not have seven of");
 
-        const auto& degrees = degreesOf (key.mode);
+        // AN ACCIDENTAL IS RELATIVE TO THE MAJOR SCALE. A bare numeral is
+        // relative to the mode.
+        //
+        // Both halves are needed and neither alone is right. Flattening the
+        // mode's own degree gives `bVII` = Bb in C major, which is correct, and
+        // `bVI` = E in A MINOR, which is a semitone below what anybody writing
+        // `i bVI bVII` means - the sixth of natural minor is already flat, so
+        // flattening it again lands on the wrong chord. Every minor-key score
+        // in this repo, `examples/amber.score` included, was rendering a
+        // semitone low and sounding plausible enough that nobody heard it.
+        //
+        // Read against major, `bVI` is F in A minor and Ab in C major, which is
+        // what the numeral means in both. A bare `VI` in A minor is F too, and
+        // that they coincide is correct rather than a collision: both spellings
+        // name the same chord and both are written.
+        const auto& degrees = prefix != 0 ? degreesOf (Mode::major) : degreesOf (key.mode);
+
         const auto rootPc = pitchClassOf (key.tonicPc + degrees[(std::size_t) numeral->degree]
                                           + prefix);
 

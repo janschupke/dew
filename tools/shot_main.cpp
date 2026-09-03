@@ -7,6 +7,7 @@
 #include "ui/MidiSettingsPanel.h"
 #include "ui/RenderPanel.h"
 #include "ui/MainComponent.h"
+#include "ui/ScoreEditorComponent.h"
 #include "ui/RandomizePanel.h"
 #include "ui/DewLookAndFeel.h"
 #include "ui/design/DewGallery.h"
@@ -33,6 +34,7 @@ Usage:
 Options:
   --project <file.dew>   Project to load (default: the built-in demo)
   --tab <name>           channel-rack | piano-roll | playlist | mixer | score
+  --completions          open the score tab's completion popup before shooting
   --size <WxH>           Default 1440x900
   --help
 )";
@@ -314,6 +316,28 @@ int main (int argc, char* argv[])
     if (tabs == nullptr)
         return fail ("could not find the editor tabs");
 
+    // The completion popup only exists while it is open, so a picture of it has
+    // to be asked for. Reviewing it as a PNG is the only way anybody looks at a
+    // transient panel in a build with no display.
+    const auto openCompletions = [&component]
+    {
+        auto* score = dynamic_cast<dew::ScoreEditorComponent*> (
+            findDescendantWithID (component, "scoreEditor"));
+
+        if (score == nullptr)
+            return;
+
+        // Inside the harmony block, which is where completion has the most to
+        // say: the chords are ranked by the key the score declares.
+        const auto text = score->getSourceDocument().getAllContent();
+        const auto anchor = text.indexOf ("harmony loop {\n  ");
+        const auto caret = anchor < 0 ? 0 : anchor + juce::String ("harmony loop {\n  ").length();
+
+        score->getEditor().moveCaretTo (
+            juce::CodeDocument::Position (score->getSourceDocument(), caret), false);
+        score->showCompletions();
+    };
+
     const auto shoot = [&] (int tabIndex, const juce::File& destination) -> int
     {
         if (tabIndex >= 0)
@@ -336,7 +360,16 @@ int main (int argc, char* argv[])
         const auto destination = juce::File::getCurrentWorkingDirectory()
                                      .getChildFile (args.positional[1]);
 
-        return shoot (tabIndexFor (args.value ("--tab", "channel-rack")), destination);
+        const auto tabIndex = tabIndexFor (args.value ("--tab", "channel-rack"));
+
+        if (args.has ("--completions"))
+        {
+            tabs->setCurrentTabIndex (tabIndex, true);
+            component.resized();
+            openCompletions();
+        }
+
+        return shoot (tabIndex, destination);
     }
 
     if (mode == "tabs")

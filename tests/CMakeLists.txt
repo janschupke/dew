@@ -70,6 +70,7 @@ add_executable(dew_tests
   ScoreBakeTests.cpp
   ScoreSchemaTests.cpp
   ScoreEditorTests.cpp
+  ScoreCompletionTests.cpp
   ScoreDeterminismTests.cpp
 )
 

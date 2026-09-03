@@ -7,6 +7,7 @@
 
 #include "lang/Compile.h"
 #include "model/ProjectDocument.h"
+#include "ui/ScoreCompletionList.h"
 #include "ui/ScoreTokeniser.h"
 #include "ui/StatusBar.h"
 #include "ui/primitives/DewControls.h"
@@ -73,7 +74,8 @@ private:
 class ScoreEditorComponent : public juce::Component,
                              private juce::CodeDocument::Listener,
                              private juce::Timer,
-                             private juce::ListBoxModel
+                             private juce::ListBoxModel,
+                             private juce::KeyListener
 {
 public:
     explicit ScoreEditorComponent (ProjectDocument&);
@@ -138,6 +140,25 @@ public:
     */
     static juce::String starterScore();
 
+    /** The inverse: a character index back to the byte offset the compiler
+        speaks in. The caret is a character position; completion is asked in
+        bytes.
+    */
+    static int byteIndexForCharacter (const std::string& utf8, int characterIndex);
+
+    // --- completion ----------------------------------------------------------
+    /** Offers what may be written at the caret. Control-Space, and a test. */
+    void showCompletions();
+
+    void hideCompletions();
+
+    /** Replaces the partial word under the caret with the selected candidate. */
+    void acceptCompletion();
+
+    bool isCompletionVisible() const;
+
+    ScoreCompletionList& getCompletionList() { return completions; }
+
     std::function<void (const juce::String&, StatusBar::Severity)> onMessage;
 
 private:
@@ -148,6 +169,18 @@ private:
     int getNumRows() override;
     void paintListBoxItem (int row, juce::Graphics&, int width, int height, bool selected) override;
     void listBoxItemClicked (int row, const juce::MouseEvent&) override;
+
+    /** Keys reach here BEFORE the editor sees them, which is the only way a
+        popup can own Up, Down, Return and Escape while it is open without
+        subclassing CodeEditorComponent and owning its layout too.
+    */
+    bool keyPressed (const juce::KeyPress&, juce::Component*) override;
+
+    // Component declares a one-argument keyPressed and KeyListener a
+    // two-argument one; without this the second hides the first, which
+    // -Woverloaded-virtual rejects and which would silently stop this component
+    // ever receiving a key of its own.
+    using juce::Component::keyPressed;
 
     /** Writes the text into the project. One transaction per typing run. */
     void storeSource();
@@ -163,6 +196,7 @@ private:
     DiagnosticsOverlay overlay { *this };
     juce::ListBox list { "scoreDiagnostics", this };
 
+    ScoreCompletionList completions;
     DewButton compileButton { "Compile", DewButton::Role::primary };
     juce::Label heading;
 
