@@ -19,7 +19,7 @@ public:
         : DocumentWindow (name, tokens::colour::background, DocumentWindow::allButtons)
     {
         setUsingNativeTitleBar (true);
-        setContentOwned (new MainComponent(), true);
+        setContentOwned (new MainComponent (true), true);
         setResizable (true, false);
         setResizeLimits (900, 560, 20000, 20000);
 

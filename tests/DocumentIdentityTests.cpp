@@ -133,7 +133,7 @@ TEST_CASE ("the pattern dropdown offers a way to make one", "[ui][transport]")
     // is also where a new one comes from.
     const juce::ScopedJuceInitialiser_GUI juceInit;
 
-    MainComponent component;
+    MainComponent component (false);
     component.setSize (1280, 800);
 
     REQUIRE_FALSE (component.getChildren().isEmpty());
@@ -176,7 +176,7 @@ TEST_CASE ("the transport bar still tracks the project after New and Open",
     // that report is about a missing button rather than a broken document.
     const juce::ScopedJuceInitialiser_GUI juceInit;
 
-    MainComponent component;
+    MainComponent component (false);
     component.setSize (1280, 800);
 
     auto& document = component.getDocument();
@@ -266,7 +266,7 @@ TEST_CASE ("clicks land on the step grid across window sizes", "[ui][hittest]")
     // actually write a note.
     const juce::ScopedJuceInitialiser_GUI juceInit;
 
-    MainComponent component;
+    MainComponent component (false);
     component.getDocument().setState (ProjectFactory::createDefault(), true);
     component.documentWasReplaced();
 
@@ -308,7 +308,7 @@ TEST_CASE ("clicking a step writes a note, and right-clicking clears it", "[ui][
 {
     const juce::ScopedJuceInitialiser_GUI juceInit;
 
-    MainComponent component;
+    MainComponent component (false);
     auto& document = component.getDocument();
     document.setState (ProjectFactory::createDefault(), true);
     component.documentWasReplaced();

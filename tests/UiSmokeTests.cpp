@@ -43,7 +43,7 @@ TEST_CASE ("the editor lays out and paints", "[ui][smoke]")
 {
     const juce::ScopedJuceInitialiser_GUI juceInit;
 
-    dew::MainComponent component;
+    dew::MainComponent component (false);
 
     REQUIRE (component.getWidth() > 0);
     REQUIRE (component.getHeight() > 0);
@@ -60,7 +60,7 @@ TEST_CASE ("the instrument panel folds away, and comes back", "[ui][smoke]")
 {
     const juce::ScopedJuceInitialiser_GUI juceInit;
 
-    dew::MainComponent component;
+    dew::MainComponent component (false);
     component.setSize (1400, 900);
 
     auto* panel = component.findChildWithID ("instrumentPanel");
@@ -98,7 +98,7 @@ TEST_CASE ("the editor survives being resized to its limits", "[ui][smoke]")
 {
     const juce::ScopedJuceInitialiser_GUI juceInit;
 
-    dew::MainComponent component;
+    dew::MainComponent component (false);
 
     for (auto size : { juce::Point<int> { 900, 560 }, juce::Point<int> { 2400, 1400 } })
     {
@@ -117,7 +117,7 @@ TEST_CASE ("every editor tab paints something", "[ui][smoke]")
     // a person clicking on it.
     const juce::ScopedJuceInitialiser_GUI juceInit;
 
-    dew::MainComponent component;
+    dew::MainComponent component (false);
     component.getDocument().setState (dew::testing::fixtureProject(), true);
     component.documentWasReplaced();
     component.setSize (1280, 800);
@@ -150,7 +150,7 @@ TEST_CASE ("the editor's own engine renders audio for the loaded project", "[ui]
     // that a person clicking Play would exercise.
     const juce::ScopedJuceInitialiser_GUI juceInit;
 
-    dew::MainComponent component;
+    dew::MainComponent component (false);
     component.getDocument().setState (dew::testing::fixtureProject(), true);
     component.documentWasReplaced();
 
@@ -178,7 +178,7 @@ TEST_CASE ("editing through the UI's edit API changes what the engine plays", "[
 {
     const juce::ScopedJuceInitialiser_GUI juceInit;
 
-    dew::MainComponent component;
+    dew::MainComponent component (false);
     auto& document = component.getDocument();
 
     // A new project is silent: channels but no notes.
@@ -333,7 +333,7 @@ TEST_CASE ("a span selected in the editor loops the editor's own engine", "[ui][
     // own; this is the wiring between them.
     const juce::ScopedJuceInitialiser_GUI juceInit;
 
-    dew::MainComponent component;
+    dew::MainComponent component (false);
     component.getDocument().setState (dew::testing::fixtureProject(), true);
     component.documentWasReplaced();
 
