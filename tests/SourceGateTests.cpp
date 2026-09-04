@@ -656,6 +656,11 @@ TEST_CASE ("no source spells an automatable parameter as a string literal", "[bu
         {
             const auto trimmed = line.trim();
 
+            // The exemption is the DIRECTORY src/ui/design/icons, not a file in it.
+            // The catalog names its own icons as strings - { "mute", mute } - and
+            // several of those names are also parameter names. It was one file and
+            // one entry; splitting it into three would have meant three entries,
+            // which is the list SourceScan.h warns a fourth file falls off.
             // Doc comments name properties all through this codebase, deliberately.
             if (trimmed.startsWith ("//") || trimmed.startsWith ("*") || trimmed.startsWith ("/*"))
                 return false;
@@ -666,7 +671,7 @@ TEST_CASE ("no source spells an automatable parameter as a string literal", "[bu
 
             return false;
         },
-        { "Ids.h", "Icons.cpp", "lang" });
+        { "Ids.h", "icons", "lang" });
 
     INFO ("automatable parameters written as string literals:\n" << found.joinIntoString ("\n"));
     CHECK (found.isEmpty());
@@ -810,7 +815,7 @@ TEST_CASE ("no source states a radius or a stroke as a bare number", "[build][ga
 
             return false;
         },
-        { "Tokens.h", "Icons.cpp" });
+        { "Tokens.h", "icons" });
 
     INFO ("radii and strokes written as bare numbers:\n" << found.joinIntoString ("\n"));
     CHECK (found.isEmpty());

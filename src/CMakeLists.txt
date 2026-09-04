@@ -296,7 +296,9 @@ target_link_libraries(dew_io
 add_library(dew_design STATIC
   ui/design/Tokens.cpp
   ui/design/Animator.cpp
-  ui/design/Icons.cpp
+  ui/design/icons/Icons.cpp
+  ui/design/icons/IconsSound.cpp
+  ui/design/icons/IconsViews.cpp
   ui/design/DewGallery.cpp
   ui/primitives/DewControls.cpp
   ui/primitives/DewKnob.cpp
