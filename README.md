@@ -94,7 +94,7 @@ picture and nearly invisible in code.
 ## Test
 
 ```sh
-ctest --preset release        # 1264 tests
+ctest --preset release        # 1296 tests
 ```
 
 The gate, which is what CI runs and what a change has to pass:
@@ -406,6 +406,23 @@ Several tests enforce a convention by scanning the sources, and each passes sile
 it finds nothing; `SourceGateTests` checks that walk against the libraries' own source
 lists in both directions, so code that moves out of `src/` cannot quietly disarm them and
 a file that never joins a library cannot sit there uncompiled while appearing to be built.
+
+Each of those gates lets one or two places break its rule, because a rule has to be
+declared somewhere. **An exemption names a path and has to earn its place**: an entry that
+suppresses nothing is reported as an offence of its own, so a definition site that moves
+is named rather than silently escaping. It used to be a bare file name — and a name is not
+a property a file keeps, which is how five gates went red during the split above, each for
+a file that had done nothing wrong. Ten of the twenty-one entries turned out to suppress
+nothing at all: `Tokens.h` was exempt from the gate on drawn radii while drawing nothing,
+`Ids.h` from a gate on names it spells with the preprocessor, and two files that build the
+document held a standing licence to write an undoable property by hand.
+
+Those gates read stripped code, not the file as written. Every one of them used to ask
+whether a line began with a comment marker, which dew's doc comments — continuing without
+a leading asterisk — defeat, so three gates were held green by a wrapped sentence. The
+reader tracks strings as well, and that mattered most: a gate quoting a comment marker in
+its own predicate opened a comment that swallowed the rest of the file, which is why
+`SourceGateTests.cpp` measured 301 code lines while holding 667.
 
 **No file is over 400 lines of code**, and a gate says so. The number is the tree's own
 p90 rather than a preference — the same way `ColumnLimit` is 100 because the p99 line is

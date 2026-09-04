@@ -60,6 +60,29 @@ Menus are built as `buildMenu()` + `applyMenuChoice (int)` pairs precisely becau
 `showMenuAsync` cannot run headlessly; components expose those as a public test seam
 (`src/ui/MenuSeam.h`).
 
+## The source gates
+
+`tests/SourceScan.h` + `SourceGate*Tests.cpp`. `offenders(predicate, exempt)` runs the
+predicate over every **code** line under `src/` — comments and strings are stripped, so a
+predicate says what it looks for and never how a comment is spelled — and reports
+`ui/File.cpp:12  the line`.
+
+- **An exemption is a PATH relative to `src/`**, matching that file or anything under that
+  directory: `"ui/design/Tokens.h"`, `"model/edits"`. Never a bare name. A name is not a
+  property a file keeps when it is split, and five gates went red proving that.
+- **An exemption that suppresses nothing FAILS the gate.** So when one goes red, the two
+  honest fixes are to change the code or to argue the rule down — never to add a name.
+  If a gate goes red at a definition site that moved, the entry that went stale is named
+  in the same report.
+- **Prefer a predicate that recognises the sanctioned CALL** over a list of sanctioned
+  files. `ProjectEdits::setProperty` and `gesture::dragPixelsFor` are both allowed by what
+  the line says, so neither needs an entry.
+- **Ask a shape, not a spelling.** The undo gate matched the literal `&undo` and therefore
+  matched nothing in the tree for as long as it existed — green because it could not see.
+- A gate that scans must assert it scanned something. `REQUIRE (files.size() > n)` — a
+  gate over an empty walk passes silently, which is the failure mode all of these exist
+  to avoid.
+
 ## Looking at it
 
 `dew_shot` paints the UI into a PNG with no window. Use it — both of the layout defects
