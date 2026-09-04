@@ -12,6 +12,7 @@
 #include "ui/ParamContextMenu.h"
 #include "ui/primitives/DewControls.h"
 #include "ui/primitives/HoverTracker.h"
+#include "ui/design/Gestures.h"
 #include "ui/design/Tokens.h"
 
 namespace dew
@@ -146,6 +147,37 @@ private:
 
     juce::Label nameLabel;
     juce::Slider gainSlider;
+
+    /** Latches shift onto the fader at the moment of press.
+
+        The fader is the one value control in dew with no primitive of its own,
+        so it is also the one that had to be told the gesture rules by hand -
+        and it never was. "Shift is finer, on every knob, fader and number
+        field" was written down and true of two of the three: a bare
+        juce::Slider snaps to the pointer, which is a position rather than a
+        drag, so neither the shared distance nor shift reached it.
+
+        A listener rather than MixerStrip::mouseDown, because that one reads
+        event.getPosition() against routingBounds and a forwarded event carries
+        the position in the SLIDER's coordinates - the routing rows would answer
+        a press on the fader.
+    */
+    struct FineDrag : juce::MouseListener
+    {
+        explicit FineDrag (juce::Slider& s)
+            : slider (s)
+        {
+        }
+
+        void mouseDown (const juce::MouseEvent& event) override
+        {
+            slider.setMouseDragSensitivity (gesture::dragPixelsFor (event.mods));
+        }
+
+        juce::Slider& slider;
+    };
+
+    FineDrag fineDrag { gainSlider };
 
     /** The same two controls the channel rack's rows carry, at the same size and
         in the same painter.

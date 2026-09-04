@@ -347,9 +347,10 @@ TEST_CASE ("a knob answers vertical travel, and only vertical travel", "[design]
         const auto source = juce::Desktop::getInstance().getMainMouseSource();
         const auto now = juce::Time::getCurrentTime();
 
-        const auto at = [&] (juce::Point<float> where, bool dragged) {
-            return juce::MouseEvent { source, where, {},   1.0f, 0.0f,  0.0f, 0.0f,    0.0f,
-                                      &slider, &slider,    now,  start, now,  1,       dragged };
+        const auto at = [&] (juce::Point<float> where, bool dragged)
+        {
+            return juce::MouseEvent { source,  where,   {},  1.0f,  0.0f, 0.0f, 0.0f,   0.0f,
+                                      &slider, &slider, now, start, now,  1,    dragged };
         };
 
         slider.mouseDown (at (start, false));

@@ -10,6 +10,7 @@
 #include "ui/ColourMenu.h"
 #include "ui/design/Cursors.h"
 #include "ui/design/DewLookAndFeel.h"
+#include "ui/design/Gestures.h"
 #include "ui/design/ParamPalette.h"
 #include "ui/primitives/DewMeter.h"
 
@@ -43,6 +44,18 @@ MixerStrip::MixerStrip (ProjectDocument& d, juce::ValueTree t, bool isMasterStri
     // and shows an arrow in the middle of a strip that says "clickable".
     gainSlider.setMouseCursor (cursor::value);
     gainSlider.setSliderStyle (juce::Slider::LinearVertical);
+
+    // A fader answers a DRAG, not a position.
+    //
+    // juce::Slider snaps to the pointer by default, so a press anywhere on the
+    // track jumped the gain there and setMouseDragSensitivity - the one knob
+    // that carries dew's shared drag distance - did not apply at all. That is
+    // why "shift is finer, on every knob, fader and number field" was true of
+    // the knob and the number field and not of this. Both halves are here now:
+    // the distance at construction, and shift latched at press by fineDrag.
+    gainSlider.setSliderSnapsToMousePosition (false);
+    gainSlider.setMouseDragSensitivity (gesture::dragPixelsForFullRange);
+    gainSlider.addMouseListener (&fineDrag, false);
     gainSlider.setTextBoxStyle (juce::Slider::TextBoxBelow, false, 60,
                                 tokens::size::controlHeightSm);
     const auto& gainSpec = requireMixerTrackParamSpec (ids::gain);

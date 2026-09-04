@@ -15,6 +15,7 @@
 #include "model/ProjectFactory.h"
 #include "ui/EditorState.h"
 #include "ui/MixerComponent.h"
+#include "ui/design/Gestures.h"
 #include "ui/design/Tokens.h"
 
 #include "ConfirmSupport.h"
@@ -341,6 +342,59 @@ constexpr int addInsertChoice = 2;
 constexpr int removeInsertChoice = 3;
 
 } // namespace
+
+TEST_CASE ("the fader answers a drag, at the distance every value control uses", "[ui][mixer]")
+{
+    // "Shift is finer, on every knob, fader and number field" was written down
+    // and was true of two of the three. juce::Slider snaps to the pointer by
+    // default, so a press on the track jumped the gain to it - a position, not
+    // a drag - and setMouseDragSensitivity, which is the one place dew's shared
+    // drag distance is applied, did not come into it at all.
+    //
+    // Asserted through the slider rather than by driving a drag, because the
+    // sensitivity is what JUCE divides the travel by and is therefore the whole
+    // of the claim; MixerComponent has no harness that can post a press to a
+    // grandchild.
+    const juce::ScopedJuceInitialiser_GUI juceInit;
+
+    ProjectDocument document;
+    EditorState editorState;
+
+    document.setState (dew::testing::fixtureProject(), true);
+
+    MixerComponent mixer { document, editorState };
+    mixer.setSize (1000, 600);
+    mixer.setVisible (true);
+    mixer.refresh();
+    mixer.resized();
+
+    juce::Array<juce::Slider*> faders;
+
+    std::function<void (juce::Component&)> walk = [&] (juce::Component& c)
+    {
+        for (auto* child : c.getChildren())
+        {
+            if (auto* slider = dynamic_cast<juce::Slider*> (child))
+                if (slider->getSliderStyle() == juce::Slider::LinearVertical)
+                    faders.add (slider);
+
+            walk (*child);
+        }
+    };
+
+    walk (mixer);
+
+    // Every strip's, not the first one found: the master strip is built by a
+    // second call and is exactly the kind of thing that gets one of a pair.
+    INFO ("faders: " << faders.size());
+    REQUIRE (faders.size() > 1);
+
+    for (auto* fader : faders)
+    {
+        CHECK (! fader->getSliderSnapsToMousePosition());
+        CHECK (fader->getMouseDragSensitivity() == gesture::dragPixelsForFullRange);
+    }
+}
 
 TEST_CASE ("a strip's menu offers rename, add and remove", "[mixer][ui]")
 {

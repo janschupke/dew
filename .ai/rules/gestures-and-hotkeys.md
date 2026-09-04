@@ -199,6 +199,14 @@ an octave — and every one of them changes a *selection* or a *position*. None 
 value. That is what keeps the sixth meaning from being one too many. A whole drag is one
 undo step.
 
+That sentence was two thirds true for a while, and the exception is worth keeping written
+down. The mixer fader is the one value control with no primitive of its own, so it was
+also the one nothing told the rule to: a bare `juce::Slider` snaps to the pointer, which
+makes a press a *position* rather than a drag, and `setMouseDragSensitivity` — the single
+place the shared distance is applied — then does not come into it at all. Both halves are
+wired now, and "the fader answers a drag, at the distance every value control uses" in
+`tests/MixerUiTests.cpp` is what keeps the sentence honest.
+
 Right-drag erases in the piano roll and the step grid, and means the same thing in both:
 one undo step for the sweep, filling the cells between drag samples so a quick flick
 leaves no survivors. Alt-drag is the same gesture. A right-press that erased nothing was
