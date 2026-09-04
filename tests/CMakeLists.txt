@@ -142,3 +142,44 @@ target_compile_definitions(dew_tests PRIVATE
 target_include_directories(dew_tests PRIVATE "${CMAKE_SOURCE_DIR}/tools")
 
 catch_discover_tests(dew_tests)
+
+# ==============================================================================
+# dew_lang_tests - the score language on its own.
+#
+# The eleven files below include nothing but lang/ headers and name juce:: not
+# once, so this target links dew_lang and Catch2 and no JUCE at all. That is
+# what makes it buildable on a machine with no X11, no ALSA and no GTK, which is
+# what makes a second compiler and a second standard library cheap enough to run
+# on every change.
+#
+# It is worth having for its own sake too: 159 tests that build in seconds are a
+# different inner loop from 1046 that build in minutes.
+#
+# The same files stay in dew_tests above. Nothing should run on only one
+# platform, and a file that runs in both places is the point.
+# ==============================================================================
+set(DEW_LANG_TEST_SOURCES
+  ScoreCompletionTests.cpp
+  ScoreCounterpointTests.cpp
+  ScoreDeterminismTests.cpp
+  ScoreDiagnosticTests.cpp
+  ScoreGeneratorTests.cpp
+  ScoreGridTests.cpp
+  ScoreImitationTests.cpp
+  ScoreLexerTests.cpp
+  ScoreMusicTests.cpp
+  ScoreParserTests.cpp
+  ScoreResolverTests.cpp
+)
+
+add_executable(dew_lang_tests ${DEW_LANG_TEST_SOURCES})
+
+target_link_libraries(dew_lang_tests
+  PRIVATE
+    dew_lang
+    Catch2::Catch2WithMain
+    juce::juce_recommended_config_flags
+    juce::juce_recommended_warning_flags
+)
+
+catch_discover_tests(dew_lang_tests TEST_PREFIX "lang: ")

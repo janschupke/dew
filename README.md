@@ -23,7 +23,12 @@ Presets, not raw flags:
 | `dev` | Debug, with tests |
 | `release` | RelWithDebInfo — build this for normal use |
 | `ci` | `release` plus warnings-as-errors; the gate |
+| `asan` | `ci` plus AddressSanitizer and UndefinedBehaviorSanitizer |
+| `tsan` | `ci` plus ThreadSanitizer |
 | `offline` | `release` from a warm dependency cache, no network |
+
+`dev` also turns on libc++'s debug hardening, which bounds-checks `operator[]`. It costs
+nothing and the render path indexes a snapshot's channels on every block.
 
 The first configure fetches JUCE and Catch2 from source — a few seconds, shallow, cached
 per machine under `~/.cache/CPM` — so one build is slow and the rest are not.
@@ -103,6 +108,33 @@ tests and the generated manifest, in the order that fails cheapest first.
 
 `release` is not the gate. Only `ci` builds warnings-as-errors, so it is the only one
 that catches an exact float comparison or a dropped result.
+
+Two things run outside it, because both are slow enough that putting them in front of
+every change would only teach people to skip the gate:
+
+```sh
+ctest --preset asan           # AddressSanitizer and UndefinedBehaviorSanitizer
+ctest --preset tsan           # ThreadSanitizer, for the three lock-free queues
+./scripts/linux-check.sh      # the score language under gcc and libstdc++, in Docker
+```
+
+`tsan` is aimed at `SnapshotBridge`, `PreviewQueue` and `SignalTap`, which are hand-rolled
+and where a race would look like a flake rather than a failure. There is no leak check:
+`detect_leaks` is unsupported on Apple Silicon, and with no manual `delete` anywhere in
+the tree there is little for it to find.
+
+**Both are CI-only at the time of writing.** Neither sanitizer runtime works on macOS 26.4
+with Xcode 26.4: `int main(){}` built with `-fsanitize=address` spins forever inside
+`__asan::InitializeShadowMemory`, and the same program under `-fsanitize=thread`
+segfaults. UBSan is unaffected, which is why it rides along with `asan`. The presets are
+correct and the CI runners are an older macOS; they have not been run here.
+
+`linux-check.sh` exists for one claim. The score language writes out its own splitmix64
+and PCG32 because libstdc++ and libc++ generate different numbers, and until there was a
+second standard library in the loop that was an assertion rather than a test. It is cheap
+because `dew_lang` links nothing — JUCE included — so the container needs a compiler and
+CMake and no system libraries at all. The same eleven files build as `dew_lang_tests`,
+which is also a faster inner loop for language work than the full suite.
 
 MP3 is the one thing needing a tool dew does not ship: JUCE can only decode it, so
 encoding drives an installed `lame` as a child process — no build dependency and no

@@ -32,6 +32,27 @@ using namespace dew;
 // relaxed load per allocation for the rest of the suite.
 // =============================================================================
 
+// A sanitizer that owns the allocator must be left to own it: ASan replaces
+// operator new itself and intercepts the malloc underneath, and two
+// replacements of the same function is not a thing to reason about.
+//
+// Not a measured claim about this machine. ASan and TSan cannot run here at
+// all - on macOS 26.4 with Xcode 26.4, `int main(){}` built with
+// -fsanitize=address spins forever inside __asan::InitializeShadowMemory, and
+// the same program under -fsanitize=thread segfaults. UBSan is fine. So the
+// asan and tsan presets are CI-only for now, and this guard is written from
+// the contract rather than from an experiment.
+//
+// No loss of cover either way. This gate's job is the `ci` preset, which is
+// what a change has to pass; the sanitizer builds exist to find other bugs.
+// The tests skip rather than silently passing, so a build that is not checking
+// this says so.
+#if defined(__has_feature)
+#if __has_feature(address_sanitizer) || __has_feature(thread_sanitizer)
+#define DEW_SANITIZER_OWNS_THE_ALLOCATOR 1
+#endif
+#endif
+
 namespace
 {
 
@@ -67,6 +88,8 @@ struct ScopedAllocationCount
 };
 
 } // namespace
+
+#if ! defined(DEW_SANITIZER_OWNS_THE_ALLOCATOR)
 
 void* operator new (std::size_t size)
 {
@@ -161,6 +184,8 @@ void operator delete[] (void* p, std::size_t, std::align_val_t) noexcept
     std::free (p);
 }
 
+#endif // ! DEW_SANITIZER_OWNS_THE_ALLOCATOR
+
 namespace
 {
 
@@ -228,6 +253,9 @@ juce::ValueTree maximalProject()
 
 TEST_CASE ("the allocation counter actually counts", "[realtime][gate][allocation]")
 {
+#if defined(DEW_SANITIZER_OWNS_THE_ALLOCATOR)
+    SKIP ("the sanitizer owns operator new; this gate runs in the ci preset");
+#else
     // The control case. Every gate in this repo that scans for something needs
     // one, because "found nothing" and "looked nowhere" are the same result.
     auto allocated = 0;
@@ -242,10 +270,14 @@ TEST_CASE ("the allocation counter actually counts", "[realtime][gate][allocatio
     }
 
     CHECK (allocated > 0);
+#endif
 }
 
 TEST_CASE ("the render path allocates nothing", "[realtime][gate][allocation]")
 {
+#if defined(DEW_SANITIZER_OWNS_THE_ALLOCATOR)
+    SKIP ("the sanitizer owns operator new; this gate runs in the ci preset");
+#else
     constexpr auto sampleRate = 48000.0;
     constexpr auto blockSize = 256;
 
@@ -320,6 +352,7 @@ TEST_CASE ("the render path allocates nothing", "[realtime][gate][allocation]")
     // non-zero: a vector that reallocated has a different capacity.
     CHECK (engine.getTriggerCapacity() == triggerCapacity);
     CHECK (engine.getActiveAutomationCapacity() == automationCapacity);
+#endif
 }
 
 TEST_CASE ("the sequencer refuses at its trigger bound rather than growing",

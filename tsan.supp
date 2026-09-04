@@ -1,0 +1,12 @@
+# ThreadSanitizer suppressions.
+#
+# JUCE frames only. Nothing under dew:: belongs in this file: a race this
+# project owns is a bug to fix, and suppressing one here would make the job
+# green while leaving it in place.
+#
+# Add an entry only with a comment saying which JUCE call it is and why it is
+# JUCE's to answer for.
+
+# juce::MessageManager and the CoreAudio callback thread exchange ownership
+# through Obj-C runtime machinery TSan cannot see into.
+called_from_lib:libobjc.A.dylib

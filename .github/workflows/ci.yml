@@ -98,6 +98,17 @@ jobs:
             --into "${RUNNER_TEMP}/base.dew"
           cmp "${RUNNER_TEMP}/amber.dew" "${RUNNER_TEMP}/rebaked.dew"
 
+      # dew_shot is how the design system is reviewed, and until now the only
+      # tool with nothing checking it runs at all. Offscreen, so no display.
+      - name: The screenshot tool renders
+        run: |
+          ./build/ci/tools/dew_shot_artefacts/RelWithDebInfo/dew_shot \
+            gallery "${RUNNER_TEMP}/gallery.png"
+          test -s "${RUNNER_TEMP}/gallery.png"
+          ./build/ci/tools/dew_shot_artefacts/RelWithDebInfo/dew_shot \
+            editor "${RUNNER_TEMP}/roll.png" --project examples/melody.dew --tab piano-roll
+          test -s "${RUNNER_TEMP}/roll.png"
+
       # The manifest is generated at configure time; if it differs from what is
       # committed, the two have drifted.
       - name: Dependency manifest is up to date
@@ -110,3 +121,82 @@ jobs:
           name: build-logs
           path: build/ci/CMakeFiles/*.log
           if-no-files-found: ignore
+
+  # ----------------------------------------------------------------------------
+  # The score language against a second standard library.
+  #
+  # The README's determinism section says dew_lang writes out splitmix64 and
+  # PCG32 by hand because libstdc++ and libc++ render different music. That has
+  # been an untested claim for as long as CI has been macOS-only.
+  #
+  # It costs almost nothing to test: dew_lang links nothing, JUCE included, so
+  # this job installs a compiler and CMake and no system libraries at all.
+  # ----------------------------------------------------------------------------
+  lang-linux:
+    name: linux · gcc · score language
+    runs-on: ubuntu-latest
+
+    env:
+      CPM_SOURCE_CACHE: ${{ github.workspace }}/.cache/CPM
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Restore dependency sources
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.CPM_SOURCE_CACHE }}
+          key: cpm-linux-${{ hashFiles('cpm-package-lock.cmake', 'cmake/DependencyPins.cmake') }}
+
+      - name: Install ninja
+        run: sudo apt-get update && sudo apt-get install -y ninja-build
+
+      - name: Configure
+        run: |
+          cmake -S . -B build/linux -G Ninja \
+            -DCMAKE_BUILD_TYPE=RelWithDebInfo \
+            -DCMAKE_COMPILE_WARNING_AS_ERROR=ON
+
+      - name: Build the language and its tests
+        run: cmake --build build/linux --target dew_lang_tests
+
+      - name: Test
+        run: ./build/linux/tests/dew_lang_tests
+
+  # ----------------------------------------------------------------------------
+  # Sanitizers. Separate jobs because ASan and TSan cannot share a build, and
+  # separate from the gate above because both are slow enough that putting them
+  # in front of every push would be paid for by nobody running the gate.
+  # ----------------------------------------------------------------------------
+  sanitizers:
+    name: macOS · ${{ matrix.preset }}
+    runs-on: macos-15
+    strategy:
+      fail-fast: false
+      matrix:
+        preset: [asan, tsan]
+
+    env:
+      CPM_SOURCE_CACHE: ${{ github.workspace }}/.cache/CPM
+      TSAN_OPTIONS: suppressions=${{ github.workspace }}/tsan.supp
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Restore dependency sources
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.CPM_SOURCE_CACHE }}
+          key: cpm-${{ runner.os }}-${{ hashFiles('cpm-package-lock.cmake', 'cmake/DependencyPins.cmake') }}
+
+      - name: Install toolchain
+        run: brew bundle
+
+      - name: Configure
+        run: cmake --preset ${{ matrix.preset }}
+
+      - name: Build
+        run: cmake --build --preset ${{ matrix.preset }}
+
+      - name: Test
+        run: ctest --preset ${{ matrix.preset }} --parallel 2

@@ -18,7 +18,11 @@
       "name": "dev",
       "inherits": "base",
       "displayName": "Debug build with tests",
-      "cacheVariables": { "CMAKE_BUILD_TYPE": "Debug" }
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "_comment_hardening": "libc++ bounds-checks operator[], .front() and friends. Free, no dependency, and the render path indexes snapshot.channels and snapshot.mixerTracks on every block.",
+        "CMAKE_CXX_FLAGS_DEBUG": "-g -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_DEBUG"
+      }
     },
     {
       "name": "release",
@@ -33,6 +37,28 @@
       "cacheVariables": { "CMAKE_COMPILE_WARNING_AS_ERROR": "ON" }
     },
     {
+      "name": "asan",
+      "inherits": "ci",
+      "displayName": "CI plus AddressSanitizer and UndefinedBehaviorSanitizer",
+      "cacheVariables": {
+        "_comment": "ASan and UBSan share a build; TSan cannot join them and has its own. No leak detection: detect_leaks is unsupported on Apple Silicon, and it would report nothing here anyway - there is no manual delete in the tree.",
+        "CMAKE_CXX_FLAGS": "-fsanitize=address,undefined -fno-sanitize-recover=all -fno-omit-frame-pointer",
+        "CMAKE_C_FLAGS": "-fsanitize=address,undefined -fno-sanitize-recover=all -fno-omit-frame-pointer",
+        "CMAKE_EXE_LINKER_FLAGS": "-fsanitize=address,undefined"
+      }
+    },
+    {
+      "name": "tsan",
+      "inherits": "ci",
+      "displayName": "CI plus ThreadSanitizer",
+      "cacheVariables": {
+        "_comment": "For the three hand-rolled lock-free primitives: SnapshotBridge, PreviewQueue and SignalTap. Mutually exclusive with ASan, which is why it is a separate preset and a separate build directory.",
+        "CMAKE_CXX_FLAGS": "-fsanitize=thread -fno-omit-frame-pointer",
+        "CMAKE_C_FLAGS": "-fsanitize=thread -fno-omit-frame-pointer",
+        "CMAKE_EXE_LINKER_FLAGS": "-fsanitize=thread"
+      }
+    },
+    {
       "name": "offline",
       "inherits": "release",
       "displayName": "Release from a warm dependency cache, no network",
@@ -44,6 +70,8 @@
     { "name": "dev",      "configurePreset": "dev" },
     { "name": "release",  "configurePreset": "release" },
     { "name": "ci",       "configurePreset": "ci" },
+    { "name": "asan",     "configurePreset": "asan" },
+    { "name": "tsan",     "configurePreset": "tsan" },
     { "name": "offline",  "configurePreset": "offline" }
   ],
 
@@ -56,6 +84,8 @@
     },
     { "name": "dev",     "inherits": "base", "configurePreset": "dev" },
     { "name": "release", "inherits": "base", "configurePreset": "release" },
-    { "name": "ci",      "inherits": "base", "configurePreset": "ci" }
+    { "name": "ci",      "inherits": "base", "configurePreset": "ci" },
+    { "name": "asan",    "inherits": "base", "configurePreset": "asan" },
+    { "name": "tsan",    "inherits": "base", "configurePreset": "tsan" }
   ]
 }

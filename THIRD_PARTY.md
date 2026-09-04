@@ -6,8 +6,6 @@ do not edit by hand. Regenerate with `cmake --preset release`.
 Source of truth: [cpm-package-lock.cmake](cpm-package-lock.cmake) (versions)
 and [cmake/DependencyPins.cmake](cmake/DependencyPins.cmake) (commit SHAs).
 
-Generated 2026-09-03.
-
 ## Libraries
 
 | Package | Version | Commit | Licence | Licence file | Source |
