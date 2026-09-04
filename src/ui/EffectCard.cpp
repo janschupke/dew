@@ -10,6 +10,7 @@
 #include "ui/design/Cursors.h"
 #include "ui/design/Gestures.h"
 #include "ui/design/Icons.h"
+#include "ui/design/ParamPalette.h"
 
 namespace dew
 {
@@ -235,14 +236,42 @@ void EffectCard::paint (juce::Graphics& g)
     if (showsParameters())
         g.fillRect (header.withTop (header.getBottom() - radius::md));
 
-    g.setColour (selected ? colour::accent : colour::outline);
+    const auto bypassed = ! (bool) effect[ids::enabled];
+
+    // What this device DOES, and the same hue its own knobs turn in. A chain of
+    // six cards used to be six identical outlines told apart by reading their
+    // names; the border and the icon carry it now.
+    //
+    // Two cards CAN share a colour - filter, EQ and drive are all tone, reverb
+    // and delay are both space - because they share a function. That is what
+    // the icon is for, and it is why the icon takes the colour at full strength
+    // where the border takes it subdued: the border says which family, the icon
+    // says which member.
+    const auto functionColour = palette::forRole (roleOfEffect (type));
+    const auto stated = bypassed ? emphasis::disabled (functionColour) : functionColour;
+
+    // Selection stays accent. It is chrome - it says which card you are talking
+    // to, not what the card does - and a selected card that changed hue would
+    // be saying both things with one colour.
+    g.setColour (selected ? colour::accent : stated.withAlpha (emphasis::subdued));
     g.drawRoundedRectangle (body, radius::md, selected ? stroke::regular : stroke::hairline);
 
-    const auto bypassed = ! (bool) effect[ids::enabled];
+    // A rule under the header, in the card's own colour, but only when the card
+    // is OPEN. It is the group-level statement the knobs below make one at a
+    // time - and an effect card is the one group in dew that is single-function
+    // by construction, so it is the one place such a rule is honest. A closed
+    // card is a row in a list and needs no divider inside it.
+    if (showsParameters())
+    {
+        g.setColour (stated.withAlpha (emphasis::subdued));
+        g.fillRect (header.withTop (header.getBottom() - stroke::hairline));
+    }
+
     const auto textColour = bypassed ? colour::textDisabled : colour::textPrimary;
 
     icons::draw (g, icons::grip(), gripBounds.toFloat(), colour::textDisabled);
-    icons::draw (g, iconForType (type), iconBounds.toFloat(), textColour);
+    icons::draw (g, iconForType (type), iconBounds.toFloat(),
+                 bypassed ? colour::textDisabled : functionColour);
 
     g.setColour (textColour);
     g.setFont (type::font (type::body));
@@ -438,10 +467,13 @@ void EffectCard::buildParameters()
 
         if (spec.control == ParamControl::knob)
         {
-            control->knob = std::make_unique<DewKnob> (spec.caption, spec.minimum, spec.maximum,
-                                                       spec.interval);
-            control->knob->setNumDecimalPlaces (spec.decimals);
-            control->knob->setBipolar (spec.bipolar);
+            // From the SPEC, not from four fields copied out of it. The caption,
+            // the range, the step, the decimals, whether it is bipolar and what
+            // it DOES all arrive together - and the last of those is why this
+            // changed: an effect card's knobs were the only spec-built controls
+            // in dew still painting the generic accent, because this was the
+            // one place that took the long constructor.
+            control->knob = std::make_unique<DewKnob> (spec);
             control->knob->setValue (value, juce::dontSendNotification);
 
             auto* knob = control->knob.get();
@@ -471,6 +503,7 @@ void EffectCard::buildParameters()
             control->field->setCaption (spec.caption);
             control->field->setSuffix (spec.suffix);
             control->field->setLogarithmic (spec.curve == ParamCurve::logarithmic);
+            control->field->setFunctionColour (palette::forRole (roleOf (*spec.property)));
             control->field->setValue (value, juce::dontSendNotification);
 
             auto* field = control->field.get();

@@ -179,6 +179,7 @@ add_library(dew_model STATIC
   model/AutomationCurve.cpp
   model/AutomationTargets.cpp
   model/ParamSpec.cpp
+  model/ParamRole.cpp
   model/EffectType.cpp
   model/InstrumentType.cpp
   model/ModuleCatalog.cpp
@@ -304,6 +305,7 @@ add_library(dew_design STATIC
   ui/design/icons/IconsSound.cpp
   ui/design/icons/IconsViews.cpp
   ui/design/DewGallery.cpp
+  ui/design/DewGalleryPalette.cpp
   ui/primitives/DewControls.cpp
   ui/primitives/DewKnob.cpp
   ui/primitives/DewPaint.cpp

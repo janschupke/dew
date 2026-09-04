@@ -185,8 +185,13 @@ void DewLookAndFeel::drawRotarySlider (juce::Graphics& g, int x, int y, int widt
     const auto range = slider.getRange();
     const auto bipolar = range.getStart() < 0.0 && range.getEnd() > 0.0;
 
+    // And the same for the function colour: a DewKnob is told its role by the
+    // ParamSpec it was built from, a stock slider has to be told through the
+    // colour id JUCE already has for a value track. The constructor above sets
+    // that id to `accent` for every slider, so one that says nothing is
+    // unchanged and one that has a role is a single setColour at its call site.
     paint::rotary (g, juce::Rectangle<int> (x, y, width, height).toFloat(), sliderPos,
-                   slider.isEnabled(), bipolar);
+                   slider.isEnabled(), bipolar, slider.findColour (juce::Slider::trackColourId));
 }
 
 void DewLookAndFeel::drawButtonBackground (juce::Graphics& g, juce::Button& button,

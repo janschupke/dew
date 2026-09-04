@@ -3,7 +3,11 @@
 #include <array>
 #include <cmath>
 
+#include "model/Ids.h"
+#include "model/ModuleCatalog.h"
+#include "ui/design/DewGalleryPalette.h"
 #include "ui/design/Icons.h"
+#include "ui/design/ParamPalette.h"
 #include "ui/design/Tokens.h"
 
 namespace dew
@@ -27,53 +31,6 @@ constexpr int titleHeight = size::rowHeight;
 */
 constexpr int iconCell = 62;
 constexpr int iconGlyph = 26;
-
-struct Swatch
-{
-    const char* name;
-    juce::Colour value;
-};
-
-std::vector<Swatch> palette()
-{
-    return {
-        { "wellDeep", colour::wellDeep },
-        { "well", colour::well },
-        { "background", colour::background },
-        { "surface", colour::surface },
-        { "surfaceRaised", colour::surfaceRaised },
-        { "surfaceHover", colour::surfaceHover },
-        { "divider", colour::divider },
-        { "dividerStrong", colour::dividerStrong },
-        { "outline", colour::outline },
-        { "textPrimary", colour::textPrimary },
-        { "textSecondary", colour::textSecondary },
-        { "textDisabled", colour::textDisabled },
-        { "accent", colour::accent },
-        { "accentMuted", colour::accentMuted },
-        { "playhead", colour::playhead },
-        { "recording", colour::recording },
-        { "success", colour::success },
-        { "warning", colour::warning },
-        { "danger", colour::danger },
-        { "beatShade", colour::beatShade },
-        { "barShade", colour::barShade },
-        { "keyBlack", colour::keyBlack },
-        { "keyWhite", colour::keyWhite },
-        // Both were missing, and the ramp's absence was why nothing outside a
-        // test referred to it - a token the gallery does not show is a token
-        // nobody knows they have.
-        { "textOnAccent", colour::textOnAccent },
-        { "channel 0", colour::channelColour (0) },
-        { "channel 1", colour::channelColour (1) },
-        { "channel 2", colour::channelColour (2) },
-        { "channel 3", colour::channelColour (3) },
-        { "channel 4", colour::channelColour (4) },
-        { "channel 5", colour::channelColour (5) },
-        { "channel 6", colour::channelColour (6) },
-        { "channel 7", colour::channelColour (7) },
-    };
-}
 
 struct Rung
 {
@@ -167,34 +124,57 @@ DewGallery::DewGallery()
     add (noPresets);
 
     // --- knobs ---------------------------------------------------------------
-    auto* cutoff = new DewKnob ("CUTOFF", 20.0, 20000.0, 1.0);
-    cutoff->setValue (2400.0, juce::dontSendNotification);
-    cutoff->setNumDecimalPlaces (0);
-    add (cutoff);
+    // A table rather than nine near-identical blocks, because the page is a
+    // list of specimens and reads better as one. The ORDER is load-bearing:
+    // layOut walks `controls` positionally, and the captioned ones have to come
+    // before the compact pair.
+    //
+    // Each takes its function colour through the same roleOf the application
+    // does, rather than being handed one. A gallery knob coloured by hand would
+    // be a page showing what the design system is SAID to do.
+    struct Specimen
+    {
+        const char* caption;
+        const juce::Identifier* property;
+        double minimum, maximum, interval, value;
+        int decimals;
+        bool bipolar;
+        const char* tooltip; ///< non-empty makes it compact, as a row carries it
+    };
 
-    auto* resonance = new DewKnob ("RES", 0.0, 1.0, 0.001);
-    resonance->setValue (0.35, juce::dontSendNotification);
-    add (resonance);
+    // Seven captioned - two pairs of which share a shape and a range and mean
+    // different things - then the compact pair a channel rack row holds, where
+    // there is no caption and the colour is all there is.
+    const Specimen specimens[] {
+        { "CUTOFF", &ids::cutoff, 20.0, 20000.0, 1.0, 2400.0, 0, false, "" },
+        { "RES", &ids::resonance, 0.0, 1.0, 0.001, 0.35, 3, false, "" },
+        { "PAN", &ids::pan, -1.0, 1.0, 0.001, -0.4, 3, true, "" },
+        { "ATTACK", &ids::attack, 0.0005, 10.0, 0.0005, 0.05, 3, false, "" },
+        { "SIZE", &ids::roomSize, 0.0, 1.0, 0.01, 0.6, 2, false, "" },
+        { "DEPTH", &ids::depth, 0.0, 1.0, 0.01, 0.3, 2, false, "" },
+        { "OCT", &ids::octave, -4.0, 4.0, 1.0, -1.0, 0, true, "" },
+        { "VOL", &ids::volume, 0.0, 1.0, 0.001, 0.8, 3, false, "Volume" },
+        { "PAN", &ids::pan, -1.0, 1.0, 0.001, -0.4, 3, true, "Pan" },
+    };
 
-    auto* pan = new DewKnob ("PAN", -1.0, 1.0, 0.001);
-    pan->setValue (-0.4, juce::dontSendNotification);
-    pan->setBipolar (true);
-    add (pan);
+    for (const auto& specimen : specimens)
+    {
+        auto* knob = new DewKnob (specimen.caption, specimen.minimum, specimen.maximum,
+                                  specimen.interval);
 
-    // The compact pair, as a channel rack row carries them: no caption and no
-    // value, so the only thing telling volume from pan is which way each fills.
-    auto* compactVolume = new DewKnob ("VOL", 0.0, 1.0, 0.001);
-    compactVolume->setCompact (true);
-    compactVolume->setTooltip ("Volume");
-    compactVolume->setValue (0.8, juce::dontSendNotification);
-    add (compactVolume);
+        knob->setNumDecimalPlaces (specimen.decimals);
+        knob->setBipolar (specimen.bipolar);
+        knob->setFunctionColour (palette::forRole (roleOf (*specimen.property)));
 
-    auto* compactPan = new DewKnob ("PAN", -1.0, 1.0, 0.001);
-    compactPan->setCompact (true);
-    compactPan->setBipolar (true);
-    compactPan->setTooltip ("Pan");
-    compactPan->setValue (-0.4, juce::dontSendNotification);
-    add (compactPan);
+        if (juce::String (specimen.tooltip).isNotEmpty())
+        {
+            knob->setCompact (true);
+            knob->setTooltip (specimen.tooltip);
+        }
+
+        knob->setValue (specimen.value, juce::dontSendNotification);
+        add (knob);
+    }
 
     // --- number fields -------------------------------------------------------
     auto* tempo = new DewNumberField();
@@ -211,11 +191,15 @@ DewGallery::DewGallery()
     steps->setCaption ("STEPS");
     add (steps);
 
+    // The field twin of the OCT knob above, and the page's one specimen of the
+    // field treatment: a field takes its function colour on the edge it shows
+    // while being dragged, not on its resting border or its number.
     auto* octave = new DewNumberField();
     octave->setRange (-4.0, 4.0, 1.0);
     octave->setValue (-1.0, juce::dontSendNotification);
     octave->setNumDecimalPlaces (0);
     octave->setCaption ("OCT");
+    octave->setFunctionColour (palette::forRole (roleOf (ids::octave)));
     add (octave);
 
     // --- dropdowns -----------------------------------------------------------
@@ -339,7 +323,10 @@ int DewGallery::layOut (juce::Rectangle<int> area, bool apply)
     {
         auto row = sectionHeading ("Knobs", 78);
 
-        for (int i = 0; i < 3; ++i)
+        // Seven, and the number is here rather than derived because the array
+        // is walked positionally: a knob added without this moving takes the
+        // compact pair's slot and every control after it shifts by one.
+        for (int i = 0; i < 7; ++i)
         {
             place (controls[index++], row.removeFromLeft (72));
             row.removeFromLeft (space::lg);
@@ -417,7 +404,10 @@ int DewGallery::layOut (juce::Rectangle<int> area, bool apply)
     if (apply)
         emphasisBounds = emphasisRow;
 
-    auto paletteRow = sectionHeading ("Palette", 200);
+    // Derived from how many swatches there ARE, the way the icon grid above is
+    // and for the same reason: this was a hard-coded 200, and the palette is
+    // the section a design system grows.
+    auto paletteRow = sectionHeading ("Palette", galleryPalette::heightFor (area.getWidth()));
 
     if (apply)
     {
@@ -478,34 +468,7 @@ void DewGallery::paint (juce::Graphics& g)
         }
     }
 
-    // --- palette -------------------------------------------------------------
-    {
-        const auto swatches = palette();
-        auto area = paletteBounds;
-
-        constexpr int cell = 104;
-        const auto perRow = juce::jmax (1, area.getWidth() / cell);
-
-        for (int i = 0; i < (int) swatches.size(); ++i)
-        {
-            const auto column = i % perRow;
-            const auto row = i / perRow;
-
-            juce::Rectangle<int> cellBounds (area.getX() + column * cell, area.getY() + row * 48,
-                                             cell - 6, 44);
-
-            auto chip = cellBounds.removeFromTop (26);
-            g.setColour (swatches[(size_t) i].value);
-            g.fillRoundedRectangle (chip.toFloat(), radius::sm);
-            g.setColour (colour::outline);
-            g.drawRoundedRectangle (chip.toFloat(), radius::sm, stroke::hairline);
-
-            g.setColour (colour::textSecondary);
-            g.setFont (type::font (type::caption));
-            g.drawText (swatches[(size_t) i].name, cellBounds, juce::Justification::centredTop,
-                        false);
-        }
-    }
+    galleryPalette::paintSwatches (g, paletteBounds);
 
     // --- emphasis ------------------------------------------------------------
     {

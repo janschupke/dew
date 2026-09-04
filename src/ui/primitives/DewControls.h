@@ -316,6 +316,16 @@ public:
     /** Bipolar knobs fill out from the centre - pan, detune, EQ gain. */
     void setBipolar (bool);
 
+    /** What this control DOES, as the colour of its value arc.
+
+        Set for you by the ParamSpec constructor, which is why almost nothing
+        calls this: every knob in the application is built from the catalog, so
+        every knob is already the right colour. It is here for the two controls
+        that are not - a free-form knob, and a stock juce::Slider that has to be
+        told through Slider::trackColourId instead.
+    */
+    void setFunctionColour (juce::Colour);
+
     /** Drops the caption and the value readout and gives the rotary the whole
         component, for a knob that has to fit on a 34px row. The caption then has
         nowhere to be drawn, so a compact knob says what it is through its
@@ -403,6 +413,10 @@ private:
     float proportionOfValue() const;
 
     juce::String caption;
+
+    /** Accent until a ParamSpec says otherwise, so a knob built without one
+        looks exactly as every knob used to. */
+    juce::Colour functionColour { tokens::colour::accent };
     juce::Slider slider { juce::Slider::RotaryHorizontalVerticalDrag, juce::Slider::NoTextBox };
     ComponentMotion needle { *this };
     bool needleSeeded = false;
@@ -447,8 +461,14 @@ namespace paint
     @param proportion  0..1 position within the range
     @param bipolar     true for pan-like controls, where the arc fills out
                        from the centre instead of from the left
+    @param value       the arc's colour: what this control DOES, from
+                       palette::forRole. The track and the pointer are chrome
+                       and stay as they are - a knob whose ring, needle and arc
+                       were all one hue would be a coloured knob rather than a
+                       knob that says something.
 */
-void rotary (juce::Graphics&, juce::Rectangle<float>, float proportion, bool enabled, bool bipolar);
+void rotary (juce::Graphics&, juce::Rectangle<float>, float proportion, bool enabled, bool bipolar,
+             juce::Colour value);
 
 void surface (juce::Graphics&, juce::Rectangle<int>, juce::Colour);
 void wellBackground (juce::Graphics&, juce::Rectangle<int>);

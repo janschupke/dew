@@ -10,6 +10,7 @@ add_executable(dew_tests
   FixtureProject.cpp
   FixtureProjectTests.cpp
   DesignSystemTests.cpp
+  ParamRoleTests.cpp
   DesignDropdownTests.cpp
   DesignGalleryTests.cpp
   SchemaTests.cpp

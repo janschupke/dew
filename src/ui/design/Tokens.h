@@ -48,6 +48,41 @@ namespace colour
     inline const juce::Colour warning       { 0xfff2c14e };
     inline const juce::Colour danger        { 0xffff7a51 };
 
+    /** What a control DOES, as a colour.
+
+        One hue per audio function, so a level reads as a level and an envelope
+        stage reads as an envelope stage wherever either appears. Before this
+        every knob in dew painted the same `accent` arc: on a 34px channel row
+        and a 72px mixer strip there is no caption, so volume and pan were told
+        apart only by one of them filling from the centre.
+
+        Deliberately QUIETER than channelRamp: every one of these sits below
+        0.37 saturation and the quietest ramp entry is 0.41, so the claim holds
+        against the whole ramp rather than against its average. The ramp means
+        identity - which channel this is - and identity has to win, because on
+        the playlist a clip's identity colour and an automation curve's function
+        colour are inches apart. Function is chrome; identity is content.
+
+        Hues sit at least 32 degrees apart and at least 31 from the accent's
+        211, so nothing here competes with selection. `funcTone` at 35 is the
+        one close call - the playhead is 42 - and what separates them is chroma
+        rather than hue: 0.36 against 0.68. That is the pair to look at on a
+        render of the playlist, where a cutoff curve is crossed by the playhead.
+
+        The `func` prefix is not decoration. "every token the design system
+        declares is one the app uses" matches whole words across the tree, and
+        bare `level`, `time` and `space` would be satisfied by a mixer strip's
+        local variable and by `space::md` - a gate that passes for the wrong
+        reason is not a gate.
+    */
+    inline const juce::Colour funcTone       { 0xffc9ab81 };  ///<  35deg  spectral shaping
+    inline const juce::Colour funcTime       { 0xffabbf7c };  ///<  78deg  envelope in time
+    inline const juce::Colour funcLevel      { 0xff80c4a0 };  ///< 148deg  how loud
+    inline const juce::Colour funcStereo     { 0xff7fc7c7 };  ///< 180deg  where in the field
+    inline const juce::Colour funcSpace      { 0xff958fdb };  ///< 245deg  ambience and echo
+    inline const juce::Colour funcModulation { 0xffc88ad1 };  ///< 292deg  what makes it move
+    inline const juce::Colour funcPitch      { 0xffd48ca4 };  ///< 340deg  which note you hear
+
     /** A piano keyboard's two key colours. Not "black" and "white": a black key
         is a dark surface and a white key is a light one, and calling them what
         they ARE is what lets a light theme swap them here rather than in the

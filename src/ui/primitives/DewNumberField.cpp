@@ -75,6 +75,12 @@ void DewNumberField::setTooltip (const juce::String& text)
     setTitle (text);
 }
 
+void DewNumberField::setFunctionColour (juce::Colour c)
+{
+    functionColour = c;
+    repaint();
+}
+
 void DewNumberField::setCaption (juce::String newCaption)
 {
     caption = std::move (newCaption);
@@ -200,7 +206,7 @@ void DewNumberField::beginTypedEdit()
     editor->setSelectAllWhenFocused (true);
     editor->setColour (juce::TextEditor::backgroundColourId, colour::well);
     editor->setColour (juce::TextEditor::textColourId, colour::textPrimary);
-    editor->setColour (juce::TextEditor::outlineColourId, colour::accent);
+    editor->setColour (juce::TextEditor::outlineColourId, functionColour);
 
     const auto finish = [this] (bool keep)
     {
@@ -240,7 +246,7 @@ void DewNumberField::paint (juce::Graphics& g)
     g.setColour (hovered || dragging ? colour::surfaceHover : colour::surfaceRaised);
     g.fillRoundedRectangle (bounds, radius::sm);
 
-    g.setColour (dragging ? colour::accent : colour::outline);
+    g.setColour (dragging ? functionColour : colour::outline);
     g.drawRoundedRectangle (bounds, radius::sm, stroke::hairline);
 
     auto text = bounds.toNearestInt();

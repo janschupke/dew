@@ -136,4 +136,28 @@ std::optional<AutomationTarget> automationTargetFor (const juce::ValueTree& proj
 
 std::vector<AutomationTarget> availableAutomationTargets (const juce::ValueTree& project);
 
+/** What an AUTOMATION node drives, resolved from what it stores.
+
+    The third direction, and the one that was missing. `automationTargetFor`
+    goes node -> target for a control that knows which node it was built from;
+    this goes the other way, for a painter that has only a clip and the four
+    properties on it - scope, targetId, slot and param.
+
+    The playlist has been going without it and saying so: its automation clip
+    was drawn in one colour for every target and with `bipolar` hard-coded
+    false, because "resolving its (scope, targetId, slot) back to a ParamSpec"
+    had nowhere to happen. A pan curve therefore filled from the bottom instead
+    of from the centre, which is a curve drawn unlike the knob it drives.
+
+    Returns nullptr when the clip points at something that no longer applies -
+    an effect slot that changed type, an oscillator switched out of wavetable
+    mode - which is the same answer findParamSpec already gives, so a stale clip
+    is drawn inert rather than misread.
+
+    The pointer is into a table with static storage duration and is safe to
+    hold.
+*/
+const ParamSpec* specForAutomation (const juce::ValueTree& project,
+                                    const juce::ValueTree& automation);
+
 } // namespace dew

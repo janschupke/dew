@@ -7,6 +7,7 @@
 #include <catch2/matchers/catch_matchers_floating_point.hpp>
 
 #include <cmath>
+#include <vector>
 
 #include <juce_gui_basics/juce_gui_basics.h>
 
@@ -538,4 +539,48 @@ TEST_CASE ("a taller track gives the automation curve the whole lane",
 
     INFO ("value axis: " << tight << "px at the minimum, " << roomy << "px at the maximum");
     REQUIRE (roomy > tight * 4.0f);
+}
+
+TEST_CASE ("an automation clip is drawn in its target's function colour",
+           "[ui][playlist][automation][role]")
+{
+    // Every automation clip used to be amber whatever it drove, so a lane of
+    // them said only "these are curves" - which their shape already said.
+    const juce::ScopedJuceInitialiser_GUI juceInit;
+    PlaylistHarness h;
+
+    const auto& project = h.document.getState();
+    const auto channel = project.getChildWithName (ids::CHANNEL)[ids::name].toString();
+
+    h.playlist.createAutomationClip (targetNamed (project, channel + " > Volume"), 0, 4);
+    h.playlist.refresh();
+    h.playlist.resized();
+
+    // Deliberately NOT asserting the absence of `warning`, which is what these
+    // used to be drawn in: warning and the playhead are seven degrees apart and
+    // coverageOf matches within 24 per channel, so such an assertion passed or
+    // failed on whether the playhead was in frame. And the two function colours
+    // are close by design, so it is which one WINS that says anything.
+    const std::vector<juce::Colour> choices { tokens::colour::funcLevel,
+                                              tokens::colour::funcStereo };
+
+    const auto volumeLane = render (h.playlist);
+
+    CHECK (coverageOf (volumeLane, tokens::colour::funcLevel) > 0.0f);
+    CHECK (strongestCoverage (volumeLane, choices) == 0);
+
+    // The same clip pointed somewhere else is a different colour, which is the
+    // whole claim: the colour comes from the TARGET, not from the clip kind.
+    PlaylistHarness pan;
+    const auto& panProject = pan.document.getState();
+    const auto panChannel = panProject.getChildWithName (ids::CHANNEL)[ids::name].toString();
+
+    pan.playlist.createAutomationClip (targetNamed (panProject, panChannel + " > Pan"), 0, 4);
+    pan.playlist.refresh();
+    pan.playlist.resized();
+
+    const auto panLane = render (pan.playlist);
+
+    CHECK (coverageOf (panLane, tokens::colour::funcStereo) > 0.0f);
+    CHECK (strongestCoverage (panLane, choices) == 1);
 }

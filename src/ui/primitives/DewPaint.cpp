@@ -48,7 +48,7 @@ namespace paint
 {
 
 void rotary (juce::Graphics& g, juce::Rectangle<float> bounds, float proportion, bool enabled,
-             bool bipolar)
+             bool bipolar, juce::Colour value)
 {
     constexpr auto startAngle = juce::MathConstants<float>::pi * 1.2f;
     constexpr auto endAngle = juce::MathConstants<float>::pi * 2.8f;
@@ -82,12 +82,12 @@ void rotary (juce::Graphics& g, juce::Rectangle<float> bounds, float proportion,
 
     if (! juce::approximatelyEqual (angle, fillFrom))
     {
-        juce::Path value;
-        value.addCentredArc (centre.x, centre.y, arcRadius, arcRadius, 0.0f,
-                             juce::jmin (fillFrom, angle), juce::jmax (fillFrom, angle), true);
-        g.setColour (enabled ? colour::accent : colour::dividerStrong);
-        g.strokePath (value, juce::PathStrokeType (thickness, juce::PathStrokeType::curved,
-                                                   juce::PathStrokeType::rounded));
+        juce::Path arc;
+        arc.addCentredArc (centre.x, centre.y, arcRadius, arcRadius, 0.0f,
+                           juce::jmin (fillFrom, angle), juce::jmax (fillFrom, angle), true);
+        g.setColour (enabled ? value : colour::dividerStrong);
+        g.strokePath (arc, juce::PathStrokeType (thickness, juce::PathStrokeType::curved,
+                                                 juce::PathStrokeType::rounded));
     }
 
     juce::Path pointer;

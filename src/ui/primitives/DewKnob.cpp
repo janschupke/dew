@@ -16,9 +16,11 @@
 
 #include <cmath>
 
+#include "model/ModuleCatalog.h"
 #include "ui/design/Cursors.h"
 #include "ui/design/DewLookAndFeel.h"
 #include "ui/design/Gestures.h"
+#include "ui/design/ParamPalette.h"
 #include "ui/design/Tokens.h"
 
 namespace dew
@@ -116,6 +118,13 @@ DewKnob::DewKnob (const ParamSpec& spec)
     setNumDecimalPlaces (spec.decimals);
     setBipolar (spec.bipolar);
 
+    // What this parameter DOES, taken from the catalog rather than chosen at
+    // the call site. Here rather than in each panel because this constructor is
+    // how every knob in dew is built: the instrument panel, the oscillator,
+    // sample and soundfont sections and the effect cards all come through it,
+    // so all of them are right without any of them saying anything.
+    setFunctionColour (palette::forRole (roleOf (*spec.property)));
+
     // A logarithmic parameter gets a NormalisableRange, not a plain one: half a
     // millisecond to ten seconds is four and a half decades, and linearly every
     // usable value lives in the first one per cent of the travel.
@@ -144,6 +153,12 @@ void DewKnob::setValue (double v, juce::NotificationType notification)
 void DewKnob::setNumDecimalPlaces (int places)
 {
     decimalPlaces = juce::jmax (0, places);
+    repaint();
+}
+
+void DewKnob::setFunctionColour (juce::Colour c)
+{
+    functionColour = c;
     repaint();
 }
 
@@ -236,7 +251,7 @@ void DewKnob::paint (juce::Graphics& g)
     // from the left, bipolar pan from the centre.
     if (compact)
     {
-        paint::rotary (g, area.toFloat(), proportion, isEnabled(), bipolar);
+        paint::rotary (g, area.toFloat(), proportion, isEnabled(), bipolar, functionColour);
         return;
     }
 
@@ -247,7 +262,7 @@ void DewKnob::paint (juce::Graphics& g)
 
     auto valueArea = area.removeFromBottom (size::knobValue);
 
-    paint::rotary (g, area.toFloat(), proportion, isEnabled(), bipolar);
+    paint::rotary (g, area.toFloat(), proportion, isEnabled(), bipolar, functionColour);
 
     g.setColour (isEnabled() ? colour::textPrimary : colour::textDisabled);
     g.setFont (type::font (type::caption));

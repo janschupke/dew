@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cmath>
+#include <vector>
 
 #include <juce_gui_basics/juce_gui_basics.h>
 
@@ -52,6 +53,31 @@ inline float coverageOf (const juce::Image& image, juce::Colour target)
     }
 
     return sampled > 0 ? (float) matching / (float) sampled : 0.0f;
+}
+
+/** Which of several colours an image shows most of, as an index into them, or
+    -1 if it shows none of them at all.
+
+    coverageOf matches within 24 per channel, which is right for asking whether
+    a control drew in a colour and wrong for telling two members of ONE palette
+    family apart: they are close by design, so a knob drawn in either has
+    antialiased pixels inside the other's tolerance. Asking which one WINS is
+    the question a reader actually has, and it does not get more fragile as a
+    palette gets more coherent.
+*/
+inline int strongestCoverage (const juce::Image& image, const std::vector<juce::Colour>& choices)
+{
+    auto best = -1;
+    auto bestCoverage = 0.0f;
+
+    for (int i = 0; i < (int) choices.size(); ++i)
+        if (const auto coverage = coverageOf (image, choices[(size_t) i]); coverage > bestCoverage)
+        {
+            best = i;
+            bestCoverage = coverage;
+        }
+
+    return best;
 }
 
 /** Fraction of pixels differing from the top-left one, which every dew surface

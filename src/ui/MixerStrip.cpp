@@ -9,6 +9,7 @@
 #include "ui/ColourMenu.h"
 #include "ui/design/Cursors.h"
 #include "ui/design/DewLookAndFeel.h"
+#include "ui/design/ParamPalette.h"
 #include "ui/primitives/DewMeter.h"
 
 namespace dew
@@ -45,6 +46,14 @@ MixerStrip::MixerStrip (ProjectDocument& d, juce::ValueTree t, bool isMasterStri
                                 tokens::size::controlHeightSm);
     const auto& gainSpec = requireMixerTrackParamSpec (ids::gain);
     gainSlider.setRange (gainSpec.minimum, gainSpec.maximum, gainSpec.interval);
+
+    // The one control in dew with no primitive of its own: a fader is drawn by
+    // LookAndFeel_V4, which already reads these two ids. So the same colour
+    // every other level control takes reaches it without a painter, and the
+    // strip's fader and the channel rack's volume knob agree.
+    const auto levelColour = palette::forRole (roleOf (ids::gain));
+    gainSlider.setColour (juce::Slider::trackColourId, levelColour);
+    gainSlider.setColour (juce::Slider::thumbColourId, levelColour);
     gainSlider.setValue ((double) track[ids::gain], juce::dontSendNotification);
     gainSlider.onDragStart = [this]
     {

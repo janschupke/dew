@@ -2,6 +2,8 @@
 
 #include <juce_gui_basics/juce_gui_basics.h>
 
+#include "ui/design/Tokens.h"
+
 namespace dew
 {
 
@@ -36,6 +38,17 @@ public:
 
     /** Small caption drawn above the value. */
     void setCaption (juce::String);
+
+    /** What this control DOES, as the colour of its active edge.
+
+        A field is the twin of a knob - cutoff, delay time and tempo are fields
+        because the number itself matters - so the two have to agree, or a
+        Filter card's CUTOFF would disown the RES knob beside it. Only the
+        ACTIVE states take it: the edge while dragging and the outline while
+        typing. A resting field is chrome, and a coloured number would be
+        harder to read than a white one.
+    */
+    void setFunctionColour (juce::Colour);
 
     /** Sets the tooltip AND the accessible name, the way every other dew
         primitive does. The field is a plain juce::Component, so nothing else
@@ -87,6 +100,7 @@ private:
     double minimum = 0.0, maximum = 1.0, interval = 0.01;
     int decimalPlaces = 2;
     juce::String suffix, caption;
+    juce::Colour functionColour { tokens::colour::accent };
 
     bool dragging = false;
     bool hovered = false;

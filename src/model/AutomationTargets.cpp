@@ -357,6 +357,74 @@ std::optional<AutomationTarget> automationTargetFor (const juce::ValueTree& proj
     return target;
 }
 
+namespace
+{
+
+/** The nth EFFECT under an owner. The inverse of slotOf, and the only thing
+    specForAutomation needs the project tree for: an effect's parameters depend
+    on its TYPE, and the clip stores a position rather than a type. */
+juce::ValueTree effectAt (const juce::ValueTree& owner, int slot)
+{
+    int index = 0;
+
+    for (const auto& child : owner)
+    {
+        if (! child.hasType (ids::EFFECT))
+            continue;
+
+        if (index == slot)
+            return child;
+
+        ++index;
+    }
+
+    return {};
+}
+
+/** A CHANNEL or a MIXER_TRACK by its id. */
+juce::ValueTree ownerWithId (const juce::ValueTree& container, const juce::Identifier& type, int id)
+{
+    for (const auto& child : container)
+        if (child.hasType (type) && (int) child[ids::id] == id)
+            return child;
+
+    return {};
+}
+
+} // namespace
+
+const ParamSpec* specForAutomation (const juce::ValueTree& project,
+                                    const juce::ValueTree& automation)
+{
+    if (! automation.isValid())
+        return nullptr;
+
+    const auto scope = automationScopeFromString (automation[ids::scope].toString());
+    const juce::Identifier property { automation[ids::param].toString() };
+
+    // Only the two effect scopes need the tree at all: every other scope's
+    // parameters are a fixed table, so the property alone answers it.
+    juce::String effectType;
+
+    if (scope == AutomationScope::channelEffect || scope == AutomationScope::mixerEffect)
+    {
+        const auto targetId = (int) automation[ids::targetId];
+        const auto owner = scope == AutomationScope::channelEffect
+                               ? ownerWithId (project, ids::CHANNEL, targetId)
+                               : ownerWithId (project.getChildWithName (ids::MIXER),
+                                              ids::MIXER_TRACK, targetId);
+
+        const auto effect = effectAt (owner, (int) automation[ids::slot]);
+
+        if (! effect.isValid())
+            return nullptr;
+
+        effectType = effect[ids::type].toString();
+    }
+
+    return findParamSpec (scope, effectType, property);
+}
+
 std::vector<AutomationTarget> availableAutomationTargets (const juce::ValueTree& project)
 {
     // A WALK over automationTargetFor rather than a second implementation of it.

@@ -16,6 +16,8 @@
 #include <utility>
 
 #include "model/AutomationCurve.h"
+#include "model/AutomationTargets.h"
+#include "model/ModuleCatalog.h"
 
 #include "ui/AutomationLane.h"
 
@@ -32,6 +34,7 @@
 #include "ui/HeaderRow.h"
 #include "ui/MenuSeam.h"
 #include "ui/TimelinePaint.h"
+#include "ui/design/ParamPalette.h"
 #include "ui/design/Tokens.h"
 #include "ui/primitives/DewControls.h"
 
@@ -98,9 +101,22 @@ void PlaylistComponent::paintAutomationClip (juce::Graphics& g, const juce::Valu
 {
     const auto automation = automationOf (clip);
 
+    // What the clip DRIVES, resolved from the four properties it stores. Every
+    // automation clip used to be amber whatever it automated, so a lane of them
+    // said only "these are curves" - the one thing already obvious from their
+    // shape.
+    //
+    // A pattern clip takes its channel's identity colour and an automation clip
+    // takes its target's function colour, and the two are meant to read
+    // differently: identity is loud, function is quiet. On a lane holding both
+    // that difference is the whole point.
+    const auto* spec = specForAutomation (document.getState(), automation);
+    const auto targetColour = spec != nullptr ? palette::forRole (roleOf (*spec->property))
+                                              : colour::warning;
+
     // An automation clip reads as a different kind of thing from a pattern
     // clip: no fill, a visible curve, and its own colour.
-    const auto clipColour = audible ? colour::warning : emphasis::silenced (colour::warning);
+    const auto clipColour = audible ? targetColour : emphasis::silenced (targetColour);
 
     g.setColour (colour::wellDeep.withAlpha (emphasis::strong));
     g.fillRoundedRectangle (bounds, radius::sm);
@@ -136,13 +152,14 @@ void PlaylistComponent::paintAutomationClip (juce::Graphics& g, const juce::Valu
     // thread reads, so a bend and a step are drawn as they are heard rather than
     // as the chord this used to draw.
     //
-    // `bipolar` is still false: telling whether a target is pan-like means
-    // resolving its (scope, targetId, slot) back to a ParamSpec, and the one
-    // function that will do that does not exist yet. Wiring it from here would
-    // be a second copy of the resolution the picker already does.
-    automationLane::paintCurve (
-        g, laneGeometry (clip, trackIndex), ProjectEdits::sortedAutomationPoints (automation),
-        { clipColour, false, clip == hoveredSegmentClip ? hoveredSegment : -1 });
+    // `bipolar` comes from the spec now. It was hard-coded false because the
+    // resolution above did not exist, so a pan curve filled from the bottom
+    // while the pan knob it drives filled from the centre - the curve and the
+    // control disagreeing about where nothing is.
+    automationLane::paintCurve (g, laneGeometry (clip, trackIndex),
+                                ProjectEdits::sortedAutomationPoints (automation),
+                                { clipColour, spec != nullptr && spec->bipolar,
+                                  clip == hoveredSegmentClip ? hoveredSegment : -1 });
 }
 
 /** The lanes and the clips on them. Its own function because it is the only

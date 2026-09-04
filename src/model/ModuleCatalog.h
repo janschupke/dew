@@ -5,6 +5,7 @@
 
 #include "model/EffectType.h"
 #include "model/InstrumentType.h"
+#include "model/ParamRole.h"
 #include "model/ParamSpec.h"
 
 namespace dew
