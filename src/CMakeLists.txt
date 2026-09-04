@@ -272,6 +272,7 @@ add_library(dew_io STATIC
     io/SoundFontFile.cpp
     io/SoundFontPool.cpp
   io/OfflineRenderer.cpp
+  io/RenderFormats.cpp
   io/MidiExporter.cpp
   io/RenderJob.cpp
   io/AudioRecorder.cpp
@@ -363,6 +364,7 @@ add_library(dew_ui STATIC
   ui/TimelinePaint.cpp
   ui/TimelineRuler.cpp
   ui/StepGridComponent.cpp
+  ui/StepGridPaint.cpp
   ui/ChannelRackComponent.cpp
   ui/ChannelRackHeader.cpp
   ui/PianoRollToolbar.cpp
