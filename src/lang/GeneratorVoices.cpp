@@ -268,10 +268,11 @@ void Generator::renderImitation (const PartSpec& part, const ChannelSpec& channe
     if (copied.empty())
     {
         auto& d = diagnostics.warning (
-            "W605", "`" + part.imitation.source + "` has nothing to imitate here",
+            "W605",
+            diagnostics.text (Msg::generator_nothingToImitate_message,
+                              MsgArgs {}.with ("channel", part.imitation.source)),
             part.imitation.sourceRange);
-        d.notes.push_back ("parts are written in the order they are declared, so the "
-                           "voice being copied has to come first");
+        d.notes.push_back (diagnostics.text (Msg::generator_nothingToImitate_note));
         return;
     }
 
@@ -372,10 +373,11 @@ void Generator::renderCounterpoint (const PartSpec& part, const ChannelSpec& cha
     if (! anySounding)
     {
         auto& d = diagnostics.warning (
-            "W602", "`" + part.counterpoint.against + "` has nothing to answer here",
+            "W602",
+            diagnostics.text (Msg::generator_nothingToAnswer_message,
+                              MsgArgs {}.with ("channel", part.counterpoint.against)),
             part.counterpoint.againstRange);
-        d.notes.push_back ("parts are written in the order they are declared, so the "
-                           "voice being answered has to come first");
+        d.notes.push_back (diagnostics.text (Msg::generator_nothingToAnswer_note));
         return;
     }
 
@@ -401,10 +403,12 @@ void Generator::renderCounterpoint (const PartSpec& part, const ChannelSpec& cha
     // Relaxation is reported, never silent: a voice that went where it was
     // told not to is something the writer has to know about.
     for (const auto& relaxed : result.relaxations)
-        diagnostics.warning ("W603",
-                             std::string ("`") + nameOf (relaxed.rule)
-                                 + "` had to be given up in bar " + std::to_string (relaxed.bar),
-                             part.counterpoint.againstRange);
+        diagnostics.warning (
+            "W603",
+            diagnostics.text (
+                Msg::generator_ruleRelaxed_message,
+                MsgArgs {}.with ("rule", nameOf (relaxed.rule)).with ("bar", relaxed.bar)),
+            part.counterpoint.againstRange);
 
     auto ordinal = 0;
 

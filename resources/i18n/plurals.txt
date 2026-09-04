@@ -1,0 +1,65 @@
+# ==============================================================================
+# CLDR plural rules, authored once.
+#
+# cmake/GenStrings.cmake emits this as PluralTable.h into BOTH generated
+# directories - dew_i18n's and dew_lang's - byte for byte identical, and a test
+# compares the two copies. The libraries cannot share a header: dew_lang links
+# nothing at all and dew_i18n links juce_core, so an include either way would be
+# the layering edge that puts JUCE on dew_docs' link line. The rules are
+# duplicated because the libraries are separate, and GENERATED because a rule
+# transcribed twice by hand is a rule that will disagree with itself - and it
+# would disagree quietly, in the one locale nobody on this project reads.
+#
+# Format. A block per family, blank line between:
+#
+#     family <name>
+#     languages <subtag> <subtag> ...      or  languages *
+#     <category> <condition>
+#     ...
+#
+# The last category in a family is its fallback and its condition is `always`.
+# A condition is one or more terms joined by ` and `, each of the shape
+#
+#     n [% <m>] (= | != | <=) <value>[..<value>]
+#
+# n is the absolute value of the count. dew formats integers only - Arg keeps
+# an integer an integer precisely so a plural rule can trust it - so CLDR's i is
+# n and its v, w, f and t are all zero, which is what collapses the published
+# rules to the terms above.
+#
+# The first family whose languages name the locale's language subtag wins, so
+# `languages *` belongs last and there must be exactly one of it. A language
+# named nowhere gets that default, which is the safest wrong answer: every
+# message declares `other`, so an unknown locale reads a real sentence rather
+# than a missing branch.
+#
+# Written out per family rather than reduced to a shared expression. These are
+# different rules that happen to agree on small numbers, and folding them
+# together is how a locale silently inherits another's.
+# ==============================================================================
+
+family westSlavic
+languages cs sk
+one n = 1
+few n = 2..4
+other always
+
+family polish
+languages pl
+one n = 1
+few n % 10 = 2..4 and n % 100 != 12..14
+many always
+
+family noPlural
+languages ja zh ko th
+other always
+
+family french
+languages fr
+one n <= 1
+other always
+
+family twoForm
+languages *
+one n = 1
+other always

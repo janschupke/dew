@@ -172,16 +172,35 @@ foreach(dew_locale ${DEW_I18N_LOCALES})
 endforeach()
 
 set(DEW_I18N_GENERATED "${CMAKE_CURRENT_BINARY_DIR}/generated/i18n")
+set(DEW_LANG_GENERATED "${CMAKE_CURRENT_BINARY_DIR}/generated/lang")
 
+# Named upwards so tests/ can read them rather than spelling the same two paths
+# a second time. The test that the two PluralTable.h copies agree is the only
+# thing that needs them, and it would be a poor test if it were checking a path
+# it had guessed.
+set(DEW_I18N_GENERATED "${DEW_I18N_GENERATED}" PARENT_SCOPE)
+set(DEW_LANG_GENERATED "${DEW_LANG_GENERATED}" PARENT_SCOPE)
+
+# One command, six outputs, two libraries. The `lang.` subtree of the same
+# en.json becomes dew_lang's catalogue - see cmake/GenStrings.cmake - and
+# PluralTable.h is written into both directories byte for byte identical,
+# because neither library may include the other's header. resources/i18n/
+# plurals.txt argues that; a test checks the two copies agree.
 add_custom_command(
   OUTPUT "${DEW_I18N_GENERATED}/StringIds.h" "${DEW_I18N_GENERATED}/Catalogs.cpp"
+         "${DEW_I18N_GENERATED}/PluralTable.h"
+         "${DEW_LANG_GENERATED}/MessageIds.h" "${DEW_LANG_GENERATED}/MessageCatalogs.cpp"
+         "${DEW_LANG_GENERATED}/PluralTable.h"
   COMMAND "${CMAKE_COMMAND}"
           "-DDEW_I18N_LOCALES=${DEW_I18N_LOCALES}"
           "-DDEW_I18N_DIR=${CMAKE_SOURCE_DIR}/resources/i18n"
           "-DDEW_I18N_OUT=${DEW_I18N_GENERATED}"
+          "-DDEW_LANG_OUT=${DEW_LANG_GENERATED}"
           -P "${CMAKE_SOURCE_DIR}/cmake/GenStrings.cmake"
-  DEPENDS ${DEW_I18N_INPUTS} "${CMAKE_SOURCE_DIR}/cmake/GenStrings.cmake"
-  COMMENT "dew: generating the string catalogue"
+  DEPENDS ${DEW_I18N_INPUTS}
+          "${CMAKE_SOURCE_DIR}/resources/i18n/plurals.txt"
+          "${CMAKE_SOURCE_DIR}/cmake/GenStrings.cmake"
+  COMMENT "dew: generating the string catalogues"
   VERBATIM
 )
 
@@ -192,6 +211,7 @@ add_library(dew_i18n STATIC
   i18n/Strings.cpp
   "${DEW_I18N_GENERATED}/Catalogs.cpp"
   "${DEW_I18N_GENERATED}/StringIds.h"
+  "${DEW_I18N_GENERATED}/PluralTable.h"
 )
 
 # generated/ is the include root and the files sit in generated/i18n/, so a
@@ -214,6 +234,13 @@ target_link_libraries(dew_i18n
 
 #-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
 add_library(dew_lang STATIC
+  lang/MessageArg.cpp
+  lang/MessageFormat.cpp
+  lang/Messages.cpp
+  "${DEW_LANG_GENERATED}/MessageCatalogs.cpp"
+  "${DEW_LANG_GENERATED}/MessageIds.h"
+  "${DEW_LANG_GENERATED}/PluralTable.h"
+
   lang/SourceRange.cpp
   lang/Diagnostics.cpp
   lang/Numbers.cpp
@@ -240,7 +267,14 @@ add_library(dew_lang STATIC
   lang/Compile.cpp
 )
 
-target_include_directories(dew_lang PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}")
+# generated/ is a second include root, exactly as it is for dew_i18n: the files
+# sit in generated/lang/, so a consumer writes #include "lang/MessageIds.h" and
+# the layering gate attributes it to dew_lang as it does a hand-written header.
+# It adds no link dependency - a header of const tables is not a library.
+target_include_directories(dew_lang
+  PUBLIC
+    "${CMAKE_CURRENT_SOURCE_DIR}"
+    "${CMAKE_CURRENT_BINARY_DIR}/generated")
 
 target_link_libraries(dew_lang
   PRIVATE

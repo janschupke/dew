@@ -123,10 +123,12 @@ bool Generator::decideGrid()
             continue;
 
         auto& d = diagnostics.error (
-            "E401", "this duration needs a grid of " + std::to_string (needed) + " steps per beat",
-            use.range, "requires stepsPerBeat divisible by " + std::to_string (needed));
-        d.notes.push_back ("the score declares a grid of " + std::to_string (score.stepsPerBeat));
-        d.helps.push_back ("remove `grid` to let the compiler choose one");
+            "E401", diagnostics.text (Msg::generator_gridNeeded_message, MsgArgs {}.count (needed)),
+            use.range,
+            diagnostics.text (Msg::generator_gridNeeded_label, MsgArgs {}.count (needed)));
+        d.notes.push_back (diagnostics.text (Msg::generator_gridNeeded_note,
+                                             MsgArgs {}.with ("declared", score.stepsPerBeat)));
+        d.helps.push_back (diagnostics.text (Msg::generator_gridNeeded_help));
         return false;
     }
 
@@ -138,27 +140,27 @@ void Generator::reportGridTooFine (const GridResolution& resolved)
     const auto anchor = resolved.firstWitness.has_value() ? resolved.firstWitness->range
                                                           : model.song.gridRange;
 
-    auto& d = diagnostics.error ("E402",
-                                 "this score needs a grid of " + std::to_string (resolved.required)
-                                     + " steps per beat, but dew stores at most "
-                                     + std::to_string (maxStepsPerBeat),
-                                 anchor);
+    auto& d = diagnostics.error (
+        "E402",
+        diagnostics.text (Msg::generator_gridTooFine_message,
+                          MsgArgs {}.count (resolved.required).with ("maximum", maxStepsPerBeat)),
+        anchor);
 
     // BOTH witnesses, because the conflict is between two durations and
     // either one alone would have been fine.
     if (resolved.firstWitness.has_value())
-        d.notes.push_back (
-            std::to_string (gridNeededFor (resolved.firstWitness->duration, score.beatUnit))
-            + " steps per beat are needed here");
+        d.notes.push_back (diagnostics.text (
+            Msg::generator_gridTooFine_note,
+            MsgArgs {}.count (gridNeededFor (resolved.firstWitness->duration, score.beatUnit))));
 
     if (resolved.secondWitness.has_value())
         d.related.push_back (
             { resolved.secondWitness->range,
-              std::to_string (gridNeededFor (resolved.secondWitness->duration, score.beatUnit))
-                  + " steps per beat are needed" });
+              diagnostics.text (Msg::generator_gridTooFine_related,
+                                MsgArgs {}.count (gridNeededFor (resolved.secondWitness->duration,
+                                                                 score.beatUnit))) });
 
-    d.helps.push_back ("a note value and a triplet of a finer value cannot share "
-                       "a grid this coarse");
+    d.helps.push_back (diagnostics.text (Msg::generator_gridTooFine_help));
 }
 
 void Generator::buildTracks()
@@ -167,8 +169,10 @@ void Generator::buildTracks()
     {
         if ((int) score.tracks.size() >= maxTracks)
         {
-            auto& d = diagnostics.error ("E501", "too many channels", channel.range);
-            d.notes.push_back ("dew plays at most " + std::to_string (maxTracks));
+            auto& d = diagnostics.error (
+                "E501", diagnostics.text (Msg::generator_tooManyChannels_message), channel.range);
+            d.notes.push_back (diagnostics.text (Msg::generator_tooManyChannels_note,
+                                                 MsgArgs {}.count (maxTracks)));
             return;
         }
 
@@ -377,9 +381,11 @@ void Generator::renderPart (const PartSpec& part, const std::vector<ChordSpan>& 
     // voice vanish exactly this quietly.
     if (notes.size() == before)
     {
-        auto& d = diagnostics.warning (
-            "W604", std::string ("`") + part.channel + "` wrote no notes here", part.range);
-        d.helps.push_back ("a part needs a rhythm, and something to play over it");
+        auto& d = diagnostics.warning ("W604",
+                                       diagnostics.text (Msg::generator_partWroteNothing_message,
+                                                         MsgArgs {}.with ("channel", part.channel)),
+                                       part.range);
+        d.helps.push_back (diagnostics.text (Msg::generator_partWroteNothing_help));
     }
 }
 

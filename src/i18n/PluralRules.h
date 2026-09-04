@@ -2,26 +2,23 @@
 
 #include <juce_core/juce_core.h>
 
+#include "i18n/PluralTable.h"
+
 namespace dew
 {
 
-/** CLDR's plural categories.
+/** CLDR's plural categories, and the rule that picks one.
 
-    Six, because that is how many the widest locale needs, not because English
-    needs them. English selects between two and Czech between four, and a
-    message that names 'one' and 'other' is answered correctly in both - the
-    rule picks a category, and a branch the message does not carry falls back to
-    'other'.
+    The rules themselves are GENERATED, into i18n/PluralTable.h and into
+    dew_lang's copy of the same file, from resources/i18n/plurals.txt. That file
+    says why they are duplicated: the two libraries cannot share a header, and a
+    rule transcribed twice by hand is a rule that will eventually disagree with
+    itself in the one locale nobody here reads.
+
+    What is left in this layer is the JUCE face - juce::StringRef in, const char*
+    out - so nothing above has to know the table is a std::string_view affair.
 */
-enum class PluralCategory
-{
-    zero,
-    one,
-    two,
-    few,
-    many,
-    other
-};
+using PluralCategory = plural::Category;
 
 /** The category `count` takes in `locale`.
 

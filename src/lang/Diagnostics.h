@@ -5,6 +5,7 @@
 #include <string_view>
 #include <vector>
 
+#include "lang/Messages.h"
 #include "lang/SourceRange.h"
 
 namespace dew::lang
@@ -75,7 +76,37 @@ class DiagnosticBag
 public:
     static constexpr std::size_t maxDiagnostics = 100;
 
-    explicit DiagnosticBag (std::string_view source);
+    /** The locale every sentence this bag collects is written in.
+
+        Held here, and here only, because a bag is exactly as long-lived as one
+        compile - which is exactly as long as a language is a meaningful thing
+        to have chosen. dew_lang holds no mutable global state, so there is
+        nowhere else it COULD live without two compiles in one process being
+        able to differ by something neither of them was given.
+    */
+    explicit DiagnosticBag (std::string_view source, Locale = referenceLocale);
+
+    Locale locale() const noexcept
+    {
+        return activeLocale;
+    }
+
+    /** `id`'s sentence in this bag's locale.
+
+        Every string a diagnostic carries goes through here - the message, the
+        primary label, and the notes, helps and related labels a call site
+        pushes onto the Diagnostic it gets back. A literal at any of those is
+        a sentence no translator will ever see.
+    */
+    std::string text (Msg id) const
+    {
+        return msg (id, activeLocale);
+    }
+
+    std::string text (Msg id, const MsgArgs& arguments) const
+    {
+        return msg (id, arguments, activeLocale);
+    }
 
     Diagnostic& add (Severity, std::string code, std::string message, SourceRange,
                      std::string primaryLabel = {});
@@ -111,7 +142,8 @@ private:
     */
     Diagnostic discarded;
 
-    std::string_view text;
+    std::string_view source;
+    Locale activeLocale = referenceLocale;
     LineIndex index;
     std::vector<Diagnostic> items;
     std::vector<int> linesWithErrors;

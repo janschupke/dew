@@ -136,6 +136,7 @@ add_executable(dew_tests
   ScoreCompletionUiTests.cpp
   ScoreCompletionTests.cpp
   ScoreDeterminismTests.cpp
+  ScoreMessageTests.cpp
 
   I18nTests.cpp
   ParamNameTests.cpp
@@ -170,6 +171,12 @@ target_compile_definitions(dew_tests PRIVATE
   # it directly rather than the enum, because a key that reached the enum and
   # nothing else is exactly what that gate is looking for.
   DEW_I18N_DIR="${CMAKE_SOURCE_DIR}/resources/i18n"
+
+  # Where the generator wrote each library's half. Only the test that the two
+  # PluralTable.h copies agree reads these; everything else about the catalogue
+  # is reachable through the enum.
+  DEW_I18N_GENERATED_DIR="${DEW_I18N_GENERATED}"
+  DEW_LANG_GENERATED_DIR="${DEW_LANG_GENERATED}"
 
   # What the website reads. The generated JSON is COMMITTED, so the site builds
   # with no C++ toolchain - and the gate that it is current lives here, where
@@ -244,6 +251,7 @@ set(DEW_LANG_TEST_SOURCES
   ScoreGridTests.cpp
   ScoreImitationTests.cpp
   ScoreLexerTests.cpp
+  ScoreMessageTests.cpp
   ScoreMusicTests.cpp
   ScoreParserTests.cpp
   ScoreResolverTests.cpp

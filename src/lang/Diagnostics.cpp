@@ -27,9 +27,10 @@ std::string severityName (Severity severity)
 
 } // namespace
 
-DiagnosticBag::DiagnosticBag (std::string_view source)
-    : text (source)
-    , index (source)
+DiagnosticBag::DiagnosticBag (std::string_view sourceText, Locale locale)
+    : source (sourceText)
+    , activeLocale (locale)
+    , index (sourceText)
 {
 }
 
@@ -44,7 +45,7 @@ Diagnostic& DiagnosticBag::add (Severity severity, std::string code, std::string
 
             // Reported at the end of the source rather than at the hundredth
             // error's position: it is a fact about the file, not about a line.
-            const auto end = (std::uint32_t) text.size();
+            const auto end = (std::uint32_t) source.size();
             items.push_back ({ Severity::error,
                                "E999",
                                "too many errors; stopping here",

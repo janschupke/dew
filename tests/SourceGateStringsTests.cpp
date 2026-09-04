@@ -169,7 +169,7 @@ void collectKeys (const juce::var& node, const juce::String& prefix, juce::Strin
     }
 }
 
-/** Every StringId the code names, collected once.
+/** Every StringId or Msg the code names, collected once, under `marker`.
 
     Once, rather than a search of the whole tree per key: four hundred keys
     against a megabyte of concatenated source is four hundred passes over it,
@@ -181,10 +181,9 @@ void collectKeys (const juce::var& node, const juce::String& prefix, juce::Strin
     and would look exactly like a gate that covered everything while covering
     almost nothing.
 */
-std::set<juce::String> namedStringIds()
+std::set<juce::String> namedIdentifiers (const juce::String& marker)
 {
     std::set<juce::String> named;
-    const juce::String marker { "StringId::" };
 
     for (const auto* directory : { DEW_SOURCE_DIR, DEW_TESTS_DIR })
         for (const auto& entry :
@@ -227,26 +226,45 @@ TEST_CASE ("every string the catalogue declares is one the app asks for", "[buil
     INFO ("keys declared: " << keys.size());
     REQUIRE (keys.size() > 300);
     REQUIRE (keys.contains ("param.cutoff.caption"));
+    REQUIRE (keys.contains ("lang.generator.tooManyChannels.message"));
 
+    // One file, two enums. The `lang.` subtree is generated into dew_lang as
+    // Msg with the prefix stripped - it already lives in namespace dew::lang -
+    // and everything else into dew_i18n as StringId. A translator sees one
+    // catalogue; which of dew's libraries holds a sentence is a fact about the
+    // link graph and no business of theirs. See cmake/GenStrings.cmake.
+    //
     // Comments stripped by codeLinesOf, so a key mentioned in prose does not
     // count as used - ceum learned that one the expensive way, with a key
     // prefix named in a comment hiding a hundred and forty-one dead entries
     // from its own scanner.
-    const auto named = namedStringIds();
+    const auto stringIds = namedIdentifiers ("StringId::");
+    const auto messages = namedIdentifiers ("Msg::");
 
     // Control case: a set that collected nothing would report every key unused,
     // which fails loudly - but one that collected the wrong thing would report
     // every key USED and pass in silence.
-    INFO ("StringIds named in the source: " << named.size());
-    REQUIRE (named.size() > 300);
-    REQUIRE (named.count ("param_cutoff_caption") == 1);
-    REQUIRE (named.count ("param_attackScale_name") == 1);
+    INFO ("StringIds named in the source: " << stringIds.size());
+    INFO ("Msgs named in the source: " << messages.size());
+    REQUIRE (stringIds.size() > 300);
+    REQUIRE (stringIds.count ("param_cutoff_caption") == 1);
+    REQUIRE (stringIds.count ("param_attackScale_name") == 1);
+    REQUIRE (messages.size() > 10);
+    REQUIRE (messages.count ("generator_tooManyChannels_message") == 1);
 
     juce::StringArray unused;
 
     for (const auto& key : keys)
-        if (named.count (key.replaceCharacter ('.', '_')) == 0)
+    {
+        const auto isLanguage = key.startsWith ("lang.");
+        const auto& named = isLanguage ? messages : stringIds;
+        const auto identifier = (isLanguage ? key.fromFirstOccurrenceOf ("lang.", false, false)
+                                            : key)
+                                    .replaceCharacter ('.', '_');
+
+        if (named.count (identifier) == 0)
             unused.add (key);
+    }
 
     INFO ("declared in en.json and asked for nowhere:\n" << unused.joinIntoString ("\n"));
     CHECK (unused.isEmpty());

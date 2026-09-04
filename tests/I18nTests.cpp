@@ -4,7 +4,76 @@
 #include "i18n/PluralRules.h"
 #include "i18n/Strings.h"
 
+#include "MessageFormatCases.h"
+
 using namespace dew;
+
+namespace
+{
+
+Args argumentsFor (const testing::MessageCase& c)
+{
+    Args arguments;
+
+    if (c.name != nullptr)
+        arguments.with (c.name, c.value);
+
+    if (c.hasCount)
+        arguments.count (c.count);
+
+    return arguments;
+}
+
+} // namespace
+
+TEST_CASE ("the application formats the subset the score language does", "[i18n]")
+{
+    // The shared table, run through the juce::String formatter. dew_lang_tests
+    // runs the same one through the std::string formatter, so a fix applied to
+    // one loop and not the other fails there and not here.
+    // tests/MessageFormatCases.h says why there are two loops at all.
+    for (const auto& c : testing::messageCases)
+    {
+        INFO (c.message << "  in " << c.locale);
+        CHECK (formatMessage (c.message, argumentsFor (c), c.locale) == juce::String (c.expected));
+    }
+}
+
+TEST_CASE ("the generated plural rules say what plurals.txt says", "[i18n]")
+{
+    for (const auto& c : testing::pluralCases)
+    {
+        INFO (c.locale << "  " << c.count);
+        CHECK (juce::String (nameOfPluralCategory (pluralFor (c.locale, c.count)))
+               == juce::String (c.category));
+    }
+}
+
+TEST_CASE ("both libraries were given the same plural rules", "[i18n][gate]")
+{
+    // The rules are generated into dew_i18n's build directory and into
+    // dew_lang's, byte for byte, because neither library may include the
+    // other's header - resources/i18n/plurals.txt argues that at length.
+    //
+    // The duplication is only survivable because it is PROVED to be
+    // duplication. Without this the two could be emitted from two code paths,
+    // or one could be regenerated and the other not, and the first symptom
+    // would be a locale counting differently depending on which half of dew
+    // was asking.
+    const juce::File application { juce::String (DEW_I18N_GENERATED_DIR) + "/PluralTable.h" };
+    const juce::File language { juce::String (DEW_LANG_GENERATED_DIR) + "/PluralTable.h" };
+
+    REQUIRE (application.existsAsFile());
+    REQUIRE (language.existsAsFile());
+
+    const auto emitted = application.loadFileAsString();
+
+    // Control case: a comparison of two empty files is not a comparison.
+    REQUIRE (emitted.contains ("namespace dew::plural"));
+    REQUIRE (emitted.length() > 1000);
+
+    CHECK (emitted == language.loadFileAsString());
+}
 
 TEST_CASE ("a message substitutes what it is given", "[i18n]")
 {

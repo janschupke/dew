@@ -874,5 +874,40 @@
     "samplesValue": "{value} samples",
     "seconds": " s",
     "steps": " steps"
+  },
+  "lang": {
+    "generator": {
+      "gridNeeded": {
+        "message": "this duration needs a grid of {count, plural, one {# step} other {# steps}} per beat",
+        "label": "requires stepsPerBeat divisible by {count}",
+        "note": "the score declares a grid of {declared}",
+        "help": "remove `grid` to let the compiler choose one"
+      },
+      "gridTooFine": {
+        "message": "this score needs a grid of {count, plural, one {# step} other {# steps}} per beat, but dew stores at most {maximum}",
+        "note": "{count, plural, one {# step} other {# steps}} per beat are needed here",
+        "related": "{count, plural, one {# step} other {# steps}} per beat are needed",
+        "help": "a note value and a triplet of a finer value cannot share a grid this coarse"
+      },
+      "tooManyChannels": {
+        "message": "too many channels",
+        "note": "dew plays at most {count, plural, one {# channel} other {# channels}}"
+      },
+      "partWroteNothing": {
+        "message": "`{channel}` wrote no notes here",
+        "help": "a part needs a rhythm, and something to play over it"
+      },
+      "nothingToImitate": {
+        "message": "`{channel}` has nothing to imitate here",
+        "note": "parts are written in the order they are declared, so the voice being copied has to come first"
+      },
+      "nothingToAnswer": {
+        "message": "`{channel}` has nothing to answer here",
+        "note": "parts are written in the order they are declared, so the voice being answered has to come first"
+      },
+      "ruleRelaxed": {
+        "message": "`{rule}` had to be given up in bar {bar}"
+      }
+    }
   }
 }
