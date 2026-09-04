@@ -33,6 +33,7 @@ add_executable(dew_tests
   PitchBendTests.cpp
   AutomationLaneTests.cpp
   AutomationTests.cpp
+  AutomationRenderTests.cpp
   EffectTests.cpp
   EffectDragTests.cpp
   EffectEngineTests.cpp
@@ -93,12 +94,16 @@ add_executable(dew_tests
   ScoreMusicTests.cpp
   ScoreParserTests.cpp
   ScoreResolverTests.cpp
-  ScoreGeneratorTests.cpp
+  ScoreHarmonyTests.cpp
+  ScoreMelodyTests.cpp
+  ScoreVoicingTests.cpp
   ScoreCounterpointTests.cpp
   ScoreImitationTests.cpp
   ScoreBakeTests.cpp
+  ScoreRecompileTests.cpp
   ScoreSchemaTests.cpp
   ScoreEditorTests.cpp
+  ScoreCompletionUiTests.cpp
   ScoreCompletionTests.cpp
   ScoreDeterminismTests.cpp
 )
@@ -179,7 +184,9 @@ set(DEW_LANG_TEST_SOURCES
   ScoreCounterpointTests.cpp
   ScoreDeterminismTests.cpp
   ScoreDiagnosticTests.cpp
-  ScoreGeneratorTests.cpp
+  ScoreHarmonyTests.cpp
+  ScoreMelodyTests.cpp
+  ScoreVoicingTests.cpp
   ScoreGridTests.cpp
   ScoreImitationTests.cpp
   ScoreLexerTests.cpp
