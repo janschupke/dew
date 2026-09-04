@@ -9,6 +9,7 @@ import { repositoryUrl } from '@/content/setup';
 import { t } from '@/lib/strings';
 
 const links = [
+  { href: '/download/', label: t('nav.download') },
   { href: '/features/', label: t('nav.features') },
   { href: '/score/', label: t('nav.score') },
   { href: '/score/reference/', label: t('nav.reference') },

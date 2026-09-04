@@ -69,6 +69,12 @@ dependency and no licence question.
 - Commit before reporting that something is done.
 - A formatting-only commit goes in `.git-blame-ignore-revs`.
 
+## Releasing
+
+One subject, one home: [release.md](release.md). The version is two lines in the top-level
+`CMakeLists.txt`, a tag that disagrees with them is refused before anything is built, and
+`./scripts/package.sh` is what turns a `dist` build into the files a person downloads.
+
 ## Dates
 
 Use the `date` CLI when writing one into a file. ISO 8601.

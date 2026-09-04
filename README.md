@@ -6,12 +6,41 @@ channel — or, on an audio channel, by a recording.
 
 Status: **working prototype**. New, open, edit, save and playback work end to end, with
 effects and automation on top. It is not a product, but every layer is real and wired to
-the next. macOS only: nothing has been built or run on another platform.
+the next. macOS is where it is developed and where the gate runs; Windows and Linux build
+the whole application and run the whole suite in CI, on every push.
 
 - **Source** — <https://github.com/janschupke/dew>
+- **Download** — <https://github.com/janschupke/dew/releases/latest>
 - **The site** — what it does, the design system, and the score language's generated
   reference. Built from `website/`; `/setup/` there is this page's Build section, kept in
   step by a test.
+
+## Download
+
+| Platform | File |
+|---|---|
+| macOS 11+, Apple Silicon and Intel | [`dew-macos-universal.dmg`](https://github.com/janschupke/dew/releases/latest/download/dew-macos-universal.dmg) |
+| Windows 10/11 x64 | [`dew-windows-x64-setup.exe`](https://github.com/janschupke/dew/releases/latest/download/dew-windows-x64-setup.exe) · [`dew-windows-x64.zip`](https://github.com/janschupke/dew/releases/latest/download/dew-windows-x64.zip) |
+| Linux x86_64, glibc 2.35+ | [`dew-linux-x86_64.AppImage`](https://github.com/janschupke/dew/releases/latest/download/dew-linux-x86_64.AppImage) · [`dew-linux-x86_64.tar.gz`](https://github.com/janschupke/dew/releases/latest/download/dew-linux-x86_64.tar.gz) |
+
+Those links carry no version and never break: GitHub resolves
+`releases/latest/download/<asset>` to the newest release holding that name. Every release
+also carries `SHA256SUMS.txt` and a Sigstore build attestation —
+`gh attestation verify <file> --repo janschupke/dew` says which workflow and which commit
+produced it.
+
+**None of these builds is signed.** macOS will refuse the first launch and send you to
+System Settings → Privacy & Security → Open Anyway; Windows will show SmartScreen's
+"Windows protected your PC" and hide the button behind More info. A certificate costs
+money every year and this is a prototype. The site's `/download/` page says exactly what
+each system does, in the words it uses.
+
+**MP3 export is unavailable in a downloaded build.** dew drives an installed `lame` as a
+child process rather than shipping an encoder, so the option greys itself out until one is
+on `PATH`. See [Dependencies](#dependencies).
+
+Old versions stay on [the releases page](https://github.com/janschupke/dew/releases) for
+as long as GitHub keeps them, which is indefinitely.
 
 ## Build
 
@@ -20,6 +49,13 @@ brew bundle                    # cmake >= 3.25, ninja, ccache, lame
 cmake --preset release
 cmake --build --preset release
 ```
+
+That is macOS. On Linux the same two CMake commands work once the distribution has a
+compiler, CMake 3.25 or newer, Ninja, and the ALSA, X11, freetype and fontconfig
+development packages — `.github/workflows/ci.yml` names the exact apt list, because a list
+CI runs is a list that is true. On Windows, `cmake --preset dist-windows` builds with the
+Visual Studio generator, which finds its own toolchain; the Ninja presets would need a
+developer command prompt.
 
 Presets, not raw flags:
 
@@ -30,6 +66,8 @@ Presets, not raw flags:
 | `ci` | `release` plus warnings-as-errors; the gate |
 | `asan` | `ci` plus AddressSanitizer and UndefinedBehaviorSanitizer |
 | `tsan` | `ci` plus ThreadSanitizer |
+| `dist` | What a release is built from — no tests, universal on Apple |
+| `dist-windows` | `dist`, built by the Visual Studio generator |
 | `offline` | `release` from a warm dependency cache, no network |
 
 `dev` also turns on libc++'s debug hardening, which bounds-checks `operator[]`. It costs
@@ -472,6 +510,7 @@ writing code and then, under *Why it is this way*, the argument for it.
 | [C++ style](.ai/rules/cpp-style.md) | `.clang-format`, includes, the `juce::String` UTF-8 trap |
 | [The website](.ai/rules/website.md) | its own gates, its generated JSON, what it may not do |
 | [Workflow](.ai/rules/workflow.md) | the gate, the generated files, commit style |
+| [Releasing](.ai/rules/release.md) | the two lines a version lives in, the tag check, packaging, signing |
 
 ## Dependencies
 
@@ -510,5 +549,9 @@ project does not need. If the graph grows past a handful, vcpkg manifest mode wi
 
 ## Licence
 
-JUCE 9 is dual-licensed: commercial, or AGPLv3. This project is a personal prototype used
-under the **AGPLv3** terms. See [THIRD_PARTY.md](THIRD_PARTY.md).
+**[AGPLv3](LICENSE)**, in full, in the repository root — not only as this sentence. JUCE 9
+is dual-licensed commercial or AGPLv3 and dew takes the AGPL terms, which oblige an offer
+of the corresponding source to whoever receives a binary. Somebody holding a `.dmg` has
+never read this file, so both licence texts travel inside the package: `dew-LICENSE.txt`,
+`JUCE-LICENSE.md` and `THIRD_PARTY.md` are in the app bundle's `Resources` on macOS and
+beside the binary elsewhere. See [THIRD_PARTY.md](THIRD_PARTY.md).

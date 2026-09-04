@@ -31,9 +31,10 @@ export default function Home() {
         <P className="mt-stack">{t('site.status')}</P>
 
         <div className="mt-stack gap-md flex flex-wrap">
-          <Button variant="primary" href="/setup/">
-            {t('home.readSetup')}
+          <Button variant="primary" href="/download/">
+            {t('home.readDownload')}
           </Button>
+          <Button href="/setup/">{t('home.readSetup')}</Button>
           <Button href="/features/">{t('home.readFeatures')}</Button>
           <Button variant="ghost" href="/score/">
             {t('home.readScore')}

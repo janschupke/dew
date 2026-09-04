@@ -30,7 +30,8 @@
     "readScore": "The score language",
     "tabsTitle": "Five tabs",
     "tabsBody": "The same notes, seen four ways, and a fifth tab that writes them for you.",
-    "readSetup": "Build it"
+    "readSetup": "Build it",
+    "readDownload": "Download"
   },
   "mcp": {
     "title": "Control dew from an agent",
@@ -71,7 +72,8 @@
     "reference": "Reference",
     "source": "Source",
     "setup": "Setup",
-    "mcp": "MCP"
+    "mcp": "MCP",
+    "download": "Download"
   },
   "notFound": {
     "title": "Not here",
@@ -108,7 +110,7 @@
   },
   "setup": {
     "title": "Setup",
-    "lead": "dew builds from source on macOS in three commands. There is no release to download — it is a working prototype, and a download would be a build of this repository.",
+    "lead": "dew builds from source in three commands. There are binaries too, if you would rather not.",
     "requirementsTitle": "What you need",
     "requirementsBody": "macOS, and nothing that is not already on a machine somebody writes software on. brew bundle installs the rest from the Brewfile in the repository root.",
     "buildTitle": "Build it",
@@ -119,7 +121,7 @@
     "runBody": "Then Demos → Getting Started in the menu bar. There are eight, and each one demonstrates a different part of the app.",
     "checkTitle": "The gate",
     "checkBody": "One command, running everything CI runs, in the order that fails cheapest first. The dependency pins and the formatting need no build, so a bad pin or an unformatted file is reported in seconds.",
-    "platformNote": "macOS only. Nothing here has been built or run on another platform. The parts that could be — the score language compiles under gcc and libstdc++ in CI — are the parts that link nothing.",
+    "platformNote": "macOS is where dew is developed and where its gate runs. Windows and Linux build the whole application and run the whole suite in CI, on every push.",
     "sourceCta": "The repository",
     "nameHeading": "Preset",
     "whatHeading": "What it is",
@@ -129,7 +131,26 @@
   "site": {
     "name": "dew",
     "tagline": "A desktop synth DAW where the song can be written as text.",
-    "status": "Working prototype, macOS only. Every layer is built and wired to the next.",
+    "status": "Working prototype, on macOS, Windows and Linux. Every layer is built and wired to the next.",
     "skipToContent": "Skip to content"
+  },
+  "download": {
+    "title": "Download",
+    "lead": "Builds of dew for macOS, Windows and Linux, from the latest release. It is a working prototype: everything works end to end, and it is not a product.",
+    "getTitle": "Get it",
+    "getBody": "Every link points at the latest release, so a bookmark keeps working. Older versions stay on the releases page for as long as GitHub keeps them, which is indefinitely.",
+    "platformHeading": "Platform",
+    "fileHeading": "File",
+    "whatHeading": "What it is",
+    "firstRunTitle": "The first time you run it",
+    "firstRunBody": "None of these builds is signed, because a certificate costs money every year and this is a prototype a handful of people run. Both desktop systems will say so, in language designed to frighten. Here is exactly what each one does, so nothing about it is a surprise.",
+    "verifyTitle": "Checking what you downloaded",
+    "verifyBody": "Every release carries SHA256SUMS.txt, and every asset is covered by a build attestation signed through Sigstore — which records the repository, the workflow and the commit that produced it, not merely that somebody signed something.",
+    "checksumsLabel": "SHA256SUMS.txt",
+    "allReleases": "All releases",
+    "buildTitle": "Or build it yourself",
+    "buildBody": "Three commands on macOS, and the same CMake presets on the other two platforms. Building from source is also the answer to every warning above.",
+    "buildCta": "How to build it",
+    "mp3Note": "One thing a build of your own has that these do not: MP3 export. dew drives an installed lame binary as a child process rather than shipping an encoder, so the option is greyed out until lame is on your PATH."
   }
 }

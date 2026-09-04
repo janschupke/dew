@@ -1,0 +1,315 @@
+name: release
+
+# ==============================================================================
+# The tag is the trigger and CMakeLists.txt is the truth.
+#
+# A release is one edit - the version in CMakeLists.txt - a commit, and a tag.
+# The first job refuses a tag that disagrees with the file, before three builds
+# have been spent on it.
+#
+# It does NOT re-run the gate. ci.yml has already run on this commit; running
+# the suite again here would add twenty minutes and could only fail for a reason
+# that would have been better found before the tag existed.
+# ==============================================================================
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: Build and package all three platforms, publish nothing
+        type: boolean
+        default: true
+
+# Deliberately NOT cancel-in-progress. A half-cancelled release leaves a draft
+# holding some of its assets, which is a worse state than two runs racing.
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  # ----------------------------------------------------------------------------
+  verify:
+    name: the tag says what CMakeLists.txt says
+    runs-on: ubuntu-latest
+
+    outputs:
+      version: ${{ steps.read.outputs.version }}
+      prerelease: ${{ steps.read.outputs.prerelease }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - id: read
+        run: |
+          # Anchored at the start of a line, so the comment blocks above both
+          # declarations - which talk about version numbers - cannot match.
+          version=$(sed -n 's/^project(dew VERSION \([0-9][0-9.]*\).*/\1/p' CMakeLists.txt)
+          suffix=$(sed -n 's/^set(DEW_VERSION_SUFFIX "\(.*\)")$/\1/p' CMakeLists.txt)
+          full="${version}${suffix}"
+
+          if [ -z "$version" ]; then
+            echo "::error::could not read project(dew VERSION ...) out of CMakeLists.txt"
+            exit 1
+          fi
+
+          echo "version=$full" >> "$GITHUB_OUTPUT"
+
+          # A hyphen is what SemVer spells a prerelease with, and what GitHub
+          # keeps out of releases/latest - which is what makes an -rc rehearsal
+          # invisible to the website's download links.
+          if [ -n "$suffix" ]; then
+            echo "prerelease=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "prerelease=false" >> "$GITHUB_OUTPUT"
+          fi
+
+          if [ "$GITHUB_REF_TYPE" = tag ] && [ "$GITHUB_REF_NAME" != "v${full}" ]; then
+            echo "::error::tag $GITHUB_REF_NAME does not match v${full} in CMakeLists.txt"
+            exit 1
+          fi
+
+          echo "dew ${full}"
+
+  # ----------------------------------------------------------------------------
+  macos:
+    name: macOS · universal · dmg
+    needs: verify
+    runs-on: macos-15
+
+    env:
+      CPM_SOURCE_CACHE: ${{ github.workspace }}/.cache/CPM
+      # Empty until a certificate is bought, and every signing step is guarded
+      # on it being empty - so this workflow produces an unsigned .dmg today and
+      # a notarized one the day the secrets exist, with no edit here.
+      MACOS_CERT_P12: ${{ secrets.MACOS_CERT_P12 }}
+      MACOS_CERT_PASSWORD: ${{ secrets.MACOS_CERT_PASSWORD }}
+      MACOS_SIGN_IDENTITY: ${{ secrets.MACOS_SIGN_IDENTITY }}
+      MACOS_NOTARY_KEY: ${{ secrets.MACOS_NOTARY_KEY }}
+      MACOS_NOTARY_KEY_ID: ${{ secrets.MACOS_NOTARY_KEY_ID }}
+      MACOS_NOTARY_ISSUER: ${{ secrets.MACOS_NOTARY_ISSUER }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/cache@v4
+        with:
+          path: ${{ env.CPM_SOURCE_CACHE }}
+          key: cpm-${{ runner.os }}-${{ hashFiles('cpm-package-lock.cmake', 'cmake/DependencyPins.cmake') }}
+
+      # Not `brew bundle`: a release build needs the generator and nothing else.
+      # ccache is no help here - a release runs rarely enough that the cache is
+      # always cold - and node and lame are the website's and the user's.
+      - name: Install ninja
+        run: brew install ninja
+
+      # The keychain dance from GitHub's own documentation rather than a
+      # third-party action: it is a dozen lines, it needs no pin, and a runner
+      # is thrown away afterwards so there is nothing to clean up.
+      - name: Import the signing certificate, if there is one
+        if: env.MACOS_CERT_P12 != ''
+        run: |
+          keychain=$RUNNER_TEMP/signing.keychain-db
+          password=$(uuidgen)
+
+          echo -n "$MACOS_CERT_P12" | base64 --decode -o "$RUNNER_TEMP/cert.p12"
+
+          security create-keychain -p "$password" "$keychain"
+          security set-keychain-settings -lut 21600 "$keychain"
+          security unlock-keychain -p "$password" "$keychain"
+          security import "$RUNNER_TEMP/cert.p12" -k "$keychain" \
+            -P "$MACOS_CERT_PASSWORD" -T /usr/bin/codesign
+          security set-key-partition-list -S apple-tool:,apple: -k "$password" "$keychain"
+          security list-keychain -d user -s "$keychain"
+
+      - name: Write the notary key, if there is one
+        if: env.MACOS_NOTARY_KEY != ''
+        run: |
+          echo -n "$MACOS_NOTARY_KEY" | base64 --decode -o "$RUNNER_TEMP/notary.p8"
+          echo "MACOS_NOTARY_KEY_FILE=$RUNNER_TEMP/notary.p8" >> "$GITHUB_ENV"
+
+      - name: Configure
+        run: cmake --preset dist
+
+      - name: Build
+        run: cmake --build --preset dist
+
+      # The same script a person runs on their own machine, which is the point
+      # of it being a script.
+      - name: Package
+        run: ./scripts/package.sh
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist-macos
+          path: dist/dew-macos-universal.dmg
+          if-no-files-found: error
+
+  # ----------------------------------------------------------------------------
+  windows:
+    name: Windows · x64 · installer
+    needs: verify
+    runs-on: windows-latest
+
+    env:
+      CPM_SOURCE_CACHE: ${{ github.workspace }}/.cache/CPM
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/cache@v4
+        with:
+          path: ${{ env.CPM_SOURCE_CACHE }}
+          key: cpm-${{ runner.os }}-${{ hashFiles('cpm-package-lock.cmake', 'cmake/DependencyPins.cmake') }}
+
+      # The dist-windows preset differs from dist in one thing: the Visual
+      # Studio generator. Ninja would need cl.exe on PATH, which means either a
+      # third-party action to run vcvars or a hard-coded path that differs
+      # between runner images.
+      - name: Configure
+        run: cmake --preset dist-windows
+
+      - name: Build
+        run: cmake --build --preset dist-windows
+
+      # Inno Setup is on the runner image - NSIS is not, since windows-2025 -
+      # but ISCC is not on PATH, and CPack shells out to it by name.
+      - name: Package
+        shell: bash
+        run: |
+          export PATH="/c/Program Files (x86)/Inno Setup 6:$PATH"
+          ./scripts/package.sh build/dist-windows
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist-windows
+          path: |
+            dist/dew-windows-x64-setup.exe
+            dist/dew-windows-x64.zip
+          if-no-files-found: error
+
+  # ----------------------------------------------------------------------------
+  # A CONTAINER rather than the runner image, and that is the whole reason this
+  # job looks different from the other two: it pins the glibc the AppImage is
+  # built against. On the bare runner that floor would move the day GitHub
+  # retires an image, and an AppImage built against a newer glibc silently stops
+  # running on older distributions.
+  # ----------------------------------------------------------------------------
+  linux:
+    name: Linux · x86_64 · appimage
+    needs: verify
+    runs-on: ubuntu-latest
+    container:
+      image: ubuntu:22.04
+
+    env:
+      CPM_SOURCE_CACHE: ${{ github.workspace }}/.cache/CPM
+
+    steps:
+      # Before checkout, which needs git, and before anything else, which needs
+      # a compiler. webkit2gtk and libcurl are deliberately absent: JUCE_WEB_
+      # BROWSER=0 and JUCE_USE_CURL=0 mean JUCE reports them missing at
+      # configure time and carries on.
+      - name: Toolchain
+        run: |
+          apt-get update -qq
+          DEBIAN_FRONTEND=noninteractive apt-get install -y -qq --no-install-recommends \
+            build-essential ninja-build git pkg-config ca-certificates curl file \
+            libasound2-dev libfreetype-dev libfontconfig1-dev \
+            libx11-dev libxext-dev libxinerama-dev libxrandr-dev libxcursor-dev \
+            libxcomposite-dev libxrender-dev libxi-dev \
+            libgl1-mesa-dev libglu1-mesa-dev mesa-common-dev
+
+      # Jammy ships CMake 3.22 and CMakePresets v6 needs 3.25. The official
+      # binary rather than apt.kitware.com: one URL, one version, no third key
+      # to trust.
+      - name: CMake
+        run: |
+          version=4.4.3
+          curl -fsSL "https://github.com/Kitware/CMake/releases/download/v${version}/cmake-${version}-linux-x86_64.tar.gz" \
+            | tar xz -C /opt
+          echo "/opt/cmake-${version}-linux-x86_64/bin" >> "$GITHUB_PATH"
+
+      - uses: actions/checkout@v4
+
+      - uses: actions/cache@v4
+        with:
+          path: ${{ env.CPM_SOURCE_CACHE }}
+          key: cpm-linux-jammy-${{ hashFiles('cpm-package-lock.cmake', 'cmake/DependencyPins.cmake') }}
+
+      - name: Configure
+        run: cmake --preset dist
+
+      - name: Build
+        run: cmake --build --preset dist
+
+      - name: Package
+        run: ./scripts/package.sh
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist-linux
+          path: |
+            dist/dew-linux-x86_64.AppImage
+            dist/dew-linux-x86_64.tar.gz
+          if-no-files-found: error
+
+  # ----------------------------------------------------------------------------
+  publish:
+    name: publish
+    needs: [verify, macos, windows, linux]
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write      # create the release and attach the assets
+      id-token: write      # mint the Sigstore certificate for the attestation
+      attestations: write  # store it
+
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          merge-multiple: true
+
+      # Named explicitly rather than `*`, so the file cannot list itself and a
+      # missing artefact is a shell error rather than a shorter list nobody
+      # reads. GitHub has published a digest for every release asset since June
+      # 2025, so this is for scripted verification and for the attestation
+      # below, which takes it as its manifest.
+      - name: Checksums
+        working-directory: artifacts
+        run: |
+          shasum -a 256 dew-* > SHA256SUMS.txt
+          cat SHA256SUMS.txt
+
+      # actions/attest, not actions/attest-build-provenance, which since v4 is
+      # only a wrapper over this and whose own README says new work should use
+      # it directly. One step covers every asset because the subject is the
+      # checksums file. Free on a public repository.
+      - uses: actions/attest@v4
+        with:
+          subject-checksums: artifacts/SHA256SUMS.txt
+
+      # A draft first, then undrafted, so there is never a moment where the
+      # release exists with only some of its assets attached - which is exactly
+      # the moment the website's releases/latest/download links would resolve
+      # to a 404.
+      - uses: softprops/action-gh-release@v3
+        id: release
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: dew ${{ needs.verify.outputs.version }}
+          draft: true
+          prerelease: ${{ needs.verify.outputs.prerelease == 'true' }}
+          generate_release_notes: true
+          fail_on_unmatched_files: true
+          files: artifacts/*
+
+      - name: Publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release edit "$GITHUB_REF_NAME" --draft=false --repo "$GITHUB_REPOSITORY"

@@ -1,6 +1,6 @@
 # dew
 
-A macOS-only desktop synth DAW in the FL Studio shape: a channel rack with a step grid, a
+A desktop synth DAW in the FL Studio shape: a channel rack with a step grid, a
 piano roll, a playlist of clips and a mixer, driven by a three-oscillator synth per channel
 — or by a recording, or by a song written as text and compiled to notes. It can also be
 driven by an agent, over an MCP endpoint it runs itself. C++20, JUCE 9, CMake, Catch2.
@@ -29,6 +29,7 @@ these files.
 - [The MCP endpoint](.ai/rules/mcp.md) — one operation table read by the protocol, the permission check and the website; five fields that address every parameter; loopback and an `Origin` check; a client named to the user and approved once; one call, one undo step
 - [The website](.ai/rules/website.md) — `website/` is checked by its own gates and by nothing the C++ tree runs; the JSON it reads is generated and diffed, the screenshots are not; dark only, one palette; no tokenizer, because the samples arrive pre-scanned
 - [Workflow](.ai/rules/workflow.md) — `./scripts/check.sh`, the generated files, the dependency pins, commit style, and why `build/ci` is not the app
+- [Releasing](.ai/rules/release.md) — the version is two lines in `CMakeLists.txt`, the tag is checked against them, asset names carry no version, packaging is `./scripts/package.sh`, and every signing step is guarded on a secret that does not exist yet
 
 ## Commands
 
@@ -81,5 +82,12 @@ Full set in [`.ai/rules/`](.ai/rules/). The ones an agent trips over first:
 - **`build/ci` is not the app.** The user opens
   `build/release/src/dew_artefacts/RelWithDebInfo/dew.app`, so after a UI change also run
   `cmake --build --preset release`, and verify it with `dew_shot` rather than by reasoning.
+- **A version is written by hand in exactly two lines**, both in the top-level
+  `CMakeLists.txt`: `project(dew VERSION …)` and `DEW_VERSION_SUFFIX`. A test holds the
+  running binary against them and the release workflow holds the git tag against them.
+  Nothing else may spell a version, and no release asset name may contain one.
+- **dew builds on Windows and Linux now, and CI proves it on every push.** `#if JUCE_MAC`
+  needs its other branches, and a libc function that is not in glibc - `arc4random_buf`
+  was one - fails there and nowhere else.
 - **Never create a branch.** Commit to the branch you are already on, with an imperative
   sentence-case subject and no prefix.
