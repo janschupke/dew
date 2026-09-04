@@ -75,7 +75,7 @@ function ToolSection({ tool }: { tool: (typeof mcp.tools)[number] }) {
     <section
       id={anchorForTool(tool.name)}
       data-mcp-anchor={anchorForTool(tool.name)}
-      className="mt-section scroll-mt-section"
+      className="mt-stack scroll-mt-section"
     >
       <h3 className="text-h3 text-primary font-mono">{tool.name}</h3>
 
@@ -118,7 +118,7 @@ export default function McpReference() {
   ] as const;
 
   return (
-    <Container className="py-section">
+    <Container className="pt-stack pb-section">
       <h1 className="text-h1 text-primary leading-tight font-semibold tracking-tight">
         {t('mcpReference.title')}
       </h1>
@@ -146,7 +146,7 @@ export default function McpReference() {
         </ul>
       </nav>
 
-      <section className="py-section">
+      <section className="pt-section">
         <h2 className="text-h2 text-primary font-semibold">{t('mcpReference.guideTitle')}</h2>
         <p className="mt-sm text-prose text-secondary max-w-[68ch]">
           {t('mcpReference.guideLead')}
@@ -157,7 +157,7 @@ export default function McpReference() {
             key={section.id}
             id={anchorForGuide(section.id)}
             data-mcp-anchor={anchorForGuide(section.id)}
-            className="mt-section scroll-mt-section"
+            className="mt-stack scroll-mt-section"
           >
             <h3 className="text-h3 text-primary font-semibold">{section.title}</h3>
             <p className="mt-xs text-fine text-secondary font-mono">dew://guide/{section.id}</p>
@@ -171,7 +171,7 @@ export default function McpReference() {
         ))}
       </section>
 
-      <section className="py-section">
+      <section className="pt-section">
         <h2 className="text-h2 text-primary font-semibold">{t('mcpReference.toolsTitle')}</h2>
         <p className="mt-sm text-prose text-secondary max-w-[68ch]">{t('mcpReference.undoNote')}</p>
 

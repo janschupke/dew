@@ -4,7 +4,7 @@ import { Button } from '@/ui/Button';
 import { Band, Card, Container } from '@/ui/Surface';
 import { Lead, P } from '@/ui/Prose';
 import { Shot } from '@/ui/Shot';
-import { features } from '@/content/features';
+import { anchorForFeature, features } from '@/content/features';
 import { t } from '@/lib/strings';
 
 /*  The hero is `text-h1` and steps up to `text-hero` at the small breakpoint.
@@ -30,7 +30,7 @@ export default function Home() {
             page that buried it would be the one place in the tree that did. */}
         <P className="mt-stack">{t('site.status')}</P>
 
-        <div className="mt-section gap-md flex flex-wrap">
+        <div className="mt-stack gap-md flex flex-wrap">
           <Button variant="primary" href="/setup/">
             {t('home.readSetup')}
           </Button>
@@ -55,10 +55,13 @@ export default function Home() {
         </h2>
         <P className="mt-stack">{t('home.tabsBody')}</P>
 
-        <ul className="mt-section gap-stack grid sm:grid-cols-2 lg:grid-cols-3">
+        {/* Each card goes to its own section on /features/. They were divs that
+            lit up under the pointer and did nothing when clicked, which is the
+            one thing a card must not be. */}
+        <ul className="mt-stack gap-stack grid sm:grid-cols-2 lg:grid-cols-3">
           {features.slice(0, 6).map((feature) => (
             <li key={feature.name}>
-              <Card className="h-full">
+              <Card href={`/features/#${anchorForFeature(feature.name)}`} className="h-full">
                 <h3 className="text-h3 text-primary leading-snug font-semibold">{feature.name}</h3>
                 <p className="mt-md text-prose leading-prose text-secondary">{feature.body}</p>
               </Card>
@@ -66,7 +69,7 @@ export default function Home() {
           ))}
         </ul>
 
-        <p className="mt-section text-prose">
+        <p className="mt-stack text-prose">
           <Link href="/features/" className="text-accent hover:underline">
             {t('features.title')}
           </Link>

@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
 import { Container } from '@/ui/Surface';
+import { GitHubMark } from '@/ui/Icon';
 import { repositoryUrl } from '@/content/setup';
 import { t } from '@/lib/strings';
 
@@ -17,7 +18,11 @@ const links = [
 ] as const;
 
 /** The app's tab strip, as a site header: stripTabs is 30px and the active tab
- *  carries an accent underline. Sticky, because the reference is one long page.
+ *  carries an accent underline. Pinned, because the reference is one long page.
+ *
+ *  `pinned` rather than `sticky top-0`: the second class emitted no CSS, so the
+ *  header had a position and no offset and scrolled away like a static one. See
+ *  theme.site.css for why, and gates.test.ts for what refuses it now.
  *
  *  A client component only for `usePathname`. That underline was described in
  *  this comment for as long as the file existed and was never drawn - there was
@@ -41,7 +46,7 @@ export function Nav() {
   );
 
   return (
-    <header className="border-b-hairline border-divider bg-background/90 sticky top-0 z-10 backdrop-blur">
+    <header className="border-b-hairline border-divider bg-background/90 pinned z-10 backdrop-blur">
       <Container>
         <nav className="gap-x-stack gap-y-md py-lg flex flex-wrap items-baseline">
           <Link href="/" className="text-h3 text-primary font-semibold tracking-tight">
@@ -74,8 +79,9 @@ export function Nav() {
 
           <a
             href={repositoryUrl}
-            className="text-secondary hover:text-primary text-prose ml-auto whitespace-nowrap transition-colors duration-[--motion-quick-ms]"
+            className="text-secondary hover:text-primary text-prose gap-sm ml-auto inline-flex items-center whitespace-nowrap transition-colors duration-[--motion-quick-ms]"
           >
+            <GitHubMark />
             {t('nav.source')}
           </a>
         </nav>

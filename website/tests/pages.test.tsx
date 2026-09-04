@@ -8,7 +8,7 @@ import Features from '@/app/features/page';
 import Home from '@/app/page';
 import Setup from '@/app/setup/page';
 import { buildCommands, presets, runCommands } from '@/content/setup';
-import { features } from '@/content/features';
+import { anchorForFeature, features } from '@/content/features';
 
 /*  Every page here is a plain synchronous component and stays one.
     Testing Library cannot render an async server component, so a page that
@@ -35,6 +35,49 @@ describe('pages', () => {
 
   it('no feature is left without a sentence', () => {
     for (const feature of features) expect(feature.body.length).toBeGreaterThan(40);
+  });
+
+  it('every card on the home page goes somewhere the features page has', () => {
+    // The cards used to be divs that lifted under the pointer and did nothing
+    // when clicked. They are links now, and the destination is derived on both
+    // sides from the same name - so what can still break is a feature renamed
+    // on one side of a list the two pages split differently. The home page
+    // shows the first six, which straddles that split.
+    const anchors = features.slice(0, 6).map((feature) => anchorForFeature(feature.name));
+
+    const home = render(<Home />);
+
+    // Matched on the FRAGMENT, not the whole href. next/link normalises the
+    // trailing slash and `trailingSlash: true` is a next.config setting nothing
+    // here applies, so the path half differs between this and the export - and
+    // the half that carries the meaning is the same in both.
+    for (const [i, anchor] of anchors.entries()) {
+      const card = home.container.querySelector(`a[href$="#${anchor}"]`);
+
+      expect(card, anchor).not.toBeNull();
+      expect(card?.getAttribute('href')).toContain('/features');
+      expect(card?.textContent).toContain(features[i]?.name ?? '');
+    }
+
+    home.unmount();
+
+    const { container } = render(<Features />);
+
+    for (const anchor of anchors)
+      expect(container.querySelector(`#${anchor}`), anchor).not.toBeNull();
+  });
+
+  it('no card without a destination answers the pointer', () => {
+    // The other half of the rule. The features page's leftover cards and the
+    // MCP page's four have nowhere to go, so they are flat panels: a surface
+    // that lights up and does nothing is a promise the page cannot keep.
+    const { container } = render(<Features />);
+    const flat = container.querySelectorAll('div.bg-surface');
+
+    // It cannot pass by finding none.
+    expect(flat.length).toBeGreaterThan(3);
+
+    for (const card of flat) expect(card.className, card.textContent).not.toContain('hover:');
   });
 
   it('the setup page shows the commands and every preset', () => {

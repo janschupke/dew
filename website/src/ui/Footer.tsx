@@ -1,6 +1,7 @@
 import Link from 'next/link';
 
 import { Container } from '@/ui/Surface';
+import { GitHubMark } from '@/ui/Icon';
 import { repositoryUrl } from '@/content/setup';
 import { t } from '@/lib/strings';
 
@@ -12,15 +13,20 @@ const docs = [
   { href: '/setup/', label: t('nav.setup') },
 ] as const;
 
+/*  The mark goes on the repository itself and not on the two links under it.
+    Those point at a file and a directory inside it, not at the project. Three
+    identical marks in a column of three would be a texture, not a signal.
+*/
 const project = [
-  { href: repositoryUrl, label: t('footer.sourceLabel') },
-  { href: `${repositoryUrl}/blob/master/README.md`, label: t('footer.readmeLabel') },
-  { href: `${repositoryUrl}/tree/master/.ai/rules`, label: t('footer.rulesLabel') },
+  { href: repositoryUrl, label: t('footer.sourceLabel'), mark: true },
+  { href: `${repositoryUrl}/blob/master/README.md`, label: t('footer.readmeLabel'), mark: false },
+  { href: `${repositoryUrl}/tree/master/.ai/rules`, label: t('footer.rulesLabel'), mark: false },
 ] as const;
 
 const columnHeading = 'text-fine text-primary mb-md font-semibold tracking-wide uppercase';
 const columnLink =
-  'text-prose text-secondary hover:text-primary transition-colors duration-[--motion-quick-ms]';
+  'text-prose text-secondary hover:text-primary gap-sm inline-flex items-center ' +
+  'transition-colors duration-[--motion-quick-ms]';
 
 /** Two columns of links and the two sentences that were the whole of it.
  *
@@ -37,7 +43,7 @@ export function Footer() {
   return (
     <footer className="border-t-hairline border-divider bg-well">
       <Container className="py-section">
-        <div className="gap-section grid sm:grid-cols-2">
+        <div className="gap-stack grid sm:grid-cols-2">
           <nav>
             <h2 className={columnHeading}>{t('footer.docsTitle')}</h2>
             <ul className="gap-sm flex flex-col">
@@ -57,6 +63,7 @@ export function Footer() {
               {project.map((link) => (
                 <li key={link.href}>
                   <a href={link.href} className={columnLink}>
+                    {link.mark ? <GitHubMark /> : null}
                     {link.label}
                   </a>
                 </li>
@@ -65,7 +72,7 @@ export function Footer() {
           </nav>
         </div>
 
-        <div className="border-t-hairline border-divider mt-section pt-stack text-fine text-secondary">
+        <div className="border-t-hairline border-divider mt-stack pt-stack text-fine text-secondary">
           <p>{t('footer.generated')}</p>
           <p className="mt-sm">{t('footer.licence')}</p>
         </div>

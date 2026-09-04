@@ -24,7 +24,7 @@ export const metadata: Metadata = { title: `${t('reference.title')} — ${t('sit
 */
 export default function Reference() {
   return (
-    <Container className="py-section">
+    <Container className="pt-stack pb-section">
       <h1 className="text-h1 text-primary leading-tight font-semibold tracking-tight">
         {t('reference.title')}
       </h1>
@@ -45,7 +45,7 @@ export default function Reference() {
         </ul>
       </nav>
 
-      <section className="py-section">
+      <section className="pt-section">
         <h2 className="text-h2 text-primary font-semibold">{t('reference.blocksTitle')}</h2>
 
         {schema.blocks.map((block) => (
@@ -53,7 +53,7 @@ export default function Reference() {
             key={block.kind}
             id={anchorForBlock(block.kind)}
             data-schema-anchor={anchorForBlock(block.kind)}
-            className="mt-section scroll-mt-section"
+            className="mt-stack scroll-mt-section"
           >
             <h3 className="text-h3 text-primary font-mono">{block.kind}</h3>
 
@@ -114,7 +114,7 @@ export default function Reference() {
         ))}
       </section>
 
-      <section className="py-section">
+      <section className="pt-section">
         <h2 className="text-h2 text-primary font-semibold">{t('reference.valuesTitle')}</h2>
         <p className="mt-sm text-prose text-secondary">
           {t('reference.kindsCount', { count: schema.valueKinds.length })}
@@ -150,7 +150,7 @@ export default function Reference() {
         </p>
       </section>
 
-      <section className="py-section">
+      <section className="pt-section">
         <h2 className="text-h2 text-primary font-semibold">{t('reference.modesTitle')}</h2>
 
         <div className="mt-lg">

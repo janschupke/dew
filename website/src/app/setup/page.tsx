@@ -1,8 +1,8 @@
 import type { Metadata } from 'next';
 
 import { Band, Container } from '@/ui/Surface';
-import { Button } from '@/ui/Button';
-import { P, PageHeader, Section } from '@/ui/Prose';
+import { GitHubMark } from '@/ui/Icon';
+import { P, PageHeader, Section, SectionPair } from '@/ui/Prose';
 import { Cell, Row, Table } from '@/ui/Table';
 import {
   buildCommands,
@@ -49,7 +49,7 @@ export default function Setup() {
     <>
       <PageHeader title={t('setup.title')} lead={t('setup.lead')} />
 
-      <Container>
+      <Container className="pb-section">
         <Section title={t('setup.requirementsTitle')}>
           <P>{t('setup.requirementsBody')}</P>
 
@@ -90,26 +90,40 @@ export default function Setup() {
         </div>
       </Band>
 
-      <Container>
+      <Container className="pb-section">
+        {/* Full width, and not half of a pair: the run command is a 62-character
+            path, and in half a column it scrolls inside its own box - a command
+            you have to drag to read is worse than one with space beside it. */}
         <Section title={t('setup.runTitle')}>
           <Commands lines={runCommands} />
           <P className="mt-stack">{t('setup.runBody')}</P>
         </Section>
 
-        <Section title={t('setup.checkTitle')}>
-          <Commands lines={checkCommands} />
-          <P className="mt-stack">{t('setup.checkBody')}</P>
-        </Section>
+        {/* These two are short, and stacked they left the right half of the
+            page blank twice running. The link is a link and not a button: the
+            three on the home page are calls to action, this one names a URL,
+            and as the loudest control on the page it outranked the commands the
+            page is actually about. */}
+        <SectionPair>
+          <Section title={t('setup.checkTitle')}>
+            <Commands lines={checkCommands} />
+            <P className="mt-stack">{t('setup.checkBody')}</P>
+          </Section>
 
-        <Section title={t('setup.sourceCta')}>
-          <P>{t('setup.platformNote')}</P>
+          <Section title={t('setup.sourceCta')}>
+            <P>{t('setup.platformNote')}</P>
 
-          <div className="mt-stack">
-            <Button variant="primary" href={repositoryUrl}>
-              {repositoryUrl.replace('https://', '')}
-            </Button>
-          </div>
-        </Section>
+            <div className="mt-stack">
+              <a
+                href={repositoryUrl}
+                className="text-accent text-prose gap-sm inline-flex items-center hover:underline"
+              >
+                <GitHubMark />
+                {repositoryUrl.replace('https://', '')}
+              </a>
+            </div>
+          </Section>
+        </SectionPair>
       </Container>
     </>
   );

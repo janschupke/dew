@@ -34,7 +34,7 @@ export function Row({ id, children }: { id?: string; children: ReactNode }) {
     <tr
       {...(id ? { id } : {})}
       data-schema-anchor={id ?? undefined}
-      className="border-b-hairline border-divider scroll-mt-band last:border-0"
+      className="border-b-hairline border-divider scroll-mt-section last:border-0"
     >
       {children}
     </tr>

@@ -27,7 +27,7 @@ export const requirements: readonly Requirement[] = [
   { name: 'Homebrew', need: 'How the four below arrive, from the Brewfile.' },
   { name: 'cmake ≥ 3.25', need: 'JUCE 9 needs 3.22; CMakePresets v6 needs 3.25.' },
   { name: 'ninja', need: 'The generator every preset uses.' },
-  { name: 'ccache', need: 'Optional. A cold JUCE rebuild is minutes without it.' },
+  { name: 'ccache', need: 'Optional. A cold JUCE rebuild takes minutes without it.' },
   { name: 'lame', need: 'MP3 export only, driven as a child process. Optional.' },
 ];
 
@@ -38,7 +38,7 @@ export interface Preset {
 
 export const presets: readonly Preset[] = [
   { name: 'dev', what: 'Debug, with tests' },
-  { name: 'release', what: 'RelWithDebInfo — build this for normal use' },
+  { name: 'release', what: 'RelWithDebInfo. Build this for normal use' },
   { name: 'ci', what: 'release plus warnings-as-errors; the gate' },
   { name: 'asan', what: 'ci plus AddressSanitizer and UndefinedBehaviorSanitizer' },
   { name: 'tsan', what: 'ci plus ThreadSanitizer' },

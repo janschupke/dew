@@ -69,6 +69,20 @@ each decodes, is the size it was asked for, and is not one flat colour.
   Tailwind sizing family, `inline-size` among them, so `--spacing-block` generated an
   `inline-block` utility that beat `display: inline-block` and sized five nav links to
   40px. `tests/utilities.test.ts` holds the reserved list.
+- **`--spacing: initial` deletes every numeric OFFSET too, not only the padding.**
+  The gate has always refused `p-3` and `gap-7`, and `top-0` is the same deletion
+  wearing a different family: it compiles to `top: calc(var(--spacing) * 0)`, which
+  is invalid and drops. The header was `sticky top-0 z-10` from the day it was
+  written and never stuck once — it had a position and no offset, and `top: auto`
+  on a sticky box scrolls away like a static one. `theme.site.css` declares
+  `pinned` for the one place that needs it, and `tests/gates.test.ts` refuses a
+  numeric offset anywhere.
+- **A `Card` with an `href` is a link and lifts; one without is a flat panel and
+  does not move.** Every card on the site used to hover and go nowhere: a pointer
+  answered by a colour change and a click answered by nothing. Where there is a
+  destination the card is a real `next/link`, which is also how it gets the focus
+  ring for free; where there is none — the MCP page's four, the features page's
+  leftovers — the hover is gone rather than pointing somewhere invented.
 - **A custom `@utility` has no directional family.** `@utility border-hairline` defines
   that one class and nothing else: Tailwind derives `border-b-2` from `border-2` and
   derives nothing from a custom utility, so `border-b-hairline` emitted no CSS at all and

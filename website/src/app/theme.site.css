@@ -65,7 +65,29 @@
   --leading-prose: 1.65;
 
   --spacing-gutter: 2rem;
-  --spacing-stack: 2.5rem;
-  --spacing-section: 4.5rem;
-  --spacing-band: 7rem;
+  --spacing-stack: 2rem;
+  --spacing-section: 3.5rem;
+  --spacing-band: 4.5rem;
+}
+
+/*  Sticking to the top edge, and the reason it needs a utility of its own.
+
+    `--spacing: initial` in theme.generated.css deletes Tailwind's dynamic
+    scale, and that scale is what every numeric OFFSET reads too - not just the
+    padding the gate already refuses. So `top-0` compiles to
+    `top: calc(var(--spacing) * 0)`, which is invalid and drops.
+
+    The header carried `sticky top-0 z-10` from the day it was written and never
+    stuck once: the position was set, the offset was not, and a sticky box with
+    `top: auto` scrolls away exactly like a static one. The markup was right,
+    the class was in the compiled output as `.sticky{position:sticky}`, and the
+    rule the second class should have emitted was not there at all - the same
+    shape as the `border-b-hairline` bug, and invisible for the same reason.
+
+    `tests/gates.test.ts` refuses a numeric offset now, so the next one takes a
+    named utility rather than compiling to nothing.
+*/
+@utility pinned {
+  position: sticky;
+  top: 0;
 }

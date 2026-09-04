@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import type { ReactNode } from 'react';
 
 /** A panel, at one rung of the surface ladder.
@@ -78,23 +79,42 @@ export function Band({
 /** A surface with an edge and a corner: a card. `divider` rather than
  *  `outline`, because a card is separated rather than interactive.
  *
- *  It lifts under the pointer even though it is not a control, and that is the
- *  one place this departs from the app: on a page a card is usually a link to
- *  somewhere, and a surface that never answers the pointer reads as a picture
- *  of a card. `surface-hover` is the rung the app moves a panel to, so the
- *  movement is the app's even where the reason is the page's.
+ *  WITH an href it is a link and lifts; without one it is a flat panel and does
+ *  not move at all. Every card on this site used to do the second thing while
+ *  looking like the first - a pointer answered by a colour change and a click
+ *  answered by nothing, which is a promise the page cannot keep. `surface-hover`
+ *  is the rung the app moves a panel to, so where there IS somewhere to go the
+ *  movement is still the app's.
+ *
+ *  `block` is load-bearing: next/link renders an anchor, which is inline, and
+ *  the `h-full` the grid call sites pass has nothing to stretch inside one.
+ *
+ *  The focus ring comes free from the `:focus-visible` rule in globals.css,
+ *  which is the whole reason this is a real link rather than a div with a
+ *  handler on it.
  */
-export function Card({ className = '', children }: { className?: string; children: ReactNode }) {
+export function Card({
+  href,
+  className = '',
+  children,
+}: {
+  href?: string;
+  className?: string;
+  children: ReactNode;
+}) {
+  const base = `border-hairline border-divider bg-surface p-stack rounded-md ${className}`;
+
+  if (href === undefined) return <div className={base}>{children}</div>;
+
   return (
-    <div
+    <Link
+      href={href}
       className={
-        'border-hairline border-divider bg-surface p-stack rounded-md ' +
-        'hover:border-divider-strong hover:bg-surface-hover ' +
-        'transition-colors duration-[--motion-panel-ms] ' +
-        className
+        `${base} hover:border-divider-strong hover:bg-surface-hover block ` +
+        'transition-colors duration-[--motion-panel-ms]'
       }
     >
       {children}
-    </div>
+    </Link>
   );
 }

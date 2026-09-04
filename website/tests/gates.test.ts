@@ -78,6 +78,32 @@ describe('source gates', () => {
     expect(report(offenders(/\b(?:p|m|gap|space)[trblxy]?-\d/))).toBe('');
   });
 
+  it('no positional offset off the ladder', () => {
+    // `--spacing: initial` deletes the scale every numeric offset reads, not
+    // just the padding the gate above refuses - so `top-0` compiles to
+    // `top: calc(var(--spacing) * 0)`, which is invalid and drops.
+    //
+    // The header was `sticky top-0 z-10` from the day it was written and never
+    // stuck: it had a position and no offset, and `top: auto` on a sticky box
+    // scrolls away like a static one. Nothing at the level of source was wrong,
+    // which is why this reads the source for the CLASS of mistake instead.
+    // theme.site.css declares `pinned` for the one place that needs it.
+    expect(report(offenders(/\b(?:top|bottom|left|right|inset(?:-[xy])?)-\d/))).toBe('');
+  });
+
+  it('sees a positional offset when there is one', () => {
+    const pattern = /\b(?:top|bottom|left|right|inset(?:-[xy])?)-\d/;
+
+    expect(pattern.test('className="sticky top-0"')).toBe(true);
+    expect(pattern.test('className="absolute inset-0"')).toBe(true);
+    expect(pattern.test('className="inset-x-4"')).toBe(true);
+
+    // Neither of these reads the spacing scale, and both are in use.
+    expect(pattern.test('className="pinned z-10"')).toBe(false);
+    expect(pattern.test('className="last:border-0"')).toBe(false);
+    expect(pattern.test('className="grid sm:grid-cols-2"')).toBe(false);
+  });
+
   it('no inline style carrying a colour of its own', () => {
     // An inline style is allowed to reference a TOKEN and nothing else.
     //

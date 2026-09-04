@@ -3,7 +3,7 @@ import type { Metadata } from 'next';
 import { Band, Card, Container } from '@/ui/Surface';
 import { PageHeader } from '@/ui/Prose';
 import { Shot } from '@/ui/Shot';
-import { features } from '@/content/features';
+import { anchorForFeature, features } from '@/content/features';
 import { t } from '@/lib/strings';
 
 export const metadata: Metadata = { title: `${t('features.title')} — ${t('site.name')}` };
@@ -19,10 +19,19 @@ export default function Features() {
       {/* The five with a shot lead, because a picture of a DAW says more than a
           paragraph about one. The rest follow as cards, in a band, so where the
           page changes from one shape to the other is visible rather than
-          inferred from a heading. */}
+          inferred from a heading.
+
+          Both groups carry an anchor. The home page shows the first six of the
+          same list, which straddles the split - `Instrument` has no shot and is
+          a card down there - so an id on the shot sections alone would break
+          one of its six links and only one. */}
       <Container className="pb-section">
         {shown.map((feature) => (
-          <section key={feature.name} className="py-section">
+          <section
+            key={feature.name}
+            id={anchorForFeature(feature.name)}
+            className="scroll-mt-section pt-section"
+          >
             <h2 className="text-h2 text-primary leading-snug font-semibold tracking-tight">
               {feature.name}
             </h2>
@@ -40,7 +49,11 @@ export default function Features() {
       <Band>
         <ul className="gap-stack grid md:grid-cols-2">
           {rest.map((feature) => (
-            <li key={feature.name}>
+            <li
+              key={feature.name}
+              id={anchorForFeature(feature.name)}
+              className="scroll-mt-section"
+            >
               <Card className="h-full">
                 <h2 className="text-h3 text-primary leading-snug font-semibold">{feature.name}</h2>
                 <p className="mt-md text-prose leading-prose text-secondary">{feature.body}</p>

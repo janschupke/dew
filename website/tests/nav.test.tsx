@@ -61,6 +61,21 @@ describe('the nav', () => {
     expect(currentTab()).toEqual([]);
   });
 
+  it('is pinned to the top of the page', () => {
+    // `sticky top-0` was the markup for as long as the file existed and the
+    // header scrolled away regardless: --spacing: initial deletes the scale
+    // `top-0` reads, so the offset emitted nothing and a sticky box with
+    // `top: auto` is a static one. `pinned` is a custom utility carrying both
+    // declarations, which is the only form of this that cannot half-apply.
+    pathname = '/';
+    const { container } = render(<Nav />);
+
+    const header = container.querySelector('header');
+
+    expect(header?.className).toContain('pinned');
+    expect(header?.className).not.toMatch(/\btop-\d/);
+  });
+
   it('offers the repository', () => {
     pathname = '/';
     render(<Nav />);

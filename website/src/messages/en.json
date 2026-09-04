@@ -1,19 +1,19 @@
 {
   "design": {
     "title": "Design system",
-    "lead": "One vocabulary, held to a number rather than to taste. Every value on this page is read out of the application's own tokens.",
+    "lead": "Every value on this page is read out of the application’s own tokens. Nothing here is a second copy.",
     "coloursTitle": "Colour roles",
-    "coloursBody": "Named for their role, never their appearance. A theme is one assignment because each name is a reference into the palette in force.",
+    "coloursBody": "Each name says what a colour is for, not what it looks like. A theme is one assignment, because every name is a reference into the palette in force.",
     "rampTitle": "Channel ramp",
     "rampBody": "Not themeable. These eight are document data, written into every project file, so repainting them would make a saved project disagree with the swatch it was chosen from.",
     "scalesTitle": "Scales",
     "liftTitle": "Lifts",
-    "liftBody": "How much lighter a surface gets when touched. A large surface needs a subtler lift than a small one — that distinction is real, and the other values that had grown beside it were not.",
+    "liftBody": "How much lighter a surface gets when touched. A large surface needs a subtler lift than a small one, so there are two rungs and no more.",
     "galleryCaption": "The whole design system on one page, rendered by dew_shot gallery."
   },
   "features": {
     "title": "What it does",
-    "lead": "Each of these is built and wired to the next. Nothing here is a mock."
+    "lead": "Each of these is built and wired to the next."
   },
   "footer": {
     "licence": "JUCE 9 is dual-licensed; dew is a personal prototype used under the AGPLv3 terms.",
@@ -34,20 +34,20 @@
   },
   "mcp": {
     "title": "Control dew from an agent",
-    "lead": "dew runs a Model Context Protocol server inside the application, so a coding agent can read and change the project you have open - instruments, effects, the mixer, the notes and the arrangement.",
+    "lead": "dew runs a Model Context Protocol server inside the application, so a coding agent can read and change the project you have open: instruments, effects, the mixer, the notes and the arrangement.",
     "howTitle": "How it works",
-    "howBody": "Turn it on under Audio > MCP. dew listens on the loopback interface only, and nothing off your machine can reach it. The first time a client connects, dew names it and asks whether to allow it - and whether it may only read, or change things too. Every change it makes is one step of your undo history.",
+    "howBody": "Turn it on under Audio → MCP. dew listens on the loopback interface only, so nothing off your machine can reach it. The first time a client connects, dew names it and asks whether to allow it, and whether it may only read or change things too. Every change it makes is one step of your undo history.",
     "connectTitle": "Connecting a client",
-    "connectBody": "The MCP settings panel shows the address and the exact command. The port is not fixed: dew takes the next free one when its own is busy, so copy the command rather than typing it.",
+    "connectBody": "The MCP settings panel shows the address and the exact command. The port is not fixed — dew takes the next free one when its own is busy — so copy the command instead of typing it.",
     "surfaceTitle": "What it can reach",
-    "surfaceBody": "One address space covers every value in the document. A target, an id, a group and a slot name any parameter of any oscillator, envelope, sample, soundfont, effect, mixer insert or the master - and the same four fields say what a curve can be pointed at.",
+    "surfaceBody": "One address space covers every value in the document. A target, an id, a group and a slot name any parameter of any oscillator, envelope, sample, soundfont, effect, mixer insert or the master. The same four fields say what a curve can be pointed at.",
     "scoreTitle": "Writing music, not notes",
-    "scoreBody": "For anything longer than a few bars, an agent writes dew’s arrangement language and compiles it. The language says what the music is - a key, a progression, rhythms, voicings, a counterpoint - and the compiler works out the notes.",
+    "scoreBody": "For anything longer than a few bars, an agent writes dew’s arrangement language and compiles it. The language says what the music is — a key, a progression, rhythms, voicings, a counterpoint — and the compiler works out the notes.",
     "referenceLink": "Every tool, in the reference"
   },
   "mcpReference": {
     "title": "MCP reference",
-    "lead": "Generated from the same table the server dispatches on and the permission check reads, so a tool cannot exist without being documented and cannot be documented differently from how it behaves.",
+    "lead": "Generated from the same table the server dispatches on and the permission check reads. A tool cannot exist without being documented, or be documented differently from how it behaves.",
     "onThisPage": "On this page",
     "protocol": "Protocol",
     "guideTitle": "Resources",
@@ -75,12 +75,12 @@
   },
   "notFound": {
     "title": "Not here",
-    "body": "That page does not exist. The site is six pages, and they are all in the header.",
+    "body": "That page does not exist. Everything the site has is in the header above.",
     "home": "Back to the start"
   },
   "reference": {
     "title": "Score language reference",
-    "lead": "Generated from the same table the compiler validates against and the editor completes from, so a key cannot be documented differently from how it is checked.",
+    "lead": "Generated from the same table the compiler validates against and the editor completes from. A key cannot be documented differently from how it is checked.",
     "blocksTitle": "Blocks",
     "valuesTitle": "Values",
     "modesTitle": "Modes",
@@ -104,22 +104,22 @@
     "lead": "A song written as text and compiled to real patterns, notes and clips. Seven block keywords, and the set is closed.",
     "exampleCaption": "examples/amber.score — the one CI compiles and renders.",
     "referenceLink": "Every block and key",
-    "noExpressions": "There is no expression language — no arithmetic, no variables, no conditionals. That single restriction is what makes completion a table lookup rather than type inference, and what lets the grid be computed statically before anything is generated."
+    "noExpressions": "There is no expression language: no arithmetic, no variables, no conditionals. That restriction is what makes completion a table lookup, and what lets the grid be computed before anything is generated."
   },
   "setup": {
     "title": "Setup",
-    "lead": "dew builds from source on macOS in three commands. There is no release to download: it is a working prototype, and the thing you would be downloading is a build of this repository.",
+    "lead": "dew builds from source on macOS in three commands. There is no release to download — it is a working prototype, and a download would be a build of this repository.",
     "requirementsTitle": "What you need",
     "requirementsBody": "macOS, and nothing that is not already on a machine somebody writes software on. brew bundle installs the rest from the Brewfile in the repository root.",
     "buildTitle": "Build it",
-    "buildBody": "The first configure fetches JUCE and Catch2 from source — a few seconds, shallow, cached per machine under ~/.cache/CPM — so one build is slow and the rest are not.",
+    "buildBody": "The first configure fetches JUCE and Catch2 from source — a few seconds, shallow, cached per machine under ~/.cache/CPM. One build is slow and the rest are not.",
     "presetsTitle": "The presets",
-    "presetsBody": "Presets rather than raw flags, so the flags a build was made with are in the repository rather than in somebody's shell history.",
+    "presetsBody": "Presets instead of raw flags, so the flags a build was made with live in the repository and not in somebody’s shell history.",
     "runTitle": "Run it",
-    "runBody": "Then Demos → Getting Started in the menu bar. There are eight, and each one is the demo for a different part of the app rather than eight versions of the same song.",
+    "runBody": "Then Demos → Getting Started in the menu bar. There are eight, and each one demonstrates a different part of the app.",
     "checkTitle": "The gate",
-    "checkBody": "One command, running everything CI runs, in the order that fails cheapest first: the dependency pins and the formatting need no build, so a bad pin or an unformatted file is reported in seconds rather than after a compile.",
-    "platformNote": "macOS only. Nothing here has been built or run on another platform, and the parts that could be — the score language compiles under gcc and libstdc++ in CI — are the parts that link nothing.",
+    "checkBody": "One command, running everything CI runs, in the order that fails cheapest first. The dependency pins and the formatting need no build, so a bad pin or an unformatted file is reported in seconds.",
+    "platformNote": "macOS only. Nothing here has been built or run on another platform. The parts that could be — the score language compiles under gcc and libstdc++ in CI — are the parts that link nothing.",
     "sourceCta": "The repository",
     "nameHeading": "Preset",
     "whatHeading": "What it is",
@@ -129,7 +129,7 @@
   "site": {
     "name": "dew",
     "tagline": "A desktop synth DAW where the song can be written as text.",
-    "status": "Working prototype. Every layer is real and wired to the next. macOS only.",
+    "status": "Working prototype, macOS only. Every layer is built and wired to the next.",
     "skipToContent": "Skip to content"
   }
 }

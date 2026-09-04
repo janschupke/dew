@@ -20,6 +20,16 @@ export interface Feature {
   readonly shot?: ShotName;
 }
 
+/** The id a feature's section carries on /features/, and the fragment the home
+ *  page's cards link to.
+ *
+ *  Derived once here rather than written twice: the two pages split the same
+ *  list on whether a feature has a shot, so a name typed out on one side and
+ *  slugged on the other is six dead links nobody would notice. A test walks
+ *  both directions.
+ */
+export const anchorForFeature = (name: string): string => name.toLowerCase().replace(/\s+/g, '-');
+
 export const features: readonly Feature[] = [
   {
     name: 'Channel rack',
@@ -52,7 +62,7 @@ export const features: readonly Feature[] = [
   },
   {
     name: 'Effects',
-    body: 'Reverb, filter, delay, drive, distortion, chorus, phaser, a 3-band EQ, a compressor and a limiter, chained up to four deep on any channel, track or the master. Drag a card by its grip to reorder — one undo step for the whole drag, however far it travelled.',
+    body: 'Reverb, filter, delay, drive, distortion, chorus, phaser, a 3-band EQ, a compressor and a limiter, chained up to four deep on any channel, track or the master. Drag a card by its grip to reorder; the whole drag is one undo step, however far it travelled.',
   },
   {
     name: 'Automation',
@@ -72,6 +82,6 @@ export const features: readonly Feature[] = [
   },
   {
     name: 'It remembers',
-    body: 'Window geometry, interface scale, active tab, selections, zoom, scroll, row height and snap. The piano roll’s tool deliberately does not — restoring into slice would mean the first click of a session cuts something nobody asked for.',
+    body: 'Window geometry, interface scale, active tab, selections, zoom, scroll, row height and snap. The piano roll’s tool does not: restoring into slice would mean the first click of a session cuts something nobody asked for.',
   },
 ];

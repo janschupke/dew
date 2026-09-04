@@ -36,7 +36,7 @@ export default function Mcp() {
         </div>
       </Band>
 
-      <Container>
+      <Container className="pb-section">
         <Section title={t('mcpReference.guideTitle')}>
           <P>{t('mcpReference.guideLead')}</P>
 
