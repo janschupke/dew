@@ -13,7 +13,7 @@ ProjectDocument::ProjectDocument()
     : FileBasedDocument (fileExtension, fileWildcard, tr (StringId::file_openCaption),
                          tr (StringId::file_saveCaption))
 {
-    setState (ProjectFactory::createDefault(), true);
+    setState (ProjectFactory::createDefault (activeLocale()), true);
 }
 
 ProjectDocument::~ProjectDocument()

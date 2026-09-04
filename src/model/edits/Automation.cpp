@@ -127,8 +127,10 @@ juce::ValueTree ProjectEdits::addAutomationWithClip (juce::ValueTree project,
     // choose - undo the definition and return nothing - was a menu item that
     // did nothing at all, which is the worse of the two by a distance now that
     // every control offers it.
-    auto track = addPlaylistTrack (project, "Track " + juce::String (playlist.getNumChildren() + 1),
-                                   undo);
+    auto track = addPlaylistTrack (
+        project,
+        tr (StringId::project_trackN, Args {}.with ("number", playlist.getNumChildren() + 1)),
+        undo);
 
     if (! track.isValid())
         return {};

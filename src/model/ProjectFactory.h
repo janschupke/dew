@@ -4,6 +4,8 @@
 
 #include <vector>
 
+#include "i18n/Strings.h"
+
 namespace dew
 {
 
@@ -12,8 +14,34 @@ struct ProjectFactory
 {
     /** A blank project: four channels routed to four mixer inserts, one empty
         16-step pattern, four empty playlist tracks. What File > New produces.
+
+        Its names are written in `locale`, and they are written INTO THE FILE.
+        A German reader's new project holds German channel names from the moment
+        it exists; reopening it never re-translates them, and a project shared
+        with someone reading English reads the same for both. That is what a
+        name in a document is: the author's data, not a label.
+
+        The DEFAULT is the reference locale, and the default being the safe
+        answer is the whole point. Everything that compares what it built
+        against a committed file - the demo builders, ScoreBake's fresh project,
+        fifty test fixtures that name "Kick" - takes it and is right without
+        saying anything. Only File > New wants the reader's language, and those
+        three call sites say so.
+
+        It used to be the other way round, and by accident: the names were
+        literals, nothing in a console tool happens to call setLocale, and
+        `dew_render --write-demos` therefore happened to write English. An
+        accident that holds is one that stops holding the day a second
+        catalogue ships and a test somewhere sets a locale before the artefact
+        tests run. Now the tag is an argument, the risky value is the one you
+        have to spell, and the safe one is what you get by not thinking.
+
+        One consequence worth knowing: a score that says `channel kick` binds to
+        a project channel BY NAME, so in another language it creates a channel
+        rather than adopting one. That is the same behaviour as any other name
+        mismatch - see .ai/rules/i18n.md, which writes it down.
     */
-    static juce::ValueTree createDefault();
+    static juce::ValueTree createDefault (juce::StringRef locale = referenceLocale());
 
     /** A four-bar demo used by the tests, by CI, and shipped as examples/demo.dew.
         Deliberately audible: a kick pulse, an offbeat bass, and a lead line, so a

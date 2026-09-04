@@ -889,6 +889,18 @@
   "demo": {
     "missing": "The demo \"{name}\" is missing from this build."
   },
+  "project": {
+    "untitled": "Untitled",
+    "kick": "Kick",
+    "snare": "Snare",
+    "bass": "Bass",
+    "lead": "Lead",
+    "channelN": "Channel {number}",
+    "patternN": "Pattern {number}",
+    "trackN": "Track {number}",
+    "insertN": "Insert {number}",
+    "copyOf": "{name} copy"
+  },
   "warning": {
     "andMore": "... and more",
     "midiDuplicateNotes": "Overlapping clips played some notes twice; the duplicates were merged, so this file is slightly thinner than the audio.",

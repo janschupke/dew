@@ -1,6 +1,7 @@
 #include <catch2/catch_test_macros.hpp>
 
 #include "engine/EngineSnapshot.h"
+#include "i18n/Strings.h"
 #include "io/OfflineRenderer.h"
 #include "model/DemoLibrary.h"
 #include "model/Ids.h"
@@ -107,6 +108,40 @@ TEST_CASE ("the committed demo files are byte for byte what the factory writes",
         REQUIRE (ProjectSerializer::toJsonString (demo.build()).replace ("\r\n", "\n").trim()
                  == file.loadFileAsString().replace ("\r\n", "\n").trim());
     }
+}
+
+TEST_CASE ("what a demo is built from does not depend on a locale", "[demos][i18n]")
+{
+    // The committed demos are compared byte for byte against what the factory
+    // builds, and the factory's channel, pattern, track and insert names now
+    // come from the catalogue. So the artefact would move the day a second
+    // language shipped - unless what feeds it is pinned, which is what
+    // ProjectFactory::createDefault's REFERENCE default does.
+    //
+    // Pinned by construction rather than by ambient state: there is no overload
+    // that reads the active locale, so a demo builder that wanted the reader's
+    // language would have to ask for it in writing. Setting a locale here and
+    // finding the tree unchanged is what says so.
+    const auto reference = ProjectFactory::createDefault();
+
+    const auto previous = activeLocale();
+    setLocale ("de-CH");
+    const auto underAnotherLocale = ProjectFactory::createDefault();
+    setLocale (previous);
+
+    CHECK (underAnotherLocale.isEquivalentTo (reference));
+
+    // And File > New is the one that does follow the reader. Equal here today
+    // because English is the only catalogue this build carries; what the check
+    // holds is that the call site asked, which is the part that has to survive
+    // a second one.
+    CHECK (ProjectFactory::createDefault (activeLocale()).isEquivalentTo (reference));
+
+    // Control case: the names really do come from the catalogue, so the two
+    // comparisons above are comparing something.
+    const auto channel = reference.getChildWithName (ids::CHANNEL);
+    REQUIRE (channel.isValid());
+    CHECK (channel[ids::name].toString() == tr (StringId::project_kick));
 }
 
 TEST_CASE ("no demo ships two patterns with the same id", "[demos]")

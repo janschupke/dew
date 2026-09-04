@@ -29,8 +29,10 @@ juce::ValueTree ProjectEdits::addChannel (juce::ValueTree project, const juce::S
 
     const auto id = nextFreeId (project, ids::CHANNEL);
     channel.setProperty (ids::id, id, nullptr);
-    channel.setProperty (ids::name, name.isNotEmpty() ? name : "Channel " + juce::String (id),
-                         nullptr);
+    channel.setProperty (
+        ids::name,
+        name.isNotEmpty() ? name : tr (StringId::project_channelN, Args {}.with ("number", id)),
+        nullptr);
 
     // Round the ramp rather than taking the schema default, which is one blue:
     // every channel a user added came out the same colour as the last, in an
@@ -187,7 +189,8 @@ juce::ValueTree ProjectEdits::addPattern (juce::ValueTree project, juce::UndoMan
 
     const auto id = nextFreeId (project, ids::PATTERN);
     pattern.setProperty (ids::id, id, nullptr);
-    pattern.setProperty (ids::name, "Pattern " + juce::String (id), nullptr);
+    pattern.setProperty (ids::name, tr (StringId::project_patternN, Args {}.with ("number", id)),
+                         nullptr);
 
     int insertAt = project.getNumChildren();
 
@@ -221,12 +224,21 @@ juce::ValueTree ProjectEdits::duplicatePattern (juce::ValueTree project, juce::V
 
     // An auto-named pattern gets the next auto name; a renamed one keeps the
     // name it was given, marked as a copy, because that name is information.
+    //
+    // The comparison is against the auto name in the ACTIVE locale, so a
+    // project made in one language and duplicated in another treats an
+    // untouched pattern as renamed and calls the copy "Pattern 3 copy". A
+    // stored flag is the only thing that would answer "was this renamed"
+    // properly, and inventing one for this is a file-format change to improve a
+    // name. Written down in .ai/rules/i18n.md rather than papered over.
     const auto sourceName = pattern[ids::name].toString();
-    const auto autoName = "Pattern " + juce::String (sourceId);
+    const auto autoName = tr (StringId::project_patternN, Args {}.with ("number", sourceId));
 
-    copy.setProperty (
-        ids::name,
-        sourceName == autoName ? "Pattern " + juce::String (newId) : sourceName + " copy", nullptr);
+    copy.setProperty (ids::name,
+                      sourceName == autoName
+                          ? tr (StringId::project_patternN, Args {}.with ("number", newId))
+                          : tr (StringId::project_copyOf, Args {}.with ("name", sourceName)),
+                      nullptr);
 
     // Next to the original, so the pattern list reads in the order it was built.
     project.addChild (copy, index + 1, undo);

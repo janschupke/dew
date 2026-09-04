@@ -57,8 +57,10 @@ juce::ValueTree ProjectEdits::addMixerTrack (juce::ValueTree project, const juce
 
     const auto id = nextFreeId (project, ids::MIXER_TRACK);
     track.setProperty (ids::id, id, nullptr);
-    track.setProperty (ids::name, name.isNotEmpty() ? name : "Insert " + juce::String (id),
-                       nullptr);
+    track.setProperty (
+        ids::name,
+        name.isNotEmpty() ? name : tr (StringId::project_insertN, Args {}.with ("number", id)),
+        nullptr);
 
     // Appended, with no insert position to work out: the mixer's schema order is
     // master then tracks*, so the end is already the canonical place.
@@ -124,7 +126,10 @@ juce::ValueTree ProjectEdits::addPlaylistTrack (juce::ValueTree project, const j
         if (child.hasType (ids::PLAYLIST_TRACK))
             ++existing;
 
-    track.setProperty (ids::name, name.isNotEmpty() ? name : "Track " + juce::String (existing + 1),
+    track.setProperty (ids::name,
+                       name.isNotEmpty()
+                           ? name
+                           : tr (StringId::project_trackN, Args {}.with ("number", existing + 1)),
                        nullptr);
 
     playlist.appendChild (track, undo);

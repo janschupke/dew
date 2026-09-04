@@ -352,7 +352,7 @@ bool DewApplication::perform (const InvocationInfo& info)
                     if (result != juce::FileBasedDocument::savedOk)
                         return;
 
-                    document->setState (ProjectFactory::createDefault(), true);
+                    document->setState (ProjectFactory::createDefault (activeLocale()), true);
                     document->setFile ({});
                     refreshAfterReplace();
                 });

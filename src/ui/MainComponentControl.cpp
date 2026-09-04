@@ -58,7 +58,7 @@ bool MainComponent::ControlAdapter::newProject()
     if (owner.getDocument().hasChangedSinceSaved())
         return false;
 
-    owner.getDocument().setState (ProjectFactory::createDefault(), true);
+    owner.getDocument().setState (ProjectFactory::createDefault (activeLocale()), true);
 
     return true;
 }

@@ -128,6 +128,31 @@ juce::String tr (StringId id, const Args& arguments)
     return formatMessage (tr (id), arguments, activeLocale());
 }
 
+juce::String trIn (juce::StringRef locale, StringId id)
+{
+    const auto* table = catalogs();
+    const auto chosen = negotiate (locale);
+    const auto* row = table[chosen].text[(size_t) id];
+
+    if (row == nullptr || *row == '\0')
+        row = table[referenceIndex()].text[(size_t) id];
+
+    if (row == nullptr || *row == '\0')
+        return juce::String (juce::CharPointer_UTF8 (catalogKeyPaths()[(size_t) id]));
+
+    return juce::String (juce::CharPointer_UTF8 (row));
+}
+
+juce::String trIn (juce::StringRef locale, StringId id, const Args& arguments)
+{
+    return formatMessage (trIn (locale, id), arguments, locale);
+}
+
+juce::String referenceLocale()
+{
+    return juce::String (catalogs()[referenceIndex()].tag);
+}
+
 void setLocale (juce::StringRef tag)
 {
     buildFor (negotiate (tag));

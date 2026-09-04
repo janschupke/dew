@@ -420,6 +420,10 @@ BakeReport ScoreBake::into (juce::ValueTree project, const lang::Score& score,
 
 juce::ValueTree ScoreBake::toNewProject (const lang::Score& score, BakeReport& report)
 {
+    // The REFERENCE locale, which is createDefault's default. Three demos are
+    // baked from a score and pinned byte for byte against committed files, and
+    // every caller of this is one of them or a test - nothing in the running
+    // application reaches it.
     auto project = ProjectFactory::createDefault();
 
     // A fresh project starts at four steps per beat; the score's grid is the

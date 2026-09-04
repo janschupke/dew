@@ -35,6 +35,26 @@ const juce::String& tr (StringId id);
     subset. */
 juce::String tr (StringId id, const Args& arguments);
 
+/** `id`'s text in a NAMED locale, by value, negotiated the same way.
+
+    For the one thing that must not read the active locale: content written into
+    a file. `dew_render --write-demos` and `--write-presets` produce artefacts
+    that are committed and compared byte for byte, so what they write has to be
+    a function of the code and never of what the machine running it was set to.
+    Passing the tag makes that a property of the call rather than of the order
+    the suite happened to run in.
+
+    By value, not by reference, because there is no table to point into: nothing
+    is cached per locale and nothing dangles. tr() is the one to reach for
+    everywhere a person is reading.
+*/
+juce::String trIn (juce::StringRef locale, StringId id);
+juce::String trIn (juce::StringRef locale, StringId id, const Args& arguments);
+
+/** The tag every other locale falls back to, row by row - what the generator
+    wrote first, and what a file-bound artefact is written in. */
+juce::String referenceLocale();
+
 /** Choose the locale, once, from a BCP-47 tag.
 
     Negotiated against what was compiled in: an exact tag wins, then the
