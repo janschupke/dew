@@ -25,6 +25,7 @@ these files.
 - [Automation](.ai/rules/automation.md) — one evaluator, `automationTargetFor` as the primitive, `ParamSpec::automatable` as the only gate, `TempoMap::isConstant` as correctness, and what is deliberately not automatable
 - [Strings](.ai/rules/i18n.md) — every sentence a person reads is a structural key in `resources/i18n/en.json`; `StringIds.h` is generated; `tr` never returns empty; what is deliberately not translated
 - [C++ style](.ai/rules/cpp-style.md) — `.clang-format` is the authority; hand-grouped includes, the `juce::String` ASCII/UTF-8 trap, and the standard-library limits on this deployment target
+- [The website](.ai/rules/website.md) — `website/` is checked by its own gates and by nothing the C++ tree runs; the JSON it reads is generated and diffed, the screenshots are not; dark only, one palette; no tokenizer, because the samples arrive pre-scanned
 - [Workflow](.ai/rules/workflow.md) — `./scripts/check.sh`, the generated files, the dependency pins, commit style, and why `build/ci` is not the app
 
 ## Commands
@@ -61,8 +62,9 @@ Full set in [`.ai/rules/`](.ai/rules/). The ones an agent trips over first:
 - **No user-facing string is written in a source file.** Every sentence a person reads is
   a key in `resources/i18n/en.json`, reached as `tr (StringId::x)`; a gate refuses a literal
   at any text-setting call. `StringIds.h` is generated from that file into the build tree.
-- **`THIRD_PARTY.md`, `examples/`, `presets/` and `.cursor/rules/main.mdc` are generated.**
-  Never hand-edit one; regenerate it in the same commit.
+- **`THIRD_PARTY.md`, `examples/`, `presets/`, `.cursor/rules/main.mdc` and
+  `website/src/generated/` are generated.** Never hand-edit one; regenerate it in the same
+  commit.
 - **`build/ci` is not the app.** The user opens
   `build/release/src/dew_artefacts/RelWithDebInfo/dew.app`, so after a UI change also run
   `cmake --build --preset release`, and verify it with `dew_shot` rather than by reasoning.

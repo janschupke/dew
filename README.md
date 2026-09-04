@@ -732,6 +732,61 @@ never eased**, because a needle trailing the pointer moving it feels broken; and
 up from zero. The wheel is never eased at all — adding lag to the one gesture that must
 feel direct is a regression, not a polish.
 
+## The website
+
+`website/` is a Next.js site: what dew is, what it does, and the score language's
+reference. `./scripts/check-website.sh` checks it and `./scripts/check.sh` runs that.
+
+**The reference is generated, and that is the point.** `src/lang/Schema.h` has always
+declared the whole language as one table, and its own comment says the reference manual
+reads it — "so a key cannot exist without being completable and cannot be documented
+differently from how it is checked". Until now nothing read it but the completion popup and
+the editor's highlighter. `dew_docs` is the reader that was missing: it walks `schema()`
+and writes JSON, and the site renders every block, key, value kind and mode from it. A key
+added to `Schema.cpp` appears on the page with no page edit, and a page that stopped
+rendering one fails a test naming it.
+
+**The JSON is committed, not built.** So the site needs no C++ toolchain: its CI job runs
+on a Linux runner in about a minute instead of waiting behind a JUCE build, and a host that
+has never heard of CMake can serve the export. The cost is that the files can go stale,
+which is what the freshness test and CI's second-process `cmp` are for. Freshness is a test
+rather than `git diff --exit-code` because the manifest's trick — regenerate, then diff —
+would mean `check.sh` writing into the working tree before judging it.
+
+**Two emitters rather than one, because of the link line.** `dew_docs` links `dew_lang` and
+nothing else, JUCE included, so it is a second place that library's zero-dependency claim is
+proved rather than asserted. The design tokens live in `dew_design`, which publicly links
+`dew_engine` — one tool emitting both would have put `juce_gui_basics` on the score
+compiler's link line, which is the mistake `dew_render` already made once. So `dew_shot`
+emits the tokens, beside the picture of them it already renders.
+
+**It takes its colours from the application, not from a copy of them.** `dew_shot tokens`
+reads `darkPalette()` and `scripts/gen-theme.mjs` turns that into Tailwind's `@theme` block.
+The lifts are the interesting part: `juce::Colour::brighter` is per sRGB channel and
+truncates where CSS `color-mix` rounds, so the composed colours are computed by that same
+call and emitted, rather than re-derived in a browser. It also settles a trap — a hovered
+button is `surfaceRaised` lifted by `controlLift`, which is *not* `colour::surfaceHover`.
+
+The theme's namespace resets do the work a source gate does in the C++ tree:
+`--color-*: initial` deletes Tailwind's own palette and `--spacing: initial` its dynamic
+scale, so `bg-blue-500` and `p-7` are not wrong — they do not exist. That is a build that
+cannot express an off-vocabulary class, rather than a test that catches one.
+
+**It is dark, one palette.** Both of dew's palettes are dark for a stated reason, and the
+site inherits it: there is no `dark:` variant anywhere and a gate refuses one.
+
+**Nothing highlights anything.** The rule that the highlighter is not a second grammar is
+absolute, and a TypeScript tokenizer would have been a genuine third implementation. The
+site renders committed samples and never user input, so it does not need one: `dew_shot
+samples` scans with `lang::tokenize` and classifies with `ScoreTokeniser::colourFor`, and
+the page paints spans. A test asserts the rendered text is byte-identical to the source.
+
+**The screenshots are committed and are not gated on their bytes.** dew paints with the
+system typeface, so a shot depends on the macOS version and the installed fonts — a `cmp`
+would fail on somebody else's machine for a reason with nothing to do with dew. They are
+regenerated deliberately with `./scripts/gen-shots.sh`; a test holds that each decodes, is
+the size it was asked for, and is not one flat colour.
+
 ## The score language
 
 A song can be written as text and compiled to notes. It is edited in the **Score** tab, the

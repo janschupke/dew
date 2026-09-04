@@ -6,8 +6,9 @@
 ./scripts/check.sh              # --no-build when the tree is already built
 ```
 
-Dependency pins, the generated Cursor rule, formatting, a warnings-as-errors build, the
-tests, and the generated manifest — in the order that fails cheapest first. **Run it before
+Dependency pins, the generated Cursor rule, formatting, the website, a warnings-as-errors
+build, the tests, and the generated manifest — in the order that fails cheapest first. The
+website step is skipped, loudly, when there is no `node`; see [website.md](website.md). **Run it before
 calling anything done.** `ctest --preset release` is *not* the gate: only `ci` builds
 warnings-as-errors. See [testing.md](testing.md).
 
@@ -37,6 +38,9 @@ gate is. Verify a visual change with `dew_shot`, not by reasoning about the code
 | `examples/*` | `dew_render --write-demos examples` | tests pinning file == binary == factory |
 | `presets/*` | `dew_render --write-presets presets` | tests walking the committed list against `PresetFactory`, both ways |
 | `.cursor/rules/main.mdc` | `./scripts/gen-cursor-rules.sh`, from `AGENTS.md` | `--check`, in `check.sh` |
+| `website/src/generated/*.json` | `dew_docs schema`, `dew_shot tokens`, `dew_shot samples` | a test in `dew_tests`, and `cmp` against a second process in CI |
+| `website/src/app/theme.generated.css` | `website/scripts/gen-theme.mjs` | `npm run theme:check` |
+| `website/public/shots/*.png` | `./scripts/gen-shots.sh`, from the **release** build | **nothing byte-wise** — see [website.md](website.md) |
 
 `.cursor/rules/main.mdc` is checked locally only — it is not a CI job, so an `AGENTS.md`
 edit committed without regenerating will pass CI and fail the next local gate. Run the

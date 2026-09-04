@@ -23,6 +23,9 @@ of 2.0, which is why a parameter is one `ParamSpec` row now.
 | `AGENTS.md` | An index, and the excerpt an agent trips over first | Anything not derivable from the files it links |
 | `.cursor/rules/main.mdc` | Nothing. It is generated from `AGENTS.md` | Being edited by hand — `./scripts/gen-cursor-rules.sh --check` fails |
 | `CLAUDE.md` | Nothing. One line, `@AGENTS.md` | Growing content of its own |
+| `website/src/content/` | The claim, for a reader who has not cloned anything — what dew is and what it does | Arguing a decision. The README owns every "why"; link to it |
+| `website/src/generated/` | Nothing. `dew_docs` and `dew_shot` write it | Being hand-edited — a test in `dew_tests` diffs it |
+| `website/src/messages/en.json` | Every sentence the site's own chrome says | Holding reference content — that is generated |
 
 ## Numbers in prose rot, so prefer one that cannot
 
