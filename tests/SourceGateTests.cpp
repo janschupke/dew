@@ -370,13 +370,18 @@ TEST_CASE ("no layer includes a header a layer above it owns", "[build][layering
 
     for (const auto& file : sourceFiles())
     {
-        // main.cpp and DewApplication belong to the `dew` application target,
-        // which sits above every library and is not in the foreach that writes
-        // the list. They share src/ with dew_model's BuildInfo.cpp, so the
-        // directory cannot speak for them.
+        // main.cpp and the DewApplication files belong to the `dew` application
+        // target, which sits above every library and is not in the foreach that
+        // writes the list. They share src/ with dew_model's BuildInfo.cpp, so
+        // the directory cannot speak for them.
+        //
+        // The prefix has no trailing dot, and that matters: it used to, and
+        // DewApplicationMenus.cpp was judged as dew_model the moment it existed
+        // - every ui/ include in it an offence. Any DewApplication* file is the
+        // application's.
         const auto name = file.getFileName();
 
-        if (name == "main.cpp" || name.startsWith ("DewApplication."))
+        if (name == "main.cpp" || name.startsWith ("DewApplication"))
             continue;
 
         const auto relative = file.getRelativePathFrom (juce::File { DEW_SOURCE_DIR })

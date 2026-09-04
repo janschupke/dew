@@ -1,5 +1,7 @@
 #include "lang/Music.h"
 
+#include "lang/MusicSpelling.h"
+
 #include <algorithm>
 
 #include "lang/ScanCore.h"
@@ -9,29 +11,6 @@ namespace dew::lang
 
 namespace
 {
-
-constexpr int letterOffsets[7] = { 9, 11, 0, 2, 4, 5, 7 }; // A B C D E F G
-
-std::optional<int> letterToPitchClass (char c) noexcept
-{
-    const auto upper = (c >= 'a' && c <= 'g') ? (char) (c - 'a' + 'A') : c;
-
-    if (upper < 'A' || upper > 'G')
-        return std::nullopt;
-
-    return letterOffsets[upper - 'A'];
-}
-
-/** Reads any run of 'b' and '#' as a signed semitone shift. */
-int readAccidentals (std::string_view text, std::size_t& i) noexcept
-{
-    auto shift = 0;
-
-    while (i < text.size() && (text[i] == 'b' || text[i] == '#'))
-        shift += text[i++] == '#' ? 1 : -1;
-
-    return shift;
-}
 
 // --- interval tables ----------------------------------------------------------
 
@@ -160,19 +139,6 @@ std::optional<Numeral> readNumeral (std::string_view text, std::size_t from) noe
     return std::nullopt;
 }
 
-std::string describePitchClass (int pc, bool preferFlat)
-{
-    static const char* sharps[] = {
-        "C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"
-    };
-    static const char* flats[] = {
-        "C", "Db", "D", "Eb", "E", "F", "Gb", "G", "Ab", "A", "Bb", "B"
-    };
-
-    const auto index = ((pc % 12) + 12) % 12;
-    return preferFlat ? flats[index] : sharps[index];
-}
-
 /** Everything a chord root resolves to, before inversion is applied. */
 struct RootAndShape
 {
@@ -202,7 +168,7 @@ std::optional<RootAndShape> resolveRoot (std::string_view text, const Key& key,
     // carries its accidental after the letter (`Bb`). That is what keeps the two
     // apart with no lookahead, and it works because I and V are not note letters
     // and A-G are not roman letters.
-    const auto prefix = readAccidentals (text, i);
+    const auto prefix = spelling::readAccidentals (text, i);
     const auto hadPrefix = i > 0;
 
     if (const auto numeral = readNumeral (text, i))
@@ -243,7 +209,7 @@ std::optional<RootAndShape> resolveRoot (std::string_view text, const Key& key,
         out.rootPc = rootPc;
         out.intervals = intervals;
         out.minorBase = ! numeral->upper;
-        out.label = describePitchClass (rootPc, prefix < 0 || key.mode == Mode::minor)
+        out.label = spelling::describePitchClass (rootPc, prefix < 0 || key.mode == Mode::minor)
                     + std::string (suffix.empty() && ! numeral->upper ? "m" : "")
                     + std::string (suffix);
 
@@ -254,13 +220,13 @@ std::optional<RootAndShape> resolveRoot (std::string_view text, const Key& key,
         return fail (std::string ("`") + std::string (text) + "` is not a chord");
 
     // Absolute: a letter, then any accidentals, then a quality.
-    const auto letterPc = letterToPitchClass (text[0]);
+    const auto letterPc = spelling::letterToPitchClass (text[0]);
 
     if (! letterPc.has_value() || ! (text[0] >= 'A' && text[0] <= 'G'))
         return fail (std::string ("`") + std::string (text) + "` is not a chord");
 
     i = 1;
-    const auto shift = readAccidentals (text, i);
+    const auto shift = spelling::readAccidentals (text, i);
     const auto rootPc = pitchClassOf (*letterPc + shift);
 
     auto suffix = text.substr (i);
@@ -290,190 +256,6 @@ std::optional<RootAndShape> resolveRoot (std::string_view text, const Key& key,
 }
 
 } // namespace
-
-// ------------------------------------------------------------------------------
-
-std::optional<int> parsePitch (std::string_view text) noexcept
-{
-    if (text.empty())
-        return std::nullopt;
-
-    const auto letterPc = letterToPitchClass (text[0]);
-
-    if (! letterPc.has_value() || ! (text[0] >= 'A' && text[0] <= 'G'))
-        return std::nullopt;
-
-    std::size_t i = 1;
-    const auto shift = readAccidentals (text, i);
-
-    if (i >= text.size())
-        return std::nullopt;
-
-    auto negative = false;
-
-    if (text[i] == '-')
-    {
-        negative = true;
-        ++i;
-    }
-
-    if (i >= text.size() || ! isDigit (text[i]))
-        return std::nullopt;
-
-    auto octave = 0;
-
-    while (i < text.size() && isDigit (text[i]))
-        octave = octave * 10 + (text[i++] - '0');
-
-    if (i != text.size())
-        return std::nullopt;
-
-    if (negative)
-        octave = -octave;
-
-    // Middle C is 60 and is called C4, matching PianoRollComponent::noteName.
-    const auto pitch = (octave + 1) * 12 + *letterPc + shift;
-
-    if (pitch < lowestPitch || pitch > highestPitch)
-        return std::nullopt;
-
-    return pitch;
-}
-
-std::string pitchName (int pitch)
-{
-    return describePitchClass (pitchClassOf (pitch), false) + std::to_string (pitch / 12 - 1);
-}
-
-// ------------------------------------------------------------------------------
-
-std::optional<Mode> parseMode (std::string_view text) noexcept
-{
-    struct Entry
-    {
-        const char* text;
-        Mode mode;
-    };
-
-    static const Entry entries[] = {
-        { "major", Mode::major },
-        { "ionian", Mode::major },
-        { "minor", Mode::minor },
-        { "aeolian", Mode::minor },
-        { "dorian", Mode::dorian },
-        { "phrygian", Mode::phrygian },
-        { "lydian", Mode::lydian },
-        { "mixolydian", Mode::mixolydian },
-        { "locrian", Mode::locrian },
-        { "harmonic-minor", Mode::harmonicMinor },
-        { "melodic-minor", Mode::melodicMinor },
-        { "major-pentatonic", Mode::majorPentatonic },
-        { "minor-pentatonic", Mode::minorPentatonic },
-        { "blues", Mode::blues },
-        { "chromatic", Mode::chromatic },
-    };
-
-    for (const auto& entry : entries)
-        if (text == entry.text)
-            return entry.mode;
-
-    return std::nullopt;
-}
-
-const char* nameOf (Mode mode) noexcept
-{
-    switch (mode)
-    {
-        case Mode::major: return "major";
-        case Mode::minor: return "minor";
-        case Mode::dorian: return "dorian";
-        case Mode::phrygian: return "phrygian";
-        case Mode::lydian: return "lydian";
-        case Mode::mixolydian: return "mixolydian";
-        case Mode::locrian: return "locrian";
-        case Mode::harmonicMinor: return "harmonic-minor";
-        case Mode::melodicMinor: return "melodic-minor";
-        case Mode::majorPentatonic: return "major-pentatonic";
-        case Mode::minorPentatonic: return "minor-pentatonic";
-        case Mode::blues: return "blues";
-        case Mode::chromatic: return "chromatic";
-    }
-
-    return "major";
-}
-
-const std::vector<int>& degreesOf (Mode mode)
-{
-    static const std::vector<int> major { 0, 2, 4, 5, 7, 9, 11 };
-    static const std::vector<int> minor { 0, 2, 3, 5, 7, 8, 10 };
-    static const std::vector<int> dorian { 0, 2, 3, 5, 7, 9, 10 };
-    static const std::vector<int> phrygian { 0, 1, 3, 5, 7, 8, 10 };
-    static const std::vector<int> lydian { 0, 2, 4, 6, 7, 9, 11 };
-    static const std::vector<int> mixolydian { 0, 2, 4, 5, 7, 9, 10 };
-    static const std::vector<int> locrian { 0, 1, 3, 5, 6, 8, 10 };
-    static const std::vector<int> harmonicMinor { 0, 2, 3, 5, 7, 8, 11 };
-    static const std::vector<int> melodicMinor { 0, 2, 3, 5, 7, 9, 11 };
-    static const std::vector<int> majorPentatonic { 0, 2, 4, 7, 9 };
-    static const std::vector<int> minorPentatonic { 0, 3, 5, 7, 10 };
-    static const std::vector<int> blues { 0, 3, 5, 6, 7, 10 };
-    static const std::vector<int> chromatic { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11 };
-
-    switch (mode)
-    {
-        case Mode::major: return major;
-        case Mode::minor: return minor;
-        case Mode::dorian: return dorian;
-        case Mode::phrygian: return phrygian;
-        case Mode::lydian: return lydian;
-        case Mode::mixolydian: return mixolydian;
-        case Mode::locrian: return locrian;
-        case Mode::harmonicMinor: return harmonicMinor;
-        case Mode::melodicMinor: return melodicMinor;
-        case Mode::majorPentatonic: return majorPentatonic;
-        case Mode::minorPentatonic: return minorPentatonic;
-        case Mode::blues: return blues;
-        case Mode::chromatic: return chromatic;
-    }
-
-    return major;
-}
-
-bool supportsRomanNumerals (Mode mode) noexcept
-{
-    return degreesOf (mode).size() == 7;
-}
-
-std::optional<Key> parseKey (std::string_view tonic, std::string_view mode) noexcept
-{
-    if (tonic.empty())
-        return std::nullopt;
-
-    const auto letterPc = letterToPitchClass (tonic[0]);
-
-    if (! letterPc.has_value() || ! (tonic[0] >= 'A' && tonic[0] <= 'G'))
-        return std::nullopt;
-
-    std::size_t i = 1;
-    const auto shift = readAccidentals (tonic, i);
-
-    if (i != tonic.size())
-        return std::nullopt;
-
-    const auto parsedMode = parseMode (mode);
-
-    if (! parsedMode.has_value())
-        return std::nullopt;
-
-    return Key { pitchClassOf (*letterPc + shift), *parsedMode };
-}
-
-bool isScaleTone (const Key& key, int pitch) noexcept
-{
-    const auto offset = pitchClassOf (pitch - key.tonicPc);
-    const auto& degrees = degreesOf (key.mode);
-
-    return std::find (degrees.begin(), degrees.end(), offset) != degrees.end();
-}
 
 std::vector<int> scalePitchesBetween (const Key& key, int low, int high)
 {

@@ -142,6 +142,7 @@ add_library(dew_lang STATIC
   lang/Lexer.cpp
   lang/Grid.cpp
   lang/Music.cpp
+  lang/MusicPitch.cpp
   lang/Model.cpp
   lang/Parser.cpp
   lang/ParserBodies.cpp
@@ -349,6 +350,7 @@ add_library(dew_ui STATIC
   ui/ConfirmPanel.cpp
   ui/EffectCard.cpp
   ui/EffectChainComponent.cpp
+  ui/EffectChainReorder.cpp
   ui/OscillatorSection.cpp
   ui/SampleSection.cpp
   ui/SoundFontSection.cpp
@@ -422,6 +424,7 @@ juce_add_gui_app(dew
 target_sources(dew PRIVATE
   main.cpp
   DewApplication.cpp
+  DewApplicationMenus.cpp
 )
 
 target_link_libraries(dew
