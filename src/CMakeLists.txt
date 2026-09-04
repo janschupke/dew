@@ -154,6 +154,7 @@ add_library(dew_lang STATIC
   lang/Melody.cpp
   lang/Counterpoint.cpp
   lang/Generator.cpp
+  lang/GeneratorVoices.cpp
   lang/Completion.cpp
   lang/Compile.cpp
 )
