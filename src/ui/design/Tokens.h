@@ -20,80 +20,149 @@ namespace dew::tokens
 // --- surfaces ----------------------------------------------------------------
 namespace colour
 {
-    // Backgrounds, darkest to lightest.
-    inline const juce::Colour wellDeep      { 0xff0e1013 };  ///< inside grids and timelines
-    inline const juce::Colour well          { 0xff121417 };  ///< recessed areas
-    inline const juce::Colour background    { 0xff17191d };  ///< window
-    inline const juce::Colour surface       { 0xff22252b };  ///< panels, headers, strips
-    inline const juce::Colour surfaceRaised { 0xff2b2f36 };  ///< controls at rest
-    inline const juce::Colour surfaceHover  { 0xff343941 };  ///< controls under the cursor
+    /** Every colour dew paints, as one object so a theme is one assignment.
 
-    // Lines.
-    inline const juce::Colour divider       { 0xff2c3037 };  ///< ordinary grid lines
-    inline const juce::Colour dividerStrong { 0xff3d434d };  ///< bar lines, section edges
-    inline const juce::Colour outline       { 0xff7c838e };  ///< control borders
+        The names below are REFERENCES into `active`, not values, which is what
+        lets a theme change nothing at the 437 places that read one. A reference
+        binds to an address at compile time and reads whatever is there when it
+        is used, so `g.setColour (colour::accent)` and
+        `colour::accent.withAlpha (…)` both keep working and both follow the
+        theme. The values are still initialised dynamically, exactly as the
+        constants they replaced were - nothing here may be read during static
+        initialisation, and nothing does.
 
-    // Text.
-    inline const juce::Colour textPrimary   { 0xffe6e8ec };
-    inline const juce::Colour textSecondary { 0xff9aa2ae };
-    inline const juce::Colour textDisabled  { 0xff858c96 };
-    inline const juce::Colour textOnAccent  { 0xff10151c };
-
-    // Meaning.
-    inline const juce::Colour accent        { 0xff4fa3ff };  ///< selection, focus, primary action
-    inline const juce::Colour accentMuted   { 0xff4682bf };
-    inline const juce::Colour playhead      { 0xffffc857 };
-    inline const juce::Colour recording     { 0xffff7a51 };
-    inline const juce::Colour success       { 0xff3ecf8e };
-    inline const juce::Colour warning       { 0xfff2c14e };
-    inline const juce::Colour danger        { 0xffff7a51 };
-
-    /** What a control DOES, as a colour.
-
-        One hue per audio function, so a level reads as a level and an envelope
-        stage reads as an envelope stage wherever either appears. Before this
-        every knob in dew painted the same `accent` arc: on a 34px channel row
-        and a 72px mixer strip there is no caption, so volume and pan were told
-        apart only by one of them filling from the centre.
-
-        Deliberately QUIETER than channelRamp: every one of these sits below
-        0.37 saturation and the quietest ramp entry is 0.41, so the claim holds
-        against the whole ramp rather than against its average. The ramp means
-        identity - which channel this is - and identity has to win, because on
-        the playlist a clip's identity colour and an automation curve's function
-        colour are inches apart. Function is chrome; identity is content.
-
-        Hues sit at least 32 degrees apart and at least 31 from the accent's
-        211, so nothing here competes with selection. `funcTone` at 35 is the
-        one close call - the playhead is 42 - and what separates them is chroma
-        rather than hue: 0.36 against 0.68. That is the pair to look at on a
-        render of the playlist, where a cutoff curve is crossed by the playhead.
-
-        The `func` prefix is not decoration. "every token the design system
-        declares is one the app uses" matches whole words across the tree, and
-        bare `level`, `time` and `space` would be satisfied by a mixer strip's
-        local variable and by `space::md` - a gate that passes for the wrong
-        reason is not a gate.
+        What a theme may NOT change is `channelRamp`. That is document data:
+        entityColour writes it into every .dew file, dew_model restates it as
+        strings, and the colour picker offers it. Repainting it would make every
+        saved project disagree with the swatch it was chosen from. What varies
+        is `textOnAccent`, drawn on top of it.
     */
-    inline const juce::Colour funcTone       { 0xffc9ab81 };  ///<  35deg  spectral shaping
-    inline const juce::Colour funcTime       { 0xffabbf7c };  ///<  78deg  envelope in time
-    inline const juce::Colour funcLevel      { 0xff80c4a0 };  ///< 148deg  how loud
-    inline const juce::Colour funcStereo     { 0xff7fc7c7 };  ///< 180deg  where in the field
-    inline const juce::Colour funcSpace      { 0xff958fdb };  ///< 245deg  ambience and echo
-    inline const juce::Colour funcModulation { 0xffc88ad1 };  ///< 292deg  what makes it move
-    inline const juce::Colour funcPitch      { 0xffd48ca4 };  ///< 340deg  which note you hear
+    struct Palette
+    {
+        // Backgrounds, darkest to lightest.
+        juce::Colour wellDeep;      ///< inside grids and timelines
+        juce::Colour well;          ///< recessed areas
+        juce::Colour background;    ///< window
+        juce::Colour surface;       ///< panels, headers, strips
+        juce::Colour surfaceRaised; ///< controls at rest
+        juce::Colour surfaceHover;  ///< controls under the cursor
 
-    /** A piano keyboard's two key colours. Not "black" and "white": a black key
-        is a dark surface and a white key is a light one, and calling them what
-        they ARE is what lets a light theme swap them here rather than in the
-        piano roll's painter.
+        // Lines.
+        juce::Colour divider;       ///< ordinary grid lines
+        juce::Colour dividerStrong; ///< bar lines, section edges
+        juce::Colour outline;       ///< control borders
+
+        // Text.
+        juce::Colour textPrimary;
+        juce::Colour textSecondary;
+        juce::Colour textDisabled;
+        juce::Colour textOnAccent;
+
+        // Meaning.
+        juce::Colour accent;      ///< selection, focus, primary action
+        juce::Colour accentMuted;
+        juce::Colour playhead;
+        juce::Colour recording;
+        juce::Colour success;
+        juce::Colour warning;
+        juce::Colour danger;
+
+        /** What a control DOES, as a colour.
+
+            One hue per audio function, so a level reads as a level and an
+            envelope stage reads as an envelope stage wherever either appears.
+            Before this every knob in dew painted the same `accent` arc: on a
+            34px channel row and a 72px mixer strip there is no caption, so
+            volume and pan were told apart only by one of them filling from the
+            centre.
+
+            Deliberately QUIETER than channelRamp. The ramp means identity -
+            which channel this is - and identity has to win, because on the
+            playlist a clip's identity colour and an automation curve's function
+            colour are inches apart. Function is chrome; identity is content.
+
+            The `func` prefix is not decoration. "every token the design system
+            declares is one the app uses" matches whole words across the tree,
+            and bare `level`, `time` and `space` would be satisfied by a mixer
+            strip's local variable and by `space::md` - a gate that passes for
+            the wrong reason is not a gate.
+        */
+        juce::Colour funcTone;       ///< spectral shaping
+        juce::Colour funcTime;       ///< envelope in time
+        juce::Colour funcLevel;      ///< how loud
+        juce::Colour funcStereo;     ///< where in the field
+        juce::Colour funcSpace;      ///< ambience and echo
+        juce::Colour funcModulation; ///< what makes it move
+        juce::Colour funcPitch;      ///< which note you hear
+
+        /** A piano keyboard's two key colours. Not "black" and "white": a black
+            key is a dark surface and a white key is a light one, and calling
+            them what they ARE is what lets a theme swap them here rather than
+            in the piano roll's painter.
+        */
+        juce::Colour keyBlack;
+        juce::Colour keyWhite;
+
+        // Step grid shading.
+        juce::Colour beatShade; ///< every other beat
+        juce::Colour barShade;  ///< first beat of a bar
+    };
+
+    /** dew as it has always looked. */
+    Palette darkPalette();
+
+    /** The same roles, pushed apart until every pair a person reads clears 7:1
+        and every edge they have to find clears 4.5:1 - one grade above the AA
+        the default palette is held to.
+
+        Still DARK. A light theme is a different job: emphasis::silenced and
+        emphasis::disabled both multiply brightness downward, the four lift
+        rungs mean "how much brighter", and wellDeep is used as a scrim at four
+        sites. Every one of those stays correct here and would invert there.
     */
-    inline const juce::Colour keyBlack      { 0xff1c1f24 };
-    inline const juce::Colour keyWhite      { 0xffd8dce3 };
+    Palette highContrastPalette();
 
-    // Step grid shading.
-    inline const juce::Colour beatShade     { 0xff1b1e23 };  ///< every other beat
-    inline const juce::Colour barShade      { 0xff20242b };  ///< first beat of a bar
+    /** The palette in force. Assigned by theme::apply on the message thread,
+        and read by everything below. */
+    inline Palette active = darkPalette();
+
+    inline const juce::Colour& wellDeep = active.wellDeep;
+    inline const juce::Colour& well = active.well;
+    inline const juce::Colour& background = active.background;
+    inline const juce::Colour& surface = active.surface;
+    inline const juce::Colour& surfaceRaised = active.surfaceRaised;
+    inline const juce::Colour& surfaceHover = active.surfaceHover;
+
+    inline const juce::Colour& divider = active.divider;
+    inline const juce::Colour& dividerStrong = active.dividerStrong;
+    inline const juce::Colour& outline = active.outline;
+
+    inline const juce::Colour& textPrimary = active.textPrimary;
+    inline const juce::Colour& textSecondary = active.textSecondary;
+    inline const juce::Colour& textDisabled = active.textDisabled;
+    inline const juce::Colour& textOnAccent = active.textOnAccent;
+
+    inline const juce::Colour& accent = active.accent;
+    inline const juce::Colour& accentMuted = active.accentMuted;
+    inline const juce::Colour& playhead = active.playhead;
+    inline const juce::Colour& recording = active.recording;
+    inline const juce::Colour& success = active.success;
+    inline const juce::Colour& warning = active.warning;
+    inline const juce::Colour& danger = active.danger;
+
+    inline const juce::Colour& funcTone = active.funcTone;
+    inline const juce::Colour& funcTime = active.funcTime;
+    inline const juce::Colour& funcLevel = active.funcLevel;
+    inline const juce::Colour& funcStereo = active.funcStereo;
+    inline const juce::Colour& funcSpace = active.funcSpace;
+    inline const juce::Colour& funcModulation = active.funcModulation;
+    inline const juce::Colour& funcPitch = active.funcPitch;
+
+    inline const juce::Colour& keyBlack = active.keyBlack;
+    inline const juce::Colour& keyWhite = active.keyWhite;
+
+    inline const juce::Colour& beatShade = active.beatShade;
+    inline const juce::Colour& barShade = active.barShade;
 
     /** The channel colour ramp. Channels cycle through these so a new channel is
         immediately distinguishable from its neighbours without anyone choosing.

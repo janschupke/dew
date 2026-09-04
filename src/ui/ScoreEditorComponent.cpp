@@ -31,7 +31,6 @@ ScoreEditorComponent::ScoreEditorComponent (ProjectDocument& projectDocument)
     heading.setText (juce::String (juce::CharPointer_UTF8 ("Score   \xe2\x8c\x83Space completes")),
                      juce::dontSendNotification);
     heading.setFont (tokens::type::font (tokens::type::title, true));
-    heading.setColour (juce::Label::textColourId, tokens::colour::textPrimary);
     addAndMakeVisible (heading);
 
     compileButton.setComponentID ("scoreCompile");

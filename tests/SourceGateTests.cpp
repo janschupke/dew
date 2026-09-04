@@ -806,7 +806,7 @@ TEST_CASE ("no source names a colour by its hex value", "[build][gate][design]")
 
             return line.contains ("juce::Colour (0x") || line.contains ("juce::Colour(0x");
         },
-        { "Tokens.h" });
+        { "Tokens.h", "Tokens.cpp" });
 
     INFO ("colours written as hex outside the token file:\n" << found.joinIntoString ("\n"));
     CHECK (found.isEmpty());
@@ -1133,8 +1133,13 @@ TEST_CASE ("every token the design system declares is one the app uses", "[build
     {
         const auto trimmed = line.trim();
 
-        for (const auto* form :
-             { "inline const juce::Colour ", "inline constexpr int ", "inline constexpr float " })
+        // The reference form is how a colour is declared now: the names are
+        // aliases into the palette in force, so a theme is one assignment
+        // rather than 437 edits. Leaving it out of this list does not fail -
+        // it silently stops covering every colour in the design system, which
+        // is the shape of hole this whole file exists to refuse.
+        for (const auto* form : { "inline const juce::Colour& ", "inline const juce::Colour ",
+                                  "inline constexpr int ", "inline constexpr float " })
             if (trimmed.startsWith (form))
                 declared.addIfNotAlreadyThere (
                     trimmed.fromFirstOccurrenceOf (form, false, false)
@@ -1146,6 +1151,11 @@ TEST_CASE ("every token the design system declares is one the app uses", "[build
     REQUIRE (declared.size() > 60);
     REQUIRE (declared.contains ("controlHeight"));
     REQUIRE (declared.contains ("channelRamp"));
+
+    // A colour declared the reference way, so this gate cannot go back to
+    // covering the size ladder and the ramp while quietly ignoring the palette.
+    REQUIRE (declared.contains ("accent"));
+    REQUIRE (declared.contains ("funcTone"));
 
     // Declared but not yet quoted. This list may only ever get SHORTER: both of
     // these are animation durations, and the animator that consumes them lands
@@ -1159,7 +1169,12 @@ TEST_CASE ("every token the design system declares is one the app uses", "[build
          { DEW_SOURCE_DIR, DEW_SOURCE_DIR "/../tests", DEW_SOURCE_DIR "/../tools" })
         for (const auto& entry :
              juce::RangedDirectoryIterator (juce::File (directory), true, "*.cpp;*.h"))
-            if (entry.getFile().getFileName() != "Tokens.h")
+            // Tokens.cpp is excluded alongside Tokens.h: it holds the two
+            // palettes, written as designated initialisers, so every token
+            // name appears there as `.accent =` and would satisfy the search
+            // below without the application referring to it at all.
+            if (const auto name = entry.getFile().getFileName();
+                name != "Tokens.h" && name != "Tokens.cpp")
                 everythingElse += entry.getFile().loadFileAsString();
 
     juce::StringArray unused;

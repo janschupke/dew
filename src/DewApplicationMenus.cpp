@@ -84,6 +84,13 @@ juce::PopupMenu DewApplication::getMenuForIndex (int, const juce::String& name)
             motion.addCommandItem (&commandManager, CommandIDs::viewMotionFirst + step);
 
         menu.addSubMenu ("Motion", motion);
+
+        juce::PopupMenu theme;
+
+        for (int step = 0; step < 2; ++step)
+            theme.addCommandItem (&commandManager, CommandIDs::viewThemeFirst + step);
+
+        menu.addSubMenu ("Theme", theme);
     }
     else if (name == "Transport")
     {

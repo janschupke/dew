@@ -85,7 +85,7 @@ OscillatorSection::OscillatorSection (ProjectDocument& d, EditorState& s)
 
     octaveLabel.setText ("OCT", juce::dontSendNotification);
     octaveLabel.setFont (type::font (type::caption));
-    octaveLabel.setColour (juce::Label::textColourId, colour::textSecondary);
+    octaveLabel.setTextColourToken (colour::textSecondary);
     addAndMakeVisible (octaveLabel);
 
     {

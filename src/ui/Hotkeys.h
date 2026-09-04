@@ -55,6 +55,12 @@ enum
     viewMotionFirst,
     viewMotionFull = viewMotionFirst + 1,
     viewMotionReduced,
+
+    /** One per theme::Kind, contiguous and in the same order, so the menu loops
+        rather than naming each id twice - the way the scales and the motion
+        settings do. */
+    viewThemeFirst,
+    viewThemeHighContrast = viewThemeFirst + 1,
 };
 
 } // namespace CommandIDs

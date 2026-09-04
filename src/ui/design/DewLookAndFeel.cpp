@@ -11,6 +11,11 @@ namespace dew
 
 DewLookAndFeel::DewLookAndFeel()
 {
+    applyPalette();
+}
+
+void DewLookAndFeel::applyPalette()
+{
     setColour (juce::ResizableWindow::backgroundColourId, tokens::colour::background);
     setColour (juce::DocumentWindow::textColourId, tokens::colour::textPrimary);
 

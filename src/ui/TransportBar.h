@@ -132,7 +132,7 @@ private:
     // Pattern management lives here because the pattern selector does: adding a
     // pattern used to be reachable only from a menu shortcut, which meant it
     // read as "you cannot add more patterns".
-    juce::Label patternCaption;
+    DewLabel patternCaption;
     DewDropdown patternBox;
     DewIconButton addPatternButton { icons::plus(), "Add a pattern" };
     DewIconButton clonePatternButton { icons::duplicate(), "Duplicate this pattern" };
@@ -140,7 +140,7 @@ private:
                                         DewIconButton::Role::danger };
     DewNumberField patternLengthField;
 
-    juce::Label positionLabel;
+    DewLabel positionLabel;
 
     /** The right-hand end of the bar, and the only thing in it that gives way
         when the window narrows.

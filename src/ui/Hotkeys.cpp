@@ -99,6 +99,13 @@ const std::vector<Binding<juce::CommandID>>& application()
         { CommandIDs::viewMotionReduced, {},
           "Reduce motion", "Make every transition instant", "View" },
 
+        // Keyless, like the scales and the motion settings: a theme is chosen
+        // once and then left alone.
+        { CommandIDs::viewThemeFirst, {},
+          "Default", "dew's own palette", "View" },
+        { CommandIDs::viewThemeHighContrast, {},
+          "High contrast", "The same palette pushed apart, for reading at distance", "View" },
+
         { CommandIDs::transportPlayStop, { juce::KeyPress::spaceKey, 0 },
           "Play / Stop", "Start or stop playback", "Transport" },
         { CommandIDs::transportRewind, { juce::KeyPress::homeKey, 0 },

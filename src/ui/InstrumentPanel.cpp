@@ -44,7 +44,6 @@ InstrumentPanel::InstrumentPanel (ProjectDocument& d, EditorState& s, SamplePool
     addAndMakeVisible (chainHost);
 
     titleLabel.setFont (tokens::type::font (tokens::type::title, true));
-    titleLabel.setColour (juce::Label::textColourId, tokens::colour::textPrimary);
     addAndMakeVisible (titleLabel);
 
     presetButton.setTooltip ("Load a factory sound onto this channel");
@@ -190,7 +189,7 @@ void InstrumentPanel::bindRotary (juce::Slider& slider, DewKnob* knob,
     boundRotaries.push_back ({ &slider, knob, owner, property });
 }
 
-void InstrumentPanel::attachStepper (juce::Slider& slider, juce::Label& label,
+void InstrumentPanel::attachStepper (juce::Slider& slider, DewLabel& label,
                                      const juce::String& text,
                                      std::function<juce::ValueTree()> owner,
                                      const juce::Identifier& property,

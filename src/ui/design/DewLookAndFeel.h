@@ -16,6 +16,15 @@ class DewLookAndFeel : public juce::LookAndFeel_V4
 public:
     DewLookAndFeel();
 
+    /** Seeds every JUCE ColourId from the palette in force.
+
+        Called by the constructor and again whenever the theme changes. It has
+        to be a second entry point rather than only a constructor: these are
+        one-time copies into the LookAndFeel, so a palette swapped underneath
+        them changes nothing until they are taken again.
+    */
+    void applyPalette();
+
     void drawRotarySlider (juce::Graphics&, int x, int y, int width, int height, float sliderPos,
                            float rotaryStartAngle, float rotaryEndAngle, juce::Slider&) override;
 

@@ -23,9 +23,10 @@ built on it. [README.md](../../README.md#design-system) argues why.
 - **A token nothing refers to.** The opposite mistake: adding a token on speculation fails
   too, and the "awaiting" allowlist inside that gate may only ever get shorter.
 - **A colour pair below its contrast ratio.** `tests/ContrastTests.cpp` states the pairs
-  that are actually painted and what each needs — 4.5:1 for text, 3:1 for a control's
-  outline and the focus ring. A role name says nothing about whether the pair is legible;
-  five of them were not. Changing a `colour::` value means changing that table too.
+  that are actually painted and what each needs, **for every palette at its own
+  thresholds** — 4.5:1 / 3:1 for the default, 7:1 / 4.5:1 for high contrast. A role name
+  says nothing about whether the pair is legible; five of them were not. Changing a
+  `colour::` value, or adding a theme, means answering that table.
 
 ## Icons and the gallery
 
@@ -96,3 +97,27 @@ pointer.
   and compiles the same calls to nothing elsewhere, so none of it needs an `#ifdef`. The
   one exception in the tree is `systemPrefersReducedMotion`, because JUCE has no API for
   that preference on any platform.
+
+## Adding or changing a colour
+
+- **The names in `tokens::colour` are REFERENCES into the palette in force**, defined in
+  `Tokens.h`; the values live in `Tokens.cpp` as two `Palette` functions written with
+  designated initialisers. Both files are exempt from the hex gate and nothing else is.
+  Adding a colour means adding a member, a value in **both** palettes, and a reference.
+- **Anything that COPIES a colour must take it again on `lookAndFeelChanged()`.** Reading
+  one inside `paint()` is free and follows a theme by itself; a `setColour` on a child, a
+  member initialised from a token, a LookAndFeel ColourId — all of those are the palette
+  that was in force when they ran. `DewLabel` exists for the label case: it holds the
+  token's address, which is stable, and takes its value again on demand.
+  `theme::apply` walks the window and a gate fails on anything left behind.
+- **Call the base class in a `lookAndFeelChanged()` override.**
+  `juce::ComboBox::lookAndFeelChanged` replaces its label outright, so an override that
+  skipped it would leave the old one, with the old palette on it, in place.
+- **`channelRamp` is not themeable.** It is document data, mirrored in `dew_model` and
+  written into every project file. A cross-layer test holds the two copies equal.
+- **A theme is dark.** `emphasis::silenced`, `emphasis::disabled` and the four lift rungs
+  all encode a direction — less is darker, hovered is lighter — which is true on a dark
+  ground and inverts on a light one. A light theme is a change to the emphasis vocabulary,
+  not to the palette.
+- **`dew_shot --theme highContrast`** renders any tab or the gallery under a theme. Look at
+  it after touching a colour.

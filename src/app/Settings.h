@@ -103,6 +103,11 @@ public:
         Not "slower": off. Some people find animation distracting and some find
         it nauseating, and a DAW is a tool people sit in front of for hours.
     */
+    /** Which palette dew paints from. Stored by NAME rather than by index, so
+        adding a theme cannot silently renumber somebody's saved choice. */
+    juce::String getThemeName() const;
+    void setThemeName (const juce::String&);
+
     enum class Motion
     {
         system, ///< whatever the OS accessibility preference says

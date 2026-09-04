@@ -8,6 +8,7 @@
 #include "ui/Hotkeys.h"
 #include "ui/design/Animator.h"
 #include "ui/design/SystemMotionPreference.h"
+#include "ui/design/Theme.h"
 
 namespace dew
 {
@@ -77,6 +78,11 @@ void DewApplication::initialise (const juce::String&)
     // application snaps exactly as it did before there was an animator.
     Animator::shared().setEnabled (true);
     Animator::shared().setReduceMotion (settings->getReduceMotion (systemPrefersReducedMotion()));
+
+    // Before the window is built, so everything that copies a colour when it is
+    // constructed copies the right one and there is nothing to correct on the
+    // first frame.
+    theme::applyPalette (theme::kindFor (settings->getThemeName()));
 
     mainWindow = std::make_unique<MainWindow> (getApplicationName(), commandManager, *settings);
     restoreSession();
@@ -276,6 +282,16 @@ void DewApplication::getCommandInfo (juce::CommandID id, juce::ApplicationComman
             break;
         }
 
+        case CommandIDs::viewThemeFirst:
+        case CommandIDs::viewThemeHighContrast:
+        {
+            const auto step = (int) (id - CommandIDs::viewThemeFirst);
+
+            info.setActive (settings != nullptr);
+            info.setTicked ((int) theme::current() == step);
+            break;
+        }
+
         default:
             // Everything else needs the editor, and nothing more.
             info.setActive (main != nullptr);
@@ -456,6 +472,23 @@ bool DewApplication::perform (const InvocationInfo& info)
             settings->setMotionPreference ((Settings::Motion) step);
             Animator::shared().setReduceMotion (
                 settings->getReduceMotion (systemPrefersReducedMotion()));
+            commandManager.commandStatusChanged();
+            return true;
+        }
+
+        case CommandIDs::viewThemeFirst:
+        case CommandIDs::viewThemeHighContrast:
+        {
+            const auto kind = info.commandID == CommandIDs::viewThemeHighContrast
+                                  ? theme::Kind::highContrast
+                                  : theme::Kind::dark;
+
+            if (settings != nullptr)
+                settings->setThemeName (theme::name (kind));
+
+            if (main != nullptr)
+                theme::apply (kind, *main);
+
             commandManager.commandStatusChanged();
             return true;
         }

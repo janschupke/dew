@@ -17,7 +17,7 @@ namespace
     a registry.
 */
 constexpr int firstCommand = CommandIDs::fileNew;
-constexpr int lastCommand = CommandIDs::viewMotionReduced;
+constexpr int lastCommand = CommandIDs::viewThemeHighContrast;
 
 bool sameStroke (const hotkeys::Stroke& a, const hotkeys::Stroke& b) noexcept
 {

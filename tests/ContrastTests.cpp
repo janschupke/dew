@@ -5,18 +5,23 @@
 
 #include <juce_gui_basics/juce_gui_basics.h>
 
+#include "ui/design/Theme.h"
 #include "ui/design/Tokens.h"
 
 using namespace dew;
 using namespace dew::tokens;
 
-/*  What the palette has to be legible against.
+/*  What a palette has to be legible against.
 
-    dew's colours are named for their ROLE, which is what lets a theme change be
-    an edit to one file - but a role says nothing about whether the pair is
-    readable, and five of them were not. The worst was the hover-help line: the
-    app's only always-on explanation of the control under the pointer, drawn in
-    the palette's least readable colour.
+    dew's colours are named for their ROLE, which is what lets a theme be one
+    assignment - but a role says nothing about whether the pair is readable, and
+    five of them were not. The worst was the hover-help line: the app's only
+    always-on explanation of the control under the pointer, drawn in the
+    palette's least readable colour at 2.6:1.
+
+    Every check below runs over EVERY palette, at that palette's own thresholds.
+    A theme is not a set of colours somebody liked; it is a set of colours that
+    clears a bar, and adding one means clearing it too.
 
     The pairs are written out rather than derived, so a new token has to be
     added to a table deliberately and a changed one has to be argued with.
@@ -44,42 +49,57 @@ float contrastRatio (juce::Colour a, juce::Colour b)
     return (juce::jmax (la, lb) + 0.05f) / (juce::jmin (la, lb) + 0.05f);
 }
 
-struct Pair
+/** A palette and what it promises.
+
+    Dark is held to WCAG AA - 4.5:1 for text, 3:1 for a boundary. High contrast
+    is held to AAA, one grade up, which is the whole reason it exists.
+*/
+struct Theme
 {
-    const char* foreground;
-    juce::Colour on;
-    const char* background;
-    juce::Colour against;
+    const char* name;
+    colour::Palette palette;
+    float text;
+    float nonText;
 };
+
+std::vector<Theme> themes()
+{
+    return { { "dark", colour::darkPalette(), 4.5f, 3.0f },
+             { "high contrast", colour::highContrastPalette(), 7.0f, 4.5f } };
+}
+
+using Ground = std::pair<const char*, juce::Colour>;
 
 /** Every surface a panel or a grid is painted with. */
-const std::vector<std::pair<const char*, juce::Colour>> surfaces {
-    { "wellDeep", colour::wellDeep },           { "well", colour::well },
-    { "background", colour::background },       { "surface", colour::surface },
-    { "surfaceRaised", colour::surfaceRaised }, { "surfaceHover", colour::surfaceHover },
-};
+std::vector<Ground> surfaces (const colour::Palette& p)
+{
+    return { { "wellDeep", p.wellDeep },           { "well", p.well },
+             { "background", p.background },       { "surface", p.surface },
+             { "surfaceRaised", p.surfaceRaised }, { "surfaceHover", p.surfaceHover } };
+}
 
 /** The two a control is painted with, where "disabled" is a thing to be. */
-const std::vector<std::pair<const char*, juce::Colour>> controlSurfaces {
-    { "surfaceRaised", colour::surfaceRaised },
-    { "surfaceHover", colour::surfaceHover },
-};
+std::vector<Ground> controlSurfaces (const colour::Palette& p)
+{
+    return { { "surfaceRaised", p.surfaceRaised }, { "surfaceHover", p.surfaceHover } };
+}
 
 /** The four a document or a panel is painted with - where text is CONTENT. */
-const std::vector<std::pair<const char*, juce::Colour>> contentSurfaces {
-    { "wellDeep", colour::wellDeep },
-    { "well", colour::well },
-    { "background", colour::background },
-    { "surface", colour::surface },
-};
+std::vector<Ground> contentSurfaces (const colour::Palette& p)
+{
+    return { { "wellDeep", p.wellDeep },
+             { "well", p.well },
+             { "background", p.background },
+             { "surface", p.surface } };
+}
 
-void checkAll (const std::vector<std::pair<const char*, juce::Colour>>& grounds, const char* name,
-               juce::Colour c, float required, juce::StringArray& failures)
+void checkAll (const std::vector<Ground>& grounds, const char* name, juce::Colour c, float required,
+               const char* theme, juce::StringArray& failures)
 {
     for (const auto& [groundName, ground] : grounds)
         if (const auto ratio = contrastRatio (c, ground); ratio < required)
-            failures.add (juce::String (name) + " on " + groundName + "  " + juce::String (ratio, 2)
-                          + ":1, needs " + juce::String (required, 1));
+            failures.add (juce::String (theme) + ": " + name + " on " + groundName + "  "
+                          + juce::String (ratio, 2) + ":1, needs " + juce::String (required, 1));
 }
 
 } // namespace
@@ -94,36 +114,44 @@ TEST_CASE ("the contrast helper agrees with the specification", "[design][contra
            == Catch::Approx (1.0f).margin (0.01f));
     CHECK (contrastRatio (juce::Colour (0xff777777), juce::Colours::white)
            == Catch::Approx (4.48f).margin (0.02f));
+
+    // And a control case over the themes themselves: a loop over an empty list
+    // is not a gate, and a second theme that was never added would pass every
+    // case below in silence.
+    REQUIRE (themes().size() == 2);
 }
 
 TEST_CASE ("every text role is readable on the surfaces it is drawn on", "[design][contrast]")
 {
     juce::StringArray failures;
 
-    // 4.5:1 - WCAG 1.4.3 for text below 18pt, which is all of dew's: the type
-    // scale tops out at 20 and almost every label lands on 11 or 12.
-    constexpr auto bodyText = 4.5f;
+    for (const auto& [name, p, text, nonText] : themes())
+    {
+        juce::ignoreUnused (nonText);
 
-    checkAll (surfaces, "textPrimary", colour::textPrimary, bodyText, failures);
-    checkAll (surfaces, "textSecondary", colour::textSecondary, bodyText, failures);
-    checkAll (surfaces, "playhead", colour::playhead, bodyText, failures);
-    checkAll (surfaces, "success", colour::success, bodyText, failures);
-    checkAll (surfaces, "warning", colour::warning, bodyText, failures);
-    checkAll (surfaces, "danger", colour::danger, bodyText, failures);
-    checkAll (surfaces, "recording", colour::recording, bodyText, failures);
+        for (const auto& [role, c] : std::vector<Ground> { { "textPrimary", p.textPrimary },
+                                                           { "textSecondary", p.textSecondary },
+                                                           { "playhead", p.playhead },
+                                                           { "success", p.success },
+                                                           { "warning", p.warning },
+                                                           { "danger", p.danger },
+                                                           { "recording", p.recording } })
+            checkAll (surfaces (p), role, c, text, name, failures);
 
-    // The accent is text on a PANEL - a selected slot's name, a heading - and
-    // never on a hovered control, whose own text is textPrimary or textOnAccent.
-    // Listed against the grounds it actually lands on rather than against all
-    // six, because a gate asserting a pair that is never painted is fiction.
-    checkAll (contentSurfaces, "accent", colour::accent, bodyText, failures);
-    checkAll ({ { "surfaceRaised", colour::surfaceRaised } }, "accent", colour::accent, bodyText,
-              failures);
+        // The accent is text on a PANEL - a selected slot's name, a heading -
+        // and never on a hovered control, whose own text is textPrimary or
+        // textOnAccent. Listed against the grounds it actually lands on rather
+        // than against all six, because a gate asserting a pair that is never
+        // painted is fiction.
+        checkAll (contentSurfaces (p), "accent", p.accent, text, name, failures);
+        checkAll ({ { "surfaceRaised", p.surfaceRaised } }, "accent", p.accent, text, name,
+                  failures);
 
-    // textDisabled does two jobs. On a panel it is CONTENT that happens to be
-    // quiet - a comment in the score editor, a bar number past the end of the
-    // song, the hover-help line - and content has to be readable.
-    checkAll (contentSurfaces, "textDisabled", colour::textDisabled, bodyText, failures);
+        // textDisabled does two jobs. On a panel it is CONTENT that happens to
+        // be quiet - a comment in the score editor, a bar number past the end of
+        // the song, the hover-help line - and content has to be readable.
+        checkAll (contentSurfaces (p), "textDisabled", p.textDisabled, text, name, failures);
+    }
 
     INFO (failures.joinIntoString ("\n"));
     CHECK (failures.isEmpty());
@@ -134,10 +162,14 @@ TEST_CASE ("a disabled control is quiet but not invisible", "[design][contrast]"
     juce::StringArray failures;
 
     // On a control surface, textDisabled means "you cannot use this", which
-    // WCAG exempts from 1.4.3 outright. 3:1 is dew's own floor rather than a
+    // WCAG exempts from 1.4.3 outright. This is dew's own floor rather than a
     // requirement: a disabled button still has to read as a button, which is
     // the distinction emphasis::disabled exists to make.
-    checkAll (controlSurfaces, "textDisabled", colour::textDisabled, 3.0f, failures);
+    for (const auto& [name, p, text, nonText] : themes())
+    {
+        juce::ignoreUnused (text);
+        checkAll (controlSurfaces (p), "textDisabled", p.textDisabled, nonText, name, failures);
+    }
 
     INFO (failures.joinIntoString ("\n"));
     CHECK (failures.isEmpty());
@@ -147,16 +179,30 @@ TEST_CASE ("a control's edge and its focus ring are visible", "[design][contrast
 {
     juce::StringArray failures;
 
-    // 3:1 - WCAG 1.4.11, for the boundary that identifies a control.
+    // WCAG 1.4.11, for the boundary that identifies a control.
     //
     // It carries the whole job here: surfaceRaised, which is what a button is
-    // filled with, sits at 1.14 to 1.42 against every ground it is placed on,
-    // so a dew control is its outline. At the old 0xff454c57 the outline was
-    // 1.55, and between the two of them nothing said where the button was.
-    constexpr auto nonText = 3.0f;
+    // filled with, sits close to every ground it is placed on, so a dew control
+    // is its outline. At the original 0xff454c57 the outline was 1.55:1, and
+    // between the two of them nothing said where the button was.
+    for (const auto& [name, p, text, nonText] : themes())
+    {
+        juce::ignoreUnused (text);
 
-    checkAll (surfaces, "outline", colour::outline, nonText, failures);
-    checkAll (surfaces, "accent (focus ring)", colour::accent, nonText, failures);
+        checkAll (surfaces (p), "outline", p.outline, nonText, name, failures);
+        checkAll (surfaces (p), "accent (focus ring)", p.accent, nonText, name, failures);
+
+        // The function colours are knob arcs and automation curves - things you
+        // find rather than read - so they are held to the non-text bar.
+        for (const auto& [role, c] : std::vector<Ground> { { "funcTone", p.funcTone },
+                                                           { "funcTime", p.funcTime },
+                                                           { "funcLevel", p.funcLevel },
+                                                           { "funcStereo", p.funcStereo },
+                                                           { "funcSpace", p.funcSpace },
+                                                           { "funcModulation", p.funcModulation },
+                                                           { "funcPitch", p.funcPitch } })
+            checkAll (surfaces (p), role, c, nonText, name, failures);
+    }
 
     INFO (failures.joinIntoString ("\n"));
     CHECK (failures.isEmpty());
@@ -165,28 +211,36 @@ TEST_CASE ("a control's edge and its focus ring are visible", "[design][contrast
 TEST_CASE ("text on a filled control is readable on every fill", "[design][contrast]")
 {
     juce::StringArray failures;
-    constexpr auto bodyText = 4.5f;
 
-    // textOnAccent is the label on anything the accent-family fills: a primary
-    // button, a toggled icon button, a selected menu row, a clip.
-    const std::vector<std::pair<const char*, juce::Colour>> fills {
-        { "accent", colour::accent },     { "accentMuted", colour::accentMuted },
-        { "playhead", colour::playhead }, { "success", colour::success },
-        { "warning", colour::warning },   { "danger", colour::danger },
-        { "keyWhite", colour::keyWhite },
-    };
-
-    checkAll (fills, "textOnAccent", colour::textOnAccent, bodyText, failures);
-
-    // And on every channel colour, because a clip is filled with one and its
-    // name is drawn in textOnAccent regardless of which it got.
-    for (int i = 0; i < 8; ++i)
+    for (const auto& [name, p, text, nonText] : themes())
     {
-        const auto c = colour::channelColour (i);
+        juce::ignoreUnused (nonText);
 
-        if (const auto ratio = contrastRatio (colour::textOnAccent, c); ratio < bodyText)
-            failures.add ("textOnAccent on channelRamp[" + juce::String (i) + "]  "
-                          + juce::String (ratio, 2) + ":1");
+        // textOnAccent is the label on anything the accent family fills: a
+        // primary button, a toggled icon button, a selected menu row, a clip.
+        checkAll ({ { "accent", p.accent },
+                    { "accentMuted", p.accentMuted },
+                    { "playhead", p.playhead },
+                    { "success", p.success },
+                    { "warning", p.warning },
+                    { "danger", p.danger },
+                    { "keyWhite", p.keyWhite } },
+                  "textOnAccent", p.textOnAccent, text, name, failures);
+
+        // The channel ramp is the exception, and it is a real one rather than a
+        // concession. Those eight colours are DOCUMENT DATA - entityColour
+        // writes them into every .dew file and the picker offers them - so no
+        // theme may repaint them, and the label drawn on one can only be held
+        // to AA. Raising this to AAA would mean changing what a saved project
+        // means.
+        for (int i = 0; i < 8; ++i)
+        {
+            const auto c = colour::channelColour (i);
+
+            if (const auto ratio = contrastRatio (p.textOnAccent, c); ratio < 4.5f)
+                failures.add (juce::String (name) + ": textOnAccent on channelRamp["
+                              + juce::String (i) + "]  " + juce::String (ratio, 2) + ":1");
+        }
     }
 
     INFO (failures.joinIntoString ("\n"));
@@ -195,6 +249,18 @@ TEST_CASE ("text on a filled control is readable on every fill", "[design][contr
 
 TEST_CASE ("a piano key reads against the other kind", "[design][contrast]")
 {
+    juce::StringArray failures;
+
     // The one pair in the palette whose whole job is to be told apart.
-    CHECK (contrastRatio (colour::keyWhite, colour::keyBlack) >= 3.0f);
+    for (const auto& [name, p, text, nonText] : themes())
+    {
+        juce::ignoreUnused (text);
+
+        if (const auto ratio = contrastRatio (p.keyWhite, p.keyBlack); ratio < nonText)
+            failures.add (juce::String (name) + ": keyWhite on keyBlack "
+                          + juce::String (ratio, 2));
+    }
+
+    INFO (failures.joinIntoString ("\n"));
+    CHECK (failures.isEmpty());
 }

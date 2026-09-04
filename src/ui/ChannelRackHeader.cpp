@@ -30,7 +30,6 @@ ChannelRackHeader::ChannelRackHeader (ProjectDocument& d, EditorState& s, juce::
     // a double-click on the row, which is where it already was.
     nameLabel.setInterceptsMouseClicks (false, false);
     nameLabel.setFont (type::font (type::body));
-    nameLabel.setColour (juce::Label::textColourId, colour::textPrimary);
     nameLabel.onTextChange = [this]
     {
         ProjectEdits::setProperty (channel, ids::name, nameLabel.getText(),

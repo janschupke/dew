@@ -271,10 +271,66 @@ public:
     Sixteen boxes in seven panels, which is exactly the count at which a habit
     stops being reliable, so a gate refuses a bare juce::ComboBox.
 */
+/** A juce::Label whose colour is a ROLE rather than a value.
+
+    juce::Label keeps a colour it was given, and a colour it was given is the
+    palette that was in force when it was given - so a themed application comes
+    back half painted, in whichever places nobody thought of. This holds the
+    token instead and takes its value again whenever the look and feel changes.
+
+    A POINTER into the palette is safe here in a way it would not have been
+    before: tokens::colour names are references into the palette in force, so
+    their addresses are fixed and their values are whatever the theme says.
+
+    Only for a label whose colour is NOT the look and feel's own default. A
+    label that wants textPrimary should say nothing and inherit it.
+*/
+class DewLabel : public juce::Label
+{
+public:
+    DewLabel() = default;
+
+    /** @param token  a tokens::colour name. Must outlive this, which every
+                      token does - they are namespace-scope. */
+    void setTextColourToken (const juce::Colour& token)
+    {
+        colourToken = &token;
+        lookAndFeelChanged();
+    }
+
+    void lookAndFeelChanged() override
+    {
+        if (colourToken != nullptr)
+            setColour (juce::Label::textColourId, *colourToken);
+    }
+
+private:
+    const juce::Colour* colourToken = nullptr;
+
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (DewLabel)
+};
+
+// -----------------------------------------------------------------------------
+
 class DewDropdown : public juce::ComboBox
 {
 public:
     explicit DewDropdown (const juce::String& name = {});
+
+    /** A ComboBox puts its text colour on the juce::Label inside it, and does
+        so from positionComboBoxText - on layout, not on paint. A box whose
+        bounds do not change keeps the old palette's text through a theme
+        change, so it is laid out again when the look and feel moves.
+
+        The BASE call first, and it is not optional: ComboBox::lookAndFeelChanged
+        replaces the label outright, and an override that skipped it would leave
+        the old one - with the old palette on it - in place.
+    */
+    void lookAndFeelChanged() override
+    {
+        juce::ComboBox::lookAndFeelChanged();
+        resized();
+    }
 
     /** Sets the tooltip AND the accessible name, the way the hand-painted
         primitives do. juce::ComboBox reads its name from Component::getTitle,
@@ -453,7 +509,7 @@ void forwardChildMouseEventsTo (juce::Component& parent);
     file-local helper, and the two toolbars that wanted the same word next to
     the same kind of control would each have grown their own.
 */
-void styleCaption (juce::Label&, const juce::String& text);
+void styleCaption (DewLabel&, const juce::String& text);
 
 namespace paint
 {

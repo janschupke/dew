@@ -301,6 +301,7 @@ add_library(dew_design STATIC
   ui/design/Tokens.cpp
   ui/design/Animator.cpp
   ui/design/SystemMotionPreference.cpp
+  ui/design/Theme.cpp
   ui/design/icons/Icons.cpp
   ui/design/icons/IconsSound.cpp
   ui/design/icons/IconsViews.cpp

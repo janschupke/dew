@@ -28,7 +28,6 @@ PlaylistTrackHeader::PlaylistTrackHeader (ProjectDocument& d, juce::ValueTree t)
     // The channel rack learned this the hard way; see the README.
     nameLabel.setInterceptsMouseClicks (false, false);
     nameLabel.setFont (type::font (type::body));
-    nameLabel.setColour (juce::Label::textColourId, colour::textPrimary);
     nameLabel.onTextChange = [this]
     {
         ProjectEdits::setProperty (track, ids::name, nameLabel.getText(),

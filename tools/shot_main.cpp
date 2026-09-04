@@ -11,6 +11,7 @@
 #include "ui/ConfirmPanel.h"
 #include "ui/RandomizePanel.h"
 #include "ui/design/DewLookAndFeel.h"
+#include "ui/design/Theme.h"
 #include "ui/design/DewGallery.h"
 #include "CliArgs.h"
 
@@ -38,6 +39,7 @@ Options:
   --tab <name>           channel-rack | piano-roll | playlist | mixer | score
   --completions          open the score tab's completion popup before shooting
   --size <WxH>           Default 1440x900
+  --theme <name>         dark | highContrast
   --help
 )";
 
@@ -146,6 +148,12 @@ int main (int argc, char* argv[])
     } clearLookAndFeel;
 
     const auto size = parseSize (args.value ("--size", "1440x900"));
+
+    // Before anything is constructed. Components copy colours when they are
+    // built, so a palette chosen after the fact would be half applied - which
+    // is the whole reason theme::apply exists for the running application and
+    // the reason a renderer does not need it.
+    dew::theme::applyPalette (dew::theme::kindFor (args.value ("--theme", "dark")));
 
     if (mode == "gallery")
     {

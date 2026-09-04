@@ -274,6 +274,16 @@ bool Settings::getPanelCollapsed() const
     return file().getBoolValue ("panelCollapsed", false);
 }
 
+juce::String Settings::getThemeName() const
+{
+    return file().getValue ("theme", "dark");
+}
+
+void Settings::setThemeName (const juce::String& name)
+{
+    file().setValue ("theme", name);
+}
+
 Settings::Motion Settings::getMotionPreference() const
 {
     const auto stored = file().getValue ("motion", "system");

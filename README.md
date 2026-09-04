@@ -536,12 +536,47 @@ accessible name, and a way for the keyboard to reach it. The second found thirty
 sixty-three silent when it was written; the third and fourth are below.
 
 A fifth holds the palette to a number rather than to a vocabulary. Colours are named for
-their ROLE, which is what makes a theme change an edit to one file — but a role says
-nothing about whether the pair is legible, and five of them were not. `ContrastTests`
-states the pairs that are actually painted and the ratio each needs, so a token cannot be
-darkened back without an argument. The worst of the five was the hover-help line itself:
-the app's only always-on explanation of the control under the pointer, drawn in the
-palette's least readable colour at 2.6:1.
+their ROLE, which is what makes a theme one assignment — but a role says nothing about
+whether the pair is legible, and five of them were not. `ContrastTests` states the pairs
+that are actually painted and the ratio each needs, **for every palette at that palette's
+own thresholds**, so a token cannot be darkened back without an argument and a new theme
+cannot be added without clearing the same bar. The worst of the original five was the
+hover-help line itself: the app's only always-on explanation of the control under the
+pointer, drawn in the palette's least readable colour at 2.6:1.
+
+### Two palettes
+
+**View → Theme.** The default is dew as it has always looked, held to WCAG AA — 4.5:1 for
+anything read, 3:1 for an edge you have to find. **High contrast** is the same design with
+the distances opened up, held to AAA: 7:1 and 4.5:1.
+
+Every value in it is derived rather than chosen by eye. The surfaces were pushed down and
+apart first; then each meaning and function colour kept its hue and saturation and had
+only its lightness raised, by bisection, until it cleared its target against `surfaceHover`
+— the lightest ground anything is drawn on, so clearing it clears the other five. Keeping
+hue and saturation is the point: a high-contrast theme that also re-hued everything would
+be a second design to maintain, and this one is the same design further apart.
+
+It stays **dark**, and that is what makes it small. A light theme is a different job:
+`emphasis::silenced` and `emphasis::disabled` both multiply brightness downward, the four
+lift rungs mean "how much brighter", and `wellDeep` is used as a scrim at four sites. All
+of that is correct on a dark ground and inverts on a light one.
+
+`channelRamp` is **not** themed. Those eight colours are document data — `entityColour`
+writes them into every `.dew` file, `dew_model` restates them as strings, and the colour
+picker offers them — so repainting them would make every saved project disagree with the
+swatch it was chosen from. What varies is `textOnAccent`, drawn on top, and that is why
+the clip-label pair is the one thing held to AA in both themes.
+
+The mechanism is worth knowing before adding a colour. The names in `tokens::colour` are
+**references** into the palette in force, so the 437 places that read one need no edit and
+a theme is a single assignment. Two thirds of those reads happen inside `paint()` and
+follow it for free; the rest COPIED a colour when they were built — a LookAndFeel's
+ColourIds, a Label's `textColourId`, a toggle's on-colour — and a copy follows nothing.
+`theme::apply` re-seeds the look and feel and then calls `sendLookAndFeelChange`, which is
+JUCE's own hook for exactly this, and a gate walks the window after a switch and fails on
+anything still holding a colour from the palette it was built under. That gate found ten
+sites the first time it ran.
 
 ### Reaching it without a mouse
 

@@ -221,7 +221,7 @@ private:
     DewDropdown tableBox, sourceBox;
 
     juce::Slider octaveSlider { juce::Slider::IncDecButtons, juce::Slider::TextBoxLeft };
-    juce::Label octaveLabel;
+    DewLabel octaveLabel;
 
     // Every one of these used to state its range here, a second time. The
     // catalog states it once, and the engine clamps by the same row.

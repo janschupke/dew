@@ -26,11 +26,11 @@ using namespace tokens;
 
 // --- shared painting ---------------------------------------------------------
 
-void styleCaption (juce::Label& label, const juce::String& text)
+void styleCaption (DewLabel& label, const juce::String& text)
 {
     label.setText (text, juce::dontSendNotification);
     label.setFont (type::font (type::caption));
-    label.setColour (juce::Label::textColourId, colour::textSecondary);
+    label.setTextColourToken (colour::textSecondary);
     label.setJustificationType (juce::Justification::centred);
 
     // A caption labels the control beside it; the pointer belongs to that

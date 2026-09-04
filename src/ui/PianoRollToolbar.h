@@ -101,7 +101,7 @@ private:
         showed a channel name and the other a fraction, and neither is
         self-describing at a glance. The status bar explains them on hover; a
         word beside them means you do not have to hover to find out. */
-    juce::Label channelCaption, snapCaption;
+    DewLabel channelCaption, snapCaption;
 
     DewDropdown snapBox;
 
