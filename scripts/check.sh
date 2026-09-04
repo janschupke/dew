@@ -22,6 +22,9 @@ step() { printf '\n\033[1m==> %s\033[0m\n' "$*"; }
 step "dependency pins"
 ./scripts/check-deps.sh
 
+step "generated cursor rules"
+./scripts/gen-cursor-rules.sh --check
+
 step "formatting"
 # Xcode ships clang-format, so this needs nothing installed. A version that
 # cannot be found is reported rather than skipped silently: a gate that quietly
