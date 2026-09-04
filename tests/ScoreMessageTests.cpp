@@ -118,14 +118,27 @@ TEST_CASE ("every score message is answerable with the arguments it names", "[sc
 
 TEST_CASE ("a locale is chosen by tag and then by language", "[score][i18n]")
 {
-    CHECK (localeFor ("en") == referenceLocale);
+    // Written against however many catalogues this build carries, not against
+    // one: an assertion that `de` falls back to the reference is true only
+    // while German is not compiled in, and it is exactly the assertion that
+    // goes quietly wrong the day it is.
+    for (auto i = 0; i < numLocales; ++i)
+    {
+        const auto locale = (Locale) i;
+        const std::string tag { localeTag (locale) };
 
-    // A regional tag reaches its language, and a language the build does not
-    // carry falls back to the reference rather than to nothing.
-    CHECK (localeFor ("en-GB") == referenceLocale);
-    CHECK (localeFor ("de") == referenceLocale);
+        INFO ("locale: " << tag);
+        CHECK (localeFor (tag) == locale);
 
-    CHECK (localeTag (referenceLocale) == "en");
+        // A regional tag reaches its language: fr-CA compiles its errors in
+        // French rather than falling all the way back to English.
+        CHECK (localeFor (tag + "-XX") == locale);
+    }
+
+    // A tag no catalogue claims falls back to the reference rather than to
+    // nothing. `zz` is not a language.
+    CHECK (localeFor ("zz") == referenceLocale);
+    CHECK (localeFor ("") == referenceLocale);
 }
 
 TEST_CASE ("a diagnostic is written in its bag's locale", "[score][i18n]")
