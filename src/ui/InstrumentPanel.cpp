@@ -338,8 +338,13 @@ juce::StringArray InstrumentPanel::presetMenuItems() const
 {
     juce::StringArray items;
 
+    // Name and description, as one row. The description was authored,
+    // serialised into every .dewpreset and shown to nobody for the whole life
+    // of the feature; a picker that says only "Pluck" makes you audition the
+    // list to find out what is in it.
     for (const auto& preset : presetsForChannel (selectedChannel()))
-        items.add (PresetLibrary::displayName (preset));
+        items.add (DewLookAndFeel::menuRow (PresetLibrary::displayName (preset),
+                                            PresetLibrary::describe (preset)));
 
     return items;
 }
@@ -363,10 +368,15 @@ void InstrumentPanel::showPresetMenu()
     if (presets.empty())
         return;
 
+    // Built from the same list the headless seam returns, not from a second
+    // walk over the presets. The two had already drifted once: presetMenuItems
+    // was the thing the tests read and showPresetMenu was the thing a person
+    // saw, and only one of them had been taught to translate a name.
     juce::PopupMenu menu;
+    const auto items = presetMenuItems();
 
-    for (int i = 0; i < (int) presets.size(); ++i)
-        menu.addItem (i + 1, presets[(size_t) i].name);
+    for (int i = 0; i < items.size(); ++i)
+        menu.addItem (i + 1, items[i]);
 
     menu.setLookAndFeel (&getLookAndFeel());
     menu.showMenuAsync (juce::PopupMenu::Options().withTargetComponent (presetButton),

@@ -21,6 +21,7 @@
 #include "i18n/Strings.h"
 #include "model/DemoLibrary.h"
 #include "model/ProjectFactory.h"
+#include "ui/design/DewLookAndFeel.h"
 #include "ui/Hotkeys.h"
 #include "ui/MainComponent.h"
 
@@ -205,7 +206,9 @@ juce::PopupMenu DewApplication::getMenuForIndex (int topLevelMenuIndex, const ju
         const auto& demos = ProjectFactory::demos();
 
         for (int i = 0; i < (int) demos.size(); ++i)
-            menu.addItem (demoMenuBaseId + i, tr (demos[(size_t) i].menuName));
+            menu.addItem (demoMenuBaseId + i,
+                          DewLookAndFeel::menuRow (tr (demos[(size_t) i].menuName),
+                                                   tr (demos[(size_t) i].description)));
     }
 
     return menu;

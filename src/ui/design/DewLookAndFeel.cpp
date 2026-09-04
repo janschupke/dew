@@ -388,6 +388,29 @@ void DewLookAndFeel::drawPopupMenuBackground (juce::Graphics& g, int width, int 
     g.drawRoundedRectangle (bounds, radius::md, stroke::hairline);
 }
 
+juce::String DewLookAndFeel::menuRow (const juce::String& text, const juce::String& detail)
+{
+    return detail.isEmpty() ? text : text + "\n" + detail;
+}
+
+namespace
+{
+
+/** A menu row's two lines. The second is empty for an ordinary row. */
+struct MenuLines
+{
+    juce::String label;
+    juce::String detail;
+};
+
+MenuLines linesOf (const juce::String& text)
+{
+    return { text.upToFirstOccurrenceOf ("\n", false, false),
+             text.fromFirstOccurrenceOf ("\n", false, false) };
+}
+
+} // namespace
+
 void DewLookAndFeel::drawPopupMenuItem (juce::Graphics& g, const juce::Rectangle<int>& area,
                                         bool isSeparator, bool isActive, bool isHighlighted,
                                         bool isTicked, bool hasSubMenu, const juce::String& text,
@@ -445,9 +468,31 @@ void DewLookAndFeel::drawPopupMenuItem (juce::Graphics& g, const juce::Rectangle
                     juce::Justification::centredRight, false);
     }
 
+    const auto lines = linesOf (text);
+
+    if (lines.detail.isEmpty())
+    {
+        g.setColour (textColour);
+        g.setFont (type::font (type::body));
+        g.drawText (lines.label, content, juce::Justification::centredLeft, true);
+        return;
+    }
+
+    // Two lines: the label on the body rung, the sentence under it on the small
+    // one. Dimmed only where there is room to be, exactly as the shortcut above
+    // is - on the highlighted row the text sits on the accent fill and taking
+    // it to dimmed drops it under 3:1.
+    const auto labelHeight = juce::roundToInt (type::body);
+    auto label = content.removeFromTop (labelHeight);
+    label.translate (0, (content.getHeight() - labelHeight) / 2 + space::xxs);
+
     g.setColour (textColour);
     g.setFont (type::font (type::body));
-    g.drawText (text, content, juce::Justification::centredLeft, true);
+    g.drawText (lines.label, label, juce::Justification::centredLeft, true);
+
+    g.setColour (isHighlighted ? textColour : textColour.withAlpha (emphasis::dimmed));
+    g.setFont (type::font (type::small));
+    g.drawText (lines.detail, content, juce::Justification::centredLeft, true);
 }
 
 void DewLookAndFeel::getIdealPopupMenuItemSize (const juce::String& text, bool isSeparator,
@@ -463,9 +508,23 @@ void DewLookAndFeel::getIdealPopupMenuItemSize (const juce::String& text, bool i
         return;
     }
 
+    const auto label = text.upToFirstOccurrenceOf ("\n", false, false);
+    const auto detail = text.fromFirstOccurrenceOf ("\n", false, false);
+
     idealHeight = standardMenuItemHeight > 0 ? standardMenuItemHeight : size::controlHeight;
-    idealWidth = juce::GlyphArrangement::getStringWidthInt (type::font (type::body), text)
+    idealWidth = juce::GlyphArrangement::getStringWidthInt (type::font (type::body), label)
                  + space::xxl * 2;
+
+    // A row carrying a sentence is as tall as two rungs and as wide as its
+    // widest line. Measured rather than guessed: a menu whose ideal width came
+    // from the label alone would clip every description it was given.
+    if (detail.isNotEmpty())
+    {
+        idealHeight += juce::roundToInt (type::small) + space::xxs;
+        idealWidth = juce::jmax (
+            idealWidth, juce::GlyphArrangement::getStringWidthInt (type::font (type::small), detail)
+                            + space::xxl * 2);
+    }
 }
 
 int DewLookAndFeel::getPopupMenuBorderSize()

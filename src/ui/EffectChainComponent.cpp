@@ -4,6 +4,7 @@
 #include "ui/EffectCard.h"
 
 #include "model/PresetLibrary.h"
+#include "ui/design/DewLookAndFeel.h"
 
 #include "engine/Effects.h"
 #include "model/Ids.h"
@@ -199,8 +200,10 @@ juce::StringArray EffectChainComponent::presetMenuItems (int slot) const
 {
     juce::StringArray items;
 
+    // Name and description, as one row - see InstrumentPanel's twin.
     for (const auto& preset : presetsForSlot (effectAt (slot)))
-        items.add (PresetLibrary::displayName (preset));
+        items.add (DewLookAndFeel::menuRow (PresetLibrary::displayName (preset),
+                                            PresetLibrary::describe (preset)));
 
     return items;
 }
@@ -226,11 +229,14 @@ void EffectChainComponent::showPresetMenu (int slot, juce::Component& target)
     if (presets.empty())
         return;
 
+    // The seam's list, so what a test reads and what a person sees cannot be
+    // two different things.
     juce::PopupMenu menu;
+    const auto items = presetMenuItems (slot);
 
-    for (int i = 0; i < (int) presets.size(); ++i)
+    for (int i = 0; i < items.size(); ++i)
     {
-        juce::PopupMenu::Item item (presets[(size_t) i].name);
+        juce::PopupMenu::Item item (items[i]);
         item.itemID = i + 1;
         menu.addItem (item);
     }

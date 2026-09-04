@@ -52,6 +52,74 @@ TEST_CASE ("a combo box is painted in the dew idiom, not JUCE's", "[design][drop
     box.setLookAndFeel (nullptr);
 }
 
+TEST_CASE ("a menu row can carry a sentence under its label", "[design][dropdown]")
+{
+    // What the preset pickers needed. PopupMenu::Item carries a text and a
+    // shortcut and nothing else, and a CustomComponent would mean
+    // re-implementing the highlight, the tick gutter and every colour this
+    // class already decides - so a second line travels inside the text and
+    // DewLookAndFeel::menuRow is the only place that joins it.
+    const juce::ScopedJuceInitialiser_GUI juceInit;
+
+    DewLookAndFeel lookAndFeel;
+
+    CHECK (DewLookAndFeel::menuRow ("Cathedral", "A long dark tail.")
+           == "Cathedral\nA long dark tail.");
+
+    // A row with nothing to add is an ordinary one-line row and costs nothing.
+    CHECK (DewLookAndFeel::menuRow ("Cathedral", {}) == "Cathedral");
+
+    auto plainWidth = 0;
+    auto plainHeight = 0;
+    lookAndFeel.getIdealPopupMenuItemSize ("Cathedral", false, 0, plainWidth, plainHeight);
+
+    auto detailedWidth = 0;
+    auto detailedHeight = 0;
+    lookAndFeel.getIdealPopupMenuItemSize (
+        DewLookAndFeel::menuRow ("Cathedral", "A long dark tail, and then some more of it."), false,
+        0, detailedWidth, detailedHeight);
+
+    // Taller, and wide enough for the LONGER line. An ideal width taken from
+    // the label alone would clip every description it was given, which is the
+    // failure this is written for.
+    INFO ("plain " << plainWidth << "x" << plainHeight << ", detailed " << detailedWidth << "x"
+                   << detailedHeight);
+    CHECK (detailedHeight > plainHeight);
+    CHECK (detailedWidth > plainWidth);
+
+    // And both lines are painted. Drawn straight through the look and feel
+    // rather than through a menu window, which a headless test has no peer for.
+    struct Row : juce::Component
+    {
+        Row (DewLookAndFeel& l, juce::String t)
+            : lookAndFeel (l)
+            , text (std::move (t))
+        {
+        }
+
+        DewLookAndFeel& lookAndFeel;
+        juce::String text;
+
+        void paint (juce::Graphics& g) override
+        {
+            lookAndFeel.drawPopupMenuItem (g, getLocalBounds(), false, true, false, false, false,
+                                           text, {}, nullptr, nullptr);
+        }
+    };
+
+    Row plain { lookAndFeel, "Cathedral" };
+    plain.setSize (detailedWidth, detailedHeight);
+
+    Row detailed { lookAndFeel, DewLookAndFeel::menuRow ("Cathedral", "A long dark tail.") };
+    detailed.setSize (detailedWidth, detailedHeight);
+
+    const auto plainInk = inkCoverage (render (plain));
+    const auto detailedInk = inkCoverage (render (detailed));
+
+    INFO ("ink: label only " << plainInk << ", with a sentence " << detailedInk);
+    CHECK (detailedInk > plainInk * 1.5f);
+}
+
 TEST_CASE ("a dropdown's menu opens below the box, not over it", "[design][dropdown]")
 {
     const juce::ScopedJuceInitialiser_GUI juceInit;

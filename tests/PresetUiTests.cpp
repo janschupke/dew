@@ -29,6 +29,28 @@ using namespace dew;
 using namespace dew::testing;
 using Catch::Approx;
 
+namespace
+{
+
+/** The first line of a menu row - the preset's name, without the sentence the
+    picker shows under it.
+
+    The seam returns exactly what the menu displays, which is what stops the
+    two drifting; these tests are about WHICH presets are offered, so they read
+    the label off the row rather than restating how a row is built.
+*/
+juce::StringArray labelsOf (const juce::StringArray& rows)
+{
+    juce::StringArray labels;
+
+    for (const auto& row : rows)
+        labels.add (row.upToFirstOccurrenceOf ("\n", false, false));
+
+    return labels;
+}
+
+} // namespace
+
 TEST_CASE ("an effect card offers only its own type's presets, and loads one", "[preset][ui]")
 {
     const juce::ScopedJuceInitialiser_GUI juceInit;
@@ -44,7 +66,8 @@ TEST_CASE ("an effect card offers only its own type's presets, and loads one", "
     chain.addEffectOfType ("reverb");
     REQUIRE (chain.getNumSlotRows() == 1);
 
-    const auto offered = chain.presetMenuItems (0);
+    const auto rows = chain.presetMenuItems (0);
+    const auto offered = labelsOf (rows);
 
     // Exactly the reverbs, by name and in the library's order.
     juce::StringArray expected;
@@ -54,6 +77,16 @@ TEST_CASE ("an effect card offers only its own type's presets, and loads one", "
 
     REQUIRE (offered == expected);
     REQUIRE (offered.size() >= 2);
+
+    // And each row carries the sentence the picker shows under the name -
+    // authored, serialised into every .dewpreset, and displayed nowhere until
+    // now.
+    for (const auto& preset : PresetLibrary::presetsFor (EffectType::reverb))
+    {
+        INFO ("preset: " << preset.name);
+        REQUIRE (preset.description.isNotEmpty());
+        CHECK (rows.contains (preset.name + "\n" + preset.description));
+    }
 
     // A mismatch is never presented in the first place.
     for (const auto& preset : PresetLibrary::presetsFor (EffectType::delay))
@@ -110,7 +143,7 @@ TEST_CASE ("the instrument panel offers the presets for the channel it is on", "
     panel.setSize (280, 900);
     panel.resized();
 
-    const auto offered = panel.presetMenuItems();
+    const auto offered = labelsOf (panel.presetMenuItems());
     REQUIRE (offered.size() >= 2);
     CHECK (offered.contains ("Sub Bass"));
 
@@ -142,7 +175,7 @@ TEST_CASE ("the panel's audio face offers the audio presets", "[preset][ui]")
     panel.setSize (280, 900);
     panel.resized();
 
-    const auto offered = panel.presetMenuItems();
+    const auto offered = labelsOf (panel.presetMenuItems());
 
     // Which kind of channel it is decides, without the panel being told.
     CHECK (offered.contains ("Looped Bed"));

@@ -82,6 +82,19 @@ public:
     juce::PopupMenu::Options getOptionsForComboBoxPopupMenu (juce::ComboBox&,
                                                              juce::Label&) override;
 
+    /** A menu row's label and the sentence that explains it, as one string.
+
+        PopupMenu::Item carries a text and a shortcut and nothing else, and a
+        CustomComponent would mean re-implementing the highlight, the tick
+        gutter and every colour this class already decides. So a second line
+        travels inside the text, joined here rather than spelled at a call site,
+        and drawPopupMenuItem renders it dimmed underneath.
+
+        `detail` empty gives back `text` unchanged, so a row that has nothing to
+        add is an ordinary one-line row and costs nothing.
+    */
+    static juce::String menuRow (const juce::String& text, const juce::String& detail);
+
     void drawPopupMenuBackground (juce::Graphics&, int width, int height) override;
 
     void drawPopupMenuItem (juce::Graphics&, const juce::Rectangle<int>& area, bool isSeparator,
