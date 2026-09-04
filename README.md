@@ -365,7 +365,7 @@ reach an off-grid position without changing the dropdown.
 
 ## Architecture
 
-Six layers, each a static library, each testable without the ones above it. Libraries
+Eight layers, each a static library, each testable without the ones above it. Libraries
 rather than directories on purpose: the include graph was already acyclic, but nothing
 enforced it, and the headless `dew_render` linked all thirty UI translation units to
 write a WAV. Split, a layering mistake is a link error.
@@ -397,11 +397,56 @@ dew_engine   SnapshotBridge → Transport → Sequencer → InstrumentModule[]
 dew_model    ProjectDocument (FileBasedDocument) ── ValueTree ── ProjectSchema ── JSON
              ParamSpec + ModuleCatalog (every parameter, declared once)
              AutomationTargets · NoteTools (snap, quantize, slice — no GUI)
-             A leaf: it depends on nothing of dew's.
+             Depends on dew_lang and dew_i18n, and nothing else of dew's.
 
              │ AsyncUpdater coalesces rebuilds ─→ EngineSnapshot
              │ PreviewQueue carries auditioned notes
+                                                 │
+                                                 ▼
+dew_i18n     StringIds (generated) · Catalogs (generated) · MessageFormat · PluralRules
+             Every sentence a person reads, by structural key. Links juce_core and
+             nothing else, so a catalogue cannot open a file or build a ValueTree.
+
+dew_lang     The score language. Links nothing at all, JUCE included.
 ```
+
+### Strings
+
+Every sentence a person reads is a key in `resources/i18n/en.json` —
+`transport.tempo.help`, `param.cutoff.caption` — and the code names the key, never the
+sentence. `StringIds.h` and the catalogue tables are generated from that file into the
+build tree by a CMake script, so a key the app names and the catalogue does not hold is a
+compile error rather than a blank label.
+
+**JUCE's own mechanism was rejected rather than overlooked.** `TRANS("Save As...")` keys
+the translation on the English sentence, so correcting a typo orphans every translation of
+it, two identical English strings with different meanings collapse into one entry, and
+nothing can enumerate the keys that exist. Keys are structural here; the English text is
+just the first translation.
+
+**The message syntax is ICU MessageFormat, and the implementation is not ICU.** Plurals
+and substitutions use the syntax i18next, Fluent, Android and iOS have all converged on, so
+the catalogue is a shape a translator's tooling already reads — but ICU itself is a pinned
+dependency, a `THIRD_PARTY.md` row and tens of megabytes of CLDR data for the three
+constructs dew uses. The subset is a few hundred lines and the plural table is written out
+per language, because `cs` and `pl` agree on small numbers and diverge above them and
+folding them together is how a locale silently inherits another's rule.
+
+**The catalogue is compiled in, not loaded.** `dew_i18n` links `juce_core` and nothing
+else, so it cannot read itself off disk — which would also be file I/O two layers below
+`dew_io`, the only layer allowed to touch a file. A catalogue that has to be compiled in
+cannot drift from the build that ships it.
+
+**The locale is fixed at launch.** `tr` returns a *reference* into a table built once when
+the locale is chosen, so drawing a label costs no allocation — cheaper than the literal it
+replaced, since `juce::String` has no small-string optimisation. The price is that changing
+language needs a relaunch, and the menu says so; the alternative was handing every caller a
+copy, forever.
+
+A missing row returns its own dotted key rather than an empty string, which is visible in a
+`dew_shot` render. That is not politeness: two coverage gates read a control's tooltip and
+treat blank as silence, so a fallback of `""` would turn both into tests that pass over
+nothing.
 
 Several tests enforce a convention by scanning the sources, and each passes silently when
 it finds nothing; `SourceGateTests` checks that walk against the libraries' own source

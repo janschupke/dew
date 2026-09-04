@@ -3,7 +3,7 @@
 A macOS-only desktop synth DAW in the FL Studio shape: a channel rack with a step grid, a
 piano roll, a playlist of clips and a mixer, driven by a three-oscillator synth per channel
 — or by a recording, or by a song written as text and compiled to notes. C++20, JUCE 9,
-CMake, Catch2. Seven static libraries rather than seven directories, so a layering mistake
+CMake, Catch2. Eight static libraries rather than eight directories, so a layering mistake
 is a link error.
 
 [README.md](README.md) is the tour and the reasoning: what the app does, why each decision
@@ -15,7 +15,7 @@ these files.
 
 ## Rules
 
-- [Architecture](.ai/rules/architecture.md) — the seven libraries and what each may depend on, rooted includes, one `ParamSpec` per parameter, every edit through `ProjectEdits`, and the two things that fail silently (a new clip kind, a metre that is not a tempo)
+- [Architecture](.ai/rules/architecture.md) — the eight libraries and what each may depend on, rooted includes, one `ParamSpec` per parameter, every edit through `ProjectEdits`, and the two things that fail silently (a new clip kind, a metre that is not a tempo)
 - [The audio thread](.ai/rules/realtime.md) — the render path allocates nothing, effect modules are never destroyed, no command queue, and the three queues with three different contracts
 - [Design system](.ai/rules/design-system.md) — everything from `Tokens.h`; no hex colour, no bare radius or gap, no size the ladder already names, no orphan token, no colour pair below its contrast ratio in EITHER palette; icons as `juce::Path`; motion off unless the application turns it on; a control reachable by tab, ringed when focused, and named for a screen reader
 - [Gestures and hotkeys](.ai/rules/gestures-and-hotkeys.md) — every key a row in `Hotkeys.h`, `matches()` ignores shift, a wheel notch is pixels divided at the point of use, and view geometry lives on the view
@@ -23,6 +23,7 @@ these files.
 - [The score language](.ai/rules/score-language.md) — `dew_lang` links nothing, hand-written RNG keyed on the structural path, byte-identical **across processes**, the three host walls, and what is settled
 - [Rendering and export](.ai/rules/render-and-export.md) — a bar range renders from sample 0, stems mute rather than solo, LAME encodes in its writer's destructor, and the post-processing order
 - [Automation](.ai/rules/automation.md) — one evaluator, `automationTargetFor` as the primitive, `ParamSpec::automatable` as the only gate, `TempoMap::isConstant` as correctness, and what is deliberately not automatable
+- [Strings](.ai/rules/i18n.md) — every sentence a person reads is a structural key in `resources/i18n/en.json`; `StringIds.h` is generated; `tr` never returns empty; what is deliberately not translated
 - [C++ style](.ai/rules/cpp-style.md) — `.clang-format` is the authority; hand-grouped includes, the `juce::String` ASCII/UTF-8 trap, and the standard-library limits on this deployment target
 - [Workflow](.ai/rules/workflow.md) — `./scripts/check.sh`, the generated files, the dependency pins, commit style, and why `build/ci` is not the app
 
@@ -57,6 +58,9 @@ Full set in [`.ai/rules/`](.ai/rules/). The ones an agent trips over first:
 - **`dew_lang` links nothing at all**, JUCE included, and never uses `std::shuffle`,
   `std::uniform_int_distribution` or `juce::Random` — libstdc++ and libc++ would render
   different music.
+- **No user-facing string is written in a source file.** Every sentence a person reads is
+  a key in `resources/i18n/en.json`, reached as `tr (StringId::x)`; a gate refuses a literal
+  at any text-setting call. `StringIds.h` is generated from that file into the build tree.
 - **`THIRD_PARTY.md`, `examples/`, `presets/` and `.cursor/rules/main.mdc` are generated.**
   Never hand-edit one; regenerate it in the same commit.
 - **`build/ci` is not the app.** The user opens

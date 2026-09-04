@@ -1,13 +1,14 @@
 # Architecture
 
-Seven static libraries. **There is no `dew_core`** — anything that says so is out of date.
+Eight static libraries. **There is no `dew_core`** — anything that says so is out of date.
 The layering is a link error, which is the whole reason they are libraries rather than
 directories; see [README.md](../../README.md#architecture) for the argument.
 
 | Library | Directory | May depend on |
 | --- | --- | --- |
 | `dew_lang` | `src/lang/` | **nothing at all**, JUCE included |
-| `dew_model` | `src/model/` | JUCE core only. A leaf: nothing of dew's |
+| `dew_i18n` | `src/i18n/` | `juce_core` only — so a catalogue cannot open a file or build a `ValueTree` |
+| `dew_model` | `src/model/` | `dew_lang`, `dew_i18n`, JUCE data structures and graphics |
 | `dew_engine` | `src/engine/` | `dew_model`. Neither `juce_audio_devices` nor `juce_audio_formats` |
 | `dew_io` | `src/io/` | `dew_engine`. Everything that touches a file or a device lives here |
 | `dew_design` | `src/ui/design/`, `src/ui/primitives/` | JUCE. Knows nothing about a project |
@@ -23,9 +24,13 @@ Consequences you will hit:
   (`SampleProvider.h`, `SoundFontProvider.h`) and `dew_io` supplies it.
 - **`dew_app` cannot clamp to a token.** `Settings` stores such a number raw and the view
   clamps; restating the bounds in `Settings.h` trips the size-ladder gate.
-- **Adding a library** means adding it to the `DEW_GATE_SOURCES` foreach in
-  `tests/CMakeLists.txt` *and* to the layer list in the gate "every layer is represented
-  in the scanned sources". Miss either and the gates silently stop covering it.
+- **Adding a library** means three edits, not two: the `foreach` in `tests/CMakeLists.txt`,
+  the layer list in the gate "every layer is represented in the scanned sources", *and*
+  the `directDeps` map in "no layer includes a header a layer above it owns". Miss one of
+  the first two and the gates silently stop covering it; miss the third and the gate throws
+  an exception that names nothing — there is a `REQUIRE` there now that names it instead.
+- **Only `dew_model` names `dew_i18n`**, PUBLIC, and every layer above inherits it. Naming
+  an inherited library a second time makes every link warn about a duplicate.
 
 ## The document
 
