@@ -1,5 +1,6 @@
 #include "ui/PianoRollComponent.h"
 
+#include "i18n/Strings.h"
 #include "ui/PianoRollNotes.h"
 
 #include "model/EntityColour.h"
@@ -31,7 +32,7 @@ PianoRollComponent::PianoRollComponent (ProjectDocument& d, AudioEngine& e, Edit
     // not keyboardFocusContainer: the two flags are independent, and the second
     // would confine the tab key to this panel with no key to leave it - a
     // keyboard trap, which is worse than the flat tab order it would tidy.
-    setTitle ("Piano roll");
+    setTitle (tr (StringId::pianoRoll_title));
     setFocusContainerType (FocusContainerType::focusContainer);
 
     setWantsKeyboardFocus (true);

@@ -22,7 +22,7 @@ RandomizePanel::RandomizePanel (NoteTools::RandomizeOptions initial, juce::Strin
     stepField.setRange (0.0, 8.0, 1.0);
     stepField.setNumDecimalPlaces (0);
     stepField.setCaption ("TIMING");
-    stepField.setSuffix (" steps");
+    stepField.setSuffix (tr (StringId::unit_steps));
     stepField.setTooltip (tr (StringId::randomize_step_help));
     addAndMakeVisible (stepField);
 

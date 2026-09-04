@@ -168,7 +168,7 @@ TransportBar::TransportBar (ProjectDocument& d, AudioEngine& e, EditorState& s)
     // A suffix rather than a caption, matching the tempo field beside it: a
     // caption reserves 12px above the value, which made this the only control
     // in the bar that could not share the common height.
-    patternLengthField.setSuffix (" steps");
+    patternLengthField.setSuffix (tr (StringId::unit_steps));
     patternLengthField.setTooltip (tr (StringId::transport_patternLength_help));
     patternLengthField.onEditStart = [this] { lengthGestureActive = false; };
     patternLengthField.onValueChange = [this]

@@ -39,7 +39,7 @@ InstrumentPanel::InstrumentPanel (ProjectDocument& d, EditorState& s, SamplePool
     // not keyboardFocusContainer: the two flags are independent, and the second
     // would confine the tab key to this panel with no key to leave it - a
     // keyboard trap, which is worse than the flat tab order it would tidy.
-    setTitle ("Instrument");
+    setTitle (tr (StringId::instrument_title));
     setFocusContainerType (FocusContainerType::focusContainer);
 
     addAndMakeVisible (chainHost);
@@ -285,7 +285,7 @@ void InstrumentPanel::refresh()
 
     if (! valid)
     {
-        titleLabel.setText ("No channel selected", juce::dontSendNotification);
+        titleLabel.setText (tr (StringId::instrument_empty), juce::dontSendNotification);
         return;
     }
 

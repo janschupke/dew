@@ -1,5 +1,6 @@
 #include "ui/SampleSection.h"
 
+#include "i18n/Strings.h"
 #include "model/ProjectEdits.h"
 #include "ui/design/Cursors.h"
 #include "ui/design/Tokens.h"
@@ -22,7 +23,7 @@ SampleSection::SampleSection (ProjectDocument& d, SamplePool* p)
     // not keyboardFocusContainer: the two flags are independent, and the second
     // would confine the tab key to this panel with no key to leave it - a
     // keyboard trap, which is worse than the flat tab order it would tidy.
-    setTitle ("Sample");
+    setTitle (tr (StringId::sample_title));
     setFocusContainerType (FocusContainerType::focusContainer);
 
     fadeInKnob.setNumDecimalPlaces (0);

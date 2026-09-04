@@ -1,4 +1,5 @@
 #include "ui/MidiSettingsPanel.h"
+#include "i18n/Strings.h"
 #include "ui/DewDialog.h"
 
 #include "ui/design/Tokens.h"
@@ -79,7 +80,7 @@ MidiSettingsPanel::MidiSettingsPanel (MidiInputHost& h, Settings* s)
     // not keyboardFocusContainer: the two flags are independent, and the second
     // would confine the tab key to this panel with no key to leave it - a
     // keyboard trap, which is worse than the flat tab order it would tidy.
-    setTitle ("MIDI settings");
+    setTitle (tr (StringId::midi_title));
     setFocusContainerType (FocusContainerType::focusContainer);
 
     setSize (preferredWidth, preferredHeight);

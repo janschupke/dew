@@ -1,5 +1,6 @@
 #include "ui/EffectChainComponent.h"
 
+#include "i18n/Strings.h"
 #include "ui/EffectCard.h"
 
 #include "model/PresetLibrary.h"
@@ -35,7 +36,7 @@ EffectChainComponent::EffectChainComponent (ProjectDocument& d, EditorState& s)
     // not keyboardFocusContainer: the two flags are independent, and the second
     // would confine the tab key to this panel with no key to leave it - a
     // keyboard trap, which is worse than the flat tab order it would tidy.
-    setTitle ("Effect chain");
+    setTitle (tr (StringId::effect_chain_title));
     setFocusContainerType (FocusContainerType::focusContainer);
 
     // Only so escape can abandon a reorder; the chain grabs it when a drag

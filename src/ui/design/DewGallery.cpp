@@ -3,6 +3,7 @@
 #include <array>
 #include <cmath>
 
+#include "i18n/Strings.h"
 #include "model/Ids.h"
 #include "model/ModuleCatalog.h"
 #include "ui/design/DewGalleryPalette.h"
@@ -181,7 +182,7 @@ DewGallery::DewGallery()
     tempo->setRange (20.0, 300.0, 0.1);
     tempo->setValue (128.0, juce::dontSendNotification);
     tempo->setNumDecimalPlaces (1);
-    tempo->setSuffix (" bpm");
+    tempo->setSuffix (tr (StringId::unit_bpm));
     add (tempo);
 
     auto* steps = new DewNumberField();

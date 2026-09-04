@@ -2,7 +2,8 @@
   "audio": {
     "test": {
       "help": "Play a short note through the current device"
-    }
+    },
+    "title": "Audio settings"
   },
   "automation": {
     "master": "Master",
@@ -22,7 +23,8 @@
     },
     "arm": {
       "help": "Arm this channel for recording"
-    }
+    },
+    "title": "Channel rack"
   },
   "dialog": {
     "deletePattern": {
@@ -32,17 +34,25 @@
     }
   },
   "effect": {
+    "chain": {
+      "title": "Effect chain"
+    },
     "expand": {
       "help": "Show or hide this effect's controls"
     }
   },
   "instrument": {
+    "empty": "No channel selected",
     "mixer": {
       "help": "Which mixer track this channel plays through"
     },
     "preset": {
       "help": "Load a factory sound onto this channel"
-    }
+    },
+    "title": "Instrument"
+  },
+  "midi": {
+    "title": "MIDI settings"
   },
   "mixer": {
     "addInsert": {
@@ -50,7 +60,8 @@
     },
     "pan": {
       "name": "Pan"
-    }
+    },
+    "title": "Mixer"
   },
   "oscillator": {
     "mod": {
@@ -58,6 +69,9 @@
     },
     "mode": {
       "help": "Which generator this oscillator runs"
+    },
+    "octave": {
+      "caption": "OCT"
     },
     "position": {
       "help": "Where in the table this oscillator sits"
@@ -77,6 +91,7 @@
     "table": {
       "help": "Which wavetable this oscillator reads"
     },
+    "title": "Oscillators",
     "unison": {
       "help": "How many detuned copies of this oscillator to stack"
     },
@@ -96,7 +111,8 @@
     },
     "snap": {
       "help": "Grid the editing gestures snap to"
-    }
+    },
+    "title": "Piano roll"
   },
   "playlist": {
     "addAutomation": {
@@ -104,7 +120,8 @@
     },
     "addTrack": {
       "help": "Add a track to the arrangement"
-    }
+    },
+    "title": "Playlist"
   },
   "randomize": {
     "step": {
@@ -119,6 +136,9 @@
       "help": "Time rendered after the music ends, so release tails are not cut off"
     }
   },
+  "sample": {
+    "title": "Sample"
+  },
   "score": {
     "compile": {
       "help": "Turn this score into patterns, notes and clips (cmd-R)"
@@ -129,6 +149,7 @@
       "help": "Choose a SoundFont file for this channel to play"
     },
     "preset": {
+      "caption": "Sound",
       "help": "Which sound inside the soundfont this channel plays"
     }
   },
@@ -147,11 +168,16 @@
       "help": "Which pattern the rack and the piano roll are editing"
     },
     "patternLength": {
-      "help": "Pattern length - drag up and down, or double-click to type",
-      "suffix": " steps"
+      "help": "Pattern length - drag up and down, or double-click to type"
     },
     "tempo": {
       "help": "Tempo - drag up and down, or double-click to type"
     }
+  },
+  "unit": {
+    "bpm": " bpm",
+    "decibels": " dB",
+    "seconds": " s",
+    "steps": " steps"
   }
 }

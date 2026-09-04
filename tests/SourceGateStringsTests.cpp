@@ -26,7 +26,8 @@ namespace
 */
 bool showsALiteral (const juce::String& line)
 {
-    for (const auto* sink : { "setTooltip (" })
+    for (const auto* sink :
+         { "setTooltip (", "setButtonText (", "setText (", "setTitle (", "setSuffix (" })
     {
         if (! line.contains (sink))
             continue;

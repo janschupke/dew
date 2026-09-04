@@ -26,7 +26,7 @@ OscillatorSection::OscillatorSection (ProjectDocument& d, EditorState& s)
     // not keyboardFocusContainer: the two flags are independent, and the second
     // would confine the tab key to this panel with no key to leave it - a
     // keyboard trap, which is worse than the flat tab order it would tidy.
-    setTitle ("Oscillators");
+    setTitle (tr (StringId::oscillator_title));
     setFocusContainerType (FocusContainerType::focusContainer);
 
     for (int i = 0; i < kMaxOscillators; ++i)
@@ -84,7 +84,7 @@ OscillatorSection::OscillatorSection (ProjectDocument& d, EditorState& s)
     };
     addAndMakeVisible (sourceBox);
 
-    octaveLabel.setText ("OCT", juce::dontSendNotification);
+    octaveLabel.setText (tr (StringId::oscillator_octave_caption), juce::dontSendNotification);
     octaveLabel.setFont (type::font (type::caption));
     octaveLabel.setTextColourToken (colour::textSecondary);
     addAndMakeVisible (octaveLabel);

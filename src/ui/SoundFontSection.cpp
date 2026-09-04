@@ -262,7 +262,7 @@ void SoundFontSection::refresh()
         presetBox.addItem (items[i], i + 1);
 
     presetBox.setEnabled (valid && ! items.isEmpty());
-    presetLabel.setText ("Sound", juce::dontSendNotification);
+    presetLabel.setText (tr (StringId::soundFont_preset_caption), juce::dontSendNotification);
 
     if (valid)
     {

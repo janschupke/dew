@@ -53,13 +53,13 @@ RenderPanel::RenderPanel (ProjectDocument& d, EditorState& state, Settings* sett
 
     tailField.setRange (0.0, 30.0, 0.1);
     tailField.setNumDecimalPlaces (1);
-    tailField.setSuffix (" s");
+    tailField.setSuffix (tr (StringId::unit_seconds));
     tailField.setValue (1.0, juce::dontSendNotification);
     tailField.setTooltip (tr (StringId::render_tail_help));
 
     peakField.setRange (-24.0, 0.0, 0.1);
     peakField.setNumDecimalPlaces (1);
-    peakField.setSuffix (" dB");
+    peakField.setSuffix (tr (StringId::unit_decibels));
     peakField.setValue (-1.0, juce::dontSendNotification);
     peakField.setTooltip (tr (StringId::render_peak_help));
 
