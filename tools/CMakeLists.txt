@@ -59,3 +59,28 @@ target_link_libraries(dew_score
     juce::juce_recommended_config_flags
     juce::juce_recommended_warning_flags
 )
+
+# ==============================================================================
+# dew_docs - writes the score language's schema as JSON, for the website.
+#
+# A plain add_executable, and dew_lang alone on the link line. dew_lang links
+# nothing at all, JUCE included, so this tool does not either - which makes it a
+# second place that claim is proved rather than merely asserted, and lets the
+# lang-linux job build it under gcc and libstdc++ for free.
+#
+# It is deliberately NOT a mode on dew_score. The design tokens live in
+# dew_design, which PUBLIC-links dew_engine; one tool emitting both artefacts
+# would put juce_gui_basics on the link line of the score compiler, which is the
+# mistake dew_render's header comment above already records once. The tokens are
+# emitted by dew_shot, which links dew_ui already and whose job is showing the
+# design system.
+# ==============================================================================
+
+add_executable(dew_docs docs_main.cpp)
+
+target_link_libraries(dew_docs
+  PRIVATE
+    dew_lang
+    juce::juce_recommended_config_flags
+    juce::juce_recommended_warning_flags
+)

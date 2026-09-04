@@ -109,6 +109,19 @@ jobs:
             editor "${RUNNER_TEMP}/roll.png" --project examples/melody.dew --tab piano-roll
           test -s "${RUNNER_TEMP}/roll.png"
 
+      # The website's copy of the score language, regenerated in a SECOND
+      # PROCESS and compared byte for byte.
+      #
+      # dew_tests already holds the committed file against what the emitter
+      # writes, in process. This is the other half, and it is the half that
+      # caught the score compiler: two runs inside one process read the same
+      # memory and agree even when something is reading memory it should not.
+      # It costs a second and it needs no Node.
+      - name: The generated reference is what the emitter writes
+        run: |
+          ./build/ci/tools/dew_docs schema "${RUNNER_TEMP}/score-schema.json"
+          cmp "${RUNNER_TEMP}/score-schema.json" website/src/generated/score-schema.json
+
       # The manifest is generated at configure time; if it differs from what is
       # committed, the two have drifted.
       - name: Dependency manifest is up to date

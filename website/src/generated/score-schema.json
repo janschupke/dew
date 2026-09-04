@@ -1,0 +1,877 @@
+{
+  "valueKinds": [
+    {
+      "name": "text",
+      "doc": "a quoted string",
+      "members": []
+    },
+    {
+      "name": "integer",
+      "doc": "a whole number",
+      "members": []
+    },
+    {
+      "name": "number",
+      "doc": "a number",
+      "members": []
+    },
+    {
+      "name": "tempo",
+      "doc": "a tempo, like `96 bpm`",
+      "members": []
+    },
+    {
+      "name": "meter",
+      "doc": "a meter, like `4/4`",
+      "members": []
+    },
+    {
+      "name": "grid",
+      "doc": "`auto` or a number of steps per beat",
+      "members": []
+    },
+    {
+      "name": "key",
+      "doc": "a key, like `F minor`",
+      "members": []
+    },
+    {
+      "name": "seed",
+      "doc": "a number",
+      "members": []
+    },
+    {
+      "name": "pitchRange",
+      "doc": "a pitch range, like `C3..C5`",
+      "members": []
+    },
+    {
+      "name": "bars",
+      "doc": "a number of bars, like `8 bars`",
+      "members": []
+    },
+    {
+      "name": "jitteredInt",
+      "doc": "a number, optionally `+- n`",
+      "members": []
+    },
+    {
+      "name": "voices",
+      "doc": "a number of voices, like `4 voices`",
+      "members": []
+    },
+    {
+      "name": "muteBudget",
+      "doc": "a budget, like `1 of 4`",
+      "members": []
+    },
+    {
+      "name": "spread",
+      "doc": "a voicing spread",
+      "members": [
+        "close",
+        "open",
+        "drop2",
+        "drop3",
+        "shell",
+        "rootless"
+      ]
+    },
+    {
+      "name": "motion",
+      "doc": "a voice-leading motion",
+      "members": [
+        "smooth",
+        "parallel",
+        "fixed"
+      ]
+    },
+    {
+      "name": "contour",
+      "doc": "a melodic contour",
+      "members": [
+        "arch",
+        "rise",
+        "fall",
+        "flat",
+        "wave"
+      ]
+    },
+    {
+      "name": "strongRule",
+      "doc": "a strong-beat rule",
+      "members": [
+        "chord-tones",
+        "scale-tones",
+        "free"
+      ]
+    },
+    {
+      "name": "articulation",
+      "doc": "an articulation",
+      "members": [
+        "legato",
+        "detached"
+      ]
+    },
+    {
+      "name": "lineSource",
+      "doc": "a line source",
+      "members": [
+        "root",
+        "root-fifth",
+        "root-third-fifth"
+      ]
+    },
+    {
+      "name": "cadence",
+      "doc": "a chord tone to end on",
+      "members": []
+    },
+    {
+      "name": "rule",
+      "doc": "`forbid`, or `soft` and a weight",
+      "members": []
+    },
+    {
+      "name": "bassRule",
+      "doc": "which note goes at the bottom",
+      "members": [
+        "from-inversion",
+        "root",
+        "any"
+      ]
+    },
+    {
+      "name": "leapRule",
+      "doc": "`max <semitones>`, and how a leap is answered",
+      "members": []
+    },
+    {
+      "name": "alignment",
+      "doc": "whether a rhythm restarts at each bar",
+      "members": [
+        "bar",
+        "continuous"
+      ]
+    },
+    {
+      "name": "transposeMode",
+      "doc": "`diatonic` or `chromatic`",
+      "members": [
+        "diatonic",
+        "chromatic"
+      ]
+    },
+    {
+      "name": "scope",
+      "doc": "how often a choice is re-drawn",
+      "members": [
+        "note",
+        "bar",
+        "instance",
+        "section",
+        "song"
+      ]
+    },
+    {
+      "name": "instrument",
+      "doc": "an instrument",
+      "members": [
+        "synth"
+      ]
+    },
+    {
+      "name": "rhythmRef",
+      "doc": "the name of a declared rhythm",
+      "members": []
+    },
+    {
+      "name": "voicingRef",
+      "doc": "the name of a declared voicing",
+      "members": []
+    },
+    {
+      "name": "harmonyRef",
+      "doc": "the name of a declared harmony",
+      "members": []
+    },
+    {
+      "name": "channelRef",
+      "doc": "the name of a declared channel",
+      "members": []
+    }
+  ],
+  "blocks": [
+    {
+      "kind": "song",
+      "doc": "whole-song properties",
+      "topLevel": true,
+      "keys": [
+        {
+          "name": "title",
+          "kind": "text",
+          "kindDoc": "a quoted string",
+          "required": false,
+          "overridable": false,
+          "doc": "the song's name"
+        },
+        {
+          "name": "tempo",
+          "kind": "tempo",
+          "kindDoc": "a tempo, like `96 bpm`",
+          "required": true,
+          "overridable": false,
+          "doc": "beats per minute"
+        },
+        {
+          "name": "meter",
+          "kind": "meter",
+          "kindDoc": "a meter, like `4/4`",
+          "required": true,
+          "overridable": false,
+          "doc": "beats per bar over the beat unit"
+        },
+        {
+          "name": "grid",
+          "kind": "grid",
+          "kindDoc": "`auto` or a number of steps per beat",
+          "required": false,
+          "overridable": false,
+          "doc": "steps per beat, or `auto` to derive it from the durations written"
+        },
+        {
+          "name": "key",
+          "kind": "key",
+          "kindDoc": "a key, like `F minor`",
+          "required": true,
+          "overridable": false,
+          "doc": "the home key"
+        },
+        {
+          "name": "seed",
+          "kind": "seed",
+          "kindDoc": "a number",
+          "required": false,
+          "overridable": false,
+          "doc": "the root of every random choice"
+        }
+      ],
+      "children": []
+    },
+    {
+      "kind": "channel",
+      "doc": "one instrument",
+      "topLevel": true,
+      "keys": [
+        {
+          "name": "instrument",
+          "kind": "instrument",
+          "kindDoc": "an instrument",
+          "required": false,
+          "overridable": false,
+          "doc": "what plays this part"
+        },
+        {
+          "name": "mixer",
+          "kind": "integer",
+          "kindDoc": "a whole number",
+          "required": false,
+          "overridable": false,
+          "doc": "the mixer track to route to"
+        },
+        {
+          "name": "range",
+          "kind": "pitchRange",
+          "kindDoc": "a pitch range, like `C3..C5`",
+          "required": false,
+          "overridable": false,
+          "doc": "the pitches this channel may use"
+        },
+        {
+          "name": "velocity",
+          "kind": "jitteredInt",
+          "kindDoc": "a number, optionally `+- n`",
+          "required": false,
+          "overridable": true,
+          "doc": "0..127, optionally jittered"
+        },
+        {
+          "name": "octave",
+          "kind": "integer",
+          "kindDoc": "a whole number",
+          "required": false,
+          "overridable": true,
+          "doc": "octaves to shift by"
+        }
+      ],
+      "children": []
+    },
+    {
+      "kind": "voicing",
+      "doc": "how a chord is laid out",
+      "topLevel": true,
+      "keys": [
+        {
+          "name": "size",
+          "kind": "voices",
+          "kindDoc": "a number of voices, like `4 voices`",
+          "required": false,
+          "overridable": false,
+          "doc": "how many voices sound"
+        },
+        {
+          "name": "spread",
+          "kind": "spread",
+          "kindDoc": "a voicing spread",
+          "required": false,
+          "overridable": false,
+          "doc": "how the voices are laid out"
+        },
+        {
+          "name": "register",
+          "kind": "pitchRange",
+          "kindDoc": "a pitch range, like `C3..C5`",
+          "required": false,
+          "overridable": false,
+          "doc": "where the voicing sits"
+        },
+        {
+          "name": "motion",
+          "kind": "motion",
+          "kindDoc": "a voice-leading motion",
+          "required": false,
+          "overridable": false,
+          "doc": "how it moves from the chord before"
+        },
+        {
+          "name": "maxLeap",
+          "kind": "integer",
+          "kindDoc": "a whole number",
+          "required": false,
+          "overridable": false,
+          "doc": "the largest jump one voice may make"
+        },
+        {
+          "name": "bass",
+          "kind": "bassRule",
+          "kindDoc": "which note goes at the bottom",
+          "required": false,
+          "overridable": false,
+          "doc": "which note goes at the bottom - `from-inversion` honours `^N`"
+        }
+      ],
+      "children": []
+    },
+    {
+      "kind": "rhythm",
+      "doc": "a cycle of durations",
+      "topLevel": true,
+      "keys": [],
+      "children": []
+    },
+    {
+      "kind": "harmony",
+      "doc": "a chord progression",
+      "topLevel": true,
+      "keys": [
+        {
+          "name": "key",
+          "kind": "key",
+          "kindDoc": "a key, like `F minor`",
+          "required": false,
+          "overridable": false,
+          "doc": "the key these numerals are read in"
+        }
+      ],
+      "children": []
+    },
+    {
+      "kind": "section",
+      "doc": "a named span of bars",
+      "topLevel": true,
+      "keys": [
+        {
+          "name": "length",
+          "kind": "bars",
+          "kindDoc": "a number of bars, like `8 bars`",
+          "required": true,
+          "overridable": false,
+          "doc": "how long this section is"
+        },
+        {
+          "name": "harmony",
+          "kind": "harmonyRef",
+          "kindDoc": "the name of a declared harmony",
+          "required": false,
+          "overridable": false,
+          "doc": "which progression it uses"
+        }
+      ],
+      "children": [
+        "part",
+        "harmony"
+      ]
+    },
+    {
+      "kind": "part",
+      "doc": "what one channel plays in this section",
+      "topLevel": false,
+      "keys": [
+        {
+          "name": "chords",
+          "kind": "voicingRef",
+          "kindDoc": "the name of a declared voicing",
+          "required": false,
+          "overridable": false,
+          "doc": "play the harmony, voiced"
+        },
+        {
+          "name": "line",
+          "kind": "lineSource",
+          "kindDoc": "a line source",
+          "required": false,
+          "overridable": false,
+          "doc": "play a single line"
+        },
+        {
+          "name": "rhythm",
+          "kind": "rhythmRef",
+          "kindDoc": "the name of a declared rhythm",
+          "required": false,
+          "overridable": true,
+          "doc": "which rhythm to use"
+        },
+        {
+          "name": "octave",
+          "kind": "integer",
+          "kindDoc": "a whole number",
+          "required": false,
+          "overridable": true,
+          "doc": "octaves to shift by"
+        }
+      ],
+      "children": [
+        "melody",
+        "counterpoint",
+        "imitate",
+        "rhythm"
+      ]
+    },
+    {
+      "kind": "melody",
+      "doc": "a generated single-voice line",
+      "topLevel": false,
+      "keys": [
+        {
+          "name": "rhythm",
+          "kind": "rhythmRef",
+          "kindDoc": "the name of a declared rhythm",
+          "required": false,
+          "overridable": true,
+          "doc": "which rhythm to use"
+        },
+        {
+          "name": "articulation",
+          "kind": "articulation",
+          "kindDoc": "an articulation",
+          "required": false,
+          "overridable": true,
+          "doc": "how long each note sounds"
+        },
+        {
+          "name": "contour",
+          "kind": "contour",
+          "kindDoc": "a melodic contour",
+          "required": false,
+          "overridable": true,
+          "doc": "the shape of the line"
+        },
+        {
+          "name": "strong",
+          "kind": "strongRule",
+          "kindDoc": "a strong-beat rule",
+          "required": false,
+          "overridable": true,
+          "doc": "what may fall on a strong beat"
+        },
+        {
+          "name": "variance",
+          "kind": "number",
+          "kindDoc": "a number",
+          "required": false,
+          "overridable": true,
+          "doc": "0 is the same every compile; above 0 explores, reproducibly"
+        },
+        {
+          "name": "mute",
+          "kind": "muteBudget",
+          "kindDoc": "a budget, like `1 of 4`",
+          "required": false,
+          "overridable": true,
+          "doc": "how many onsets become rests"
+        },
+        {
+          "name": "leap",
+          "kind": "leapRule",
+          "kindDoc": "`max <semitones>`, and how a leap is answered",
+          "required": false,
+          "overridable": true,
+          "doc": "the widest jump, and whether one has to be answered by a step"
+        },
+        {
+          "name": "align",
+          "kind": "alignment",
+          "kindDoc": "whether a rhythm restarts at each bar",
+          "required": false,
+          "overridable": true,
+          "doc": "`bar` restarts the rhythm at each bar line; `continuous` lets it phase"
+        },
+        {
+          "name": "cadence",
+          "kind": "cadence",
+          "kindDoc": "a chord tone to end on",
+          "required": false,
+          "overridable": true,
+          "doc": "which tone of the last chord to end on - `1`, or `choose [1 3 5] per instance`"
+        },
+        {
+          "name": "range",
+          "kind": "pitchRange",
+          "kindDoc": "a pitch range, like `C3..C5`",
+          "required": false,
+          "overridable": true,
+          "doc": "the pitches this melody may use"
+        }
+      ],
+      "children": [
+        "rhythm"
+      ]
+    },
+    {
+      "kind": "counterpoint",
+      "doc": "a voice written against another",
+      "topLevel": false,
+      "keys": [
+        {
+          "name": "rhythm",
+          "kind": "rhythmRef",
+          "kindDoc": "the name of a declared rhythm",
+          "required": false,
+          "overridable": true,
+          "doc": "which rhythm to use"
+        },
+        {
+          "name": "articulation",
+          "kind": "articulation",
+          "kindDoc": "an articulation",
+          "required": false,
+          "overridable": true,
+          "doc": "how long each note sounds"
+        },
+        {
+          "name": "range",
+          "kind": "pitchRange",
+          "kindDoc": "a pitch range, like `C3..C5`",
+          "required": false,
+          "overridable": true,
+          "doc": "the pitches this voice may use"
+        },
+        {
+          "name": "variance",
+          "kind": "number",
+          "kindDoc": "a number",
+          "required": false,
+          "overridable": true,
+          "doc": "0 is the same every compile; above 0 explores, reproducibly"
+        },
+        {
+          "name": "align",
+          "kind": "alignment",
+          "kindDoc": "whether a rhythm restarts at each bar",
+          "required": false,
+          "overridable": true,
+          "doc": "`bar` restarts the rhythm at each bar line; `continuous` lets it phase"
+        },
+        {
+          "name": "parallel-fifths",
+          "kind": "rule",
+          "kindDoc": "`forbid`, or `soft` and a weight",
+          "required": false,
+          "overridable": true,
+          "doc": "two voices moving in parallel into a fifth"
+        },
+        {
+          "name": "parallel-octaves",
+          "kind": "rule",
+          "kindDoc": "`forbid`, or `soft` and a weight",
+          "required": false,
+          "overridable": true,
+          "doc": "the same, into an octave or a unison"
+        },
+        {
+          "name": "direct-fifths",
+          "kind": "rule",
+          "kindDoc": "`forbid`, or `soft` and a weight",
+          "required": false,
+          "overridable": true,
+          "doc": "both voices moving the same way INTO a fifth or an octave"
+        },
+        {
+          "name": "voice-crossing",
+          "kind": "rule",
+          "kindDoc": "`forbid`, or `soft` and a weight",
+          "required": false,
+          "overridable": true,
+          "doc": "this voice passing through the one it answers"
+        },
+        {
+          "name": "dissonance-on-strong",
+          "kind": "rule",
+          "kindDoc": "`forbid`, or `soft` and a weight",
+          "required": false,
+          "overridable": true,
+          "doc": "a dissonant interval on a beat that carries weight"
+        },
+        {
+          "name": "leaps",
+          "kind": "rule",
+          "kindDoc": "`forbid`, or `soft` and a weight",
+          "required": false,
+          "overridable": true,
+          "doc": "how much a jump costs"
+        },
+        {
+          "name": "repeats",
+          "kind": "rule",
+          "kindDoc": "`forbid`, or `soft` and a weight",
+          "required": false,
+          "overridable": true,
+          "doc": "how much repeating the same pitch costs"
+        }
+      ],
+      "children": [
+        "rhythm"
+      ]
+    },
+    {
+      "kind": "imitate",
+      "doc": "a voice repeating another, later",
+      "topLevel": false,
+      "keys": [
+        {
+          "name": "delay",
+          "kind": "bars",
+          "kindDoc": "a number of bars, like `8 bars`",
+          "required": true,
+          "overridable": true,
+          "doc": "how far behind the voice it copies"
+        },
+        {
+          "name": "transpose",
+          "kind": "integer",
+          "kindDoc": "a whole number",
+          "required": false,
+          "overridable": true,
+          "doc": "how far up or down, in scale degrees or semitones"
+        },
+        {
+          "name": "mode",
+          "kind": "transposeMode",
+          "kindDoc": "`diatonic` or `chromatic`",
+          "required": false,
+          "overridable": true,
+          "doc": "`diatonic` stays in the key; `chromatic` moves exactly"
+        }
+      ],
+      "children": []
+    },
+    {
+      "kind": "arrangement",
+      "doc": "the order the sections play in",
+      "topLevel": true,
+      "keys": [],
+      "children": []
+    },
+    {
+      "kind": "overrides",
+      "doc": "per-instance changes",
+      "topLevel": false,
+      "keys": [],
+      "children": [
+        "part"
+      ]
+    }
+  ],
+  "modes": [
+    {
+      "name": "major",
+      "degrees": [
+        0,
+        2,
+        4,
+        5,
+        7,
+        9,
+        11
+      ],
+      "romanNumerals": true
+    },
+    {
+      "name": "minor",
+      "degrees": [
+        0,
+        2,
+        3,
+        5,
+        7,
+        8,
+        10
+      ],
+      "romanNumerals": true
+    },
+    {
+      "name": "dorian",
+      "degrees": [
+        0,
+        2,
+        3,
+        5,
+        7,
+        9,
+        10
+      ],
+      "romanNumerals": true
+    },
+    {
+      "name": "phrygian",
+      "degrees": [
+        0,
+        1,
+        3,
+        5,
+        7,
+        8,
+        10
+      ],
+      "romanNumerals": true
+    },
+    {
+      "name": "lydian",
+      "degrees": [
+        0,
+        2,
+        4,
+        6,
+        7,
+        9,
+        11
+      ],
+      "romanNumerals": true
+    },
+    {
+      "name": "mixolydian",
+      "degrees": [
+        0,
+        2,
+        4,
+        5,
+        7,
+        9,
+        10
+      ],
+      "romanNumerals": true
+    },
+    {
+      "name": "locrian",
+      "degrees": [
+        0,
+        1,
+        3,
+        5,
+        6,
+        8,
+        10
+      ],
+      "romanNumerals": true
+    },
+    {
+      "name": "harmonic-minor",
+      "degrees": [
+        0,
+        2,
+        3,
+        5,
+        7,
+        8,
+        11
+      ],
+      "romanNumerals": true
+    },
+    {
+      "name": "melodic-minor",
+      "degrees": [
+        0,
+        2,
+        3,
+        5,
+        7,
+        9,
+        11
+      ],
+      "romanNumerals": true
+    },
+    {
+      "name": "major-pentatonic",
+      "degrees": [
+        0,
+        2,
+        4,
+        7,
+        9
+      ],
+      "romanNumerals": false
+    },
+    {
+      "name": "minor-pentatonic",
+      "degrees": [
+        0,
+        3,
+        5,
+        7,
+        10
+      ],
+      "romanNumerals": false
+    },
+    {
+      "name": "blues",
+      "degrees": [
+        0,
+        3,
+        5,
+        6,
+        7,
+        10
+      ],
+      "romanNumerals": false
+    },
+    {
+      "name": "chromatic",
+      "degrees": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11
+      ],
+      "romanNumerals": false
+    }
+  ]
+}

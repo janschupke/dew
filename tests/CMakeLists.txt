@@ -99,6 +99,8 @@ add_executable(dew_tests
   AudioRecorderTests.cpp
   AudioUiTests.cpp
   CliArgsTests.cpp
+  DocsJsonTests.cpp
+  DocsGenerationTests.cpp
   GestureTests.cpp
   HotkeyTests.cpp
   SourceGateTests.cpp
@@ -160,7 +162,13 @@ target_compile_definitions(dew_tests PRIVATE
   # The catalogue the generator reads. The gate on keys nothing asks for walks
   # it directly rather than the enum, because a key that reached the enum and
   # nothing else is exactly what that gate is looking for.
-  DEW_I18N_DIR="${CMAKE_SOURCE_DIR}/resources/i18n")
+  DEW_I18N_DIR="${CMAKE_SOURCE_DIR}/resources/i18n"
+
+  # What the website reads. The generated JSON is COMMITTED, so the site builds
+  # with no C++ toolchain - and the gate that it is current lives here, where
+  # the emitter is, rather than in a step that would have to write into the
+  # working tree before diffing it.
+  DEW_WEBSITE_GENERATED_DIR="${CMAKE_SOURCE_DIR}/website/src/generated")
 
 # What is actually COMPILED, as opposed to what happens to sit under src/.
 #
@@ -195,7 +203,9 @@ target_compile_definitions(dew_tests PRIVATE
   DEW_COMPILED_SOURCES_FILE="${CMAKE_CURRENT_BINARY_DIR}/compiled-sources.txt")
 
 # The console tools' shared argument parser is header-only and lives beside them,
-# so the suite can test it without either tool being on the link line.
+# so the suite can test it without either tool being on the link line. The docs
+# emitters are header-only for the same reason: the suite compares what they
+# write against the committed copy without dew_docs being linked in.
 target_include_directories(dew_tests PRIVATE "${CMAKE_SOURCE_DIR}/tools")
 
 catch_discover_tests(dew_tests)
