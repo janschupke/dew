@@ -5,7 +5,9 @@
 #include "app/ProjectDocument.h"
 #include "model/Ids.h"
 #include "model/ProjectEdits.h"
+#include "model/AssetPaths.h"
 #include "model/ProjectFactory.h"
+#include "model/ProjectSerializer.h"
 #include "ui/EditorState.h"
 #include "ui/InstrumentPanel.h"
 #include "ui/SoundFontSection.h"
@@ -44,6 +46,22 @@ struct Harness
         return channel;
     }
 };
+
+/** What FileBasedDocument::saveAs does internally - write the document, then
+    adopt the new file as its own. saveAs itself is gated behind
+    JUCE_MODAL_LOOPS_PERMITTED, which a headless test build does not define.
+
+    The order matters: gatherAssetsInto resolves against where the document
+    lived BEFORE the save, which is exactly the path it is rewriting from.
+*/
+bool saveTo (ProjectDocument& document, const juce::File& file)
+{
+    if (! document.saveDocument (file).wasOk())
+        return false;
+
+    document.setFile (file);
+    return true;
+}
 
 } // namespace
 
@@ -155,4 +173,79 @@ TEST_CASE ("the instrument panel shows a third face for a soundfont channel", "[
     CHECK_FALSE (section->isVisible());
     CHECK (oscillators->isVisible());
     CHECK_FALSE (sample->isVisible());
+}
+
+TEST_CASE ("Save As keeps a soundfont reference without copying the font", "[soundfont][assets]")
+{
+    // The decision this whole feature rests on: a soundfont is a library you
+    // own, like a plugin, not a take that belongs to one song - and it can be
+    // five hundred megabytes. gatherAssetsInto copies recordings; it must never
+    // copy one of these.
+    //
+    // But it still has to REWRITE the path, which is not the same thing. A
+    // relative path is relative to where the document lived when it was
+    // written, so a Save As into another folder would leave it pointing at
+    // nothing. The audio path never noticed, because copying into the sidecar
+    // re-relativises as a side effect and this one does not copy.
+    Harness harness;
+    auto channel = harness.addChannel();
+
+    const auto firstFile = harness.directory.dir.getChildFile ("Song.dew");
+    REQUIRE (saveTo (harness.document, firstFile));
+    harness.pool.setProjectFile (firstFile);
+
+    SoundFontSection section (harness.document, &harness.pool);
+    section.setOwner (channel.getChildWithName (ids::SOUNDFONT));
+    section.loadFile (harness.font);
+
+    // Beside the project, so it is stored relatively - which is the case that
+    // breaks if the path is not rewritten.
+    REQUIRE_FALSE (juce::File::isAbsolutePath (
+        channel.getChildWithName (ids::SOUNDFONT)[ids::file].toString()));
+
+    testing::TempDir elsewhere { "dew-soundfont-saveas-" };
+    const auto secondFile = elsewhere.dir.getChildFile ("Song.dew");
+
+    REQUIRE (saveTo (harness.document, secondFile));
+
+    // Not copied.
+    CHECK_FALSE (AssetPaths::sidecarFolderFor (secondFile)
+                     .getChildFile (harness.font.getFileName())
+                     .existsAsFile());
+
+    // And still pointing at the font where it actually lives.
+    const auto stored = channel.getChildWithName (ids::SOUNDFONT)[ids::file].toString();
+    CHECK (AssetPaths::resolve (stored, secondFile) == harness.font);
+    CHECK (AssetPaths::resolve (stored, secondFile).existsAsFile());
+}
+
+TEST_CASE ("a project written before soundfonts existed gains an inert node", "[soundfont][schema]")
+{
+    // Additive with declared defaults, which is what lets every earlier file
+    // load as exactly what it was. Built by taking a real project apart rather
+    // than by hand: a hand-written payload tests the reader against one
+    // person's idea of the format, and misses everything else the schema wants.
+    auto older = ProjectFactory::createDefault();
+
+    for (auto channel : older)
+        if (channel.hasType (ids::CHANNEL))
+            channel.removeChild (channel.getChildWithName (ids::SOUNDFONT), nullptr);
+
+    older.setProperty (ids::formatVersion, 12, nullptr);
+
+    const auto loaded = ProjectSerializer::fromJsonString (ProjectSerializer::toJsonString (older));
+
+    INFO (loaded.warnings.joinIntoString ("\n"));
+    REQUIRE (loaded.ok());
+
+    const auto channel = loaded.tree.getChildWithName (ids::CHANNEL);
+    REQUIRE (channel.isValid());
+
+    const auto node = channel.getChildWithName (ids::SOUNDFONT);
+    REQUIRE (node.isValid());
+
+    CHECK (node[ids::file].toString().isEmpty());
+    CHECK (juce::exactlyEqual ((double) node[ids::velocitySens], 1.0));
+    CHECK (ProjectEdits::playsNotes (channel));
+    CHECK_FALSE (ProjectEdits::playsClips (channel));
 }

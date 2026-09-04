@@ -81,6 +81,29 @@ void ProjectDocument::gatherAssetsInto (const juce::File& projectFile)
         if (! channel.hasType (ids::CHANNEL))
             continue;
 
+        // A soundfont is REFERENCED and never copied: it is a library you own,
+        // like a plugin, not a take that belongs to one song, and it can be
+        // five hundred megabytes.
+        //
+        // Its path still has to be REWRITTEN, though, and that is not the same
+        // thing. A relative path is relative to where the document lived when
+        // it was written, so a Save As into another folder leaves it pointing
+        // at nothing - the audio path never noticed because copying into the
+        // sidecar re-relativises as a side effect, and this one does not copy.
+        if (auto soundFont = channel.getChildWithName (ids::SOUNDFONT); soundFont.isValid())
+        {
+            const auto storedFont = soundFont[ids::file].toString();
+
+            if (storedFont.isNotEmpty())
+            {
+                const auto source = AssetPaths::resolve (storedFont, getFile());
+
+                if (source.existsAsFile())
+                    soundFont.setProperty (ids::file, AssetPaths::relativise (source, projectFile),
+                                           nullptr);
+            }
+        }
+
         auto sample = channel.getChildWithName (ids::SAMPLE);
 
         if (! sample.isValid())
