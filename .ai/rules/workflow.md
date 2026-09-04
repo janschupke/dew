@@ -35,6 +35,7 @@ gate is. Verify a visual change with `dew_shot`, not by reasoning about the code
 | File | Written by | Held by |
 | --- | --- | --- |
 | `THIRD_PARTY.md` | CMake, at configure time | `git diff --exit-code` in `check.sh` |
+| `StringIds.h`, `Catalogs.cpp`, `MessageIds.h`, `MessageCatalogs.cpp`, `PluralTable.h` ×2 | `cmake/GenStrings.cmake`, at build time, into the BUILD tree | never committed; a test compares the two `PluralTable.h` copies |
 | `examples/*` | `dew_render --write-demos examples` | tests pinning file == binary == factory |
 | `presets/*` | `dew_render --write-presets presets` | tests walking the committed list against `PresetFactory`, both ways |
 | `.cursor/rules/main.mdc` | `./scripts/gen-cursor-rules.sh`, from `AGENTS.md` | `--check`, in `check.sh` |

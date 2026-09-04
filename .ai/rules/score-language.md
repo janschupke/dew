@@ -11,7 +11,12 @@ way](#why-it-is-this-way) below is the reasoning.
 - **`dew_lang` links nothing at all**, JUCE included. Keep it that way: a source gate
   asserts it knows nothing of JUCE, and `scripts/linux-check.sh` builds it under gcc and
   libstdc++ in Docker for one claim — that the same score compiles to the same notes under
-  a second standard library.
+  a second standard library. It is also why the language has its own string catalogue and
+  its own message formatter rather than calling `tr` — see [i18n.md](i18n.md).
+- **The compiler holds no mutable global state**, and a locale is not the place to start.
+  `DiagnosticBag` takes one, `compile` and `completionsAt` take one defaulting to the
+  reference, and nothing caches it: two compiles of the same score in one process must not
+  be able to differ by something that changed between them.
 - **Never `std::uniform_int_distribution`, never `std::shuffle`, never `juce::Random`.**
   The standard fixes their statistics, not their algorithms, so libstdc++ and libc++
   render different music. Use the hand-written splitmix64 and PCG32 in `src/lang/Rng.h`.
@@ -57,6 +62,11 @@ escape hatch, and `--json` golden files were cut and stay cut.
 
 ## Traps
 
+- **A score binds a channel BY NAME.** `channel kick` finds the default project's "Kick"
+  case-insensitively, so the demo builders' content names are join keys rather than labels
+  and are never translated. A new project made in another language names its channels
+  otherwise, and a score written against English then creates a channel instead of adopting
+  one — the same behaviour as any other name mismatch. [i18n.md](i18n.md) owns that.
 - **An accidental reads against the MAJOR scale; a bare numeral reads against the mode.**
   Flattening the mode's own degree is right in major (`bVII` = B♭ in C) and a semitone low
   in minor, where the sixth is already flat. Every minor-key score once rendered a semitone

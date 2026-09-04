@@ -299,7 +299,9 @@ dew_i18n     StringIds (generated) · Catalogs (generated) · MessageFormat · P
              Every sentence a person reads, by structural key. Links juce_core and
              nothing else, so a catalogue cannot open a file or build a ValueTree.
 
-dew_lang     The score language. Links nothing at all, JUCE included.
+dew_lang     The score language. Links nothing at all, JUCE included — which is why
+             it carries a second catalogue of its own, generated from the same
+             en.json into std::string_view rows that need no juce::String.
 ```
 
 ## Design system
@@ -466,7 +468,7 @@ writing code and then, under *Why it is this way*, the argument for it.
 | [The score language](.ai/rules/score-language.md) | determinism, counterpoint, the editor, recompiling |
 | [Rendering and export](.ai/rules/render-and-export.md) | bar ranges, stems, LAME, the post-processing order |
 | [Automation](.ai/rules/automation.md) | one evaluator, and what is deliberately not automatable |
-| [Strings](.ai/rules/i18n.md) | structural keys, the generated catalogue, adding a language |
+| [Strings](.ai/rules/i18n.md) | structural keys, the two generated catalogues, what a file's names are, adding a language |
 | [C++ style](.ai/rules/cpp-style.md) | `.clang-format`, includes, the `juce::String` UTF-8 trap |
 | [The website](.ai/rules/website.md) | its own gates, its generated JSON, what it may not do |
 | [Workflow](.ai/rules/workflow.md) | the gate, the generated files, commit style |

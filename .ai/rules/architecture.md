@@ -8,7 +8,7 @@ file.
 
 | Library | Directory | May depend on |
 | --- | --- | --- |
-| `dew_lang` | `src/lang/` | **nothing at all**, JUCE included |
+| `dew_lang` | `src/lang/` | **nothing at all**, JUCE included — so it carries its own string catalogue |
 | `dew_i18n` | `src/i18n/` | `juce_core` only — so a catalogue cannot open a file or build a `ValueTree` |
 | `dew_model` | `src/model/` | `dew_lang`, `dew_i18n`, JUCE data structures and graphics |
 | `dew_engine` | `src/engine/` | `dew_model`. Neither `juce_audio_devices` nor `juce_audio_formats` |
