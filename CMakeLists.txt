@@ -36,6 +36,15 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 # and no Catch2 and said nothing about it.
 option(DEW_BUILD_TESTS "Build the test suite" ON)
 
+# THIRD_PARTY.md is written into the SOURCE TREE at configure time, and its
+# toolchain table records the CMake, compiler and ccache versions that wrote it.
+# That is exactly right for the macOS gate, which diffs the committed copy - and
+# exactly wrong anywhere else: a configure on a Windows or Linux runner, or a
+# `dist` build for packaging, would rewrite the file with a different toolchain
+# and leave the tree dirty for a reason that has nothing to do with the
+# dependencies. Those configures turn this OFF; the recording still happens, so
+# the licence files a package ships are still located.
+option(DEW_WRITE_THIRD_PARTY "Write THIRD_PARTY.md into the source tree" ON)
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
@@ -89,7 +98,9 @@ if(DEW_BUILD_TESTS)
   include(Catch)
 endif()
 
-dew_write_third_party_manifest("${CMAKE_CURRENT_SOURCE_DIR}/THIRD_PARTY.md")
+if(DEW_WRITE_THIRD_PARTY)
+  dew_write_third_party_manifest("${CMAKE_CURRENT_SOURCE_DIR}/THIRD_PARTY.md")
+endif()
 
 # ------------------------------------------------------------------------------
 # Targets
