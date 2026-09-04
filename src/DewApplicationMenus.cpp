@@ -160,6 +160,22 @@ juce::PopupMenu DewApplication::getMenuForIndex (int topLevelMenuIndex, const ju
             theme.addCommandItem (&commandManager, CommandIDs::viewThemeFirst + step);
 
         menu.addSubMenu (tr (StringId::menu_theme), theme);
+
+        // Data-driven, the way the Demos menu is: adding a locale is a JSON
+        // file and a word in CMake, and it appears here without an edit.
+        juce::PopupMenu languages;
+        const auto chosen = settings->getLanguage();
+
+        languages.addItem (languageMenuBaseId, tr (StringId::menu_languageSystem), true,
+                           chosen.isEmpty());
+
+        const auto tags = availableLocales();
+
+        for (int i = 0; i < tags.size(); ++i)
+            languages.addItem (languageMenuBaseId + 1 + i, endonymOf (tags[i]), true,
+                               chosen == tags[i]);
+
+        menu.addSubMenu (tr (StringId::menu_language), languages);
     }
     else if (which == MenuBarItem::transport)
     {
@@ -199,7 +215,14 @@ void DewApplication::menuItemSelected (int menuItemID, int topLevelMenuIndex)
         return;
 
     if (menuBarOrder[(size_t) topLevelMenuIndex] == MenuBarItem::demos)
+    {
         openDemo (menuItemID - demoMenuBaseId);
+        return;
+    }
+
+    if (menuItemID >= languageMenuBaseId
+        && menuItemID <= languageMenuBaseId + availableLocales().size())
+        chooseLanguage (menuItemID - languageMenuBaseId);
 }
 
 void DewApplication::openDemo (int index)
@@ -237,4 +260,18 @@ void DewApplication::openDemo (int index)
             main->showLoadWarnings (warnings);
         });
 }
+void DewApplication::chooseLanguage (int index)
+{
+    // Stored and not applied. setLocale rebuilds the table tr() hands out
+    // references into, so switching under a live interface would leave every
+    // label already built pointing into the table that was replaced. The status
+    // line says so rather than the change happening silently and partly.
+    const auto tags = availableLocales();
+
+    settings->setLanguage (index == 0 ? juce::String() : tags[index - 1]);
+
+    if (auto* main = getMainComponent())
+        main->showLanguageNotice();
+}
+
 } // namespace dew

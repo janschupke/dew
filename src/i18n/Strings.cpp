@@ -149,6 +149,37 @@ juce::StringArray availableLocales()
     return tags;
 }
 
+juce::String endonymOf (juce::StringRef tag)
+{
+    // clang-format off
+    struct Endonym { const char* tag; const char* name; };
+
+    // \u escapes rather than raw bytes or \x: a \x escape swallows every hex
+    // digit that follows it, so "Fran\xc3\xa7ais" reads \xa7a as one character
+    // and does not compile. These are the only non-ASCII literals in dew's own
+    // source, and they are constructed through CharPointer_UTF8 below for the
+    // reason the concatenation gate exists.
+    static const Endonym endonyms[] {
+        { "en", "English" },
+        { "de", "Deutsch" },
+        { "fr", "Fran\u00e7ais" },
+        { "es", "Espa\u00f1ol" },
+        { "cs", "\u010ce\u0161tina" },
+        { "fi", "Suomi" },
+        { "ja", "\u65e5\u672c\u8a9e" },
+    };
+
+    // clang-format on
+
+    const auto language = juce::String (tag).upToFirstOccurrenceOf ("-", false, false);
+
+    for (const auto& row : endonyms)
+        if (language == juce::StringRef (row.tag))
+            return juce::String (juce::CharPointer_UTF8 (row.name));
+
+    return juce::String (tag);
+}
+
 juce::String keyOf (StringId id)
 {
     return juce::String (catalogKeyPaths()[(size_t) id]);

@@ -1,5 +1,7 @@
 #include "app/Settings.h"
 
+#include "i18n/Strings.h"
+
 #include <juce_gui_basics/juce_gui_basics.h>
 
 #include "model/NoteTools.h"
@@ -282,6 +284,24 @@ juce::String Settings::getThemeName() const
 void Settings::setThemeName (const juce::String& name)
 {
     file().setValue ("theme", name);
+}
+
+juce::String Settings::getLanguage() const
+{
+    // Validated on the way out, the way every other stored value is: a tag this
+    // build does not ship - a language removed, or a file somebody edited - is
+    // an empty answer rather than a locale nothing can resolve.
+    const auto stored = file().getValue ("language", "");
+
+    if (stored.isEmpty() || availableLocales().contains (stored))
+        return stored;
+
+    return {};
+}
+
+void Settings::setLanguage (const juce::String& bcp47Tag)
+{
+    file().setValue ("language", bcp47Tag);
 }
 
 Settings::Motion Settings::getMotionPreference() const

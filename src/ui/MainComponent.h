@@ -101,6 +101,12 @@ public:
     /** Warnings from the last load, shown once in the status line. */
     void showLoadWarnings (const juce::StringArray&);
 
+    /** Says that the language has changed and applies next launch.
+
+        Here because the status bar is MainComponent's, and the menu that makes
+        the change lives in the application above it. */
+    void showLanguageNotice();
+
     /** Opens the audio settings over this window. */
     void showAudioSettings();
 

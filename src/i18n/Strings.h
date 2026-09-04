@@ -51,6 +51,20 @@ juce::String activeLocale();
 /** Every tag compiled into this build, reference locale first. */
 juce::StringArray availableLocales();
 
+/** What a language calls ITSELF - "English", "Deutsch", "Cestina".
+
+    Deliberately not a catalogue key, and this is the one string in dew that
+    argues for staying out. A language picker shows every language in its own
+    language, in every locale: a German reader looking for German looks for
+    "Deutsch", not for whatever English calls it. So there is nothing here to
+    translate, and a per-locale key would also be a key no data-driven menu
+    could name - the orphan gate looks for StringId::x written down, and a loop
+    over availableLocales() writes none.
+
+    An unknown tag answers with the tag, which is wrong but visible.
+*/
+juce::String endonymOf (juce::StringRef tag);
+
 /** The dotted key `id` was generated from - "transport.tempo.help".
 
     For a test's INFO, for the missing-row fallback, and for nothing else.

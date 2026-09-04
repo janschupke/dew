@@ -206,6 +206,11 @@ void MainComponent::flushPendingEngineUpdate()
     handleUpdateNowIfNeeded();
 }
 
+void MainComponent::showLanguageNotice()
+{
+    statusBar.showMessage (tr (StringId::status_languageChanged), StatusBar::Severity::info);
+}
+
 void MainComponent::showLoadWarnings (const juce::StringArray& warnings)
 {
     if (warnings.isEmpty())

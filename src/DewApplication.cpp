@@ -1,5 +1,6 @@
 #include "DewApplication.h"
 
+#include "i18n/Strings.h"
 #include "model/BuildInfo.h"
 #include "model/DemoLibrary.h"
 #include "model/Ids.h"
@@ -68,6 +69,17 @@ const juce::String DewApplication::getApplicationVersion()
 void DewApplication::initialise (const juce::String&)
 {
     settings = std::make_unique<Settings>();
+
+    // FIRST, and before anything reads a string. tr() hands out references into
+    // a table setLocale rebuilds, so a label built before this call would be
+    // holding a reference into a table that no longer exists - which is also
+    // why the language menu says the choice takes effect next launch rather
+    // than switching under a live interface.
+    //
+    // An empty stored tag means "follow the system", and an unresolvable one
+    // negotiates down to the reference locale rather than to a blank catalogue.
+    const auto language = settings->getLanguage();
+    setLocale (language.isNotEmpty() ? language : juce::SystemStats::getUserLanguage());
 
     // Before the window exists, so it is built at the size it will be seen at
     // rather than laid out once and rescaled.

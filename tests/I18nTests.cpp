@@ -265,3 +265,26 @@ TEST_CASE ("a confirmation names what it is about to destroy", "[i18n]")
     CHECK (tr (StringId::dialog_removeTrack_body, Args {}.with ("name", "Drums"))
            == "Remove \"Drums\"? Every clip on it goes with it.");
 }
+
+TEST_CASE ("a language is offered in its own language", "[i18n]")
+{
+    // A picker shows every language in its own language: a German reader
+    // looking for German looks for "Deutsch". So these are not catalogue keys,
+    // and this test is what says they are still right.
+    CHECK (endonymOf ("en") == "English");
+    CHECK (endonymOf ("de") == "Deutsch");
+
+    // The region falls back to the language, the way plural rules do.
+    CHECK (endonymOf ("de-AT") == "Deutsch");
+
+    // Non-ASCII survives the trip. These are the only non-ASCII literals in
+    // dew's own source, and they go through CharPointer_UTF8 - so a regression
+    // to juce::String's other constructor shows up as the 0xc2 the gate at
+    // SourceGateTests exists for.
+    CHECK_FALSE (endonymOf ("fr").containsChar ((juce::juce_wchar) 0xc2));
+    CHECK (endonymOf ("fr").length() == 8);
+    CHECK (endonymOf ("cs").length() == 7);
+
+    // An unknown tag answers with the tag: wrong, but visible.
+    CHECK (endonymOf ("xx") == "xx");
+}

@@ -108,6 +108,21 @@ public:
     juce::String getThemeName() const;
     void setThemeName (const juce::String&);
 
+    /** The language to run in, as a BCP-47 tag, or empty for the system's.
+
+        A TAG rather than an index or an enum: the set of languages a build
+        ships is decided by resources/i18n and read at startup, so a stored
+        number would mean something different the moment one is added. Empty is
+        a real answer - "follow the system" - and it is the default.
+
+        Read once, at startup. dew::setLocale hands out references into a table
+        it rebuilds, so changing the language while the interface is up would
+        leave every label holding a reference into the old one; the menu says
+        the choice takes effect next launch.
+    */
+    juce::String getLanguage() const;
+    void setLanguage (const juce::String& bcp47Tag);
+
     enum class Motion
     {
         system, ///< whatever the OS accessibility preference says

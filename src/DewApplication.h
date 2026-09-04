@@ -115,9 +115,16 @@ private:
         the user is asked where it should go.
     */
     void openDemo (int index);
+    void chooseLanguage (int index);
 
     /** Menu ids for the Demos menu, kept clear of the command ids. */
     static constexpr int demoMenuBaseId = 0x3000;
+
+    /** The language items, one per compiled-in locale plus "System" at the
+        base. A range rather than a command each, because which languages exist
+        is data - resources/i18n decides it - and a CommandID has to be an
+        enumerator somebody wrote down. */
+    static constexpr int languageMenuBaseId = 0x3400;
 
     std::unique_ptr<MainWindow> mainWindow;
     juce::ApplicationCommandManager commandManager;
