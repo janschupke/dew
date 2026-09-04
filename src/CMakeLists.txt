@@ -228,6 +228,7 @@ add_library(dew_engine STATIC
   engine/PreviewQueue.cpp
   engine/SignalTap.cpp
   engine/EngineSnapshot.cpp
+  engine/SnapshotReaders.cpp
   engine/SnapshotBridge.cpp
   engine/TempoMap.cpp
   engine/Transport.cpp
