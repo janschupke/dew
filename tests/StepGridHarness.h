@@ -1,0 +1,91 @@
+#pragma once
+
+#include <catch2/catch_test_macros.hpp>
+
+#include <juce_gui_basics/juce_gui_basics.h>
+
+#include "engine/AudioEngine.h"
+#include "model/Ids.h"
+#include "app/ProjectDocument.h"
+#include "model/ProjectEdits.h"
+#include "model/ProjectFactory.h"
+#include "ui/EditorState.h"
+#include "ui/StepGridComponent.h"
+
+/** A step grid laid out and visible, so a cell can be clicked at directly.
+
+    Shared by the grid's painting tests and its gesture tests, for the reason
+    every harness here exists: both aim at a cell by asking the component where
+    it is, and two ways of doing that is one of them going stale.
+*/
+namespace dew::testing
+{
+
+using namespace dew;
+
+struct GridHarness
+{
+    GridHarness (int width = 1200, int height = 400)
+    {
+        document.setState (ProjectFactory::createDefault(), true);
+        grid.setSize (width, height);
+        grid.setVisible (true);
+        grid.resized();
+    }
+
+    juce::ValueTree pattern()
+    {
+        return ProjectEdits::findPattern (document.getState(), 1);
+    }
+
+    /** The channel drawn on row 0. Channels are direct children of PROJECT and
+        the grid draws them in tree order, so the first one is the top row.
+    */
+    juce::ValueTree firstChannel()
+    {
+        return document.getState().getChildWithName (ids::CHANNEL);
+    }
+
+    void setPatternLength (int steps)
+    {
+        pattern().setProperty (ids::lengthSteps, steps, nullptr);
+        grid.resized();
+    }
+
+    juce::Image render()
+    {
+        juce::Image image (juce::Image::ARGB, grid.getWidth(), grid.getHeight(), true);
+        juce::Graphics g (image);
+        grid.paintEntireComponent (g, true);
+        return image;
+    }
+
+    ProjectDocument document;
+    AudioEngine engine;
+    EditorState editorState;
+    StepGridComponent grid { document, engine, editorState };
+};
+
+inline juce::MouseEvent eventAt (juce::Component& target, juce::Point<int> local,
+                                 juce::ModifierKeys mods = juce::ModifierKeys())
+{
+    const auto position = local.toFloat();
+
+    return { juce::Desktop::getInstance().getMainMouseSource(),
+             position,
+             mods,
+             1.0f,
+             0.0f,
+             0.0f,
+             0.0f,
+             0.0f,
+             &target,
+             &target,
+             juce::Time::getCurrentTime(),
+             position,
+             juce::Time::getCurrentTime(),
+             1,
+             false };
+}
+
+} // namespace dew::testing

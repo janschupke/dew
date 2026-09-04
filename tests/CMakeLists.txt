@@ -22,6 +22,7 @@ add_executable(dew_tests
   SequencerTests.cpp
   LoopRegionTests.cpp
   StepGridTests.cpp
+  StepGridGestureTests.cpp
   ChannelRackTests.cpp
   ConfirmTests.cpp
   PreviewQueueTests.cpp
@@ -40,7 +41,10 @@ add_executable(dew_tests
   EffectUiTests.cpp
   EngineTests.cpp
   MixerTests.cpp
+  MixerUiTests.cpp
   OscillatorTests.cpp
+  OscillatorEngineTests.cpp
+  OscillatorUiTests.cpp
   WavetableTests.cpp
   WavetableEngineTests.cpp
   WavetableUiTests.cpp

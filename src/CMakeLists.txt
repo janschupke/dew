@@ -351,6 +351,7 @@ add_library(dew_ui STATIC
   ui/EffectCard.cpp
   ui/EffectChainComponent.cpp
   ui/EffectChainReorder.cpp
+  ui/OscillatorFaces.cpp
   ui/OscillatorSection.cpp
   ui/SampleSection.cpp
   ui/SoundFontSection.cpp
