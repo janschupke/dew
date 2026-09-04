@@ -277,9 +277,10 @@ jobs:
 
       # Named explicitly rather than `*`, so the file cannot list itself and a
       # missing artefact is a shell error rather than a shorter list nobody
-      # reads. GitHub has published a digest for every release asset since June
-      # 2025, so this is for scripted verification and for the attestation
-      # below, which takes it as its manifest.
+      # reads. Bare names, so `shasum -a 256 -c SHA256SUMS.txt` works in the
+      # directory somebody downloaded into. GitHub has published a digest for
+      # every release asset since June 2025, so this is for scripted
+      # verification rather than the whole integrity story.
       - name: Checksums
         working-directory: artifacts
         run: |
@@ -288,11 +289,16 @@ jobs:
 
       # actions/attest, not actions/attest-build-provenance, which since v4 is
       # only a wrapper over this and whose own README says new work should use
-      # it directly. One step covers every asset because the subject is the
-      # checksums file. Free on a public repository.
+      # it directly. Free on a public repository.
+      #
+      # subject-path rather than subject-checksums, which would also have taken
+      # the file above in one line: the checksums are written with bare names so
+      # that `shasum -c` works where a person unpacks them, and how the action
+      # resolves those names is a question a glob does not raise. Every asset
+      # still lands in one attestation.
       - uses: actions/attest@v4
         with:
-          subject-checksums: artifacts/SHA256SUMS.txt
+          subject-path: artifacts/dew-*
 
       # A draft first, then undrafted, so there is never a moment where the
       # release exists with only some of its assets attached - which is exactly
