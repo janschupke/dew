@@ -3,6 +3,7 @@
 #include <cstdint>
 #include <string>
 #include <string_view>
+#include <type_traits>
 
 namespace dew::lang
 {
@@ -37,19 +38,21 @@ public:
     {
     }
 
-    MsgArg (int value)
-        : number (value)
-        , kind (Kind::integer)
-    {
-    }
+    /** Any integer, as ONE candidate.
 
-    MsgArg (std::int64_t value)
-        : number (value)
-        , kind (Kind::integer)
-    {
-    }
+        Three overloads - int, int64_t, size_t - is what this was, and it
+        compiled on macOS for months. Under libstdc++ int64_t is `long` and
+        size_t is `unsigned long`, so a `long long` matched none of them exactly
+        and all of them by conversion: ambiguous, and only on the platform
+        `scripts/linux-check.sh` builds. One constrained template has one
+        candidate for every integer type there is.
 
-    MsgArg (std::size_t value)
+        bool is excluded so that a flag cannot silently become the number 1
+        where a message expected a word.
+    */
+    template <typename T,
+              typename = std::enable_if_t<std::is_integral_v<T> && ! std::is_same_v<T, bool>>>
+    MsgArg (T value)
         : number ((std::int64_t) value)
         , kind (Kind::integer)
     {
