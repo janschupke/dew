@@ -135,6 +135,11 @@ void DewApplication::restoreSession()
     // of whatever was chosen last time.
     if (auto state = settings->getAudioState())
         main->getAudioHost().restoreState (*state);
+
+    // The endpoint LAST, and by reference rather than by value: a grant the
+    // user gives has to be written back when they give it, which is minutes
+    // after this runs. It starts nothing unless the switch is on.
+    main->applyMcpSettings (*settings);
 }
 
 void DewApplication::saveSession()
@@ -439,6 +444,7 @@ bool DewApplication::perform (const InvocationInfo& info)
         case CommandIDs::audioSettings: main->showAudioSettings(); return true;
 
         case CommandIDs::midiSettings: main->showMidiSettings(); return true;
+        case CommandIDs::mcpSettings: main->showMcpSettings(); return true;
 
         case CommandIDs::compileScore: main->compileScore(); return true;
 

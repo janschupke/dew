@@ -8,6 +8,12 @@ add_executable(dew_tests
   DocumentIdentityTests.cpp
   DemoLibraryTests.cpp
   FixtureProject.cpp
+  ControlTableTests.cpp
+  ControlOpsTests.cpp
+  McpProtocolTests.cpp
+  McpServerTests.cpp
+  LocalHttpServerTests.cpp
+  McpUiTests.cpp
   FixtureProjectTests.cpp
   DesignSystemTests.cpp
   ParamRoleTests.cpp
@@ -190,7 +196,7 @@ target_compile_definitions(dew_tests PRIVATE
 # very assumption that stopped holding when dew_design took four files that
 # still live under src/ui.
 set(DEW_GATE_SOURCES "")
-foreach(dew_layer dew_lang dew_i18n dew_model dew_engine dew_io dew_design dew_app dew_ui dew)
+foreach(dew_layer dew_lang dew_i18n dew_model dew_engine dew_io dew_control dew_design dew_app dew_ui dew)
   # The layer name leads every line: once before the JOIN for the first source,
   # and once inside the separator for each of the rest.
   list(APPEND DEW_GATE_SOURCES

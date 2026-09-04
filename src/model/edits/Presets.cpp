@@ -48,7 +48,7 @@ void writeParams (juce::ValueTree node, const juce::var& values, const ParamSpec
 } // namespace
 
 bool ProjectEdits::applyEffectPreset (juce::ValueTree effect, const Preset& preset,
-                                      juce::UndoManager* undo)
+                                      juce::UndoManager* undo, bool continuingTransaction)
 {
     if (! effect.isValid() || ! effect.hasType (ids::EFFECT) || ! preset.isEffect())
         return false;
@@ -65,7 +65,7 @@ bool ProjectEdits::applyEffectPreset (juce::ValueTree effect, const Preset& pres
 
     const auto transactionName = "Load preset \"" + preset.name + "\"";
 
-    if (undo != nullptr)
+    if (undo != nullptr && ! continuingTransaction)
         undo->beginNewTransaction (transactionName);
 
     const auto params = effectParamsFor (*slotType);
@@ -75,7 +75,7 @@ bool ProjectEdits::applyEffectPreset (juce::ValueTree effect, const Preset& pres
 }
 
 bool ProjectEdits::applyInstrumentPreset (juce::ValueTree channel, const Preset& preset,
-                                          juce::UndoManager* undo)
+                                          juce::UndoManager* undo, bool continuingTransaction)
 {
     if (! channel.isValid() || ! channel.hasType (ids::CHANNEL) || ! preset.isInstrument())
         return false;
@@ -97,7 +97,7 @@ bool ProjectEdits::applyInstrumentPreset (juce::ValueTree channel, const Preset&
 
     const auto transactionName = "Load preset \"" + preset.name + "\"";
 
-    if (undo != nullptr)
+    if (undo != nullptr && ! continuingTransaction)
         undo->beginNewTransaction (transactionName);
 
     const auto instrument = channel.getChildWithName (ids::INSTRUMENT);

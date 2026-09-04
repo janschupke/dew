@@ -10,7 +10,10 @@
 #include "app/ProjectDocument.h"
 #include "ui/ChannelRackComponent.h"
 #include "ui/design/DewLookAndFeel.h"
+#include "control/McpServer.h"
 #include "ui/EditorState.h"
+#include "ui/McpConsentPanel.h"
+#include "ui/McpGrants.h"
 #include "ui/EditorTabs.h"
 #include "ui/InstrumentPanel.h"
 #include "ui/ParamContextMenu.h"
@@ -161,6 +164,28 @@ public:
     */
     void flushPendingEngineUpdate();
 
+    // --- the MCP endpoint ----------------------------------------------------
+    /** Starts or stops the local MCP endpoint to match what is stored.
+
+        Takes the Settings by reference and KEEPS it, unlike applySettings which
+        only reads: a grant the user gives has to be written back at the moment
+        they give it, which is a message that arrives long after startup.
+
+        Safe to call again; it starts nothing that is already running and stops
+        what the switch has turned off.
+    */
+    void applyMcpSettings (Settings&);
+
+    /** Opens the MCP settings over this window. */
+    void showMcpSettings();
+
+    /** The endpoint, or nullptr when it has never been started. Public so a
+        test and dew_shot can ask what it is doing without a socket. */
+    control::McpServer* getMcpServer() noexcept
+    {
+        return mcpServer.get();
+    }
+
 private:
     /** Picks the destination and starts the background render. Split from the
         dialog so that the panel never touches a file, which is what keeps it
@@ -303,6 +328,71 @@ private:
         */
         DewIconButton toggleButton { icons::chevronRight(), "Hide the instrument panel" };
     };
+
+    /** MainComponent as dew_control sees it.
+
+        An adapter rather than MainComponent implementing ControlHost itself,
+        and not for taste: the interface has engine(), samplePool() and
+        renderJob(), and this class already has MEMBERS of all three names, so
+        the direct form does not compile. Holding a reference instead also keeps
+        MainComponent's public surface the editor's rather than the protocol's.
+    */
+    class ControlAdapter : public control::ControlHost
+    {
+    public:
+        explicit ControlAdapter (MainComponent& o)
+            : owner (o)
+        {
+        }
+
+        juce::ValueTree project() override;
+        juce::UndoManager* undoManager() override;
+        void flushEngine() override;
+
+        AudioEngine* engine() override;
+        RenderJob* renderJob() override;
+        SamplePool* samplePool() override;
+        SoundFontPool* soundFontPool() override;
+
+        bool newProject() override;
+        bool openProject (const juce::File&) override;
+        bool saveProject() override;
+        bool saveProjectAs (const juce::File&) override;
+        juce::File projectFile() const override;
+        bool isProjectModified() const override;
+
+    private:
+        MainComponent& owner;
+    };
+
+    /** Raises the consent dialog when the server asks.
+
+        The hook is the seam: JUCE_MODAL_LOOPS_PERMITTED is 0, so the dialog
+        cannot be driven to an answer inline, and a test replaces this to answer
+        without one ever opening.
+    */
+    class ConsentAdapter : public control::McpServer::ConsentPrompt
+    {
+    public:
+        void ask (const control::McpServer::ClientInfo&,
+                  std::function<void (control::Grant)> reply) override;
+
+        ConsentHook hook;
+    };
+
+    ControlAdapter controlHost { *this };
+    ConsentAdapter consentPrompt;
+
+    /** Null until applyMcpSettings has been called, which is what makes the
+        endpoint something the application turns on rather than something a
+        window opens by existing. */
+    std::unique_ptr<McpGrants> mcpGrants;
+    std::unique_ptr<control::McpServer> mcpServer;
+
+    /** Kept, not copied: a grant the user gives has to be written back at the
+        moment they give it, and the switch in the settings panel writes here
+        too. Null until applyMcpSettings has been called. */
+    Settings* mcpSettings = nullptr;
 
     void setPanelWidth (int);
     void setPanelCollapsed (bool);

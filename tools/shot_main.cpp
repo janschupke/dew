@@ -9,6 +9,8 @@
 #include "ui/MainComponent.h"
 #include "ui/ScoreEditorComponent.h"
 #include "ui/ConfirmPanel.h"
+#include "ui/McpConnectionsPanel.h"
+#include "ui/McpConsentPanel.h"
 #include "ui/RandomizePanel.h"
 #include "ui/design/DewLookAndFeel.h"
 #include "ui/design/Theme.h"
@@ -37,6 +39,8 @@ Usage:
   dew_shot render <out.png> [--project f] [--format wav|flac|mp3|midi]
   dew_shot randomize <out.png>              the piano roll's randomize dialog
   dew_shot confirm <out.png>                the confirmation a deletion asks
+  dew_shot mcp-consent <out.png>            what a client is allowed by
+  dew_shot mcp <out.png>                    the MCP settings
 
 Options:
   --project <file.dew>   Project to load (default: the built-in demo)
@@ -354,6 +358,46 @@ int main (int argc, char* argv[])
                                     "Delete" } };
         panel.setVisible (true);
         panel.setSize (dew::ConfirmPanel::preferredWidth, dew::ConfirmPanel::preferredHeight);
+
+        const auto destination = juce::File::getCurrentWorkingDirectory().getChildFile (
+            args.positional[1]);
+
+        if (const auto result = writePng (panel, destination, scale); result.failed())
+            return fail (result.getErrorMessage());
+
+        std::cout << "wrote " << destination.getFullPathName() << "  (" << panel.getWidth() << "x"
+                  << panel.getHeight() << ")" << std::endl;
+        return 0;
+    }
+
+    if (mode == "mcp-consent")
+    {
+        // Bare, for the reason the confirmation above is: dew_shot cannot
+        // capture a DialogWindow, so the content sizes itself.
+        dew::McpConsentPanel panel { { "Claude Code", "1.2.3" } };
+        panel.setVisible (true);
+        panel.setSize (dew::McpConsentPanel::preferredWidth, dew::McpConsentPanel::preferredHeight);
+
+        const auto destination = juce::File::getCurrentWorkingDirectory().getChildFile (
+            args.positional[1]);
+
+        if (const auto result = writePng (panel, destination, scale); result.failed())
+            return fail (result.getErrorMessage());
+
+        std::cout << "wrote " << destination.getFullPathName() << "  (" << panel.getWidth() << "x"
+                  << panel.getHeight() << ")" << std::endl;
+        return 0;
+    }
+
+    if (mode == "mcp")
+    {
+        // No server and no settings: the panel is a VIEW, and the state it
+        // shows when there is neither is exactly the state worth a picture -
+        // the switch off and nothing listening.
+        dew::McpConnectionsPanel panel { {}, nullptr };
+        panel.setVisible (true);
+        panel.setSize (dew::McpConnectionsPanel::preferredWidth,
+                       dew::McpConnectionsPanel::preferredHeight);
 
         const auto destination = juce::File::getCurrentWorkingDirectory().getChildFile (
             args.positional[1]);

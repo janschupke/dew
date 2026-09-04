@@ -230,7 +230,7 @@ TEST_CASE ("every layer is represented in the scanned sources", "[build][gate]")
     // Matched on the path relative to src/, not the absolute one. This asked
     // whether the full path CONTAINED "/ui/", which a checkout living in a
     // directory called ui satisfies without a single dew source being there.
-    for (const auto* layer : { "lang", "i18n", "model", "engine", "io", "ui", "app" })
+    for (const auto* layer : { "lang", "i18n", "model", "engine", "io", "control", "ui", "app" })
     {
         auto seen = false;
 
@@ -422,9 +422,16 @@ TEST_CASE ("no layer includes a header a layer above it owns", "[build][layering
         { "dew_model", { "dew_lang", "dew_i18n" } },
         { "dew_engine", { "dew_model" } },
         { "dew_io", { "dew_engine" } },
+
+        // The operation table an agent drives dew through. dew_io and nothing
+        // else: it cannot see dew_design, so it cannot paint, and it cannot see
+        // dew_app or dew_ui, so everything session-shaped reaches it through
+        // control/ControlHost.h rather than by including its way upwards.
+        { "dew_control", { "dew_io" } },
+
         { "dew_design", { "dew_engine" } },
         { "dew_app", { "dew_model" } },
-        { "dew_ui", { "dew_design", "dew_app", "dew_io" } },
+        { "dew_ui", { "dew_design", "dew_app", "dew_control" } },
 
         // The application itself, above every library. It used to be missing
         // from the manifest's foreach, so main.cpp and the DewApplication files

@@ -32,6 +32,22 @@ enum class SnapDivision
 */
 struct NoteTools
 {
+    /** The pitches a dew document may hold, C0 to C8.
+
+        Here rather than on the piano roll, which is where they were, for the
+        reason ProjectEdits::minPointGap is in the model and not in Tokens.h:
+        it is a rule about what a document may CONTAIN, not a decision about
+        what a view can draw. The roll still spells them its own way and gets
+        them from here, and transpose - which clamps a group against them - is
+        in this file, so the rule and its enforcement now sit together.
+
+        It matters beyond tidiness: anything that writes notes without going
+        through the roll needs the same bounds, and a note outside them is one
+        the editor cannot show.
+    */
+    static constexpr int lowestPitch = 12;
+    static constexpr int highestPitch = 108;
+
     // --- snapping ------------------------------------------------------------
     static constexpr int numSnapDivisions = 5;
 

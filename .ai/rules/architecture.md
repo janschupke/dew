@@ -1,6 +1,6 @@
 # Architecture
 
-Eight static libraries. **There is no `dew_core`** — anything that says so is out of date.
+Nine static libraries. **There is no `dew_core`** — anything that says so is out of date.
 The layering is a link error, which is the whole reason they are libraries rather than
 directories; [README.md](../../README.md#architecture) draws the diagram and argues that
 part, and [Why it is this way](#why-it-is-this-way) below covers modules and the project
@@ -13,9 +13,14 @@ file.
 | `dew_model` | `src/model/` | `dew_lang`, `dew_i18n`, JUCE data structures and graphics |
 | `dew_engine` | `src/engine/` | `dew_model`. Neither `juce_audio_devices` nor `juce_audio_formats` |
 | `dew_io` | `src/io/` | `dew_engine`. Everything that touches a file or a device lives here |
+| `dew_control` | `src/control/` | `dew_io`. The operation table an agent drives dew through — see [mcp.md](mcp.md) |
 | `dew_design` | `src/ui/design/`, `src/ui/primitives/` | JUCE. Knows nothing about a project |
 | `dew_app` | `src/app/` | `dew_model` only — so it **cannot see `Tokens.h`** |
 | `dew_ui` | `src/ui/` | all of the above |
+
+The layering is a DAG rather than a ladder: `dew_control`, `dew_design` and `dew_app` are
+siblings that know nothing of each other, which is what stops protocol code reaching
+`Tokens.h`.
 
 Consequences you will hit:
 

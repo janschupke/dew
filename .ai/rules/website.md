@@ -16,6 +16,7 @@ they are the only thing standing between it and a second design system.
 | `website/src/generated/score-schema.json` | `dew_docs schema` | a test in `dew_tests`, and `cmp` against a second process in CI |
 | `website/src/generated/design-tokens.json` | `dew_shot tokens` | the same pair |
 | `website/src/generated/score-samples.json` | `dew_shot samples` | the same pair |
+| `website/src/generated/mcp-tools.json` | `dew_mcp schema` | the same pair |
 | `website/src/app/theme.generated.css` | `website/scripts/gen-theme.mjs` | `npm run theme:check` |
 | `website/src/app/icon.svg` | `website/scripts/gen-theme.mjs` | the same check |
 | `website/public/shots/*.png` | `./scripts/gen-shots.sh`, from the **release** build | **nothing byte-wise** — see below |
@@ -127,12 +128,14 @@ which is what the freshness test and CI's second-process `cmp` are for. Freshnes
 rather than `git diff --exit-code` because the manifest's trick — regenerate, then diff —
 would mean `check.sh` writing into the working tree before judging it.
 
-**Two emitters rather than one, because of the link line.** `dew_docs` links `dew_lang` and
+**Three emitters rather than one, because of the link line.** `dew_docs` links `dew_lang` and
 nothing else, JUCE included, so it is a second place that library's zero-dependency claim is
 proved rather than asserted. The design tokens live in `dew_design`, which publicly links
 `dew_engine` — one tool emitting both would have put `juce_gui_basics` on the score
 compiler's link line, which is the mistake `dew_render` already made once. So `dew_shot`
-emits the tokens, beside the picture of them it already renders.
+emits the tokens, beside the picture of them it already renders. `dew_mcp` is the third and
+takes the argument further: it links `dew_control` alone, so the operation table's claim to
+need no interface is proved by a tool that builds without one.
 
 **It takes its colours from the application, not from a copy of them.** `dew_shot tokens`
 reads `darkPalette()` and `scripts/gen-theme.mjs` turns that into Tailwind's `@theme` block.

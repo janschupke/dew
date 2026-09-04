@@ -276,6 +276,41 @@ bool Settings::getPanelCollapsed() const
     return file().getBoolValue ("panelCollapsed", false);
 }
 
+bool Settings::getMcpEnabled() const
+{
+    return file().getBoolValue ("mcpEnabled", false);
+}
+
+void Settings::setMcpEnabled (bool enabled)
+{
+    file().setValue ("mcpEnabled", enabled);
+}
+
+int Settings::getMcpPort() const
+{
+    // Validated on the way out, like everything else here. A port outside the
+    // range a port can be - or a privileged one this could not bind anyway -
+    // reads as "use the default" rather than as a failure to start.
+    const auto stored = file().getIntValue ("mcpPort", 0);
+
+    return (stored >= 1024 && stored <= 65535) ? stored : 0;
+}
+
+void Settings::setMcpPort (int port)
+{
+    file().setValue ("mcpPort", port);
+}
+
+juce::String Settings::getMcpGrants() const
+{
+    return file().getValue ("mcpGrants");
+}
+
+void Settings::setMcpGrants (const juce::String& grants)
+{
+    file().setValue ("mcpGrants", grants);
+}
+
 juce::String Settings::getThemeName() const
 {
     return file().getValue ("theme", "dark");

@@ -164,6 +164,13 @@ const std::vector<Binding<juce::CommandID>>& application()
                                            | juce::ModifierKeys::shiftModifier },
           StringId::command_midiSettings_name, StringId::command_midiSettings_description,
           StringId::command_category_audio },
+
+        // No key. Every stroke a person could reach for here is either taken or
+        // worth more to something they do often, and this is a switch somebody
+        // sets once - describe() skips addDefaultKeypress for keyCode 0, and a
+        // keyless row collides with nothing.
+        { CommandIDs::mcpSettings, Stroke {}, StringId::command_mcpSettings_name,
+          StringId::command_mcpSettings_description, StringId::command_category_tools },
     };
 
     // clang-format on

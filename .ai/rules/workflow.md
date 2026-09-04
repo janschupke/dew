@@ -38,7 +38,7 @@ gate is. Verify a visual change with `dew_shot`, not by reasoning about the code
 | `examples/*` | `dew_render --write-demos examples` | tests pinning file == binary == factory |
 | `presets/*` | `dew_render --write-presets presets` | tests walking the committed list against `PresetFactory`, both ways |
 | `.cursor/rules/main.mdc` | `./scripts/gen-cursor-rules.sh`, from `AGENTS.md` | `--check`, in `check.sh` |
-| `website/src/generated/*.json` | `dew_docs schema`, `dew_shot tokens`, `dew_shot samples` | a test in `dew_tests`, and `cmp` against a second process in CI |
+| `website/src/generated/*.json` | `dew_docs schema`, `dew_shot tokens`, `dew_shot samples`, `dew_mcp schema` | a test in `dew_tests`, and `cmp` against a second process in CI |
 | `website/src/app/theme.generated.css` | `website/scripts/gen-theme.mjs` | `npm run theme:check` |
 | `website/public/shots/*.png` | `./scripts/gen-shots.sh`, from the **release** build | **nothing byte-wise** — see [website.md](website.md) |
 

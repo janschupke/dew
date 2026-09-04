@@ -4,6 +4,7 @@
 #include <juce_core/juce_core.h>
 
 #include "ui/design/Theme.h"
+#include "DocsMcp.h"
 #include "DocsSamples.h"
 #include "DocsSchema.h"
 #include "DocsTokens.h"
@@ -38,6 +39,45 @@ TEST_CASE ("the website's schema is what the emitter writes", "[docs][website][g
     // No trim(). CI compares the same file with cmp in a second process, and
     // two gates disagreeing about one file is worse than either alone.
     CHECK (file.loadFileAsString().toStdString() == docs::schemaJson());
+}
+
+TEST_CASE ("the website's MCP reference is what the emitter writes", "[docs][website][gate][mcp]")
+{
+    const auto file = generatedFile ("mcp-tools.json");
+
+    INFO ("file: " << file.getFullPathName());
+    INFO ("regenerate: cmake --build --preset ci --target dew_mcp && "
+          "./build/ci/tools/dew_mcp_artefacts/RelWithDebInfo/dew_mcp schema "
+          "website/src/generated/mcp-tools.json");
+
+    REQUIRE (file.existsAsFile());
+    CHECK (file.loadFileAsString().toStdString() == docs::mcpJson());
+}
+
+TEST_CASE ("the MCP emitter writes the same bytes twice", "[docs][website][gate][mcp]")
+{
+    CHECK (docs::mcpJson() == docs::mcpJson());
+}
+
+TEST_CASE ("every operation and every guide page reaches the reference",
+           "[docs][website][gate][mcp]")
+{
+    // The half that a byte comparison cannot catch: the file agreeing with the
+    // emitter says nothing about the emitter agreeing with the TABLE. An
+    // operation the walk skipped would be missing from both, identically.
+    const auto emitted = docs::mcpJson();
+
+    for (const auto& op : control::ops())
+    {
+        INFO ("operation: " << op.name);
+        CHECK (emitted.find (std::string ("\"") + op.name + "\"") != std::string::npos);
+    }
+
+    for (const auto& section : control::guide())
+    {
+        INFO ("guide section: " << section.id);
+        CHECK (emitted.find (std::string ("\"") + section.id + "\"") != std::string::npos);
+    }
 }
 
 TEST_CASE ("the schema emitter writes the same bytes twice", "[docs][website][gate]")

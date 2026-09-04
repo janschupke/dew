@@ -129,6 +129,9 @@ jobs:
             samples "${RUNNER_TEMP}/score-samples.json" \
             examples/amber.score examples/drift.score examples/neon.score
           cmp "${RUNNER_TEMP}/score-samples.json" website/src/generated/score-samples.json
+          ./build/ci/tools/dew_mcp_artefacts/RelWithDebInfo/dew_mcp \
+            schema "${RUNNER_TEMP}/mcp-tools.json"
+          cmp "${RUNNER_TEMP}/mcp-tools.json" website/src/generated/mcp-tools.json
 
       # The manifest is generated at configure time; if it differs from what is
       # committed, the two have drifted.

@@ -368,8 +368,11 @@ private:
     static_assert (eraseStridePx < tokens::size::pianoRowMin,
                    "an erase sweep must sample more often than once a row");
 
-    static constexpr int lowestPitch = 12;   ///< C0
-    static constexpr int highestPitch = 108; ///< C8
+    // The document's rule, not the view's - NoteTools owns it, beside the
+    // transpose that clamps against it. Aliased rather than re-spelled so the
+    // roll's own thirty uses read as they always did.
+    static constexpr int lowestPitch = NoteTools::lowestPitch;   ///< C0
+    static constexpr int highestPitch = NoteTools::highestPitch; ///< C8
     static constexpr int numRows = highestPitch - lowestPitch + 1;
     static constexpr int velocityHeight = 62;
 

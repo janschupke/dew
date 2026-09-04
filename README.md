@@ -252,7 +252,7 @@ wheel notch is worth and where shift means *finer* — is in
 
 ## Architecture
 
-Eight layers, each a static library, each testable without the ones above it. Libraries
+Nine layers, each a static library, each testable without the ones above it. Libraries
 rather than directories on purpose: the include graph was already acyclic, but nothing
 enforced it, and the headless `dew_render` linked all thirty UI translation units to
 write a WAV. Split, a layering mistake is a link error.
@@ -267,6 +267,11 @@ dew_ui       ChannelRack · PianoRoll · Playlist · Mixer · TransportBar · St
 dew_design   tokens · icons · primitives · look and feel · Animator │
              SignalScope                                           │
                               │                                    │
+dew_control  ControlOps (every operation an agent can call, declared once)
+             McpServer (sessions, consent, grants) · ParamAddress
+             Links dew_io and stops there: it cannot paint, and everything
+             above it arrives through ControlHost.                 │
+
 dew_app      Settings (window, view and device state, validated on read)
                A leaf, not a top: it holds state the UI reads.     │
                                                  ▼                 │
@@ -316,11 +321,36 @@ direction. The rules, the gates and the argument for each are in
 language's generated reference. `./scripts/check-website.sh` checks it and
 `./scripts/check.sh` runs that; `vercel.json` at the root is how it deploys.
 
-Three of its inputs — the score schema, the design tokens and the highlighted samples —
-are JSON written by `dew_docs` and `dew_shot` and committed, so the site needs no C++
-toolchain to build and CI regenerates each in a second process and compares byte for byte.
-The rest, including why it is dark-only and what it may not do, is in
-[`.ai/rules/website.md`](.ai/rules/website.md).
+Four of its inputs — the score schema, the design tokens, the highlighted samples and the
+MCP reference — are JSON written by `dew_docs`, `dew_shot` and `dew_mcp` and committed, so
+the site needs no C++ toolchain to build and CI regenerates each in a second process and
+compares byte for byte. The rest, including why it is dark-only and what it may not do, is
+in [`.ai/rules/website.md`](.ai/rules/website.md).
+
+## Driving it from an agent
+
+dew runs a Model Context Protocol server inside the application, so a coding agent can
+read and change the project you have open — instruments, effects, the mixer, the notes and
+the arrangement. Turn it on under **Audio > MCP**, which also shows the address and the
+exact command:
+
+```sh
+claude mcp add --transport http dew http://127.0.0.1:4551/mcp
+```
+
+It listens on the loopback interface only and validates the `Origin` header, so nothing
+off your machine can reach it and a page in your browser cannot drive it either. The first
+time a client connects, dew names it and asks whether to allow it — and whether it may only
+read, or change things too. **Every call that changes the project is exactly one undo
+step**, however many notes it wrote, which is what makes the approval a reasonable thing to
+give.
+
+Every operation is declared once, in `src/control/ControlOps.h`, and three things read that
+one table: the protocol builds each tool's schema from it, the permission check reads
+whether an operation writes, and `dew_mcp` walks it into the website's reference — so a
+tool cannot exist without being documented. Five fields address every value in the
+document, and `score_compile` is how an agent writes a lot of music at once rather than a
+note at a time. [`.ai/rules/mcp.md`](.ai/rules/mcp.md) has the whole argument.
 
 ## The score language
 

@@ -11,6 +11,7 @@ const links = [
   { href: '/features/', label: t('nav.features') },
   { href: '/score/', label: t('nav.score') },
   { href: '/score/reference/', label: t('nav.reference') },
+  { href: '/mcp/', label: t('nav.mcp') },
   { href: '/design/', label: t('nav.design') },
   { href: '/setup/', label: t('nav.setup') },
 ] as const;

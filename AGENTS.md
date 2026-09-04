@@ -2,9 +2,9 @@
 
 A macOS-only desktop synth DAW in the FL Studio shape: a channel rack with a step grid, a
 piano roll, a playlist of clips and a mixer, driven by a three-oscillator synth per channel
-— or by a recording, or by a song written as text and compiled to notes. C++20, JUCE 9,
-CMake, Catch2. Eight static libraries rather than eight directories, so a layering mistake
-is a link error.
+— or by a recording, or by a song written as text and compiled to notes. It can also be
+driven by an agent, over an MCP endpoint it runs itself. C++20, JUCE 9, CMake, Catch2.
+Nine static libraries rather than nine directories, so a layering mistake is a link error.
 
 [README.md](README.md) is the tour: what the app does, how to build it, run it and test
 it, the layer diagram, and the score language by example. Everything else — what you must
@@ -26,6 +26,7 @@ these files.
 - [Automation](.ai/rules/automation.md) — one evaluator, `automationTargetFor` as the primitive, `ParamSpec::automatable` as the only gate, `TempoMap::isConstant` as correctness, and what is deliberately not automatable
 - [Strings](.ai/rules/i18n.md) — every sentence a person reads is a structural key in `resources/i18n/en.json`; `StringIds.h` is generated; `tr` never returns empty; what is deliberately not translated
 - [C++ style](.ai/rules/cpp-style.md) — `.clang-format` is the authority; hand-grouped includes, the `juce::String` ASCII/UTF-8 trap, and the standard-library limits on this deployment target
+- [The MCP endpoint](.ai/rules/mcp.md) — one operation table read by the protocol, the permission check and the website; five fields that address every parameter; loopback and an `Origin` check; a client named to the user and approved once; one call, one undo step
 - [The website](.ai/rules/website.md) — `website/` is checked by its own gates and by nothing the C++ tree runs; the JSON it reads is generated and diffed, the screenshots are not; dark only, one palette; no tokenizer, because the samples arrive pre-scanned
 - [Workflow](.ai/rules/workflow.md) — `./scripts/check.sh`, the generated files, the dependency pins, commit style, and why `build/ci` is not the app
 
@@ -51,7 +52,8 @@ Full set in [`.ai/rules/`](.ai/rules/). The ones an agent trips over first:
 - **Every key dew binds is a row in `src/ui/Hotkeys.h`**, and a gate refuses one spelled
   anywhere else.
 - **Every edit goes through `ProjectEdits`**, one undo step per gesture, and **never
-  hand-build a `ValueTree` node** — use `defaultTreeFor (spec)`.
+  hand-build a `ValueTree` node** — use `defaultTreeFor (spec)`. That includes an MCP
+  operation: **one call is one undo step**, however many entries its batch carried.
 - **A parameter is declared once**, as a `ParamSpec` row in `src/model/ModuleCatalog.cpp`.
   The schema defaults, engine clamps, automation range and UI control are views of it.
 - **The render path allocates nothing**, and an effect module is **never destroyed while
@@ -63,6 +65,10 @@ Full set in [`.ai/rules/`](.ai/rules/). The ones an agent trips over first:
 - **No user-facing string is written in a source file.** Every sentence a person reads is
   a key in `resources/i18n/en.json`, reached as `tr (StringId::x)`; a gate refuses a literal
   at any text-setting call. `StringIds.h` is generated from that file into the build tree.
+- **`dew_control` links `dew_io` and nothing else of dew's**, so it cannot paint and
+  cannot reach a Component; everything above it arrives through `control/ControlHost.h`.
+  A wire argument backed by a document property is NAMED by that property —
+  `ids::muted`, never `"muted"` beside it.
 - **`THIRD_PARTY.md`, `examples/`, `presets/`, `.cursor/rules/main.mdc` and
   `website/src/generated/` are generated.** Never hand-edit one; regenerate it in the same
   commit.

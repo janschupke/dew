@@ -227,6 +227,32 @@ public:
     int getMidiTranspose() const;
     void setMidiTranspose (int);
 
+    // --- the MCP endpoint ----------------------------------------------------
+    /** Whether dew listens for local clients at all.
+
+        Off by default, and deliberately: a DAW that opens a port because it was
+        installed is a DAW that decided something on the user's behalf. Turning
+        it on is one switch, and the first client to connect still has to be
+        allowed by name.
+    */
+    bool getMcpEnabled() const;
+    void setMcpEnabled (bool);
+
+    /** The port to ask for. Zero means dew's default, and dew takes the next
+        free one when that is busy - so two copies running is not an error. */
+    int getMcpPort() const;
+    void setMcpPort (int);
+
+    /** What the user has already decided about which clients may do what.
+
+        Stored as opaque text, encoded and decoded by ui/McpGrants.cpp. It lives
+        there rather than here because a grant's vocabulary is dew_control's and
+        dew_app links dew_model alone - the same reason this class stores a lane
+        height raw and lets the playlist decide what is showable.
+    */
+    juce::String getMcpGrants() const;
+    void setMcpGrants (const juce::String&);
+
     /** Writes to disk. Called on exit; safe to call more often. */
     void flush();
 

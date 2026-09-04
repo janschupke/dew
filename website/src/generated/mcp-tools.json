@@ -1,0 +1,1616 @@
+{
+  "protocolVersion": "2025-06-18",
+  "guide": [
+    {
+      "id": "index",
+      "title": "Driving dew",
+      "summary": "What dew is, and which tool answers which question.",
+      "paragraphs": [
+        "dew is a desktop DAW in the FL Studio shape. A project holds CHANNELS, each carrying one instrument - a three-oscillator synth, a recording, or a soundfont - and its own chain of effects. PATTERNS hold notes. The PLAYLIST arranges clips of those patterns into a song. A MIXER routes channels through inserts to a master.",
+        "Start with project_describe. It is the cheap read: the tempo, the metre, and every channel, pattern, lane, insert and automation by name and id, with not one note in it. Everything else is addressed by the ids it gives you.",
+        "Then: params_list and params_write reach every value in the document - a volume, an oscillator's detune, an envelope, any effect's anything, a fader, the tempo. channels_write, effects_write and mixer_write add and arrange the objects those values live on. notes_write and clips_write are the piano roll and the arrangement. score_compile is the fast way to write a lot of music at once.",
+        "Read dew://guide/addressing before writing anything, and dew://guide/undo before writing a lot of it."
+      ]
+    },
+    {
+      "id": "addressing",
+      "title": "How things are addressed",
+      "summary": "Ids, indexes, and the five fields that name any parameter.",
+      "paragraphs": [
+        "Channels, patterns, mixer inserts and automations carry IDS, and an id is stable for as long as the thing exists. Playlist lanes do not: lanes are positional, so a lane is addressed by its index, and removing one renumbers the lanes after it. Clips are addressed by the lane and the bar they sit on, which is how they are identified on screen.",
+        "Every parameter in the project is addressed by the same five fields. `target` is project, channel, mixerTrack or master. `id` is the channel or mixer track id. `group` says which part of the thing: leave it empty for the target's own parameters, or give oscillators, amp, sample, soundfont or effects. `slot` picks which oscillator or which effect. `param` is the parameter's name.",
+        "What a channel offers depends on what instrument it carries, which project_describe reports as its source: a synth has oscillators and an amp envelope, an audio channel has a sample, a soundfont channel has a soundfont. Call params_list at an address to see exactly what is there, with each parameter's range, its default and whether it can be automated.",
+        "automation_targets_list answers in the same five fields, so a parameter you have just set can be automated without translating anything. Not every parameter can be: whether one is worth a curve is declared beside the parameter itself."
+      ]
+    },
+    {
+      "id": "arrangement",
+      "title": "Notes, patterns and the arrangement",
+      "summary": "Steps and bars, and why a pattern is not an instrument.",
+      "paragraphs": [
+        "Time inside a pattern is whole STEPS. A step is one over stepsPerBeat of a beat - at the default of 4, a step is a sixteenth note. There is no fractional step, so a rhythm the grid does not divide cannot be written; raising stepsPerBeat is how you get triplets and finer values.",
+        "A PATTERN holds every channel's notes for its span. It is a section of the song rather than one instrument's part, which is the thing most likely to surprise you: a drum pattern and a bass pattern covering the same four bars are usually one pattern, not two.",
+        "The PLAYLIST is measured in BARS, and a bar is beatsPerBar steps. Placing two clips of one pattern is how a section repeats identically. Duplicating the pattern first, with patterns_write and duplicateOf, is how it repeats with variation. A lane can carry a clip of any pattern; lanes are not instruments either.",
+        "Changing the metre redefines what a bar IS, so every clip's start and length is rescaled in the same undo step to hold its position in time. The answer says whether every clip landed on a whole bar.",
+        "Patterns and the song both GROW to fit what you write and never shrink. Trailing empty bars and a pattern longer than its notes are a deliberate silence, and nothing trims one behind your back."
+      ]
+    },
+    {
+      "id": "score",
+      "title": "The score language",
+      "summary": "When to write music as text instead of as notes.",
+      "paragraphs": [
+        "dew carries a declarative language for arrangement. You say what the music IS - a key, a harmonic progression, rhythms, voicings, a counterpoint - and the compiler works out the notes, the patterns and the clips. For anything longer than a few bars this is worth far more per call than placing notes one at a time.",
+        "score_write stores the text and compiles nothing; score_compile turns it into real notes as one undo step. They are separate because a compile writes notes, and text being worked on should not fill the undo stack with them. Both report diagnostics with a code, a line and a column.",
+        "The language owns notes, patterns and clips. You own channels, instruments, effects and the mixer - so set up the sounds with the other tools, and let the score put the music on them. Recompiling is an update rather than a second copy, and edits made by hand are kept unless you ask for them to be discarded.",
+        "Three things it cannot say, because the host cannot hold them: time is whole steps, so a rhythm needing a finer grid than the project has is an error naming both offenders; there is one tempo and one metre for the whole project, so a section in another metre is not expressible; and a pattern holds every channel's notes for its span.",
+        "The same source always compiles to the same notes, on any machine. The full reference is on the website."
+      ]
+    },
+    {
+      "id": "undo",
+      "title": "Changes, undo and consent",
+      "summary": "What a grant covers, and what protects the user.",
+      "paragraphs": [
+        "Every operation that writes is exactly ONE undo step, however many entries its batch carried. Two hundred notes in one notes_write call is one press of Cmd-Z. That is deliberate, and it is the user's real protection: they approved a client, not each of its actions, so being able to take back an action whole is what makes the approval reasonable.",
+        "Prefer one batched call over many small ones for the same reason, and not only for speed. Ten separate calls are ten undo steps and ten chances to leave the document half-changed.",
+        "A batch is checked before any of it is written. An entry naming a channel that does not exist fails the whole call and changes nothing, rather than applying the entries it understood - half a batch is the worst answer available, because the caller is told it failed and the document has moved anyway.",
+        "A grant is read-only or read-and-write, chosen by the user when they approved the client. Under a read-only grant every writing operation is refused before it runs. project_command can undo and redo, so a client can take back its own work - and so can the person at the keyboard.",
+        "Nothing here can approve itself, change a grant, or reach outside the open project except by writing the files that render_audio and export_midi are asked for."
+      ]
+    }
+  ],
+  "tools": [
+    {
+      "name": "project_describe",
+      "scope": "read",
+      "summary": "Summarise the open project: tempo, meter, and every channel, pattern, playlist track, mixer insert and automation by name and id.",
+      "doc": "Start here. It is the cheap read - counts and names, and not one note, clip or automation point - so it costs a few hundred tokens whatever the size of the arrangement.\n\nUse the ids it returns to address everything else. Reach for project_read only when you need the contents of something this named.",
+      "args": []
+    },
+    {
+      "name": "project_read",
+      "scope": "read",
+      "summary": "Read the whole project document, or one top-level member of it, exactly as a .dew file stores it.",
+      "doc": "The document through the same schema that reads and writes the file, so what you get back is what is on disk rather than a summary of it.\n\nThis is large: a real arrangement is tens of thousands of tokens of notes. Pass `member` to take one part - 'channels', 'patterns', 'playlist', 'mixer' - and prefer project_describe when you only need to know what exists.",
+      "args": [
+        {
+          "name": "member",
+          "kind": "text",
+          "required": false,
+          "doc": "One top-level member to return instead of the whole document.",
+          "holdsBareElements": false,
+          "fields": []
+        }
+      ]
+    },
+    {
+      "name": "project_command",
+      "scope": "write",
+      "summary": "Create, open or save the project, or step its undo history.",
+      "doc": "Verbs about the document rather than edits to it. 'new' and 'open' replace what is open and may be refused when there are unsaved changes; 'save' writes to the project's own file, or to `path` if you give one.\n\n'undo' and 'redo' step the same history the user's own Cmd-Z steps. Every operation in this table is exactly one step of it, however many entries its batch carried.",
+      "args": [
+        {
+          "name": "verb",
+          "kind": "text",
+          "required": true,
+          "doc": "new, open, save, undo or redo.",
+          "holdsBareElements": false,
+          "fields": []
+        },
+        {
+          "name": "path",
+          "kind": "text",
+          "required": false,
+          "doc": "The file to open, or to save to. Required by 'open'.",
+          "holdsBareElements": false,
+          "fields": []
+        }
+      ]
+    },
+    {
+      "name": "structure_write",
+      "scope": "write",
+      "summary": "Set the project's name, tempo, metre or length in bars.",
+      "doc": "The metre is not a tempo. Changing beatsPerBar redefines what a bar IS, and a clip is stored in bars - so every clip's start and length is rescaled in the same undo step to hold its position in time. The answer says whether every clip landed on a whole bar; when it did not, some were rounded.\n\nbeatUnit is notational: it names the metre and labels the snap divisions, and does not change how long anything sounds for.",
+      "args": [
+        {
+          "name": "name",
+          "kind": "text",
+          "required": false,
+          "doc": "The project's title.",
+          "holdsBareElements": false,
+          "fields": []
+        },
+        {
+          "name": "tempoBpm",
+          "kind": "number",
+          "required": false,
+          "doc": "Beats per minute.",
+          "holdsBareElements": false,
+          "fields": []
+        },
+        {
+          "name": "beatsPerBar",
+          "kind": "integer",
+          "required": false,
+          "doc": "The top of the time signature. Load-bearing: it is the bar.",
+          "holdsBareElements": false,
+          "fields": []
+        },
+        {
+          "name": "beatUnit",
+          "kind": "integer",
+          "required": false,
+          "doc": "The bottom of the time signature. Notational only.",
+          "holdsBareElements": false,
+          "fields": []
+        },
+        {
+          "name": "barsInSong",
+          "kind": "integer",
+          "required": false,
+          "doc": "How long the arrangement is.",
+          "holdsBareElements": false,
+          "fields": []
+        }
+      ]
+    },
+    {
+      "name": "params_list",
+      "scope": "read",
+      "summary": "List every parameter at one address, with its range, its default, whether it can be automated, and what it holds now.",
+      "doc": "How to find out what is writable before writing it. An address is a target (project, channel, mixerTrack, master), an id, a group and a slot - the same five fields every parameter operation takes.\n\nLeave `group` off for the target's own parameters. Set it to 'oscillators', 'amp', 'sample' or 'soundfont' for part of a channel's instrument, or to 'effects' with a slot for one effect. What a channel offers depends on what kind of instrument it carries, which project_describe reports as its source.",
+      "args": [
+        {
+          "name": "target",
+          "kind": "text",
+          "required": true,
+          "doc": "project, channel, mixerTrack or master.",
+          "holdsBareElements": false,
+          "fields": []
+        },
+        {
+          "name": "id",
+          "kind": "integer",
+          "required": false,
+          "doc": "The channel id or mixer track id. Unread by project and master.",
+          "holdsBareElements": false,
+          "fields": []
+        },
+        {
+          "name": "group",
+          "kind": "text",
+          "required": false,
+          "doc": "oscillators, amp, sample, soundfont or effects. Omit for the target's own parameters.",
+          "holdsBareElements": false,
+          "fields": []
+        },
+        {
+          "name": "slot",
+          "kind": "integer",
+          "required": false,
+          "doc": "Which oscillator or which effect slot, counting from 0.",
+          "holdsBareElements": false,
+          "fields": []
+        },
+        {
+          "name": "param",
+          "kind": "text",
+          "required": true,
+          "doc": "The parameter's name, as params_list gives it.",
+          "holdsBareElements": false,
+          "fields": []
+        }
+      ]
+    },
+    {
+      "name": "params_read",
+      "scope": "read",
+      "summary": "Read the current value of any number of parameters.",
+      "doc": "Takes a list of addresses and answers with a value for each. An address that names nothing comes back with found=false rather than failing the batch, so one stale id does not cost you the other forty answers.",
+      "args": [
+        {
+          "name": "entries",
+          "kind": "array",
+          "required": true,
+          "doc": "The addresses to read.",
+          "holdsBareElements": false,
+          "fields": [
+            {
+              "name": "target",
+              "kind": "text",
+              "required": true,
+              "doc": "project, channel, mixerTrack or master.",
+              "holdsBareElements": false,
+              "fields": []
+            },
+            {
+              "name": "id",
+              "kind": "integer",
+              "required": false,
+              "doc": "The channel id or mixer track id. Unread by project and master.",
+              "holdsBareElements": false,
+              "fields": []
+            },
+            {
+              "name": "group",
+              "kind": "text",
+              "required": false,
+              "doc": "oscillators, amp, sample, soundfont or effects. Omit for the target's own parameters.",
+              "holdsBareElements": false,
+              "fields": []
+            },
+            {
+              "name": "slot",
+              "kind": "integer",
+              "required": false,
+              "doc": "Which oscillator or which effect slot, counting from 0.",
+              "holdsBareElements": false,
+              "fields": []
+            },
+            {
+              "name": "param",
+              "kind": "text",
+              "required": true,
+              "doc": "The parameter's name, as params_list gives it.",
+              "holdsBareElements": false,
+              "fields": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "params_write",
+      "scope": "write",
+      "summary": "Set any number of parameters anywhere in the project, as one undo step.",
+      "doc": "The one tool for every value in the document: a channel's volume, an oscillator's detune, an envelope's release, a sample's fade, a soundfont's tuning, any parameter of any effect, a mixer fader, the master, the tempo.\n\nEvery address is resolved before anything is written, so a batch with a bad entry changes nothing at all rather than half of what it asked for. A value outside a parameter's range is clamped to it; a choice given a name it does not have fails and says which names it has.\n\nThe whole call is one undo step, however many entries it carried.",
+      "args": [
+        {
+          "name": "entries",
+          "kind": "array",
+          "required": true,
+          "doc": "The parameters to set, and what to set them to.",
+          "holdsBareElements": false,
+          "fields": [
+            {
+              "name": "target",
+              "kind": "text",
+              "required": true,
+              "doc": "project, channel, mixerTrack or master.",
+              "holdsBareElements": false,
+              "fields": []
+            },
+            {
+              "name": "id",
+              "kind": "integer",
+              "required": false,
+              "doc": "The channel id or mixer track id. Unread by project and master.",
+              "holdsBareElements": false,
+              "fields": []
+            },
+            {
+              "name": "group",
+              "kind": "text",
+              "required": false,
+              "doc": "oscillators, amp, sample, soundfont or effects. Omit for the target's own parameters.",
+              "holdsBareElements": false,
+              "fields": []
+            },
+            {
+              "name": "slot",
+              "kind": "integer",
+              "required": false,
+              "doc": "Which oscillator or which effect slot, counting from 0.",
+              "holdsBareElements": false,
+              "fields": []
+            },
+            {
+              "name": "param",
+              "kind": "text",
+              "required": true,
+              "doc": "The parameter's name, as params_list gives it.",
+              "holdsBareElements": false,
+              "fields": []
+            },
+            {
+              "name": "value",
+              "kind": "any",
+              "required": true,
+              "doc": "A number, or the id of a choice, or true/false. params_list says which this parameter takes.",
+              "holdsBareElements": false,
+              "fields": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "channels_write",
+      "scope": "write",
+      "summary": "Add channels, or change the name, colour, routing or mute of existing ones, as one undo step.",
+      "doc": "An upsert: an entry with an `id` changes that channel, an entry without one adds a channel of `kind`. A field an entry does not mention is left alone, so changing a name does not blank a colour.\n\nThe sound a channel makes is not here - that is params_write, which reaches every oscillator, envelope and effect parameter it has. This is the channel as an object in the rack.",
+      "args": [
+        {
+          "name": "entries",
+          "kind": "array",
+          "required": true,
+          "doc": "The channels to add or change.",
+          "holdsBareElements": false,
+          "fields": [
+            {
+              "name": "id",
+              "kind": "integer",
+              "required": false,
+              "doc": "An existing channel to change. Omit to add a new one.",
+              "holdsBareElements": false,
+              "fields": []
+            },
+            {
+              "name": "kind",
+              "kind": "text",
+              "required": false,
+              "doc": "synth, audio or soundfont. Read only when adding.",
+              "holdsBareElements": false,
+              "fields": []
+            },
+            {
+              "name": "name",
+              "kind": "text",
+              "required": false,
+              "doc": "What the channel is called.",
+              "holdsBareElements": false,
+              "fields": []
+            },
+            {
+              "name": "colour",
+              "kind": "text",
+              "required": false,
+              "doc": "A hex colour. Empty means inherit the colour of its position.",
+              "holdsBareElements": false,
+              "fields": []
+            },
+            {
+              "name": "mixerTrackId",
+              "kind": "integer",
+              "required": false,
+              "doc": "The mixer insert to route into.",
+              "holdsBareElements": false,
+              "fields": []
+            },
+            {
+              "name": "muted",
+              "kind": "flag",
+              "required": false,
+              "doc": "Whether the channel is silent.",
+              "holdsBareElements": false,
+              "fields": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "channels_remove",
+      "scope": "write",
+      "summary": "Remove channels and the notes that belong to them.",
+      "doc": "One undo step. A channel's notes live in patterns and become unreachable once it is gone, so they go with it. Refuses the whole batch if any id names nothing, rather than removing the ones it recognised.",
+      "args": [
+        {
+          "name": "ids",
+          "kind": "array",
+          "required": true,
+          "doc": "The channel ids to remove.",
+          "holdsBareElements": true,
+          "fields": [
+            {
+              "name": "",
+              "kind": "integer",
+              "required": true,
+              "doc": "A channel id.",
+              "holdsBareElements": false,
+              "fields": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "source_write",
+      "scope": "write",
+      "summary": "Point an audio channel at a sample file, or a soundfont channel at a file and a sound inside it.",
+      "doc": "Only audio and soundfont channels have a source; a synth channel makes its own sound and this refuses it.\n\nFor a soundfont, giving a bank and program with no `file` chooses a different sound inside the font the channel already has, which is deliberately not the same as re-pointing it: re-pointing reloads the whole font.\n\nA soundfont is referenced and never copied. A sample is gathered into the project's Assets folder when the project is saved.",
+      "args": [
+        {
+          "name": "channelId",
+          "kind": "integer",
+          "required": true,
+          "doc": "The channel to point.",
+          "holdsBareElements": false,
+          "fields": []
+        },
+        {
+          "name": "file",
+          "kind": "text",
+          "required": false,
+          "doc": "The path to the sample or soundfont. Omit to keep the current file.",
+          "holdsBareElements": false,
+          "fields": []
+        },
+        {
+          "name": "sourceSampleRate",
+          "kind": "integer",
+          "required": false,
+          "doc": "The sample's own rate, in Hz.",
+          "holdsBareElements": false,
+          "fields": []
+        },
+        {
+          "name": "lengthSamples",
+          "kind": "integer",
+          "required": false,
+          "doc": "How long the sample is, in samples.",
+          "holdsBareElements": false,
+          "fields": []
+        },
+        {
+          "name": "bank",
+          "kind": "integer",
+          "required": false,
+          "doc": "Soundfont bank. Drum kits are bank 128.",
+          "holdsBareElements": false,
+          "fields": []
+        },
+        {
+          "name": "program",
+          "kind": "integer",
+          "required": false,
+          "doc": "Soundfont program within the bank.",
+          "holdsBareElements": false,
+          "fields": []
+        },
+        {
+          "name": "presetName",
+          "kind": "text",
+          "required": false,
+          "doc": "What that sound is called, stored so the channel can name it when the font is missing.",
+          "holdsBareElements": false,
+          "fields": []
+        }
+      ]
+    },
+    {
+      "name": "effects_write",
+      "scope": "write",
+      "summary": "Add effects to a channel, mixer insert or the master, or bypass and preset existing ones.",
+      "doc": "An entry with a `slot` changes the effect already there; an entry without one appends an effect of `type` to the end of the chain. A chain holds four, and a fifth is refused rather than silently dropped - an effect the engine does not render is an effect that appears to have stopped working.\n\nThe effect's own parameters are params_write's, addressed with group 'effects' and the same slot. `preset` here is a shorthand for the whole set of them at once; presets_list says what is available.",
+      "args": [
+        {
+          "name": "entries",
+          "kind": "array",
+          "required": true,
+          "doc": "The effects to add or change.",
+          "holdsBareElements": false,
+          "fields": [
+            {
+              "name": "target",
+              "kind": "text",
+              "required": true,
+              "doc": "channel, mixerTrack or master.",
+              "holdsBareElements": false,
+              "fields": []
+            },
+            {
+              "name": "id",
+              "kind": "integer",
+              "required": false,
+              "doc": "The channel or mixer track id.",
+              "holdsBareElements": false,
+              "fields": []
+            },
+            {
+              "name": "slot",
+              "kind": "integer",
+              "required": false,
+              "doc": "An existing slot to change. Omit to append a new effect.",
+              "holdsBareElements": false,
+              "fields": []
+            },
+            {
+              "name": "type",
+              "kind": "text",
+              "required": false,
+              "doc": "What effect to add. Read only when adding.",
+              "holdsBareElements": false,
+              "fields": []
+            },
+            {
+              "name": "enabled",
+              "kind": "flag",
+              "required": false,
+              "doc": "False bypasses the slot.",
+              "holdsBareElements": false,
+              "fields": []
+            },
+            {
+              "name": "preset",
+              "kind": "text",
+              "required": false,
+              "doc": "A factory preset's name, applied to this slot.",
+              "holdsBareElements": false,
+              "fields": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "effects_move",
+      "scope": "write",
+      "summary": "Move one effect to another position in its chain.",
+      "doc": "Order is audible: a distortion before a reverb is not a distortion after one. Positions count effects only, so the instrument a channel also carries cannot shift the result.\n\nAn effect keeps its own DSP unit across the move - the pool is keyed on the effect's identity rather than its position - so reordering a chain does not cut the reverb tail the slots after it were in the middle of.",
+      "args": [
+        {
+          "name": "target",
+          "kind": "text",
+          "required": true,
+          "doc": "channel, mixerTrack or master.",
+          "holdsBareElements": false,
+          "fields": []
+        },
+        {
+          "name": "id",
+          "kind": "integer",
+          "required": false,
+          "doc": "The channel or mixer track id.",
+          "holdsBareElements": false,
+          "fields": []
+        },
+        {
+          "name": "slot",
+          "kind": "integer",
+          "required": true,
+          "doc": "Which effect to move.",
+          "holdsBareElements": false,
+          "fields": []
+        },
+        {
+          "name": "toSlot",
+          "kind": "integer",
+          "required": true,
+          "doc": "Where it should end up.",
+          "holdsBareElements": false,
+          "fields": []
+        }
+      ]
+    },
+    {
+      "name": "effects_remove",
+      "scope": "write",
+      "summary": "Remove effects from chains, as one undo step.",
+      "doc": "Slots are resolved before anything is removed, so removing slots 0 and 1 in one call removes the two you meant rather than the first and whatever slid up into its place.",
+      "args": [
+        {
+          "name": "entries",
+          "kind": "array",
+          "required": true,
+          "doc": "The effects to remove.",
+          "holdsBareElements": false,
+          "fields": [
+            {
+              "name": "target",
+              "kind": "text",
+              "required": true,
+              "doc": "channel, mixerTrack or master.",
+              "holdsBareElements": false,
+              "fields": []
+            },
+            {
+              "name": "id",
+              "kind": "integer",
+              "required": false,
+              "doc": "The channel id or mixer track id. Unread by master.",
+              "holdsBareElements": false,
+              "fields": []
+            },
+            {
+              "name": "slot",
+              "kind": "integer",
+              "required": true,
+              "doc": "Which effect in that chain, counting from 0.",
+              "holdsBareElements": false,
+              "fields": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "presets_list",
+      "scope": "read",
+      "summary": "List the factory presets, for instruments and for effects.",
+      "doc": "Filter by `kind` ('instrument' or 'effect') and by `type` - the id of an effect or an instrument, as project_describe reports a channel's source. A preset is refused if its type is not the slot's, so filtering first is worth doing.",
+      "args": [
+        {
+          "name": "kind",
+          "kind": "text",
+          "required": false,
+          "doc": "instrument or effect.",
+          "holdsBareElements": false,
+          "fields": []
+        },
+        {
+          "name": "type",
+          "kind": "text",
+          "required": false,
+          "doc": "An effect or instrument id, such as reverb.",
+          "holdsBareElements": false,
+          "fields": []
+        }
+      ]
+    },
+    {
+      "name": "mixer_write",
+      "scope": "write",
+      "summary": "Add mixer inserts, or rename and recolour existing ones.",
+      "doc": "An upsert, like channels_write: an entry with an `id` changes that insert, one without adds a new one.\n\nA fader and a pan are parameters, not fields here - reach them with params_write, target 'mixerTrack'. The master is addressed as target 'master' and has a fader and nothing else.",
+      "args": [
+        {
+          "name": "entries",
+          "kind": "array",
+          "required": true,
+          "doc": "The inserts to add or change.",
+          "holdsBareElements": false,
+          "fields": [
+            {
+              "name": "id",
+              "kind": "integer",
+              "required": false,
+              "doc": "An existing insert to change. Omit to add one.",
+              "holdsBareElements": false,
+              "fields": []
+            },
+            {
+              "name": "name",
+              "kind": "text",
+              "required": false,
+              "doc": "What the insert is called.",
+              "holdsBareElements": false,
+              "fields": []
+            },
+            {
+              "name": "colour",
+              "kind": "text",
+              "required": false,
+              "doc": "A hex colour. Empty means inherit the colours routed into it.",
+              "holdsBareElements": false,
+              "fields": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "mixer_remove",
+      "scope": "write",
+      "summary": "Remove mixer inserts, their effects and the routing they leave behind.",
+      "doc": "Channels routed into a removed insert are re-pointed at the first remaining one in the same undo step, because a channel that has lost its insert is still a channel with notes in it - unlike a clip that has lost its pattern.\n\nRefuses the last insert and refuses the master. Skipped entries are counted in the answer rather than reported as failures.",
+      "args": [
+        {
+          "name": "ids",
+          "kind": "array",
+          "required": true,
+          "doc": "The insert ids to remove.",
+          "holdsBareElements": true,
+          "fields": [
+            {
+              "name": "",
+              "kind": "integer",
+              "required": true,
+              "doc": "A mixer insert id.",
+              "holdsBareElements": false,
+              "fields": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "patterns_write",
+      "scope": "write",
+      "summary": "Add, duplicate, rename or resize patterns, as one undo step.",
+      "doc": "A pattern holds every channel's notes for its span, which is why a section of an arrangement is one pattern rather than one per instrument.\n\n`duplicateOf` deep-copies a pattern, notes and all, under a new id - which is what a repeat that will be varied wants. A repeat that is identical wants one pattern and two clips instead.\n\nA pattern deliberately longer than its notes is a rest at the end, so nothing here shrinks one implicitly. `fitToNotes` asks for it explicitly.",
+      "args": [
+        {
+          "name": "entries",
+          "kind": "array",
+          "required": true,
+          "doc": "The patterns to add or change.",
+          "holdsBareElements": false,
+          "fields": [
+            {
+              "name": "id",
+              "kind": "integer",
+              "required": false,
+              "doc": "An existing pattern to change. Omit to make a new one.",
+              "holdsBareElements": false,
+              "fields": []
+            },
+            {
+              "name": "duplicateOf",
+              "kind": "integer",
+              "required": false,
+              "doc": "Copy this pattern, notes and all, instead of making an empty one.",
+              "holdsBareElements": false,
+              "fields": []
+            },
+            {
+              "name": "name",
+              "kind": "text",
+              "required": false,
+              "doc": "What the pattern is called.",
+              "holdsBareElements": false,
+              "fields": []
+            },
+            {
+              "name": "lengthSteps",
+              "kind": "integer",
+              "required": false,
+              "doc": "How long the pattern is, in steps.",
+              "holdsBareElements": false,
+              "fields": []
+            },
+            {
+              "name": "fitToNotes",
+              "kind": "flag",
+              "required": false,
+              "doc": "Set the length to exactly what the notes need.",
+              "holdsBareElements": false,
+              "fields": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "patterns_read",
+      "scope": "read",
+      "summary": "Read one pattern's notes, optionally for one channel only.",
+      "doc": "The piano roll's contents. Ask for one channel when you only mean one - a pattern holds every channel's notes, so the whole of a busy one is a lot of tokens for a question about the bass.",
+      "args": [
+        {
+          "name": "id",
+          "kind": "integer",
+          "required": true,
+          "doc": "The pattern to read.",
+          "holdsBareElements": false,
+          "fields": []
+        },
+        {
+          "name": "channelId",
+          "kind": "integer",
+          "required": false,
+          "doc": "Return only this channel's notes.",
+          "holdsBareElements": false,
+          "fields": []
+        }
+      ]
+    },
+    {
+      "name": "patterns_remove",
+      "scope": "write",
+      "summary": "Remove patterns and every playlist clip that played them.",
+      "doc": "One undo step. A clip pointing at a missing pattern would be dropped by the next engine rebuild anyway, so removing it here keeps the document consistent rather than merely tidy.\n\nRefuses the last pattern: a project with none has nothing to edit and nothing to play. A refusal is counted as skipped rather than failing the batch.",
+      "args": [
+        {
+          "name": "ids",
+          "kind": "array",
+          "required": true,
+          "doc": "The pattern ids to remove.",
+          "holdsBareElements": true,
+          "fields": [
+            {
+              "name": "",
+              "kind": "integer",
+              "required": true,
+              "doc": "A pattern id.",
+              "holdsBareElements": false,
+              "fields": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "notes_write",
+      "scope": "write",
+      "summary": "Write notes into a pattern, as one undo step.",
+      "doc": "An upsert on the three fields that identify a note - channel, step and pitch - so sending the same bar twice does not double it.\n\nTime is whole steps. A step is 1/stepsPerBeat of a beat, which project_describe reports; at the default 4 a step is a sixteenth note. There is no fractional step and no tuplet that the grid does not divide.\n\nThe pattern grows to fit what you write, and never shrinks - a pattern longer than its notes is a deliberate rest at the end. Refuses the whole batch on a bad channel or an out-of-range pitch rather than writing half of it.\n\nFor anything longer than a few bars, prefer score_write and score_compile: the language says what the music IS, and this says where every note goes.",
+      "args": [
+        {
+          "name": "patternId",
+          "kind": "integer",
+          "required": true,
+          "doc": "The pattern to write into.",
+          "holdsBareElements": false,
+          "fields": []
+        },
+        {
+          "name": "notes",
+          "kind": "array",
+          "required": true,
+          "doc": "The notes.",
+          "holdsBareElements": false,
+          "fields": [
+            {
+              "name": "channelId",
+              "kind": "integer",
+              "required": true,
+              "doc": "Which channel sounds the note.",
+              "holdsBareElements": false,
+              "fields": []
+            },
+            {
+              "name": "step",
+              "kind": "integer",
+              "required": true,
+              "doc": "When it starts, in steps from the pattern's 0.",
+              "holdsBareElements": false,
+              "fields": []
+            },
+            {
+              "name": "pitch",
+              "kind": "integer",
+              "required": true,
+              "doc": "MIDI note number. 60 is middle C.",
+              "holdsBareElements": false,
+              "fields": []
+            },
+            {
+              "name": "lengthSteps",
+              "kind": "integer",
+              "required": false,
+              "doc": "How long it lasts. One step if absent.",
+              "holdsBareElements": false,
+              "fields": []
+            },
+            {
+              "name": "velocity",
+              "kind": "number",
+              "required": false,
+              "doc": "How hard it is struck, 0.05 to 1.",
+              "holdsBareElements": false,
+              "fields": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "notes_remove",
+      "scope": "write",
+      "summary": "Remove notes from a pattern, by list or by range.",
+      "doc": "Give `notes` to remove exactly those. Give none and it removes every note in the channel and step range you describe - with no channel and no range, that is every note in the pattern.\n\nOne undo step either way.",
+      "args": [
+        {
+          "name": "patternId",
+          "kind": "integer",
+          "required": true,
+          "doc": "The pattern to remove from.",
+          "holdsBareElements": false,
+          "fields": []
+        },
+        {
+          "name": "notes",
+          "kind": "array",
+          "required": false,
+          "doc": "Exactly these notes.",
+          "holdsBareElements": false,
+          "fields": [
+            {
+              "name": "channelId",
+              "kind": "integer",
+              "required": true,
+              "doc": "Which channel sounds the note.",
+              "holdsBareElements": false,
+              "fields": []
+            },
+            {
+              "name": "step",
+              "kind": "integer",
+              "required": true,
+              "doc": "When it starts, in steps from the pattern's 0.",
+              "holdsBareElements": false,
+              "fields": []
+            },
+            {
+              "name": "pitch",
+              "kind": "integer",
+              "required": true,
+              "doc": "MIDI note number. 60 is middle C.",
+              "holdsBareElements": false,
+              "fields": []
+            },
+            {
+              "name": "lengthSteps",
+              "kind": "integer",
+              "required": false,
+              "doc": "How long it lasts. One step if absent.",
+              "holdsBareElements": false,
+              "fields": []
+            },
+            {
+              "name": "velocity",
+              "kind": "number",
+              "required": false,
+              "doc": "How hard it is struck, 0.05 to 1.",
+              "holdsBareElements": false,
+              "fields": []
+            }
+          ]
+        },
+        {
+          "name": "channelId",
+          "kind": "integer",
+          "required": false,
+          "doc": "Limit a range removal to one channel.",
+          "holdsBareElements": false,
+          "fields": []
+        },
+        {
+          "name": "fromStep",
+          "kind": "integer",
+          "required": false,
+          "doc": "First step of the range, inclusive.",
+          "holdsBareElements": false,
+          "fields": []
+        },
+        {
+          "name": "toStep",
+          "kind": "integer",
+          "required": false,
+          "doc": "Last step of the range, inclusive.",
+          "holdsBareElements": false,
+          "fields": []
+        }
+      ]
+    },
+    {
+      "name": "notes_transform",
+      "scope": "write",
+      "summary": "Quantize or transpose every note on one channel of a pattern.",
+      "doc": "Quantizing rounds each note's START to the grid and deliberately leaves lengths alone: quantizing length as well turns an eighth-note line into a legato blur. Two notes that land on the same step and pitch are collapsed into one, keeping the longer - they retrigger one voice at one instant, so the second was never audible.\n\nTransposing clamps the notes as a GROUP, so a chord against the top of the range keeps its intervals rather than compressing. The answer says how many semitones were actually applied, which is zero when the group is already against a limit.",
+      "args": [
+        {
+          "name": "patternId",
+          "kind": "integer",
+          "required": true,
+          "doc": "The pattern to transform.",
+          "holdsBareElements": false,
+          "fields": []
+        },
+        {
+          "name": "channelId",
+          "kind": "integer",
+          "required": true,
+          "doc": "Which channel's notes.",
+          "holdsBareElements": false,
+          "fields": []
+        },
+        {
+          "name": "verb",
+          "kind": "text",
+          "required": true,
+          "doc": "quantize or transpose.",
+          "holdsBareElements": false,
+          "fields": []
+        },
+        {
+          "name": "snap",
+          "kind": "integer",
+          "required": false,
+          "doc": "For quantize: 0 sixteenth, 1 eighth, 2 quarter, 3 half, 4 bar.",
+          "holdsBareElements": false,
+          "fields": []
+        },
+        {
+          "name": "semitones",
+          "kind": "integer",
+          "required": false,
+          "doc": "For transpose: how far, and which way.",
+          "holdsBareElements": false,
+          "fields": []
+        }
+      ]
+    },
+    {
+      "name": "playlist_tracks_write",
+      "scope": "write",
+      "summary": "Add arrangement lanes, or rename, mute, solo and recolour existing ones.",
+      "doc": "A lane carries no id: lanes are positional, unlike channels and mixer inserts, so an index is the whole address. An entry with an `index` changes that lane and one without appends a new one.\n\nA lane is not a channel. Any lane can carry a clip of any pattern, and a pattern holds every channel's notes - so lanes are sections of the song, not instruments.",
+      "args": [
+        {
+          "name": "entries",
+          "kind": "array",
+          "required": true,
+          "doc": "The lanes to add or change.",
+          "holdsBareElements": false,
+          "fields": [
+            {
+              "name": "index",
+              "kind": "integer",
+              "required": false,
+              "doc": "An existing lane. Omit to append a new one.",
+              "holdsBareElements": false,
+              "fields": []
+            },
+            {
+              "name": "name",
+              "kind": "text",
+              "required": false,
+              "doc": "What the lane is called.",
+              "holdsBareElements": false,
+              "fields": []
+            },
+            {
+              "name": "mute",
+              "kind": "flag",
+              "required": false,
+              "doc": "Silence everything on the lane.",
+              "holdsBareElements": false,
+              "fields": []
+            },
+            {
+              "name": "solo",
+              "kind": "flag",
+              "required": false,
+              "doc": "Silence every OTHER lane.",
+              "holdsBareElements": false,
+              "fields": []
+            },
+            {
+              "name": "colour",
+              "kind": "text",
+              "required": false,
+              "doc": "A hex colour, or empty to inherit.",
+              "holdsBareElements": false,
+              "fields": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "playlist_tracks_remove",
+      "scope": "write",
+      "summary": "Remove arrangement lanes and the clips on them.",
+      "doc": "One undo step. The clips go with the lane. Automations do NOT - an automation is a reusable definition that can be placed again, unlike the notes a removed channel leaves behind, which nothing can reach.\n\nRemoving a lane renumbers the ones after it, so give every index you mean in one call rather than calling repeatedly.",
+      "args": [
+        {
+          "name": "indexes",
+          "kind": "array",
+          "required": true,
+          "doc": "The lane indexes to remove.",
+          "holdsBareElements": true,
+          "fields": [
+            {
+              "name": "",
+              "kind": "integer",
+              "required": true,
+              "doc": "A lane index.",
+              "holdsBareElements": false,
+              "fields": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "clips_write",
+      "scope": "write",
+      "summary": "Place clips on the arrangement: patterns, audio takes or automation curves.",
+      "doc": "A clip is measured in BARS, and a bar is beatsPerBar steps - so a clip's length in time follows the metre. Placing two clips of one pattern is how a section repeats identically; duplicating the pattern first is how it repeats with variation.\n\nThe song grows to fit what you place, and never shrinks: trailing empty bars are a deliberate silence.\n\nRefuses the whole batch on a bad lane, pattern, channel or automation rather than placing some of it.",
+      "args": [
+        {
+          "name": "clips",
+          "kind": "array",
+          "required": true,
+          "doc": "The clips to place.",
+          "holdsBareElements": false,
+          "fields": [
+            {
+              "name": "track",
+              "kind": "integer",
+              "required": true,
+              "doc": "Which lane, counting from 0.",
+              "holdsBareElements": false,
+              "fields": []
+            },
+            {
+              "name": "kind",
+              "kind": "text",
+              "required": false,
+              "doc": "pattern, audio or automation. Pattern if absent.",
+              "holdsBareElements": false,
+              "fields": []
+            },
+            {
+              "name": "startBar",
+              "kind": "integer",
+              "required": true,
+              "doc": "Where it begins, counting from 0.",
+              "holdsBareElements": false,
+              "fields": []
+            },
+            {
+              "name": "lengthBars",
+              "kind": "integer",
+              "required": false,
+              "doc": "How many bars it spans.",
+              "holdsBareElements": false,
+              "fields": []
+            },
+            {
+              "name": "patternId",
+              "kind": "integer",
+              "required": false,
+              "doc": "For a pattern clip.",
+              "holdsBareElements": false,
+              "fields": []
+            },
+            {
+              "name": "channelId",
+              "kind": "integer",
+              "required": false,
+              "doc": "For an audio clip.",
+              "holdsBareElements": false,
+              "fields": []
+            },
+            {
+              "name": "automationId",
+              "kind": "integer",
+              "required": false,
+              "doc": "For an automation clip.",
+              "holdsBareElements": false,
+              "fields": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "clips_remove",
+      "scope": "write",
+      "summary": "Remove the clip covering a bar on a lane.",
+      "doc": "Addressed by where it is rather than by an id, because that is how a clip is identified on screen: a lane and a bar. A bar with no clip on it is skipped rather than failing the batch, so clearing a range is safe to ask for twice.",
+      "args": [
+        {
+          "name": "clips",
+          "kind": "array",
+          "required": true,
+          "doc": "Lane-and-bar pairs.",
+          "holdsBareElements": false,
+          "fields": [
+            {
+              "name": "track",
+              "kind": "integer",
+              "required": true,
+              "doc": "Which lane.",
+              "holdsBareElements": false,
+              "fields": []
+            },
+            {
+              "name": "atBar",
+              "kind": "integer",
+              "required": true,
+              "doc": "Any bar the clip covers.",
+              "holdsBareElements": false,
+              "fields": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "automation_targets_list",
+      "scope": "read",
+      "summary": "List every parameter in this project that a curve can be pointed at.",
+      "doc": "Automation is a curated set, not every property: whether a parameter is worth a curve is declared beside the parameter itself. A relation between tracks (solo), a read-pointer discontinuity (a sample's reverse and loop) and a pattern's length are all deliberately absent, each for its own reason.\n\nAnswers in the same five-field address params_write takes, so a parameter you have just set can be automated without translating anything.",
+      "args": [
+        {
+          "name": "contains",
+          "kind": "text",
+          "required": false,
+          "doc": "Only targets whose display name contains this.",
+          "holdsBareElements": false,
+          "fields": []
+        }
+      ]
+    },
+    {
+      "name": "automation_write",
+      "scope": "write",
+      "summary": "Create an automation curve for a parameter, and place a clip for it.",
+      "doc": "Creating the curve and placing its clip is one call because it is one action: a curve with nowhere to play is a curve nothing hears. The clip lands on the first lane with room at `startBar`, and a lane is added if every one is occupied there.\n\nA fresh curve has two points, so it is a line rather than an empty box. Shape it with automation_points_write.\n\nRefuses a parameter that is not automatable, and says so - which is a different answer from a parameter that does not exist.",
+      "args": [
+        {
+          "name": "target",
+          "kind": "text",
+          "required": true,
+          "doc": "project, channel, mixerTrack or master.",
+          "holdsBareElements": false,
+          "fields": []
+        },
+        {
+          "name": "id",
+          "kind": "integer",
+          "required": false,
+          "doc": "The channel or mixer track id.",
+          "holdsBareElements": false,
+          "fields": []
+        },
+        {
+          "name": "group",
+          "kind": "text",
+          "required": false,
+          "doc": "oscillators or effects, or omit.",
+          "holdsBareElements": false,
+          "fields": []
+        },
+        {
+          "name": "slot",
+          "kind": "integer",
+          "required": false,
+          "doc": "Which oscillator or effect slot.",
+          "holdsBareElements": false,
+          "fields": []
+        },
+        {
+          "name": "param",
+          "kind": "text",
+          "required": true,
+          "doc": "The parameter to automate.",
+          "holdsBareElements": false,
+          "fields": []
+        },
+        {
+          "name": "placeClip",
+          "kind": "flag",
+          "required": false,
+          "doc": "Place a clip for it. True if absent.",
+          "holdsBareElements": false,
+          "fields": []
+        },
+        {
+          "name": "startBar",
+          "kind": "integer",
+          "required": false,
+          "doc": "Where the clip begins.",
+          "holdsBareElements": false,
+          "fields": []
+        },
+        {
+          "name": "lengthBars",
+          "kind": "integer",
+          "required": false,
+          "doc": "How many bars it spans.",
+          "holdsBareElements": false,
+          "fields": []
+        }
+      ]
+    },
+    {
+      "name": "automation_read",
+      "scope": "read",
+      "summary": "Read one automation curve's points.",
+      "doc": "Values are 0 to 1 and are mapped onto the parameter's own units when they are read - a discrete parameter is snapped, because half-on is not a state a toggle has.\n\n`stale` is true when the curve points at something that no longer applies - an effect slot that changed type, an oscillator switched out of wavetable mode. A stale curve is inert rather than misapplied.",
+      "args": [
+        {
+          "name": "id",
+          "kind": "integer",
+          "required": true,
+          "doc": "The automation to read.",
+          "holdsBareElements": false,
+          "fields": []
+        }
+      ]
+    },
+    {
+      "name": "automation_points_write",
+      "scope": "write",
+      "summary": "Add or move points on an automation curve, as one undo step.",
+      "doc": "A point is a step and a value from 0 to 1. Two points on one step is a curve with no defined value there, so a point written where one already sits moves it rather than duplicating it.\n\nThree shapes are offered and two are stored: 'line' is a curve with no bend, so switching to 'step' and back returns the curve you had. A stepped segment ignores its bend rather than losing it.\n\n`replace` removes whatever was there that you did not write, which is how you redraw a curve rather than add to it. A curve always keeps at least two points - one with fewer has no shape to evaluate - so replacing with a single point leaves one of the old ones behind, and the answer's `points` count says so.",
+      "args": [
+        {
+          "name": "id",
+          "kind": "integer",
+          "required": true,
+          "doc": "The automation to shape.",
+          "holdsBareElements": false,
+          "fields": []
+        },
+        {
+          "name": "replace",
+          "kind": "flag",
+          "required": false,
+          "doc": "Clear the existing points first.",
+          "holdsBareElements": false,
+          "fields": []
+        },
+        {
+          "name": "points",
+          "kind": "array",
+          "required": true,
+          "doc": "The points.",
+          "holdsBareElements": false,
+          "fields": [
+            {
+              "name": "step",
+              "kind": "number",
+              "required": true,
+              "doc": "Where, in steps from the clip's start.",
+              "holdsBareElements": false,
+              "fields": []
+            },
+            {
+              "name": "value",
+              "kind": "number",
+              "required": true,
+              "doc": "What, from 0 to 1.",
+              "holdsBareElements": false,
+              "fields": []
+            },
+            {
+              "name": "shape",
+              "kind": "text",
+              "required": false,
+              "doc": "line, curve or step. Applies to the RIGHT.",
+              "holdsBareElements": false,
+              "fields": []
+            },
+            {
+              "name": "bend",
+              "kind": "number",
+              "required": false,
+              "doc": "How the curve bends, -1 to 1.",
+              "holdsBareElements": false,
+              "fields": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "automation_remove",
+      "scope": "write",
+      "summary": "Remove automation curves and every clip that played them.",
+      "doc": "One undo step. A clip pointing at a removed automation would have nothing to drive, so it goes too.",
+      "args": [
+        {
+          "name": "ids",
+          "kind": "array",
+          "required": true,
+          "doc": "The automation ids to remove.",
+          "holdsBareElements": true,
+          "fields": [
+            {
+              "name": "",
+              "kind": "integer",
+              "required": true,
+              "doc": "An automation id.",
+              "holdsBareElements": false,
+              "fields": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "score_read",
+      "scope": "read",
+      "summary": "Read the project's score source, and whether it still compiles.",
+      "doc": "A dew project can carry the text of the arrangement language that produced it. Checking is free and writes nothing, so this reports the diagnostics without putting a single note on the undo stack.\n\nRead the dew://guide/score resource for the language itself.",
+      "args": [
+        {
+          "name": "check",
+          "kind": "flag",
+          "required": false,
+          "doc": "Compile it to report diagnostics. True if absent.",
+          "holdsBareElements": false,
+          "fields": []
+        }
+      ]
+    },
+    {
+      "name": "score_write",
+      "scope": "write",
+      "summary": "Store score source in the project, without compiling it.",
+      "doc": "Storing and compiling are separate on purpose: a compile writes notes, and text that is being worked on should not fill the undo stack with them.\n\nThe answer says whether what you stored compiles and why not, so you can fix it before asking for the notes.",
+      "args": [
+        {
+          "name": "source",
+          "kind": "text",
+          "required": true,
+          "doc": "The whole score, as text.",
+          "holdsBareElements": false,
+          "fields": []
+        },
+        {
+          "name": "sourceName",
+          "kind": "text",
+          "required": false,
+          "doc": "What to call it in diagnostics.",
+          "holdsBareElements": false,
+          "fields": []
+        }
+      ]
+    },
+    {
+      "name": "score_compile",
+      "scope": "write",
+      "summary": "Compile the score into real patterns, notes and clips, as one undo step.",
+      "doc": "This is the high-leverage way to arrange. The language says what the music IS - key, harmony, rhythm, voicing, counterpoint - and the compiler works out the notes, which is worth far more per call than placing them one at a time with notes_write.\n\nThe language owns notes, patterns and clips; you own channels, instruments, effects and the mixer. Recompiling is an UPDATE rather than a second copy, and hand edits are kept unless you say otherwise.\n\nRefuses outright if the score has errors, rather than baking half of it. Note that the same source always compiles to the same notes, on any machine.",
+      "args": [
+        {
+          "name": "source",
+          "kind": "text",
+          "required": false,
+          "doc": "Compile this instead of what is stored, and store it too.",
+          "holdsBareElements": false,
+          "fields": []
+        },
+        {
+          "name": "sourceName",
+          "kind": "text",
+          "required": false,
+          "doc": "What to call it in diagnostics.",
+          "holdsBareElements": false,
+          "fields": []
+        },
+        {
+          "name": "discardHandEdits",
+          "kind": "flag",
+          "required": false,
+          "doc": "Overwrite notes edited by hand since the last compile.",
+          "holdsBareElements": false,
+          "fields": []
+        }
+      ]
+    },
+    {
+      "name": "transport_write",
+      "scope": "write",
+      "summary": "Start or stop playback, choose song or pattern mode, and move the playhead.",
+      "doc": "Not an edit: nothing here touches the document or the undo history. It is what the transport bar does.\n\nAny pending change to the document is applied to the engine first, so playing immediately after writing notes plays the notes you just wrote.",
+      "args": [
+        {
+          "name": "playing",
+          "kind": "flag",
+          "required": false,
+          "doc": "True plays, false stops.",
+          "holdsBareElements": false,
+          "fields": []
+        },
+        {
+          "name": "mode",
+          "kind": "text",
+          "required": false,
+          "doc": "song plays the arrangement, pattern loops the current pattern.",
+          "holdsBareElements": false,
+          "fields": []
+        },
+        {
+          "name": "playheadSteps",
+          "kind": "number",
+          "required": false,
+          "doc": "Move the playhead, in steps.",
+          "holdsBareElements": false,
+          "fields": []
+        },
+        {
+          "name": "rewind",
+          "kind": "flag",
+          "required": false,
+          "doc": "Return to the start.",
+          "holdsBareElements": false,
+          "fields": []
+        }
+      ]
+    },
+    {
+      "name": "transport_read",
+      "scope": "read",
+      "summary": "Report whether dew is playing, and in which mode.",
+      "doc": "A read, so it is available to a read-only grant. Use it to tell whether something you started is still going.",
+      "args": []
+    },
+    {
+      "name": "render_audio",
+      "scope": "write",
+      "summary": "Start rendering the project to an audio file, or to one file per channel.",
+      "doc": "Answers as soon as the render STARTS, because a render is seconds to minutes of work. Poll render_status for progress, and do not start a second one while one is going.\n\nThe format follows the extension. MP3 needs the lame binary to be installed and reports itself unavailable when it is not.\n\nStems mute rather than solo, so a stem carries the effects and the routing it has in the mix.",
+      "args": [
+        {
+          "name": "path",
+          "kind": "text",
+          "required": true,
+          "doc": "Where to write. A file, or the folder to fill when stems is set.",
+          "holdsBareElements": false,
+          "fields": []
+        },
+        {
+          "name": "mode",
+          "kind": "text",
+          "required": false,
+          "doc": "song renders the arrangement, pattern renders one pattern. Song if absent.",
+          "holdsBareElements": false,
+          "fields": []
+        },
+        {
+          "name": "patternId",
+          "kind": "integer",
+          "required": false,
+          "doc": "Which pattern, in pattern mode.",
+          "holdsBareElements": false,
+          "fields": []
+        },
+        {
+          "name": "stems",
+          "kind": "flag",
+          "required": false,
+          "doc": "Write one file per channel instead of one mix.",
+          "holdsBareElements": false,
+          "fields": []
+        },
+        {
+          "name": "seconds",
+          "kind": "number",
+          "required": false,
+          "doc": "Render exactly this long, letting the material loop. 0, or absent, renders it once.",
+          "holdsBareElements": false,
+          "fields": []
+        }
+      ]
+    },
+    {
+      "name": "render_status",
+      "scope": "read",
+      "summary": "Report whether a render is going, and how far along it is.",
+      "doc": "Progress runs 0 to 1 across the whole job, stems included. `stage` names which stem is being written.",
+      "args": []
+    },
+    {
+      "name": "export_midi",
+      "scope": "write",
+      "summary": "Write the project's notes to a MIDI file.",
+      "doc": "Synchronous, unlike an audio render: writing MIDI is arithmetic over the notes rather than a pass over every sample.\n\nThe metre's beatUnit goes into the file's time signature. Audio channels have no notes to write and are reported as warnings rather than silently dropped.",
+      "args": [
+        {
+          "name": "path",
+          "kind": "text",
+          "required": true,
+          "doc": "Where to write the file.",
+          "holdsBareElements": false,
+          "fields": []
+        },
+        {
+          "name": "mode",
+          "kind": "text",
+          "required": false,
+          "doc": "song renders the arrangement, pattern renders one pattern. Song if absent.",
+          "holdsBareElements": false,
+          "fields": []
+        },
+        {
+          "name": "patternId",
+          "kind": "integer",
+          "required": false,
+          "doc": "Which pattern, in pattern mode.",
+          "holdsBareElements": false,
+          "fields": []
+        }
+      ]
+    }
+  ]
+}

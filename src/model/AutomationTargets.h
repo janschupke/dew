@@ -160,4 +160,27 @@ std::vector<AutomationTarget> availableAutomationTargets (const juce::ValueTree&
 const ParamSpec* specForAutomation (const juce::ValueTree& project,
                                     const juce::ValueTree& automation);
 
+/** The node an address names, or an invalid tree.
+
+    The fourth direction, and the inverse of automationTargetFor: that one goes
+    node -> (scope, targetId, slot); this one goes back. Both halves of one fact,
+    so a caller that has only an address - an automation clip, or a control
+    surface outside the interface - resolves it exactly where the picker does
+    rather than re-deriving the tree walk.
+
+    It existed already, as two file-local helpers specForAutomation used to find
+    an effect's TYPE. Naming it is what stops the next caller writing a third
+    copy of "a channel by id, then the nth EFFECT under it", which is the walk
+    that has to agree with slotOf or an address silently means a different
+    effect.
+
+    `slot` is ignored by every scope that has none, so an address carrying a
+    stale slot still resolves rather than failing for a field nothing reads.
+
+    A test asserts the round trip over every target availableAutomationTargets
+    offers, which is what holds the two directions together.
+*/
+juce::ValueTree automationNodeFor (const juce::ValueTree& project, AutomationScope scope,
+                                   int targetId, int slot);
+
 } // namespace dew

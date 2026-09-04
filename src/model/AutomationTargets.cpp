@@ -402,6 +402,57 @@ juce::ValueTree ownerWithId (const juce::ValueTree& container, const juce::Ident
 
 } // namespace
 
+juce::ValueTree automationNodeFor (const juce::ValueTree& project, AutomationScope scope,
+                                   int targetId, int slot)
+{
+    if (! project.isValid())
+        return {};
+
+    // A switch with no default, for the reason DocsSchema.h's identifierOf has
+    // none: -Wswitch-enum is an error under the ci preset, so a scope added to
+    // the enum fails to compile here until somebody says what node it names.
+    // The alternative - an if-chain with a fallthrough - is a scope that
+    // silently resolves to nothing and an address that silently does nothing.
+    switch (scope)
+    {
+        case AutomationScope::project: return project;
+
+        case AutomationScope::channel: return ownerWithId (project, ids::CHANNEL, targetId);
+
+        case AutomationScope::mixerTrack:
+            return ownerWithId (project.getChildWithName (ids::MIXER), ids::MIXER_TRACK, targetId);
+
+        case AutomationScope::master:
+            return project.getChildWithName (ids::MIXER).getChildWithName (ids::MASTER);
+
+        case AutomationScope::channelOsc:
+        {
+            const auto channel = ownerWithId (project, ids::CHANNEL, targetId);
+            const auto instrument = channel.getChildWithName (ids::INSTRUMENT);
+
+            // getChild, not getChildWithName: the slot is a POSITION among the
+            // oscillators, and every one of them has the same type.
+            int index = 0;
+
+            for (const auto& osc : instrument)
+                if (osc.hasType (ids::OSC) && index++ == slot)
+                    return osc;
+
+            return {};
+        }
+
+        case AutomationScope::channelEffect:
+            return effectAt (ownerWithId (project, ids::CHANNEL, targetId), slot);
+
+        case AutomationScope::mixerEffect:
+            return effectAt (
+                ownerWithId (project.getChildWithName (ids::MIXER), ids::MIXER_TRACK, targetId),
+                slot);
+    }
+
+    return {};
+}
+
 const ParamSpec* specForAutomation (const juce::ValueTree& project,
                                     const juce::ValueTree& automation)
 {
@@ -417,13 +468,8 @@ const ParamSpec* specForAutomation (const juce::ValueTree& project,
 
     if (scope == AutomationScope::channelEffect || scope == AutomationScope::mixerEffect)
     {
-        const auto targetId = (int) automation[ids::targetId];
-        const auto owner = scope == AutomationScope::channelEffect
-                               ? ownerWithId (project, ids::CHANNEL, targetId)
-                               : ownerWithId (project.getChildWithName (ids::MIXER),
-                                              ids::MIXER_TRACK, targetId);
-
-        const auto effect = effectAt (owner, (int) automation[ids::slot]);
+        const auto effect = automationNodeFor (project, scope, (int) automation[ids::targetId],
+                                               (int) automation[ids::slot]);
 
         if (! effect.isValid())
             return nullptr;

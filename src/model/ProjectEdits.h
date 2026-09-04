@@ -233,6 +233,12 @@ struct ProjectEdits
     // --- presets -------------------------------------------------------------
     /** Writes a preset's parameters onto one effect slot, as ONE undo step.
 
+        `continuingTransaction` joins the step already open instead of arming a
+        new one, for the reason setProperty takes the same flag: beginNewTransaction
+        ARMS a transaction rather than being a no-op when one is open, so a caller
+        applying presets to six channels as one action would otherwise get six
+        undo steps.
+
         Refuses a preset whose type is not the slot's, and returns false: a
         reverb's roomSize applied to a filter is not a filter with a room size,
         it is nothing, and coercing it would be the same silent wrongness
@@ -241,7 +247,8 @@ struct ProjectEdits
         Leaves the slot's `id` and `enabled` alone. The id keys its DSP unit in
         the pool, and a bypass is a mixing decision rather than part of a sound.
     */
-    static bool applyEffectPreset (juce::ValueTree effect, const Preset&, juce::UndoManager*);
+    static bool applyEffectPreset (juce::ValueTree effect, const Preset&, juce::UndoManager*,
+                                   bool continuingTransaction = false);
 
     /** The same for a channel's instrument, and likewise one undo step.
 
@@ -250,7 +257,8 @@ struct ProjectEdits
         untouched by construction. Refuses a preset whose kind is not the
         channel's `source`.
     */
-    static bool applyInstrumentPreset (juce::ValueTree channel, const Preset&, juce::UndoManager*);
+    static bool applyInstrumentPreset (juce::ValueTree channel, const Preset&, juce::UndoManager*,
+                                       bool continuingTransaction = false);
 
     // --- automation ----------------------------------------------------------
     /** Creates an automation definition pointed at a curated target, with two
@@ -343,7 +351,8 @@ struct ProjectEdits
         is what makes "Default" a real menu item rather than a fifth colour that
         happens to look like the fourth.
     */
-    static void setColour (juce::ValueTree node, const juce::String& hex, juce::UndoManager*);
+    static void setColour (juce::ValueTree node, const juce::String& hex, juce::UndoManager*,
+                           bool continuingTransaction = false);
 
     /** What the editor's "Line" means: shape `curve`, bend zero, one undo step.
 

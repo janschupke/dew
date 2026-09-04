@@ -363,6 +363,7 @@ add_library(dew_io STATIC
   io/LiveAudioHost.cpp
   io/MidiRouter.cpp
   io/MidiInputHost.cpp
+  io/LocalHttpServer.cpp
 )
 
 target_link_libraries(dew_io
@@ -370,6 +371,54 @@ target_link_libraries(dew_io
     dew_engine
     juce::juce_audio_devices
     juce::juce_audio_formats
+  PRIVATE
+    juce::juce_recommended_config_flags
+    juce::juce_recommended_warning_flags
+)
+
+# ------------------------------------------------------------------------------
+# dew_control - the operation table an agent drives dew through. Links dew_io
+# and nothing else of dew's.
+#
+# The link line is the argument, as it is for dew_lang and dew_i18n. A library
+# that cannot see dew_design cannot paint, and one that cannot see dew_ui cannot
+# reach a Component - so an operation is a function of the document and the
+# engine, and the whole table can be driven by a test that owns a ValueTree and
+# an UndoManager and nothing else: no window, no message loop, no audio device,
+# no socket.
+#
+# Everything session-shaped arrives through control/ControlHost.h, which
+# MainComponent implements. That is the same shape SampleProvider.h and
+# SoundFontProvider.h already give dew_engine for the same problem: the layer
+# below needs something the layer above owns.
+#
+# It also keeps juce_gui_extra off the link line of the tool that emits the
+# website's MCP reference - the mistake tools/CMakeLists.txt records twice.
+# ------------------------------------------------------------------------------
+add_library(dew_control STATIC
+  control/ControlOps.cpp
+  control/ControlValue.cpp
+  control/ControlGuide.cpp
+  control/McpProtocol.cpp
+  control/McpServer.cpp
+  control/ParamAddress.cpp
+  control/OpsProject.cpp
+  control/OpsParams.cpp
+  control/OpsChannels.cpp
+  control/OpsEffects.cpp
+  control/OpsMixer.cpp
+  control/OpsPatterns.cpp
+  control/OpsNotes.cpp
+  control/OpsPlaylist.cpp
+  control/OpsAutomation.cpp
+  control/OpsScore.cpp
+  control/OpsTransport.cpp
+  control/OpsOutput.cpp
+)
+
+target_link_libraries(dew_control
+  PUBLIC
+    dew_io
   PRIVATE
     juce::juce_recommended_config_flags
     juce::juce_recommended_warning_flags
@@ -433,6 +482,10 @@ target_link_libraries(dew_app
 add_library(dew_ui STATIC
   ui/DewDialog.cpp
   ui/ConfirmPanel.cpp
+  ui/McpConsentPanel.cpp
+  ui/McpGrants.cpp
+  ui/McpConnectionsPanel.cpp
+  ui/MainComponentControl.cpp
   ui/EffectCard.cpp
   ui/EffectChainComponent.cpp
   ui/EffectChainReorder.cpp
@@ -487,7 +540,7 @@ target_link_libraries(dew_ui
   PUBLIC
     dew_design
     dew_app
-    dew_io
+    dew_control
     juce::juce_gui_extra
   PRIVATE
     juce::juce_recommended_config_flags

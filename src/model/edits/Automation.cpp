@@ -294,12 +294,12 @@ void ProjectEdits::setPointShape (juce::ValueTree point, SegmentShape shape,
 }
 
 void ProjectEdits::setColour (juce::ValueTree node, const juce::String& hex,
-                              juce::UndoManager* undo)
+                              juce::UndoManager* undo, bool continuingTransaction)
 {
     if (! node.isValid())
         return;
 
-    setProperty (node, ids::colour, hex, undo, "Change colour");
+    setProperty (node, ids::colour, hex, undo, "Change colour", continuingTransaction);
 }
 
 void ProjectEdits::setPointStraight (juce::ValueTree point, juce::UndoManager* undo)

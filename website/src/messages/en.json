@@ -1,30 +1,4 @@
 {
-  "site": {
-    "name": "dew",
-    "tagline": "A desktop synth DAW where the song can be written as text.",
-    "status": "Working prototype. Every layer is real and wired to the next. macOS only.",
-    "skipToContent": "Skip to content"
-  },
-  "nav": {
-    "features": "Features",
-    "design": "Design system",
-    "score": "Score language",
-    "reference": "Reference",
-    "source": "Source",
-    "setup": "Setup"
-  },
-  "home": {
-    "intro": "A channel rack with a step grid, a piano roll, a playlist of clips and a mixer, driven by a three-oscillator synth per channel — or by a recording, or by a song written as text and compiled to notes.",
-    "readFeatures": "What it does",
-    "readScore": "The score language",
-    "tabsTitle": "Five tabs",
-    "tabsBody": "The same notes, seen four ways, and a fifth tab that writes them for you.",
-    "readSetup": "Build it"
-  },
-  "features": {
-    "title": "What it does",
-    "lead": "Each of these is built and wired to the next. Nothing here is a mock."
-  },
   "design": {
     "title": "Design system",
     "lead": "One vocabulary, held to a number rather than to taste. Every value on this page is read out of the application's own tokens.",
@@ -37,12 +11,72 @@
     "liftBody": "How much lighter a surface gets when touched. A large surface needs a subtler lift than a small one — that distinction is real, and the other values that had grown beside it were not.",
     "galleryCaption": "The whole design system on one page, rendered by dew_shot gallery."
   },
-  "score": {
-    "title": "The score language",
-    "lead": "A song written as text and compiled to real patterns, notes and clips. Seven block keywords, and the set is closed.",
-    "exampleCaption": "examples/amber.score — the one CI compiles and renders.",
-    "referenceLink": "Every block and key",
-    "noExpressions": "There is no expression language — no arithmetic, no variables, no conditionals. That single restriction is what makes completion a table lookup rather than type inference, and what lets the grid be computed statically before anything is generated."
+  "features": {
+    "title": "What it does",
+    "lead": "Each of these is built and wired to the next. Nothing here is a mock."
+  },
+  "footer": {
+    "licence": "JUCE 9 is dual-licensed; dew is a personal prototype used under the AGPLv3 terms.",
+    "generated": "The reference and every colour on this site are generated from the source.",
+    "docsTitle": "Documentation",
+    "projectTitle": "Project",
+    "sourceLabel": "Source on GitHub",
+    "readmeLabel": "README",
+    "rulesLabel": "Rules and reasoning"
+  },
+  "home": {
+    "intro": "A channel rack with a step grid, a piano roll, a playlist of clips and a mixer, driven by a three-oscillator synth per channel — or by a recording, or by a song written as text and compiled to notes.",
+    "readFeatures": "What it does",
+    "readScore": "The score language",
+    "tabsTitle": "Five tabs",
+    "tabsBody": "The same notes, seen four ways, and a fifth tab that writes them for you.",
+    "readSetup": "Build it"
+  },
+  "mcp": {
+    "title": "Control dew from an agent",
+    "lead": "dew runs a Model Context Protocol server inside the application, so a coding agent can read and change the project you have open - instruments, effects, the mixer, the notes and the arrangement.",
+    "howTitle": "How it works",
+    "howBody": "Turn it on under Audio > MCP. dew listens on the loopback interface only, and nothing off your machine can reach it. The first time a client connects, dew names it and asks whether to allow it - and whether it may only read, or change things too. Every change it makes is one step of your undo history.",
+    "connectTitle": "Connecting a client",
+    "connectBody": "The MCP settings panel shows the address and the exact command. The port is not fixed: dew takes the next free one when its own is busy, so copy the command rather than typing it.",
+    "surfaceTitle": "What it can reach",
+    "surfaceBody": "One address space covers every value in the document. A target, an id, a group and a slot name any parameter of any oscillator, envelope, sample, soundfont, effect, mixer insert or the master - and the same four fields say what a curve can be pointed at.",
+    "scoreTitle": "Writing music, not notes",
+    "scoreBody": "For anything longer than a few bars, an agent writes dew’s arrangement language and compiles it. The language says what the music is - a key, a progression, rhythms, voicings, a counterpoint - and the compiler works out the notes.",
+    "referenceLink": "Every tool, in the reference"
+  },
+  "mcpReference": {
+    "title": "MCP reference",
+    "lead": "Generated from the same table the server dispatches on and the permission check reads, so a tool cannot exist without being documented and cannot be documented differently from how it behaves.",
+    "onThisPage": "On this page",
+    "protocol": "Protocol",
+    "guideTitle": "Resources",
+    "guideLead": "dew serves these as MCP resources. A client should read the first before its first call.",
+    "toolsTitle": "Tools",
+    "readTitle": "Reading",
+    "writeTitle": "Changing",
+    "argumentsHeading": "Argument",
+    "typeHeading": "Type",
+    "notesHeading": "Notes",
+    "required": "required",
+    "noArguments": "Takes no arguments.",
+    "readScope": "read",
+    "writeScope": "changes the project",
+    "undoNote": "Every call that changes the project is exactly one undo step, however many entries its batch carried."
+  },
+  "nav": {
+    "features": "Features",
+    "design": "Design system",
+    "score": "Score language",
+    "reference": "Reference",
+    "source": "Source",
+    "setup": "Setup",
+    "mcp": "MCP"
+  },
+  "notFound": {
+    "title": "Not here",
+    "body": "That page does not exist. The site is six pages, and they are all in the header.",
+    "home": "Back to the start"
   },
   "reference": {
     "title": "Score language reference",
@@ -65,14 +99,12 @@
     "generatedFrom": "Generated from src/lang/Schema.h by dew_docs. Do not edit by hand.",
     "kindsCount": "{count, plural, one {# value kind} other {# value kinds}}"
   },
-  "footer": {
-    "licence": "JUCE 9 is dual-licensed; dew is a personal prototype used under the AGPLv3 terms.",
-    "generated": "The reference and every colour on this site are generated from the source.",
-    "docsTitle": "Documentation",
-    "projectTitle": "Project",
-    "sourceLabel": "Source on GitHub",
-    "readmeLabel": "README",
-    "rulesLabel": "Rules and reasoning"
+  "score": {
+    "title": "The score language",
+    "lead": "A song written as text and compiled to real patterns, notes and clips. Seven block keywords, and the set is closed.",
+    "exampleCaption": "examples/amber.score — the one CI compiles and renders.",
+    "referenceLink": "Every block and key",
+    "noExpressions": "There is no expression language — no arithmetic, no variables, no conditionals. That single restriction is what makes completion a table lookup rather than type inference, and what lets the grid be computed statically before anything is generated."
   },
   "setup": {
     "title": "Setup",
@@ -94,9 +126,10 @@
     "toolHeading": "Tool",
     "needHeading": "What it is for"
   },
-  "notFound": {
-    "title": "Not here",
-    "body": "That page does not exist. The site is six pages, and they are all in the header.",
-    "home": "Back to the start"
+  "site": {
+    "name": "dew",
+    "tagline": "A desktop synth DAW where the song can be written as text.",
+    "status": "Working prototype. Every layer is real and wired to the next. macOS only.",
+    "skipToContent": "Skip to content"
   }
 }

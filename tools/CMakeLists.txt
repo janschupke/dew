@@ -84,3 +84,31 @@ target_link_libraries(dew_docs
     juce::juce_recommended_config_flags
     juce::juce_recommended_warning_flags
 )
+
+# ==============================================================================
+# dew_mcp - writes the MCP reference as JSON, for the website.
+#
+# A third emitter, for the reason there is a second: the link line. dew_docs
+# links dew_lang alone and dew_shot emits the design tokens beside the picture
+# of them it already renders. This one links dew_control - which links dew_io
+# and stops there - so the operation table's claim to need no interface is
+# proved by a tool that builds without one rather than asserted in a comment.
+#
+# A console app rather than a plain executable, unlike dew_docs: dew_control
+# reaches JUCE through dew_io, so this needs the same JUCE application scaffold
+# every other tool here has.
+# ==============================================================================
+
+juce_add_console_app(dew_mcp
+  PRODUCT_NAME "dew_mcp"
+  VERSION      "${PROJECT_VERSION}"
+)
+
+target_sources(dew_mcp PRIVATE mcp_main.cpp)
+
+target_link_libraries(dew_mcp
+  PRIVATE
+    dew_control
+    juce::juce_recommended_config_flags
+    juce::juce_recommended_warning_flags
+)

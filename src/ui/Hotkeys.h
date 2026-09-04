@@ -36,6 +36,7 @@ enum
     compileScore,
     audioSettings,
     midiSettings,
+    mcpSettings,
     viewChannelRack,
     viewPianoRoll,
     viewPlaylist,

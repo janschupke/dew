@@ -162,6 +162,10 @@
       "description": "Save this project to a new file",
       "name": "Save As..."
     },
+    "mcpSettings": {
+      "description": "Show the address for local clients, and which are allowed",
+      "name": "MCP..."
+    },
     "midiSettings": {
       "description": "Choose which MIDI controllers play",
       "name": "MIDI Settings..."
@@ -396,6 +400,30 @@
       "name": "Synth"
     },
     "title": "Instrument"
+  },
+  "mcp": {
+    "connections": {
+      "address": "Address",
+      "addressHelp": "Give this to an MCP client. It is on this machine only.",
+      "command": "Command to add it to Claude Code",
+      "empty": "No client has been allowed yet. One that connects will ask.",
+      "enable": "Let programs on this machine control dew",
+      "enableHelp": "dew listens on this machine only, and asks before it lets anything in.",
+      "grantRead": "Reading only",
+      "grantWrite": "Reading and changing",
+      "granted": "Allowed",
+      "offline": "Not running",
+      "revoke": "Revoke",
+      "title": "MCP"
+    },
+    "consent": {
+      "body": "It will be able to read this project and, if you let it, change anything in it \u2014 instruments, effects, the mixer, the notes and the arrangement. Every change it makes is one step of your undo history. You can revoke this at any time in MCP settings.",
+      "deny": "Deny",
+      "question": "Allow \u201c{client}\u201d to control dew?",
+      "read": "Read only",
+      "title": "Allow a program to control dew",
+      "write": "Read and change"
+    }
   },
   "menu": {
     "audio": "Audio",

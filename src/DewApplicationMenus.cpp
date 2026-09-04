@@ -197,6 +197,8 @@ juce::PopupMenu DewApplication::getMenuForIndex (int topLevelMenuIndex, const ju
     {
         menu.addCommandItem (&commandManager, CommandIDs::audioSettings);
         menu.addCommandItem (&commandManager, CommandIDs::midiSettings);
+        menu.addSeparator();
+        menu.addCommandItem (&commandManager, CommandIDs::mcpSettings);
     }
     else if (which == MenuBarItem::demos)
     {
