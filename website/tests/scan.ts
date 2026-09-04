@@ -108,3 +108,33 @@ export function offenders(pattern: RegExp, files = sourceFiles()): Offence[] {
 
 export const report = (found: Offence[]): string =>
   found.map((o) => `${o.file}:${String(o.line)}  ${o.text}`).join('\n');
+
+/** True when a Tailwind arbitrary value encodes something the design system
+ *  should have owned.
+ *
+ *  Exported so the gate and its control case share ONE implementation. Two
+ *  copies of a predicate is two things that can disagree, and the one that
+ *  disagrees silently is the gate.
+ *
+ *  Refused: a colour literal, and a length in px/rem/em. Those are exactly what
+ *  `tokens::colour`, `tokens::space`, `tokens::radius` and `tokens::type`
+ *  already name, so writing one in a bracket is a second copy of a rung.
+ *
+ *  Allowed, and each for a stated reason:
+ *   - a custom property (`duration-[--motion-quick-ms]`) is the token, resolved
+ *     at runtime rather than at build time;
+ *   - `fr` and bare keywords (`grid-cols-[auto_1fr]`) are a grid template, and
+ *     there is no rung for one;
+ *   - `72rem` is the page width and `68ch` the measure. A text column is
+ *     counted in characters, which is not something Tokens.h has an opinion
+ *     about - the application has no prose.
+ */
+export function unownedMeasurement(value: string): boolean {
+  if (value.includes('--') || value.includes('var(')) return false;
+  if (value === '68ch' || value === '72rem') return false;
+
+  return /#[0-9a-fA-F]{3,8}/.test(value) || /\d+(?:\.\d+)?(?:px|rem|em)\b/.test(value);
+}
+
+export const arbitraryValues = (text: string): string[] =>
+  [...text.matchAll(/-\[([^\]]+)\]/g)].map((m) => m[1] ?? '');

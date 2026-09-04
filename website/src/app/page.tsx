@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { Button } from '@/ui/Button';
 import { Card } from '@/ui/Surface';
 import { Lead } from '@/ui/Prose';
+import { Shot } from '@/ui/Shot';
 import { features } from '@/content/features';
 import { t } from '@/lib/strings';
 
@@ -27,6 +28,12 @@ export default function Home() {
           <Button href="/score/">{t('home.readScore')}</Button>
         </div>
       </section>
+
+      <Shot
+        name="channel-rack"
+        alt="dew's channel rack, a step grid with one row per channel"
+        priority
+      />
 
       <section className="py-xxl">
         <h2 className="text-h2 text-primary font-semibold">{t('home.tabsTitle')}</h2>

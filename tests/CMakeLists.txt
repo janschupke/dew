@@ -101,6 +101,7 @@ add_executable(dew_tests
   CliArgsTests.cpp
   DocsJsonTests.cpp
   DocsGenerationTests.cpp
+  WebsiteShotTests.cpp
   GestureTests.cpp
   HotkeyTests.cpp
   SourceGateTests.cpp
@@ -168,7 +169,8 @@ target_compile_definitions(dew_tests PRIVATE
   # with no C++ toolchain - and the gate that it is current lives here, where
   # the emitter is, rather than in a step that would have to write into the
   # working tree before diffing it.
-  DEW_WEBSITE_GENERATED_DIR="${CMAKE_SOURCE_DIR}/website/src/generated")
+  DEW_WEBSITE_GENERATED_DIR="${CMAKE_SOURCE_DIR}/website/src/generated"
+  DEW_WEBSITE_SHOTS_DIR="${CMAKE_SOURCE_DIR}/website/public/shots")
 
 # What is actually COMPILED, as opposed to what happens to sit under src/.
 #

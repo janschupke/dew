@@ -43,6 +43,7 @@ Options:
   --tab <name>           channel-rack | piano-roll | playlist | mixer | score
   --completions          open the score tab's completion popup before shooting
   --size <WxH>           Default 1440x900
+  --scale <n>            Render at n times the size, 1..4. Default 1
   --theme <name>         dark | highContrast
   --help
 )";
@@ -91,12 +92,21 @@ int tabIndexFor (const juce::String& name)
     return -1;
 }
 
-juce::Result writePng (juce::Component& component, const juce::File& destination)
+/** `scale` renders AT that scale rather than drawing at 1x and resampling.
+
+    Text on a control surface is the whole subject of these shots, and a
+    resampled 11px caption is mush. The component still lays out in logical
+    pixels, so a 2x shot is the same picture with more of it in rather than a
+    different one.
+*/
+juce::Result writePng (juce::Component& component, const juce::File& destination, int scale)
 {
-    juce::Image image (juce::Image::ARGB, component.getWidth(), component.getHeight(), true);
+    juce::Image image (juce::Image::ARGB, component.getWidth() * scale,
+                       component.getHeight() * scale, true);
 
     {
         juce::Graphics g (image);
+        g.addTransform (juce::AffineTransform::scale ((float) scale));
         component.paintEntireComponent (g, true);
     }
 
@@ -194,6 +204,7 @@ int main (int argc, char* argv[])
     } clearLookAndFeel;
 
     const auto size = parseSize (args.value ("--size", "1440x900"));
+    const auto scale = juce::jlimit (1, 4, args.value ("--scale", "1").getIntValue());
 
     // Before anything is constructed. Components copy colours when they are
     // built, so a palette chosen after the fact would be half applied - which
@@ -211,7 +222,7 @@ int main (int argc, char* argv[])
         const auto destination = juce::File::getCurrentWorkingDirectory().getChildFile (
             args.positional[1]);
 
-        if (const auto result = writePng (gallery, destination); result.failed())
+        if (const auto result = writePng (gallery, destination, scale); result.failed())
             return fail (result.getErrorMessage());
 
         std::cout << "wrote " << destination.getFullPathName() << "  (" << gallery.getWidth() << "x"
@@ -234,7 +245,7 @@ int main (int argc, char* argv[])
         const auto destination = juce::File::getCurrentWorkingDirectory().getChildFile (
             args.positional[1]);
 
-        if (const auto result = writePng (panel, destination); result.failed())
+        if (const auto result = writePng (panel, destination, scale); result.failed())
             return fail (result.getErrorMessage());
 
         std::cout << "wrote " << destination.getFullPathName() << "  (" << panel.getWidth() << "x"
@@ -302,7 +313,7 @@ int main (int argc, char* argv[])
         const auto destination = juce::File::getCurrentWorkingDirectory().getChildFile (
             args.positional[1]);
 
-        if (const auto result = writePng (panel, destination); result.failed())
+        if (const auto result = writePng (panel, destination, scale); result.failed())
             return fail (result.getErrorMessage());
 
         std::cout << "wrote " << destination.getFullPathName() << "  (" << panel.getWidth() << "x"
@@ -326,7 +337,7 @@ int main (int argc, char* argv[])
         const auto destination = juce::File::getCurrentWorkingDirectory().getChildFile (
             args.positional[1]);
 
-        if (const auto result = writePng (panel, destination); result.failed())
+        if (const auto result = writePng (panel, destination, scale); result.failed())
             return fail (result.getErrorMessage());
 
         std::cout << "wrote " << destination.getFullPathName() << "  (" << panel.getWidth() << "x"
@@ -347,7 +358,7 @@ int main (int argc, char* argv[])
         const auto destination = juce::File::getCurrentWorkingDirectory().getChildFile (
             args.positional[1]);
 
-        if (const auto result = writePng (panel, destination); result.failed())
+        if (const auto result = writePng (panel, destination, scale); result.failed())
             return fail (result.getErrorMessage());
 
         std::cout << "wrote " << destination.getFullPathName() << "  (" << panel.getWidth() << "x"
@@ -366,7 +377,7 @@ int main (int argc, char* argv[])
         const auto destination = juce::File::getCurrentWorkingDirectory().getChildFile (
             args.positional[1]);
 
-        if (const auto result = writePng (panel, destination); result.failed())
+        if (const auto result = writePng (panel, destination, scale); result.failed())
             return fail (result.getErrorMessage());
 
         std::cout << "wrote " << destination.getFullPathName() << "  (" << panel.getWidth() << "x"
@@ -437,7 +448,7 @@ int main (int argc, char* argv[])
             component.resized();
         }
 
-        if (const auto result = writePng (component, destination); result.failed())
+        if (const auto result = writePng (component, destination, scale); result.failed())
             return fail (result.getErrorMessage());
 
         std::cout << "wrote " << destination.getFullPathName() << "  (" << component.getWidth()

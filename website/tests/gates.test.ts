@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { offenders, report, sourceFiles } from './scan';
+import { arbitraryValues, offenders, report, sourceFiles, unownedMeasurement } from './scan';
 
 describe('source gates', () => {
   // Control case, first and separately. Every gate below passes silently when
@@ -46,18 +46,28 @@ describe('source gates', () => {
     expect(report(offenders(/prefers-color-scheme/))).toBe('');
   });
 
-  it('no arbitrary value that is not a token reference', () => {
+  it('no arbitrary value carrying a measurement the ladder should own', () => {
     // `bg-[#2b2f36]` and `p-[13px]` are how the closed vocabulary gets
-    // reopened. A bracket holding a var() or a custom property is a token by
-    // another spelling and is allowed; a bracket holding a NUMBER is not.
-    //
-    // max-w-[68ch] and max-w-[72rem] are the measure and the page width. They
-    // are the site's own layout rather than anything Tokens.h names, and there
-    // is no rung for either - a text column is measured in characters.
-    const allowed = /\[(?:--|var\(|68ch|72rem)/;
-    const found = offenders(/-\[[^\]]+\]/).filter((o) => !allowed.test(o.text));
+    // reopened. See unownedMeasurement in ./scan for what is refused and why
+    // three things are not - the predicate is shared with the control case
+    // below so the two cannot drift.
+    const found = offenders(/-\[[^\]]+\]/).filter((o) =>
+      arbitraryValues(o.text).some(unownedMeasurement),
+    );
 
     expect(report(found)).toBe('');
+  });
+
+  it('sees an arbitrary measurement when there is one', () => {
+    expect(unownedMeasurement('13px')).toBe(true);
+    expect(unownedMeasurement('#2b2f36')).toBe(true);
+    expect(unownedMeasurement('240px')).toBe(true);
+    expect(unownedMeasurement('1.5rem')).toBe(true);
+
+    expect(unownedMeasurement('auto_1fr')).toBe(false);
+    expect(unownedMeasurement('--motion-quick-ms')).toBe(false);
+    expect(unownedMeasurement('68ch')).toBe(false);
+    expect(unownedMeasurement('72rem')).toBe(false);
   });
 
   it('no spacing off the ladder', () => {
@@ -68,7 +78,30 @@ describe('source gates', () => {
     expect(report(offenders(/\b(?:p|m|gap|space)[trblxy]?-\d/))).toBe('');
   });
 
-  it('no inline style carrying a colour', () => {
-    expect(report(offenders(/style=\{\{[^}]*(?:color|background|border)/))).toBe('');
+  it('no inline style carrying a colour of its own', () => {
+    // An inline style is allowed to reference a TOKEN and nothing else.
+    //
+    // The design page needs one: a swatch's colour is chosen by the name it is
+    // iterating over, and Tailwind cannot generate `bg-${name}` because a class
+    // has to be statically visible to be emitted. `var(--color-...)` in a style
+    // attribute is the right answer there - it is still the token, resolved at
+    // runtime rather than at build time.
+    //
+    // What is refused is an inline style holding a VALUE: that is a colour with
+    // no owner, which is the whole point of the hex gate above.
+    const found = offenders(/style=\{\{[^}]*(?:color|background|border)/i).filter(
+      (o) => !o.text.includes('var(--'),
+    );
+
+    expect(report(found)).toBe('');
+  });
+
+  it('sees an inline style with a value in it', () => {
+    const literal = (text: string) =>
+      /style=\{\{[^}]*(?:color|background|border)/i.test(text) && !text.includes('var(--');
+
+    expect(literal("style={{ backgroundColor: '#2b2f36' }}")).toBe(true);
+    expect(literal('style={{ borderColor: theme.accent }}')).toBe(true);
+    expect(literal('style={{ backgroundColor: `var(--color-accent)` }}')).toBe(false);
   });
 });

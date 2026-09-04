@@ -1,3 +1,6 @@
+import { existsSync, readdirSync } from 'node:fs';
+import { join } from 'node:path';
+
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 
@@ -30,5 +33,32 @@ describe('pages', () => {
 
   it('no feature is left without a sentence', () => {
     for (const feature of features) expect(feature.body.length).toBeGreaterThan(40);
+  });
+});
+
+describe('screenshots', () => {
+  it('every shot a feature names exists on disk', () => {
+    // A missing PNG is a 404 nobody sees until a reader does - `public/` is
+    // fetched at runtime, unlike the generated JSON, which a build would refuse.
+    // This is what stands in for that.
+    const named = features.filter((f) => f.shot).map((f) => f.shot);
+
+    expect(named.length).toBeGreaterThan(3);
+
+    for (const shot of named)
+      expect(existsSync(join('public', 'shots', `${shot ?? ''}.png`)), `${shot ?? ''}.png`).toBe(
+        true,
+      );
+  });
+
+  it('every shot on disk is one something names', () => {
+    // The other direction: a PNG nothing references is 200KB of committed
+    // binary nobody will ever look at again.
+    const referenced = new Set([...features.map((f) => f.shot), 'gallery']);
+
+    for (const file of readdirSync(join('public', 'shots')))
+      expect(referenced, `${file} is committed and unreferenced`).toContain(
+        file.replace('.png', ''),
+      );
   });
 });
