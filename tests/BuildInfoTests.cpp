@@ -1,6 +1,6 @@
 #include <catch2/catch_test_macros.hpp>
 
-#include "BuildInfo.h"
+#include "model/BuildInfo.h"
 
 TEST_CASE ("build reports the version CMake was told", "[buildinfo]")
 {

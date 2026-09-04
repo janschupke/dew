@@ -1,6 +1,6 @@
 #include <juce_core/juce_core.h>
 
-#include "BuildInfo.h"
+#include "model/BuildInfo.h"
 #include "io/OfflineRenderer.h"
 #include "io/SamplePool.h"
 #include "io/SoundFontPool.h"

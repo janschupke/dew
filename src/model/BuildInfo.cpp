@@ -1,4 +1,4 @@
-#include "BuildInfo.h"
+#include "model/BuildInfo.h"
 
 namespace dew
 {

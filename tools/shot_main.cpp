@@ -1,6 +1,6 @@
 #include <juce_gui_extra/juce_gui_extra.h>
 
-#include "BuildInfo.h"
+#include "model/BuildInfo.h"
 #include "model/ProjectFactory.h"
 #include "model/ProjectSerializer.h"
 #include "ui/AudioSettingsPanel.h"

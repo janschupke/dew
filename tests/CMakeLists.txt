@@ -171,7 +171,7 @@ target_compile_definitions(dew_tests PRIVATE
 # very assumption that stopped holding when dew_design took four files that
 # still live under src/ui.
 set(DEW_GATE_SOURCES "")
-foreach(dew_layer dew_lang dew_model dew_engine dew_io dew_design dew_app dew_ui)
+foreach(dew_layer dew_lang dew_model dew_engine dew_io dew_design dew_app dew_ui dew)
   # The layer name leads every line: once before the JOIN for the first source,
   # and once inside the separator for each of the rest.
   list(APPEND DEW_GATE_SOURCES

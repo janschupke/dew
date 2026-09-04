@@ -174,7 +174,7 @@ target_link_libraries(dew_lang
 #dew_model - the document.Depends on nothing of dew's.
 #-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
 add_library(dew_model STATIC
-  BuildInfo.cpp
+  model/BuildInfo.cpp
 
   model/AutomationCurve.cpp
   model/AutomationTargets.cpp

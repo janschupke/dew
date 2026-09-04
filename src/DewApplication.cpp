@@ -1,6 +1,6 @@
 #include "DewApplication.h"
 
-#include "BuildInfo.h"
+#include "model/BuildInfo.h"
 #include "model/DemoLibrary.h"
 #include "model/Ids.h"
 #include "model/ProjectEdits.h"

@@ -205,15 +205,10 @@ TEST_CASE ("every source under src is one a library compiles", "[build][gate]")
 
     for (const auto& file : sourceFiles())
     {
-        // Headers are not compiled on their own, and the application target is
-        // not in the manifest's foreach - see the layering gate BELOW, which
-        // exempts the same two by name.
+        // Headers are not compiled on their own. Nothing else is skipped: the
+        // application target is in the manifest's foreach now, so main.cpp and
+        // the DewApplication files are checked like everything else.
         if (file.getFileExtension() != ".cpp")
-            continue;
-
-        const auto name = file.getFileName();
-
-        if (name == "main.cpp" || name.startsWith ("DewApplication"))
             continue;
 
         const auto path = relativePathOf (file);
@@ -425,6 +420,12 @@ TEST_CASE ("no layer includes a header a layer above it owns", "[build][layering
         { "dew_design", { "dew_engine" } },
         { "dew_app", { "dew_model" } },
         { "dew_ui", { "dew_design", "dew_app", "dew_io" } },
+
+        // The application itself, above every library. It used to be missing
+        // from the manifest's foreach, so main.cpp and the DewApplication files
+        // were skipped by NAME here and in the orphan gate - and being skipped,
+        // their includes were judged by nothing at all.
+        { "dew", { "dew_ui" } },
     };
 
     std::map<juce::String, std::set<juce::String>> mayReach;
@@ -488,22 +489,22 @@ TEST_CASE ("no layer includes a header a layer above it owns", "[build][layering
 
     for (const auto& file : sourceFiles())
     {
-        // main.cpp and the DewApplication files belong to the `dew` application
-        // target, which sits above every library and is not in the foreach that
-        // writes the list. They share src/ with dew_model's BuildInfo.cpp, so
-        // the directory cannot speak for them.
+        // No name skips. main.cpp and the DewApplication files used to have two
+        // - one here and one in the orphan gate - because the `dew` target was
+        // not in the foreach that writes the list, and they shared src/ with
+        // dew_model's BuildInfo.cpp, so the directory could not speak for them.
         //
-        // The prefix has no trailing dot, and that matters: it used to, and
-        // DewApplicationMenus.cpp was judged as dew_model the moment it existed
-        // - every ui/ include in it an offence. Any DewApplication* file is the
-        // application's.
-        const auto name = file.getFileName();
-
-        if (name == "main.cpp" || name.startsWith ("DewApplication"))
-            continue;
-
-        const auto relative = file.getRelativePathFrom (juce::File { DEW_SOURCE_DIR })
-                                  .replaceCharacter ('\\', '/');
+        // That list of names was as brittle as the comment above offenders()
+        // says. The prefix here once had a trailing dot, and DewApplicationMenus
+        // .cpp was judged as dew_model the moment it existed - every ui/ include
+        // in it an offence.
+        //
+        // BuildInfo is a dew_model source that happened to sit at the root, so
+        // it moved to model/ where it belongs, src/ became the application's
+        // alone, and the app joined the foreach. Its includes are checked here
+        // now, which they never were: a file that is skipped is a file nothing
+        // is asking about.
+        const auto relative = relativePathOf (file);
 
         const auto directory = relative.contains ("/")
                                    ? relative.upToLastOccurrenceOf ("/", false, false)
@@ -539,7 +540,7 @@ TEST_CASE ("no layer includes a header a layer above it owns", "[build][layering
                 continue;
 
             if (reachable.count (includedOwner->second) == 0)
-                climbing.add (name + ":" + juce::String (i + 1) + "  " + owner->second
+                climbing.add (relative + ":" + juce::String (i + 1) + "  " + owner->second
                               + " includes " + included + ", which " + includedOwner->second
                               + " owns");
         }
