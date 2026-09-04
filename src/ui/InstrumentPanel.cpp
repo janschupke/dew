@@ -339,7 +339,7 @@ juce::StringArray InstrumentPanel::presetMenuItems() const
     juce::StringArray items;
 
     for (const auto& preset : presetsForChannel (selectedChannel()))
-        items.add (preset.name);
+        items.add (PresetLibrary::displayName (preset));
 
     return items;
 }

@@ -31,12 +31,32 @@ struct Preset
         than guessed. */
     juce::String typeId;
 
+    /** What the FILE says this is called, in English, written by the factory.
+
+        A person reads PresetLibrary::displayName instead, which resolves the
+        same preset by its id in their own locale. This stays because the format
+        is meant to be opened and diffed: a file whose name field said
+        `preset.warmPad.name` would be a file only the program can read.
+    */
     juce::String name;
     juce::String description;
 
     /** The parameters, in the shape stateFor produces: flat for an effect,
         grouped the way the project file groups them for an instrument. */
     juce::var state;
+
+    /** The file this came from - "warm-pad.dewpreset" - or empty for one that
+        was never in the library.
+
+        Set by PresetLibrary::all() from the factory's entry, and NOT part of
+        the format: it is the identity a .dewpreset has by virtue of where it
+        lives, which is why it is a field here rather than a key in the JSON.
+        It is what a translated name is looked up by.
+
+        Last, after everything the FILE holds, so that an aggregate initialiser
+        naming the format's fields still reads as the format.
+    */
+    juce::String id;
 
     bool isInstrument() const
     {

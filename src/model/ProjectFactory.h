@@ -57,9 +57,16 @@ struct ProjectFactory
     */
     struct Demo
     {
+        /** The stable id, and what the file is called on disk. */
         const char* fileName;
-        const char* menuName;
-        const char* description;
+
+        /** What the Demos menu shows. A StringId outright, with nothing to keep
+            in step: unlike a preset's name, this is never written into a file -
+            the demo's own project name is - so there is no stored copy that
+            could disagree with it. */
+        StringId menuName;
+        StringId description;
+
         juce::ValueTree (*build)();
     };
 

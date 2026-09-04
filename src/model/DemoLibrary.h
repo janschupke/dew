@@ -16,13 +16,6 @@ namespace dew
 */
 struct DemoLibrary
 {
-    struct Entry
-    {
-        juce::String fileName;
-        juce::String menuName;
-        juce::String description;
-    };
-
     static const std::vector<ProjectFactory::Demo>& entries()
     {
         return ProjectFactory::demos();

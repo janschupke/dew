@@ -2,6 +2,7 @@
 
 #include <PresetData.h>
 
+#include "i18n/Strings.h"
 #include "model/PresetFactory.h"
 #include "model/PresetSerializer.h"
 
@@ -45,14 +46,37 @@ const std::vector<Preset>& PresetLibrary::all()
             // from the factory: the point of reading the files is that what the
             // picker offers is what shipped, and a silent fallback would hide
             // exactly the drift a test is there to catch.
-            if (const auto result = PresetSerializer::fromJsonString (json); result.ok())
+            if (auto result = PresetSerializer::fromJsonString (json); result.ok())
+            {
+                // The id the file does not carry. It is where the preset came
+                // from, which is what displayName looks it up by.
+                result.preset.id = entry.fileName;
                 presets.push_back (result.preset);
+            }
         }
 
         return presets;
     }();
 
     return loaded;
+}
+
+juce::String PresetLibrary::displayName (const Preset& preset)
+{
+    for (const auto& entry : PresetFactory::presets())
+        if (preset.id == entry.fileName)
+            return tr (entry.name);
+
+    return preset.name;
+}
+
+juce::String PresetLibrary::describe (const Preset& preset)
+{
+    for (const auto& entry : PresetFactory::presets())
+        if (preset.id == entry.fileName)
+            return tr (entry.description);
+
+    return preset.description;
 }
 
 namespace

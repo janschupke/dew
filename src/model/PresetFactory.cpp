@@ -29,10 +29,17 @@ juce::var objectOf (std::initializer_list<Value> values)
     return juce::var (object);
 }
 
-Preset effectPreset (const char* typeId, const char* name, const char* description,
-                     std::initializer_list<Value> values)
+/** The four builders describe a SOUND and nothing else.
+
+    A preset's name and description used to be arguments here and were English
+    literals; they are catalogue rows now, and PresetFactory::presets() is the
+    one place that names them - see buildFor. Naming them here as well would be
+    two mentions of one fact with an enum between them, which is a mismatch a
+    compiler cannot see.
+*/
+Preset effectPreset (const char* typeId, std::initializer_list<Value> values)
 {
-    return { "effect", typeId, name, description, objectOf (values) };
+    return { "effect", typeId, {}, {}, objectOf (values), {} };
 }
 
 /** A synth preset: up to three oscillator slots and an envelope.
@@ -42,8 +49,7 @@ Preset effectPreset (const char* typeId, const char* name, const char* descripti
     from their defaults - which switches them OFF, because that is what a fresh
     slot is. So a one-oscillator preset really is one oscillator.
 */
-Preset synthPreset (const char* name, const char* description, std::vector<juce::var> oscillators,
-                    std::initializer_list<Value> amp)
+Preset synthPreset (std::vector<juce::var> oscillators, std::initializer_list<Value> amp)
 {
     juce::Array<juce::var> slots;
 
@@ -55,18 +61,17 @@ Preset synthPreset (const char* name, const char* description, std::vector<juce:
     state->setProperty ("oscillators", slots);
     state->setProperty ("amp", objectOf (amp));
 
-    return { "instrument", "synth", name, description, juce::var (state) };
+    return { "instrument", "synth", {}, {}, juce::var (state), {} };
 }
 
 // clang-format off
-Preset audioPreset (const char* name, const char* description,
-                    std::initializer_list<Value> sample)
+Preset audioPreset (std::initializer_list<Value> sample)
 {
     auto* state = new juce::DynamicObject();
     state->setProperty ("sample", objectOf (sample));
 
     // clang-format on
-    return { "instrument", "audio", name, description, juce::var (state) };
+    return { "instrument", "audio", {}, {}, juce::var (state), {} };
 }
 
 // clang-format off
@@ -78,14 +83,13 @@ Preset audioPreset (const char* name, const char* description,
     nothing against another font. So what a soundfont preset can honestly carry
     is how the font is BENT, which is exactly what these six knobs are.
 */
-Preset soundFontPreset (const char* name, const char* description,
-                        std::initializer_list<Value> soundfont)
+Preset soundFontPreset (std::initializer_list<Value> soundfont)
 {
     auto* state = new juce::DynamicObject();
     state->setProperty ("soundfont", objectOf (soundfont));
 
     // clang-format on
-    return { "instrument", "soundfont", name, description, juce::var (state) };
+    return { "instrument", "soundfont", {}, {}, juce::var (state), {} };
 }
 
 /** A classic oscillator slot. Gains are well under the 0.8 a single slot
@@ -113,193 +117,125 @@ juce::var oscOff()
 // smallest set that shows what a type's parameters actually do.
 
 // clang-format off
-Preset rumbleCut()    { return effectPreset ("filter", "Rumble Cut",
-                            "Takes the room out from under a sound.",
-                            { { &ids::filterMode, "highpass" }, { &ids::cutoff, 120.0 },
+Preset rumbleCut()    { return effectPreset ("filter",{ { &ids::filterMode, "highpass" }, { &ids::cutoff, 120.0 },
                               { &ids::resonance, 0.3 }, { &ids::mix, 1.0 } }); }
 
-Preset warmLowPass()  { return effectPreset ("filter", "Warm Low Pass",
-                            "Rolls the top off without dulling it.",
-                            { { &ids::filterMode, "lowpass" }, { &ids::cutoff, 900.0 },
+Preset warmLowPass()  { return effectPreset ("filter",{ { &ids::filterMode, "lowpass" }, { &ids::cutoff, 900.0 },
                               { &ids::resonance, 0.8 }, { &ids::mix, 1.0 } }); }
 
-Preset squelch()      { return effectPreset ("filter", "Squelch",
-                            "Close to self-oscillation, at the resonance the engine reaches.",
-                            { { &ids::filterMode, "lowpass" }, { &ids::cutoff, 400.0 },
+Preset squelch()      { return effectPreset ("filter",{ { &ids::filterMode, "lowpass" }, { &ids::cutoff, 400.0 },
                               { &ids::resonance, 3.6 }, { &ids::mix, 1.0 } }); }
 
-Preset ambience()     { return effectPreset ("reverb", "Ambience",
-                            "Glue rather than an effect you can hear.",
-                            { { &ids::roomSize, 0.12 }, { &ids::damping, 0.5 },
+Preset ambience()     { return effectPreset ("reverb",{ { &ids::roomSize, 0.12 }, { &ids::damping, 0.5 },
                               { &ids::width, 1.0 }, { &ids::mix, 0.12 } }); }
 
-Preset plate()        { return effectPreset ("reverb", "Plate",
-                            "Bright, short and wide, sitting behind the source.",
-                            { { &ids::roomSize, 0.45 }, { &ids::damping, 0.35 },
+Preset plate()        { return effectPreset ("reverb",{ { &ids::roomSize, 0.45 }, { &ids::damping, 0.35 },
                               { &ids::width, 1.0 }, { &ids::mix, 0.28 } }); }
 
-Preset cathedral()    { return effectPreset ("reverb", "Cathedral",
-                            "A long dark tail.",
-                            { { &ids::roomSize, 0.92 }, { &ids::damping, 0.25 },
+Preset cathedral()    { return effectPreset ("reverb",{ { &ids::roomSize, 0.92 }, { &ids::damping, 0.25 },
                               { &ids::width, 1.0 }, { &ids::mix, 0.4 } }); }
 
-Preset slapback()     { return effectPreset ("delay", "Slapback",
-                            "One repeat, close behind.",
-                            { { &ids::delayMs, 110.0 }, { &ids::feedback, 0.12 },
+Preset slapback()     { return effectPreset ("delay",{ { &ids::delayMs, 110.0 }, { &ids::feedback, 0.12 },
                               { &ids::mix, 0.3 } }); }
 
-Preset dubEcho()      { return effectPreset ("delay", "Dub Echo",
-                            "Repeats that outlast the note.",
-                            { { &ids::delayMs, 375.0 }, { &ids::feedback, 0.78 },
+Preset dubEcho()      { return effectPreset ("delay",{ { &ids::delayMs, 375.0 }, { &ids::feedback, 0.78 },
                               { &ids::mix, 0.35 } }); }
 
-Preset doubler()      { return effectPreset ("delay", "Doubler",
-                            "Too short to hear as an echo; it widens instead.",
-                            { { &ids::delayMs, 28.0 }, { &ids::feedback, 0.0 },
+Preset doubler()      { return effectPreset ("delay",{ { &ids::delayMs, 28.0 }, { &ids::feedback, 0.0 },
                               { &ids::mix, 0.45 } }); }
 
-Preset warmDrive()    { return effectPreset ("drive", "Warm",
-                            "A little weight, and no obvious distortion.",
-                            { { &ids::drive, 2.5 }, { &ids::outputGain, 0.85 },
+Preset warmDrive()    { return effectPreset ("drive",{ { &ids::drive, 2.5 }, { &ids::outputGain, 0.85 },
                               { &ids::mix, 1.0 } }); }
 
-Preset fuzz()         { return effectPreset ("drive", "Fuzz",
-                            "All the way, with the output pulled back to compensate.",
-                            { { &ids::drive, 28.0 }, { &ids::outputGain, 0.28 },
+Preset fuzz()         { return effectPreset ("drive",{ { &ids::drive, 28.0 }, { &ids::outputGain, 0.28 },
                               { &ids::mix, 1.0 } }); }
 
-Preset parallelGrit() { return effectPreset ("drive", "Parallel Grit",
-                            "Heavy distortion blended under the dry signal.",
-                            { { &ids::drive, 16.0 }, { &ids::outputGain, 0.6 },
+Preset parallelGrit() { return effectPreset ("drive",{ { &ids::drive, 16.0 }, { &ids::outputGain, 0.6 },
                               { &ids::mix, 0.35 } }); }
 
-Preset saturate()     { return effectPreset ("distortion", "Saturate",
-                            "Soft clip with the top rolled off - weight, not grit.",
-                            { { &ids::distortionMode, "softClip" }, { &ids::drive, 4.0 },
+Preset saturate()     { return effectPreset ("distortion",{ { &ids::distortionMode, "softClip" }, { &ids::drive, 4.0 },
                               { &ids::tone, 0.45 }, { &ids::outputGain, 0.7 },
                               { &ids::mix, 1.0 } }); }
 
-Preset crunch()       { return effectPreset ("distortion", "Crunch",
-                            "Hard clipped and bright, with the output pulled back.",
-                            { { &ids::distortionMode, "hardClip" }, { &ids::drive, 14.0 },
+Preset crunch()       { return effectPreset ("distortion",{ { &ids::distortionMode, "hardClip" }, { &ids::drive, 14.0 },
                               { &ids::tone, 0.8 }, { &ids::outputGain, 0.35 },
                               { &ids::mix, 1.0 } }); }
 
-Preset ringFold()     { return effectPreset ("distortion", "Ring Fold",
-                            "A wavefolder past the point where it stops sounding like level.",
-                            { { &ids::distortionMode, "fold" }, { &ids::drive, 9.0 },
+Preset ringFold()     { return effectPreset ("distortion",{ { &ids::distortionMode, "fold" }, { &ids::drive, 9.0 },
                               { &ids::tone, 0.6 }, { &ids::outputGain, 0.5 },
                               { &ids::mix, 1.0 } }); }
 
-Preset subtleWiden()  { return effectPreset ("chorus", "Subtle Widen",
-                            "Slow and shallow: stereo, rather than an effect.",
-                            { { &ids::rate, 0.35 }, { &ids::depth, 0.18 },
+Preset subtleWiden()  { return effectPreset ("chorus",{ { &ids::rate, 0.35 }, { &ids::depth, 0.18 },
                               { &ids::mix, 0.4 } }); }
 
-Preset classicChorus(){ return effectPreset ("chorus", "Classic Chorus",
-                            "The one everybody means.",
-                            { { &ids::rate, 1.2 }, { &ids::depth, 0.4 },
+Preset classicChorus(){ return effectPreset ("chorus",{ { &ids::rate, 1.2 }, { &ids::depth, 0.4 },
                               { &ids::mix, 0.5 } }); }
 
-Preset vibrato()      { return effectPreset ("chorus", "Vibrato",
-                            "Fully wet, which is what makes it vibrato and not chorus.",
-                            { { &ids::rate, 5.5 }, { &ids::depth, 0.5 },
+Preset vibrato()      { return effectPreset ("chorus",{ { &ids::rate, 5.5 }, { &ids::depth, 0.5 },
                               { &ids::mix, 1.0 } }); }
 
-Preset slowSweep()    { return effectPreset ("phaser", "Slow Sweep",
-                            "One notch pair crossing the mid, slowly enough to hear it move.",
-                            { { &ids::rate, 0.2 }, { &ids::depth, 0.6 },
+Preset slowSweep()    { return effectPreset ("phaser",{ { &ids::rate, 0.2 }, { &ids::depth, 0.6 },
                               { &ids::centreFreq, 500.0 }, { &ids::feedback, 0.3 },
                               { &ids::mix, 0.5 } }); }
 
-Preset jetPhaser()    { return effectPreset ("phaser", "Jet",
-                            "High feedback, high up: the notches whistle rather than sweep.",
-                            { { &ids::rate, 0.6 }, { &ids::depth, 0.9 },
+Preset jetPhaser()    { return effectPreset ("phaser",{ { &ids::rate, 0.6 }, { &ids::depth, 0.9 },
                               { &ids::centreFreq, 1800.0 }, { &ids::feedback, 0.85 },
                               { &ids::mix, 0.7 } }); }
 
-Preset shimmer()      { return effectPreset ("phaser", "Shimmer",
-                            "Fast and shallow, blended under the dry signal.",
-                            { { &ids::rate, 4.0 }, { &ids::depth, 0.25 },
+Preset shimmer()      { return effectPreset ("phaser",{ { &ids::rate, 4.0 }, { &ids::depth, 0.25 },
                               { &ids::centreFreq, 900.0 }, { &ids::feedback, 0.15 },
                               { &ids::mix, 0.3 } }); }
 
-Preset glue()         { return effectPreset ("compressor", "Glue",
-                            "Two decibels at most, slow enough to leave the transients.",
-                            { { &ids::threshold, -14.0 }, { &ids::ratio, 2.0 },
+Preset glue()         { return effectPreset ("compressor",{ { &ids::threshold, -14.0 }, { &ids::ratio, 2.0 },
                               { &ids::attackMs, 30.0 }, { &ids::releaseMs, 250.0 },
                               { &ids::makeup, 1.5 }, { &ids::mix, 1.0 } }); }
 
-Preset punch()        { return effectPreset ("compressor", "Punch",
-                            "A slow attack lets the hit through and clamps what follows.",
-                            { { &ids::threshold, -20.0 }, { &ids::ratio, 4.0 },
+Preset punch()        { return effectPreset ("compressor",{ { &ids::threshold, -20.0 }, { &ids::ratio, 4.0 },
                               { &ids::attackMs, 25.0 }, { &ids::releaseMs, 80.0 },
                               { &ids::makeup, 4.0 }, { &ids::mix, 1.0 } }); }
 
-Preset squash()       { return effectPreset ("compressor", "Squash",
-                            "Fast and hard, for a level that does not move at all.",
-                            { { &ids::threshold, -30.0 }, { &ids::ratio, 12.0 },
+Preset squash()       { return effectPreset ("compressor",{ { &ids::threshold, -30.0 }, { &ids::ratio, 12.0 },
                               { &ids::attackMs, 1.0 }, { &ids::releaseMs, 40.0 },
                               { &ids::makeup, 9.0 }, { &ids::mix, 1.0 } }); }
 
-Preset masterCeiling(){ return effectPreset ("limiter", "Master Ceiling",
-                            "Just under full scale, and slow enough not to pump.",
-                            { { &ids::ceiling, -0.3 }, { &ids::releaseMs, 200.0 },
+Preset masterCeiling(){ return effectPreset ("limiter",{ { &ids::ceiling, -0.3 }, { &ids::releaseMs, 200.0 },
                               { &ids::mix, 1.0 } }); }
 
-Preset safetyNet()    { return effectPreset ("limiter", "Safety Net",
-                            "Set low enough that nothing but a mistake reaches it.",
-                            { { &ids::ceiling, -6.0 }, { &ids::releaseMs, 100.0 },
+Preset safetyNet()    { return effectPreset ("limiter",{ { &ids::ceiling, -6.0 }, { &ids::releaseMs, 100.0 },
                               { &ids::mix, 1.0 } }); }
 
-Preset brickWall()    { return effectPreset ("limiter", "Brick Wall",
-                            "Well into the signal, released fast: audibly held, and nothing above it.",
-                            { { &ids::ceiling, -12.0 }, { &ids::releaseMs, 20.0 },
+Preset brickWall()    { return effectPreset ("limiter",{ { &ids::ceiling, -12.0 }, { &ids::releaseMs, 20.0 },
                               { &ids::mix, 1.0 } }); }
 
-Preset air()          { return effectPreset ("eq", "Air",
-                            "A lift above the top of the mix.",
-                            { { &ids::lowGainDb, 0.0 }, { &ids::midGainDb, 0.0 },
+Preset air()          { return effectPreset ("eq",{ { &ids::lowGainDb, 0.0 }, { &ids::midGainDb, 0.0 },
                               { &ids::midFreq, 900.0 }, { &ids::highGainDb, 4.5 },
                               { &ids::mix, 1.0 } }); }
 
-Preset scoop()        { return effectPreset ("eq", "Scoop",
-                            "Out of the way of a vocal.",
-                            { { &ids::lowGainDb, 2.0 }, { &ids::midGainDb, -6.0 },
+Preset scoop()        { return effectPreset ("eq",{ { &ids::lowGainDb, 2.0 }, { &ids::midGainDb, -6.0 },
                               { &ids::midFreq, 700.0 }, { &ids::highGainDb, 3.0 },
                               { &ids::mix, 1.0 } }); }
 
-Preset telephone()    { return effectPreset ("eq", "Telephone",
-                            "Everything but the middle.",
-                            { { &ids::lowGainDb, -18.0 }, { &ids::midGainDb, 6.0 },
+Preset telephone()    { return effectPreset ("eq",{ { &ids::lowGainDb, -18.0 }, { &ids::midGainDb, 6.0 },
                               { &ids::midFreq, 1600.0 }, { &ids::highGainDb, -14.0 },
                               { &ids::mix, 1.0 } }); }
 
-Preset warmPad()      { return synthPreset ("Warm Pad",
-                            "Three detuned voices under a slow attack.",
-                            { classicOsc ("saw", 0, -7.0, 0.5),
+Preset warmPad()      { return synthPreset ({ classicOsc ("saw", 0, -7.0, 0.5),
                               classicOsc ("saw", 0, 7.0, 0.5),
                               classicOsc ("sine", -1, 0.0, 0.35) },
                             { { &ids::attack, 0.9 }, { &ids::decay, 1.2 },
                               { &ids::sustain, 0.75 }, { &ids::release, 1.6 } }); }
 
-Preset subBass()      { return synthPreset ("Sub Bass",
-                            "One sine an octave down, and nothing else.",
-                            { classicOsc ("sine", -1, 0.0, 0.9), oscOff(), oscOff() },
+Preset subBass()      { return synthPreset ({ classicOsc ("sine", -1, 0.0, 0.9), oscOff(), oscOff() },
                             { { &ids::attack, 0.004 }, { &ids::decay, 0.25 },
                               { &ids::sustain, 0.85 }, { &ids::release, 0.09 } }); }
 
-Preset pluck()        { return synthPreset ("Pluck",
-                            "No sustain: the decay is the whole sound.",
-                            { classicOsc ("saw", 0, 0.0, 0.7),
+Preset pluck()        { return synthPreset ({ classicOsc ("saw", 0, 0.0, 0.7),
                               classicOsc ("square", 0, 9.0, 0.35),
                               oscOff() },
                             { { &ids::attack, 0.001 }, { &ids::decay, 0.28 },
                               { &ids::sustain, 0.0 }, { &ids::release, 0.12 } }); }
 
-Preset hollowKeys()   { return synthPreset ("Hollow Keys",
-                            "A square under a triangle an octave up.",
-                            { classicOsc ("square", 0, 0.0, 0.55),
+Preset hollowKeys()   { return synthPreset ({ classicOsc ("square", 0, 0.0, 0.55),
                               classicOsc ("triangle", 1, -5.0, 0.3),
                               oscOff() },
                             { { &ids::attack, 0.006 }, { &ids::decay, 0.6 },
@@ -322,81 +258,124 @@ Preset morphingSweep()
                            { &ids::unisonDetune, 14.0 } });
 
     // clang-format off
-    return synthPreset ("Morphing Sweep",
-                        "Five unison voices morphing across the table over the note.",
-                        { osc, oscOff(), oscOff() },
+    return synthPreset ({ osc, oscOff(), oscOff() },
                         { { &ids::attack, 0.02 }, { &ids::decay, 1.5 },
                           { &ids::sustain, 0.5 }, { &ids::release, 0.8 } });
 }
 
-Preset loopedBed()    { return audioPreset ("Looped Bed",
-                            "Loops with short fades at both ends, so the seam does not click.",
-                            { { &ids::fadeInMs, 40.0 }, { &ids::fadeOutMs, 40.0 },
+Preset loopedBed()    { return audioPreset ({ { &ids::fadeInMs, 40.0 }, { &ids::fadeOutMs, 40.0 },
                               { &ids::transpose, 0.0 }, { &ids::reverse, false },
                               { &ids::loop, true } }); }
 
-Preset reverseSwell() { return audioPreset ("Reverse Swell",
-                            "Played backwards into a long fade in.",
-                            { { &ids::fadeInMs, 600.0 }, { &ids::fadeOutMs, 20.0 },
+Preset reverseSwell() { return audioPreset ({ { &ids::fadeInMs, 600.0 }, { &ids::fadeOutMs, 20.0 },
                               { &ids::transpose, 0.0 }, { &ids::reverse, true },
                               { &ids::loop, false } }); }
 
-Preset softenedFont()  { return soundFontPreset ("Softened",
-                            "Slower on and off, and a little darker, for a font that starts too hard.",
-                            { { &ids::transpose, 0.0 }, { &ids::tuneCents, 0.0 },
+Preset softenedFont()  { return soundFontPreset ({ { &ids::transpose, 0.0 }, { &ids::tuneCents, 0.0 },
                               { &ids::filterOffset, -600.0 }, { &ids::attackScale, 2.5 },
                               { &ids::releaseScale, 2.0 }, { &ids::velocitySens, 1.0 } }); }
 
-Preset steppedFont()   { return soundFontPreset ("Stepped",
-                            "Every note at full level and cut short, for playing a kit from the grid.",
-                            { { &ids::transpose, 0.0 }, { &ids::tuneCents, 0.0 },
+Preset steppedFont()   { return soundFontPreset ({ { &ids::transpose, 0.0 }, { &ids::tuneCents, 0.0 },
                               { &ids::filterOffset, 0.0 }, { &ids::attackScale, 1.0 },
                               { &ids::releaseScale, 0.4 }, { &ids::velocitySens, 0.0 } }); }
 
 } // namespace
 
+Preset PresetFactory::buildFor (const Entry& entry)
+{
+    auto preset = entry.build();
+
+    // The REFERENCE locale, because this is what goes INTO the file and the
+    // file is compared byte for byte against a committed copy. What a person
+    // reads comes from PresetLibrary::displayName, in their own locale, off the
+    // same entry.
+    preset.name = trIn (referenceLocale(), entry.name);
+    preset.description = trIn (referenceLocale(), entry.description);
+
+    return preset;
+}
+
 const std::vector<PresetFactory::Entry>& PresetFactory::presets()
 {
     static const std::vector<Entry> all {
-        { "rumble-cut.dewpreset",     &rumbleCut },
-        { "warm-low-pass.dewpreset",  &warmLowPass },
-        { "squelch.dewpreset",        &squelch },
-        { "ambience.dewpreset",       &ambience },
-        { "plate.dewpreset",          &plate },
-        { "cathedral.dewpreset",      &cathedral },
-        { "slapback.dewpreset",       &slapback },
-        { "dub-echo.dewpreset",       &dubEcho },
-        { "doubler.dewpreset",        &doubler },
-        { "warm.dewpreset",           &warmDrive },
-        { "fuzz.dewpreset",           &fuzz },
-        { "parallel-grit.dewpreset",  &parallelGrit },
-        { "saturate.dewpreset",       &saturate },
-        { "crunch.dewpreset",         &crunch },
-        { "ring-fold.dewpreset",      &ringFold },
-        { "subtle-widen.dewpreset",   &subtleWiden },
-        { "classic-chorus.dewpreset", &classicChorus },
-        { "vibrato.dewpreset",        &vibrato },
-        { "slow-sweep.dewpreset",     &slowSweep },
-        { "jet.dewpreset",            &jetPhaser },
-        { "shimmer.dewpreset",        &shimmer },
-        { "air.dewpreset",            &air },
-        { "scoop.dewpreset",          &scoop },
-        { "telephone.dewpreset",      &telephone },
-        { "glue.dewpreset",           &glue },
-        { "punch.dewpreset",          &punch },
-        { "squash.dewpreset",         &squash },
-        { "master-ceiling.dewpreset", &masterCeiling },
-        { "safety-net.dewpreset",     &safetyNet },
-        { "brick-wall.dewpreset",     &brickWall },
-        { "warm-pad.dewpreset",       &warmPad },
-        { "sub-bass.dewpreset",       &subBass },
-        { "pluck.dewpreset",          &pluck },
-        { "hollow-keys.dewpreset",    &hollowKeys },
-        { "morphing-sweep.dewpreset", &morphingSweep },
-        { "looped-bed.dewpreset",     &loopedBed },
-        { "reverse-swell.dewpreset",  &reverseSwell },
-        { "softened.dewpreset",       &softenedFont },
-        { "stepped.dewpreset",        &steppedFont },
+        { "rumble-cut.dewpreset", StringId::preset_rumbleCut_name,
+          StringId::preset_rumbleCut_description, &rumbleCut },
+        { "warm-low-pass.dewpreset", StringId::preset_warmLowPass_name,
+          StringId::preset_warmLowPass_description, &warmLowPass },
+        { "squelch.dewpreset", StringId::preset_squelch_name,
+          StringId::preset_squelch_description, &squelch },
+        { "ambience.dewpreset", StringId::preset_ambience_name,
+          StringId::preset_ambience_description, &ambience },
+        { "plate.dewpreset", StringId::preset_plate_name,
+          StringId::preset_plate_description, &plate },
+        { "cathedral.dewpreset", StringId::preset_cathedral_name,
+          StringId::preset_cathedral_description, &cathedral },
+        { "slapback.dewpreset", StringId::preset_slapback_name,
+          StringId::preset_slapback_description, &slapback },
+        { "dub-echo.dewpreset", StringId::preset_dubEcho_name,
+          StringId::preset_dubEcho_description, &dubEcho },
+        { "doubler.dewpreset", StringId::preset_doubler_name,
+          StringId::preset_doubler_description, &doubler },
+        { "warm.dewpreset", StringId::preset_warmDrive_name,
+          StringId::preset_warmDrive_description, &warmDrive },
+        { "fuzz.dewpreset", StringId::preset_fuzz_name,
+          StringId::preset_fuzz_description, &fuzz },
+        { "parallel-grit.dewpreset", StringId::preset_parallelGrit_name,
+          StringId::preset_parallelGrit_description, &parallelGrit },
+        { "saturate.dewpreset", StringId::preset_saturate_name,
+          StringId::preset_saturate_description, &saturate },
+        { "crunch.dewpreset", StringId::preset_crunch_name,
+          StringId::preset_crunch_description, &crunch },
+        { "ring-fold.dewpreset", StringId::preset_ringFold_name,
+          StringId::preset_ringFold_description, &ringFold },
+        { "subtle-widen.dewpreset", StringId::preset_subtleWiden_name,
+          StringId::preset_subtleWiden_description, &subtleWiden },
+        { "classic-chorus.dewpreset", StringId::preset_classicChorus_name,
+          StringId::preset_classicChorus_description, &classicChorus },
+        { "vibrato.dewpreset", StringId::preset_vibrato_name,
+          StringId::preset_vibrato_description, &vibrato },
+        { "slow-sweep.dewpreset", StringId::preset_slowSweep_name,
+          StringId::preset_slowSweep_description, &slowSweep },
+        { "jet.dewpreset", StringId::preset_jetPhaser_name,
+          StringId::preset_jetPhaser_description, &jetPhaser },
+        { "shimmer.dewpreset", StringId::preset_shimmer_name,
+          StringId::preset_shimmer_description, &shimmer },
+        { "air.dewpreset", StringId::preset_air_name,
+          StringId::preset_air_description, &air },
+        { "scoop.dewpreset", StringId::preset_scoop_name,
+          StringId::preset_scoop_description, &scoop },
+        { "telephone.dewpreset", StringId::preset_telephone_name,
+          StringId::preset_telephone_description, &telephone },
+        { "glue.dewpreset", StringId::preset_glue_name,
+          StringId::preset_glue_description, &glue },
+        { "punch.dewpreset", StringId::preset_punch_name,
+          StringId::preset_punch_description, &punch },
+        { "squash.dewpreset", StringId::preset_squash_name,
+          StringId::preset_squash_description, &squash },
+        { "master-ceiling.dewpreset", StringId::preset_masterCeiling_name,
+          StringId::preset_masterCeiling_description, &masterCeiling },
+        { "safety-net.dewpreset", StringId::preset_safetyNet_name,
+          StringId::preset_safetyNet_description, &safetyNet },
+        { "brick-wall.dewpreset", StringId::preset_brickWall_name,
+          StringId::preset_brickWall_description, &brickWall },
+        { "warm-pad.dewpreset", StringId::preset_warmPad_name,
+          StringId::preset_warmPad_description, &warmPad },
+        { "sub-bass.dewpreset", StringId::preset_subBass_name,
+          StringId::preset_subBass_description, &subBass },
+        { "pluck.dewpreset", StringId::preset_pluck_name,
+          StringId::preset_pluck_description, &pluck },
+        { "hollow-keys.dewpreset", StringId::preset_hollowKeys_name,
+          StringId::preset_hollowKeys_description, &hollowKeys },
+        { "morphing-sweep.dewpreset", StringId::preset_morphingSweep_name,
+          StringId::preset_morphingSweep_description, &morphingSweep },
+        { "looped-bed.dewpreset", StringId::preset_loopedBed_name,
+          StringId::preset_loopedBed_description, &loopedBed },
+        { "reverse-swell.dewpreset", StringId::preset_reverseSwell_name,
+          StringId::preset_reverseSwell_description, &reverseSwell },
+        { "softened.dewpreset", StringId::preset_softenedFont_name,
+          StringId::preset_softenedFont_description, &softenedFont },
+        { "stepped.dewpreset", StringId::preset_steppedFont_name,
+          StringId::preset_steppedFont_description, &steppedFont },
     };
 
     // clang-format on

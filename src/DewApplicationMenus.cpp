@@ -205,7 +205,7 @@ juce::PopupMenu DewApplication::getMenuForIndex (int topLevelMenuIndex, const ju
         const auto& demos = ProjectFactory::demos();
 
         for (int i = 0; i < (int) demos.size(); ++i)
-            menu.addItem (demoMenuBaseId + i, demos[(size_t) i].menuName);
+            menu.addItem (demoMenuBaseId + i, tr (demos[(size_t) i].menuName));
     }
 
     return menu;

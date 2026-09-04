@@ -200,7 +200,7 @@ juce::StringArray EffectChainComponent::presetMenuItems (int slot) const
     juce::StringArray items;
 
     for (const auto& preset : presetsForSlot (effectAt (slot)))
-        items.add (preset.name);
+        items.add (PresetLibrary::displayName (preset));
 
     return items;
 }

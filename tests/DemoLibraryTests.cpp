@@ -19,7 +19,7 @@ TEST_CASE ("every demo is embedded, loads clean, and is audible", "[demos]")
     for (int i = 0; i < (int) demos.size(); ++i)
     {
         const auto& demo = demos[(size_t) i];
-        INFO ("demo: " << demo.menuName << " (" << demo.fileName << ")");
+        INFO ("demo: " << keyOf (demo.menuName) << " (" << demo.fileName << ")");
 
         juce::StringArray warnings;
         const auto project = DemoLibrary::load (i, warnings);
@@ -69,7 +69,7 @@ TEST_CASE ("the committed demo files match what the factory builds", "[demos]")
 
     for (const auto& demo : ProjectFactory::demos())
     {
-        INFO ("demo: " << demo.menuName);
+        INFO ("demo: " << keyOf (demo.menuName));
 
         const auto loaded = ProjectSerializer::readFromFile (examples.getChildFile (demo.fileName));
 
@@ -155,7 +155,7 @@ TEST_CASE ("no demo ships two patterns with the same id", "[demos]")
     for (int i = 0; i < (int) ProjectFactory::demos().size(); ++i)
     {
         const auto project = DemoLibrary::load (i, warnings);
-        INFO ("demo: " << ProjectFactory::demos()[(size_t) i].menuName);
+        INFO ("demo: " << keyOf (ProjectFactory::demos()[(size_t) i].menuName));
 
         juce::Array<int> seen;
 
@@ -179,7 +179,7 @@ TEST_CASE ("every demo clip points at something that exists", "[demos]")
     for (int i = 0; i < (int) ProjectFactory::demos().size(); ++i)
     {
         const auto project = DemoLibrary::load (i, warnings);
-        INFO ("demo: " << ProjectFactory::demos()[(size_t) i].menuName);
+        INFO ("demo: " << keyOf (ProjectFactory::demos()[(size_t) i].menuName));
 
         juce::Array<int> patterns, automations;
 

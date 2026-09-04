@@ -10,6 +10,7 @@
 
 #include <PresetData.h>
 
+#include "i18n/Strings.h"
 #include "model/Ids.h"
 #include "model/ModuleCatalog.h"
 #include "model/ModuleState.h"
@@ -108,6 +109,66 @@ TEST_CASE ("the embedded presets match the committed files", "[preset][library]"
     }
 }
 
+TEST_CASE ("a preset is named from its file, not from its name", "[preset][library][i18n]")
+{
+    // A .dewpreset has no id field, so the stable identity is the FILE it came
+    // from - unique, kebab-case, and gate-checked in both directions against
+    // the CMake embed list. PresetLibrary::all() carries it onto the Preset,
+    // and that is what a translated name is looked up by.
+    //
+    // Keying on the English name instead is what JUCE's own TRANS() does, and
+    // it is what this whole catalogue was built to avoid: correcting a typo in
+    // a preset's name would silently orphan every translation of it.
+    const auto& all = PresetLibrary::all();
+    REQUIRE (all.size() > 30);
+
+    for (const auto& preset : all)
+    {
+        INFO ("preset: " << preset.id);
+        REQUIRE (preset.id.isNotEmpty());
+        REQUIRE (preset.id.endsWith (".dewpreset"));
+
+        // English is the only catalogue this build carries, so what is checked
+        // is that BOTH answers exist and agree - the file's name and the
+        // catalogue's row are the same sentence, which is what keeps a
+        // hand-opened .dewpreset readable.
+        CHECK (PresetLibrary::displayName (preset) == preset.name);
+        CHECK (PresetLibrary::describe (preset) == preset.description);
+    }
+
+    // A preset the factory does not know - one from a later version, or one
+    // written by hand - falls back to what its file says rather than to
+    // nothing. This is the case a lookup by id has to answer and a lookup by
+    // name would answer wrongly.
+    Preset unknown { "effect", "reverb", "Somebody's Hall", "From elsewhere.", {}, {} };
+    CHECK (PresetLibrary::displayName (unknown) == "Somebody's Hall");
+    CHECK (PresetLibrary::describe (unknown) == "From elsewhere.");
+}
+
+TEST_CASE ("what a preset FILE holds does not depend on a locale", "[preset][library][i18n]")
+{
+    // The twin of the demo library's. buildFor writes the reference locale into
+    // the file because the file is compared byte for byte against a committed
+    // copy, and because a .dewpreset is meant to be opened and diffed - a name
+    // field reading `preset.warmPad.name` would be a file only dew can read.
+    const auto& entries = PresetFactory::presets();
+    REQUIRE (! entries.empty());
+
+    const auto reference = PresetSerializer::toJsonString (PresetFactory::buildFor (entries[0]));
+
+    const auto previous = activeLocale();
+    setLocale ("de-CH");
+    const auto underAnotherLocale = PresetSerializer::toJsonString (
+        PresetFactory::buildFor (entries[0]));
+    setLocale (previous);
+
+    CHECK (underAnotherLocale == reference);
+
+    // Control case: it is writing a real name, not an empty one.
+    INFO (reference);
+    CHECK (reference.contains ("Rumble Cut"));
+}
+
 TEST_CASE ("the committed presets are byte for byte what the factory writes", "[preset][library]")
 {
     // Regenerate with `dew_render --write-presets presets` when this fails.
@@ -120,7 +181,9 @@ TEST_CASE ("the committed presets are byte for byte what the factory writes", "[
         INFO ("file: " << file.getFullPathName());
 
         REQUIRE (file.existsAsFile());
-        REQUIRE (PresetSerializer::toJsonString (entry.build()).replace ("\r\n", "\n").trim()
+        REQUIRE (PresetSerializer::toJsonString (PresetFactory::buildFor (entry))
+                     .replace ("\r\n", "\n")
+                     .trim()
                  == file.loadFileAsString().replace ("\r\n", "\n").trim());
     }
 }

@@ -39,7 +39,7 @@ juce::ValueTree DemoLibrary::load (int index, juce::StringArray& warnings)
     if (json.isEmpty())
     {
         warnings.add (
-            tr (StringId::demo_missing, Args {}.with ("name", all[(size_t) index].menuName)));
+            tr (StringId::demo_missing, Args {}.with ("name", tr (all[(size_t) index].menuName))));
         return {};
     }
 

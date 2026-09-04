@@ -887,7 +887,197 @@
     "steps": " steps"
   },
   "demo": {
-    "missing": "The demo \"{name}\" is missing from this build."
+    "missing": "The demo \"{name}\" is missing from this build.",
+    "gettingStarted": {
+      "name": "Getting Started",
+      "description": "A four-bar groove: kick, snare, bass and a lead line."
+    },
+    "pianoRoll": {
+      "name": "Piano Roll",
+      "description": "Chords, held notes and a velocity shape."
+    },
+    "effectChain": {
+      "name": "Effect Chain",
+      "description": "A pad through a filter and chorus, a pluck into a delay, reverb on the mix."
+    },
+    "automation": {
+      "name": "Automation",
+      "description": "A filter sweep over four bars, then a fade."
+    },
+    "wavetable": {
+      "name": "Wavetable",
+      "description": "Five wavetables, unison and a morph position drawn across thirty-two bars."
+    },
+    "oscillatorStack": {
+      "name": "Oscillator Stack",
+      "description": "Three oscillators a channel: octaves, cent detune and per-slot gain."
+    },
+    "songStructure": {
+      "name": "Song Structure",
+      "description": "Three lanes coming and going over thirty-two bars, and a drum bus."
+    },
+    "compiledScore": {
+      "name": "Compiled from a Score",
+      "description": "Fifty-two bars written as text: pads, a bass, a lead and a voice answering it."
+    }
+  },
+  "preset": {
+    "rumbleCut": {
+      "name": "Rumble Cut",
+      "description": "Takes the room out from under a sound."
+    },
+    "warmLowPass": {
+      "name": "Warm Low Pass",
+      "description": "Rolls the top off without dulling it."
+    },
+    "squelch": {
+      "name": "Squelch",
+      "description": "Close to self-oscillation, at the resonance the engine reaches."
+    },
+    "ambience": {
+      "name": "Ambience",
+      "description": "Glue rather than an effect you can hear."
+    },
+    "plate": {
+      "name": "Plate",
+      "description": "Bright, short and wide, sitting behind the source."
+    },
+    "cathedral": {
+      "name": "Cathedral",
+      "description": "A long dark tail."
+    },
+    "slapback": {
+      "name": "Slapback",
+      "description": "One repeat, close behind."
+    },
+    "dubEcho": {
+      "name": "Dub Echo",
+      "description": "Repeats that outlast the note."
+    },
+    "doubler": {
+      "name": "Doubler",
+      "description": "Too short to hear as an echo; it widens instead."
+    },
+    "warmDrive": {
+      "name": "Warm",
+      "description": "A little weight, and no obvious distortion."
+    },
+    "fuzz": {
+      "name": "Fuzz",
+      "description": "All the way, with the output pulled back to compensate."
+    },
+    "parallelGrit": {
+      "name": "Parallel Grit",
+      "description": "Heavy distortion blended under the dry signal."
+    },
+    "saturate": {
+      "name": "Saturate",
+      "description": "Soft clip with the top rolled off - weight, not grit."
+    },
+    "crunch": {
+      "name": "Crunch",
+      "description": "Hard clipped and bright, with the output pulled back."
+    },
+    "ringFold": {
+      "name": "Ring Fold",
+      "description": "A wavefolder past the point where it stops sounding like level."
+    },
+    "subtleWiden": {
+      "name": "Subtle Widen",
+      "description": "Slow and shallow: stereo, rather than an effect."
+    },
+    "classicChorus": {
+      "name": "Classic Chorus",
+      "description": "The one everybody means."
+    },
+    "vibrato": {
+      "name": "Vibrato",
+      "description": "Fully wet, which is what makes it vibrato and not chorus."
+    },
+    "slowSweep": {
+      "name": "Slow Sweep",
+      "description": "One notch pair crossing the mid, slowly enough to hear it move."
+    },
+    "jetPhaser": {
+      "name": "Jet",
+      "description": "High feedback, high up: the notches whistle rather than sweep."
+    },
+    "shimmer": {
+      "name": "Shimmer",
+      "description": "Fast and shallow, blended under the dry signal."
+    },
+    "glue": {
+      "name": "Glue",
+      "description": "Two decibels at most, slow enough to leave the transients."
+    },
+    "punch": {
+      "name": "Punch",
+      "description": "A slow attack lets the hit through and clamps what follows."
+    },
+    "squash": {
+      "name": "Squash",
+      "description": "Fast and hard, for a level that does not move at all."
+    },
+    "masterCeiling": {
+      "name": "Master Ceiling",
+      "description": "Just under full scale, and slow enough not to pump."
+    },
+    "safetyNet": {
+      "name": "Safety Net",
+      "description": "Set low enough that nothing but a mistake reaches it."
+    },
+    "brickWall": {
+      "name": "Brick Wall",
+      "description": "Well into the signal, released fast: audibly held, and nothing above it."
+    },
+    "air": {
+      "name": "Air",
+      "description": "A lift above the top of the mix."
+    },
+    "scoop": {
+      "name": "Scoop",
+      "description": "Out of the way of a vocal."
+    },
+    "telephone": {
+      "name": "Telephone",
+      "description": "Everything but the middle."
+    },
+    "warmPad": {
+      "name": "Warm Pad",
+      "description": "Three detuned voices under a slow attack."
+    },
+    "subBass": {
+      "name": "Sub Bass",
+      "description": "One sine an octave down, and nothing else."
+    },
+    "pluck": {
+      "name": "Pluck",
+      "description": "No sustain: the decay is the whole sound."
+    },
+    "hollowKeys": {
+      "name": "Hollow Keys",
+      "description": "A square under a triangle an octave up."
+    },
+    "morphingSweep": {
+      "name": "Morphing Sweep",
+      "description": "Five unison voices morphing across the table over the note."
+    },
+    "loopedBed": {
+      "name": "Looped Bed",
+      "description": "Loops with short fades at both ends, so the seam does not click."
+    },
+    "reverseSwell": {
+      "name": "Reverse Swell",
+      "description": "Played backwards into a long fade in."
+    },
+    "softenedFont": {
+      "name": "Softened",
+      "description": "Slower on and off, and a little darker, for a font that starts too hard."
+    },
+    "steppedFont": {
+      "name": "Stepped",
+      "description": "Every note at full level and cut short, for playing a kit from the grid."
+    }
   },
   "project": {
     "untitled": "Untitled",

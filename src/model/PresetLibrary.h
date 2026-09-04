@@ -21,6 +21,22 @@ struct PresetLibrary
     /** Every preset that is both declared and embedded, in the factory's order. */
     static const std::vector<Preset>& all();
 
+    /** What a person reads for `preset`, in the ACTIVE locale.
+
+        Looked up by the preset's id - the file it came from - which is the one
+        stable thing a .dewpreset has. Falls back to the name stored in the file
+        for a preset the factory does not know: one from a later version, or one
+        somebody wrote by hand.
+
+        Resolved at the point of display rather than cached into all(), because
+        all() is built once and a locale is chosen once, and a cache that
+        outlived a language would be the thing nobody tested.
+    */
+    static juce::String displayName (const Preset&);
+
+    /** The same for the sentence under the name. */
+    static juce::String describe (const Preset&);
+
     /** The embedded bytes of one preset, or an empty string if it is not there. */
     static juce::String jsonFor (const juce::String& fileName);
 

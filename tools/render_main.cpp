@@ -199,7 +199,8 @@ int main (int argc, char* argv[])
         for (const auto& entry : dew::PresetFactory::presets())
         {
             const auto target = directory.getChildFile (entry.fileName);
-            const auto result = dew::PresetSerializer::writeToFile (entry.build(), target);
+            const auto result = dew::PresetSerializer::writeToFile (
+                dew::PresetFactory::buildFor (entry), target);
 
             if (result.failed())
                 return fail (result.getErrorMessage());
