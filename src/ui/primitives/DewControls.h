@@ -121,7 +121,29 @@ private:
 class DewIconButton : public juce::Button
 {
 public:
-    DewIconButton (juce::Path icon, const juce::String& tooltipText);
+    /** What the glyph MEANS, which is what decides its colour.
+
+        Roles rather than colours, the same way DewButton takes them: the
+        transport bar knows that a button records and the design system knows
+        what recording looks like, and a later theme change does not have to
+        find every call site.
+
+        Only four, and deliberately: an icon set where everything is coloured is
+        an icon set where nothing is. `neutral` is the default and stays the
+        overwhelming majority - tools, chevrons, zoom, stop. The other three are
+        the glyphs a person looks for in a hurry.
+    */
+    enum class Role
+    {
+        neutral, ///< the text colour: says nothing beyond its shape
+        go,      ///< starts sound: play
+        record,  ///< arms or runs a take
+        danger   ///< destroys something: every trash can
+    };
+
+    DewIconButton (juce::Path icon, const juce::String& tooltipText, Role = Role::neutral);
+
+    void setRole (Role);
 
     void setIcon (juce::Path);
 
@@ -148,10 +170,16 @@ protected:
     }
 
 private:
+    /** The glyph's colour at rest. Only at rest: a toggled button still crosses
+        to onColour and a disabled one is still drained, because those say
+        something about the button's STATE, which outranks what it means. */
+    juce::Colour restingTint() const;
+
     ButtonLift lift { *this };
 
     juce::Path icon;
     juce::Colour onColour = tokens::colour::accent;
+    Role role = Role::neutral;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (DewIconButton)
 };

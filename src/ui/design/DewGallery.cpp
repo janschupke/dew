@@ -138,7 +138,10 @@ DewGallery::DewGallery()
     add (disabled);
 
     // --- icon buttons and letter toggles -------------------------------------
-    add (new DewIconButton (icons::play(), "Play"));
+    // One of each role, because a role is a colour and a page that shows only
+    // the neutral one is a page that does not show the roles at all.
+    add (new DewIconButton (icons::play(), "Play", DewIconButton::Role::go));
+    add (new DewIconButton (icons::record(), "Record", DewIconButton::Role::record));
     add (new DewIconButton (icons::stop(), "Stop"));
 
     auto* looping = new DewIconButton (icons::loop(), "Loop");
@@ -147,7 +150,7 @@ DewGallery::DewGallery()
     add (looping);
 
     add (new DewIconButton (icons::plus(), "Add"));
-    add (new DewIconButton (icons::trash(), "Delete"));
+    add (new DewIconButton (icons::trash(), "Delete", DewIconButton::Role::danger));
 
     auto* muted = new DewLetterToggle ("M", colour::warning, "Mute");
     muted->setToggleState (true, juce::dontSendNotification);
@@ -324,7 +327,7 @@ int DewGallery::layOut (juce::Rectangle<int> area, bool apply)
     {
         auto row = sectionHeading ("Icon buttons and toggles", size::iconButton + 6);
 
-        for (int i = 0; i < 8; ++i)
+        for (int i = 0; i < 9; ++i)
         {
             place (controls[index++],
                    row.removeFromLeft (size::iconButton + 6).withHeight (size::iconButton + 6));

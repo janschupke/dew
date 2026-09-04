@@ -117,17 +117,37 @@ void DewButton::paintButton (juce::Graphics& g, bool highlighted, bool down)
 
 // --- DewIconButton -----------------------------------------------------------
 
-DewIconButton::DewIconButton (juce::Path i, const juce::String& tooltipText)
+DewIconButton::DewIconButton (juce::Path i, const juce::String& tooltipText, Role r)
     : juce::Button (tooltipText)
     , icon (std::move (i))
+    , role (r)
 {
     setTooltip (tooltipText);
+}
+
+void DewIconButton::setRole (Role r)
+{
+    role = r;
+    repaint();
 }
 
 void DewIconButton::setIcon (juce::Path i)
 {
     icon = std::move (i);
     repaint();
+}
+
+juce::Colour DewIconButton::restingTint() const
+{
+    switch (role)
+    {
+        case Role::go: return colour::success;
+        case Role::record: return colour::recording;
+        case Role::danger: return colour::danger;
+        case Role::neutral: break;
+    }
+
+    return colour::textPrimary;
 }
 
 void DewIconButton::setOnColour (juce::Colour c)
@@ -158,8 +178,11 @@ void DewIconButton::paintButton (juce::Graphics& g, bool highlighted, bool down)
     g.setColour (drain (lift.cross (colour::outline, onColour)));
     g.drawRoundedRectangle (bounds, radius::sm, stroke::hairline);
 
+    // The role colours the glyph at rest only. A toggled button crosses to
+    // textOnAccent because the fill has crossed to onColour underneath it, and
+    // a red glyph on a filled button would be unreadable rather than emphatic.
     const auto tint = ! isEnabled() ? colour::textDisabled
-                                    : lift.cross (colour::textPrimary, colour::textOnAccent);
+                                    : lift.cross (restingTint(), colour::textOnAccent);
 
     icons::draw (g, icon, bounds.reduced (bounds.getWidth() * 0.28f), tint);
 }

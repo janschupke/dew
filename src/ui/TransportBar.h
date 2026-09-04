@@ -100,9 +100,10 @@ private:
     AudioEngine& engine;
     EditorState& editorState;
 
-    DewIconButton playButton { icons::play(), "Play or pause (Space)" };
+    DewIconButton playButton { icons::play(), "Play or pause (Space)", DewIconButton::Role::go };
     DewIconButton stopButton { icons::stop(), "Stop and rewind" };
-    DewIconButton recordButton { icons::record(), "Record into the armed channel (R)" };
+    DewIconButton recordButton { icons::record(), "Record into the armed channel (R)",
+                                 DewIconButton::Role::record };
     const paramMenu::Host* paramMenuHost = nullptr;
 
     DewNumberField tempoField;
@@ -123,7 +124,8 @@ private:
     juce::ComboBox patternBox;
     DewIconButton addPatternButton { icons::plus(), "Add a pattern" };
     DewIconButton clonePatternButton { icons::duplicate(), "Duplicate this pattern" };
-    DewIconButton deletePatternButton { icons::trash(), "Delete this pattern" };
+    DewIconButton deletePatternButton { icons::trash(), "Delete this pattern",
+                                        DewIconButton::Role::danger };
     DewNumberField patternLengthField;
 
     juce::Label positionLabel;

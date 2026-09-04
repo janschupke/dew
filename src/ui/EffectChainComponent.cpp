@@ -580,7 +580,8 @@ private:
     DewIconButton upButton { icons::chevronUp(), "Move earlier in the chain" };
     DewIconButton downButton { icons::chevronDown(), "Move later in the chain" };
     DewIconButton presetButton { icons::preset(), "Load a preset for this effect" };
-    DewIconButton removeButton { icons::trash(), "Remove this effect" };
+    DewIconButton removeButton { icons::trash(), "Remove this effect",
+                                 DewIconButton::Role::danger };
 
     juce::OwnedArray<ParamWidget> params;
     std::unique_ptr<juce::ComboBox> modeBox;

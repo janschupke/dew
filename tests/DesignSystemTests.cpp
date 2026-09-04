@@ -175,6 +175,58 @@ TEST_CASE ("primitives paint in every state", "[design][primitives]")
     }
 }
 
+TEST_CASE ("an icon button's role colours its glyph", "[design][primitives]")
+{
+    const juce::ScopedJuceInitialiser_GUI juceInit;
+
+    // The whole icon set was one grey. Record, delete and play carry meaning
+    // that their SHAPE alone was being asked to hold, which is a lot to ask of
+    // a twelve-pixel glyph in a panel that has thirty of them.
+    //
+    // Measured at 48px rather than the real 24: coverageOf counts pixels within
+    // a tolerance, and a glyph inside a 24px button is about forty of them
+    // before antialiasing takes its share.
+    //
+    // Counted rather than compared as a fraction - -Wfloat-equal is an error
+    // under the ci preset, and "none of them" is an integer statement anyway.
+    const auto glyphPixels = [] (DewIconButton::Role role, juce::Path icon, juce::Colour target)
+    {
+        DewIconButton button (std::move (icon), "Tip", role);
+        button.setSize (48, 48);
+
+        const auto image = render (button);
+        auto matching = 0;
+
+        for (int y = 0; y < image.getHeight(); ++y)
+            for (int x = 0; x < image.getWidth(); ++x)
+            {
+                const auto pixel = image.getPixelAt (x, y);
+
+                if (pixel.getAlpha() > 200
+                    && std::abs ((int) pixel.getRed() - (int) target.getRed()) < 24
+                    && std::abs ((int) pixel.getGreen() - (int) target.getGreen()) < 24
+                    && std::abs ((int) pixel.getBlue() - (int) target.getBlue()) < 24)
+                    ++matching;
+            }
+
+        return matching;
+    };
+
+    CHECK (glyphPixels (DewIconButton::Role::record, icons::record(), tokens::colour::recording)
+           > 0);
+    CHECK (glyphPixels (DewIconButton::Role::danger, icons::trash(), tokens::colour::danger) > 0);
+    CHECK (glyphPixels (DewIconButton::Role::go, icons::play(), tokens::colour::success) > 0);
+
+    // The control case, and the one that says the ROLE is doing the work: the
+    // same glyph with no role paints none of those pixels. Without it the three
+    // checks above would also pass on a button that painted its whole fill in
+    // the target colour.
+    CHECK (glyphPixels (DewIconButton::Role::neutral, icons::record(), tokens::colour::recording)
+           == 0);
+    CHECK (glyphPixels (DewIconButton::Role::neutral, icons::trash(), tokens::colour::danger) == 0);
+    CHECK (glyphPixels (DewIconButton::Role::neutral, icons::play(), tokens::colour::success) == 0);
+}
+
 TEST_CASE ("the number field changes by dragging, and up means more", "[design][primitives]")
 {
     const juce::ScopedJuceInitialiser_GUI juceInit;
