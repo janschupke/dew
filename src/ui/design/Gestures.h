@@ -171,6 +171,25 @@ inline bool isFine (const juce::ModifierKeys& mods) noexcept
     return mods.isShiftDown();
 }
 
+/** How far a drag travels to sweep a whole range, with the modifiers applied.
+
+    The two numbers above and the rule joining them, in one place. A primitive
+    was combining them by hand - read the flag, divide the distance by the
+    multiplier, cast - which is a gesture decision being made in a control, and
+    exactly what the rest of this header exists to prevent.
+
+    It also let the gate that guards this rule shrink. That gate had to exempt
+    the two files handing JUCE a number, and the exemption list was a list a
+    moved file falls off: it went red once already, when the knob left
+    DewControls.cpp. A call that NAMES gesture:: needs no exemption at all,
+    because it is the opposite of deciding a scale for itself.
+*/
+inline int dragPixelsFor (const juce::ModifierKeys& mods) noexcept
+{
+    return isFine (mods) ? (int) ((double) dragPixelsForFullRange / fineMultiplier)
+                         : dragPixelsForFullRange;
+}
+
 /** A right-drag erases in the two grids. In the playlist it opens a menu
     instead, and deliberately: a clip is an object with properties and a step
     is not. */

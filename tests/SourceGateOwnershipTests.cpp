@@ -252,19 +252,26 @@ TEST_CASE ("no view reads the wheel or the drag scale for itself", "[build][gate
     // Gestures.h is where the reading happens, so it is the one place allowed
     // to touch the raw fields.
     //
-    // The two primitives that APPLY the drag scale are exempt as well: a knob
-    // and a number field each hand JUCE the number Gestures.h names, which is
-    // the opposite of deciding one. DewKnob.cpp joined the list when the knob
-    // left DewControls.cpp - a name-based exemption is a list a moved file
-    // silently falls off, and this gate went red for exactly that reason.
+    // Handing JUCE the drag scale is allowed when the line NAMES gesture::,
+    // because a call that quotes the scale is the opposite of deciding one.
+    // That is what the exemption used to stand in for, and standing in for it
+    // was the problem: the list held the two files that happened to make the
+    // call, DewKnob.cpp joined it when the knob left DewControls.cpp, and the
+    // gate went red for exactly that - a moved file falling off a list of
+    // names. Asking about the call instead needs no list, and the knob's own
+    // fine-drag arithmetic moved to gesture::dragPixelsFor where it belonged.
     const auto found = offenders (
         [] (const juce::String& line)
         {
+            const auto trimmed = line.trim();
+
+            if (trimmed.contains ("setMouseDragSensitivity"))
+                return ! trimmed.contains ("gesture::");
+
             return line.contains ("wheel.deltaX") || line.contains ("wheel.deltaY")
-                   || line.contains ("wheel.isReversed")
-                   || line.contains ("setMouseDragSensitivity");
+                   || line.contains ("wheel.isReversed");
         },
-        { "ui/design/Gestures.h", "ui/primitives/DewControls.cpp", "ui/primitives/DewKnob.cpp" });
+        { "ui/design/Gestures.h" });
 
     INFO ("views reading the wheel or the drag scale directly:\n" << found.joinIntoString ("\n"));
     CHECK (found.isEmpty());

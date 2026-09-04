@@ -321,12 +321,7 @@ void DewKnob::mouseDown (const juce::MouseEvent& event)
     if (consumePopupPress (event, onContextMenu))
         return;
 
-    const auto pixels = gesture::isFine (event.mods)
-                            ? (int) ((double) gesture::dragPixelsForFullRange
-                                     / gesture::fineMultiplier)
-                            : gesture::dragPixelsForFullRange;
-
-    slider.setMouseDragSensitivity (pixels);
+    slider.setMouseDragSensitivity (gesture::dragPixelsFor (event.mods));
 }
 
 } // namespace dew

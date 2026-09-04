@@ -58,6 +58,15 @@ TEST_CASE ("shift is finer wherever a drag changes a value", "[ui][gesture]")
     // And finer means finer, not coarser or the same.
     CHECK (gesture::fineMultiplier > 0.0);
     CHECK (gesture::fineMultiplier < 1.0);
+
+    // The two of them applied, which is what a control actually asks for.
+    // Nothing covered this while the knob was doing the arithmetic itself.
+    //
+    // A FURTHER drag for the same range is what "finer" means to JUCE: the
+    // sensitivity is a distance, so more pixels is less value per pixel.
+    CHECK (gesture::dragPixelsFor (juce::ModifierKeys()) == gesture::dragPixelsForFullRange);
+    CHECK (gesture::dragPixelsFor (juce::ModifierKeys (juce::ModifierKeys::shiftModifier))
+           > gesture::dragPixelsForFullRange);
 }
 
 TEST_CASE ("zoom answers to command and to control", "[ui][gesture]")

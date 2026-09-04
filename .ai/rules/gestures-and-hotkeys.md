@@ -38,6 +38,10 @@ Two files own this, and a gate holds each: `src/ui/Hotkeys.h` for the keyboard,
 - **Shift means finer wherever a drag changes a VALUE**, and nothing else. Shift already
   means suspend snap, extend a selection, make a copy unique and transpose by an octave —
   every one of which changes a selection or a position, not a value.
+- `gesture::dragPixelsFor(mods)` applies that rule to `dragPixelsForFullRange`. Hand it to
+  `setMouseDragSensitivity` rather than combining the two by hand: the gate allows a call
+  that NAMES `gesture::` and refuses one that picks its own number, so this is the form
+  that needs no exemption.
 - `getDistanceFromDragStart()` is always zero in a headless harness, so a component that
   wants its drag tested keeps its own origin and calls `gesture::passedThreshold`.
 
