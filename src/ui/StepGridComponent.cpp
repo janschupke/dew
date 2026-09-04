@@ -166,6 +166,72 @@ void StepGridComponent::zoomToFit()
     repaint();
 }
 
+juce::Rectangle<int> StepGridComponent::cursorLimits() const
+{
+    return { 0, 0, numSteps(), getNumRows() };
+}
+
+bool StepGridComponent::moveCursor (juce::Point<int> delta)
+{
+    const auto previous = cursor.getPosition();
+
+    if (! cursor.moveBy (delta, cursorLimits()))
+        return true; // at the edge: the key was ours, it simply had nowhere to go
+
+    repaintCell (previous);
+    repaintCell (cursor.getPosition());
+
+    // The channel under the cursor becomes the selected one, so the instrument
+    // panel follows the keyboard the way it follows a click.
+    if (const auto channel = channelForRow (cursor.getPosition().y); channel.isValid())
+        editorState.setSelectedChannelId ((int) channel[ids::id]);
+
+    announceCursor();
+    return true;
+}
+
+void StepGridComponent::activateCursor()
+{
+    const auto channel = channelForRow (cursor.getPosition().y);
+
+    if (! channel.isValid())
+        return;
+
+    auto& undo = document.getUndoManager();
+    undo.beginNewTransaction ("Toggle step");
+
+    ProjectEdits::toggleStep (currentPattern(), (int) channel[ids::id], cursor.getPosition().x,
+                              (int) channel[ids::basePitch], &undo);
+
+    announceCursor();
+}
+
+void StepGridComponent::announceCursor()
+{
+    const auto channel = channelForRow (cursor.getPosition().y);
+
+    if (! channel.isValid())
+        return;
+
+    const auto step = cursor.getPosition().x;
+    const auto lit = ProjectEdits::findNoteAtStep (currentPattern(), (int) channel[ids::id], step)
+                         .isValid();
+
+    // The channel, where in the bar, and whether it sounds - which is the whole
+    // of what a step is. Said as a sentence rather than as coordinates: "step 5"
+    // is a number, "beat 2 of bar 1" is a place in the music.
+    const auto meter = Meter::of (document.getState());
+    const auto perBar = juce::jmax (1, meter.stepsPerBar());
+
+    const auto description = channel[ids::name].toString() + ", bar "
+                             + juce::String (step / perBar + 1) + " step "
+                             + juce::String (step % perBar + 1) + ", " + (lit ? "on" : "off");
+
+    setDescription (description);
+    juce::AccessibilityHandler::postAnnouncement (
+        description, juce::AccessibilityHandler::AnnouncementPriority::low);
+}
+
 bool StepGridComponent::keyPressed (const juce::KeyPress& key)
 {
     switch (hotkeys::viewCommandFor (key))
@@ -179,6 +245,18 @@ bool StepGridComponent::keyPressed (const juce::KeyPress& key)
             return true;
 
         case hotkeys::ViewCommand::zoomToFit: zoomToFit(); return true;
+
+        case hotkeys::ViewCommand::cursorLeft: return moveCursor ({ -1, 0 });
+        case hotkeys::ViewCommand::cursorRight: return moveCursor ({ 1, 0 });
+        case hotkeys::ViewCommand::cursorUp: return moveCursor ({ 0, -1 });
+        case hotkeys::ViewCommand::cursorDown: return moveCursor ({ 0, 1 });
+
+        case hotkeys::ViewCommand::cursorActivate:
+            if (! cursor.isPlaced())
+                return false;
+
+            activateCursor();
+            return true;
 
         // The sequencer has no tools, no note selection and no select-all: a
         // step is toggled, not selected. Nor a second size: a row here is a

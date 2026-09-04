@@ -216,6 +216,17 @@ void focusRing (juce::Graphics& g, const juce::Component& c, bool focused)
     g.drawRoundedRectangle (bodyRect (c), radius::sm, stroke::bold);
 }
 
+void cursorOutline (juce::Graphics& g, juce::Rectangle<float> bounds, bool shown)
+{
+    if (! shown || bounds.isEmpty())
+        return;
+
+    // Inset by half the stroke so the ring sits ON the cell rather than
+    // straddling its edge and its neighbour's - the same reason bodyRect exists.
+    g.setColour (colour::accent);
+    g.drawRoundedRectangle (bounds.reduced (stroke::hairline), radius::xs, stroke::bold);
+}
+
 void waveform (juce::Graphics& g, juce::Range<float> y, juce::Range<float> span,
                juce::Range<float> painted, const WaveformPeaks& peaks,
                const std::function<juce::Colour (float x)>& colourAt)

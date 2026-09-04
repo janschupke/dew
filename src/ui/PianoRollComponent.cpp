@@ -191,6 +191,86 @@ juce::Colour PianoRollComponent::channelColour() const
 
 // --- geometry ----------------------------------------------------------------
 
+juce::Rectangle<int> PianoRollComponent::cursorLimits() const
+{
+    // y is a PITCH, not a row index: the roll's vertical axis is the material,
+    // and a cursor that counted rows would move to a different note whenever
+    // the view scrolled.
+    return { 0, lowestPitch, numSteps(), highestPitch - lowestPitch + 1 };
+}
+
+bool PianoRollComponent::moveCursor (juce::Point<int> delta)
+{
+    if (! cursor.moveBy (delta, cursorLimits()))
+        return true;
+
+    // Brought into view, so arrowing off the edge scrolls rather than losing
+    // the cursor behind the gutter.
+    timeline.ensureVisible ((double) cursor.getPosition().x, (float) noteArea().getWidth());
+    centreOnPitch (cursor.getPosition().y);
+
+    announceCursor();
+    repaint();
+    return true;
+}
+
+void PianoRollComponent::activateCursor()
+{
+    const auto pattern = currentPattern();
+    const auto channelId = editorState.getSelectedChannelId();
+    const auto at = cursor.getPosition();
+
+    auto& undo = document.getUndoManager();
+
+    // Toggle: a note there is removed, an empty step gets one. The same rule the
+    // step grid's activate follows, so the two canvases answer Return the same
+    // way even though one has a selection and the other does not.
+    //
+    // noteCovering rather than findNote: a held note running THROUGH this step
+    // is what is sounding here, and Return should remove the note you can hear
+    // rather than only one that happens to start under the cursor.
+    if (const auto existing = NoteTools::noteCovering (pattern, channelId, at.x, at.y);
+        existing.isValid())
+    {
+        undo.beginNewTransaction ("Delete note");
+        ProjectEdits::removeNote (pattern, existing, &undo);
+    }
+    else
+    {
+        undo.beginNewTransaction ("Add note");
+        ProjectEdits::addNote (pattern, channelId, at.x,
+                               juce::jmax (1, editorState.getLastNoteLengthSteps()), at.y,
+                               (float) editorState.getLastNoteVelocity(), &undo);
+        ProjectEdits::growPatternToFitNotes (pattern, &undo);
+    }
+
+    announceCursor();
+    repaint();
+}
+
+void PianoRollComponent::announceCursor()
+{
+    const auto at = cursor.getPosition();
+    const auto note = NoteTools::noteCovering (currentPattern(), editorState.getSelectedChannelId(),
+                                               at.x, at.y);
+
+    const auto meter = Meter::of (document.getState());
+    const auto perBar = juce::jmax (1, meter.stepsPerBar());
+
+    auto description = noteName (at.y) + ", bar " + juce::String (at.x / perBar + 1) + " step "
+                       + juce::String (at.x % perBar + 1);
+
+    if (note.isValid())
+        description += ", note of " + juce::String ((int) note[ids::lengthSteps])
+                       + " steps, velocity " + juce::String ((int) note[ids::velocity]);
+    else
+        description += ", empty";
+
+    setDescription (description);
+    juce::AccessibilityHandler::postAnnouncement (
+        description, juce::AccessibilityHandler::AnnouncementPriority::low);
+}
+
 bool PianoRollComponent::keyPressed (const juce::KeyPress& key)
 {
     // The bindings the three timeline views share are read from one map, so a
@@ -231,13 +311,37 @@ bool PianoRollComponent::keyPressed (const juce::KeyPress& key)
 
         case hotkeys::ViewCommand::sizeDefault: setRowHeight (size::pianoRowDefault); return true;
 
+        case hotkeys::ViewCommand::cursorLeft: return moveCursor ({ -1, 0 });
+        case hotkeys::ViewCommand::cursorRight: return moveCursor ({ 1, 0 });
+
+        // Up is UP: a higher pitch is a higher row, and the roll's rows are
+        // drawn from the top down, so the cursor's y falls as the pitch rises.
+        case hotkeys::ViewCommand::cursorUp: return moveCursor ({ 0, 1 });
+        case hotkeys::ViewCommand::cursorDown: return moveCursor ({ 0, -1 });
+
+        case hotkeys::ViewCommand::cursorActivate:
+            if (! cursor.isPlaced())
+                return false;
+
+            activateCursor();
+            return true;
+
         case hotkeys::ViewCommand::none: break;
     }
 
-    // The arrows and the bare digits are unbound - keyPressed is only reached
-    // when the grid itself has focus, so they cannot collide with typing into a
-    // number field.
-    if (key.getKeyCode() == juce::KeyPress::upKey || key.getKeyCode() == juce::KeyPress::downKey)
+    // TRANSPOSE, on alt. It had the bare arrows, which are the one gesture a
+    // canvas that paints its contents most needs for moving around it - and a
+    // roll that could only be navigated with a mouse is a roll a keyboard could
+    // not reach at all. Alt is the modifier dew already spends on a view's
+    // other axis, so this is the same idea: the arrows move you, alt-arrows
+    // move the music.
+    //
+    // Shift is a VARIANT here rather than a second binding, which is why this
+    // reads the KeyPress rather than going through the registry -
+    // hotkeys::matches ignores shift by design.
+    if (key.getModifiers().isAltDown()
+        && (key.getKeyCode() == juce::KeyPress::upKey
+            || key.getKeyCode() == juce::KeyPress::downKey))
     {
         const auto up = key.getKeyCode() == juce::KeyPress::upKey;
         const auto interval = key.getModifiers().isShiftDown() ? 12 : 1;

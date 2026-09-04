@@ -230,5 +230,7 @@ void StepGridComponent::paint (juce::Graphics& g)
     {
         paint::emptyState (g, getLocalBounds(), "No channels. Use + Channel to add one.");
     }
+    paint::cursorOutline (g, getBoundsForCell (cursor.getPosition().y, cursor.getPosition().x),
+                          cursor.isPlaced());
 }
 } // namespace dew

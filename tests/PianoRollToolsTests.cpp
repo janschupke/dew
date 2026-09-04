@@ -352,7 +352,7 @@ TEST_CASE ("with nothing selected an edit acts on the whole channel", "[ui][roll
     CHECK ((int) otherChannel[ids::pitch] == 50);
 }
 
-TEST_CASE ("the arrow keys transpose by a semitone and an octave", "[ui][rolltools]")
+TEST_CASE ("alt-arrow transposes by a semitone and an octave", "[ui][rolltools]")
 {
     const juce::ScopedJuceInitialiser_GUI juceInit;
     RollHarness h;
@@ -363,17 +363,29 @@ TEST_CASE ("the arrow keys transpose by a semitone and an octave", "[ui][rolltoo
     const auto press = [&h] (int keyCode, juce::ModifierKeys mods = juce::ModifierKeys())
     { return h.roll.keyPressed (juce::KeyPress (keyCode, mods, 0)); };
 
-    REQUIRE (press (juce::KeyPress::upKey));
+    // ALT-arrow. The bare arrows moved to the keyboard cursor, which is the one
+    // gesture a canvas that paints its contents most needs and the only way a
+    // keyboard reaches a note at all; alt is the modifier dew already spends on
+    // a view's other axis.
+    const auto alt = juce::ModifierKeys (juce::ModifierKeys::altModifier);
+    const auto altShift = juce::ModifierKeys (juce::ModifierKeys::altModifier
+                                              | juce::ModifierKeys::shiftModifier);
+
+    REQUIRE (press (juce::KeyPress::upKey, alt));
     CHECK ((int) note[ids::pitch] == 67);
 
-    REQUIRE (press (juce::KeyPress::downKey));
+    REQUIRE (press (juce::KeyPress::downKey, alt));
     CHECK ((int) note[ids::pitch] == 66);
 
-    REQUIRE (press (juce::KeyPress::upKey, juce::ModifierKeys (juce::ModifierKeys::shiftModifier)));
+    REQUIRE (press (juce::KeyPress::upKey, altShift));
     CHECK ((int) note[ids::pitch] == 78);
 
-    REQUIRE (
-        press (juce::KeyPress::downKey, juce::ModifierKeys (juce::ModifierKeys::shiftModifier)));
+    REQUIRE (press (juce::KeyPress::downKey, altShift));
+    CHECK ((int) note[ids::pitch] == 66);
+
+    // And a bare arrow no longer moves the music: it moves the cursor, and
+    // leaves the note where it is.
+    REQUIRE (press (juce::KeyPress::upKey));
     CHECK ((int) note[ids::pitch] == 66);
 }
 

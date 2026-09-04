@@ -265,6 +265,11 @@ void PianoRollComponent::paintNotes (juce::Graphics& g)
         g.setColour (colour::accent);
         g.drawRect (rubberBand, stroke::hairlinePx);
     }
+
+    // Last, and clipped to the note area: the keyboard's own position has to be
+    // findable over whatever is under it.
+    paint::cursorOutline (g, boundsForCell (cursor.getPosition().x, cursor.getPosition().y),
+                          cursor.isPlaced());
 }
 
 void PianoRollComponent::paintVelocityLane (juce::Graphics& g)

@@ -129,115 +129,6 @@ ScoreEditorComponent::~ScoreEditorComponent()
     source.removeListener (this);
 }
 
-int ScoreEditorComponent::characterIndexForByte (const std::string& utf8, std::uint32_t byteOffset)
-{
-    const auto limit = juce::jmin ((std::size_t) byteOffset, utf8.size());
-    auto characters = 0;
-
-    for (std::size_t i = 0; i < limit; ++i)
-        if (((unsigned char) utf8[i] & 0xC0u) != 0x80u) // not a continuation byte
-            ++characters;
-
-    return characters;
-}
-
-int ScoreEditorComponent::byteIndexForCharacter (const std::string& utf8, int characterIndex)
-{
-    auto characters = 0;
-
-    for (std::size_t i = 0; i < utf8.size(); ++i)
-    {
-        if (((unsigned char) utf8[i] & 0xC0u) != 0x80u) // not a continuation byte
-        {
-            if (characters == characterIndex)
-                return (int) i;
-
-            ++characters;
-        }
-    }
-
-    return (int) utf8.size();
-}
-
-// --- completion --------------------------------------------------------------
-
-bool ScoreEditorComponent::isCompletionVisible() const
-{
-    return completions.isVisible();
-}
-
-void ScoreEditorComponent::hideCompletions()
-{
-    completions.setVisible (false);
-}
-
-void ScoreEditorComponent::showCompletions()
-{
-    const auto text = source.getAllContent().toStdString();
-    const auto offset = byteIndexForCharacter (text, editor.getCaretPos().getPosition());
-
-    const auto result = lang::completionsAt (text, (std::uint32_t) offset);
-
-    if (result.items.empty())
-    {
-        hideCompletions();
-        return;
-    }
-
-    completions.setItems (result.items);
-
-    // Under the caret, and shoved back on screen rather than off the bottom or
-    // the right - a popup you cannot see is worse than none.
-    const auto caret = editor.getCharacterBounds (editor.getCaretPos())
-                           .translated (editor.getX(), editor.getY());
-
-    const auto width = juce::jmin (getWidth() - tokens::space::xl, tokens::size::gutterChannel);
-    const auto height = completions.preferredHeight();
-
-    auto x = juce::jlimit (0, juce::jmax (0, getWidth() - width), caret.getX());
-    auto y = caret.getBottom() + tokens::space::xxs;
-
-    if (y + height > getHeight())
-        y = juce::jmax (0, caret.getY() - height - tokens::space::xxs);
-
-    completions.setBounds (x, y, width, height);
-    completions.setVisible (true);
-    completions.toFront (false);
-}
-
-void ScoreEditorComponent::acceptCompletion()
-{
-    const auto* selected = completions.getSelected();
-
-    if (selected == nullptr)
-    {
-        hideCompletions();
-        return;
-    }
-
-    const auto text = source.getAllContent().toStdString();
-    const auto offset = byteIndexForCharacter (text, editor.getCaretPos().getPosition());
-    const auto result = lang::completionsAt (text, (std::uint32_t) offset);
-
-    // The partial word is REPLACED, not appended to, or accepting `channel`
-    // after `cha` spells `chachannel`.
-    const juce::CodeDocument::Position from {
-        source, result.replacing.isEmpty() ? editor.getCaretPos().getPosition()
-                                           : characterIndexForByte (text, result.replacing.begin)
-    };
-
-    const juce::CodeDocument::Position to { source, editor.getCaretPos().getPosition() };
-
-    hideCompletions();
-
-    source.replaceSection (from.getPosition(), to.getPosition(), juce::String (selected->text));
-
-    editor.moveCaretTo (
-        juce::CodeDocument::Position (source, from.getPosition() + (int) selected->text.size()),
-        false);
-    editor.grabKeyboardFocus();
-}
-
 bool ScoreEditorComponent::keyPressed (const juce::KeyPress& key, juce::Component*)
 {
     // Control-Space asks, whether or not the popup is already open - asking
@@ -259,7 +150,16 @@ bool ScoreEditorComponent::keyPressed (const juce::KeyPress& key, juce::Componen
         case hotkeys::ViewCommand::sizeDefault: setFontStep (bodyStep); return true;
 
         // Everything else the timeline map knows is a key this editor must let
-        // through: `1` is a digit somebody is typing, not the select tool.
+        // through: `1` is a digit somebody is typing, not the select tool, and
+        // the arrows are how a caret moves through a document. The three
+        // canvases put a cursor on those because they paint their contents and
+        // have nothing else for a keyboard to land on; a text editor already
+        // is a keyboard interface and must not have them taken away.
+        case hotkeys::ViewCommand::cursorLeft:
+        case hotkeys::ViewCommand::cursorRight:
+        case hotkeys::ViewCommand::cursorUp:
+        case hotkeys::ViewCommand::cursorDown:
+        case hotkeys::ViewCommand::cursorActivate:
         case hotkeys::ViewCommand::none:
         case hotkeys::ViewCommand::zoomIn:
         case hotkeys::ViewCommand::zoomOut:

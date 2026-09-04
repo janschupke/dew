@@ -4,6 +4,7 @@
 
 #include "engine/AudioEngine.h"
 #include "app/ProjectDocument.h"
+#include "ui/CanvasCursor.h"
 #include "ui/EditorState.h"
 #include "ui/TimelinePaint.h"
 #include "ui/TimelineView.h"
@@ -130,6 +131,15 @@ private:
 
     void applyPaint (const juce::MouseEvent&);
     void repaintCell (juce::Point<int> cell);
+
+    /** Where the arrow keys are, as {step, row}. See CanvasCursor for why it is
+        a coordinate and not a note. */
+    bool moveCursor (juce::Point<int> delta);
+    void activateCursor();
+    void announceCursor();
+    juce::Rectangle<int> cursorLimits() const;
+
+    CanvasCursor cursor;
 
     ProjectDocument& document;
     AudioEngine& engine;

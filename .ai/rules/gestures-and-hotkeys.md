@@ -55,3 +55,23 @@ A project load therefore does not reset it, which is asserted.
 sizes a font must fit inside, so scaling text alone clips a caption in the box it was
 measured for. It reaches nothing offscreen, so every `dew_shot` render and headless test
 stays at 1:1 and no baseline moves.
+
+## The canvas cursor
+
+The piano roll, the playlist and the step grid each hold a `CanvasCursor`
+(`src/ui/CanvasCursor.h`) — where the arrow keys are on a surface that paints its contents.
+
+- **It is a coordinate, never a `juce::ValueTree`.** A position survives an edit and an
+  undo; a tree does not, and `ProjectEdits::moveClipToTrack` detaches the one it was given.
+- **It is not the selection.** The cursor is where you are; the selection is what you have
+  chosen. The step grid has no selection and still has a cursor.
+- **What the two axes mean is the view's business** — step and pitch, bar and track, step
+  and channel. `CanvasCursor` only knows how to be somewhere and how to stay in bounds.
+- **`paint::cursorOutline` takes a bool**, for the same reason `paint::focusRing` does:
+  `grabKeyboardFocus` does nothing without a `ComponentPeer` and the harness has none.
+- Each view needs a `boundsForCell`-shaped function, because the cursor sits on a place
+  that may hold nothing. All three have one now, beside their `boundsForNote` /
+  `boundsForClip`.
+- **`ControlWalkHarness` cannot see any of this.** It finds controls by type, and a cursor
+  is not a component; cursor tests live in `tests/CanvasCursorTests.cpp` and drive the
+  three existing view harnesses.

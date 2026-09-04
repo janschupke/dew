@@ -63,6 +63,7 @@ add_executable(dew_tests
   ContrastTests.cpp
   ReflowTests.cpp
   ThemeTests.cpp
+  CanvasCursorTests.cpp
   TimelineRulerTests.cpp
   TypographyTests.cpp
   PianoRollTests.cpp

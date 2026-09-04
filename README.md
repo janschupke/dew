@@ -264,11 +264,31 @@ keys were live in the tests and nowhere else.
 | `esc` clear selection | — | ✓ | ✓ | — |
 | `del` delete selection | — | ✓ | — | — |
 | ⌘A select all | — | ✓ | — | — |
+| ← → ↑ ↓ move the cursor | ✓ | ✓ | ✓ | — |
+| `return` act on the cursor | toggle a step | toggle a note | open the clip | — |
+| ⌥↑ ⌥↓ transpose | — | ±1, ⌥⇧ for ±12 | — | — |
 
 **Tab reaches every control**, and the one holding the keyboard draws an accent ring.
 Neither used to be true: knobs refused focus because `juce::Slider` does, and the toolbars
 refused it deliberately to keep a click from moving focus off the editor. Both are gates
 now — see [Reaching it without a mouse](#reaching-it-without-a-mouse).
+
+**The three timelines have a cursor.** They paint their notes, clips and cells rather than
+parenting them, so until it existed there was nothing for a keyboard to land on: three of
+the five tabs could only be edited with a mouse, and a screen reader met a rectangle with a
+name and no contents. The arrows move it, `return` acts on what is under it, and it is
+drawn in the accent and said out loud when it moves.
+
+It is a **coordinate**, never a `juce::ValueTree`. A position survives the edit made under
+it, and — the one that would have cost a day — `ProjectEdits::moveClipToTrack` returns a
+*new* tree and detaches the one it was given, so a cursor holding a clip would be pointing
+at a corpse the moment somebody dragged it to another track. It is also not the selection:
+the cursor is where you are, the selection is what you have chosen, and the step grid has
+no selection at all and still wants one.
+
+The piano roll's transpose gave up the bare arrows for this and moved to ⌥, which is the
+modifier dew already spends on a view's other axis. That is a deliberate change to a
+binding somebody may have in their fingers.
 
 **The pointer says what is under it.** `ui/design/Cursors.h` names six cursors for the
 gesture rather than for the arrow — `idle`, `clickable`, `value`, `move`, `resizeX`,

@@ -424,6 +424,8 @@ void PlaylistComponent::paint (juce::Graphics& g)
     {
         paint::emptyState (g, getLocalBounds(), "This project has no playlist tracks");
     }
+    paint::cursorOutline (g, boundsForCell (cursor.getPosition().x, cursor.getPosition().y),
+                          cursor.isPlaced());
 }
 
 } // namespace dew

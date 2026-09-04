@@ -167,6 +167,15 @@ int PlaylistComponent::trackAtY (int y) const
     return rows.rowAtY ((double) (y - lanesTop()));
 }
 
+juce::Rectangle<float> PlaylistComponent::boundsForCell (int bar, int trackIndex) const
+{
+    // One bar wide, which is what an empty lane cell is. The keyboard cursor
+    // sits on coordinates rather than on clips, so it needs a rectangle for a
+    // place that may hold nothing.
+    return { (float) size::gutterTrack + timeline.xForStep ((double) bar), laneY (trackIndex),
+             (float) timeline.pixelsPerStep, (float) rows.height };
+}
+
 juce::Rectangle<float> PlaylistComponent::boundsForClip (const juce::ValueTree& clip,
                                                          int trackIndex) const
 {

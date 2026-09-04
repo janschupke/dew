@@ -186,6 +186,19 @@ const std::vector<Binding<ViewCommand>>& timeline()
           "Shorter", "Make this view's rows, or its text, one size smaller", "View" },
         { ViewCommand::sizeDefault, { '0', juce::ModifierKeys::altModifier },
           "Default Size", "Return this view's rows, or its text, to the default size", "View" },
+
+        // Bare, and reaching keyPressed only when the canvas itself has focus -
+        // so they cannot collide with typing into a number field.
+        { ViewCommand::cursorLeft, { juce::KeyPress::leftKey, 0 },
+          "Previous Step", "Move the keyboard's position earlier", "Edit" },
+        { ViewCommand::cursorRight, { juce::KeyPress::rightKey, 0 },
+          "Next Step", "Move the keyboard's position later", "Edit" },
+        { ViewCommand::cursorUp, { juce::KeyPress::upKey, 0 },
+          "Up", "Move the keyboard's position up a row", "Edit" },
+        { ViewCommand::cursorDown, { juce::KeyPress::downKey, 0 },
+          "Down", "Move the keyboard's position down a row", "Edit" },
+        { ViewCommand::cursorActivate, { juce::KeyPress::returnKey, 0 },
+          "Activate", "Act on what the keyboard is pointing at", "Edit" },
     };
 
     // clang-format on

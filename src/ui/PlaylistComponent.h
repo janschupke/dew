@@ -5,6 +5,7 @@
 #include "engine/AudioEngine.h"
 #include "app/ProjectDocument.h"
 #include "ui/ConfirmPanel.h"
+#include "ui/CanvasCursor.h"
 #include "ui/EditorState.h"
 #include "model/AutomationTargets.h"
 #include "ui/PlaylistToolbar.h"
@@ -334,6 +335,17 @@ private:
     void zoomBy (double factor, float anchorX);
     void rebuildHeaders();
     void openPatternOf (const juce::ValueTree& clip);
+
+    /** Where one bar of one track sits, whether or not a clip is there. */
+    juce::Rectangle<float> boundsForCell (int bar, int trackIndex) const;
+
+    /** Where the arrow keys are, as {bar, track}. See CanvasCursor. */
+    bool moveCursor (juce::Point<int> delta);
+    void activateCursor();
+    void announceCursor();
+    juce::Rectangle<int> cursorLimits() const;
+
+    CanvasCursor cursor;
     void showAutomationMenu();
 
     /** The menu a right-click on a lane opens, and what its items do.

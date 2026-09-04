@@ -5,6 +5,7 @@
 #include "engine/AudioEngine.h"
 #include "model/NoteTools.h"
 #include "app/ProjectDocument.h"
+#include "ui/CanvasCursor.h"
 #include "ui/EditorState.h"
 #include "ui/PianoRollToolbar.h"
 #include "ui/TimelineRuler.h"
@@ -219,6 +220,17 @@ public:
 
     void quantizeScope();
     void transposeScope (int semitones);
+
+    /** Where one step of one pitch sits, whether or not a note is there. */
+    juce::Rectangle<float> boundsForCell (int step, int pitch) const;
+
+    /** Where the arrow keys are, as {step, pitch}. See CanvasCursor. */
+    bool moveCursor (juce::Point<int> delta);
+    void activateCursor();
+    void announceCursor();
+    juce::Rectangle<int> cursorLimits() const;
+
+    CanvasCursor cursor;
     void openRandomizeDialog();
 
 private:

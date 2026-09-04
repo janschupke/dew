@@ -209,6 +209,18 @@ bool PlaylistComponent::keyPressed (const juce::KeyPress& key)
             setTrackHeight (size::trackHeightDefault);
             return true;
 
+        case hotkeys::ViewCommand::cursorLeft: return moveCursor ({ -1, 0 });
+        case hotkeys::ViewCommand::cursorRight: return moveCursor ({ 1, 0 });
+        case hotkeys::ViewCommand::cursorUp: return moveCursor ({ 0, -1 });
+        case hotkeys::ViewCommand::cursorDown: return moveCursor ({ 0, 1 });
+
+        case hotkeys::ViewCommand::cursorActivate:
+            if (! cursor.isPlaced())
+                return false;
+
+            activateCursor();
+            return true;
+
         // The playlist has no erase tool, no note selection to delete and no
         // select-all: a clip is deleted through its own menu. Listed rather
         // than defaulted so adding a command to the map is a compile error
@@ -220,6 +232,87 @@ bool PlaylistComponent::keyPressed (const juce::KeyPress& key)
     }
 
     return false;
+}
+
+namespace
+{
+
+/** What kind of thing a clip is, in a word. The three kinds are already spelled
+    out as strings in the schema and read back in four places; this is the one
+    that says them to a person rather than to a switch. */
+juce::String clipKindName (const juce::ValueTree& clip)
+{
+    if (ProjectEdits::isAutomationClip (clip))
+        return "automation";
+
+    if (ProjectEdits::isAudioClip (clip))
+        return "audio";
+
+    return "pattern";
+}
+
+} // namespace
+
+juce::Rectangle<int> PlaylistComponent::cursorLimits() const
+{
+    auto tracks = 0;
+
+    for (const auto& track : playlist())
+        if (track.hasType (ids::PLAYLIST_TRACK))
+            ++tracks;
+
+    return { 0, 0, numBars(), tracks };
+}
+
+bool PlaylistComponent::moveCursor (juce::Point<int> delta)
+{
+    if (! cursor.moveBy (delta, cursorLimits()))
+        return true;
+
+    // The playlist's timeline counts BARS, not steps - PlaylistView divides the
+    // playhead by stepsPerBar before it gets here - so the cursor's x is
+    // already in the unit ensureVisible wants.
+    timeline.ensureVisible ((double) cursor.getPosition().x, contentWidth());
+
+    announceCursor();
+    repaint();
+    return true;
+}
+
+void PlaylistComponent::activateCursor()
+{
+    const auto at = cursor.getPosition();
+    const auto track = trackAt (at.y);
+
+    if (! track.isValid())
+        return;
+
+    // Opens what is there. A clip is created through the paint tool and deleted
+    // through its own menu, so Return is the one thing left that a clip does
+    // and that the keyboard could not reach: look inside it.
+    if (const auto clip = ProjectEdits::findClipAtBar (track, at.x); clip.isValid())
+        openPatternOf (clip);
+}
+
+void PlaylistComponent::announceCursor()
+{
+    const auto at = cursor.getPosition();
+    const auto track = trackAt (at.y);
+
+    if (! track.isValid())
+        return;
+
+    auto description = track[ids::name].toString() + ", bar " + juce::String (at.x + 1);
+
+    if (const auto clip = ProjectEdits::findClipAtBar (track, at.x); clip.isValid())
+        description += ", " + clipKindName (clip) + " clip of "
+                       + juce::String ((int) clip[ids::lengthBars]) + " bars";
+    else
+        description += ", empty";
+
+    setDescription (description);
+    juce::AccessibilityHandler::postAnnouncement (
+        description, juce::AccessibilityHandler::AnnouncementPriority::low);
 }
 
 // --- gestures ----------------------------------------------------------------

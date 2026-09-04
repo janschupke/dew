@@ -154,6 +154,33 @@ enum class ViewCommand
     sizeBigger,
     sizeSmaller,
     sizeDefault,
+
+    /** Moving the keyboard's own position on a canvas that paints its contents.
+
+        The three timelines draw their notes, clips and cells rather than
+        parenting them, so until this there was nothing for the keyboard to land
+        on: every one of them could only be edited with a mouse, and a screen
+        reader met a rectangle with a name and no contents.
+
+        What an axis MEANS is the view's: a step and a pitch in the roll, a bar
+        and a track in the playlist, a step and a channel in the grid. What they
+        share is that left and right move along time, which is the axis all
+        three have.
+
+        Bare arrows, because this is the most ordinary thing a person can ask a
+        canvas to do and it should not need a modifier. The piano roll's
+        transpose, which had them, moves to alt - the modifier dew already uses
+        for a view's other axis.
+    */
+    cursorLeft,
+    cursorRight,
+    cursorUp,
+    cursorDown,
+
+    /** Do the thing under the cursor: toggle a step, select a note, open a
+        clip's pattern. Return rather than space, which is Play everywhere and
+        has to stay that way. */
+    cursorActivate,
 };
 
 /** The menu-bar commands, in the order the menus present them. */

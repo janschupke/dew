@@ -608,6 +608,20 @@ juce::Rectangle<float> bodyRect (const juce::Component&);
 */
 void focusRing (juce::Graphics&, const juce::Component&, bool focused);
 
+/** The ring that says where the KEYBOARD is on a canvas that paints its
+    contents.
+
+    The same statement as a focus ring and deliberately the same colour: a
+    control gets one around its edge, a canvas gets one around the cell the
+    arrow keys are on. Drawn on an arbitrary rectangle rather than on a
+    component, because the thing it marks is not one.
+
+    Takes `shown` for the reason focusRing takes `focused` - a headless harness
+    has no ComponentPeer, so a painter that asked the component whether it had
+    the keyboard could never be shown to draw.
+*/
+void cursorOutline (juce::Graphics&, juce::Rectangle<float>, bool shown);
+
 /** A sample's waveform: one column of pixels per column of pixels, each
     showing the extremes over the span it covers.
 

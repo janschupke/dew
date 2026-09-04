@@ -100,6 +100,18 @@ int PianoRollComponent::pitchAtY (int y) const
     return juce::jlimit (lowestPitch, highestPitch, highestPitch - rowsDown);
 }
 
+juce::Rectangle<float> PianoRollComponent::boundsForCell (int step, int pitch) const
+{
+    // One step long, which is what an empty cell is. The keyboard cursor sits
+    // on coordinates rather than on notes, so it needs a rectangle for a place
+    // that may hold nothing.
+    const auto notes = noteArea();
+
+    return { (float) size::gutterKeyboard + timeline.xForStep ((double) step),
+             (float) notes.getY() + rows.yForRow (highestPitch - pitch),
+             (float) timeline.pixelsPerStep, (float) rows.height };
+}
+
 juce::Rectangle<float> PianoRollComponent::boundsForNote (const juce::ValueTree& note) const
 {
     const auto step = (int) note[ids::step];
