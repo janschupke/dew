@@ -167,9 +167,8 @@ void MainComponent::finishRecording()
 
 void MainComponent::startRender (const RenderPanel::Request& request, Settings* settingsToUpdate)
 {
-    const auto startIn = settingsToUpdate != nullptr
-                             ? settingsToUpdate->getLastRenderDirectory()
-                             : juce::File::getSpecialLocation (juce::File::userMusicDirectory);
+    const auto startIn = settingsToUpdate != nullptr ? settingsToUpdate->getLastRenderDirectory()
+                                                     : AssetPaths::defaultBrowseFolder();
 
     const auto extension = OfflineRenderer::extensionFor (request.options.format);
 

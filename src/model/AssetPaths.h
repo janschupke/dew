@@ -43,6 +43,19 @@ struct AssetPaths
         then 002, and so on. Never returns a path that would overwrite.
     */
     static juce::File nextTakeFile (const juce::File& folder, const juce::String& channelName);
+
+    /** Where a file chooser opens when nothing better is known - and a folder
+        that EXISTS, which the obvious answer is not.
+
+        Three call sites reached for userMusicDirectory directly. On macOS that
+        is ~/Music and it is always there; on Linux JUCE resolves it through
+        XDG's user-dirs, and a machine that has never run a desktop session -
+        a container, a CI runner, a fresh server login - has no ~/Music at all.
+        Handing a chooser a path that does not exist is the exact failure
+        Settings::getLastRenderDirectory refuses to restore a stored path for,
+        so the fallback may not commit it either.
+    */
+    static juce::File defaultBrowseFolder();
 };
 
 } // namespace dew

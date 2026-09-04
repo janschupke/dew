@@ -4,6 +4,7 @@
 
 #include <juce_gui_basics/juce_gui_basics.h>
 
+#include "model/AssetPaths.h"
 #include "model/NoteTools.h"
 
 namespace dew
@@ -139,7 +140,7 @@ juce::File Settings::getLastRenderDirectory() const
     if (stored.isDirectory())
         return stored;
 
-    return juce::File::getSpecialLocation (juce::File::userMusicDirectory);
+    return AssetPaths::defaultBrowseFolder();
 }
 
 void Settings::setLastRenderDirectory (const juce::File& directory)

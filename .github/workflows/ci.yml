@@ -268,8 +268,11 @@ jobs:
           -DDEW_BUILD_TESTS=ON
           -DDEW_WRITE_THIRD_PARTY=OFF
 
+      # dew_lang_tests as well as dew_tests: ctest discovers every test the
+      # configure declared, so a suite built without it does not skip those
+      # cases - it reports them NOT_BUILT and fails the job.
       - name: Build
-        run: cmake --build build/windows --config RelWithDebInfo --target dew dew_tests
+        run: cmake --build build/windows --config RelWithDebInfo --target dew dew_tests dew_lang_tests
 
       - name: Test
         run: ctest --test-dir build/windows -C RelWithDebInfo --output-on-failure --parallel 4
@@ -320,10 +323,19 @@ jobs:
           -DDEW_WRITE_THIRD_PARTY=OFF
 
       - name: Build
-        run: cmake --build build/linux-app --target dew dew_tests
+        run: cmake --build build/linux-app --target dew dew_tests dew_lang_tests
 
+      # NOT as root, and that is not hygiene. A container runs as root by
+      # default, root can write anywhere, and the suite has a test that a
+      # recorder refuses a file it cannot write - so it fails here and passes
+      # on every laptop, which is the worst shape a failing test comes in.
       - name: Test
-        run: xvfb-run -a ctest --test-dir build/linux-app --output-on-failure --parallel 4
+        run: |
+          useradd -m suite
+          chown -R suite .
+          # PATH explicitly: su starts a login-ish shell and resets it, which
+          # drops the /opt CMake installed above and makes ctest "not found".
+          su suite -c "PATH='$PATH' xvfb-run -a ctest --test-dir build/linux-app --output-on-failure --parallel 4"
 
   # ----------------------------------------------------------------------------
   # Sanitizers. Separate jobs because ASan and TSan cannot share a build, and

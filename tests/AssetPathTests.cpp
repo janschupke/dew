@@ -183,3 +183,17 @@ TEST_CASE ("Save As brings the audio to the new location", "[assets][document]")
     REQUIRE (AssetPaths::resolve (stored, second).existsAsFile());
     REQUIRE (AssetPaths::resolve (stored, second).isAChildOf (secondHome.dir));
 }
+
+TEST_CASE ("the fallback browse folder is one that exists", "[assets][paths]")
+{
+    // The property, not the path. Which folder it lands on depends on the
+    // machine - and on Linux, where JUCE resolves userMusicDirectory through
+    // XDG's user-dirs, a host that has never run a desktop session has no
+    // ~/Music at all. Committing to it anyway would hand a file chooser the
+    // missing directory that Settings::getLastRenderDirectory exists to
+    // refuse, which is exactly what it used to do.
+    const auto folder = AssetPaths::defaultBrowseFolder();
+
+    REQUIRE (folder != juce::File());
+    REQUIRE (folder.isDirectory());
+}

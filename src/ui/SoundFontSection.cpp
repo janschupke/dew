@@ -202,7 +202,7 @@ void SoundFontSection::chooseFile()
 
     const auto startIn = pool != nullptr && pool->getProjectFile() != juce::File()
                              ? pool->getProjectFile().getParentDirectory()
-                             : juce::File::getSpecialLocation (juce::File::userMusicDirectory);
+                             : AssetPaths::defaultBrowseFolder();
 
     // Both spellings: two files in a real library are named .SF2, and a
     // lower-case-only wildcard hides them on a case-sensitive filesystem.

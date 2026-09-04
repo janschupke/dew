@@ -185,9 +185,10 @@ public:
     /** Where the last render was written, so the next chooser opens there
         rather than wherever the system last felt like.
 
-        Falls back to the user's Music folder, and rejects a directory that no
-        longer exists - an external drive that has since been unplugged is
-        exactly the "something unrecoverable" this class refuses to restore.
+        Rejects a directory that no longer exists - an external drive that has
+        since been unplugged is exactly the "something unrecoverable" this
+        class refuses to restore - and falls back to
+        AssetPaths::defaultBrowseFolder, which applies the same test to itself.
     */
     juce::File getLastRenderDirectory() const;
     void setLastRenderDirectory (const juce::File&);

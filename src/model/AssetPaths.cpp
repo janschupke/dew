@@ -54,6 +54,20 @@ juce::File AssetPaths::resolve (const juce::String& path, const juce::File& proj
     return projectFile.getParentDirectory().getChildFile (path);
 }
 
+juce::File AssetPaths::defaultBrowseFolder()
+{
+    // In order of how much it looks like somewhere a person keeps music, and
+    // the first one that is actually there wins. The working directory is last
+    // because it is always a directory and never a good suggestion.
+    for (const auto location : { juce::File::userMusicDirectory, juce::File::userDocumentsDirectory,
+                                 juce::File::userHomeDirectory })
+        if (const auto candidate = juce::File::getSpecialLocation (location);
+            candidate.isDirectory())
+            return candidate;
+
+    return juce::File::getCurrentWorkingDirectory();
+}
+
 juce::File AssetPaths::nextTakeFile (const juce::File& folder, const juce::String& channelName)
 {
     const auto stem = channelName.isNotEmpty() ? channelName : juce::String ("Audio");
