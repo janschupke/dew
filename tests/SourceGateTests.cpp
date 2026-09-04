@@ -323,16 +323,28 @@ TEST_CASE ("the engine layer opens no files and no devices", "[build][layering]"
                    || trimmed.contains ("juce_audio_formats") || trimmed.contains ("\"io/");
         });
 
+    // A PREFIX, not a parent directory. This asked whether the file's immediate
+    // parent was named engine, so src/engine/modules - EffectModules and
+    // Instruments, four files - sat outside a gate about the engine layer for
+    // as long as that directory has existed. It also matched offenders back to
+    // files by base name, which offenders() no longer requires and which was
+    // never safe: two files may share a name, and nothing says otherwise.
     juce::StringArray fromEngine;
 
     for (const auto& offender : found)
-    {
-        // offenders() reports by file NAME, so ask the walk where it lives.
-        for (const auto& f : sourceFiles())
-            if (offender.startsWith (f.getFileName() + ":")
-                && f.getParentDirectory().getFileName() == "engine")
-                fromEngine.add (offender);
-    }
+        if (offender.startsWith ("engine/"))
+            fromEngine.add (offender);
+
+    // Proof the widening is real rather than a comment: the walk reaches past
+    // the layer's own directory.
+    auto beneathEngine = 0;
+
+    for (const auto& f : sourceFiles())
+        if (relativePathOf (f).startsWith ("engine/modules/"))
+            ++beneathEngine;
+
+    INFO ("files under src/engine/modules the gate now covers: " << beneathEngine);
+    REQUIRE (beneathEngine > 0);
 
     INFO ("engine sources reaching for a device or a file:\n" << fromEngine.joinIntoString ("\n"));
     CHECK (fromEngine.isEmpty());

@@ -172,7 +172,20 @@ inline juce::StringArray codeLinesOf (const juce::File& file)
     return text;
 }
 
-/** Every line of CODE for which `matches` is true, as "File.cpp:123  the line".
+/** Where a file sits under src/, as "ui/design/Tokens.h".
+
+    The path rather than the name, because a name is not unique and nothing
+    makes it so. Two gates compared offenders to files by base name and one of
+    them - the engine gate - additionally asked only about the IMMEDIATE parent
+    directory, which is how src/engine/modules stayed outside a gate about the
+    engine layer for as long as that directory existed.
+*/
+inline juce::String relativePathOf (const juce::File& file)
+{
+    return file.getRelativePathFrom (juce::File { DEW_SOURCE_DIR }).replaceCharacter ('\\', '/');
+}
+
+/** Every line of CODE for which `matches` is true, as "ui/File.cpp:123  the line".
 
     Comments never reach `matches`, so a predicate says what it is looking for
     and nothing about how a comment is spelled.
@@ -204,7 +217,7 @@ inline juce::StringArray offenders (const std::function<bool (const juce::String
 
         for (const auto& line : codeLinesWithNumbersOf (file))
             if (matches (line.text))
-                found.add (file.getFileName() + ":" + juce::String (line.number) + "  "
+                found.add (relativePathOf (file) + ":" + juce::String (line.number) + "  "
                            + line.text.trim());
     }
 
