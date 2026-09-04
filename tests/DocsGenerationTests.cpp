@@ -80,6 +80,34 @@ TEST_CASE ("every operation and every guide page reaches the reference",
     }
 }
 
+TEST_CASE ("the schema is written in the reference locale, whatever is asked for",
+           "[docs][website][gate][i18n]")
+{
+    // The schema's prose - every block's doc, every key's doc, every kind's
+    // noun phrase - now comes from the catalogue, and score-schema.json is
+    // committed and compared byte for byte in three places. So the ONE thing
+    // that must stay true is that the artefact is a function of the schema and
+    // never of a locale.
+    //
+    // dew_docs passes no locale and takes the reference default, which is what
+    // keeps it so. This says the coupling out loud rather than leaving it as a
+    // property of a default argument nobody looks at, and it is the test that
+    // fails the day somebody threads a --locale flag through without deciding
+    // what the committed file should hold.
+    CHECK (docs::schemaJson() == docs::schemaJson (lang::referenceLocale));
+
+    // A locale this build does not carry falls back to the reference rather
+    // than to blank rows, so asking for one cannot silently empty the
+    // reference manual.
+    CHECK (docs::schemaJson (lang::localeFor ("de-CH")) == docs::schemaJson());
+
+    // Control case: the emitter is reading the catalogue at all. Both of the
+    // above would pass over a file of empty strings.
+    INFO (docs::schemaJson().substr (0, 400));
+    CHECK (docs::schemaJson().find ("a tempo, like `96 bpm`") != std::string::npos);
+    CHECK (docs::schemaJson().find ("whole-song properties") != std::string::npos);
+}
+
 TEST_CASE ("the schema emitter writes the same bytes twice", "[docs][website][gate]")
 {
     // In process, so it proves less than the cmp CI runs in a second process -

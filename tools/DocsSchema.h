@@ -122,8 +122,15 @@ inline std::vector<lang::Mode> allModes()
     The schema's own doc comment says the reference manual reads this table, so
     that a key cannot exist without being completable and cannot be documented
     differently from how it is checked. This function is that reader.
+
+    The locale is a parameter with the REFERENCE as its default, and dew_docs
+    passes nothing. website/src/generated/score-schema.json is committed and
+    compared byte for byte in three places, so what it holds has to be a
+    function of the schema alone - never of anything a machine happened to be
+    set to. A per-locale reference page is one argument away the day it is
+    wanted, and nothing here decides that.
 */
-inline std::string schemaJson()
+inline std::string schemaJson (lang::Locale locale = lang::referenceLocale)
 {
     JsonWriter json;
 
@@ -138,7 +145,7 @@ inline std::string schemaJson()
         json.key ("name");
         json.value (identifierOf (kind));
         json.key ("doc");
-        json.value (lang::nameOf (kind));
+        json.value (lang::msg (lang::nameOf (kind), locale));
 
         json.key ("members");
         json.beginArray();
@@ -161,7 +168,7 @@ inline std::string schemaJson()
         json.key ("kind");
         json.value (lang::nameOf (block.kind));
         json.key ("doc");
-        json.value (block.doc);
+        json.value (lang::msg (block.doc, locale));
         json.key ("topLevel");
         json.value (block.topLevel);
 
@@ -180,13 +187,13 @@ inline std::string schemaJson()
             // be rendered without a second lookup. `members` stays in one
             // place, above, because that is the part a reader scans.
             json.key ("kindDoc");
-            json.value (lang::nameOf (key.kind));
+            json.value (lang::msg (lang::nameOf (key.kind), locale));
             json.key ("required");
             json.value (key.required);
             json.key ("overridable");
             json.value (key.overridable);
             json.key ("doc");
-            json.value (key.doc);
+            json.value (lang::msg (key.doc, locale));
             json.endObject();
         }
 

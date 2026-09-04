@@ -159,12 +159,12 @@ void addModes (std::vector<Completion>& out)
     `key F ` offers modes.
 */
 void addForKind (std::vector<Completion>& out, ValueKind kind, int wordsAlready,
-                 const SymbolTable& symbols)
+                 const SymbolTable& symbols, Locale locale)
 {
     if (const auto& members = membersOf (kind); ! members.empty())
     {
         for (const auto& member : members)
-            add (out, std::string (member), nameOf (kind), CompletionKind::value);
+            add (out, std::string (member), msg (nameOf (kind), locale), CompletionKind::value);
 
         return;
     }
@@ -291,7 +291,7 @@ bool insideTrivia (std::string_view source, std::uint32_t offset)
 
 } // namespace
 
-CompletionResult completionsAt (std::string_view source, std::uint32_t byteOffset)
+CompletionResult completionsAt (std::string_view source, std::uint32_t byteOffset, Locale locale)
 {
     CompletionResult result;
 
@@ -451,22 +451,22 @@ CompletionResult completionsAt (std::string_view source, std::uint32_t byteOffse
             // as a top-level keyword the day one was added.
             for (const auto& spec : schema())
                 if (spec.topLevel)
-                    add (items, nameOf (spec.kind), std::string (spec.doc), CompletionKind::block);
+                    add (items, nameOf (spec.kind), msg (spec.doc, locale), CompletionKind::block);
         }
         else if (const auto* spec = specFor (result.block); spec != nullptr)
         {
             for (const auto& key : spec->keys)
-                add (items, std::string (key.name), std::string (key.doc), CompletionKind::key);
+                add (items, std::string (key.name), msg (key.doc, locale), CompletionKind::key);
 
             for (const auto child : spec->children)
                 if (const auto* childSpec = specFor (child); childSpec != nullptr)
-                    add (items, nameOf (child), std::string (childSpec->doc),
+                    add (items, nameOf (child), msg (childSpec->doc, locale),
                          CompletionKind::block);
         }
     }
     else if (const auto* key = keySpecFor (result.block, keyOnCaretLine); key != nullptr)
     {
-        addForKind (items, key->kind, wordsBeforeCaret - 1, symbols);
+        addForKind (items, key->kind, wordsBeforeCaret - 1, symbols, locale);
     }
     else if (blockKindFor (keyOnCaretLine) == BlockKind::part)
     {

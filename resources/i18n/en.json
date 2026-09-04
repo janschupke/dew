@@ -1236,6 +1236,271 @@
       "noSuchInversion": {
         "message": "`{chord}` has no inversion {inversion}"
       }
+    },
+    "doc": {
+      "songTitle": {
+        "doc": "the song's name"
+      },
+      "songTempo": {
+        "doc": "beats per minute"
+      },
+      "songMeter": {
+        "doc": "beats per bar over the beat unit"
+      },
+      "songGrid": {
+        "doc": "steps per beat, or `auto` to derive it from the durations written"
+      },
+      "songKey": {
+        "doc": "the home key"
+      },
+      "songSeed": {
+        "doc": "the root of every random choice"
+      },
+      "songBlock": {
+        "doc": "whole-song properties"
+      },
+      "channelInstrument": {
+        "doc": "what plays this part"
+      },
+      "channelMixer": {
+        "doc": "the mixer track to route to"
+      },
+      "channelRange": {
+        "doc": "the pitches this channel may use"
+      },
+      "channelVelocity": {
+        "doc": "0..127, optionally jittered"
+      },
+      "sharedOctave": {
+        "doc": "octaves to shift by"
+      },
+      "channelBlock": {
+        "doc": "one instrument"
+      },
+      "voicingSize": {
+        "doc": "how many voices sound"
+      },
+      "voicingSpread": {
+        "doc": "how the voices are laid out"
+      },
+      "voicingRegister": {
+        "doc": "where the voicing sits"
+      },
+      "voicingMotion": {
+        "doc": "how it moves from the chord before"
+      },
+      "voicingMaxLeap": {
+        "doc": "the largest jump one voice may make"
+      },
+      "voicingBass": {
+        "doc": "which note goes at the bottom - `from-inversion` honours `^N`"
+      },
+      "voicingBlock": {
+        "doc": "how a chord is laid out"
+      },
+      "rhythmBlock": {
+        "doc": "a cycle of durations"
+      },
+      "harmonyKey": {
+        "doc": "the key these numerals are read in"
+      },
+      "harmonyBlock": {
+        "doc": "a chord progression"
+      },
+      "sectionLength": {
+        "doc": "how long this section is"
+      },
+      "sectionHarmony": {
+        "doc": "which progression it uses"
+      },
+      "sectionBlock": {
+        "doc": "a named span of bars"
+      },
+      "partChords": {
+        "doc": "play the harmony, voiced"
+      },
+      "partLine": {
+        "doc": "play a single line"
+      },
+      "sharedRhythm": {
+        "doc": "which rhythm to use"
+      },
+      "partBlock": {
+        "doc": "what one channel plays in this section"
+      },
+      "sharedArticulation": {
+        "doc": "how long each note sounds"
+      },
+      "melodyContour": {
+        "doc": "the shape of the line"
+      },
+      "melodyStrong": {
+        "doc": "what may fall on a strong beat"
+      },
+      "sharedVariance": {
+        "doc": "0 is the same every compile; above 0 explores, reproducibly"
+      },
+      "melodyMute": {
+        "doc": "how many onsets become rests"
+      },
+      "melodyLeap": {
+        "doc": "the widest jump, and whether one has to be answered by a step"
+      },
+      "sharedAlign": {
+        "doc": "`bar` restarts the rhythm at each bar line; `continuous` lets it phase"
+      },
+      "melodyCadence": {
+        "doc": "which tone of the last chord to end on - `1`, or `choose [1 3 5] per instance`"
+      },
+      "melodyRange": {
+        "doc": "the pitches this melody may use"
+      },
+      "melodyBlock": {
+        "doc": "a generated single-voice line"
+      },
+      "counterpointRange": {
+        "doc": "the pitches this voice may use"
+      },
+      "counterpointParallelFifths": {
+        "doc": "two voices moving in parallel into a fifth"
+      },
+      "counterpointParallelOctaves": {
+        "doc": "the same, into an octave or a unison"
+      },
+      "counterpointDirectFifths": {
+        "doc": "both voices moving the same way INTO a fifth or an octave"
+      },
+      "counterpointVoiceCrossing": {
+        "doc": "this voice passing through the one it answers"
+      },
+      "counterpointDissonanceOnStrong": {
+        "doc": "a dissonant interval on a beat that carries weight"
+      },
+      "counterpointLeaps": {
+        "doc": "how much a jump costs"
+      },
+      "counterpointRepeats": {
+        "doc": "how much repeating the same pitch costs"
+      },
+      "counterpointBlock": {
+        "doc": "a voice written against another"
+      },
+      "imitateDelay": {
+        "doc": "how far behind the voice it copies"
+      },
+      "imitateTranspose": {
+        "doc": "how far up or down, in scale degrees or semitones"
+      },
+      "imitateMode": {
+        "doc": "`diatonic` stays in the key; `chromatic` moves exactly"
+      },
+      "imitateBlock": {
+        "doc": "a voice repeating another, later"
+      },
+      "arrangementBlock": {
+        "doc": "the order the sections play in"
+      },
+      "overridesBlock": {
+        "doc": "per-instance changes"
+      }
+    },
+    "kind": {
+      "text": {
+        "name": "a quoted string"
+      },
+      "integer": {
+        "name": "a whole number"
+      },
+      "number": {
+        "name": "a number"
+      },
+      "tempo": {
+        "name": "a tempo, like `96 bpm`"
+      },
+      "meter": {
+        "name": "a meter, like `4/4`"
+      },
+      "grid": {
+        "name": "`auto` or a number of steps per beat"
+      },
+      "key": {
+        "name": "a key, like `F minor`"
+      },
+      "seed": {
+        "name": "a number"
+      },
+      "pitchRange": {
+        "name": "a pitch range, like `C3..C5`"
+      },
+      "bars": {
+        "name": "a number of bars, like `8 bars`"
+      },
+      "jitteredInt": {
+        "name": "a number, optionally `+- n`"
+      },
+      "voices": {
+        "name": "a number of voices, like `4 voices`"
+      },
+      "muteBudget": {
+        "name": "a budget, like `1 of 4`"
+      },
+      "spread": {
+        "name": "a voicing spread"
+      },
+      "motion": {
+        "name": "a voice-leading motion"
+      },
+      "contour": {
+        "name": "a melodic contour"
+      },
+      "strongRule": {
+        "name": "a strong-beat rule"
+      },
+      "articulation": {
+        "name": "an articulation"
+      },
+      "lineSource": {
+        "name": "a line source"
+      },
+      "instrument": {
+        "name": "an instrument"
+      },
+      "rhythmRef": {
+        "name": "the name of a declared rhythm"
+      },
+      "voicingRef": {
+        "name": "the name of a declared voicing"
+      },
+      "harmonyRef": {
+        "name": "the name of a declared harmony"
+      },
+      "channelRef": {
+        "name": "the name of a declared channel"
+      },
+      "cadence": {
+        "name": "a chord tone to end on"
+      },
+      "rule": {
+        "name": "`forbid`, or `soft` and a weight"
+      },
+      "bassRule": {
+        "name": "which note goes at the bottom"
+      },
+      "leapRule": {
+        "name": "`max <semitones>`, and how a leap is answered"
+      },
+      "alignment": {
+        "name": "whether a rhythm restarts at each bar"
+      },
+      "transposeMode": {
+        "name": "`diatonic` or `chromatic`"
+      },
+      "scope": {
+        "name": "how often a choice is re-drawn"
+      },
+      "unknown": {
+        "name": "a value"
+      }
     }
   }
 }

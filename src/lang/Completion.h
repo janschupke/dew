@@ -24,8 +24,17 @@ enum class CompletionKind
 
 struct Completion
 {
-    std::string text;   ///< what gets inserted
-    std::string detail; ///< the schema's own doc, or what kind of thing it is
+    /** What gets inserted. Language SYNTAX - `harmony`, `1/8t`, `V7/vi` - and
+        therefore the same in every locale. It is never translated, for the same
+        reason a channel's name in a demo is never translated: it is a token the
+        compiler has to read back. */
+    std::string text;
+
+    /** What this is, in the reader's language: the schema's own doc, or the
+        kind's noun phrase. Resolved here rather than carried as a Msg because
+        the editor renders it and the tools print it, and neither should have to
+        know which locale a completion was asked for in. */
+    std::string detail;
     CompletionKind kind = CompletionKind::value;
 };
 
@@ -55,6 +64,7 @@ struct CompletionResult
     parse produced errors. Inside a comment or a string it offers nothing, which
     is the difference between completion and interference.
 */
-CompletionResult completionsAt (std::string_view source, std::uint32_t byteOffset);
+CompletionResult completionsAt (std::string_view source, std::uint32_t byteOffset,
+                                Locale locale = referenceLocale);
 
 } // namespace dew::lang

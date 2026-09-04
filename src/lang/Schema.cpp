@@ -79,45 +79,48 @@ std::string_view closestOf (const std::vector<std::string_view>& candidates,
 } // namespace
 
 // clang-format off
-const char* nameOf (ValueKind kind) noexcept
+Msg nameOf (ValueKind kind) noexcept
 {
     switch (kind)
     {
-        case ValueKind::text:         return "a quoted string";
-        case ValueKind::integer:      return "a whole number";
-        case ValueKind::number:       return "a number";
-        case ValueKind::tempo:        return "a tempo, like `96 bpm`";
-        case ValueKind::meter:        return "a meter, like `4/4`";
-        case ValueKind::grid:         return "`auto` or a number of steps per beat";
-        case ValueKind::key:          return "a key, like `F minor`";
-        case ValueKind::seed:         return "a number";
-        case ValueKind::pitchRange:   return "a pitch range, like `C3..C5`";
-        case ValueKind::bars:         return "a number of bars, like `8 bars`";
-        case ValueKind::jitteredInt:  return "a number, optionally `+- n`";
-        case ValueKind::voices:       return "a number of voices, like `4 voices`";
-        case ValueKind::muteBudget:   return "a budget, like `1 of 4`";
-        case ValueKind::spread:       return "a voicing spread";
-        case ValueKind::motion:       return "a voice-leading motion";
-        case ValueKind::contour:      return "a melodic contour";
-        case ValueKind::strongRule:   return "a strong-beat rule";
-        case ValueKind::articulation: return "an articulation";
-        case ValueKind::lineSource:   return "a line source";
-        case ValueKind::instrument:   return "an instrument";
-        case ValueKind::rhythmRef:    return "the name of a declared rhythm";
-        case ValueKind::voicingRef:   return "the name of a declared voicing";
-        case ValueKind::harmonyRef:   return "the name of a declared harmony";
-        case ValueKind::channelRef:   return "the name of a declared channel";
-        case ValueKind::cadence:      return "a chord tone to end on";
-        case ValueKind::rule:         return "`forbid`, or `soft` and a weight";
-        case ValueKind::bassRule:     return "which note goes at the bottom";
-        case ValueKind::leapRule:     return "`max <semitones>`, and how a leap is answered";
-        case ValueKind::alignment:    return "whether a rhythm restarts at each bar";
-        case ValueKind::transposeMode: return "`diatonic` or `chromatic`";
-        case ValueKind::scope:        return "how often a choice is re-drawn";
+        case ValueKind::text:         return Msg::kind_text_name;
+        case ValueKind::integer:      return Msg::kind_integer_name;
+        case ValueKind::number:       return Msg::kind_number_name;
+        case ValueKind::tempo:        return Msg::kind_tempo_name;
+        case ValueKind::meter:        return Msg::kind_meter_name;
+        case ValueKind::grid:         return Msg::kind_grid_name;
+        case ValueKind::key:          return Msg::kind_key_name;
+        case ValueKind::seed:         return Msg::kind_seed_name;
+        case ValueKind::pitchRange:   return Msg::kind_pitchRange_name;
+        case ValueKind::bars:         return Msg::kind_bars_name;
+        case ValueKind::jitteredInt:  return Msg::kind_jitteredInt_name;
+        case ValueKind::voices:       return Msg::kind_voices_name;
+        case ValueKind::muteBudget:   return Msg::kind_muteBudget_name;
+        case ValueKind::spread:       return Msg::kind_spread_name;
+        case ValueKind::motion:       return Msg::kind_motion_name;
+        case ValueKind::contour:      return Msg::kind_contour_name;
+        case ValueKind::strongRule:   return Msg::kind_strongRule_name;
+        case ValueKind::articulation: return Msg::kind_articulation_name;
+        case ValueKind::lineSource:   return Msg::kind_lineSource_name;
+        case ValueKind::instrument:   return Msg::kind_instrument_name;
+        case ValueKind::rhythmRef:    return Msg::kind_rhythmRef_name;
+        case ValueKind::voicingRef:   return Msg::kind_voicingRef_name;
+        case ValueKind::harmonyRef:   return Msg::kind_harmonyRef_name;
+        case ValueKind::channelRef:   return Msg::kind_channelRef_name;
+        case ValueKind::cadence:      return Msg::kind_cadence_name;
+        case ValueKind::rule:         return Msg::kind_rule_name;
+        case ValueKind::bassRule:     return Msg::kind_bassRule_name;
+        case ValueKind::leapRule:     return Msg::kind_leapRule_name;
+        case ValueKind::alignment:    return Msg::kind_alignment_name;
+        case ValueKind::transposeMode: return Msg::kind_transposeMode_name;
+        case ValueKind::scope:        return Msg::kind_scope_name;
     }
 
     // clang-format on
-    return "a value";
+    // Unreachable while the switch is exhaustive, and -Wswitch-enum under the
+    // ci preset is what keeps it so. A kind added to the enum fails to compile
+    // above rather than falling through to this.
+    return Msg::kind_unknown_name;
 }
 
 // clang-format off
@@ -237,118 +240,117 @@ const std::vector<BlockSpec>& schema()
 {
     static const std::vector<BlockSpec> table {
         { BlockKind::song,
-          { { "title", ValueKind::text,   false, false, "the song's name" },
-            { "tempo", ValueKind::tempo,  true,  false, "beats per minute" },
-            { "meter", ValueKind::meter,  true,  false, "beats per bar over the beat unit" },
+          { { "title", ValueKind::text,   false, false, Msg::doc_songTitle_doc },
+            { "tempo", ValueKind::tempo,  true,  false, Msg::doc_songTempo_doc },
+            { "meter", ValueKind::meter,  true,  false, Msg::doc_songMeter_doc },
             { "grid",  ValueKind::grid,   false, false,
-              "steps per beat, or `auto` to derive it from the durations written" },
-            { "key",   ValueKind::key,    true,  false, "the home key" },
-            { "seed",  ValueKind::seed,   false, false, "the root of every random choice" } },
+              Msg::doc_songGrid_doc },
+            { "key",   ValueKind::key,    true,  false, Msg::doc_songKey_doc },
+            { "seed",  ValueKind::seed,   false, false, Msg::doc_songSeed_doc } },
           {},
-          "whole-song properties", true },
+          Msg::doc_songBlock_doc, true },
 
         { BlockKind::channel,
-          { { "instrument", ValueKind::instrument,  false, false, "what plays this part" },
-            { "mixer",      ValueKind::integer,     false, false, "the mixer track to route to" },
-            { "range",      ValueKind::pitchRange,  false, false, "the pitches this channel may use" },
-            { "velocity",   ValueKind::jitteredInt, false, true,  "0..127, optionally jittered" },
-            { "octave",     ValueKind::integer,     false, true,  "octaves to shift by" } },
+          { { "instrument", ValueKind::instrument,  false, false, Msg::doc_channelInstrument_doc },
+            { "mixer",      ValueKind::integer,     false, false, Msg::doc_channelMixer_doc },
+            { "range",      ValueKind::pitchRange,  false, false, Msg::doc_channelRange_doc },
+            { "velocity",   ValueKind::jitteredInt, false, true,  Msg::doc_channelVelocity_doc },
+            { "octave",     ValueKind::integer,     false, true,  Msg::doc_sharedOctave_doc } },
           {},
-          "one instrument", true },
+          Msg::doc_channelBlock_doc, true },
 
         { BlockKind::voicing,
-          { { "size",     ValueKind::voices,     false, false, "how many voices sound" },
-            { "spread",   ValueKind::spread,     false, false, "how the voices are laid out" },
-            { "register", ValueKind::pitchRange, false, false, "where the voicing sits" },
-            { "motion",   ValueKind::motion,     false, false, "how it moves from the chord before" },
-            { "maxLeap",  ValueKind::integer,    false, false, "the largest jump one voice may make" },
+          { { "size",     ValueKind::voices,     false, false, Msg::doc_voicingSize_doc },
+            { "spread",   ValueKind::spread,     false, false, Msg::doc_voicingSpread_doc },
+            { "register", ValueKind::pitchRange, false, false, Msg::doc_voicingRegister_doc },
+            { "motion",   ValueKind::motion,     false, false, Msg::doc_voicingMotion_doc },
+            { "maxLeap",  ValueKind::integer,    false, false, Msg::doc_voicingMaxLeap_doc },
             { "bass",     ValueKind::bassRule,   false, false,
-              "which note goes at the bottom - `from-inversion` honours `^N`" } },
+              Msg::doc_voicingBass_doc } },
           {},
-          "how a chord is laid out", true },
+          Msg::doc_voicingBlock_doc, true },
 
-        { BlockKind::rhythm, {}, {}, "a cycle of durations", true },
+        { BlockKind::rhythm, {}, {}, Msg::doc_rhythmBlock_doc, true },
 
         { BlockKind::harmony,
-          { { "key", ValueKind::key, false, false, "the key these numerals are read in" } },
+          { { "key", ValueKind::key, false, false, Msg::doc_harmonyKey_doc } },
           {},
-          "a chord progression", true },
+          Msg::doc_harmonyBlock_doc, true },
 
         { BlockKind::section,
-          { { "length",  ValueKind::bars,       true,  false, "how long this section is" },
-            { "harmony", ValueKind::harmonyRef, false, false, "which progression it uses" } },
+          { { "length",  ValueKind::bars,       true,  false, Msg::doc_sectionLength_doc },
+            { "harmony", ValueKind::harmonyRef, false, false, Msg::doc_sectionHarmony_doc } },
           { BlockKind::part, BlockKind::harmony },
-          "a named span of bars", true },
+          Msg::doc_sectionBlock_doc, true },
 
         { BlockKind::part,
-          { { "chords", ValueKind::voicingRef, false, false, "play the harmony, voiced" },
-            { "line",   ValueKind::lineSource, false, false, "play a single line" },
-            { "rhythm", ValueKind::rhythmRef,  false, true,  "which rhythm to use" },
-            { "octave", ValueKind::integer,    false, true,  "octaves to shift by" } },
+          { { "chords", ValueKind::voicingRef, false, false, Msg::doc_partChords_doc },
+            { "line",   ValueKind::lineSource, false, false, Msg::doc_partLine_doc },
+            { "rhythm", ValueKind::rhythmRef,  false, true,  Msg::doc_sharedRhythm_doc },
+            { "octave", ValueKind::integer,    false, true,  Msg::doc_sharedOctave_doc } },
           { BlockKind::melody, BlockKind::counterpoint, BlockKind::imitate,
             BlockKind::rhythm },
-          "what one channel plays in this section" },
+          Msg::doc_partBlock_doc },
 
         { BlockKind::melody,
-          { { "rhythm",       ValueKind::rhythmRef,   false, true,  "which rhythm to use" },
-            { "articulation", ValueKind::articulation, false, true, "how long each note sounds" },
-            { "contour",      ValueKind::contour,     false, true,  "the shape of the line" },
-            { "strong",       ValueKind::strongRule,  false, true,  "what may fall on a strong beat" },
+          { { "rhythm",       ValueKind::rhythmRef,   false, true,  Msg::doc_sharedRhythm_doc },
+            { "articulation", ValueKind::articulation, false, true, Msg::doc_sharedArticulation_doc },
+            { "contour",      ValueKind::contour,     false, true,  Msg::doc_melodyContour_doc },
+            { "strong",       ValueKind::strongRule,  false, true,  Msg::doc_melodyStrong_doc },
             { "variance",     ValueKind::number,      false, true,
-              "0 is the same every compile; above 0 explores, reproducibly" },
-            { "mute",         ValueKind::muteBudget,  false, true,  "how many onsets become rests" },
+              Msg::doc_sharedVariance_doc },
+            { "mute",         ValueKind::muteBudget,  false, true,  Msg::doc_melodyMute_doc },
             { "leap",         ValueKind::leapRule,    false, true,
-              "the widest jump, and whether one has to be answered by a step" },
+              Msg::doc_melodyLeap_doc },
             { "align",        ValueKind::alignment,   false, true,
-              "`bar` restarts the rhythm at each bar line; `continuous` lets it phase" },
+              Msg::doc_sharedAlign_doc },
             { "cadence",      ValueKind::cadence,     false, true,
-              "which tone of the last chord to end on - `1`, or "
-              "`choose [1 3 5] per instance`" },
-            { "range",        ValueKind::pitchRange,  false, true,  "the pitches this melody may use" } },
+              Msg::doc_melodyCadence_doc },
+            { "range",        ValueKind::pitchRange,  false, true,  Msg::doc_melodyRange_doc } },
           { BlockKind::rhythm },
-          "a generated single-voice line" },
+          Msg::doc_melodyBlock_doc },
 
         { BlockKind::counterpoint,
-          { { "rhythm",       ValueKind::rhythmRef,    false, true,  "which rhythm to use" },
-            { "articulation", ValueKind::articulation, false, true,  "how long each note sounds" },
-            { "range",        ValueKind::pitchRange,   false, true,  "the pitches this voice may use" },
+          { { "rhythm",       ValueKind::rhythmRef,    false, true,  Msg::doc_sharedRhythm_doc },
+            { "articulation", ValueKind::articulation, false, true,  Msg::doc_sharedArticulation_doc },
+            { "range",        ValueKind::pitchRange,   false, true,  Msg::doc_counterpointRange_doc },
             { "variance",     ValueKind::number,       false, true,
-              "0 is the same every compile; above 0 explores, reproducibly" },
+              Msg::doc_sharedVariance_doc },
             { "align",        ValueKind::alignment,    false, true,
-              "`bar` restarts the rhythm at each bar line; `continuous` lets it phase" },
+              Msg::doc_sharedAlign_doc },
 
             // The rules, as a closed set. Open-ended ones would be a constraint
             // solver by another name, and completion could not offer them.
             { "parallel-fifths",  ValueKind::rule, false, true,
-              "two voices moving in parallel into a fifth" },
+              Msg::doc_counterpointParallelFifths_doc },
             { "parallel-octaves", ValueKind::rule, false, true,
-              "the same, into an octave or a unison" },
+              Msg::doc_counterpointParallelOctaves_doc },
             { "direct-fifths",    ValueKind::rule, false, true,
-              "both voices moving the same way INTO a fifth or an octave" },
+              Msg::doc_counterpointDirectFifths_doc },
             { "voice-crossing",   ValueKind::rule, false, true,
-              "this voice passing through the one it answers" },
+              Msg::doc_counterpointVoiceCrossing_doc },
             { "dissonance-on-strong", ValueKind::rule, false, true,
-              "a dissonant interval on a beat that carries weight" },
-            { "leaps",            ValueKind::rule, false, true,  "how much a jump costs" },
+              Msg::doc_counterpointDissonanceOnStrong_doc },
+            { "leaps",            ValueKind::rule, false, true,  Msg::doc_counterpointLeaps_doc },
             { "repeats",          ValueKind::rule, false, true,
-              "how much repeating the same pitch costs" } },
+              Msg::doc_counterpointRepeats_doc } },
           { BlockKind::rhythm },
-          "a voice written against another" },
+          Msg::doc_counterpointBlock_doc },
 
         { BlockKind::imitate,
           { { "delay",     ValueKind::bars,          true,  true,
-              "how far behind the voice it copies" },
+              Msg::doc_imitateDelay_doc },
             { "transpose", ValueKind::integer,       false, true,
-              "how far up or down, in scale degrees or semitones" },
+              Msg::doc_imitateTranspose_doc },
             { "mode",      ValueKind::transposeMode, false, true,
-              "`diatonic` stays in the key; `chromatic` moves exactly" } },
+              Msg::doc_imitateMode_doc } },
           {},
-          "a voice repeating another, later" },
+          Msg::doc_imitateBlock_doc },
 
         // clang-format on
-        { BlockKind::arrangement, {}, {}, "the order the sections play in", true },
+        { BlockKind::arrangement, {}, {}, Msg::doc_arrangementBlock_doc, true },
 
-        { BlockKind::overrides, {}, { BlockKind::part }, "per-instance changes" },
+        { BlockKind::overrides, {}, { BlockKind::part }, Msg::doc_overridesBlock_doc },
     };
 
     return table;

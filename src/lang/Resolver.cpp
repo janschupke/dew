@@ -115,8 +115,9 @@ void Resolver::wrongValue (const Statement& statement, ValueKind kind)
 {
     auto& d = diagnostics.error (
         "E207",
-        diagnostics.text (Msg::resolver_wrongValue_message,
-                          MsgArgs {}.with ("key", statement.key).with ("kind", nameOf (kind))),
+        diagnostics.text (
+            Msg::resolver_wrongValue_message,
+            MsgArgs {}.with ("key", statement.key).with ("kind", diagnostics.text (nameOf (kind)))),
         statement.range, diagnostics.text (Msg::resolver_wrongValue_label));
 
     if (const auto& members = membersOf (kind); ! members.empty())

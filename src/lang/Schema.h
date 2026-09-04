@@ -3,6 +3,8 @@
 #include <string_view>
 #include <vector>
 
+#include "lang/Messages.h"
+
 namespace dew::lang
 {
 
@@ -48,7 +50,15 @@ enum class ValueKind
     channelRef     ///< a declared channel's name
 };
 
-const char* nameOf (ValueKind) noexcept;
+/** What this kind accepts, as a noun phrase - "a tempo, like `96 bpm`".
+
+    A Msg rather than a const char*, because this is PROSE: it is spliced into
+    E204 and E207 and it is what the website's reference shows against every
+    key. nameOf (BlockKind) beside it stays a const char* and must, because that
+    is the KEYWORD - `song`, `channel` - which is language syntax and identical
+    in every locale. The two overloads reading differently is the point.
+*/
+Msg nameOf (ValueKind) noexcept;
 
 /** The values an enum-shaped kind accepts, for validation and completion.
     Empty for kinds whose values are not a fixed list.
@@ -95,7 +105,7 @@ struct KeySpec
     */
     bool overridable = false;
 
-    std::string_view doc;
+    Msg doc;
 };
 
 struct BlockSpec
@@ -103,7 +113,7 @@ struct BlockSpec
     BlockKind kind;
     std::vector<KeySpec> keys;
     std::vector<BlockKind> children;
-    std::string_view doc;
+    Msg doc;
 
     /** May this block be written at the top level of a file?
 
