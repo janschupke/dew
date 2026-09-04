@@ -32,8 +32,12 @@ juce::Path iconForType (EffectType type)
         case EffectType::reverb: return icons::effectReverb();
         case EffectType::delay: return icons::effectDelay();
         case EffectType::drive: return icons::effectDrive();
+        case EffectType::distortion: return icons::effectDistortion();
         case EffectType::chorus: return icons::effectChorus();
+        case EffectType::phaser: return icons::effectPhaser();
         case EffectType::eq: return icons::effectEq();
+        case EffectType::compressor: return icons::effectCompressor();
+        case EffectType::limiter: return icons::effectLimiter();
     }
 
     jassertfalse;
@@ -131,6 +135,13 @@ void EffectCard::refreshValues()
     const juce::ScopedValueSetter<bool> quiet (updating, true);
 
     bypassButton.setToggleState (! (bool) effect[ids::enabled], juce::dontSendNotification);
+
+    // The mode box refreshes with the rest. It did not before, so a filter mode
+    // changed by an undo, a preset or an automation write left the box showing
+    // what it used to be - which only got easier to hit once a second type had
+    // one.
+    if (modeBox != nullptr)
+        modeBox->setSelectedId (selectedChoiceId(), juce::dontSendNotification);
 
     for (auto* control : params)
     {
@@ -287,7 +298,7 @@ void EffectCard::paint (juce::Graphics& g)
     // The mode box is the one control in a row that does not caption
     // itself, so beside captioned knobs it would be the odd one out.
     if (! modeCaptionBounds.isEmpty())
-        paint::caption (g, modeCaptionBounds, "MODE", juce::Justification::centred);
+        paint::caption (g, modeCaptionBounds, modeCaption, juce::Justification::centred);
 }
 
 void EffectCard::resized()
@@ -419,43 +430,75 @@ void EffectCard::write (const juce::Identifier& property, double value)
     gestureActive = inDrag;
 }
 
+void EffectCard::buildChoice (const ParamSpec& spec)
+{
+    // A pointer into the DESCRIPTOR's table, which is static, and deliberately
+    // not into effectParamsFor's vector, which is a copy that dies at the end of
+    // buildParameters. The dropdown outlives that call.
+    modeSpec = &spec;
+
+    // From the spec, not from three addItem calls and two triple-ternaries
+    // mapping ids to strings by hand. The catalog already carries the choices,
+    // their display names and the default - and it had to, because the schema,
+    // the file reader and the automation range all read them from there. The
+    // editor was the one place that restated them, which is why a second type
+    // with a mode had a parameter in the file and no control on the card.
+    modeBox = std::make_unique<DewDropdown>();
+    modeCaption = spec.caption;
+
+    for (int i = 0; i < spec.numChoices; ++i)
+        modeBox->addItem (spec.choices[i].displayName, i + 1);
+
+    modeBox->setSelectedId (selectedChoiceId(), juce::dontSendNotification);
+
+    modeBox->onChange = [this]
+    {
+        if (updating)
+            return;
+
+        const auto choice = juce::jlimit (0, modeSpec->numChoices - 1,
+                                          modeBox->getSelectedId() - 1);
+
+        ProjectEdits::setProperty (effect, *modeSpec->property, modeSpec->choices[choice].id,
+                                   &document.getUndoManager(), "Change effect mode");
+    };
+
+    addAndMakeVisible (*modeBox);
+}
+
+int EffectCard::selectedChoiceId() const
+{
+    const auto stored = effect.getProperty (*modeSpec->property, modeSpec->defaultVar()).toString();
+
+    for (int i = 0; i < modeSpec->numChoices; ++i)
+        if (stored == modeSpec->choices[i].id)
+            return i + 1;
+
+    return 1;
+}
+
 void EffectCard::buildParameters()
 {
-    if (type == EffectType::filter)
+    const auto& descriptor = effectDescriptor (type);
+
+    for (int i = 0; i < descriptor.numParams; ++i)
     {
-        modeBox = std::make_unique<DewDropdown>();
-        modeBox->addItem ("Low pass", 1);
-        modeBox->addItem ("High pass", 2);
-        modeBox->addItem ("Band pass", 3);
+        if (descriptor.params[i].control != ParamControl::choice)
+            continue;
 
-        const auto mode = filterModeFromString (effect[ids::filterMode].toString());
-        modeBox->setSelectedId (mode == FilterMode::lowpass    ? 1
-                                : mode == FilterMode::highpass ? 2
-                                                               : 3,
-                                juce::dontSendNotification);
+        // One per type is what the card has room for: the box takes a column of
+        // its own beside the knobs. No type declares two, and this says so.
+        jassert (modeBox == nullptr);
 
-        modeBox->onChange = [this]
-        {
-            if (updating)
-                return;
-
-            ProjectEdits::setProperty (effect, ids::filterMode,
-                                       modeBox->getSelectedId() == 2   ? "highpass"
-                                       : modeBox->getSelectedId() == 3 ? "bandpass"
-                                                                       : "lowpass",
-                                       &document.getUndoManager(), "Change filter mode");
-        };
-
-        addAndMakeVisible (*modeBox);
+        if (modeBox == nullptr)
+            buildChoice (descriptor.params[i]);
     }
 
     for (const auto& spec : effectParamsFor (type))
     {
-        // The filter's mode is a named set, not a number, and it has its own
-        // combo box above. Everything else the catalog declares gets a
-        // control here - which is how the EQ finally shows its mix, a
-        // parameter the engine has always applied and this editor never
-        // offered.
+        // A named set is not a number: it gets the dropdown above rather than a
+        // knob. One per type is what the card has room for - the box sits in a
+        // column of its own beside the knobs - and no type declares two.
         if (spec.control == ParamControl::choice)
             continue;
 

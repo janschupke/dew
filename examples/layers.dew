@@ -1,5 +1,5 @@
 {
-    "formatVersion": 13,
+    "formatVersion": 14,
     "name": "Neon",
     "tempoBpm": 108.0,
     "stepsPerBeat": 4,
@@ -207,12 +207,21 @@
             "feedback": 0.35,
             "drive": 2.0,
             "outputGain": 1.0,
+            "distortionMode": "softClip",
+            "tone": 0.5,
             "rate": 1.2,
             "depth": 0.3,
+            "centreFreq": 600.0,
             "lowGainDb": 0.0,
             "midGainDb": 0.0,
             "midFreq": 900.0,
-            "highGainDb": 0.0
+            "highGainDb": 0.0,
+            "threshold": -18.0,
+            "ratio": 4.0,
+            "attackMs": 10.0,
+            "releaseMs": 100.0,
+            "makeup": 0.0,
+            "ceiling": -0.3
           }
         ]
       },
@@ -323,12 +332,21 @@
             "feedback": 0.35,
             "drive": 2.0,
             "outputGain": 1.0,
+            "distortionMode": "softClip",
+            "tone": 0.5,
             "rate": 0.45,
             "depth": 0.35,
+            "centreFreq": 600.0,
             "lowGainDb": 0.0,
             "midGainDb": 0.0,
             "midFreq": 900.0,
-            "highGainDb": 0.0
+            "highGainDb": 0.0,
+            "threshold": -18.0,
+            "ratio": 4.0,
+            "attackMs": 10.0,
+            "releaseMs": 100.0,
+            "makeup": 0.0,
+            "ceiling": -0.3
           }
         ]
       },
@@ -3967,12 +3985,21 @@
               "feedback": 0.38,
               "drive": 2.0,
               "outputGain": 1.0,
+              "distortionMode": "softClip",
+              "tone": 0.5,
               "rate": 1.2,
               "depth": 0.3,
+              "centreFreq": 600.0,
               "lowGainDb": 0.0,
               "midGainDb": 0.0,
               "midFreq": 900.0,
-              "highGainDb": 0.0
+              "highGainDb": 0.0,
+              "threshold": -18.0,
+              "ratio": 4.0,
+              "attackMs": 10.0,
+              "releaseMs": 100.0,
+              "makeup": 0.0,
+              "ceiling": -0.3
             }
           ]
         }

@@ -17,8 +17,11 @@ using Catch::Approx;
 namespace
 {
 
-const juce::Array<EffectType> allTypes { EffectType::filter, EffectType::reverb, EffectType::delay,
-                                         EffectType::drive,  EffectType::chorus, EffectType::eq };
+const juce::Array<EffectType> allTypes { EffectType::filter,     EffectType::reverb,
+                                         EffectType::delay,      EffectType::drive,
+                                         EffectType::chorus,     EffectType::eq,
+                                         EffectType::distortion, EffectType::phaser,
+                                         EffectType::compressor, EffectType::limiter };
 
 } // namespace
 

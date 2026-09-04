@@ -1,0 +1,13 @@
+{
+    "format": "dew-preset",
+    "formatVersion": 1,
+    "kind": "effect",
+    "type": "limiter",
+    "name": "Master Ceiling",
+    "description": "Just under full scale, and slow enough not to pump.",
+    "state": {
+      "ceiling": -0.3,
+      "releaseMs": 200.0,
+      "mix": 1.0
+    }
+  }

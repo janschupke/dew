@@ -1,0 +1,16 @@
+{
+    "format": "dew-preset",
+    "formatVersion": 1,
+    "kind": "effect",
+    "type": "compressor",
+    "name": "Squash",
+    "description": "Fast and hard, for a level that does not move at all.",
+    "state": {
+      "threshold": -30.0,
+      "ratio": 12.0,
+      "attackMs": 1.0,
+      "releaseMs": 40.0,
+      "makeup": 9.0,
+      "mix": 1.0
+    }
+  }

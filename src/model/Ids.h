@@ -192,6 +192,23 @@ DEW_DECLARE_ID (drive)
 DEW_DECLARE_ID (outputGain)
 DEW_DECLARE_ID (rate)
 DEW_DECLARE_ID (depth)
+DEW_DECLARE_ID (centreFreq)
+DEW_DECLARE_ID (distortionMode)
+DEW_DECLARE_ID (tone)
+
+// The dynamics pair. `attackMs` and `releaseMs` rather than `attack` and
+// `release`, which the amp envelope already owns in SECONDS - the same word for
+// a different unit is how the four tables drifted the first time. `ceiling`
+// rather than a second `threshold` for the same reason: one EFFECT node carries
+// every type's parameters and a shared identifier must share its default, and
+// -18 dB is not what a limiter's ceiling should default to.
+DEW_DECLARE_ID (threshold)
+DEW_DECLARE_ID (ratio)
+DEW_DECLARE_ID (attackMs)
+DEW_DECLARE_ID (releaseMs)
+DEW_DECLARE_ID (makeup)
+DEW_DECLARE_ID (ceiling)
+
 DEW_DECLARE_ID (lowGainDb)
 DEW_DECLARE_ID (midGainDb)
 DEW_DECLARE_ID (midFreq)

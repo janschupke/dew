@@ -276,12 +276,21 @@ enum class AutomationParam
     midGainDb,
     midFreq,
     highGainDb,
+    tone,
+    centreFreq,
+    threshold,
+    ratio,
+    attackMs,
+    releaseMs,
+    makeup,
+    ceiling,
 
     /** Discrete ones. filterMode needs an enumerator even though it travels
         through paramIndex like any other block parameter, because buildSnapshot
         DROPS an automation whose param is `none` - so without a row here a
         filter-mode curve would be silently ignored. */
     filterMode,
+    distortionMode,
     enabled,    ///< an effect slot's bypass
     oscEnabled, ///< an oscillator slot's on/off
     muted,      ///< a channel's or a mixer track's mute

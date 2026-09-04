@@ -18,17 +18,35 @@ enum class EffectType
     reverb,
     delay,
     drive,
+    distortion,
     chorus,
-    eq
+    phaser,
+    eq,
+    compressor,
+    limiter
 };
 
-inline constexpr int kNumEffectTypes = 6;
+inline constexpr int kNumEffectTypes = 10;
 
 enum class FilterMode
 {
     lowpass,
     highpass,
     bandpass
+};
+
+/** How a distortion slot shapes a sample.
+
+    Separate from FilterMode rather than one shared enum, because the two name
+    positions in different tables and a shared enum would let a filter's mode
+    index a distortion's shaper with no complaint from anything.
+*/
+enum class DistortionMode
+{
+    softClip,
+    hardClip,
+    fold,
+    crush
 };
 
 // clang-format on

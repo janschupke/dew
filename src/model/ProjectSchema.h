@@ -125,8 +125,16 @@ struct NodeSpec
     turns out to be. An earlier file loads as what it was, and a v13 file opened
     in an older build loses the font a channel was pointed at rather than
     misreading it. Bumped for that.
+
+    v14 added four effect types - distortion, phaser, compressor and limiter -
+    and with them nine parameters on the one EFFECT node every type shares.
+    Additive with declared defaults, so a v13 file loads as exactly what it was.
+    The bump is for the other direction: an older build has no descriptor for
+    "compressor", so effectTypeFor returns nothing and the slot would be dropped
+    on the next save with nothing said. The version gate turns that into a
+    refusal, which is the whole reason it exists.
 */
-inline constexpr int kFormatVersion = 13;
+inline constexpr int kFormatVersion = 14;
 
 /** How many effects one channel or mixer track may carry. A document limit
     rather than an engine one: a chain longer than this cannot be saved, so it

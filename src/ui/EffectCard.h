@@ -5,6 +5,7 @@
 #include <juce_gui_basics/juce_gui_basics.h>
 
 #include "model/EffectType.h"
+#include "model/ParamSpec.h"
 
 #include "app/ProjectDocument.h"
 #include "ui/EditorState.h"
@@ -130,6 +131,12 @@ private:
     void write (const juce::Identifier& property, double value);
     void buildParameters();
 
+    /** The dropdown for a type's one choice parameter, built from its spec. */
+    void buildChoice (const ParamSpec& spec);
+
+    /** The item id the stored value names, one-based the way a ComboBox is. */
+    int selectedChoiceId() const;
+
     EffectChainComponent& owner;
     ProjectDocument& document;
     EditorState& editorState;
@@ -157,6 +164,11 @@ private:
 
     juce::OwnedArray<ParamWidget> params;
     std::unique_ptr<DewDropdown> modeBox;
+
+    /** The choice parameter the box edits, pointing into the descriptor's
+        static table. Null whenever the type declares no choice. */
+    const ParamSpec* modeSpec = nullptr;
+    juce::String modeCaption;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (EffectCard)
 };

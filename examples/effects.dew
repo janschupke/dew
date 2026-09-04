@@ -1,5 +1,5 @@
 {
-    "formatVersion": 13,
+    "formatVersion": 14,
     "name": "Effect Chain",
     "tempoBpm": 110.0,
     "stepsPerBeat": 4,
@@ -114,12 +114,21 @@
             "feedback": 0.35,
             "drive": 2.0,
             "outputGain": 1.0,
+            "distortionMode": "softClip",
+            "tone": 0.5,
             "rate": 1.2,
             "depth": 0.3,
+            "centreFreq": 600.0,
             "lowGainDb": 0.0,
             "midGainDb": 0.0,
             "midFreq": 900.0,
-            "highGainDb": 0.0
+            "highGainDb": 0.0,
+            "threshold": -18.0,
+            "ratio": 4.0,
+            "attackMs": 10.0,
+            "releaseMs": 100.0,
+            "makeup": 0.0,
+            "ceiling": -0.3
           },
           {
             "id": 2,
@@ -136,12 +145,21 @@
             "feedback": 0.35,
             "drive": 3.5,
             "outputGain": 0.75,
+            "distortionMode": "softClip",
+            "tone": 0.5,
             "rate": 1.2,
             "depth": 0.3,
+            "centreFreq": 600.0,
             "lowGainDb": 0.0,
             "midGainDb": 0.0,
             "midFreq": 900.0,
-            "highGainDb": 0.0
+            "highGainDb": 0.0,
+            "threshold": -18.0,
+            "ratio": 4.0,
+            "attackMs": 10.0,
+            "releaseMs": 100.0,
+            "makeup": 0.0,
+            "ceiling": -0.3
           },
           {
             "id": 3,
@@ -158,12 +176,21 @@
             "feedback": 0.35,
             "drive": 2.0,
             "outputGain": 1.0,
+            "distortionMode": "softClip",
+            "tone": 0.5,
             "rate": 0.6,
             "depth": 0.45,
+            "centreFreq": 600.0,
             "lowGainDb": 0.0,
             "midGainDb": 0.0,
             "midFreq": 900.0,
-            "highGainDb": 0.0
+            "highGainDb": 0.0,
+            "threshold": -18.0,
+            "ratio": 4.0,
+            "attackMs": 10.0,
+            "releaseMs": 100.0,
+            "makeup": 0.0,
+            "ceiling": -0.3
           },
           {
             "id": 4,
@@ -180,12 +207,21 @@
             "feedback": 0.3,
             "drive": 2.0,
             "outputGain": 1.0,
+            "distortionMode": "softClip",
+            "tone": 0.5,
             "rate": 1.2,
             "depth": 0.3,
+            "centreFreq": 600.0,
             "lowGainDb": 0.0,
             "midGainDb": 0.0,
             "midFreq": 900.0,
-            "highGainDb": 0.0
+            "highGainDb": 0.0,
+            "threshold": -18.0,
+            "ratio": 4.0,
+            "attackMs": 10.0,
+            "releaseMs": 100.0,
+            "makeup": 0.0,
+            "ceiling": -0.3
           }
         ]
       },
@@ -296,12 +332,21 @@
             "feedback": 0.35,
             "drive": 2.0,
             "outputGain": 1.0,
+            "distortionMode": "softClip",
+            "tone": 0.5,
             "rate": 1.2,
             "depth": 0.3,
+            "centreFreq": 600.0,
             "lowGainDb": 0.0,
             "midGainDb": 0.0,
             "midFreq": 900.0,
-            "highGainDb": 0.0
+            "highGainDb": 0.0,
+            "threshold": -18.0,
+            "ratio": 4.0,
+            "attackMs": 10.0,
+            "releaseMs": 100.0,
+            "makeup": 0.0,
+            "ceiling": -0.3
           },
           {
             "id": 6,
@@ -318,12 +363,21 @@
             "feedback": 0.35,
             "drive": 2.0,
             "outputGain": 1.0,
+            "distortionMode": "softClip",
+            "tone": 0.5,
             "rate": 1.2,
             "depth": 0.3,
+            "centreFreq": 600.0,
             "lowGainDb": -6.0,
             "midGainDb": 0.0,
             "midFreq": 900.0,
-            "highGainDb": 4.5
+            "highGainDb": 4.5,
+            "threshold": -18.0,
+            "ratio": 4.0,
+            "attackMs": 10.0,
+            "releaseMs": 100.0,
+            "makeup": 0.0,
+            "ceiling": -0.3
           }
         ]
       },
@@ -434,12 +488,21 @@
             "feedback": 0.35,
             "drive": 6.0,
             "outputGain": 0.9,
+            "distortionMode": "softClip",
+            "tone": 0.5,
             "rate": 1.2,
             "depth": 0.3,
+            "centreFreq": 600.0,
             "lowGainDb": 0.0,
             "midGainDb": 0.0,
             "midFreq": 900.0,
-            "highGainDb": 0.0
+            "highGainDb": 0.0,
+            "threshold": -18.0,
+            "ratio": 4.0,
+            "attackMs": 10.0,
+            "releaseMs": 100.0,
+            "makeup": 0.0,
+            "ceiling": -0.3
           },
           {
             "id": 8,
@@ -456,12 +519,21 @@
             "feedback": 0.35,
             "drive": 2.0,
             "outputGain": 1.0,
+            "distortionMode": "softClip",
+            "tone": 0.5,
             "rate": 1.2,
             "depth": 0.3,
+            "centreFreq": 600.0,
             "lowGainDb": 0.0,
             "midGainDb": 0.0,
             "midFreq": 900.0,
-            "highGainDb": 0.0
+            "highGainDb": 0.0,
+            "threshold": -18.0,
+            "ratio": 4.0,
+            "attackMs": 10.0,
+            "releaseMs": 100.0,
+            "makeup": 0.0,
+            "ceiling": -0.3
           }
         ]
       },
@@ -1828,12 +1900,21 @@
             "feedback": 0.35,
             "drive": 2.0,
             "outputGain": 1.0,
+            "distortionMode": "softClip",
+            "tone": 0.5,
             "rate": 1.2,
             "depth": 0.3,
+            "centreFreq": 600.0,
             "lowGainDb": -2.5,
             "midGainDb": 1.5,
             "midFreq": 2200.0,
-            "highGainDb": 2.0
+            "highGainDb": 2.0,
+            "threshold": -18.0,
+            "ratio": 4.0,
+            "attackMs": 10.0,
+            "releaseMs": 100.0,
+            "makeup": 0.0,
+            "ceiling": -0.3
           },
           {
             "id": 13,
@@ -1850,12 +1931,21 @@
             "feedback": 0.35,
             "drive": 2.0,
             "outputGain": 1.0,
+            "distortionMode": "softClip",
+            "tone": 0.5,
             "rate": 1.2,
             "depth": 0.3,
+            "centreFreq": 600.0,
             "lowGainDb": 0.0,
             "midGainDb": 0.0,
             "midFreq": 900.0,
-            "highGainDb": 0.0
+            "highGainDb": 0.0,
+            "threshold": -18.0,
+            "ratio": 4.0,
+            "attackMs": 10.0,
+            "releaseMs": 100.0,
+            "makeup": 0.0,
+            "ceiling": -0.3
           }
         ]
       },
@@ -1884,12 +1974,21 @@
               "feedback": 0.35,
               "drive": 2.0,
               "outputGain": 1.0,
+              "distortionMode": "softClip",
+              "tone": 0.5,
               "rate": 1.2,
               "depth": 0.3,
+              "centreFreq": 600.0,
               "lowGainDb": 0.0,
               "midGainDb": 0.0,
               "midFreq": 900.0,
-              "highGainDb": 0.0
+              "highGainDb": 0.0,
+              "threshold": -18.0,
+              "ratio": 4.0,
+              "attackMs": 10.0,
+              "releaseMs": 100.0,
+              "makeup": 0.0,
+              "ceiling": -0.3
             }
           ]
         },
@@ -1917,12 +2016,21 @@
               "feedback": 0.45,
               "drive": 2.0,
               "outputGain": 1.0,
+              "distortionMode": "softClip",
+              "tone": 0.5,
               "rate": 1.2,
               "depth": 0.3,
+              "centreFreq": 600.0,
               "lowGainDb": 0.0,
               "midGainDb": 0.0,
               "midFreq": 900.0,
-              "highGainDb": 0.0
+              "highGainDb": 0.0,
+              "threshold": -18.0,
+              "ratio": 4.0,
+              "attackMs": 10.0,
+              "releaseMs": 100.0,
+              "makeup": 0.0,
+              "ceiling": -0.3
             }
           ]
         },
@@ -1950,12 +2058,21 @@
               "feedback": 0.35,
               "drive": 2.0,
               "outputGain": 1.0,
+              "distortionMode": "softClip",
+              "tone": 0.5,
               "rate": 1.2,
               "depth": 0.3,
+              "centreFreq": 600.0,
               "lowGainDb": 5.0,
               "midGainDb": -4.0,
               "midFreq": 700.0,
-              "highGainDb": -3.0
+              "highGainDb": -3.0,
+              "threshold": -18.0,
+              "ratio": 4.0,
+              "attackMs": 10.0,
+              "releaseMs": 100.0,
+              "makeup": 0.0,
+              "ceiling": -0.3
             }
           ]
         },

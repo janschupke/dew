@@ -104,12 +104,24 @@ juce_add_binary_data(dew_preset_data
     "${CMAKE_SOURCE_DIR}/presets/warm.dewpreset"
     "${CMAKE_SOURCE_DIR}/presets/fuzz.dewpreset"
     "${CMAKE_SOURCE_DIR}/presets/parallel-grit.dewpreset"
+    "${CMAKE_SOURCE_DIR}/presets/saturate.dewpreset"
+    "${CMAKE_SOURCE_DIR}/presets/crunch.dewpreset"
+    "${CMAKE_SOURCE_DIR}/presets/ring-fold.dewpreset"
     "${CMAKE_SOURCE_DIR}/presets/subtle-widen.dewpreset"
     "${CMAKE_SOURCE_DIR}/presets/classic-chorus.dewpreset"
     "${CMAKE_SOURCE_DIR}/presets/vibrato.dewpreset"
+    "${CMAKE_SOURCE_DIR}/presets/slow-sweep.dewpreset"
+    "${CMAKE_SOURCE_DIR}/presets/jet.dewpreset"
+    "${CMAKE_SOURCE_DIR}/presets/shimmer.dewpreset"
     "${CMAKE_SOURCE_DIR}/presets/air.dewpreset"
     "${CMAKE_SOURCE_DIR}/presets/scoop.dewpreset"
     "${CMAKE_SOURCE_DIR}/presets/telephone.dewpreset"
+    "${CMAKE_SOURCE_DIR}/presets/glue.dewpreset"
+    "${CMAKE_SOURCE_DIR}/presets/punch.dewpreset"
+    "${CMAKE_SOURCE_DIR}/presets/squash.dewpreset"
+    "${CMAKE_SOURCE_DIR}/presets/master-ceiling.dewpreset"
+    "${CMAKE_SOURCE_DIR}/presets/safety-net.dewpreset"
+    "${CMAKE_SOURCE_DIR}/presets/brick-wall.dewpreset"
     "${CMAKE_SOURCE_DIR}/presets/warm-pad.dewpreset"
     "${CMAKE_SOURCE_DIR}/presets/sub-bass.dewpreset"
     "${CMAKE_SOURCE_DIR}/presets/pluck.dewpreset"
@@ -182,6 +194,7 @@ add_library(dew_model STATIC
   model/ParamRole.cpp
   model/EffectType.cpp
   model/InstrumentType.cpp
+  model/EffectCatalog.cpp
   model/ModuleCatalog.cpp
   model/ProjectSchema.cpp
   model/ProjectSchemaTrees.cpp

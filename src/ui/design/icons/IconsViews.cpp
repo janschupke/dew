@@ -184,8 +184,12 @@ std::vector<NamedIcon> all()
         { "effectReverb", effectReverb },
         { "effectDelay", effectDelay },
         { "effectDrive", effectDrive },
+        { "effectDistortion", effectDistortion },
         { "effectChorus", effectChorus },
+        { "effectPhaser", effectPhaser },
         { "effectEq", effectEq },
+        { "effectCompressor", effectCompressor },
+        { "effectLimiter", effectLimiter },
 
         { "zoomIn", zoomIn },
         { "zoomOut", zoomOut },

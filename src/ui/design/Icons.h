@@ -59,8 +59,12 @@ juce::Path effectFilter();
 juce::Path effectReverb();
 juce::Path effectDelay();
 juce::Path effectDrive();
+juce::Path effectDistortion();
 juce::Path effectChorus();
+juce::Path effectPhaser();
 juce::Path effectEq();
+juce::Path effectCompressor();
+juce::Path effectLimiter();
 
 // --- views -------------------------------------------------------------------
 juce::Path zoomIn();

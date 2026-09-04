@@ -175,11 +175,20 @@ AutomationParam automationParamFromIdentifier (const juce::Identifier& property)
         { &ids::midGainDb, AutomationParam::midGainDb },
         { &ids::midFreq, AutomationParam::midFreq },
         { &ids::highGainDb, AutomationParam::highGainDb },
+        { &ids::tone, AutomationParam::tone },
+        { &ids::centreFreq, AutomationParam::centreFreq },
+        { &ids::threshold, AutomationParam::threshold },
+        { &ids::ratio, AutomationParam::ratio },
+        { &ids::attackMs, AutomationParam::attackMs },
+        { &ids::releaseMs, AutomationParam::releaseMs },
+        { &ids::makeup, AutomationParam::makeup },
+        { &ids::ceiling, AutomationParam::ceiling },
 
         // The discrete ones. `mute` and `muted` are two spellings of one idea -
         // a mixer track says mute and a channel says muted - and both resolve
         // here, because the scope already says which node is being addressed.
         { &ids::filterMode, AutomationParam::filterMode },
+        { &ids::distortionMode, AutomationParam::distortionMode },
         { &ids::enabled, AutomationParam::enabled },
         { &ids::mute, AutomationParam::muted },
         { &ids::muted, AutomationParam::muted },

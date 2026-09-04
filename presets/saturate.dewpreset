@@ -1,0 +1,15 @@
+{
+    "format": "dew-preset",
+    "formatVersion": 1,
+    "kind": "effect",
+    "type": "distortion",
+    "name": "Saturate",
+    "description": "Soft clip with the top rolled off - weight, not grit.",
+    "state": {
+      "distortionMode": "softClip",
+      "drive": 4.0,
+      "tone": 0.45,
+      "outputGain": 0.7,
+      "mix": 1.0
+    }
+  }

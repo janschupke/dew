@@ -14,8 +14,12 @@ std::unique_ptr<EffectModule> createEffectModule (EffectType type)
         case EffectType::reverb: return std::make_unique<ReverbModule>();
         case EffectType::delay: return std::make_unique<DelayModule>();
         case EffectType::drive: return std::make_unique<DriveModule>();
+        case EffectType::distortion: return std::make_unique<DistortionModule>();
         case EffectType::chorus: return std::make_unique<ChorusModule>();
+        case EffectType::phaser: return std::make_unique<PhaserModule>();
         case EffectType::eq: return std::make_unique<EqModule>();
+        case EffectType::compressor: return std::make_unique<CompressorModule>();
+        case EffectType::limiter: return std::make_unique<LimiterModule>();
     }
 
     return {};

@@ -250,6 +250,123 @@ TEST_CASE ("chorus modulates rather than passing the signal through", "[effects]
     REQUIRE (buffer.getRMSLevel (0, start, buffer.getNumSamples() - start) > 0.1f);
 }
 
+TEST_CASE ("distortion's four modes each change the wave, and differ", "[effects][dsp]")
+{
+    const DistortionMode modes[] { DistortionMode::softClip, DistortionMode::hardClip,
+                                   DistortionMode::fold, DistortionMode::crush };
+
+    const auto input = sineBuffer (220.0, 4096, 0.6f);
+    std::vector<juce::AudioBuffer<float>> outputs;
+
+    for (const auto mode : modes)
+    {
+        Params params { EffectType::distortion };
+        params.set (ids::distortionMode, (float) mode);
+        params.set (ids::drive, 12.0f);
+        params.set (ids::tone, 1.0f); // wide open, so the shaper is what is measured
+
+        auto buffer = input;
+        runEffect (params, buffer);
+        outputs.push_back (buffer);
+    }
+
+    // Every mode changed the wave, and no two agree - which is the claim a
+    // multi-mode distortion makes and a single tanh curve could not.
+    const auto differ = [] (const juce::AudioBuffer<float>& a, const juce::AudioBuffer<float>& b)
+    {
+        auto worst = 0.0f;
+
+        for (int i = 0; i < a.getNumSamples(); ++i)
+            worst = juce::jmax (worst, std::abs (a.getSample (0, i) - b.getSample (0, i)));
+
+        return worst;
+    };
+
+    for (size_t i = 0; i < outputs.size(); ++i)
+    {
+        INFO ("mode " << i);
+        REQUIRE (differ (outputs[i], input) > 0.01f);
+
+        for (size_t j = i + 1; j < outputs.size(); ++j)
+        {
+            INFO ("against mode " << j);
+            REQUIRE (differ (outputs[i], outputs[j]) > 0.01f);
+        }
+    }
+}
+
+TEST_CASE ("a phaser moves, rather than being a fixed all-pass chain", "[effects][dsp]")
+{
+    Params params { EffectType::phaser };
+    params.set (ids::rate, 2.0f);
+    params.set (ids::depth, 0.9f);
+    params.set (ids::feedback, 0.7f);
+
+    const auto input = sineBuffer (600.0, 44100);
+    auto buffer = input;
+    runEffect (params, buffer);
+
+    // A sine through a static all-pass chain comes out a sine, shifted - so
+    // "the output differs from the input" is not enough on its own. What makes
+    // it a phaser is that the notches SWEEP, which means two windows a quarter
+    // of a cycle apart cannot match either.
+    const auto early = rmsOf (buffer, 11025, 4410);
+    const auto late = rmsOf (buffer, 22050, 4410);
+
+    INFO ("early " << early << ", late " << late);
+    REQUIRE (early > 0.0f);
+    REQUIRE (std::abs (early - late) > 0.01f);
+}
+
+TEST_CASE ("a compressor holds a loud signal down and leaves a quiet one", "[effects][dsp]")
+{
+    Params params { EffectType::compressor };
+    params.set (ids::threshold, -18.0f);
+    params.set (ids::ratio, 8.0f);
+    params.set (ids::attackMs, 1.0f);
+    params.set (ids::releaseMs, 50.0f);
+
+    // -6dB, well over the threshold; and -32dB, well under it.
+    auto loud = sineBuffer (220.0, 22050, 0.5f);
+    auto quiet = sineBuffer (220.0, 22050, 0.025f);
+
+    const auto loudBefore = rmsOf (loud, 11025, 11025);
+    const auto quietBefore = rmsOf (quiet, 11025, 11025);
+
+    runEffect (params, loud);
+    runEffect (params, quiet);
+
+    const auto loudAfter = rmsOf (loud, 11025, 11025);
+    const auto quietAfter = rmsOf (quiet, 11025, 11025);
+
+    INFO ("loud " << loudBefore << " -> " << loudAfter << ", quiet " << quietBefore << " -> "
+                  << quietAfter);
+
+    REQUIRE (loudAfter < loudBefore * 0.6f);
+    REQUIRE (quietAfter > quietBefore * 0.98f);
+}
+
+TEST_CASE ("nothing gets past the limiter's ceiling", "[effects][dsp]")
+{
+    Params params { EffectType::limiter };
+    params.set (ids::ceiling, -6.0f);
+    params.set (ids::releaseMs, 50.0f);
+
+    auto buffer = sineBuffer (220.0, 22050, 0.95f);
+    runEffect (params, buffer);
+
+    const auto peak = juce::Decibels::decibelsToGain (-6.0f);
+
+    for (int i = 0; i < buffer.getNumSamples(); ++i)
+    {
+        INFO ("sample " << i);
+        REQUIRE (std::abs (buffer.getSample (0, i)) <= peak + 1.0e-5f);
+    }
+
+    // And it is a ceiling rather than a fader: the signal still reaches it.
+    REQUIRE (buffer.getMagnitude (11025, 11025) > peak * 0.9f);
+}
+
 TEST_CASE ("a fully dry slot leaves the signal exactly as it was", "[effects][dsp]")
 {
     Params params { EffectType::filter };

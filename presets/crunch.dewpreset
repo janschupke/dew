@@ -1,0 +1,15 @@
+{
+    "format": "dew-preset",
+    "formatVersion": 1,
+    "kind": "effect",
+    "type": "distortion",
+    "name": "Crunch",
+    "description": "Hard clipped and bright, with the output pulled back.",
+    "state": {
+      "distortionMode": "hardClip",
+      "drive": 14.0,
+      "tone": 0.8,
+      "outputGain": 0.35,
+      "mix": 1.0
+    }
+  }

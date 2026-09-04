@@ -1,0 +1,15 @@
+{
+    "format": "dew-preset",
+    "formatVersion": 1,
+    "kind": "effect",
+    "type": "phaser",
+    "name": "Slow Sweep",
+    "description": "One notch pair crossing the mid, slowly enough to hear it move.",
+    "state": {
+      "rate": 0.2,
+      "depth": 0.6,
+      "centreFreq": 500.0,
+      "feedback": 0.3,
+      "mix": 0.5
+    }
+  }

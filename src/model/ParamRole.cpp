@@ -56,6 +56,10 @@ const RoleRow roleRows[] {
     { &ids::outputGain, ParamRole::level },
     { &ids::sustain, ParamRole::level },
     { &ids::velocitySens, ParamRole::level },
+    { &ids::threshold, ParamRole::level },
+    { &ids::ratio, ParamRole::level },
+    { &ids::makeup, ParamRole::level },
+    { &ids::ceiling, ParamRole::level },
 
     // Where in the field. A reverb's `width` is a stereo quantity, not a size.
     { &ids::pan, ParamRole::stereo },
@@ -76,6 +80,9 @@ const RoleRow roleRows[] {
     { &ids::wave, ParamRole::tone },
     { &ids::wavetable, ParamRole::tone },
     { &ids::mode, ParamRole::tone },
+    { &ids::distortionMode, ParamRole::tone },
+    { &ids::tone, ParamRole::tone },
+    { &ids::centreFreq, ParamRole::tone },
 
     // Envelope in time. The soundfont's two are multipliers rather than times,
     // but they scale the same stages and belong with them.
@@ -86,6 +93,8 @@ const RoleRow roleRows[] {
     { &ids::fadeOutMs, ParamRole::time },
     { &ids::attackScale, ParamRole::time },
     { &ids::releaseScale, ParamRole::time },
+    { &ids::attackMs, ParamRole::time },
+    { &ids::releaseMs, ParamRole::time },
 
     // Ambience and echo. A delay's time is a distance, not an envelope stage.
     { &ids::roomSize, ParamRole::space },
@@ -143,12 +152,19 @@ ParamRole roleOfEffect (EffectType type) noexcept
     {
         case EffectType::filter:
         case EffectType::eq:
-        case EffectType::drive: return ParamRole::tone;
+        case EffectType::drive:
+        case EffectType::distortion: return ParamRole::tone;
 
         case EffectType::reverb:
         case EffectType::delay: return ParamRole::space;
 
-        case EffectType::chorus: return ParamRole::modulation;
+        case EffectType::chorus:
+        case EffectType::phaser: return ParamRole::modulation;
+
+        // Loudness devices, and the palette has no eighth hue far enough from
+        // the seven it has to be worth splitting dynamics off level.
+        case EffectType::compressor:
+        case EffectType::limiter: return ParamRole::level;
     }
 
     // No default above, so a new effect type is a compiler warning here rather

@@ -1,0 +1,15 @@
+{
+    "format": "dew-preset",
+    "formatVersion": 1,
+    "kind": "effect",
+    "type": "phaser",
+    "name": "Jet",
+    "description": "High feedback, high up: the notches whistle rather than sweep.",
+    "state": {
+      "rate": 0.6,
+      "depth": 0.9,
+      "centreFreq": 1800.0,
+      "feedback": 0.85,
+      "mix": 0.7
+    }
+  }

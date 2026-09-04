@@ -46,7 +46,7 @@ demo for a different part of the app rather than eight versions of the same song
 |---|---|---|
 | Getting Started | 16 bars | The step grid, and a playlist that is an arrangement rather than a loop |
 | Piano Roll | 32 bars | Chords, held notes, a velocity shape, and an A-B-bridge form |
-| Effect Chain | 32 bars | All six effects, all three chain locations, a four-deep chain, a bypassed slot |
+| Effect Chain | 32 bars | Six of the ten effects, all three chain locations, a four-deep chain, a bypassed slot |
 | Automation | 32 bars | Five scopes including the tempo, curve bends, and segments that step |
 | Wavetable | 32 bars | The five wavetables, unison, both position sources, a morph drawn as a curve |
 | Oscillator Stack | 32 bars | Three oscillators a channel — octaves, cent detune, per-slot gain |
@@ -173,7 +173,8 @@ licence question. Without it the format reports itself unavailable and the rest 
   own; the channels feeding a removed insert move to the first remaining one, in the same
   undo step. The master is neither renamed nor removed — it is a different node type, so
   that is structural rather than a check.
-- **Effects** — reverb, filter, delay, drive, chorus and a 3-band EQ, chained up to four
+- **Effects** — reverb, filter, delay, drive, distortion, chorus, phaser, a 3-band EQ,
+  a compressor and a limiter, chained up to four
   deep on any channel, mixer track or the master. One editor pointed either way round: an
   accordion down the instrument panel, a row of open cards across the mixer. Drag a card
   by its grip to reorder: it lifts and follows the pointer, the rest of the chain parts to
@@ -183,8 +184,8 @@ licence question. Without it the format reports itself unavailable and the rest 
 - **Instrument** — three band-limited oscillators (sine/saw/square/triangle) or
   wavetables with unison, each with its own octave, detune, gain and on/off switch. One
   ADSR envelope behind them, and channel volume and pan.
-- **Presets** — twenty-five factory sounds: three for each effect type, five for the synth
-  and two for an audio channel. **Preset** beside the instrument panel's title loads one
+- **Presets** — thirty-nine factory sounds: three for each effect type, five for the synth,
+  two for an audio channel and two for a soundfont. **Preset** beside the instrument panel's title loads one
   onto the selected channel; each effect card has its own button, and offers only its own
   type. Loading one is a single undo step. A preset carries the *sound* and nothing else —
   not a channel's name, colour, routing, level or base pitch, and not its effect chain — so

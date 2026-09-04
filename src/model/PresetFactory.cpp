@@ -173,6 +173,24 @@ Preset parallelGrit() { return effectPreset ("drive", "Parallel Grit",
                             { { &ids::drive, 16.0 }, { &ids::outputGain, 0.6 },
                               { &ids::mix, 0.35 } }); }
 
+Preset saturate()     { return effectPreset ("distortion", "Saturate",
+                            "Soft clip with the top rolled off - weight, not grit.",
+                            { { &ids::distortionMode, "softClip" }, { &ids::drive, 4.0 },
+                              { &ids::tone, 0.45 }, { &ids::outputGain, 0.7 },
+                              { &ids::mix, 1.0 } }); }
+
+Preset crunch()       { return effectPreset ("distortion", "Crunch",
+                            "Hard clipped and bright, with the output pulled back.",
+                            { { &ids::distortionMode, "hardClip" }, { &ids::drive, 14.0 },
+                              { &ids::tone, 0.8 }, { &ids::outputGain, 0.35 },
+                              { &ids::mix, 1.0 } }); }
+
+Preset ringFold()     { return effectPreset ("distortion", "Ring Fold",
+                            "A wavefolder past the point where it stops sounding like level.",
+                            { { &ids::distortionMode, "fold" }, { &ids::drive, 9.0 },
+                              { &ids::tone, 0.6 }, { &ids::outputGain, 0.5 },
+                              { &ids::mix, 1.0 } }); }
+
 Preset subtleWiden()  { return effectPreset ("chorus", "Subtle Widen",
                             "Slow and shallow: stereo, rather than an effect.",
                             { { &ids::rate, 0.35 }, { &ids::depth, 0.18 },
@@ -186,6 +204,57 @@ Preset classicChorus(){ return effectPreset ("chorus", "Classic Chorus",
 Preset vibrato()      { return effectPreset ("chorus", "Vibrato",
                             "Fully wet, which is what makes it vibrato and not chorus.",
                             { { &ids::rate, 5.5 }, { &ids::depth, 0.5 },
+                              { &ids::mix, 1.0 } }); }
+
+Preset slowSweep()    { return effectPreset ("phaser", "Slow Sweep",
+                            "One notch pair crossing the mid, slowly enough to hear it move.",
+                            { { &ids::rate, 0.2 }, { &ids::depth, 0.6 },
+                              { &ids::centreFreq, 500.0 }, { &ids::feedback, 0.3 },
+                              { &ids::mix, 0.5 } }); }
+
+Preset jetPhaser()    { return effectPreset ("phaser", "Jet",
+                            "High feedback, high up: the notches whistle rather than sweep.",
+                            { { &ids::rate, 0.6 }, { &ids::depth, 0.9 },
+                              { &ids::centreFreq, 1800.0 }, { &ids::feedback, 0.85 },
+                              { &ids::mix, 0.7 } }); }
+
+Preset shimmer()      { return effectPreset ("phaser", "Shimmer",
+                            "Fast and shallow, blended under the dry signal.",
+                            { { &ids::rate, 4.0 }, { &ids::depth, 0.25 },
+                              { &ids::centreFreq, 900.0 }, { &ids::feedback, 0.15 },
+                              { &ids::mix, 0.3 } }); }
+
+Preset glue()         { return effectPreset ("compressor", "Glue",
+                            "Two decibels at most, slow enough to leave the transients.",
+                            { { &ids::threshold, -14.0 }, { &ids::ratio, 2.0 },
+                              { &ids::attackMs, 30.0 }, { &ids::releaseMs, 250.0 },
+                              { &ids::makeup, 1.5 }, { &ids::mix, 1.0 } }); }
+
+Preset punch()        { return effectPreset ("compressor", "Punch",
+                            "A slow attack lets the hit through and clamps what follows.",
+                            { { &ids::threshold, -20.0 }, { &ids::ratio, 4.0 },
+                              { &ids::attackMs, 25.0 }, { &ids::releaseMs, 80.0 },
+                              { &ids::makeup, 4.0 }, { &ids::mix, 1.0 } }); }
+
+Preset squash()       { return effectPreset ("compressor", "Squash",
+                            "Fast and hard, for a level that does not move at all.",
+                            { { &ids::threshold, -30.0 }, { &ids::ratio, 12.0 },
+                              { &ids::attackMs, 1.0 }, { &ids::releaseMs, 40.0 },
+                              { &ids::makeup, 9.0 }, { &ids::mix, 1.0 } }); }
+
+Preset masterCeiling(){ return effectPreset ("limiter", "Master Ceiling",
+                            "Just under full scale, and slow enough not to pump.",
+                            { { &ids::ceiling, -0.3 }, { &ids::releaseMs, 200.0 },
+                              { &ids::mix, 1.0 } }); }
+
+Preset safetyNet()    { return effectPreset ("limiter", "Safety Net",
+                            "Set low enough that nothing but a mistake reaches it.",
+                            { { &ids::ceiling, -6.0 }, { &ids::releaseMs, 100.0 },
+                              { &ids::mix, 1.0 } }); }
+
+Preset brickWall()    { return effectPreset ("limiter", "Brick Wall",
+                            "Well into the signal, released fast: audibly held, and nothing above it.",
+                            { { &ids::ceiling, -12.0 }, { &ids::releaseMs, 20.0 },
                               { &ids::mix, 1.0 } }); }
 
 Preset air()          { return effectPreset ("eq", "Air",
@@ -301,12 +370,24 @@ const std::vector<PresetFactory::Entry>& PresetFactory::presets()
         { "warm.dewpreset",           &warmDrive },
         { "fuzz.dewpreset",           &fuzz },
         { "parallel-grit.dewpreset",  &parallelGrit },
+        { "saturate.dewpreset",       &saturate },
+        { "crunch.dewpreset",         &crunch },
+        { "ring-fold.dewpreset",      &ringFold },
         { "subtle-widen.dewpreset",   &subtleWiden },
         { "classic-chorus.dewpreset", &classicChorus },
         { "vibrato.dewpreset",        &vibrato },
+        { "slow-sweep.dewpreset",     &slowSweep },
+        { "jet.dewpreset",            &jetPhaser },
+        { "shimmer.dewpreset",        &shimmer },
         { "air.dewpreset",            &air },
         { "scoop.dewpreset",          &scoop },
         { "telephone.dewpreset",      &telephone },
+        { "glue.dewpreset",           &glue },
+        { "punch.dewpreset",          &punch },
+        { "squash.dewpreset",         &squash },
+        { "master-ceiling.dewpreset", &masterCeiling },
+        { "safety-net.dewpreset",     &safetyNet },
+        { "brick-wall.dewpreset",     &brickWall },
         { "warm-pad.dewpreset",       &warmPad },
         { "sub-bass.dewpreset",       &subBass },
         { "pluck.dewpreset",          &pluck },

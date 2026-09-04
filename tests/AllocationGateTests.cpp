@@ -14,6 +14,8 @@
 #include "model/ProjectEdits.h"
 #include "model/ProjectFactory.h"
 
+#include "EffectDspHarness.h"
+
 using namespace dew;
 
 // =============================================================================
@@ -352,6 +354,48 @@ TEST_CASE ("the render path allocates nothing", "[realtime][gate][allocation]")
     // non-zero: a vector that reallocated has a different capacity.
     CHECK (engine.getTriggerCapacity() == triggerCapacity);
     CHECK (engine.getActiveAutomationCapacity() == automationCapacity);
+#endif
+}
+
+TEST_CASE ("resetting a prepared phaser allocates nothing", "[realtime][gate][allocation]")
+{
+#if defined(DEW_SANITIZER_OWNS_THE_ALLOCATOR)
+    SKIP ("the sanitizer owns operator new; this gate runs in the ci preset");
+#else
+    // Why the phaser and not the other nine. Every other effect's reset() only
+    // zeroes state; this one reaches juce::dsp::DryWetMixer::reset, which
+    // re-sizes a FIFO and a buffer. Reading the JUCE source says both are
+    // no-ops once prepare() has run - setSize is called with avoidReallocating
+    // - but runChain calls reset() ON THE AUDIO THREAD whenever a pooled unit
+    // changes type, so "reading the source says so" is not where this should
+    // rest.
+    constexpr int numSamples = 256;
+
+    auto module = createEffectModule (EffectType::phaser);
+    REQUIRE (module != nullptr);
+    module->prepare (48000.0, numSamples);
+
+    const testing::Params params { EffectType::phaser };
+    const auto numParams = effectDescriptor (EffectType::phaser).numParams;
+
+    float left[numSamples] {}, right[numSamples] {};
+    auto allocated = 0;
+
+    {
+        ScopedAllocationCount counter;
+
+        for (int i = 0; i < 32; ++i)
+        {
+            module->reset();
+            module->process ({ params.block.data() + kNumCommonEffectParams, numParams },
+                             { left, right, numSamples });
+        }
+
+        allocated = counter.count();
+    }
+
+    INFO ("allocations inside 32 reset + process pairs: " << allocated);
+    CHECK (allocated == 0);
 #endif
 }
 

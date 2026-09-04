@@ -1,0 +1,15 @@
+{
+    "format": "dew-preset",
+    "formatVersion": 1,
+    "kind": "effect",
+    "type": "phaser",
+    "name": "Shimmer",
+    "description": "Fast and shallow, blended under the dry signal.",
+    "state": {
+      "rate": 4.0,
+      "depth": 0.25,
+      "centreFreq": 900.0,
+      "feedback": 0.15,
+      "mix": 0.3
+    }
+  }
