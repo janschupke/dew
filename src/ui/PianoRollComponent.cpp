@@ -714,29 +714,30 @@ void PianoRollComponent::mouseWheelMove (const juce::MouseEvent& event,
 {
     const auto delta = gesture::deltaOf (wheel);
 
-    // Before isZoom, which a cross-zoom also satisfies.
-    if (gesture::isCrossZoom (event.mods))
+    switch (gesture::intentOf (event.mods))
     {
-        zoomRowsBy (std::pow (2.0, delta.y * gesture::wheelZoomExponent));
-    }
-    else if (gesture::isZoom (event.mods))
-    {
-        timeline.zoomAround (std::pow (2.0, delta.y * gesture::wheelZoomExponent),
-                             (float) (event.x - size::gutterKeyboard));
-    }
-    else if (event.mods.isShiftDown())
-    {
-        timeline.scrollOffsetSteps -= timeline.stepsForPixels (delta.along()
-                                                               * gesture::wheelPixelsPerNotch);
-    }
-    else
-    {
-        // Pixels, not rows. A notch used to be three rows, which was 42px here
-        // and one lane - 34px to 204px - in the playlist, for the same flick of
-        // the same wheel.
-        rows.scrollPx -= delta.y * gesture::wheelPixelsPerNotch;
-        timeline.scrollOffsetSteps -= timeline.stepsForPixels (delta.x
-                                                               * gesture::wheelPixelsPerNotch);
+        case gesture::WheelIntent::zoomOtherAxis:
+            zoomRowsBy (std::pow (2.0, delta.y * gesture::wheelZoomExponent));
+            break;
+
+        case gesture::WheelIntent::zoomTimeline:
+            timeline.zoomAround (std::pow (2.0, delta.y * gesture::wheelZoomExponent),
+                                 (float) (event.x - size::gutterKeyboard));
+            break;
+
+        case gesture::WheelIntent::scrollTimeline:
+            timeline.scrollOffsetSteps -= timeline.stepsForPixels (delta.along()
+                                                                   * gesture::wheelPixelsPerNotch);
+            break;
+
+        case gesture::WheelIntent::scrollBoth:
+            // Pixels, not rows. A notch used to be three rows, which was 42px here
+            // and one lane - 34px to 204px - in the playlist, for the same flick of
+            // the same wheel.
+            rows.scrollPx -= delta.y * gesture::wheelPixelsPerNotch;
+            timeline.scrollOffsetSteps -= timeline.stepsForPixels (delta.x
+                                                                   * gesture::wheelPixelsPerNotch);
+            break;
     }
 
     updateScrollBars();

@@ -778,15 +778,15 @@ void PlaylistComponent::mouseWheelMove (const juce::MouseEvent& event,
     // roll. The playlist answered only to scrolling, and only when there was
     // something to scroll.
     const auto delta = gesture::deltaOf (wheel);
+    const auto intent = gesture::intentOf (event.mods);
 
-    // Before isZoom, which a cross-zoom also satisfies.
-    if (gesture::isCrossZoom (event.mods))
+    if (intent == gesture::WheelIntent::zoomOtherAxis)
     {
         zoomTracksBy (std::pow (2.0, delta.y * gesture::wheelZoomExponent));
         return;
     }
 
-    if (gesture::isZoom (event.mods))
+    if (intent == gesture::WheelIntent::zoomTimeline)
     {
         zoomBy (std::pow (2.0, delta.y * gesture::wheelZoomExponent),
                 (float) (event.x - size::gutterTrack));
@@ -803,7 +803,7 @@ void PlaylistComponent::mouseWheelMove (const juce::MouseEvent& event,
     // it is the change a user notices first. It is still the right one: the two
     // timeline views disagreed about what a plain wheel meant, and the axis the
     // wheel naturally maps to is the one that now moves.
-    if (event.mods.isShiftDown())
+    if (intent == gesture::WheelIntent::scrollTimeline)
     {
         timeline.scrollOffsetSteps -= timeline.stepsForPixels (delta.along()
                                                                * gesture::wheelPixelsPerNotch);

@@ -126,6 +126,45 @@ inline bool isCrossZoom (const juce::ModifierKeys& mods) noexcept
     return isZoom (mods) && mods.isShiftDown();
 }
 
+/** What a wheel notch means over a view with two axes.
+
+    The piano roll and the playlist each answered this with the same four-branch
+    if/else, and each carried the same comment above the first branch saying
+    that a cross-zoom also satisfies isZoom so the order matters. A rule whose
+    correctness is a comment repeated in two files is a rule that will be
+    reordered in one of them.
+
+    Only the DECISION is shared. What the four mean is not: the roll updates
+    both scrollbars once at the end, the playlist re-lays its headers and
+    latches that the view is the user's, and their zooms anchor on different
+    gutters. Those stay where they are.
+
+    The step grid is deliberately not a caller. It has one axis, so a
+    cross-zoom would have nothing to zoom and shift-scroll nothing to switch
+    to; two branches written out is clearer there than four with two unused.
+*/
+enum class WheelIntent
+{
+    zoomOtherAxis,  ///< rows in the piano roll, lanes in the playlist
+    zoomTimeline,   ///< in time, around the pointer
+    scrollTimeline, ///< shift: along the timeline whichever way the wheel turned
+    scrollBoth      ///< the bare wheel: the other axis, plus any horizontal
+};
+
+inline WheelIntent intentOf (const juce::ModifierKeys& mods) noexcept
+{
+    if (isCrossZoom (mods))
+        return WheelIntent::zoomOtherAxis;
+
+    if (isZoom (mods))
+        return WheelIntent::zoomTimeline;
+
+    if (mods.isShiftDown())
+        return WheelIntent::scrollTimeline;
+
+    return WheelIntent::scrollBoth;
+}
+
 /** Finer, for a drag that changes a value. */
 inline bool isFine (const juce::ModifierKeys& mods) noexcept
 {
