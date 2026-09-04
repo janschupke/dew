@@ -46,10 +46,25 @@ option(DEW_BUILD_TESTS "Build the test suite" ON)
 # the licence files a package ships are still located.
 option(DEW_WRITE_THIRD_PARTY "Write THIRD_PARTY.md into the source tree" ON)
 
+# Declared here rather than passed as a raw -DCMAKE_OSX_ARCHITECTURES, so the
+# `dist` preset stays platform-neutral and CMake keeps the platform knowledge -
+# the same arrangement CMAKE_OSX_DEPLOYMENT_TARGET already has below. A preset
+# naming an Apple variable would make every Linux and Windows configure warn
+# about a manually-specified variable the project never used.
+#
+# Off by default because it doubles the compile, and a developer building to run
+# the thing wants one architecture. The release build wants both: GitHub's macOS
+# runners are Apple Silicon, so without this every Intel Mac gets nothing.
+option(DEW_UNIVERSAL_BINARY "On Apple, build arm64 and x86_64 in one binary" OFF)
+
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
 if(APPLE AND NOT CMAKE_OSX_DEPLOYMENT_TARGET)
   set(CMAKE_OSX_DEPLOYMENT_TARGET "11.0" CACHE STRING "Minimum macOS version" FORCE)
+endif()
+
+if(APPLE AND DEW_UNIVERSAL_BINARY AND NOT CMAKE_OSX_ARCHITECTURES)
+  set(CMAKE_OSX_ARCHITECTURES "arm64;x86_64" CACHE STRING "Apple architectures" FORCE)
 endif()
 
 # ------------------------------------------------------------------------------
@@ -111,3 +126,8 @@ add_subdirectory(tools)
 if(DEW_BUILD_TESTS)
   add_subdirectory(tests)
 endif()
+
+# ------------------------------------------------------------------------------
+# Packaging. Last, because it needs the `dew` target to exist.
+# ------------------------------------------------------------------------------
+include(Packaging)

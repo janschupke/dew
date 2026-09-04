@@ -26,6 +26,12 @@ const here = dirname(fileURLToPath(import.meta.url));
 const tokensPath = join(here, '..', 'src', 'generated', 'design-tokens.json');
 const outPath = join(here, '..', 'src', 'app', 'theme.generated.css');
 const iconPath = join(here, '..', 'src', 'app', 'icon.svg');
+// Outside website/, and the one output that is. The application needs the same
+// mark - a Linux .desktop entry and an AppImage both want an icon file - and a
+// second SVG drawn by hand would be a second home for it, drifting the first
+// time the accent moves. So the generator writes both copies and --check holds
+// both, which is the arrangement every other generated file here already has.
+const appIconPath = join(here, '..', '..', 'resources', 'icon', 'dew.svg');
 
 const tokens = JSON.parse(readFileSync(tokensPath, 'utf8'));
 
@@ -159,6 +165,7 @@ const icon = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
 const stale = [
   [outPath, css, 'theme.generated.css'],
   [iconPath, icon, 'icon.svg'],
+  [appIconPath, icon, '../resources/icon/dew.svg'],
 ];
 
 if (process.argv.includes('--check')) {

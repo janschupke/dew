@@ -42,6 +42,8 @@ export const presets: readonly Preset[] = [
   { name: 'ci', what: 'release plus warnings-as-errors; the gate' },
   { name: 'asan', what: 'ci plus AddressSanitizer and UndefinedBehaviorSanitizer' },
   { name: 'tsan', what: 'ci plus ThreadSanitizer' },
+  { name: 'dist', what: 'What a release is built from — no tests, universal on Apple' },
+  { name: 'dist-windows', what: 'dist, built by the Visual Studio generator' },
   { name: 'offline', what: 'release from a warm dependency cache, no network' },
 ];
 

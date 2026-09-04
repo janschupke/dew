@@ -59,6 +59,27 @@
       }
     },
     {
+      "name": "dist",
+      "inherits": "release",
+      "displayName": "What a release is built from - no tests, universal on Apple",
+      "cacheVariables": {
+        "_comment": "Tests OFF because a package has no use for them and their JUCE build is most of the cost. THIRD_PARTY.md OFF because it is written into the SOURCE tree at configure time and records the toolchain that wrote it - a packaging build would leave the tree dirty for a reason that has nothing to do with the dependencies. Universal ON because GitHub's macOS runners are Apple Silicon and an Intel Mac would otherwise get nothing.",
+        "DEW_BUILD_TESTS": "OFF",
+        "DEW_WRITE_THIRD_PARTY": "OFF",
+        "DEW_UNIVERSAL_BINARY": "ON"
+      }
+    },
+    {
+      "name": "dist-windows",
+      "inherits": "dist",
+      "displayName": "dist, built by the Visual Studio generator",
+      "generator": "Visual Studio 17 2022",
+      "architecture": "x64",
+      "cacheVariables": {
+        "_comment": "The generator is the whole difference. Ninja needs cl.exe on PATH, which on Windows means a developer command prompt - so a Ninja build there would need either a third-party action to set the environment or a hard-coded vcvars path that differs between the runner images. The Visual Studio generator finds its own toolchain, so this needs nothing installed and nothing pinned."
+      }
+    },
+    {
       "name": "offline",
       "inherits": "release",
       "displayName": "Release from a warm dependency cache, no network",
@@ -72,6 +93,8 @@
     { "name": "ci",       "configurePreset": "ci" },
     { "name": "asan",     "configurePreset": "asan" },
     { "name": "tsan",     "configurePreset": "tsan" },
+    { "name": "dist",     "configurePreset": "dist" },
+    { "name": "dist-windows", "configurePreset": "dist-windows", "configuration": "RelWithDebInfo" },
     { "name": "offline",  "configurePreset": "offline" }
   ],
 
