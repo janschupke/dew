@@ -230,7 +230,7 @@ TEST_CASE ("every layer is represented in the scanned sources", "[build][gate]")
     // Matched on the path relative to src/, not the absolute one. This asked
     // whether the full path CONTAINED "/ui/", which a checkout living in a
     // directory called ui satisfies without a single dew source being there.
-    for (const auto* layer : { "lang", "model", "engine", "io", "ui", "app" })
+    for (const auto* layer : { "lang", "i18n", "model", "engine", "io", "ui", "app" })
     {
         auto seen = false;
 
@@ -414,7 +414,12 @@ TEST_CASE ("no layer includes a header a layer above it owns", "[build][layering
     // each other - a rank would let one include the other and say nothing.
     const std::map<juce::String, juce::StringArray> directDeps {
         { "dew_lang", {} },
-        { "dew_model", { "dew_lang" } },
+
+        // A second leaf, beside dew_lang. dew_i18n links juce_core and nothing
+        // else, so a catalogue cannot open a file or build a ValueTree.
+        { "dew_i18n", {} },
+
+        { "dew_model", { "dew_lang", "dew_i18n" } },
         { "dew_engine", { "dew_model" } },
         { "dew_io", { "dew_engine" } },
         { "dew_design", { "dew_engine" } },
@@ -484,6 +489,24 @@ TEST_CASE ("no layer includes a header a layer above it owns", "[build][layering
     CHECK (ambiguous.isEmpty());
 
     REQUIRE (layerOfDirectory.size() > 5);
+
+    // Every library CMake compiled has a row in directDeps above.
+    //
+    // Without this the two .at() calls - one closing the DAG, one reading it
+    // back - throw std::out_of_range the moment a library is added and the map
+    // is not. Catch2 reports an unexpected exception and names nothing at all,
+    // so the gate that exists to say which layer reached too far instead says
+    // that something, somewhere, threw. Adding a library is already three
+    // edits; this is the one that tells you which one you missed.
+    juce::StringArray untranscribed;
+
+    for (const auto& [directory, layer] : layerOfDirectory)
+        if (directDeps.count (layer) == 0)
+            untranscribed.addIfNotAlreadyThere (layer + "  (src/" + directory + ")");
+
+    INFO ("libraries CMake builds that directDeps does not describe:\n"
+          << untranscribed.joinIntoString ("\n"));
+    REQUIRE (untranscribed.isEmpty());
 
     juce::StringArray climbing;
 

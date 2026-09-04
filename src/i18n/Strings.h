@@ -1,0 +1,65 @@
+#pragma once
+
+#include <juce_core/juce_core.h>
+
+#include "i18n/Arg.h"
+#include "i18n/StringIds.h"
+
+namespace dew
+{
+
+/** The active locale's text for `id`.
+
+    A REFERENCE, into a vector built once when the locale is chosen. Two
+    consequences, both deliberate:
+
+      - g.drawText (tr (StringId::playlistEmpty), ...) allocates nothing per
+        paint. It is CHEAPER than the literal it replaces, because juce::String
+        has no small-string optimisation and a const char* becomes a heap
+        allocation every time it crosses into one.
+      - The locale is chosen ONCE, at startup, and changing it needs a relaunch.
+        A reference into a vector that a later setLocale replaced would dangle,
+        and "takes effect next launch" is what the alternative - handing every
+        caller a copy, forever - would be paying for.
+
+    NEVER empty. A row the catalogue does not hold returns the key's own dotted
+    path, which is visible in a dew_shot render and impossible to mistake for
+    prose. Empty would silently satisfy "every control in the window says what
+    it is" (HoverHelpTests) and "a control's tooltip and its accessible name are
+    the same sentence" (AccessibilityTests) - two gates that read a tooltip and
+    treat blank as silence. A fallback that returns "" turns both into no-ops.
+*/
+const juce::String& tr (StringId id);
+
+/** The same, with its arguments substituted. See MessageFormat.h for the
+    subset. */
+juce::String tr (StringId id, const Args& arguments);
+
+/** Choose the locale, once, from a BCP-47 tag.
+
+    Negotiated against what was compiled in: an exact tag wins, then the
+    language alone (fr-CA falls back to fr), then the reference locale. Calling
+    it after anything has held a tr() reference is a dangling reference, which
+    is why nothing but DewApplication::initialise calls it.
+*/
+void setLocale (juce::StringRef tag);
+
+/** The tag actually in force, which is what negotiation settled on rather than
+    what was asked for. */
+juce::String activeLocale();
+
+/** Every tag compiled into this build, reference locale first. */
+juce::StringArray availableLocales();
+
+/** The dotted key `id` was generated from - "transport.tempo.help".
+
+    For a test's INFO, for the missing-row fallback, and for nothing else.
+    Nothing resolves a string BY its path, because that would be a way to name
+    a key the enum does not have.
+*/
+juce::String keyOf (StringId id);
+
+/** The argument names `id`'s message asks for, recorded at generation time. */
+juce::StringArray argumentNamesOf (StringId id);
+
+} // namespace dew

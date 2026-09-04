@@ -1,0 +1,40 @@
+{
+  "transport": {
+    "pattern": {
+      "help": "Which pattern the rack and the piano roll are editing"
+    },
+    "tempo": {
+      "help": "Tempo - drag up and down, or double-click to type"
+    },
+    "meter": {
+      "help": "Time signature - beats to the bar, and what a beat is"
+    },
+    "mode": {
+      "help": "Play the whole arrangement, or the pattern on its own (cmd-L)"
+    },
+    "patternLength": {
+      "help": "Pattern length - drag up and down, or double-click to type",
+      "suffix": " steps"
+    }
+  },
+
+  "status": {
+    "notes": "{count, plural, one {# note} other {# notes}}",
+    "dropouts": "{count, plural, one {# drop} other {# drops}}"
+  },
+
+  "dialog": {
+    "deletePattern": {
+      "title": "Delete pattern",
+      "body": "Delete \u201c{name}\u201d? Every clip that plays it goes with it.",
+      "confirm": "Delete"
+    }
+  },
+
+  "automation": {
+    "song": "Song",
+    "master": "Master",
+    "oscillator": "{channel} > Osc {slot}",
+    "parameter": "{owner} > {param}"
+  }
+}

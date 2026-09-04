@@ -146,6 +146,72 @@ juce_add_binary_data(dew_preset_data
 #directories, so linking them adds no JUCE while keeping this library under the
 #same warnings - as - errors gate as everything else.That it stays JUCE - free is
 #checked by a source gate, because a header - only include would still compile.
+# ------------------------------------------------------------------------------
+# dew_i18n - the string catalogue. Depends on juce_core and nothing else.
+#
+# The link line is the point. A catalogue that cannot reach juce_data_structures
+# cannot grow a ValueTree-backed override table, and one that cannot open a file
+# has to be compiled in - which is what keeps it in step with the build that
+# ships it. Reading a catalogue off disk would also be file I/O two layers below
+# dew_io, the only layer allowed to touch a file at all.
+#
+# It sits below dew_model rather than inside it because dew_design needs it too,
+# and dew_design knows nothing about a document. Only dew_model names it: the
+# link is PUBLIC and every layer above inherits it, because naming an inherited
+# library a second time makes every link warn about a duplicate.
+#
+# StringIds.h and Catalogs.cpp are GENERATED into the build tree and never
+# committed. Under src/ they would be walked by the source gates, and a
+# catalogue is longer than the gate on file length should have an opinion about.
+# ------------------------------------------------------------------------------
+set(DEW_I18N_LOCALES en)
+
+set(DEW_I18N_INPUTS "")
+foreach(dew_locale ${DEW_I18N_LOCALES})
+  list(APPEND DEW_I18N_INPUTS "${CMAKE_SOURCE_DIR}/resources/i18n/${dew_locale}.json")
+endforeach()
+
+set(DEW_I18N_GENERATED "${CMAKE_CURRENT_BINARY_DIR}/generated/i18n")
+
+add_custom_command(
+  OUTPUT "${DEW_I18N_GENERATED}/StringIds.h" "${DEW_I18N_GENERATED}/Catalogs.cpp"
+  COMMAND "${CMAKE_COMMAND}"
+          "-DDEW_I18N_LOCALES=${DEW_I18N_LOCALES}"
+          "-DDEW_I18N_DIR=${CMAKE_SOURCE_DIR}/resources/i18n"
+          "-DDEW_I18N_OUT=${DEW_I18N_GENERATED}"
+          -P "${CMAKE_SOURCE_DIR}/cmake/GenStrings.cmake"
+  DEPENDS ${DEW_I18N_INPUTS} "${CMAKE_SOURCE_DIR}/cmake/GenStrings.cmake"
+  COMMENT "dew: generating the string catalogue"
+  VERBATIM
+)
+
+add_library(dew_i18n STATIC
+  i18n/Arg.cpp
+  i18n/PluralRules.cpp
+  i18n/MessageFormat.cpp
+  i18n/Strings.cpp
+  "${DEW_I18N_GENERATED}/Catalogs.cpp"
+  "${DEW_I18N_GENERATED}/StringIds.h"
+)
+
+# generated/ is the include root and the files sit in generated/i18n/, so a
+# consumer writes #include "i18n/StringIds.h" and the layering gate attributes
+# it to dew_i18n exactly as it does a hand-written header.
+target_include_directories(dew_i18n
+  PUBLIC
+    "${CMAKE_CURRENT_SOURCE_DIR}"
+    "${CMAKE_CURRENT_BINARY_DIR}/generated"
+)
+
+target_link_libraries(dew_i18n
+  PUBLIC
+    juce::juce_core        # juce::String, and nothing else on purpose
+    dew_juce_config
+  PRIVATE
+    juce::juce_recommended_config_flags
+    juce::juce_recommended_warning_flags
+)
+
 #-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
 add_library(dew_lang STATIC
   lang/SourceRange.cpp
@@ -227,6 +293,7 @@ add_library(dew_model STATIC
 target_link_libraries(dew_model
   PUBLIC
     dew_lang
+    dew_i18n
     juce::juce_data_structures  # ValueTree, UndoManager
     juce::juce_graphics         # juce::Colour, for a channel's identity colour
     dew_demo_data

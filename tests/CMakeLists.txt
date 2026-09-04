@@ -126,6 +126,8 @@ add_executable(dew_tests
   ScoreCompletionUiTests.cpp
   ScoreCompletionTests.cpp
   ScoreDeterminismTests.cpp
+
+  I18nTests.cpp
 )
 
 target_link_libraries(dew_tests
@@ -151,7 +153,12 @@ target_compile_definitions(dew_tests PRIVATE
   # exactly as hard to find your way around as a 1,700-line editor - and both
   # happened here.
   DEW_TESTS_DIR="${CMAKE_CURRENT_SOURCE_DIR}"
-  DEW_TOOLS_DIR="${CMAKE_SOURCE_DIR}/tools")
+  DEW_TOOLS_DIR="${CMAKE_SOURCE_DIR}/tools"
+
+  # The catalogue the generator reads. The gate on keys nothing asks for walks
+  # it directly rather than the enum, because a key that reached the enum and
+  # nothing else is exactly what that gate is looking for.
+  DEW_I18N_DIR="${CMAKE_SOURCE_DIR}/resources/i18n")
 
 # What is actually COMPILED, as opposed to what happens to sit under src/.
 #
@@ -171,7 +178,7 @@ target_compile_definitions(dew_tests PRIVATE
 # very assumption that stopped holding when dew_design took four files that
 # still live under src/ui.
 set(DEW_GATE_SOURCES "")
-foreach(dew_layer dew_lang dew_model dew_engine dew_io dew_design dew_app dew_ui dew)
+foreach(dew_layer dew_lang dew_i18n dew_model dew_engine dew_io dew_design dew_app dew_ui dew)
   # The layer name leads every line: once before the JOIN for the first source,
   # and once inside the separator for each of the rest.
   list(APPEND DEW_GATE_SOURCES
