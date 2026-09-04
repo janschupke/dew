@@ -12,6 +12,21 @@ cmake_minimum_required(VERSION 3.25)
 # enabled, because zlib/libpng/libflac are now built in C language mode.
 project(dew VERSION 0.1.0 LANGUAGES C CXX)
 
+# The prerelease identifier, and the reason it is not in project(VERSION): CMake
+# accepts non-negative integers there and nothing else, so `0.2.0-rc.1` will not
+# parse. SemVer needs somewhere to put the suffix, so it gets its own line.
+#
+# Empty for a release; `-rc.1`, `-beta.2` and so on otherwise. It reaches the
+# running binary through DEW_VERSION_STRING (src/CMakeLists.txt) and NOT through
+# the VERSION argument of juce_add_gui_app - CFBundleShortVersionString is
+# specified as a numeric triple, and Apple rejects a bundle whose version is not.
+#
+# Not a cache variable, deliberately. A -D override would make the binary
+# disagree with the file, and the FILE is what the release workflow reads to
+# check the git tag against - so these two lines are the only place a version is
+# written by hand, and BuildInfoTests holds the running binary against them.
+set(DEW_VERSION_SUFFIX "")
+
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
@@ -20,6 +35,7 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 # CMakePresets.json, so a plain `cmake -S . -B build` configured with no tests
 # and no Catch2 and said nothing about it.
 option(DEW_BUILD_TESTS "Build the test suite" ON)
+
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 

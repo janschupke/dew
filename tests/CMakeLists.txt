@@ -183,7 +183,13 @@ target_compile_definitions(dew_tests PRIVATE
   # the emitter is, rather than in a step that would have to write into the
   # working tree before diffing it.
   DEW_WEBSITE_GENERATED_DIR="${CMAKE_SOURCE_DIR}/website/src/generated"
-  DEW_WEBSITE_SHOTS_DIR="${CMAKE_SOURCE_DIR}/website/public/shots")
+  DEW_WEBSITE_SHOTS_DIR="${CMAKE_SOURCE_DIR}/website/public/shots"
+
+  # The repository root, for the one test that has to read the build system
+  # itself: BuildInfoTests holds BuildInfo::version() against the two lines in
+  # CMakeLists.txt that declare it. Spelling the expected version in the test
+  # instead made every release a two-file edit, with the suite red in between.
+  DEW_REPO_DIR="${CMAKE_SOURCE_DIR}")
 
 # What is actually COMPILED, as opposed to what happens to sit under src/.
 #

@@ -45,7 +45,7 @@ target_compile_definitions(dew_juce_config
 #why it lives on an interface target that a plugin could decline rather
 #than baked into every layer.
     JUCE_STANDALONE_APPLICATION=1
-    DEW_VERSION_STRING="${PROJECT_VERSION}"
+    DEW_VERSION_STRING="${PROJECT_VERSION}${DEW_VERSION_SUFFIX}"
     DEW_JUCE_PIN="${DEW_PIN_JUCE}"
 )
 
