@@ -8,6 +8,7 @@
 #include "ui/EditorState.h"
 #include "model/AutomationTargets.h"
 #include "ui/PlaylistToolbar.h"
+#include "ui/PlaylistTrackHeader.h"
 #include "ui/TimelineRuler.h"
 #include "ui/TimelinePaint.h"
 #include "ui/AutomationLane.h"
@@ -232,8 +233,6 @@ public:
     void scrollTracksTo (double offsetPx);
 
 private:
-    class TrackHeader;
-
     // Scrubbing and range-selecting are not here: the ruler's whole gesture
     // lives in ruler::Gesture, shared with the piano roll and the channel rack.
     enum class Gesture
@@ -451,7 +450,7 @@ private:
     */
     juce::Component headerHolder;
 
-    juce::OwnedArray<TrackHeader> headers;
+    juce::OwnedArray<PlaylistTrackHeader> headers;
     DewButton addAutomationButton { "+ Automation", DewButton::Role::ghost };
 
     // In the header column below the last track: the next empty row of the list,

@@ -346,6 +346,7 @@ add_library(dew_ui STATIC
   ui/PlaylistComponent.cpp
   ui/PlaylistPaint.cpp
   ui/PlaylistToolbar.cpp
+  ui/PlaylistTrackHeader.cpp
   ui/MixerComponent.cpp
   ui/ScoreTokeniser.cpp
   ui/ScoreCompletionList.cpp
