@@ -6,6 +6,7 @@
 #include "app/ProjectDocument.h"
 #include "ui/ConfirmPanel.h"
 #include "ui/EditorState.h"
+#include "ui/MixerStrip.h"
 #include "ui/ParamContextMenu.h"
 #include "ui/EffectChainHost.h"
 
@@ -83,8 +84,6 @@ public:
     }
 
 private:
-    class Strip;
-
     void valueTreeChildAdded (juce::ValueTree&, juce::ValueTree&) override;
     void valueTreeChildRemoved (juce::ValueTree&, juce::ValueTree&, int) override;
     void changeListenerCallback (juce::ChangeBroadcaster*) override;
@@ -96,14 +95,14 @@ private:
 
     /** The strip answering to an id, or null. masterTrackId finds the master,
         which carries no id property and so reads as 0. */
-    Strip* stripFor (int mixerTrackId) const;
+    MixerStrip* stripFor (int mixerTrackId) const;
 
     const paramMenu::Host* paramMenuHost = nullptr;
 
     ProjectDocument& document;
     EditorState& editorState;
     AudioEngine* engine = nullptr;
-    juce::OwnedArray<Strip> strips;
+    juce::OwnedArray<MixerStrip> strips;
     juce::Viewport stripViewport;
     juce::Component stripHolder;
 
