@@ -1,0 +1,70 @@
+{
+  "site": {
+    "name": "dew",
+    "tagline": "A desktop synth DAW where the song can be written as text.",
+    "status": "Working prototype. Every layer is real and wired to the next. macOS only.",
+    "skipToContent": "Skip to content"
+  },
+  "nav": {
+    "features": "Features",
+    "design": "Design system",
+    "score": "Score language",
+    "reference": "Reference",
+    "source": "Source"
+  },
+  "home": {
+    "intro": "A channel rack with a step grid, a piano roll, a playlist of clips and a mixer, driven by a three-oscillator synth per channel — or by a recording, or by a song written as text and compiled to notes.",
+    "readFeatures": "What it does",
+    "readScore": "The score language",
+    "tabsTitle": "Five tabs",
+    "tabsBody": "The same notes, seen four ways, and a fifth tab that writes them for you."
+  },
+  "features": {
+    "title": "What it does",
+    "lead": "Each of these is built and wired to the next. Nothing here is a mock."
+  },
+  "design": {
+    "title": "Design system",
+    "lead": "One vocabulary, held to a number rather than to taste. Every value on this page is read out of the application's own tokens.",
+    "coloursTitle": "Colour roles",
+    "coloursBody": "Named for their role, never their appearance. A theme is one assignment because each name is a reference into the palette in force.",
+    "rampTitle": "Channel ramp",
+    "rampBody": "Not themeable. These eight are document data, written into every project file, so repainting them would make a saved project disagree with the swatch it was chosen from.",
+    "scalesTitle": "Scales",
+    "liftTitle": "Lifts",
+    "liftBody": "How much lighter a surface gets when touched. A large surface needs a subtler lift than a small one — that distinction is real, and the other values that had grown beside it were not.",
+    "galleryCaption": "The whole design system on one page, rendered by dew_shot gallery."
+  },
+  "score": {
+    "title": "The score language",
+    "lead": "A song written as text and compiled to real patterns, notes and clips. Seven block keywords, and the set is closed.",
+    "exampleCaption": "examples/amber.score — the one CI compiles and renders.",
+    "referenceLink": "Every block and key",
+    "noExpressions": "There is no expression language — no arithmetic, no variables, no conditionals. That single restriction is what makes completion a table lookup rather than type inference, and what lets the grid be computed statically before anything is generated."
+  },
+  "reference": {
+    "title": "Score language reference",
+    "lead": "Generated from the same table the compiler validates against and the editor completes from, so a key cannot be documented differently from how it is checked.",
+    "blocksTitle": "Blocks",
+    "valuesTitle": "Values",
+    "modesTitle": "Modes",
+    "onThisPage": "On this page",
+    "keyHeading": "Key",
+    "valueHeading": "Value",
+    "notesHeading": "Notes",
+    "required": "required",
+    "overridable": "overridable",
+    "topLevel": "top level",
+    "nested": "nested",
+    "contains": "Contains",
+    "noKeys": "A list body rather than a set of keys.",
+    "degrees": "Degrees",
+    "romanNumerals": "Takes roman numerals",
+    "generatedFrom": "Generated from src/lang/Schema.h by dew_docs. Do not edit by hand.",
+    "kindsCount": "{count, plural, one {# value kind} other {# value kinds}}"
+  },
+  "footer": {
+    "licence": "JUCE 9 is dual-licensed; dew is a personal prototype used under the AGPLv3 terms.",
+    "generated": "The reference and every colour on this site are generated from the source."
+  }
+}

@@ -1,0 +1,14 @@
+node_modules
+.next
+out
+next-env.d.ts
+
+# Written by dew_docs and dew_shot, and compared byte for byte by a test in
+# dew_tests. Formatting them here would break that comparison permanently, and
+# regenerating them would break the formatting back - two gates deadlocked over
+# one file.
+src/generated
+
+# Written by scripts/gen-theme.mjs from src/generated/design-tokens.json, and
+# checked by `npm run theme:check` for the same reason.
+src/app/theme.generated.css

@@ -40,6 +40,12 @@ find src tests tools \( -name '*.cpp' -o -name '*.h' \) -print0 \
   | xargs -0 "$CLANG_FORMAT" --dry-run -Werror
 echo "ok    $count files formatted as .clang-format says"
 
+step "website"
+# Before the C++ build: it fails cheapest first, and it needs nothing the build
+# produces. That the JSON it reads is CURRENT is a separate question, answered
+# by a test in the suite below.
+./scripts/check-website.sh "$@"
+
 if (( build )); then
   step "build (warnings are errors)"
   cmake --build --preset ci

@@ -12,3 +12,10 @@
 
 # Local overrides
 CMakeUserPresets.json
+
+# The website. /build/ and /out/ above are anchored to the repo root by their
+# leading slash, so they cover neither of the site's own build trees.
+/website/node_modules/
+/website/.next/
+/website/out/
+/website/tsconfig.tsbuildinfo

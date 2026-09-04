@@ -1,0 +1,35 @@
+@import 'tailwindcss';
+@import './theme.generated.css';
+@import './theme.site.css';
+
+/*  dew is dark, and so is this.
+
+    Both of the app's palettes are dark and that is a stated decision, not an
+    omission: three of the emphasis transforms and all four lift rungs encode
+    "less important is darker" and "hovered is lighter", which is true on a dark
+    ground and inverts on a light one. So there is no `dark:` variant anywhere
+    in this site and no prefers-color-scheme branch - a gate refuses both.
+
+    color-scheme is what tells the browser: without it the scrollbars, the
+    form controls and any native widget render light on a dark page.
+*/
+:root {
+  color-scheme: dark;
+}
+
+body {
+  background-color: var(--color-background);
+  color: var(--color-text-primary);
+  font-family: var(--font-sans);
+  font-size: var(--text-prose);
+  -webkit-font-smoothing: antialiased;
+}
+
+/*  The focus ring is the app's, from paint::focusRing: the accent colour, one
+    hairline, offset so it reads against the control rather than on it. Stated
+    once here rather than on every primitive.
+*/
+:focus-visible {
+  outline: var(--stroke-regular) solid var(--color-accent);
+  outline-offset: 2px;
+}

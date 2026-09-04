@@ -17,3 +17,14 @@ brew "ccache"
 # raises no LGPL question. Without it the app simply greys the MP3 option out,
 # so this is the one entry here that is optional.
 brew "lame"
+
+# The website. dew's own build needs none of this - the site reads committed
+# JSON and committed PNGs, so `cmake --build --preset ci` never touches node -
+# but ./scripts/check.sh checks the site when node is present, and says loudly
+# when it is not.
+#
+# npm rather than pnpm or yarn: it ships with node, so this one line is the
+# whole bootstrap, and actions/setup-node caches it with no third-party action
+# to pin. Unpinned like everything else here - this file fixes the tool SET.
+# Which node is website/.nvmrc's job, and that is the one CI reads.
+brew "node"

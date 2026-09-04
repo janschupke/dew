@@ -1,0 +1,9 @@
+# The first images this repo commits. Marked binary so git never tries to diff
+# one or translate its line endings.
+*.png binary
+
+# Written by dew_docs and dew_shot and compared BYTE FOR BYTE by a test in
+# dew_tests and by cmp in CI, so nothing may normalise them on the way in or
+# out. juce::File::replaceWithText defaults to CRLF and the emitters pass "\n"
+# explicitly for the same reason.
+website/src/generated/*.json -text

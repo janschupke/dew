@@ -1,0 +1,19 @@
+/*  NOT from src/ui/design/Tokens.h.
+
+    dew's type ladder tops out at type::display = 20px, because the largest text
+    in a DAW is a panel heading. A landing page needs a hero, and inventing one
+    inside theme.generated.css would be claiming the application declares a rung
+    it does not. These four are the website's, and this file is where that is
+    visible.
+
+    Everything else the site paints - every colour, radius, stroke, gap, motion
+    duration and code rung - comes from the generated file and is the
+    application's.
+*/
+@theme {
+  --text-prose: 1rem;
+  --text-lead: 1.1875rem;
+  --text-h2: 1.75rem;
+  --text-h1: 2.5rem;
+  --text-hero: 3.25rem;
+}

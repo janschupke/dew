@@ -149,6 +149,43 @@ jobs:
   # It costs almost nothing to test: dew_lang links nothing, JUCE included, so
   # this job installs a compiler and CMake and no system libraries at all.
   # ----------------------------------------------------------------------------
+  # ----------------------------------------------------------------------------
+  # The website.
+  #
+  # ubuntu rather than macos-15, and a job of its own rather than steps on the
+  # build. Nothing here needs a C++ toolchain: the two things the site reads
+  # from dew - the score schema and the design tokens - are COMMITTED JSON, and
+  # the screenshots are committed PNGs. That is the whole reason a C++ emitter
+  # writes them. A website change should not wait behind a JUCE build, a JUCE
+  # change should not wait behind npm, and ubuntu minutes are a fraction of
+  # macOS ones.
+  #
+  # That the committed JSON still matches what the emitters write is the build
+  # job's business, above, where the compiler already is.
+  #
+  # DEW_REQUIRE_NODE=1 so the skip that is right on a contributor's machine is
+  # a failure here, where nobody would see it.
+  # ----------------------------------------------------------------------------
+  website:
+    name: website
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # node-version-file rather than a version here: website/.nvmrc is the one
+      # home for which node this builds with, read by nvm locally and by this.
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: website/.nvmrc
+          cache: npm
+          cache-dependency-path: website/package-lock.json
+
+      - name: Theme, formatting, lint, types, tests and build
+        run: ./scripts/check-website.sh
+        env:
+          DEW_REQUIRE_NODE: 1
+
   lang-linux:
     name: linux · gcc · score language
     runs-on: ubuntu-latest
