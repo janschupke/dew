@@ -273,10 +273,6 @@
       "title": "Remove track"
     }
   },
-  "edit": {
-    "moveNote": "{count, plural, one {Move note} other {Move notes}}",
-    "sliceNote": "{count, plural, one {Slice note} other {Slice notes}}"
-  },
   "effect": {
     "bypassed": "BYPASSED",
     "chain": {
@@ -449,6 +445,9 @@
     "compile": {
       "help": "Turn this score into patterns, notes and clips (cmd-R)"
     },
+    "compiled": "Score compiled: {patterns, plural, one {# pattern} other {# patterns}}, {clips, plural, one {# clip} other {# clips}}, {notes, plural, one {# note} other {# notes}}",
+    "errors": "Score has {count, plural, one {# error} other {# errors}} - nothing was written",
+    "keptByHand": " - {count, plural, one {# pattern was} other {# patterns were}} edited by hand and left alone",
     "position": "{line}:{column}"
   },
   "soundFont": {
@@ -461,8 +460,18 @@
     }
   },
   "status": {
+    "audioNotOpened": "Audio device not opened",
+    "audioUnavailable": "Audio unavailable: {error}",
     "dropouts": "{count, plural, one {# drop} other {# drops}}",
-    "notes": "{count, plural, one {# note} other {# notes}}"
+    "loadWarnings": "{count, plural, one {# item} other {# items}} in this file were not understood: {first}",
+    "meterChanged": "Time signature is now {meter}.",
+    "meterChangedRounded": "Time signature is now {meter}. Some clips were rounded to the nearest bar.",
+    "notes": "{count, plural, one {# note} other {# notes}}",
+    "nothingRecorded": "Nothing was recorded - check the input in Audio Settings.",
+    "recordingUnreadable": "The recording could not be read back.",
+    "renderCancelled": "Render cancelled.",
+    "renderInProgress": "A render is already going.",
+    "rendering": "Rendering {file}..."
   },
   "transport": {
     "meter": {

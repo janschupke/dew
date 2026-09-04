@@ -362,9 +362,7 @@ void ScoreEditorComponent::compileIntoProject()
     if (! result.ok())
     {
         const auto errors = result.errorCount();
-        say ("Score has " + juce::String (errors) + (errors == 1 ? " error" : " errors")
-                 + " - nothing was written",
-             StatusBar::Severity::error);
+        say (tr (StringId::score_errors, Args {}.count (errors)), StatusBar::Severity::error);
         return;
     }
 
@@ -383,17 +381,14 @@ void ScoreEditorComponent::compileIntoProject()
         return;
     }
 
-    juce::String message = "Score compiled: " + juce::String (report.patternsWritten) + " pattern"
-                           + (report.patternsWritten == 1 ? "" : "s") + ", "
-                           + juce::String (report.clipsWritten) + " clip"
-                           + (report.clipsWritten == 1 ? "" : "s") + ", "
-                           + juce::String (report.notesWritten) + " note"
-                           + (report.notesWritten == 1 ? "" : "s");
+    juce::String message = tr (StringId::score_compiled,
+                               Args {}
+                                   .with ("patterns", report.patternsWritten)
+                                   .with ("clips", report.clipsWritten)
+                                   .with ("notes", report.notesWritten));
 
     if (report.patternsKept > 0)
-        message << " - " << report.patternsKept << " pattern"
-                << (report.patternsKept == 1 ? " was" : "s were")
-                << " edited by hand and left alone";
+        message << tr (StringId::score_keptByHand, Args {}.count (report.patternsKept));
 
     say (message, StatusBar::Severity::success);
 }

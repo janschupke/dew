@@ -227,11 +227,25 @@ TEST_CASE ("the extracted plurals still read as they did", "[i18n]")
     CHECK (tr (StringId::status_dropouts, Args {}.count (1)) == "1 drop");
     CHECK (tr (StringId::status_dropouts, Args {}.count (2)) == "2 drops");
 
-    CHECK (tr (StringId::edit_moveNote, Args {}.count (1)) == "Move note");
-    CHECK (tr (StringId::edit_moveNote, Args {}.count (7)) == "Move notes");
+    CHECK (tr (StringId::status_loadWarnings, Args {}.count (1).with ("first", "a clip"))
+           == "1 item in this file were not understood: a clip");
 
-    CHECK (tr (StringId::edit_sliceNote, Args {}.count (1)) == "Slice note");
-    CHECK (tr (StringId::edit_sliceNote, Args {}.count (3)) == "Slice notes");
+    CHECK (tr (StringId::score_errors, Args {}.count (1))
+           == "Score has 1 error - nothing was written");
+    CHECK (tr (StringId::score_errors, Args {}.count (9))
+           == "Score has 9 errors - nothing was written");
+
+    CHECK (tr (StringId::score_compiled,
+               Args {}.with ("patterns", 1).with ("clips", 1).with ("notes", 1))
+           == "Score compiled: 1 pattern, 1 clip, 1 note");
+    CHECK (tr (StringId::score_compiled,
+               Args {}.with ("patterns", 3).with ("clips", 5).with ("notes", 128))
+           == "Score compiled: 3 patterns, 5 clips, 128 notes");
+
+    CHECK (tr (StringId::score_keptByHand, Args {}.count (1))
+           == " - 1 pattern was edited by hand and left alone");
+    CHECK (tr (StringId::score_keptByHand, Args {}.count (2))
+           == " - 2 patterns were edited by hand and left alone");
 }
 
 TEST_CASE ("a confirmation names what it is about to destroy", "[i18n]")

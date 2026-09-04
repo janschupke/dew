@@ -1,4 +1,5 @@
 #include "ui/MainComponent.h"
+#include "i18n/Strings.h"
 #include "ui/DewDialog.h"
 
 #include <cmath>
@@ -110,12 +111,13 @@ MainComponent::MainComponent (bool openAudioDevice)
         // moves every clip, and a ratio that does not divide evenly has to
         // round one to the nearest whole bar.
         if (wasExact)
-            statusBar.showMessage ("Time signature is now " + meter.toString() + ".",
-                                   StatusBar::Severity::info);
+            statusBar.showMessage (
+                tr (StringId::status_meterChanged, Args {}.with ("meter", meter.toString())),
+                StatusBar::Severity::info);
         else
-            statusBar.showMessage ("Time signature is now " + meter.toString()
-                                       + ". Some clips were rounded to the nearest bar.",
-                                   StatusBar::Severity::warning);
+            statusBar.showMessage (
+                tr (StringId::status_meterChangedRounded, Args {}.with ("meter", meter.toString())),
+                StatusBar::Severity::warning);
     };
 
     // Which channel MIDI plays follows the selection, and has to be pushed to
@@ -126,11 +128,13 @@ MainComponent::MainComponent (bool openAudioDevice)
 
     if (! openAudioDevice)
     {
-        statusBar.showMessage ("Audio device not opened", StatusBar::Severity::warning);
+        statusBar.showMessage (tr (StringId::status_audioNotOpened), StatusBar::Severity::warning);
     }
     else if (const auto error = audioHost.start(); error.isNotEmpty())
     {
-        statusBar.showMessage ("Audio unavailable: " + error, StatusBar::Severity::error);
+        statusBar.showMessage (
+            tr (StringId::status_audioUnavailable, Args {}.with ("error", error)),
+            StatusBar::Severity::error);
     }
     else
     {
@@ -207,10 +211,10 @@ void MainComponent::showLoadWarnings (const juce::StringArray& warnings)
     if (warnings.isEmpty())
         return;
 
-    statusBar.showMessage (juce::String (warnings.size()) + " item"
-                               + (warnings.size() == 1 ? "" : "s")
-                               + " in this file were not understood: " + warnings[0],
-                           StatusBar::Severity::warning);
+    statusBar.showMessage (
+        tr (StringId::status_loadWarnings,
+            Args {}.count ((juce::int64) warnings.size()).with ("first", warnings[0])),
+        StatusBar::Severity::warning);
 }
 
 void MainComponent::paint (juce::Graphics& g)

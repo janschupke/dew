@@ -13,6 +13,7 @@
 // references.
 // =============================================================================
 
+#include "i18n/Strings.h"
 #include "ui/MainComponent.h"
 
 #include "io/AudioRecorder.h"
@@ -96,8 +97,7 @@ void MainComponent::finishRecording()
 
     if (file == juce::File() || ! file.existsAsFile())
     {
-        statusBar.showMessage ("Nothing was recorded - check the input in Audio Settings.",
-                               StatusBar::Severity::warning);
+        statusBar.showMessage (tr (StringId::status_nothingRecorded), StatusBar::Severity::warning);
         return;
     }
 
@@ -113,7 +113,7 @@ void MainComponent::finishRecording()
 
     if (! entry.isValid())
     {
-        statusBar.showMessage ("The recording could not be read back.",
+        statusBar.showMessage (tr (StringId::status_recordingUnreadable),
                                StatusBar::Severity::warning);
         return;
     }
@@ -225,8 +225,9 @@ void MainComponent::startRender (const RenderPanel::Request& request, Settings* 
             job.options.samplePool = &samplePool;
             job.options.soundFontPool = &soundFontPool;
 
-            statusBar.showMessage ("Rendering " + destination.getFileName() + "...",
-                                   StatusBar::Severity::info);
+            statusBar.showMessage (
+                tr (StringId::status_rendering, Args {}.with ("file", destination.getFileName())),
+                StatusBar::Severity::info);
 
             const auto started = renderJob->start (
                 std::move (job),
@@ -239,7 +240,8 @@ void MainComponent::startRender (const RenderPanel::Request& request, Settings* 
                     {
                         // The user asked for this. Reporting it as an error would tell
                         // them their own click was a bug.
-                        statusBar.showMessage ("Render cancelled.", StatusBar::Severity::info);
+                        statusBar.showMessage (tr (StringId::status_renderCancelled),
+                                               StatusBar::Severity::info);
                         return;
                     }
 
@@ -262,7 +264,8 @@ void MainComponent::startRender (const RenderPanel::Request& request, Settings* 
                 });
 
             if (! started)
-                statusBar.showMessage ("A render is already going.", StatusBar::Severity::warning);
+                statusBar.showMessage (tr (StringId::status_renderInProgress),
+                                       StatusBar::Severity::warning);
         });
 }
 
@@ -270,7 +273,8 @@ void MainComponent::showRenderDialog (Settings* settingsToUpdate)
 {
     if (renderJob != nullptr && renderJob->isRunning())
     {
-        statusBar.showMessage ("A render is already going.", StatusBar::Severity::warning);
+        statusBar.showMessage (tr (StringId::status_renderInProgress),
+                               StatusBar::Severity::warning);
         return;
     }
 

@@ -62,8 +62,15 @@ bool showsALiteral (const juce::String& raw)
     const auto line = withoutArgumentNames (raw);
 
     // Sinks whose text is the FIRST argument.
-    for (const auto* sink :
-         { "setTooltip (", "setButtonText (", "setText (", "setTitle (", "setSuffix (" })
+    //
+    // beginNewTransaction is deliberately NOT among them, and it is the one
+    // that looks like it should be. Fifty-five of them name an undo step, and
+    // an undo step's name is read by getUndoDescription, which nothing outside
+    // the tests calls - dew's Edit menu shows the COMMAND's name, not the
+    // transaction's. Translating a string nobody displays is paying a
+    // translator for a key the orphan gate would then have to allow.
+    for (const auto* sink : { "setTooltip (", "setButtonText (", "setText (", "setTitle (",
+                              "setSuffix (", "showMessage (" })
     {
         if (! line.contains (sink))
             continue;

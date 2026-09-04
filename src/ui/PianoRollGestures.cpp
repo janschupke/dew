@@ -261,8 +261,7 @@ void PianoRollComponent::mouseDown (const juce::MouseEvent& event)
             for (const auto& selected : selection)
                 selectionOrigins.add ({ (int) selected[ids::step], (int) selected[ids::pitch] });
 
-            undo.beginNewTransaction (
-                tr (StringId::edit_moveNote, Args {}.count ((juce::int64) selection.size())));
+            undo.beginNewTransaction (selection.size() == 1 ? "Move note" : "Move notes");
         }
 
         return;
