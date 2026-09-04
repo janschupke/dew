@@ -52,65 +52,130 @@ inline juce::Array<juce::File> allDewFiles()
     return files;
 }
 
-/** A file's lines with comments and blank lines removed.
+/** One line of code, and where in the file it came from.
 
-    Hoisted out of the JUCE-in-lang gate, which had it inline: that gate strips
-    comments because these files legitimately TALK about juce::CodeDocument, and
-    the size gate strips them because dew's headers carry long doc comments by
-    design and a raw line count would punish exactly the documentation the house
-    style asks for.
-
-    Tracked across lines rather than per line, because dew's doc comments
-    continue WITHOUT a leading asterisk - so "starts with *" would read the body
-    of every block comment as code.
+    The number is the ORIGINAL line's, so a gate can strip the prose and still
+    name a line somebody can go and look at.
 */
-inline juce::StringArray codeLinesOf (const juce::File& file)
+struct CodeLine
+{
+    int number = 0;    ///< 1-based, in the file as written
+    juce::String text; ///< that line with its comments removed
+};
+
+/** A file's lines with comments removed and blank ones dropped.
+
+    Every gate here wants this, and for the same reason. The lang gate strips
+    comments because those files legitimately TALK about juce::CodeDocument; the
+    size gate strips them because dew's headers carry long doc comments by design
+    and a raw line count would punish exactly the documentation the house style
+    asks for.
+
+    Tracked across lines rather than per line, and that is the whole point.
+    dew's doc comments continue WITHOUT a leading asterisk, so the per-line
+    heuristic every predicate used to open with - does this line start with a
+    comment marker - reads the body of every block comment as code. It was not a
+    near miss: three gates were held green by a wrapped sentence rather than by
+    any code, the combo-box gate's exempt line among them.
+
+    STRINGS are tracked too, and that is not fussiness. This file's own gates
+    quote comment markers as literals, and without this a line containing the
+    characters slash-star inside quotes opened a block comment that ran until
+    some later string closed it. SourceGateTests.cpp measured 301 code lines
+    that way when it really held 667: the size gate was being blinded by the
+    very predicates it was scanning, and the file it could not see was the one
+    holding the gates.
+*/
+inline juce::Array<CodeLine> codeLinesWithNumbersOf (const juce::File& file)
 {
     juce::StringArray lines;
     lines.addLines (file.loadFileAsString());
 
-    juce::StringArray code;
+    juce::Array<CodeLine> code;
     auto inBlockComment = false;
 
-    for (const auto& raw : lines)
+    for (int i = 0; i < lines.size(); ++i)
     {
-        auto line = raw;
+        const auto& line = lines[i];
+        juce::String kept;
 
-        if (inBlockComment)
+        for (int c = 0; c < line.length();)
         {
-            const auto closes = line.indexOf ("*/");
+            if (inBlockComment)
+            {
+                if (line[c] == '*' && c + 1 < line.length() && line[c + 1] == '/')
+                {
+                    inBlockComment = false;
+                    c += 2;
+                }
+                else
+                {
+                    ++c;
+                }
 
-            if (closes < 0)
                 continue;
+            }
 
-            line = line.substring (closes + 2);
-            inBlockComment = false;
+            // A quoted literal is copied through whole, terminator included, so
+            // the markers a gate quotes cannot open or close a comment.
+            if (line[c] == '"' || line[c] == '\'')
+            {
+                const auto quote = line[c];
+                kept += line[c++];
+
+                while (c < line.length())
+                {
+                    const auto ch = line[c];
+                    kept += ch;
+                    ++c;
+
+                    if (ch == '\\' && c < line.length())
+                        kept += line[c++];
+                    else if (ch == quote)
+                        break;
+                }
+
+                continue;
+            }
+
+            if (line[c] == '/' && c + 1 < line.length())
+            {
+                if (line[c + 1] == '/')
+                    break;
+
+                if (line[c + 1] == '*')
+                {
+                    inBlockComment = true;
+                    c += 2;
+                    continue;
+                }
+            }
+
+            kept += line[c++];
         }
 
-        if (const auto opens = line.indexOf ("/*"); opens >= 0)
-        {
-            if (const auto closes = line.indexOf (opens + 2, "*/"); closes < 0)
-            {
-                line = line.substring (0, opens);
-                inBlockComment = true;
-            }
-            else
-            {
-                line = line.substring (0, opens) + line.substring (closes + 2);
-            }
-        }
-
-        if (const auto lineComment = line.indexOf ("//"); lineComment >= 0)
-            line = line.substring (0, lineComment);
-
-        if (line.trim().isNotEmpty())
-            code.add (line);
+        if (kept.trim().isNotEmpty())
+            code.add ({ i + 1, kept });
     }
 
     return code;
 }
 
-/** Every line for which `matches` is true, as "File.cpp:123  the line".
+/** The same, when only the count matters. */
+inline juce::StringArray codeLinesOf (const juce::File& file)
+{
+    juce::StringArray text;
+
+    for (const auto& line : codeLinesWithNumbersOf (file))
+        text.add (line.text);
+
+    return text;
+}
+
+/** Every line of CODE for which `matches` is true, as "File.cpp:123  the line".
+
+    Comments never reach `matches`, so a predicate says what it is looking for
+    and nothing about how a comment is spelled.
 
     Files whose NAME appears in `exempt` are skipped whole - that is the shape
     every one of these gates needs, because each rule has one or two places that
@@ -137,13 +202,10 @@ inline juce::StringArray offenders (const std::function<bool (const juce::String
         if (skip)
             continue;
 
-        juce::StringArray lines;
-        lines.addLines (file.loadFileAsString());
-
-        for (int i = 0; i < lines.size(); ++i)
-            if (matches (lines[i]))
-                found.add (file.getFileName() + ":" + juce::String (i + 1) + "  "
-                           + lines[i].trim());
+        for (const auto& line : codeLinesWithNumbersOf (file))
+            if (matches (line.text))
+                found.add (file.getFileName() + ":" + juce::String (line.number) + "  "
+                           + line.text.trim());
     }
 
     return found;

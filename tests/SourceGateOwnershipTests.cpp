@@ -1,0 +1,316 @@
+#include <catch2/catch_test_macros.hpp>
+
+#include "SourceScan.h"
+#include "model/AutomationTargets.h"
+#include "model/ModuleCatalog.h"
+
+using namespace dew::testing;
+using namespace dew;
+
+// =============================================================================
+// The single-owner gates.
+//
+// Each of these says the same thing about a different thing: there is one place
+// that owns it, and everywhere else goes through that place. DewControls owns
+// the controls, Ids owns the property names, Gestures owns the wheel and the
+// drag scale, ProjectEdits owns an undoable write, Hotkeys owns a key.
+//
+// So each carries an exemption naming the owner, and that exemption is the only
+// kind that is ever right: it names a definition site rather than a file that
+// happens to be awkward.
+// =============================================================================
+
+/** True when `line` hands a non-ASCII literal to juce::String's const char*
+    constructor, which is the one place JUCE decodes those bytes as ASCII.
+
+    Hoisted out of the gate so the gate can be pointed at a line it should catch
+    and a line it should not, which is the only way to know a scanner works.
+*/
+static bool feedsAsciiConstructor (const juce::String& line)
+{
+    for (int i = 0; i < line.length();)
+    {
+        if (line[i] != '"')
+        {
+            ++i;
+            continue;
+        }
+
+        const auto open = i;
+        auto close = -1;
+
+        for (int j = i + 1; j < line.length(); ++j)
+        {
+            if (line[j] == '\\')
+            {
+                ++j;
+                continue;
+            }
+
+            if (line[j] == '"')
+            {
+                close = j;
+                break;
+            }
+        }
+
+        if (close < 0)
+            return false;
+
+        auto holdsNonAscii = false;
+
+        for (int j = open + 1; j < close; ++j)
+            if (line[j] > 127)
+                holdsNonAscii = true;
+
+        if (holdsNonAscii)
+        {
+            const auto before = line.substring (0, open).trimEnd();
+            const auto after = line.substring (close + 1).trim();
+
+            // Opening a concatenation means the literal is the LEFT operand, so
+            // operator+ (const char*, const String&) builds a String from it
+            // first. A literal already on the right of a + goes through
+            // operator+=, which reads UTF-8 and is correct.
+            if (after.startsWith ("+") && ! before.endsWith ("+") && ! before.endsWith ("<<"))
+                return true;
+
+            // The same constructor, reached directly. String (CharPointer_UTF8
+            // ("...")) is the escape hatch and does not match: it does not end
+            // in "String (".
+            if (before.endsWith ("juce::String (") || before.endsWith ("juce::String(")
+                || before.endsWith ("String (") || before.endsWith ("String("))
+                return true;
+        }
+
+        i = close + 1;
+    }
+
+    return false;
+}
+
+TEST_CASE ("no source declares a bare juce::ComboBox", "[build][gate]")
+{
+    // Same rule as the checkbox above, and the same reason: DewLookAndFeel
+    // paints the box, the arrow and the menu, so what a stock ComboBox lacks is
+    // not an appearance but a cursor - and JUCE does not inherit one from a
+    // parent, so a dropdown left alone shows an arrow beside a button showing a
+    // hand. Sixteen boxes in seven panels is past the count at which a habit
+    // stays reliable.
+    //
+    // Declarations only. A function taking a juce::ComboBox& is taking the base
+    // class of a DewDropdown, which is correct.
+    const auto found = offenders (
+        [] (const juce::String& line)
+        {
+            const auto trimmed = line.trim();
+
+            return trimmed.startsWith ("juce::ComboBox ") || trimmed.contains ("juce::ComboBox>()")
+                   || trimmed.contains ("new juce::ComboBox");
+        },
+        { "DewControls.h" });
+
+    INFO ("stock combo boxes:\n" << found.joinIntoString ("\n"));
+    CHECK (found.isEmpty());
+}
+
+TEST_CASE ("no source declares a bare juce::ToggleButton", "[build][gate]")
+{
+    // juce::Button completes a click for whichever mouse button pressed it, so
+    // a stock ToggleButton flips on a right-click - which is a gesture that in
+    // every other part of dew means "show me a menu" and never means "do it".
+    // DewCheckbox is that control with the press filtered, and the five that
+    // were stock lived in two dialogs where nobody thought to check.
+    //
+    // Declarations only: the LookAndFeel names ToggleButton's colour ids, and
+    // theming the stock control is the reason DewCheckbox does not repaint it.
+    const auto found = offenders (
+        [] (const juce::String& line)
+        {
+            const auto trimmed = line.trim();
+
+            return trimmed.startsWith ("juce::ToggleButton ")
+                   || trimmed.contains ("juce::ToggleButton>");
+        },
+        { "DewControls.h" });
+
+    INFO ("stock toggle buttons:\n" << found.joinIntoString ("\n"));
+    CHECK (found.isEmpty());
+}
+
+TEST_CASE ("no source starts a concatenation with a non-ASCII literal", "[build][gate]")
+{
+    // juce::String decodes an 8-bit literal two different ways depending on
+    // which side of the + it is on, and nothing warns:
+    //
+    //     String::String (const char*)      -> CharPointer_ASCII, mangles UTF-8
+    //     String::operator+= (const char*)  -> CharPointer_UTF8,  correct
+    //
+    // So `name + " — "` is right and `" — " + name` is not, and the window title
+    // was the second one: "dew — Untitled" reached the title bar with the em
+    // dash split into three characters. RenderPanel.cpp had already written the
+    // rule down in a comment, one file away, and the comment did not stop it.
+    //
+    // Invisible in review - the same file can hold both forms and only one is
+    // wrong - which is exactly the kind of rule that has to be a scanner.
+    const auto found = offenders ([] (const juce::String& line)
+                                  { return feedsAsciiConstructor (line); });
+
+    INFO ("non-ASCII literals decoded as ASCII:\n" << found.joinIntoString ("\n"));
+    CHECK (found.isEmpty());
+
+    // Control case: a scanner that cannot see the defect it was written for is
+    // not a gate. Both lines below are the window title, before and after.
+    const juce::String dash (juce::CharPointer_UTF8 ("\xe2\x80\x94"));
+
+    CHECK (feedsAsciiConstructor ("setName (\"dew " + dash + " \" + name);"));
+    CHECK_FALSE (feedsAsciiConstructor ("title += \" " + dash + " \";"));
+    CHECK_FALSE (feedsAsciiConstructor ("summary = seconds + \"  " + dash + "  \" + rate;"));
+}
+
+TEST_CASE ("no source spells an automatable parameter as a string literal", "[build][gate]")
+{
+    // The twenty names that were the actual defect: the snapshot builder held a
+    // table mapping "cutoff", "roomSize", "midFreq" and the rest to an enum, and
+    // it was the only place in production that wrote a property name by hand.
+    //
+    // The failure was silent in the worst way. Renaming an identifier in Ids.h
+    // compiled cleanly, the schema and the editor followed the new name, and
+    // every automation curve pointing at the old one simply stopped doing
+    // anything - because a name that matches nothing is indistinguishable from
+    // an automation of nothing.
+    //
+    // Scoped to automatable parameters rather than every identifier, and taken
+    // from the catalog rather than scraped, because dew's identifiers also
+    // include node types (CHANNEL, MIXER) that are legitimate UI captions, and
+    // property names that are also legitimate VALUES - "loop", "record",
+    // "wavetable", "drive". Widening this beyond the parameters would be a gate
+    // that cries wolf, which is a gate people turn off.
+    // ONE call rather than five table lookups written out here. The gate used to
+    // walk each per-scope table by hand, so a table added beside them was a
+    // table the gate silently did not cover.
+    auto names = dew::automatableParameterNames();
+
+    // Two whole files are exempt for the same reason the effect ids below are.
+    // Icons.cpp is a registry of ICON names, and "mute" is one of them; src/lang
+    // is the score language, whose keywords are its own vocabulary and address
+    // its own tree, not the project's. Both became offenders the moment mute
+    // turned into an automatable parameter, and neither is the defect this gate
+    // exists to catch - which is a property name written by hand where a
+    // property is being RESOLVED.
+    //
+    // An effect's id and one of its parameters share a spelling in one case -
+    // "drive" is both - and the id is a value a file legitimately contains.
+    for (const auto& descriptor : dew::effectDescriptors())
+        names.removeString (descriptor.id);
+
+    // Control case: a gate over an empty list is not a gate.
+    REQUIRE (names.size() > 15);
+    REQUIRE (names.contains ("cutoff"));
+    REQUIRE (names.contains ("midFreq"));
+
+    const auto found = dew::testing::offenders (
+        [&names] (const juce::String& line)
+        {
+            // The exemption is the DIRECTORY src/ui/design/icons, not a file in it.
+            // The catalog names its own icons as strings - { "mute", mute } - and
+            // several of those names are also parameter names. It was one file and
+            // one entry; splitting it into three would have meant three entries,
+            // which is the list SourceScan.h warns a fourth file falls off.
+            // Doc comments name properties all through this codebase, deliberately.
+            for (const auto& name : names)
+                if (line.contains ("\"" + name + "\""))
+                    return true;
+
+            return false;
+        },
+        { "Ids.h", "icons", "lang" });
+
+    INFO ("automatable parameters written as string literals:\n" << found.joinIntoString ("\n"));
+    CHECK (found.isEmpty());
+}
+
+TEST_CASE ("no view reads the wheel or the drag scale for itself", "[build][gate][gesture]")
+{
+    // Three wheel speeds - 4, 6 and 8 steps a notch - and one view of three
+    // reading isReversed, which JUCE reports rather than applies. The two that
+    // ignored it scrolled backwards for anyone running the Mac default, and
+    // nobody noticed because each view was right about itself.
+    //
+    // Gestures.h is where the reading happens, so it is the one place allowed
+    // to touch the raw fields.
+    //
+    // The two primitives that APPLY the drag scale are exempt as well: a knob
+    // and a number field each hand JUCE the number Gestures.h names, which is
+    // the opposite of deciding one. DewKnob.cpp joined the list when the knob
+    // left DewControls.cpp - a name-based exemption is a list a moved file
+    // silently falls off, and this gate went red for exactly that reason.
+    const auto found = offenders (
+        [] (const juce::String& line)
+        {
+            return line.contains ("wheel.deltaX") || line.contains ("wheel.deltaY")
+                   || line.contains ("wheel.isReversed")
+                   || line.contains ("setMouseDragSensitivity");
+        },
+        { "Gestures.h", "DewControls.cpp", "DewKnob.cpp" });
+
+    INFO ("views reading the wheel or the drag scale directly:\n" << found.joinIntoString ("\n"));
+    CHECK (found.isEmpty());
+}
+
+TEST_CASE ("no editor writes an undoable property by hand", "[build][gate][undo]")
+{
+    // ProjectEdits had no scalar setter at all, so all twenty-seven property
+    // writes in src/ui went straight to ValueTree and each re-implemented the
+    // transaction rule around it - copy-pasted five times, and MISSING from a
+    // sixth. The consequence was invisible in the file that had the bug and
+    // obvious only across all six: dragging an audio channel's fade made one
+    // undo step per frame.
+    //
+    // A write with no UndoManager is not caught, and deliberately: writing to a
+    // detached copy nobody can undo is a different thing, and it says so where
+    // it happens.
+    //
+    // The exemption is the DIRECTORY model/edits, not the files in it. It used
+    // to name ProjectEdits.cpp, and when that file became seven the list would
+    // have had to name all seven - which is the shape SourceScan.h warns about
+    // above offenders(): a list of five that the sixth silently escapes. An
+    // eighth edit file is exempt by being where the edits are.
+    const auto found = offenders (
+        [] (const juce::String& line)
+        {
+            if (! line.contains (".setProperty (") || line.contains ("ProjectEdits::setProperty"))
+                return false;
+
+            return line.contains ("&undo") || line.contains ("getUndoManager()");
+        },
+        { "edits", "ProjectFactory.cpp", "ProjectSchema.cpp" });
+
+    INFO ("undoable property writes outside ProjectEdits:\n" << found.joinIntoString ("\n"));
+    CHECK (found.isEmpty());
+}
+
+TEST_CASE ("no source binds a key outside the hotkey registry", "[build][gate][hotkeys]")
+{
+    // There used to be two key tables that could not see each other: fifteen
+    // addDefaultKeypress calls written inline in DewApplication::getCommandInfo,
+    // and an if-chain in Gestures.cpp for the timeline views. Neither was wrong
+    // about itself, and between them cmd-1 was swallowed by whichever view had
+    // focus and bare `r` meant two different things.
+    //
+    // Hotkeys.cpp is where a binding is spelled. ScoreEditorComponent.cpp is
+    // the one exemption: while its completion popup is open it owns Up, Down,
+    // Return, Tab and Escape, and that is a modal handler rather than a
+    // binding - nothing outside that popup can reach those keys, so putting
+    // them in a table shared with the menu bar would say something untrue.
+    const auto found = offenders (
+        [] (const juce::String& line)
+        {
+            return line.contains ("addDefaultKeypress (") || line.contains ("juce::KeyPress (")
+                   || line.contains ("KeyPress::createFromDescription");
+        },
+        { "Hotkeys.h", "Hotkeys.cpp", "ScoreEditorComponent.cpp" });
+
+    INFO ("keys bound outside the registry:\n" << found.joinIntoString ("\n"));
+    CHECK (found.isEmpty());
+}

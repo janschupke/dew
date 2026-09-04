@@ -102,6 +102,8 @@ add_executable(dew_tests
   GestureTests.cpp
   HotkeyTests.cpp
   SourceGateTests.cpp
+  SourceGateDesignTests.cpp
+  SourceGateOwnershipTests.cpp
   RealtimeTests.cpp
   AllocationGateTests.cpp
   CatalogTests.cpp
