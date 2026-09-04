@@ -9,10 +9,23 @@ using namespace dew;
 // =============================================================================
 // The design-system gates.
 //
-// Tokens.h is exempt from most of these, because it is where the values are
-// declared; a gate that forbade its own definitions would only be forbidding
-// the design system from existing. Which of them it really needs is checked
-// rather than assumed - see the exemption accounting in SourceScan.h.
+// Tokens.h is where the values are declared, so a gate that forbade its own
+// definitions would only be forbidding the design system from existing.
+//
+// It was exempt from all six. It needs two. Tokens.h names colours as hex and
+// states emphases as bare numbers, so those two gates would report it; it draws
+// no rounded rectangle, insets no rectangle and starts no timer, so three more
+// exempted it from rules it could not break. The sixth is the interesting one:
+// the size-ladder gate reads a declaration beginning "constexpr int", and all
+// fifty-two of Tokens.h's begin "inline constexpr int", so it was never a
+// candidate. Accepting the inline form would widen the gate to one more file in
+// the tree - RenderPost.h's maxDitheredBitDepth, which is a bit depth and not a
+// dimension - and a gate that calls that a strip height is the gate its own
+// comment below says people turn off. So the spelling stands, and the exemption
+// that was standing in for it does not.
+//
+// Which of them are real is now checked rather than assumed. See the exemption
+// accounting in SourceScan.h.
 // =============================================================================
 
 TEST_CASE ("no source names a mouse cursor outside the vocabulary", "[build][gate][design]")
@@ -26,7 +39,7 @@ TEST_CASE ("no source names a mouse cursor outside the vocabulary", "[build][gat
     // nib, idle - the same way the colours are named for their role.
     const auto found = offenders ([] (const juce::String& line)
                                   { return line.contains ("juce::MouseCursor::"); },
-                                  { "Cursors.h" });
+                                  { "ui/design/Cursors.h" });
 
     INFO ("cursors chosen outside the vocabulary:\n" << found.joinIntoString ("\n"));
     CHECK (found.isEmpty());
@@ -44,7 +57,7 @@ TEST_CASE ("no source names a colour by its hex value", "[build][gate][design]")
     const auto found = offenders (
         [] (const juce::String& line)
         { return line.contains ("juce::Colour (0x") || line.contains ("juce::Colour(0x"); },
-        { "Tokens.h", "Tokens.cpp" });
+        { "ui/design/Tokens.h", "ui/design/Tokens.cpp" });
 
     INFO ("colours written as hex outside the token file:\n" << found.joinIntoString ("\n"));
     CHECK (found.isEmpty());
@@ -99,7 +112,7 @@ TEST_CASE ("no source states an emphasis as a bare number", "[build][gate][desig
 
             return false;
         },
-        { "Tokens.h" });
+        { "ui/design/Tokens.h" });
 
     INFO ("emphasis written as bare numbers:\n" << found.joinIntoString ("\n"));
     CHECK (found.isEmpty());
@@ -145,7 +158,7 @@ TEST_CASE ("no source states a radius or a stroke as a bare number", "[build][ga
 
             return false;
         },
-        { "Tokens.h", "icons" });
+        { "ui/design/icons" });
 
     INFO ("radii and strokes written as bare numbers:\n" << found.joinIntoString ("\n"));
     CHECK (found.isEmpty());
@@ -221,8 +234,7 @@ TEST_CASE ("no component redeclares a size the ladder already names", "[build][g
                     return true;
 
             return false;
-        },
-        { "Tokens.h" });
+        });
 
     INFO ("dimensions the size ladder already declares:\n" << found.joinIntoString ("\n"));
     CHECK (found.isEmpty());
@@ -305,8 +317,7 @@ TEST_CASE ("no source states a gap or an inset as a bare number", "[build][gate]
             }
 
             return false;
-        },
-        { "Tokens.h" });
+        });
 
     INFO ("gaps and insets written as bare numbers:\n" << found.joinIntoString ("\n"));
     CHECK (found.isEmpty());
@@ -326,8 +337,7 @@ TEST_CASE ("no source picks its own refresh rate", "[build][gate][design]")
             return trimmed.contains ("startTimerHz (")
                    && juce::CharacterFunctions::isDigit (
                        trimmed.fromFirstOccurrenceOf ("startTimerHz (", false, false)[0]);
-        },
-        { "Tokens.h" });
+        });
 
     INFO ("timers started at a rate of their own choosing:\n" << found.joinIntoString ("\n"));
     CHECK (found.isEmpty());

@@ -190,35 +190,81 @@ inline juce::String relativePathOf (const juce::File& file)
     Comments never reach `matches`, so a predicate says what it is looking for
     and nothing about how a comment is spelled.
 
-    Files whose NAME appears in `exempt` are skipped whole - that is the shape
-    every one of these gates needs, because each rule has one or two places that
-    are allowed to break it precisely because they are where it is defined.
+    Files under a path in `exempt` are not reported - that is the shape every
+    one of these gates needs, because each rule has one or two places that are
+    allowed to break it precisely because they are where it is defined.
+
+    A PATH relative to src/, matching that file or anything beneath that
+    directory: "ui/design/Tokens.h", "model/edits". It used to be a bare name,
+    matched against a file name OR an immediate parent directory name, and that
+    was wrong in both directions. Too wide, because any file anywhere called
+    Tokens.h was exempt from six gates and nothing anchored it. Too narrow,
+    because a name is not a property a file keeps: five gates went red during
+    the work that split this tree, every one of them because code that was
+    allowed to break a rule had moved to a file whose name was not on a list.
+
+    And an exemption that suppresses NOTHING is reported as an offence of its
+    own. An entry is a claim - this file breaks the rule because it is where the
+    rule is defined - and ten of the twenty-one here were false. Tokens.h was
+    exempt from the gate on drawn radii while calling nothing that draws, and
+    from the gate on refresh rates while starting no timer. Ids.h was exempt
+    from the gate on parameter names it spells with a macro, so they never
+    appear as literals at all. Two of them - ProjectFactory.cpp and
+    ProjectSchema.cpp - were a standing licence to write an undoable property by
+    hand in exactly the two files that build the document.
+
+    There is no second list for entries that are allowed to be idle. A list like
+    that is the ratchet this is here to remove: when a file needs the exemption
+    again, the commit that needs it puts it back.
 */
 inline juce::StringArray offenders (const std::function<bool (const juce::String&)>& matches,
                                     std::initializer_list<const char*> exempt = {})
 {
     juce::StringArray found;
+    juce::Array<int> suppressed;
+
+    suppressed.insertMultiple (0, 0, (int) exempt.size());
 
     for (const auto& file : sourceFiles())
     {
-        auto skip = false;
+        const auto path = relativePathOf (file);
 
-        // A name matches a FILE or a DIRECTORY. The directory form exists
-        // because src/lang is a different language with its own vocabulary: its
-        // keywords coinciding with dew's property names is a coincidence, and
-        // exempting five of its files by name would be a list that the sixth
-        // silently escaped.
+        // Every entry that covers this file, not just the first: two entries
+        // that overlap would otherwise make one of them look idle.
+        juce::Array<int> covering;
+        auto index = 0;
+
         for (const auto* name : exempt)
-            if (file.getFileName() == name || file.getParentDirectory().getFileName() == name)
-                skip = true;
+        {
+            if (path == name || path.startsWith (juce::String (name) + "/"))
+                covering.add (index);
 
-        if (skip)
-            continue;
+            ++index;
+        }
 
         for (const auto& line : codeLinesWithNumbersOf (file))
-            if (matches (line.text))
-                found.add (relativePathOf (file) + ":" + juce::String (line.number) + "  "
-                           + line.text.trim());
+        {
+            if (! matches (line.text))
+                continue;
+
+            if (covering.isEmpty())
+                found.add (path + ":" + juce::String (line.number) + "  " + line.text.trim());
+            else
+                for (const auto i : covering)
+                    ++suppressed.getReference (i);
+        }
+    }
+
+    auto index = 0;
+
+    for (const auto* name : exempt)
+    {
+        if (suppressed[index] == 0)
+            found.add (juce::String ("(exemption) ") + name
+                       + "  hides nothing - either it was never needed, or the gate has "
+                         "stopped being able to see what it is for");
+
+        ++index;
     }
 
     return found;

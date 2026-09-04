@@ -100,6 +100,12 @@ TEST_CASE ("no source declares a bare juce::ComboBox", "[build][gate]")
     //
     // Declarations only. A function taking a juce::ComboBox& is taking the base
     // class of a DewDropdown, which is correct.
+    //
+    // No exemption. DewControls.h used to have one, and it was held open by a
+    // doc comment - the wrapped line "juce::ComboBox rather than painted over
+    // it" - because the reader counted prose as code. DewDropdown's own
+    // declaration reads "class DewDropdown : public juce::ComboBox", which this
+    // does not match and never did.
     const auto found = offenders (
         [] (const juce::String& line)
         {
@@ -107,8 +113,7 @@ TEST_CASE ("no source declares a bare juce::ComboBox", "[build][gate]")
 
             return trimmed.startsWith ("juce::ComboBox ") || trimmed.contains ("juce::ComboBox>()")
                    || trimmed.contains ("new juce::ComboBox");
-        },
-        { "DewControls.h" });
+        });
 
     INFO ("stock combo boxes:\n" << found.joinIntoString ("\n"));
     CHECK (found.isEmpty());
@@ -124,6 +129,10 @@ TEST_CASE ("no source declares a bare juce::ToggleButton", "[build][gate]")
     //
     // Declarations only: the LookAndFeel names ToggleButton's colour ids, and
     // theming the stock control is the reason DewCheckbox does not repaint it.
+    //
+    // No exemption, for the same reason as the combo box above: "class
+    // DewCheckbox : public juce::ToggleButton" does not start with the type, so
+    // the definition site never needed one.
     const auto found = offenders (
         [] (const juce::String& line)
         {
@@ -131,8 +140,7 @@ TEST_CASE ("no source declares a bare juce::ToggleButton", "[build][gate]")
 
             return trimmed.startsWith ("juce::ToggleButton ")
                    || trimmed.contains ("juce::ToggleButton>");
-        },
-        { "DewControls.h" });
+        });
 
     INFO ("stock toggle buttons:\n" << found.joinIntoString ("\n"));
     CHECK (found.isEmpty());
@@ -191,13 +199,18 @@ TEST_CASE ("no source spells an automatable parameter as a string literal", "[bu
     // table the gate silently did not cover.
     auto names = dew::automatableParameterNames();
 
-    // Two whole files are exempt for the same reason the effect ids below are.
-    // Icons.cpp is a registry of ICON names, and "mute" is one of them; src/lang
-    // is the score language, whose keywords are its own vocabulary and address
-    // its own tree, not the project's. Both became offenders the moment mute
-    // turned into an automatable parameter, and neither is the defect this gate
-    // exists to catch - which is a property name written by hand where a
-    // property is being RESOLVED.
+    // Two whole directories are exempt for the same reason the effect ids below
+    // are. ui/design/icons is a registry of ICON names, and "mute" is one of
+    // them; src/lang is the score language, whose keywords are its own
+    // vocabulary and address its own tree, not the project's. Both became
+    // offenders the moment mute turned into an automatable parameter, and
+    // neither is the defect this gate exists to catch - which is a property name
+    // written by hand where a property is being RESOLVED.
+    //
+    // Ids.h was a third, and it was never needed: DEW_DECLARE_ID spells a name
+    // with the preprocessor's # operator, so "cutoff" does not appear as a
+    // literal in the file that declares it and this gate could never have seen
+    // one there.
     //
     // An effect's id and one of its parameters share a spelling in one case -
     // "drive" is both - and the id is a value a file legitimately contains.
@@ -212,19 +225,18 @@ TEST_CASE ("no source spells an automatable parameter as a string literal", "[bu
     const auto found = dew::testing::offenders (
         [&names] (const juce::String& line)
         {
-            // The exemption is the DIRECTORY src/ui/design/icons, not a file in it.
+            // The exemption is the DIRECTORY ui/design/icons, not a file in it.
             // The catalog names its own icons as strings - { "mute", mute } - and
             // several of those names are also parameter names. It was one file and
             // one entry; splitting it into three would have meant three entries,
             // which is the list SourceScan.h warns a fourth file falls off.
-            // Doc comments name properties all through this codebase, deliberately.
             for (const auto& name : names)
                 if (line.contains ("\"" + name + "\""))
                     return true;
 
             return false;
         },
-        { "Ids.h", "icons", "lang" });
+        { "ui/design/icons", "lang" });
 
     INFO ("automatable parameters written as string literals:\n" << found.joinIntoString ("\n"));
     CHECK (found.isEmpty());
@@ -252,7 +264,7 @@ TEST_CASE ("no view reads the wheel or the drag scale for itself", "[build][gate
                    || line.contains ("wheel.isReversed")
                    || line.contains ("setMouseDragSensitivity");
         },
-        { "Gestures.h", "DewControls.cpp", "DewKnob.cpp" });
+        { "ui/design/Gestures.h", "ui/primitives/DewControls.cpp", "ui/primitives/DewKnob.cpp" });
 
     INFO ("views reading the wheel or the drag scale directly:\n" << found.joinIntoString ("\n"));
     CHECK (found.isEmpty());
@@ -271,20 +283,41 @@ TEST_CASE ("no editor writes an undoable property by hand", "[build][gate][undo]
     // detached copy nobody can undo is a different thing, and it says so where
     // it happens.
     //
-    // The exemption is the DIRECTORY model/edits, not the files in it. It used
-    // to name ProjectEdits.cpp, and when that file became seven the list would
-    // have had to name all seven - which is the shape SourceScan.h warns about
-    // above offenders(): a list of five that the sixth silently escapes. An
-    // eighth edit file is exempt by being where the edits are.
+    // This asked for the SPELLING "&undo" or "getUndoManager()", and every
+    // undoable write in the tree passes a pointer parameter named undo - so the
+    // gate matched nothing, anywhere, for as long as it has existed. It was
+    // green because it could not see. Its three exemptions read as unnecessary
+    // for the same reason, and two of them - ProjectFactory.cpp and
+    // ProjectSchema.cpp - were a standing licence to write an undoable property
+    // by hand in exactly the two files that build the document.
+    //
+    // So the question is the SHAPE: a setProperty given an UndoManager, which
+    // is any third argument that is not nullptr. Only a whole statement is
+    // judged, because a wrapped call puts its nullptr on the next line and
+    // ProjectDocument has one of those.
+    //
+    // Both exemptions name an owner rather than a file that is awkward.
+    // model/edits used to be ProjectEdits.cpp, and when that file became seven
+    // the list would have had to name all seven - the shape SourceScan.h warns
+    // about: a list of five that the sixth silently escapes. ScoreBake is the
+    // second owner and says so in its own header - "everything happens inside
+    // one UndoManager transaction, so a bake is one undo step" - which is a
+    // claim ProjectEdits::setProperty cannot carry, because it names a
+    // transaction per call.
     const auto found = offenders (
         [] (const juce::String& line)
         {
-            if (! line.contains (".setProperty (") || line.contains ("ProjectEdits::setProperty"))
+            const auto trimmed = line.trim();
+
+            if (! trimmed.endsWith (");") || ! trimmed.contains (".setProperty ("))
                 return false;
 
-            return line.contains ("&undo") || line.contains ("getUndoManager()");
+            if (trimmed.contains ("ProjectEdits::setProperty"))
+                return false;
+
+            return ! trimmed.contains ("nullptr");
         },
-        { "edits", "ProjectFactory.cpp", "ProjectSchema.cpp" });
+        { "model/edits", "model/ScoreBake.cpp" });
 
     INFO ("undoable property writes outside ProjectEdits:\n" << found.joinIntoString ("\n"));
     CHECK (found.isEmpty());
@@ -298,18 +331,23 @@ TEST_CASE ("no source binds a key outside the hotkey registry", "[build][gate][h
     // about itself, and between them cmd-1 was swallowed by whichever view had
     // focus and bare `r` meant two different things.
     //
-    // Hotkeys.cpp is where a binding is spelled. ScoreEditorComponent.cpp is
-    // the one exemption: while its completion popup is open it owns Up, Down,
-    // Return, Tab and Escape, and that is a modal handler rather than a
-    // binding - nothing outside that popup can reach those keys, so putting
-    // them in a table shared with the menu bar would say something untrue.
+    // Hotkeys.cpp is where a binding is spelled, so it is exempt.
+    // ScoreEditorComponent.cpp is the other one: while its completion popup is
+    // open it owns Up, Down, Return, Tab and Escape, and that is a modal
+    // handler rather than a binding - nothing outside that popup can reach
+    // those keys, so putting them in a table shared with the menu bar would say
+    // something untrue.
+    //
+    // Hotkeys.h was a third and never spelled a key at all; it declares the
+    // vocabulary the .cpp binds. The day a table in the header names one, the
+    // commit that puts it there puts the exemption back.
     const auto found = offenders (
         [] (const juce::String& line)
         {
             return line.contains ("addDefaultKeypress (") || line.contains ("juce::KeyPress (")
                    || line.contains ("KeyPress::createFromDescription");
         },
-        { "Hotkeys.h", "Hotkeys.cpp", "ScoreEditorComponent.cpp" });
+        { "ui/Hotkeys.cpp", "ui/ScoreEditorComponent.cpp" });
 
     INFO ("keys bound outside the registry:\n" << found.joinIntoString ("\n"));
     CHECK (found.isEmpty());
