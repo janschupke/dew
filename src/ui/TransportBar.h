@@ -5,6 +5,7 @@
 #include "engine/AudioEngine.h"
 #include "model/Meter.h"
 #include "app/ProjectDocument.h"
+#include "ui/ConfirmPanel.h"
 #include "ui/EditorState.h"
 #include "ui/design/SignalScope.h"
 #include "ui/primitives/DewControls.h"
@@ -41,6 +42,9 @@ public:
         none of those belong to a transport bar.
     */
     std::function<void()> onToggleRecord;
+
+    /** What deleting a pattern asks first. See ConfirmHook. */
+    ConfirmHook confirmDestructive;
 
     /** Whether a take is running, for the button's lit state. */
     std::function<bool()> isRecording;
@@ -95,6 +99,14 @@ private:
     void refreshMeter();
     void applyMeterChoice (int itemId);
     juce::ValueTree currentPattern() const;
+
+    /** Patterns in the DOCUMENT. The pattern box is not a count of them: it
+        carries a "New pattern" row of its own. */
+    int countPatterns() const;
+
+    /** Asks, then deletes. Separate from the button so the question and the
+        edit can be read in one place. */
+    void requestDeletePattern();
 
     ProjectDocument& document;
     AudioEngine& engine;

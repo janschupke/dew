@@ -13,6 +13,7 @@
 #include "ui/EffectChainComponent.h"
 #include "ui/MixerComponent.h"
 #include "ui/primitives/DewControls.h"
+#include "ConfirmSupport.h"
 #include "FixtureProject.h"
 
 using namespace dew;
@@ -469,6 +470,10 @@ TEST_CASE ("removing a channel from its own row removes that channel", "[ui][rac
     AudioEngine engine;
     EditorState editorState;
     ChannelRackComponent rack { document, engine, editorState };
+
+    // This test is about which ROW the menu acts on, not about the question it
+    // now asks first, so it answers yes at once.
+    rack.confirmDestructive = testing::alwaysConfirm();
 
     rack.setSize (1200, 600);
     rack.setVisible (true);

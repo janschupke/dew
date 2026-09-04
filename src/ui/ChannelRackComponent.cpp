@@ -348,6 +348,7 @@ ChannelRackComponent::ChannelRackComponent (ProjectDocument& d, AudioEngine& e, 
     , grid (d, e, s, p)
 {
     setComponentID ("channelRack");
+    confirmDestructive = confirmWithPanel (this);
     contentHolder.setComponentID ("channelRackContent");
     viewport.setComponentID ("channelRackViewport");
 
@@ -480,14 +481,30 @@ void ChannelRackComponent::addAudioChannel()
 
 void ChannelRackComponent::removeChannel (int channelId)
 {
-    auto channel = ProjectEdits::findChannel (document.getState(), channelId);
+    const auto channel = ProjectEdits::findChannel (document.getState(), channelId);
 
     if (! channel.isValid())
         return;
 
-    auto& undo = document.getUndoManager();
-    undo.beginNewTransaction ("Remove channel");
-    ProjectEdits::removeChannel (document.getState(), channel, &undo);
+    ConfirmPanel::Request request;
+    request.title = "Remove channel";
+    request.message = "Remove \"" + channel[ids::name].toString()
+                      + "\"? Its notes in every pattern go with it.";
+
+    // By id, resolved again on the way back: the dialog is async and the
+    // document may have moved on by the time the answer arrives.
+    confirmDestructive (request,
+                        [this, channelId]
+                        {
+                            auto found = ProjectEdits::findChannel (document.getState(), channelId);
+
+                            if (! found.isValid())
+                                return;
+
+                            auto& undo = document.getUndoManager();
+                            undo.beginNewTransaction ("Remove channel");
+                            ProjectEdits::removeChannel (document.getState(), found, &undo);
+                        });
 }
 
 bool ChannelRackComponent::applyChannelMenuChoice (int channelId, int choice)

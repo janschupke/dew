@@ -4,6 +4,7 @@
 
 #include "engine/AudioEngine.h"
 #include "app/ProjectDocument.h"
+#include "ui/ConfirmPanel.h"
 #include "ui/EditorState.h"
 #include "ui/ParamContextMenu.h"
 #include "ui/TimelineRuler.h"
@@ -45,6 +46,9 @@ public:
     */
     void addAudioChannel();
     void removeChannel (int channelId);
+
+    /** What removing a channel asks first. See ConfirmHook. */
+    ConfirmHook confirmDestructive;
 
     /** Drives a row's context-menu item without opening the menu.
 

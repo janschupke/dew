@@ -319,6 +319,7 @@ PlaylistComponent::PlaylistComponent (ProjectDocument& d, AudioEngine& e, Editor
     , samplePool (p)
 {
     setComponentID ("playlist");
+    confirmDestructive = confirmWithPanel (this);
     document.getState().addListener (this);
     editorState.addChangeListener (this);
 
@@ -1264,6 +1265,33 @@ void PlaylistComponent::addTrack()
 
 void PlaylistComponent::removeTrack (juce::ValueTree track)
 {
+    if (! track.isValid())
+        return;
+
+    ConfirmPanel::Request request;
+    request.title = "Remove track";
+    request.message = "Remove \"" + track[ids::name].toString()
+                      + "\"? Every clip on it goes with it.";
+
+    // A playlist track carries no id - they are positional, unlike channels and
+    // patterns - so the INDEX is what survives the dialog, and it is resolved
+    // again on the way back rather than a ValueTree being held across it.
+    auto index = -1;
+
+    for (int i = 0; i < getNumTracks(); ++i)
+        if (trackAt (i) == track)
+            index = i;
+
+    if (index < 0)
+        return;
+
+    confirmDestructive (request, [this, index] { removeTrackNow (index); });
+}
+
+void PlaylistComponent::removeTrackNow (int index)
+{
+    auto track = trackAt (index);
+
     if (! track.isValid())
         return;
 

@@ -19,6 +19,7 @@
 #include "ui/design/Gestures.h"
 #include "ui/PlaylistComponent.h"
 
+#include "ConfirmSupport.h"
 #include "PaintProbe.h"
 
 using namespace dew;
@@ -1455,6 +1456,10 @@ TEST_CASE ("a track can be added and removed from the playlist", "[ui][playlist]
 
     h.playlist.addTrack();
     REQUIRE (h.playlist.getNumTracks() == before + 1);
+
+    // About which ROW the menu acts on, not about the question it now asks
+    // first, so it answers yes at once.
+    h.playlist.confirmDestructive = testing::alwaysConfirm();
 
     // The row acts on ITSELF - "Remove track" on the third row removes the third
     // track, whatever else is going on.

@@ -4,6 +4,7 @@
 
 #include "engine/AudioEngine.h"
 #include "app/ProjectDocument.h"
+#include "ui/ConfirmPanel.h"
 #include "ui/EditorState.h"
 #include "model/AutomationTargets.h"
 #include "ui/PlaylistToolbar.h"
@@ -53,6 +54,9 @@ public:
     void mouseUp (const juce::MouseEvent&) override;
     void mouseMove (const juce::MouseEvent&) override;
     void mouseExit (const juce::MouseEvent&) override;
+
+    /** What removing a track asks first. See ConfirmHook. */
+    ConfirmHook confirmDestructive;
     void mouseDoubleClick (const juce::MouseEvent&) override;
     void mouseWheelMove (const juce::MouseEvent&, const juce::MouseWheelDetails&) override;
     void mouseMagnify (const juce::MouseEvent&, float scaleFactor) override;
@@ -253,6 +257,11 @@ private:
     int barAtX (int x) const;
     int trackAtY (int y) const;
     juce::ValueTree trackAt (int index) const;
+
+    /** The removal itself, once it has been agreed to. By index, because a
+        playlist track carries no id and a ValueTree must not be held across an
+        async dialog. */
+    void removeTrackNow (int index);
     juce::Rectangle<float> boundsForClip (const juce::ValueTree& clip, int trackIndex) const;
     bool isOnRightEdge (const juce::ValueTree& clip, int trackIndex, juce::Point<int>) const;
 

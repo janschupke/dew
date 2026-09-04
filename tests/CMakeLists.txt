@@ -23,6 +23,7 @@ add_executable(dew_tests
   LoopRegionTests.cpp
   StepGridTests.cpp
   ChannelRackTests.cpp
+  ConfirmTests.cpp
   PreviewQueueTests.cpp
   SignalTapTests.cpp
   SnapshotBridgeTests.cpp

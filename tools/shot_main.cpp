@@ -8,6 +8,7 @@
 #include "ui/RenderPanel.h"
 #include "ui/MainComponent.h"
 #include "ui/ScoreEditorComponent.h"
+#include "ui/ConfirmPanel.h"
 #include "ui/RandomizePanel.h"
 #include "ui/design/DewLookAndFeel.h"
 #include "ui/design/DewGallery.h"
@@ -30,6 +31,7 @@ Usage:
   dew_shot midi <out.png>                   the MIDI settings panel
   dew_shot render <out.png> [--project f] [--format wav|flac|mp3|midi]
   dew_shot randomize <out.png>              the piano roll's randomize dialog
+  dew_shot confirm <out.png>                the confirmation a deletion asks
 
 Options:
   --project <file.dew>   Project to load (default: the built-in demo)
@@ -266,6 +268,27 @@ int main (int argc, char* argv[])
         panel.setVisible (true);
         panel.setSize (dew::MidiSettingsPanel::preferredWidth,
                        dew::MidiSettingsPanel::preferredHeight);
+
+        const auto destination = juce::File::getCurrentWorkingDirectory().getChildFile (
+            args.positional[1]);
+
+        if (const auto result = writePng (panel, destination); result.failed())
+            return fail (result.getErrorMessage());
+
+        std::cout << "wrote " << destination.getFullPathName() << "  (" << panel.getWidth() << "x"
+                  << panel.getHeight() << ")" << std::endl;
+        return 0;
+    }
+
+    if (mode == "confirm")
+    {
+        // Bare, like the randomize dialog below and for the same reason:
+        // dew_shot cannot capture a DialogWindow, so the content sizes itself.
+        dew::ConfirmPanel panel { { "Delete pattern",
+                                    "Delete \"Groove\"? Every clip that plays it goes with it.",
+                                    "Delete" } };
+        panel.setVisible (true);
+        panel.setSize (dew::ConfirmPanel::preferredWidth, dew::ConfirmPanel::preferredHeight);
 
         const auto destination = juce::File::getCurrentWorkingDirectory().getChildFile (
             args.positional[1]);

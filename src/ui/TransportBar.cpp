@@ -31,6 +31,9 @@ TransportBar::TransportBar (ProjectDocument& d, AudioEngine& e, EditorState& s)
     , signalScope (&e)
 {
     setComponentID ("transportBar");
+
+    confirmDestructive = confirmWithPanel (this);
+
     patternBox.setComponentID ("patternSelector");
     patternBox.setTooltip ("Which pattern the rack and the piano roll are editing");
 
@@ -155,12 +158,8 @@ TransportBar::TransportBar (ProjectDocument& d, AudioEngine& e, EditorState& s)
     };
     addAndMakeVisible (clonePatternButton);
 
-    deletePatternButton.onClick = [this]
-    {
-        auto& undo = document.getUndoManager();
-        undo.beginNewTransaction ("Delete pattern");
-        ProjectEdits::removePattern (document.getState(), currentPattern(), &undo);
-    };
+    deletePatternButton.setComponentID ("deletePattern");
+    deletePatternButton.onClick = [this] { requestDeletePattern(); };
     addAndMakeVisible (deletePatternButton);
 
     patternLengthField.setRange (1.0, 256.0, 1.0);
@@ -234,6 +233,43 @@ juce::ValueTree TransportBar::currentPattern() const
     return ProjectEdits::findPattern (document.getState(), editorState.getCurrentPatternId());
 }
 
+int TransportBar::countPatterns() const
+{
+    int n = 0;
+
+    for (const auto& child : document.getState())
+        if (child.hasType (ids::PATTERN))
+            ++n;
+
+    return n;
+}
+
+void TransportBar::requestDeletePattern()
+{
+    const auto pattern = currentPattern();
+
+    if (! pattern.isValid() || countPatterns() <= 1)
+        return;
+
+    ConfirmPanel::Request request;
+    request.title = "Delete pattern";
+    request.message = "Delete \"" + pattern[ids::name].toString()
+                      + "\"? Every clip that plays it goes with it.";
+
+    // By ID, resolved again when the answer comes back: a dialog is async and
+    // the document is free to change while it is open, so a captured ValueTree
+    // would be a node that may no longer be in the project.
+    confirmDestructive (request,
+                        [this, patternId = (int) pattern[ids::id]]
+                        {
+                            auto& undo = document.getUndoManager();
+                            undo.beginNewTransaction ("Delete pattern");
+                            ProjectEdits::removePattern (
+                                document.getState(),
+                                ProjectEdits::findPattern (document.getState(), patternId), &undo);
+                        });
+}
+
 void TransportBar::refreshPatternLength()
 {
     const auto pattern = currentPattern();
@@ -245,7 +281,12 @@ void TransportBar::refreshPatternLength()
                                      juce::dontSendNotification);
 
     // Deleting the only pattern would leave nothing to edit or play.
-    deletePatternButton.setEnabled (patternBox.getNumItems() > 1);
+    // Counted from the DOCUMENT, not from the box. The box carries a "New
+    // pattern" row below a separator, so with one pattern getNumItems() came
+    // back 2 - the button was enabled, the click fired, and removePattern
+    // refused. A button that silently does nothing, and a confirmation on top
+    // of it would have made it worse: "Delete Pattern 1?" then nothing.
+    deletePatternButton.setEnabled (countPatterns() > 1);
 }
 
 void TransportBar::addPattern()
