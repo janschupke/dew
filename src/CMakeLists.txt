@@ -240,6 +240,8 @@ add_library(dew_engine STATIC
     engine/SoundFontVoice.cpp
   engine/MixerBus.cpp
   engine/AudioEngine.cpp
+  engine/AudioEngineAutomation.cpp
+  engine/AudioEngineBlock.cpp
   engine/RenderPost.cpp
 )
 

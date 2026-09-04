@@ -535,6 +535,19 @@ private:
     std::atomic<double> seekToSteps { 0.0 };
     std::atomic<Transport::Mode> requestedMode { Transport::Mode::pattern };
 
+    /** Which slot a mode's loop lives in. A function rather than a cast, so
+        adding a third mode fails to compile here instead of silently aliasing
+        an existing one.
+
+        In the header rather than file-local because two translation units index
+        the array below now: the message-thread setters, and the block pipeline
+        that reads the window once a block.
+    */
+    static constexpr size_t loopSlotFor (Transport::Mode mode) noexcept
+    {
+        return mode == Transport::Mode::song ? 1u : 0u;
+    }
+
     /** One per Transport::Mode, indexed by loopSlotFor(). */
     std::array<std::atomic<LoopRegion>, 2> loopRegions {};
 
