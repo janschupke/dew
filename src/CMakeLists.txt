@@ -144,6 +144,7 @@ add_library(dew_lang STATIC
   lang/Music.cpp
   lang/Model.cpp
   lang/Parser.cpp
+  lang/ParserBodies.cpp
   lang/Schema.cpp
   lang/Score.cpp
   lang/Resolver.cpp
