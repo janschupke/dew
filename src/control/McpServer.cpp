@@ -1,7 +1,19 @@
-#include <cstdlib>
+// Before everything, and the one thing in this tree allowed to precede a file's
+// own header: <cstdlib> declares rand_s only when this is defined, and rand_s is
+// the Windows third of the generator newSessionId uses.
+#if defined(_WIN32)
+#define _CRT_RAND_S
+#endif
 
 #include "control/McpServer.h"
 #include "control/MessageThreadCall.h"
+
+#include <cstdlib>
+
+#if defined(__linux__)
+#include <cerrno>
+#include <sys/random.h>
+#endif
 
 namespace dew::control
 {
@@ -50,21 +62,82 @@ bool isAllowedOrigin (const juce::String& origin)
     return host == "localhost" || host == "127.0.0.1" || host == "[::1]";
 }
 
-/** A session id, from the system's CSPRNG.
+/** Fills a buffer from the system's cryptographically secure generator.
+
+    Three implementations, because there is no portable one and a fallback would
+    defeat the whole point: an id that is unguessable on macOS and predictable
+    on Linux is a predictable id.
+
+    It was arc4random_buf unconditionally, which is in libc on Apple and the
+    BSDs and which glibc only grew in 2.36 - newer than the oldest distribution
+    dew builds against. The Linux build did not compile at all.
+
+      Apple, BSD   arc4random_buf   returns void, cannot fail
+      Windows      rand_s           RtlGenRandom behind a CRT name, so this
+                                    needs no bcrypt on the link line
+      Linux        getrandom        glibc 2.25 and later; it may be interrupted
+                                    or return short, so it is a loop
+
+    False means the platform refused, which a caller must treat as "no id" and
+    never as "an empty id".
+*/
+bool fillRandomBytes (unsigned char* out, size_t count)
+{
+#if JUCE_WINDOWS
+    for (size_t i = 0; i < count; ++i)
+    {
+        unsigned int value = 0;
+
+        if (rand_s (&value) != 0)
+            return false;
+
+        out[i] = (unsigned char) (value & 0xffu);
+    }
+
+    return true;
+#elif JUCE_LINUX
+    size_t filled = 0;
+
+    while (filled < count)
+    {
+        const auto got = getrandom (out + filled, count - filled, 0);
+
+        if (got < 0)
+        {
+            if (errno == EINTR)
+                continue;
+
+            return false;
+        }
+
+        filled += (size_t) got;
+    }
+
+    return true;
+#else
+    arc4random_buf (out, count);
+
+    return true;
+#endif
+}
+
+/** A session id, from that generator.
 
     NOT juce::Random, which is a pseudo-random generator for shuffling notes and
     is not unpredictable to anything that cares. A guessable session id is the
     one way past the consent prompt: a second local process could ride the
     approval the user gave to the first, and the user would never see a second
-    dialog. arc4random_buf is in libc on this platform and needs no dependency.
+    dialog.
 
     Hex, so every character is in the visible ASCII range the transport requires
-    of a session id.
+    of a session id. Empty means the generator failed, and is never a session.
 */
 juce::String newSessionId()
 {
     unsigned char bytes[16];
-    arc4random_buf (bytes, sizeof (bytes));
+
+    if (! fillRandomBytes (bytes, sizeof (bytes)))
+        return {};
 
     juce::String id;
 
@@ -214,6 +287,12 @@ juce::String McpServer::openSession (const ClientInfo& client)
 {
     const auto id = newSessionId();
 
+    // Storing an empty id would key a live session on the ABSENCE of a header,
+    // which is exactly what a request carrying no session looks like. So a
+    // generator that failed opens nothing, and the caller answers 500.
+    if (id.isEmpty())
+        return {};
+
     const std::lock_guard<std::mutex> guard { lock };
     sessions[id] = client;
 
@@ -315,7 +394,16 @@ LocalHttpServer::Response McpServer::handle (const LocalHttpServer::Request& req
     auto response = jsonResponse (200, *reply);
 
     if (method == "initialize")
-        response.extraHeaders.set ("Mcp-Session-Id", openSession (client));
+    {
+        const auto session = openSession (client);
+
+        if (session.isEmpty())
+            return protocolError (500, mcp::internalError,
+                                  "dew could not mint a session id. Its system random number "
+                                  "generator refused.");
+
+        response.extraHeaders.set ("Mcp-Session-Id", session);
+    }
 
     return response;
 }

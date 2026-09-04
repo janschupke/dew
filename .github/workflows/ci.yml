@@ -225,6 +225,105 @@ jobs:
         run: ./build/linux/tests/dew_lang_tests
 
   # ----------------------------------------------------------------------------
+  # The whole application on the other two platforms.
+  #
+  # dew was macOS-only for as long as nothing else compiled it, and the cost of
+  # that was invisible: the MCP server minted its session ids with
+  # arc4random_buf, which is in libc on Apple and which glibc only grew in 2.36,
+  # so the Linux build did not compile at all and nobody could have known.
+  #
+  # These build the app AND the suite, because a build that links is not the
+  # same claim as a suite that passes, and the interesting failures on a new
+  # platform are the runtime ones.
+  #
+  # NOT warnings-as-errors, and that is deliberate rather than lazy: JUCE's own
+  # sources are compiled into dew's targets and inherit dew's warning flags, and
+  # gcc's -Wshadow fires inside juce_audio_formats where clang's does not.
+  # Turning those into errors would make the gate a report on JUCE. The macOS
+  # `ci` preset remains the gate for dew's own warnings.
+  # ----------------------------------------------------------------------------
+  windows:
+    name: windows · msvc · build · test
+    runs-on: windows-latest
+
+    env:
+      CPM_SOURCE_CACHE: ${{ github.workspace }}/.cache/CPM
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/cache@v4
+        with:
+          path: ${{ env.CPM_SOURCE_CACHE }}
+          key: cpm-${{ runner.os }}-${{ hashFiles('cpm-package-lock.cmake', 'cmake/DependencyPins.cmake') }}
+
+      # The Visual Studio generator, for the reason dist-windows exists: Ninja
+      # needs cl.exe on PATH and this needs nothing installed.
+      - name: Configure
+        run: >
+          cmake -S . -B build/windows -G "Visual Studio 17 2022" -A x64
+          -DCMAKE_BUILD_TYPE=RelWithDebInfo
+          -DDEW_BUILD_TESTS=ON
+          -DDEW_WRITE_THIRD_PARTY=OFF
+
+      - name: Build
+        run: cmake --build build/windows --config RelWithDebInfo --target dew dew_tests
+
+      - name: Test
+        run: ctest --test-dir build/windows -C RelWithDebInfo --output-on-failure --parallel 4
+
+  linux:
+    name: linux · gcc · build · test
+    runs-on: ubuntu-latest
+    container:
+      image: ubuntu:22.04
+
+    env:
+      CPM_SOURCE_CACHE: ${{ github.workspace }}/.cache/CPM
+
+    steps:
+      # webkit2gtk and libcurl are deliberately absent: JUCE_WEB_BROWSER=0 and
+      # JUCE_USE_CURL=0 mean JUCE finds them missing at configure time and
+      # carries on. xvfb because juce_gui_basics opens a display in the suite.
+      - name: Toolchain
+        run: |
+          apt-get update -qq
+          DEBIAN_FRONTEND=noninteractive apt-get install -y -qq --no-install-recommends \
+            build-essential ninja-build git pkg-config ca-certificates curl xvfb \
+            libasound2-dev libfreetype-dev libfontconfig1-dev \
+            libx11-dev libxext-dev libxinerama-dev libxrandr-dev libxcursor-dev \
+            libxcomposite-dev libxrender-dev libxi-dev \
+            libgl1-mesa-dev libglu1-mesa-dev mesa-common-dev
+
+      # Jammy ships CMake 3.22; CMakePresets v6 needs 3.25.
+      - name: CMake
+        run: |
+          version=4.4.3
+          curl -fsSL "https://github.com/Kitware/CMake/releases/download/v${version}/cmake-${version}-linux-x86_64.tar.gz" \
+            | tar xz -C /opt
+          echo "/opt/cmake-${version}-linux-x86_64/bin" >> "$GITHUB_PATH"
+
+      - uses: actions/checkout@v4
+
+      - uses: actions/cache@v4
+        with:
+          path: ${{ env.CPM_SOURCE_CACHE }}
+          key: cpm-linux-jammy-${{ hashFiles('cpm-package-lock.cmake', 'cmake/DependencyPins.cmake') }}
+
+      - name: Configure
+        run: >
+          cmake -S . -B build/linux-app -G Ninja
+          -DCMAKE_BUILD_TYPE=RelWithDebInfo
+          -DDEW_BUILD_TESTS=ON
+          -DDEW_WRITE_THIRD_PARTY=OFF
+
+      - name: Build
+        run: cmake --build build/linux-app --target dew dew_tests
+
+      - name: Test
+        run: xvfb-run -a ctest --test-dir build/linux-app --output-on-failure --parallel 4
+
+  # ----------------------------------------------------------------------------
   # Sanitizers. Separate jobs because ASan and TSan cannot share a build, and
   # separate from the gate above because both are slow enough that putting them
   # in front of every push would be paid for by nobody running the gate.
