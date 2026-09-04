@@ -90,7 +90,8 @@ bool showsALiteral (const juce::String& raw)
     // covered none of the thirty menu items in the tree while looking exactly
     // like one that did, which is the failure "ask a shape, not a spelling"
     // names.
-    for (const auto* sink : { "addItem (", "addSubMenu (", "drawText (", "drawFittedText (" })
+    for (const auto* sink : { "addItem (", "addSubMenu (", "drawText (", "drawFittedText (",
+                              "FileChooser> (", "FileBasedDocument (" })
     {
         if (! line.contains (sink))
             continue;

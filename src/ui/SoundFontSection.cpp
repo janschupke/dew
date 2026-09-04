@@ -206,7 +206,8 @@ void SoundFontSection::chooseFile()
 
     // Both spellings: two files in a real library are named .SF2, and a
     // lower-case-only wildcard hides them on a case-sensitive filesystem.
-    chooser = std::make_unique<juce::FileChooser> ("Choose a soundfont", startIn, "*.sf2;*.SF2");
+    chooser = std::make_unique<juce::FileChooser> (tr (StringId::file_chooseSoundFont), startIn,
+                                                   "*.sf2;*.SF2");
 
     chooser->launchAsync (juce::FileBrowserComponent::openMode
                               | juce::FileBrowserComponent::canSelectFiles,

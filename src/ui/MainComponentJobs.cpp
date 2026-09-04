@@ -177,7 +177,7 @@ void MainComponent::startRender (const RenderPanel::Request& request, Settings* 
     // JUCE_MODAL_LOOPS_PERMITTED is 0, so this is the async form; the blocking
     // one asserts.
     auto chooser = std::make_shared<juce::FileChooser> (
-        request.stems ? "Choose a folder for the stems" : "Render to",
+        request.stems ? tr (StringId::file_chooseStemFolder) : tr (StringId::file_renderTo),
         startIn.getChildFile (request.suggestedName + (request.stems ? "" : extension)),
         request.stems ? juce::String() : "*" + extension);
 

@@ -346,6 +346,13 @@
       "name": "Reverb"
     }
   },
+  "file": {
+    "chooseSoundFont": "Choose a soundfont",
+    "chooseStemFolder": "Choose a folder for the stems",
+    "openCaption": "Open a dew project",
+    "renderTo": "Render to",
+    "saveCaption": "Save dew project"
+  },
   "gallery": {
     "inertArea": "inert area",
     "title": "dew design system",

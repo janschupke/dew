@@ -1,5 +1,6 @@
 #include "app/ProjectDocument.h"
 
+#include "i18n/Strings.h"
 #include "model/AssetPaths.h"
 #include "model/ProjectEdits.h"
 #include "model/ProjectFactory.h"
@@ -9,7 +10,8 @@ namespace dew
 {
 
 ProjectDocument::ProjectDocument()
-    : FileBasedDocument (fileExtension, fileWildcard, "Open a dew project", "Save dew project")
+    : FileBasedDocument (fileExtension, fileWildcard, tr (StringId::file_openCaption),
+                         tr (StringId::file_saveCaption))
 {
     setState (ProjectFactory::createDefault(), true);
 }
