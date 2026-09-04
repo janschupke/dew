@@ -157,6 +157,16 @@ public:
     */
     std::function<void()> onContextMenu;
 
+    /** Sets the tooltip AND the accessible name, which are the same sentence.
+
+        An override rather than a convention, because the convention had already
+        failed: three buttons were constructed with an empty label and given
+        their tooltip afterwards, so the status bar explained them and a screen
+        reader found nothing to say. juce::Button seeds its name from the
+        constructor argument once and setTooltip never touched it.
+    */
+    void setTooltip (const juce::String&) override;
+
     /** Colour used when the button is toggled on. Defaults to the accent. */
     void setOnColour (juce::Colour);
 
@@ -192,6 +202,12 @@ class DewLetterToggle : public juce::Button
 public:
     DewLetterToggle (const juce::String& letter, juce::Colour onColour,
                      const juce::String& tooltipText);
+
+    /** Sets the tooltip AND the accessible name. A letter toggle needs this
+        more than anything else in the set: its button text is "M", and "M" is
+        not what a screen reader should read out for Mute.
+    */
+    void setTooltip (const juce::String&) override;
 
     /** What to offer when this control is right-clicked, or null for nothing.
 
@@ -260,6 +276,13 @@ class DewDropdown : public juce::ComboBox
 public:
     explicit DewDropdown (const juce::String& name = {});
 
+    /** Sets the tooltip AND the accessible name, the way the hand-painted
+        primitives do. juce::ComboBox reads its name from Component::getTitle,
+        which nothing was setting, so eleven of dew's sixteen dropdowns had a
+        status-bar explanation and nothing for a screen reader.
+    */
+    void setTooltip (const juce::String&) override;
+
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (DewDropdown)
 };
 
@@ -310,6 +333,20 @@ public:
         the window with nothing to say.
     */
     void setTooltip (const juce::String&) override;
+
+    /** IGNORED, not inaccessible.
+
+        A DewKnob is a juce::Component wrapping the juce::Slider that is the
+        actual control, and the slider is what carries the role, the range and
+        the value a screen reader reads out. Left alone the wrapper announces
+        itself as an unnamed group containing one slider.
+
+        setAccessible (false) would be the wrong tool: Component::isAccessible
+        walks UP to its parent, so switching the wrapper off takes the slider
+        inside it off too. An ignored handler is the one that means "skip me,
+        keep my children".
+    */
+    std::unique_ptr<juce::AccessibilityHandler> createAccessibilityHandler() override;
 
     juce::Slider& getSlider() noexcept
     {
@@ -476,6 +513,24 @@ void emptyState (juce::Graphics&, juce::Rectangle<int>, const juce::String&,
     for - which is why that token exists.
 */
 juce::Rectangle<float> bodyRect (const juce::Component&);
+
+/** The ring that says a control has the keyboard.
+
+    Drawn by the primitive itself rather than through
+    LookAndFeel::createFocusOutlineForComponent, which puts the ring in its own
+    overlay window: that needs a ComponentPeer, and every UI test here paints
+    into an Image with no peer - so JUCE's mechanism would be invisible to the
+    suite and to dew_shot, which is to say untestable in the two places this
+    codebase actually looks at its own pixels.
+
+    @param focused  whether the control holds the keyboard. Passed IN rather
+                    than read from the component, because grabKeyboardFocus does
+                    nothing without a ComponentPeer and this harness has none -
+                    a helper that asked for itself could never be shown to draw.
+                    Callers pass hasKeyboardFocus (true), which is also what a
+                    DewKnob needs: its focus lives on the slider inside it.
+*/
+void focusRing (juce::Graphics&, const juce::Component&, bool focused);
 
 /** A sample's waveform: one column of pixels per column of pixels, each
     showing the extremes over the span it covers.

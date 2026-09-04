@@ -31,22 +31,22 @@ namespace colour
     // Lines.
     inline const juce::Colour divider       { 0xff2c3037 };  ///< ordinary grid lines
     inline const juce::Colour dividerStrong { 0xff3d434d };  ///< bar lines, section edges
-    inline const juce::Colour outline       { 0xff454c57 };  ///< control borders
+    inline const juce::Colour outline       { 0xff7c838e };  ///< control borders
 
     // Text.
     inline const juce::Colour textPrimary   { 0xffe6e8ec };
     inline const juce::Colour textSecondary { 0xff9aa2ae };
-    inline const juce::Colour textDisabled  { 0xff5d646e };
+    inline const juce::Colour textDisabled  { 0xff858c96 };
     inline const juce::Colour textOnAccent  { 0xff10151c };
 
     // Meaning.
     inline const juce::Colour accent        { 0xff4fa3ff };  ///< selection, focus, primary action
-    inline const juce::Colour accentMuted   { 0xff2f6ba8 };
+    inline const juce::Colour accentMuted   { 0xff4682bf };
     inline const juce::Colour playhead      { 0xffffc857 };
-    inline const juce::Colour recording     { 0xffe4572e };
+    inline const juce::Colour recording     { 0xffff7a51 };
     inline const juce::Colour success       { 0xff3ecf8e };
     inline const juce::Colour warning       { 0xfff2c14e };
-    inline const juce::Colour danger        { 0xffe4572e };
+    inline const juce::Colour danger        { 0xffff7a51 };
 
     /** A piano keyboard's two key colours. Not "black" and "white": a black key
         is a dark surface and a white key is a light one, and calling them what
@@ -257,7 +257,7 @@ inline constexpr int knob = 44;
 inline constexpr int knobSm = 26;    ///< a knob on a row, drawn without its caption
 inline constexpr int rowHeight = 34; ///< channel rack and playlist rows
 inline constexpr int rulerHeight = 22;
-inline constexpr int minTouchTarget = 20; ///< nothing clickable smaller than this
+inline constexpr int minTouchTarget = 24; ///< nothing clickable smaller than this
 
 /** Horizontal strips, shortest to tallest.
 
@@ -338,7 +338,7 @@ static_assert (pianoRowMin < pianoRowRoomy && pianoRowRoomy < pianoRowMax,
 static_assert (pianoRowMin <= pianoRowDefault && pianoRowDefault <= pianoRowMax,
                "the default has to be reachable");
 
-inline constexpr int letterToggle = 22; ///< the M and S on a row
+inline constexpr int letterToggle = 24; ///< the M and S on a row
 inline constexpr int meterHeight = 10;
 
 static_assert (trackHeightMin >= letterToggle + 2 * space::xs,

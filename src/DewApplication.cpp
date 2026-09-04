@@ -7,6 +7,7 @@
 #include "model/ProjectFactory.h"
 #include "ui/Hotkeys.h"
 #include "ui/design/Animator.h"
+#include "ui/design/SystemMotionPreference.h"
 
 namespace dew
 {
@@ -75,7 +76,7 @@ void DewApplication::initialise (const juce::String&)
     // dew_shot render - leaves it off, so a widget built outside a running
     // application snaps exactly as it did before there was an animator.
     Animator::shared().setEnabled (true);
-    Animator::shared().setReduceMotion (settings->getReduceMotion());
+    Animator::shared().setReduceMotion (settings->getReduceMotion (systemPrefersReducedMotion()));
 
     mainWindow = std::make_unique<MainWindow> (getApplicationName(), commandManager, *settings);
     restoreSession();
@@ -264,6 +265,17 @@ void DewApplication::getCommandInfo (juce::CommandID id, juce::ApplicationComman
             break;
         }
 
+        case CommandIDs::viewMotionFirst:
+        case CommandIDs::viewMotionFull:
+        case CommandIDs::viewMotionReduced:
+        {
+            const auto step = (int) (id - CommandIDs::viewMotionFirst);
+
+            info.setActive (settings != nullptr);
+            info.setTicked (settings != nullptr && (int) settings->getMotionPreference() == step);
+            break;
+        }
+
         default:
             // Everything else needs the editor, and nothing more.
             info.setActive (main != nullptr);
@@ -428,6 +440,22 @@ bool DewApplication::perform (const InvocationInfo& info)
 
             settings->setUiScale (Settings::uiScaleSteps[step]);
             applyUiScale (Settings::uiScaleSteps[step]);
+            commandManager.commandStatusChanged();
+            return true;
+        }
+
+        case CommandIDs::viewMotionFirst:
+        case CommandIDs::viewMotionFull:
+        case CommandIDs::viewMotionReduced:
+        {
+            const auto step = (int) (info.commandID - CommandIDs::viewMotionFirst);
+
+            if (settings == nullptr || step < 0 || step > (int) Settings::Motion::reduced)
+                return false;
+
+            settings->setMotionPreference ((Settings::Motion) step);
+            Animator::shared().setReduceMotion (
+                settings->getReduceMotion (systemPrefersReducedMotion()));
             commandManager.commandStatusChanged();
             return true;
         }

@@ -22,6 +22,10 @@ built on it. [README.md](../../README.md#design-system) argues why.
 - **A mouse cursor outside the vocabulary** in `src/ui/design/Cursors.h`.
 - **A token nothing refers to.** The opposite mistake: adding a token on speculation fails
   too, and the "awaiting" allowlist inside that gate may only ever get shorter.
+- **A colour pair below its contrast ratio.** `tests/ContrastTests.cpp` states the pairs
+  that are actually painted and what each needs — 4.5:1 for text, 3:1 for a control's
+  outline and the focus ring. A role name says nothing about whether the pair is legible;
+  five of them were not. Changing a `colour::` value means changing that table too.
 
 ## Icons and the gallery
 
@@ -54,12 +58,41 @@ into a peer-less `Image`.
 
 ## Coverage, not vocabulary
 
-Two more tests exist because a control added to a panel without them is the omission
+Four more tests exist because a control added to a panel without them is the omission
 nobody notices: every spec-built knob has a right-click menu, and every control in every
-tab has help text.
+tab has help text, an accessible name, and a way for the keyboard to reach it. All four
+walk the window through `tests/ControlWalkHarness.h` — see [testing.md](testing.md).
 
 **A spec-built knob takes its tooltip from `ParamSpec::displayName`** — `DewKnob (const
 ParamSpec&)` applies it. Do not hand-write help for a knob built from the catalog. And a
 knob is a `juce::SettableTooltipClient` itself: `setTooltip` must set both it and the
 slider inside it, because `juce::TooltipWindow` hit-tests the deepest component under the
 pointer.
+
+## Reaching a control without a mouse
+
+- **`juce::Slider`'s constructor turns keyboard focus OFF.** A control built on one is
+  unreachable by tab, and `Slider::keyPressed` is dead code in it, until you say
+  `setWantsKeyboardFocus (true)`.
+- **To stop a click moving focus, say `setMouseClickGrabsKeyboardFocus (false)`**, not
+  `setWantsKeyboardFocus (false)`. The toolbars used the second to get the first and took
+  themselves out of the tab order to do it.
+- **A focused control ends its paint with `paint::focusRing (g, *this,
+  hasKeyboardFocus (true))`.** It takes the flag rather than reading it, because
+  `grabKeyboardFocus` does nothing without a `ComponentPeer` and a helper that asked for
+  itself could never be shown to draw. JUCE's own
+  `LookAndFeel::createFocusOutlineForComponent` is an overlay window, so it is invisible
+  to the suite and to `dew_shot` for the same reason.
+- **`setTooltip` sets the accessible name too**, on every primitive, so a screen reader
+  reads the one sentence the codebase already curates. It is an override on each primitive
+  rather than a convention: three buttons were built with an empty label and given their
+  tooltip a line later. On a `DewDropdown` call `juce::ComboBox::setTooltip`, not
+  `SettableTooltipClient::setTooltip` — a ComboBox keeps its tooltip on the label inside
+  it and reads `getTooltip` back from there.
+- **A wrapper around the real control returns an IGNORED handler**, as `DewKnob` does.
+  Never `setAccessible (false)`: `Component::isAccessible` walks up to its parent, so
+  switching a wrapper off takes its children off with it.
+- Everything here is portable. JUCE implements accessibility natively on macOS and Windows
+  and compiles the same calls to nothing elsewhere, so none of it needs an `#ifdef`. The
+  one exception in the tree is `systemPrefersReducedMotion`, because JUCE has no API for
+  that preference on any platform.

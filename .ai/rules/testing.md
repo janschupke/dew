@@ -45,7 +45,12 @@ Two more that cost a round each:
 - **A `juce::TabbedComponent` parents only the CURRENT tab's content.** A walk of a freshly
   built `MainComponent` covers one tab. Loop `showTab (i)` + `resized()` over
   `Settings::numTabs`, and put the real number in the control case so the gate cannot
-  silently shrink back.
+  silently shrink back. `tests/ControlWalkHarness.h` does this once —
+  `forEachControl (component, fn)` returns the count for the control case. Use it rather
+  than writing a fourth copy.
+- **`grabKeyboardFocus` does nothing without a `ComponentPeer`**, and this harness has
+  none, so `hasKeyboardFocus` is always false. A paint that depends on focus has to take
+  it as an argument to be testable at all.
 - **`PaintProbe::coverageOf (image, colour::accent)` measures the KNOBS** — every rotary
   arc in dew is drawn in the accent colour. For "did this get drawn", count pixels with
   `getPixelAt (x, y).getAlpha() > 0` (the probe image starts transparent) and pair it with

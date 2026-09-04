@@ -77,6 +77,13 @@ juce::PopupMenu DewApplication::getMenuForIndex (int, const juce::String& name)
             scales.addCommandItem (&commandManager, CommandIDs::viewUiScaleFirst + step);
 
         menu.addSubMenu ("UI Scale", scales);
+
+        juce::PopupMenu motion;
+
+        for (int step = 0; step < 3; ++step)
+            motion.addCommandItem (&commandManager, CommandIDs::viewMotionFirst + step);
+
+        menu.addSubMenu ("Motion", motion);
     }
     else if (name == "Transport")
     {

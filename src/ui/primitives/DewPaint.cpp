@@ -202,6 +202,15 @@ juce::Rectangle<float> bodyRect (const juce::Component& c)
     return c.getLocalBounds().toFloat().reduced (stroke::whisper);
 }
 
+void focusRing (juce::Graphics& g, const juce::Component& c, bool focused)
+{
+    if (! focused)
+        return;
+
+    g.setColour (colour::accent);
+    g.drawRoundedRectangle (bodyRect (c), radius::sm, stroke::bold);
+}
+
 void waveform (juce::Graphics& g, juce::Range<float> y, juce::Range<float> span,
                juce::Range<float> painted, const WaveformPeaks& peaks,
                const std::function<juce::Colour (float x)>& colourAt)

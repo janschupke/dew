@@ -54,7 +54,7 @@ public:
 
         const auto wire = [this] (DewIconButton& button, double factor)
         {
-            button.setWantsKeyboardFocus (false);
+            button.setMouseClickGrabsKeyboardFocus (false);
             button.onClick = [this, factor]
             {
                 if (onHeightChange)

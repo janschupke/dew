@@ -16,10 +16,12 @@ PianoRollToolbar::PianoRollToolbar()
         button.setRadioGroupId (1);
         button.onClick = [this, which] { setTool (which); };
 
-        // Without this a click on a tool moves focus off the roll, and the
-        // shortcuts it owns - the arrows, the digits - stop working until the
-        // grid is clicked again.
-        button.setWantsKeyboardFocus (false);
+        // A CLICK must not move focus off the roll, or the shortcuts it owns -
+        // the arrows, the digits - stop working until the grid is clicked
+        // again. That is this call, and only this call: refusing focus
+        // outright also took every toolbar button out of the tab order, which
+        // is the one way a keyboard reaches them at all.
+        button.setMouseClickGrabsKeyboardFocus (false);
         addAndMakeVisible (button);
     };
 
@@ -29,7 +31,7 @@ PianoRollToolbar::PianoRollToolbar()
 
     rebuildSnapBox();
     snapBox.setTooltip ("Grid the editing gestures snap to");
-    snapBox.setWantsKeyboardFocus (false);
+    snapBox.setMouseClickGrabsKeyboardFocus (false);
     snapBox.onChange = [this]
     {
         if (updatingSnapBox)
@@ -43,7 +45,7 @@ PianoRollToolbar::PianoRollToolbar()
     addAndMakeVisible (snapCaption);
 
     channelBox.setTooltip ("Channel being edited");
-    channelBox.setWantsKeyboardFocus (false);
+    channelBox.setMouseClickGrabsKeyboardFocus (false);
     channelBox.onChange = [this]
     {
         if (updatingChannelBox)
@@ -76,7 +78,7 @@ PianoRollToolbar::PianoRollToolbar()
 
     const auto addAction = [this] (juce::Button& button, std::function<void()>& callback)
     {
-        button.setWantsKeyboardFocus (false);
+        button.setMouseClickGrabsKeyboardFocus (false);
         button.onClick = [&callback]
         {
             if (callback)
@@ -90,7 +92,7 @@ PianoRollToolbar::PianoRollToolbar()
 
     const auto addTranspose = [this] (juce::Button& button, int semitones)
     {
-        button.setWantsKeyboardFocus (false);
+        button.setMouseClickGrabsKeyboardFocus (false);
         button.onClick = [this, semitones]
         {
             if (onTranspose)

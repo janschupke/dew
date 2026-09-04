@@ -18,7 +18,7 @@ PlaylistToolbar::PlaylistToolbar()
 
         // Without this a click on a tool moves focus off the arrangement, and
         // the shortcuts it owns stop working until a lane is clicked again.
-        button.setWantsKeyboardFocus (false);
+        button.setMouseClickGrabsKeyboardFocus (false);
         addAndMakeVisible (button);
     };
 

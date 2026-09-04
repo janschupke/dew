@@ -31,6 +31,12 @@ EffectChainComponent::EffectChainComponent (ProjectDocument& d, EditorState& s)
     , editorState (s)
 {
     setComponentID ("effectChain");
+    // A name and a PLACE in the tree a screen reader is given. focusContainer,
+    // not keyboardFocusContainer: the two flags are independent, and the second
+    // would confine the tab key to this panel with no key to leave it - a
+    // keyboard trap, which is worse than the flat tab order it would tidy.
+    setTitle ("Effect chain");
+    setFocusContainerType (FocusContainerType::focusContainer);
 
     // Only so escape can abandon a reorder; the chain grabs it when a drag
     // starts and never asks for it otherwise.

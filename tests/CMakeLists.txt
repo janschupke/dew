@@ -58,6 +58,8 @@ add_executable(dew_tests
   ScrollSpeedTests.cpp
   EntityColourTests.cpp
   HoverHelpTests.cpp
+  AccessibilityTests.cpp
+  ContrastTests.cpp
   TimelineRulerTests.cpp
   TypographyTests.cpp
   PianoRollTests.cpp

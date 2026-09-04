@@ -14,55 +14,10 @@
 #include "ui/StatusBar.h"
 #include "ui/primitives/DewControls.h"
 #include "ui/primitives/DewNumberField.h"
+#include "ControlWalkHarness.h"
 
 using namespace dew;
-
-namespace
-{
-
-/** Where a control lives, as the chain of component IDs above it - so a failure
-    names the panel to go and look at rather than a count. Lifted from
-    ParamMenuTests, which needs the same sentence for the same reason.
-*/
-juce::String describe (juce::Component& c)
-{
-    juce::StringArray path;
-
-    for (auto* p = &c; p != nullptr; p = p->getParentComponent())
-        if (p->getComponentID().isNotEmpty())
-            path.insert (0, p->getComponentID());
-
-    if (path.isEmpty())
-        path.add ("(no id)");
-
-    return path.joinIntoString (" > ") + " @" + c.getBounds().toString();
-}
-
-/** Is this something a person clicks, drags or types into?
-
-    By TYPE rather than by "does it handle the mouse", because the second
-    question has no answer from outside a component - and because the list of
-    things dew calls a control is exactly the list of primitives it built.
-*/
-bool isAControl (juce::Component& c)
-{
-    return dynamic_cast<DewButton*> (&c) != nullptr || dynamic_cast<DewIconButton*> (&c) != nullptr
-           || dynamic_cast<DewLetterToggle*> (&c) != nullptr
-           || dynamic_cast<DewKnob*> (&c) != nullptr
-           || dynamic_cast<DewNumberField*> (&c) != nullptr
-           || dynamic_cast<juce::ComboBox*> (&c) != nullptr;
-}
-
-void walk (juce::Component& root, const std::function<void (juce::Component&)>& visit)
-{
-    for (auto* child : root.getChildren())
-    {
-        visit (*child);
-        walk (*child, visit);
-    }
-}
-
-} // namespace
+using namespace dew::testing;
 
 TEST_CASE ("hover help reads the nearest tooltip above the pointer", "[ui][hover]")
 {
@@ -132,30 +87,14 @@ TEST_CASE ("every control in the window says what it is", "[ui][hover]")
     MainComponent component (false);
     component.setSize (1400, 900);
 
-    int controls = 0;
     juce::StringArray silent;
 
-    // EVERY tab, not the one that happens to be in front: a TabbedComponent
-    // parents only the current tab's content, so a walk of the window as it
-    // opens covers the channel rack and none of the other four - which is a
-    // gate that passes while saying almost nothing.
-    for (int tab = 0; tab < Settings::numTabs; ++tab)
-    {
-        component.showTab (tab);
-        component.resized();
-
-        walk (component,
-              [&] (juce::Component& c)
-              {
-                  if (! isAControl (c))
-                      return;
-
-                  ++controls;
-
-                  if (HoverHelp::helpFor (c).isEmpty())
-                      silent.addIfNotAlreadyThere (describe (c));
-              });
-    }
+    const auto controls = forEachControl (component,
+                                          [&] (juce::Component& c)
+                                          {
+                                              if (HoverHelp::helpFor (c).isEmpty())
+                                                  silent.addIfNotAlreadyThere (describe (c));
+                                          });
 
     // A control case: a walk that found nothing would pass for the wrong reason,
     // and so would one that only ever saw a single tab.

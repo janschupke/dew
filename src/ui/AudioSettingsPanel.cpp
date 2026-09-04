@@ -15,6 +15,13 @@ AudioSettingsPanel::AudioSettingsPanel (LiveAudioHost& host, AudioEngine& e)
     , engine (e)
 {
     setComponentID ("audioSettings");
+    // A name and a PLACE in the tree a screen reader is given. focusContainer,
+    // not keyboardFocusContainer: the two flags are independent, and the second
+    // would confine the tab key to this panel with no key to leave it - a
+    // keyboard trap, which is worse than the flat tab order it would tidy.
+    setTitle ("Audio settings");
+    setFocusContainerType (FocusContainerType::focusContainer);
+
     setSize (preferredWidth, preferredHeight);
 
     labels = { "DRIVER", "OUTPUT", "INPUT", "CHANNELS", "RATE", "BUFFER" };
@@ -322,6 +329,18 @@ void AudioSettingsPanel::paint (juce::Graphics& g)
         // threshold, not a slope.
         g.setColour (proportion > meter::hotProportion ? colour::danger : colour::success);
         g.fillRoundedRectangle (filled, radius::sm);
+    }
+
+    // Where the meter stops being green, said by POSITION as well as by hue.
+    // The bar's height already carries the level; the threshold it crosses was
+    // carried by the colour change alone, and a colour change is the one cue
+    // some readers do not get.
+    {
+        const auto bar = meter.toFloat();
+        const auto x = bar.getX() + bar.getWidth() * meter::hotProportion;
+
+        g.setColour (colour::dividerStrong);
+        g.fillRect (x, bar.getY(), stroke::hairline, bar.getHeight());
     }
 
     g.setColour (colour::outline);

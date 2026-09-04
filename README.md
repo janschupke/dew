@@ -265,6 +265,11 @@ keys were live in the tests and nowhere else.
 | `del` delete selection | — | ✓ | — | — |
 | ⌘A select all | — | ✓ | — | — |
 
+**Tab reaches every control**, and the one holding the keyboard draws an accent ring.
+Neither used to be true: knobs refused focus because `juce::Slider` does, and the toolbars
+refused it deliberately to keep a click from moving focus off the editor. Both are gates
+now — see [Reaching it without a mouse](#reaching-it-without-a-mouse).
+
 **The pointer says what is under it.** `ui/design/Cursors.h` names six cursors for the
 gesture rather than for the arrow — `idle`, `clickable`, `value`, `move`, `resizeX`,
 `nib` — the way the colours are named for their role, and a source gate refuses a
@@ -524,10 +529,52 @@ no component redeclaring a dimension the ladder already names, no timer picking 
 refresh rate, no font built outside `Tokens.cpp` — and one that refuses the opposite
 mistake, a token nothing refers to.
 
-Two more hold coverage rather than vocabulary, and both exist because a control added to
+Four more hold coverage rather than vocabulary, and each exists because a control added to
 a panel without them is exactly the omission nobody notices: every spec-built knob in the
-window has a right-click menu, and every control in all five tabs has help text. The
-second found thirty of sixty-three silent when it was written.
+window has a right-click menu, and every control in all five tabs has help text, an
+accessible name, and a way for the keyboard to reach it. The second found thirty of
+sixty-three silent when it was written; the third and fourth are below.
+
+A fifth holds the palette to a number rather than to a vocabulary. Colours are named for
+their ROLE, which is what makes a theme change an edit to one file — but a role says
+nothing about whether the pair is legible, and five of them were not. `ContrastTests`
+states the pairs that are actually painted and the ratio each needs, so a token cannot be
+darkened back without an argument. The worst of the five was the hover-help line itself:
+the app's only always-on explanation of the control under the pointer, drawn in the
+palette's least readable colour at 2.6:1.
+
+### Reaching it without a mouse
+
+`juce::Slider`'s constructor turns keyboard focus off, so every knob in dew was
+unreachable by tab and `Slider::keyPressed` — the arrows, page up and down — was dead code
+in all of them. The editor toolbars then refused focus outright, to stop a *click* moving
+focus off the roll and killing the shortcuts it owns; that is what
+`setMouseClickGrabsKeyboardFocus` is for, and the two things were being spelled with one
+call. Both are gates now: every control in all five tabs wants keyboard focus, unless it
+is disabled.
+
+A focused control draws an accent ring. It is painted by the primitive rather than through
+`LookAndFeel::createFocusOutlineForComponent`, which puts the ring in its own overlay
+window and so needs a `ComponentPeer` — the same reason the animator is a `Timer`. JUCE's
+version would be invisible to the suite and to `dew_shot`, which is to say untestable in
+the two places this codebase looks at its own pixels. `paint::focusRing` takes the focus
+flag as an argument for the same reason: `grabKeyboardFocus` does nothing without a peer,
+so a helper that asked for itself could never be shown to draw.
+
+The tooltip is the accessible name. dew already had one curated sentence per control and a
+gate refusing a control without one, so a screen reader reads that sentence rather than a
+second vocabulary nobody keeps in step — `setTooltip` sets both on every primitive. It is
+an override rather than a convention because the convention had already failed: three zoom
+buttons were constructed with an empty label and given their tooltip a line later, so the
+status bar explained them and a screen reader found nothing. A knob is the awkward case —
+it is a `juce::Component` wrapping the `juce::Slider` that carries the role, the range and
+the value — so the wrapper returns an *ignored* handler. Not `setAccessible (false)`:
+`Component::isAccessible` walks up to its parent, so switching the wrapper off would take
+the slider inside it off too.
+
+Everything above is plain portable code. JUCE implements accessibility natively on macOS
+and Windows and compiles the same calls to nothing where there is no backend, so none of
+it is behind an `#ifdef`.
 
 `dew_shot gallery` earns its place the same way. The icon grid's height was a hard-coded
 two rows, so three new icons drew straight over the section below — on the one page whose
@@ -548,6 +595,18 @@ application, not of a widget. `Animator::advance (deltaMs)` steps every client b
 chosen number of milliseconds with no wall clock, so a test walks a whole interaction
 frame by frame rather than sampling it at the ends. Reduce motion sets every duration to
 zero, which makes `animateTo` identical to `snapTo` — no call site needs a branch.
+
+Reduce motion is **View → Motion**, and it is three states rather than two: follow the
+system, full motion, reduce motion. A stored boolean cannot say "follow the OS", so
+reading the preference into one at startup would silently overwrite a choice made in dew,
+and reading it only when the file had no value would mean a preference turned on later
+never arrived. `system` is the default.
+
+Asking the OS is dew's one piece of per-OS code — `systemPrefersReducedMotion`, in
+`ui/design/`. JUCE wraps dark mode portably and stops there, so this is a preference read
+on macOS and on Windows and `false` where there is nothing to ask. It is a `.cpp` reading
+CFPreferences rather than a `.mm` reading `NSWorkspace`, because the Objective-C version
+would put `OBJCXX` in the project's languages for one boolean.
 
 A knob has three rules, in priority order: animation is off unless turned on; a **drag is
 never eased**, because a needle trailing the pointer moving it feels broken; and the

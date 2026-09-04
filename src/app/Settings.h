@@ -103,8 +103,31 @@ public:
         Not "slower": off. Some people find animation distracting and some find
         it nauseating, and a DAW is a tool people sit in front of for hours.
     */
-    bool getReduceMotion() const;
-    void setReduceMotion (bool);
+    enum class Motion
+    {
+        system, ///< whatever the OS accessibility preference says
+        full,   ///< animate, whatever the OS says
+        reduced ///< instant, whatever the OS says
+    };
+
+    /** Three states rather than two, and `system` is the default.
+
+        A stored boolean cannot say "follow the OS", so reading the OS into it
+        at startup would silently overwrite a choice the person had made in dew
+        - and reading it only when the file has no value would mean a preference
+        turned on later never arrived.
+    */
+    Motion getMotionPreference() const;
+    void setMotionPreference (Motion);
+
+    /** What the animator should actually be told.
+
+        Takes the OS answer as an ARGUMENT rather than asking for it: reading
+        the preference needs per-OS code, that code lives in dew_design, and
+        dew_app sits beside dew_design rather than under it. Passing it in keeps
+        this a pure function of the two inputs and the layering a link error.
+    */
+    bool getReduceMotion (bool systemPrefersReduced) const;
 
     /** How much bigger the whole interface is drawn.
 

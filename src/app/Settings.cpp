@@ -274,14 +274,36 @@ bool Settings::getPanelCollapsed() const
     return file().getBoolValue ("panelCollapsed", false);
 }
 
-bool Settings::getReduceMotion() const
+Settings::Motion Settings::getMotionPreference() const
 {
-    return file().getBoolValue ("reduceMotion", false);
+    const auto stored = file().getValue ("motion", "system");
+
+    if (stored == "full")
+        return Motion::full;
+
+    if (stored == "reduced")
+        return Motion::reduced;
+
+    return Motion::system;
 }
 
-void Settings::setReduceMotion (bool reduce)
+void Settings::setMotionPreference (Motion motion)
 {
-    file().setValue ("reduceMotion", reduce);
+    file().setValue ("motion", motion == Motion::full      ? "full"
+                               : motion == Motion::reduced ? "reduced"
+                                                           : "system");
+}
+
+bool Settings::getReduceMotion (bool systemPrefersReduced) const
+{
+    switch (getMotionPreference())
+    {
+        case Motion::full: return false;
+        case Motion::reduced: return true;
+        case Motion::system: break;
+    }
+
+    return systemPrefersReduced;
 }
 
 double Settings::getUiScale() const

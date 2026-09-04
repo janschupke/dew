@@ -63,6 +63,12 @@ DewKnob::DewKnob (const juce::String& c, double minimum, double maximum, double 
     // cursor rather than walking up to a parent.
     slider.setMouseCursor (cursor::value);
 
+    // juce::Slider's constructor turns keyboard focus OFF, so every knob in dew
+    // was unreachable by tab and Slider::keyPressed - the arrows, page up and
+    // down, home and end - was dead code in every one of them. The rotary is
+    // the control, so the rotary is what takes the focus.
+    slider.setWantsKeyboardFocus (true);
+
     // Never called anywhere before this, so every knob in dew sat on JUCE's
     // default of 250 - which is not the same as having chosen 250.
     slider.setMouseDragSensitivity (gesture::dragPixelsForFullRange);
@@ -161,6 +167,18 @@ void DewKnob::setTooltip (const juce::String& text)
 {
     juce::SettableTooltipClient::setTooltip (text);
     slider.setTooltip (text);
+
+    // And as the slider's accessible NAME. The tooltip is already the one
+    // sentence in the codebase that says what this control is - HoverHelp puts
+    // it in the status bar and a gate refuses a control without one - so a
+    // screen reader should be reading that same sentence rather than a second
+    // vocabulary nobody keeps in step.
+    slider.setTitle (text);
+}
+
+std::unique_ptr<juce::AccessibilityHandler> DewKnob::createAccessibilityHandler()
+{
+    return createIgnoredAccessibilityHandler (*this);
 }
 
 void DewKnob::resized()
@@ -235,5 +253,10 @@ void DewKnob::paint (juce::Graphics& g)
     g.setFont (type::font (type::caption));
     g.drawText (juce::String (slider.getValue(), decimalPlaces), valueArea,
                 juce::Justification::centred, false);
+
+    // Around the whole knob, caption and readout included, rather than around
+    // the rotary alone: the focus is on the slider INSIDE this, and a ring that
+    // hugged it would sit in the middle of the control rather than on its edge.
+    paint::focusRing (g, *this, hasKeyboardFocus (true));
 }
 } // namespace dew

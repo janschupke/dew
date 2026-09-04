@@ -356,9 +356,13 @@ void MixerStrip::resized()
             area.removeFromTop (size::knobSm).withSizeKeepingCentre (size::knobSm, size::knobSm));
         area.removeFromTop (space::xs);
 
-        auto buttons = area.removeFromTop (size::minTouchTarget);
-        muteButton.setBounds (buttons.removeFromLeft (buttons.getWidth() / 2).reduced (space::xxs));
-        soloButton.setBounds (buttons.reduced (space::xxs));
+        // letterToggle rather than minTouchTarget, and inset sideways only: the
+        // row was the floor itself and then gave two pixels back at the top and
+        // bottom, which put the strip's M and S four pixels UNDER the floor.
+        auto buttons = area.removeFromTop (size::letterToggle);
+        muteButton.setBounds (
+            buttons.removeFromLeft (buttons.getWidth() / 2).reduced (space::xxs, 0));
+        soloButton.setBounds (buttons.reduced (space::xxs, 0));
         area.removeFromTop (space::xs);
     }
 
@@ -445,6 +449,14 @@ void MixerStrip::paintMeter (juce::Graphics& g)
                  : proportion > meter::hotProportion ? colour::warning
                                                      : colour::success);
     g.fillRoundedRectangle (bar, radius::xs);
+
+    // Where the meter stops being green, said by POSITION as well as by hue -
+    // the bar's height carries the level, but the threshold it crosses was
+    // carried by the colour change alone.
+    const auto hotY = well.getBottom() - meter::hotProportion * well.getHeight();
+
+    g.setColour (colour::dividerStrong);
+    g.fillRect (well.getX(), hotY, well.getWidth(), stroke::hairline);
 }
 
 void MixerStrip::paintRouting (juce::Graphics& g)

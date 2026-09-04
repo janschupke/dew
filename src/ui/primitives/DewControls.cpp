@@ -115,6 +115,8 @@ void DewButton::paintButton (juce::Graphics& g, bool highlighted, bool down)
     g.setColour (isEnabled() ? text : colour::textDisabled);
     g.setFont (type::font (type::body));
     g.drawText (getButtonText(), getLocalBounds(), juce::Justification::centred, false);
+
+    paint::focusRing (g, *this, hasKeyboardFocus (true));
 }
 
 // --- DewIconButton -----------------------------------------------------------
@@ -126,6 +128,12 @@ DewIconButton::DewIconButton (juce::Path i, const juce::String& tooltipText, Rol
 {
     setTooltip (tooltipText);
     setMouseCursor (cursor::clickable);
+}
+
+void DewIconButton::setTooltip (const juce::String& text)
+{
+    juce::SettableTooltipClient::setTooltip (text);
+    setTitle (text);
 }
 
 void DewIconButton::setRole (Role r)
@@ -188,6 +196,8 @@ void DewIconButton::paintButton (juce::Graphics& g, bool highlighted, bool down)
                                     : lift.cross (restingTint(), colour::textOnAccent);
 
     icons::draw (g, icon, bounds.reduced (bounds.getWidth() * 0.28f), tint);
+
+    paint::focusRing (g, *this, hasKeyboardFocus (true));
 }
 
 // --- DewLetterToggle ---------------------------------------------------------
@@ -203,6 +213,22 @@ DewLetterToggle::DewLetterToggle (const juce::String& l, juce::Colour c,
     setMouseCursor (cursor::clickable);
 }
 
+void DewDropdown::setTooltip (const juce::String& text)
+{
+    // juce::ComboBox's own override, NOT SettableTooltipClient's: a ComboBox
+    // keeps its tooltip on the juce::Label inside it and reads getTooltip back
+    // from there, so setting the base member alone stores a string nothing ever
+    // returns. The hover-help gate caught exactly that.
+    juce::ComboBox::setTooltip (text);
+    setTitle (text);
+}
+
+void DewLetterToggle::setTooltip (const juce::String& text)
+{
+    juce::SettableTooltipClient::setTooltip (text);
+    setTitle (text);
+}
+
 void DewLetterToggle::paintButton (juce::Graphics& g, bool, bool)
 {
     const auto bounds = paint::bodyRect (*this);
@@ -216,6 +242,8 @@ void DewLetterToggle::paintButton (juce::Graphics& g, bool, bool)
     g.setColour (lift.cross (colour::textSecondary, colour::textOnAccent));
     g.setFont (type::font (type::small, true));
     g.drawText (letter, getLocalBounds(), juce::Justification::centred, false);
+
+    paint::focusRing (g, *this, hasKeyboardFocus (true));
 }
 
 /** One rule for every control: a right-click opens the menu if there is one,

@@ -49,6 +49,12 @@ enum
     viewUiScale125 = viewUiScaleFirst + 1,
     viewUiScale150,
     viewUiScale175,
+
+    /** One per Settings::Motion, contiguous and in the same order, so the menu
+        loops rather than naming each id twice - the way the scales do. */
+    viewMotionFirst,
+    viewMotionFull = viewMotionFirst + 1,
+    viewMotionReduced,
 };
 
 } // namespace CommandIDs

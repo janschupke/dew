@@ -59,6 +59,20 @@ void StatusBar::showMessage (const juce::String& text, Severity severity)
     arrival.snapTo (0.0f);
     arrival.animateTo (1.0f, tokens::motion::popupMs, Ease::decelerate);
 
+    // Said out loud as well as drawn. This strip is where dew reports that the
+    // audio device would not open or that a project failed to load, and a
+    // message that only ever appears in a corner is a message a screen reader
+    // user never gets - it is not attached to anything they are focused on.
+    //
+    // The severity rule above already says an error and a routine "saved" are
+    // not comparable, so it decides the priority here too rather than a second
+    // idea of importance. Static, and compiled to nothing where the platform
+    // has no accessibility backend.
+    juce::AccessibilityHandler::postAnnouncement (
+        text, severity == Severity::error
+                  ? juce::AccessibilityHandler::AnnouncementPriority::high
+                  : juce::AccessibilityHandler::AnnouncementPriority::medium);
+
     repaint (messageBounds);
 }
 

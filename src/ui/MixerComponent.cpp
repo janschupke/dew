@@ -31,6 +31,13 @@ MixerComponent::MixerComponent (ProjectDocument& d, EditorState& s, AudioEngine*
     , chainHost (d, s, EffectChainHost::Orientation::horizontal)
 {
     setComponentID ("mixer");
+    // A name and a PLACE in the tree a screen reader is given. focusContainer,
+    // not keyboardFocusContainer: the two flags are independent, and the second
+    // would confine the tab key to this panel with no key to leave it - a
+    // keyboard trap, which is worse than the flat tab order it would tidy.
+    setTitle ("Mixer");
+    setFocusContainerType (FocusContainerType::focusContainer);
+
     confirmDestructive = confirmWithPanel (this);
 
     // Strips scroll. removeFromLeft on a fixed rectangle clamps at the right

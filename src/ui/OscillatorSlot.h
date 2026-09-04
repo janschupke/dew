@@ -129,9 +129,18 @@ public:
 
         // A dot rather than a second word: three of these share the panel's
         // width, and "OSC 1 ON" at a size that still reads does not fit.
+        //
+        // FILLED or HOLLOW, not green or grey. The colour said it on its own,
+        // which is the one thing a dot this small must not do - green against
+        // grey is the axis most colour blindness runs along, and there is no
+        // room here for the word that would otherwise carry it.
         const auto dot = body.removeFromLeft (12.0f).withSizeKeepingCentre (5.0f, 5.0f);
         g.setColour (slotEnabled ? colour::success : colour::textDisabled);
-        g.fillEllipse (dot);
+
+        if (slotEnabled)
+            g.fillEllipse (dot);
+        else
+            g.drawEllipse (dot, stroke::hairline);
 
         g.setColour (slotEnabled ? colour::textPrimary : colour::textDisabled);
         g.setFont (type::font (type::caption, selected));

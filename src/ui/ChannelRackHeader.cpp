@@ -249,9 +249,15 @@ void ChannelRackHeader::resized()
     auto area = getLocalBounds().reduced (space::sm, space::xs);
     area.removeFromLeft (space::xs);
 
-    soloButton.setBounds (area.removeFromRight (22).reduced (0, space::xxs));
+    // Square, on the rung, and centred in the row rather than inset from it:
+    // three sites spelled the width 22 by hand, and the vertical inset then
+    // took four more off a target that has a floor.
+    const auto letter = [] (juce::Rectangle<int> slot)
+    { return slot.withSizeKeepingCentre (size::letterToggle, size::letterToggle); };
+
+    soloButton.setBounds (letter (area.removeFromRight (size::letterToggle)));
     area.removeFromRight (space::xxs);
-    muteButton.setBounds (area.removeFromRight (22).reduced (0, space::xxs));
+    muteButton.setBounds (letter (area.removeFromRight (size::letterToggle)));
 
     area.removeFromRight (space::sm);
     pitchBounds = area.removeFromRight (26);
@@ -260,7 +266,7 @@ void ChannelRackHeader::resized()
     // The same slot the base pitch occupies, so the row's shape is the same
     // whichever kind of channel it is and the knobs never shift under the
     // cursor when a channel changes kind.
-    armButton.setBounds (pitchBounds.withWidth (22).reduced (0, space::xxs));
+    armButton.setBounds (letter (pitchBounds.withWidth (size::letterToggle)));
 
     panKnob.setBounds (area.removeFromRight (size::knobSm));
     area.removeFromRight (space::xs);

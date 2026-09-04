@@ -15,6 +15,7 @@
 
 #include "model/Ids.h"
 #include "ui/design/Animator.h"
+#include "ui/design/SystemMotionPreference.h"
 
 namespace dew
 {
@@ -219,7 +220,7 @@ MainComponent::PanelDivider::PanelDivider (MainComponent& o)
     setComponentID ("panelDivider");
 
     toggleButton.setComponentID ("panelToggle");
-    toggleButton.setWantsKeyboardFocus (false);
+    toggleButton.setMouseClickGrabsKeyboardFocus (false);
     toggleButton.setMouseCursor (cursor::clickable);
     toggleButton.onClick = [this] { owner.setPanelCollapsed (! owner.panelCollapsed); };
     addAndMakeVisible (toggleButton);
@@ -330,7 +331,7 @@ void MainComponent::applySettings (const Settings& settings)
     panelCollapsed = settings.getPanelCollapsed();
     divider.updateToggle();
 
-    Animator::shared().setReduceMotion (settings.getReduceMotion());
+    Animator::shared().setReduceMotion (settings.getReduceMotion (systemPrefersReducedMotion()));
 
     editorState.setSelectedChannelId (settings.getSelectedChannelId());
     editorState.setSelectedMixerTrackId (settings.getSelectedMixerTrackId());

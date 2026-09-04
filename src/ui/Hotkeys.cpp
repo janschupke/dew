@@ -89,6 +89,16 @@ const std::vector<Binding<juce::CommandID>>& application()
         { CommandIDs::viewUiScale175, {},
           "175%", "Draw the interface three quarters larger", "View" },
 
+        // Keyless for the same reason the scales are. Reduce motion was built,
+        // persisted and honoured everywhere, and had no way to be turned on:
+        // it lived in the settings file and nowhere a person could reach.
+        { CommandIDs::viewMotionFirst, {},
+          "Follow the system", "Reduce motion when the operating system asks for it", "View" },
+        { CommandIDs::viewMotionFull, {},
+          "Full motion", "Animate transitions, whatever the system prefers", "View" },
+        { CommandIDs::viewMotionReduced, {},
+          "Reduce motion", "Make every transition instant", "View" },
+
         { CommandIDs::transportPlayStop, { juce::KeyPress::spaceKey, 0 },
           "Play / Stop", "Start or stop playback", "Transport" },
         { CommandIDs::transportRewind, { juce::KeyPress::homeKey, 0 },

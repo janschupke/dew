@@ -37,6 +37,12 @@ public:
     /** Small caption drawn above the value. */
     void setCaption (juce::String);
 
+    /** Sets the tooltip AND the accessible name, the way every other dew
+        primitive does. The field is a plain juce::Component, so nothing else
+        would give a screen reader a word for it.
+    */
+    void setTooltip (const juce::String&) override;
+
     /** Drags the value exponentially rather than linearly.
 
         For frequencies and times, a linear drag is unusable: a cutoff over 20 to

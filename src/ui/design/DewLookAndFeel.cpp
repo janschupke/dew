@@ -426,7 +426,10 @@ void DewLookAndFeel::drawPopupMenuItem (juce::Graphics& g, const juce::Rectangle
 
     if (shortcutKeyText.isNotEmpty())
     {
-        g.setColour (textColour.withAlpha (emphasis::dimmed));
+        // Dimmed only where there is room to be: on the HIGHLIGHTED row the
+        // text is textOnAccent over the accent fill, and taking it to dimmed
+        // there drops it to 2.9:1 - a shortcut is text you read, not a texture.
+        g.setColour (isHighlighted ? textColour : textColour.withAlpha (emphasis::dimmed));
         g.setFont (type::font (type::small));
         g.drawText (shortcutKeyText, content.removeFromRight (72),
                     juce::Justification::centredRight, false);

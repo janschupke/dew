@@ -69,6 +69,12 @@ void DewNumberField::setNumDecimalPlaces (int places)
     repaint();
 }
 
+void DewNumberField::setTooltip (const juce::String& text)
+{
+    juce::SettableTooltipClient::setTooltip (text);
+    setTitle (text);
+}
+
 void DewNumberField::setCaption (juce::String newCaption)
 {
     caption = std::move (newCaption);
@@ -263,6 +269,8 @@ void DewNumberField::paint (juce::Graphics& g)
         arrows.addTriangle (right - 3.0f, mid + 2.0f, right + 3.0f, mid + 2.0f, right, mid + 6.0f);
         g.fillPath (arrows);
     }
+
+    paint::focusRing (g, *this, hasKeyboardFocus (true));
 }
 
 } // namespace dew

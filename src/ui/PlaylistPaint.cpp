@@ -118,7 +118,12 @@ void PlaylistComponent::paintAutomationClip (juce::Graphics& g, const juce::Valu
 
     // Underneath the curve rather than over it: the curve is the content, and
     // an automation lane is only a row tall.
-    g.setColour (clipColour.withAlpha (emphasis::subdued));
+    //
+    // At `strong`, the same alpha the clip's own border carries, rather than at
+    // `subdued`: a name is read, and subdued put it at 2.3:1 on the well behind
+    // it. Being under the curve is what keeps it out of the way; being faint as
+    // well only made it unreadable.
+    g.setColour (clipColour.withAlpha (emphasis::strong));
     g.setFont (type::font (type::caption));
     g.drawText (automation[ids::name].toString(),
                 bounds.toNearestInt().reduced (space::xs, space::xxs), juce::Justification::topLeft,
