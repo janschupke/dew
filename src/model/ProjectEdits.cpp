@@ -306,6 +306,17 @@ void ProjectEdits::setSoundFontSource (juce::ValueTree channel, const juce::Stri
         return;
 
     node.setProperty (ids::file, path, undo);
+    setSoundFontPreset (channel, bank, program, presetName, undo);
+}
+
+void ProjectEdits::setSoundFontPreset (juce::ValueTree channel, int bank, int program,
+                                       const juce::String& presetName, juce::UndoManager* undo)
+{
+    auto node = channel.getChildWithName (ids::SOUNDFONT);
+
+    if (! node.isValid())
+        return;
+
     node.setProperty (ids::bank, juce::jlimit (0, 128, bank), undo);
     node.setProperty (ids::program, juce::jlimit (0, 127, program), undo);
     node.setProperty (ids::presetName, presetName, undo);

@@ -45,6 +45,7 @@ public:
         arms it - the reason to add one is to record into it.
     */
     void addAudioChannel();
+    void addSoundFontChannel();
     void removeChannel (int channelId);
 
     /** What removing a channel asks first. See ConfirmHook. */
@@ -97,6 +98,7 @@ private:
     // parked in a footer strip at the far end of the panel.
     DewButton addChannelButton { "+ Channel", DewButton::Role::ghost };
     DewButton addAudioButton { "+ Audio", DewButton::Role::ghost };
+    DewButton addSoundFontButton { "+ Font", DewButton::Role::ghost };
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (ChannelRackComponent)
 };

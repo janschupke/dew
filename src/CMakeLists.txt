@@ -324,6 +324,7 @@ add_library(dew_ui STATIC
   ui/EffectChainComponent.cpp
   ui/OscillatorSection.cpp
   ui/SampleSection.cpp
+  ui/SoundFontSection.cpp
   ui/EffectChainHost.cpp
   ui/AudioSettingsPanel.cpp
   ui/RenderPanel.cpp

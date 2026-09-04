@@ -10,6 +10,7 @@
 #include "ui/ParamContextMenu.h"
 #include "ui/OscillatorSection.h"
 #include "ui/SampleSection.h"
+#include "ui/SoundFontSection.h"
 
 namespace dew
 {
@@ -39,7 +40,8 @@ public:
                       section draws its empty state - which is what lets a test
                       or dew_shot build the panel without a sample pool.
     */
-    InstrumentPanel (ProjectDocument&, EditorState&, SamplePool* pool = nullptr);
+    InstrumentPanel (ProjectDocument&, EditorState&, SamplePool* pool = nullptr,
+                     SoundFontPool* soundFonts = nullptr);
     ~InstrumentPanel() override;
 
     void paint (juce::Graphics&) override;
@@ -138,6 +140,10 @@ private:
     */
     SampleSection sampleSection;
 
+    /** The soundfont channel's face. Exactly one of the three is visible;
+        refresh() is the single place that decides. */
+    SoundFontSection soundFontSection;
+
     juce::Slider basePitchSlider { juce::Slider::IncDecButtons, juce::Slider::TextBoxLeft };
     juce::Label basePitchLabel;
 
@@ -174,10 +180,15 @@ private:
 
     bool updating = false;
 
-    /** Whether the panel is showing its audio face. Cached from the document so
-        that resized() and refresh() cannot disagree about the row stack.
-    */
-    bool showingAudio = false;
+    /** Which face the panel is showing, cached from the document for the reason
+        the bool it replaced was cached: resized() and refresh() must not be
+        able to disagree about the row stack. A bool could answer "synth or
+        audio"; a third kind of instrument needs the type itself. */
+    InstrumentType showing = InstrumentType::synth;
+
+    /** Whether there is a channel to show at all. Separate from the type,
+        because an invalid selection is not a kind of instrument. */
+    bool showingAny = false;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (InstrumentPanel)
 };

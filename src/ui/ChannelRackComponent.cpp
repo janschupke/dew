@@ -419,6 +419,7 @@ ChannelRackComponent::ChannelRackComponent (ProjectDocument& d, AudioEngine& e, 
 
     addChannelButton.onClick = [this] { addChannel(); };
     addAudioButton.onClick = [this] { addAudioChannel(); };
+    addSoundFontButton.onClick = [this] { addSoundFontChannel(); };
 
     // Into the scrolling holder, not onto the panel: it is the next row of the
     // list, so it belongs to the list and scrolls with it.
@@ -429,6 +430,10 @@ ChannelRackComponent::ChannelRackComponent (ProjectDocument& d, AudioEngine& e, 
     addAudioButton.setComponentID ("addAudioButton");
     addAudioButton.setTooltip ("Add a channel that plays a recording");
     contentHolder.addAndMakeVisible (addAudioButton);
+
+    addSoundFontButton.setComponentID ("addSoundFontButton");
+    addSoundFontButton.setTooltip ("Add a channel that plays a soundfont file");
+    contentHolder.addAndMakeVisible (addSoundFontButton);
 
     document.getState().addListener (this);
     editorState.addChangeListener (this);
@@ -477,6 +482,18 @@ void ChannelRackComponent::addAudioChannel()
     // error message about a step the user has just taken.
     editorState.setSelectedChannelId ((int) channel[ids::id]);
     editorState.setArmedChannelId ((int) channel[ids::id]);
+}
+
+void ChannelRackComponent::addSoundFontChannel()
+{
+    auto& undo = document.getUndoManager();
+    undo.beginNewTransaction ("Add soundfont channel");
+    const auto channel = ProjectEdits::addSoundFontChannel (document.getState(), {}, &undo);
+
+    // Selected, and NOT armed: a soundfont channel is played rather than
+    // recorded into, and the next thing to do with it is choose a file - which
+    // is in the instrument panel that selecting it opens.
+    editorState.setSelectedChannelId ((int) channel[ids::id]);
 }
 
 void ChannelRackComponent::removeChannel (int channelId)
@@ -665,8 +682,15 @@ void ChannelRackComponent::resized()
                                         size::rowHeight)
                       .reduced (space::sm, space::xs);
 
-    addChannelButton.setBounds (addRow.removeFromLeft (addRow.getWidth() / 2 - space::xxs));
-    addAudioButton.setBounds (addRow.removeFromRight (addRow.getWidth() - space::xs));
+    // Three across what was two: a third of the row each, with the same gap
+    // between them the pair had.
+    const auto third = (addRow.getWidth() - space::xs * 2) / 3;
+
+    addChannelButton.setBounds (addRow.removeFromLeft (third));
+    addRow.removeFromLeft (space::xs);
+    addAudioButton.setBounds (addRow.removeFromLeft (third));
+    addRow.removeFromLeft (space::xs);
+    addSoundFontButton.setBounds (addRow);
 
     grid.setBounds (size::gutterChannel, 0,
                     juce::jmax (120, contentHolder.getWidth() - size::gutterChannel),

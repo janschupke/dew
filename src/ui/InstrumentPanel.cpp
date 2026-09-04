@@ -21,14 +21,17 @@ namespace
 
 } // namespace
 
-InstrumentPanel::InstrumentPanel (ProjectDocument& d, EditorState& s, SamplePool* pool)
+InstrumentPanel::InstrumentPanel (ProjectDocument& d, EditorState& s, SamplePool* pool,
+                                  SoundFontPool* soundFonts)
     : document (d)
     , editorState (s)
     , oscSection (d, s)
     , sampleSection (d, pool)
+    , soundFontSection (d, soundFonts)
     , chainHost (d, s, EffectChainHost::Orientation::vertical)
 {
     addChildComponent (sampleSection);
+    addChildComponent (soundFontSection);
 
     setComponentID ("instrumentPanel");
 
@@ -112,6 +115,7 @@ void InstrumentPanel::setParamMenuHost (const paramMenu::Host* host)
     chainHost.getChain().setParamMenuHost (host);
     oscSection.setParamMenuHost (host);
     sampleSection.setParamMenuHost (host);
+    soundFontSection.setParamMenuHost (host);
 
     paramMenuTriggers.clear();
 
@@ -240,24 +244,33 @@ void InstrumentPanel::refresh()
     // The one place the panel decides which face it is showing. resized() reads
     // the cached answer rather than asking the document again, so the layout
     // and the visibility can never disagree.
-    showingAudio = valid && ProjectEdits::playsClips (channel);
+    showingAny = valid;
+    showing = valid ? ProjectEdits::instrumentTypeOf (channel).value_or (InstrumentType::synth)
+                    : InstrumentType::synth;
 
-    oscSection.setOwner (showingAudio ? juce::ValueTree()
-                                      : channel.getChildWithName (ids::INSTRUMENT));
-    sampleSection.setOwner (showingAudio ? channel.getChildWithName (ids::SAMPLE)
-                                         : juce::ValueTree());
+    const auto faceFor = [this, &channel] (InstrumentType type, const juce::Identifier& node)
+    { return showingAny && showing == type ? channel.getChildWithName (node) : juce::ValueTree(); };
 
-    oscSection.setVisible (! showingAudio);
-    sampleSection.setVisible (showingAudio);
+    oscSection.setOwner (faceFor (InstrumentType::synth, ids::INSTRUMENT));
+    sampleSection.setOwner (faceFor (InstrumentType::audio, ids::SAMPLE));
+    soundFontSection.setOwner (faceFor (InstrumentType::soundfont, ids::SOUNDFONT));
 
-    // Base pitch and the amplitude envelope belong to the oscillators. Leaving
-    // them on screen for a recording would offer four controls that do nothing.
-    const std::initializer_list<juce::Component*> synthOnly { &basePitchSlider, &basePitchLabel,
-                                                              &attackKnob,      &decayKnob,
-                                                              &sustainKnob,     &releaseKnob };
+    oscSection.setVisible (showing == InstrumentType::synth);
+    sampleSection.setVisible (showing == InstrumentType::audio);
+    soundFontSection.setVisible (showing == InstrumentType::soundfont);
 
-    for (auto* c : synthOnly)
-        c->setVisible (! showingAudio);
+    // Base pitch is what a step written on the grid is pitched at, so every
+    // channel that takes notes has one. The amplitude envelope belongs to the
+    // oscillators alone: a soundfont region carries its own, and a second one
+    // stacked on top would be two places holding the same fact.
+    const std::initializer_list<juce::Component*> envelopeOnly { &attackKnob, &decayKnob,
+                                                                 &sustainKnob, &releaseKnob };
+
+    for (auto* c : envelopeOnly)
+        c->setVisible (showing == InstrumentType::synth);
+
+    for (auto* c : { (juce::Component*) &basePitchSlider, (juce::Component*) &basePitchLabel })
+        c->setVisible (ProjectEdits::playsNotes (channel));
 
     resized();
 
@@ -376,17 +389,27 @@ void InstrumentPanel::resized()
         return r;
     };
 
-    if (showingAudio)
-        sampleSection.setBounds (row (SampleSection::requiredHeight));
-    else
-        oscSection.setBounds (row (oscSection.getRequiredHeight()));
+    switch (showing)
+    {
+        case InstrumentType::synth:
+            oscSection.setBounds (row (oscSection.getRequiredHeight()));
+            break;
+
+        case InstrumentType::audio:
+            sampleSection.setBounds (row (SampleSection::requiredHeight));
+            break;
+
+        case InstrumentType::soundfont:
+            soundFontSection.setBounds (row (SoundFontSection::requiredHeight));
+            break;
+    }
 
     // Routing and base pitch share a row. The oscillator section costs the panel
     // about 120px more than the single wave combo it replaces, and at the
     // smallest window the app opens at that was the whole effect chain.
     auto routingRow = row (size::knob);
 
-    if (! showingAudio)
+    if (showing != InstrumentType::audio)
     {
         // The pitch stepper is measured from the right and the combo takes what
         // is left: an inc/dec pair given "half of whatever remains" is the one
@@ -410,7 +433,7 @@ void InstrumentPanel::resized()
             knob->setBounds (bounds.removeFromLeft (cell).reduced (space::xxs, 0));
     };
 
-    if (! showingAudio)
+    if (showing == InstrumentType::synth)
         placeKnobs (row (size::knobRow), { &attackKnob, &decayKnob, &sustainKnob, &releaseKnob });
 
     placeKnobs (row (size::knobRow), { &volumeKnob, &panKnob });

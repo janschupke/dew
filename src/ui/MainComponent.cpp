@@ -24,7 +24,7 @@ MainComponent::MainComponent (bool openAudioDevice)
     , midiHost (audioHost.getDeviceManager(), engine)
     , transportBar (document, engine, editorState)
     , tabs (document, engine, editorState, &samplePool)
-    , instrumentPanel (document, editorState, &samplePool)
+    , instrumentPanel (document, editorState, &samplePool, &soundFontPool)
     , statusBar (document, editorState, audioHost)
 {
     // Every spec-built control's right-click, wired once here because this is

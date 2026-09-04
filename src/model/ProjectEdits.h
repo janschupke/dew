@@ -160,6 +160,15 @@ struct ProjectEdits
                                     int program, const juce::String& presetName,
                                     juce::UndoManager*);
 
+    /** Chooses a different sound inside the font a channel already has.
+
+        Separate from setSoundFontSource because it must NOT touch the path: a
+        preset list is browsed with one file loaded, and rewriting the path on
+        every choice would make each of them a fresh load.
+    */
+    static void setSoundFontPreset (juce::ValueTree channel, int bank, int program,
+                                    const juce::String& presetName, juce::UndoManager*);
+
     static void removeChannel (juce::ValueTree project, juce::ValueTree channel,
                                juce::UndoManager*);
 

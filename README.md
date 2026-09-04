@@ -412,6 +412,46 @@ of them and 20kHz in the engine, and a mixer fader offered 0–1.5 against an en
 of 2.0 and an automation range of 0–1, so automating a fader swept two thirds of it and
 stopped.
 
+### Soundfonts
+
+A channel plays its oscillators, a recording, or a **soundfont**. The third is a keyed
+multisampler: a `.sf2` file, one sound chosen inside it, and six knobs that *bend* what
+the font already says rather than replacing it — a pitch and a tuning, a filter offset,
+attack and release multipliers, and how much of the format's velocity curve to apply.
+They are offsets because that is the mechanism SF2 itself uses to let a preset colour an
+instrument it does not own, and because a preset spanning forty regions that disagree has
+no single value a knob could honestly show.
+
+The reader is written here, in `dew_io`, rather than taken from a library. A soundfont
+player from outside is a second synth engine with its own envelopes, filter and voice
+stealing, and none of its parameters would be `ParamSpec` rows. What was needed is a
+reader, and the format's sampler core is bounded.
+
+What it reads and what it cuts was **measured** against a 446-font library rather than
+decided from the specification. Modulators appear in four files of 446. Both LFOs are
+configured constantly and routed almost never — every destination that makes one audible
+is 1.2% of zones — so they are cut. The modulation envelope is not: `modEnvToFilterFc`
+alone is 173 zones, more than every LFO route put together, and it is what gives those
+fonts their sweeps. Two files in that library are spelled `.SF2`, so every extension
+test is case-insensitive.
+
+A soundfont is **referenced, never gathered**. `gatherAssetsInto` copies recordings into
+`<Project> Assets/` on save; a font is a library you own, like a plugin, not a take that
+belongs to one song — and it can be five hundred megabytes. So a project can arrive
+before its fonts, and a channel whose font is missing is silent with a warning.
+
+The file is parsed as something hostile, because it is something a person chose off their
+disk: every chunk length, bag index, sample id and loop point is checked against what was
+actually read, and a malformed font yields warnings and no presets. `SoundFontCorpusTests`
+walks a real library when `DEW_SOUNDFONT_CORPUS` points at one — 448 fonts, 7231 regions,
+every one in bounds.
+
+An instrument therefore writes a **stereo** pair. A fifth of the samples in a real library
+are one half of a stereo pair, and summing them would flatten all of it. The two mono
+instruments widen through a `MonoInstrumentModule` base that renders into a scratch and
+adds it into both sides, which leaves every rendered sample bit-identical — the render
+tests passed the change with no edit to a single pinned value.
+
 ### Effects without a command queue
 
 Effect *parameters* travel in the snapshot like everything else. Effect *instances* own
