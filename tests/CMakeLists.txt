@@ -41,6 +41,8 @@ add_executable(dew_tests
   MixerTests.cpp
   OscillatorTests.cpp
   WavetableTests.cpp
+  WavetableEngineTests.cpp
+  WavetableUiTests.cpp
   TimelineViewTests.cpp
   ScrollSpeedTests.cpp
   EntityColourTests.cpp
@@ -48,6 +50,8 @@ add_executable(dew_tests
   TimelineRulerTests.cpp
   TypographyTests.cpp
   PianoRollTests.cpp
+  PianoRollEraseTests.cpp
+  PianoRollLoopTests.cpp
   PianoRollToolsTests.cpp
   ParamMenuTests.cpp
   PlaylistTests.cpp
