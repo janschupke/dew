@@ -426,6 +426,63 @@ TEST_CASE ("no layer includes a header a layer above it owns", "[build][layering
     CHECK (climbing.isEmpty());
 }
 
+TEST_CASE ("no source declares a bare juce::ToggleButton", "[build][gate]")
+{
+    // juce::Button completes a click for whichever mouse button pressed it, so
+    // a stock ToggleButton flips on a right-click - which is a gesture that in
+    // every other part of dew means "show me a menu" and never means "do it".
+    // DewCheckbox is that control with the press filtered, and the five that
+    // were stock lived in two dialogs where nobody thought to check.
+    //
+    // Declarations only: the LookAndFeel names ToggleButton's colour ids, and
+    // theming the stock control is the reason DewCheckbox does not repaint it.
+    const auto found = offenders (
+        [] (const juce::String& line)
+        {
+            const auto trimmed = line.trim();
+
+            if (trimmed.startsWith ("//") || trimmed.startsWith ("*") || trimmed.startsWith ("/*"))
+                return false;
+
+            return trimmed.startsWith ("juce::ToggleButton ")
+                   || trimmed.contains ("juce::ToggleButton>");
+        },
+        { "DewControls.h" });
+
+    INFO ("stock toggle buttons:\n" << found.joinIntoString ("\n"));
+    CHECK (found.isEmpty());
+}
+
+TEST_CASE ("no source starts a concatenation with a non-ASCII literal", "[build][gate]")
+{
+    // juce::String decodes an 8-bit literal two different ways depending on
+    // which side of the + it is on, and nothing warns:
+    //
+    //     String::String (const char*)      -> CharPointer_ASCII, mangles UTF-8
+    //     String::operator+= (const char*)  -> CharPointer_UTF8,  correct
+    //
+    // So `name + " — "` is right and `" — " + name` is not, and the window title
+    // was the second one: "dew — Untitled" reached the title bar with the em
+    // dash split into three characters. RenderPanel.cpp had already written the
+    // rule down in a comment, one file away, and the comment did not stop it.
+    //
+    // Invisible in review - the same file can hold both forms and only one is
+    // wrong - which is exactly the kind of rule that has to be a scanner.
+    const auto found = offenders ([] (const juce::String& line)
+                                  { return feedsAsciiConstructor (line); });
+
+    INFO ("non-ASCII literals decoded as ASCII:\n" << found.joinIntoString ("\n"));
+    CHECK (found.isEmpty());
+
+    // Control case: a scanner that cannot see the defect it was written for is
+    // not a gate. Both lines below are the window title, before and after.
+    const juce::String dash (juce::CharPointer_UTF8 ("\xe2\x80\x94"));
+
+    CHECK (feedsAsciiConstructor ("setName (\"dew " + dash + " \" + name);"));
+    CHECK_FALSE (feedsAsciiConstructor ("title += \" " + dash + " \";"));
+    CHECK_FALSE (feedsAsciiConstructor ("summary = seconds + \"  " + dash + "  \" + rate;"));
+}
+
 TEST_CASE ("no source spells an automatable parameter as a string literal", "[build][gate]")
 {
     // The twenty names that were the actual defect: the snapshot builder held a

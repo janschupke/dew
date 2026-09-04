@@ -155,10 +155,10 @@ private:
 
     juce::ComboBox scopeBox, formatBox, rateBox, depthBox, mp3QualityBox;
     DewNumberField tailField, peakField;
-    juce::ToggleButton normalizeToggle { "Normalize" };
-    juce::ToggleButton fadeToggle { "Fade in and out" };
-    juce::ToggleButton ditherToggle { "Dither" };
-    juce::ToggleButton stemsToggle { "One file per mixer track" };
+    DewCheckbox normalizeToggle { "Normalize" };
+    DewCheckbox fadeToggle { "Fade in and out" };
+    DewCheckbox ditherToggle { "Dither" };
+    DewCheckbox stemsToggle { "One file per mixer track" };
 
     DewButton renderButton { "Render", DewButton::Role::primary };
     DewButton cancelButton { "Cancel", DewButton::Role::ghost };

@@ -74,7 +74,7 @@ private:
         MidiSettingsPanel& owner;
         juce::MidiDeviceInfo info;
         bool connected = false;
-        juce::ToggleButton tick;
+        DewCheckbox tick;
     };
 
     MidiInputHost& host;

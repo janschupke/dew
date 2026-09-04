@@ -256,24 +256,33 @@ DewKnob::DewKnob (const juce::String& c, double minimum, double maximum, double 
     addAndMakeVisible (slider);
 }
 
-/** One rule for all four controls: a right-click that has somewhere to go opens
-    the menu and consumes the press.
+/** One rule for every control: a right-click opens the menu if there is one,
+    and is swallowed either way.
 
     Above each class's own handling rather than inside it, so a right-click never
     arms a drag or a toggle that then never completes.
+
+    Swallowing it even with NO menu is the point, and is what this used to get
+    wrong. juce::Button completes a click for whichever mouse button pressed it,
+    so falling through on a null hook meant every button in dew without a
+    context menu - play, stop, record, delete pattern, every tool and every zoom
+    - fired on a right-click. A person aiming at a menu that is not there asked
+    for nothing, not for the button.
 */
-static bool openContextMenu (const juce::MouseEvent& event, const std::function<void()>& hook)
+static bool consumePopupPress (const juce::MouseEvent& event, const std::function<void()>& hook)
 {
-    if (! event.mods.isPopupMenu() || hook == nullptr)
+    if (! event.mods.isPopupMenu())
         return false;
 
-    hook();
+    if (hook != nullptr)
+        hook();
+
     return true;
 }
 
 void DewButton::mouseDown (const juce::MouseEvent& event)
 {
-    if (openContextMenu (event, onContextMenu))
+    if (consumePopupPress (event, onContextMenu))
         return;
 
     juce::Button::mouseDown (event);
@@ -281,7 +290,7 @@ void DewButton::mouseDown (const juce::MouseEvent& event)
 
 void DewIconButton::mouseDown (const juce::MouseEvent& event)
 {
-    if (openContextMenu (event, onContextMenu))
+    if (consumePopupPress (event, onContextMenu))
         return;
 
     juce::Button::mouseDown (event);
@@ -289,15 +298,25 @@ void DewIconButton::mouseDown (const juce::MouseEvent& event)
 
 void DewLetterToggle::mouseDown (const juce::MouseEvent& event)
 {
-    if (openContextMenu (event, onContextMenu))
+    if (consumePopupPress (event, onContextMenu))
         return;
 
     juce::Button::mouseDown (event);
 }
 
+void DewCheckbox::mouseDown (const juce::MouseEvent& event)
+{
+    // No hook: a checkbox names no parameter, so there is nothing to offer. The
+    // press is still consumed, because the alternative is toggling it.
+    if (event.mods.isPopupMenu())
+        return;
+
+    juce::ToggleButton::mouseDown (event);
+}
+
 void DewKnob::mouseDown (const juce::MouseEvent& event)
 {
-    if (openContextMenu (event, onContextMenu))
+    if (consumePopupPress (event, onContextMenu))
         return;
 
     const auto pixels = gesture::isFine (event.mods)

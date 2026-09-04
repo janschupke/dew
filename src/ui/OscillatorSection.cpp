@@ -81,6 +81,17 @@ public:
         setTooltip ("Edit oscillator " + juce::String (i + 1));
     }
 
+    /** The same rule the dew primitives follow: juce::Button completes a click
+        for whichever mouse button pressed it, and a right-click on a slot tab
+        asked for nothing. */
+    void mouseDown (const juce::MouseEvent& event) override
+    {
+        if (event.mods.isPopupMenu())
+            return;
+
+        juce::Button::mouseDown (event);
+    }
+
     void setSelected (bool s)
     {
         if (std::exchange (selected, s) != s)

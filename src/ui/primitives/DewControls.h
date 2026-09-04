@@ -195,6 +195,27 @@ private:
 
 // -----------------------------------------------------------------------------
 
+/** juce::ToggleButton, minus the defect that a right-click completes the toggle.
+
+    A subclass rather than a repaint: DewLookAndFeel already maps the tick, its
+    text and its disabled state onto tokens, so the stock control LOOKS like
+    dew. What it does not do is refuse a right-click, and juce::Button completes
+    a click for whichever mouse button pressed it. This is the same rule the
+    hand-painted primitives above follow, applied to the one JUCE control dew
+    still uses directly.
+*/
+class DewCheckbox : public juce::ToggleButton
+{
+public:
+    using juce::ToggleButton::ToggleButton;
+
+    void mouseDown (const juce::MouseEvent&) override;
+
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (DewCheckbox)
+};
+
+// -----------------------------------------------------------------------------
+
 /** A rotary with its caption and value drawn as one unit, so knobs line up
     without every caller laying out a separate label.
 */
