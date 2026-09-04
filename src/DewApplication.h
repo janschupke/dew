@@ -8,6 +8,23 @@
 namespace dew
 {
 
+/** The menus on the bar, by identity rather than by caption or by position.
+
+    getMenuForIndex arrives with both, and neither is safe on its own: an index
+    is renumbered by an insertion, and a caption is a translated sentence that a
+    copy edit changes. This is what the dispatch compares.
+*/
+enum class MenuBarItem
+{
+    file,
+    edit,
+    view,
+    transport,
+    project,
+    audio,
+    demos
+};
+
 /** The application: the window, the menu bar, and the file lifecycle.
 
     New/Open/Save all go through juce::FileBasedDocument's ASYNC variants.

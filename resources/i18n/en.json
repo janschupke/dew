@@ -42,6 +42,217 @@
     "default": "Default",
     "menu": "Colour"
   },
+  "command": {
+    "addChannel": {
+      "description": "Add a new instrument channel",
+      "name": "Add Channel"
+    },
+    "addPattern": {
+      "description": "Add a new pattern",
+      "name": "Add Pattern"
+    },
+    "audioSettings": {
+      "description": "Choose the audio device, sample rate and buffer size",
+      "name": "Audio Settings..."
+    },
+    "category": {
+      "audio": "Audio",
+      "edit": "Edit",
+      "file": "File",
+      "project": "Project",
+      "tools": "Tools",
+      "transport": "Transport",
+      "view": "View"
+    },
+    "clearSelection": {
+      "description": "Drop the current selection",
+      "name": "Clear Selection"
+    },
+    "compileScore": {
+      "description": "Turn the score into notes in this project",
+      "name": "Compile Score"
+    },
+    "cursorActivate": {
+      "description": "Act on what the keyboard is pointing at",
+      "name": "Activate"
+    },
+    "cursorDown": {
+      "description": "Move the keyboard's position down a row",
+      "name": "Down"
+    },
+    "cursorLeft": {
+      "description": "Move the keyboard's position earlier",
+      "name": "Previous Step"
+    },
+    "cursorRight": {
+      "description": "Move the keyboard's position later",
+      "name": "Next Step"
+    },
+    "cursorUp": {
+      "description": "Move the keyboard's position up a row",
+      "name": "Up"
+    },
+    "deleteSelection": {
+      "description": "Delete what is selected",
+      "name": "Delete Selection"
+    },
+    "editRedo": {
+      "description": "Redo the last undone edit",
+      "name": "Redo"
+    },
+    "editUndo": {
+      "description": "Undo the last edit",
+      "name": "Undo"
+    },
+    "eraseTool": {
+      "description": "Slice notes",
+      "name": "Slice Tool"
+    },
+    "fileNew": {
+      "description": "Start an empty project",
+      "name": "New"
+    },
+    "fileOpen": {
+      "description": "Open a dew project",
+      "name": "Open..."
+    },
+    "fileRender": {
+      "description": "Write this project out as audio or MIDI",
+      "name": "Render..."
+    },
+    "fileSave": {
+      "description": "Save this project",
+      "name": "Save"
+    },
+    "fileSaveAs": {
+      "description": "Save this project to a new file",
+      "name": "Save As..."
+    },
+    "midiSettings": {
+      "description": "Choose which MIDI controllers play",
+      "name": "MIDI Settings..."
+    },
+    "paintTool": {
+      "description": "Draw notes or clips",
+      "name": "Paint Tool"
+    },
+    "selectAll": {
+      "description": "Select everything on the channel",
+      "name": "Select All"
+    },
+    "selectTool": {
+      "description": "Select and move",
+      "name": "Select Tool"
+    },
+    "sizeBigger": {
+      "description": "Make this view's rows, or its text, one size larger",
+      "name": "Taller"
+    },
+    "sizeDefault": {
+      "description": "Return this view's rows, or its text, to the default size",
+      "name": "Default Size"
+    },
+    "sizeSmaller": {
+      "description": "Make this view's rows, or its text, one size smaller",
+      "name": "Shorter"
+    },
+    "transportPlayStop": {
+      "description": "Start or stop playback",
+      "name": "Play / Stop"
+    },
+    "transportRecord": {
+      "description": "Record audio into the armed channel",
+      "name": "Record"
+    },
+    "transportRewind": {
+      "description": "Return the playhead to the start",
+      "name": "Rewind"
+    },
+    "transportToggleMode": {
+      "description": "Switch between pattern and song playback",
+      "name": "Toggle Pattern / Song"
+    },
+    "viewChannelRack": {
+      "description": "Show the channel rack",
+      "name": "Channel Rack"
+    },
+    "viewMixer": {
+      "description": "Show the mixer",
+      "name": "Mixer"
+    },
+    "viewMotionFirst": {
+      "description": "Reduce motion when the operating system asks for it",
+      "name": "Follow the system"
+    },
+    "viewMotionFull": {
+      "description": "Animate transitions, whatever the system prefers",
+      "name": "Full motion"
+    },
+    "viewMotionReduced": {
+      "description": "Make every transition instant",
+      "name": "Reduce motion"
+    },
+    "viewNextTab": {
+      "description": "Move to the next editor",
+      "name": "Next Editor"
+    },
+    "viewPianoRoll": {
+      "description": "Show the piano roll",
+      "name": "Piano Roll"
+    },
+    "viewPlaylist": {
+      "description": "Show the playlist",
+      "name": "Playlist"
+    },
+    "viewPreviousTab": {
+      "description": "Move to the previous editor",
+      "name": "Previous Editor"
+    },
+    "viewScore": {
+      "description": "Show the score",
+      "name": "Score"
+    },
+    "viewThemeFirst": {
+      "description": "dew's own palette",
+      "name": "Default"
+    },
+    "viewThemeHighContrast": {
+      "description": "The same palette pushed apart, for reading at distance",
+      "name": "High contrast"
+    },
+    "viewToggleInstrumentPanel": {
+      "description": "Fold the instrument panel away, or bring it back",
+      "name": "Show / Hide Instrument Panel"
+    },
+    "viewUiScale125": {
+      "description": "Draw the interface a quarter larger",
+      "name": "125%"
+    },
+    "viewUiScale150": {
+      "description": "Draw the interface half again as large",
+      "name": "150%"
+    },
+    "viewUiScale175": {
+      "description": "Draw the interface three quarters larger",
+      "name": "175%"
+    },
+    "viewUiScaleFirst": {
+      "description": "Draw the interface at its original size",
+      "name": "100%"
+    },
+    "zoomIn": {
+      "description": "Zoom the timeline in",
+      "name": "Zoom In"
+    },
+    "zoomOut": {
+      "description": "Zoom the timeline out",
+      "name": "Zoom Out"
+    },
+    "zoomToFit": {
+      "description": "Fit the material to the view",
+      "name": "Zoom to Fit"
+    }
+  },
   "dialog": {
     "deletePattern": {
       "body": "Delete \u201c{name}\u201d? Every clip that plays it goes with it.",
@@ -74,9 +285,16 @@
     "title": "Instrument"
   },
   "menu": {
+    "audio": "Audio",
+    "demos": "Demos",
+    "edit": "Edit",
+    "file": "File",
     "motion": "Motion",
+    "project": "Project",
     "theme": "Theme",
-    "uiScale": "UI Scale"
+    "transport": "Transport",
+    "uiScale": "UI Scale",
+    "view": "View"
   },
   "midi": {
     "channel": "Channel {number}",

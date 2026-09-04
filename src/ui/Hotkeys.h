@@ -2,6 +2,8 @@
 
 #include <juce_gui_basics/juce_gui_basics.h>
 
+#include "i18n/Strings.h"
+
 #include <vector>
 
 namespace dew
@@ -110,9 +112,13 @@ template <typename Action> struct Binding
 {
     Action action;
     Stroke stroke;
-    const char* name;
-    const char* description;
-    const char* category;
+
+    /** What this command is CALLED, what it does, and which menu it belongs
+        to - as catalogue keys rather than sentences, so the menu bar and the
+        command manager read the same row in whatever language is running. */
+    StringId name;
+    StringId description;
+    StringId category;
 };
 
 /** What a key means in a timeline view.

@@ -16,6 +16,8 @@
 
 #include "DewApplication.h"
 
+#include <iterator>
+
 #include "i18n/Strings.h"
 #include "model/DemoLibrary.h"
 #include "model/ProjectFactory.h"
@@ -25,22 +27,88 @@
 namespace dew
 {
 
+namespace
+{
+
+/** The bar's order, and the only thing the dispatch below compares.
+
+    A separate list from the enum's own order so that moving a menu is one edit
+    here rather than a renumbering, and so the order a person sees is written
+    down where somebody looking for it would read it.
+*/
+// clang-format off
+constexpr MenuBarItem menuBarOrder[] {
+    MenuBarItem::file,
+    MenuBarItem::edit,
+    MenuBarItem::view,
+    MenuBarItem::transport,
+    MenuBarItem::project,
+    MenuBarItem::audio,
+    MenuBarItem::demos,
+};
+// clang-format on
+
+// Adding a menu is two edits, and only one of them is a compile error on its
+// own. titleOf's switch has no default and the ci preset builds -Wswitch-enum
+// as an error, so a new enumerator must be given a title before anything
+// links. Nothing makes it appear on the BAR, though, which is this line: the
+// count is the enum's, so an enumerator the order above does not carry stops
+// the build here rather than going missing from the menu bar in silence.
+static_assert (std::size (menuBarOrder) == 7, "every MenuBarItem is on the bar exactly once");
+
+StringId titleOf (MenuBarItem item)
+{
+    switch (item)
+    {
+        case MenuBarItem::file: return StringId::menu_file;
+        case MenuBarItem::edit: return StringId::menu_edit;
+        case MenuBarItem::view: return StringId::menu_view;
+        case MenuBarItem::transport: return StringId::menu_transport;
+        case MenuBarItem::project: return StringId::menu_project;
+        case MenuBarItem::audio: return StringId::menu_audio;
+        case MenuBarItem::demos: return StringId::menu_demos;
+    }
+
+    return StringId::menu_file;
+}
+
+} // namespace
+
 // --- menu bar ----------------------------------------------------------------
 
 juce::StringArray DewApplication::getMenuBarNames()
 {
-    return { "File", "Edit", "View", "Transport", "Project", "Audio", "Demos" };
+    juce::StringArray names;
+
+    for (const auto menu : menuBarOrder)
+        names.add (tr (titleOf (menu)));
+
+    return names;
 }
 
-juce::PopupMenu DewApplication::getMenuForIndex (int, const juce::String& name)
+juce::PopupMenu DewApplication::getMenuForIndex (int topLevelMenuIndex, const juce::String&)
 {
-    // Switched on the NAME rather than the index it arrives with. Inserting the
-    // View menu moved every menu after Edit along by one, and the Demos handler
-    // below compared a hard-coded 5 - so the whole menu bar was one insertion
-    // away from opening a demo when you asked for an audio device.
+    // Switched on a named POSITION, which is the only spelling that survives
+    // both ways this has been wrong.
+    //
+    // It was a hard-coded index first: inserting the View menu moved every menu
+    // after Edit along by one, and the Demos handler still compared a literal
+    // 5, so the bar was one insertion away from opening a demo when you asked
+    // for an audio device. It was the menu's own CAPTION next, which fixed that
+    // and introduced the other one - the caption is a translated sentence now,
+    // so comparing against "File" empties the File menu in every language but
+    // English, and a copy edit does the same in English.
+    //
+    // The enum is neither. Its order is the bar's order, so an insertion is
+    // still one edit, and its name is not a thing anybody translates.
     juce::PopupMenu menu;
 
-    if (name == "File")
+    if (topLevelMenuIndex < 0 || topLevelMenuIndex >= (int) std::size (menuBarOrder))
+        return menu;
+
+    const auto which = menuBarOrder[(size_t) topLevelMenuIndex];
+
+    if (which == MenuBarItem::file)
     {
         menu.addCommandItem (&commandManager, CommandIDs::fileNew);
         menu.addCommandItem (&commandManager, CommandIDs::fileOpen);
@@ -50,12 +118,12 @@ juce::PopupMenu DewApplication::getMenuForIndex (int, const juce::String& name)
         menu.addSeparator();
         menu.addCommandItem (&commandManager, CommandIDs::fileRender);
     }
-    else if (name == "Edit")
+    else if (which == MenuBarItem::edit)
     {
         menu.addCommandItem (&commandManager, CommandIDs::editUndo);
         menu.addCommandItem (&commandManager, CommandIDs::editRedo);
     }
-    else if (name == "View")
+    else if (which == MenuBarItem::view)
     {
         menu.addCommandItem (&commandManager, CommandIDs::viewChannelRack);
         menu.addCommandItem (&commandManager, CommandIDs::viewPianoRoll);
@@ -93,7 +161,7 @@ juce::PopupMenu DewApplication::getMenuForIndex (int, const juce::String& name)
 
         menu.addSubMenu (tr (StringId::menu_theme), theme);
     }
-    else if (name == "Transport")
+    else if (which == MenuBarItem::transport)
     {
         menu.addCommandItem (&commandManager, CommandIDs::transportPlayStop);
         menu.addCommandItem (&commandManager, CommandIDs::transportRewind);
@@ -102,19 +170,19 @@ juce::PopupMenu DewApplication::getMenuForIndex (int, const juce::String& name)
         menu.addSeparator();
         menu.addCommandItem (&commandManager, CommandIDs::transportToggleMode);
     }
-    else if (name == "Project")
+    else if (which == MenuBarItem::project)
     {
         menu.addCommandItem (&commandManager, CommandIDs::addChannel);
         menu.addCommandItem (&commandManager, CommandIDs::addPattern);
         menu.addSeparator();
         menu.addCommandItem (&commandManager, CommandIDs::compileScore);
     }
-    else if (name == "Audio")
+    else if (which == MenuBarItem::audio)
     {
         menu.addCommandItem (&commandManager, CommandIDs::audioSettings);
         menu.addCommandItem (&commandManager, CommandIDs::midiSettings);
     }
-    else if (name == "Demos")
+    else if (which == MenuBarItem::demos)
     {
         const auto& demos = ProjectFactory::demos();
 
@@ -127,7 +195,10 @@ juce::PopupMenu DewApplication::getMenuForIndex (int, const juce::String& name)
 
 void DewApplication::menuItemSelected (int menuItemID, int topLevelMenuIndex)
 {
-    if (topLevelMenuIndex == getMenuBarNames().indexOf ("Demos"))
+    if (topLevelMenuIndex < 0 || topLevelMenuIndex >= (int) std::size (menuBarOrder))
+        return;
+
+    if (menuBarOrder[(size_t) topLevelMenuIndex] == MenuBarItem::demos)
         openDemo (menuItemID - demoMenuBaseId);
 }
 

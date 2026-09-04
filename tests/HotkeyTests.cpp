@@ -45,12 +45,12 @@ TEST_CASE ("every command dew declares has a binding, and every binding a comman
 
     for (const auto& binding : hotkeys::application())
     {
-        INFO (binding.name);
+        INFO (tr (binding.name));
         CHECK (binding.action >= firstCommand);
         CHECK (binding.action <= lastCommand);
-        CHECK (juce::String (binding.name).isNotEmpty());
-        CHECK (juce::String (binding.description).isNotEmpty());
-        CHECK (juce::String (binding.category).isNotEmpty());
+        CHECK (tr (binding.name).isNotEmpty());
+        CHECK (tr (binding.description).isNotEmpty());
+        CHECK (tr (binding.category).isNotEmpty());
     }
 
     REQUIRE ((int) hotkeys::application().size() == lastCommand - firstCommand + 1);
@@ -63,7 +63,7 @@ TEST_CASE ("no two commands answer to the same key", "[ui][hotkeys]")
     for (size_t i = 0; i < table.size(); ++i)
         for (size_t j = i + 1; j < table.size(); ++j)
         {
-            INFO (table[i].name << " and " << table[j].name << " share a key");
+            INFO (tr (table[i].name) << " and " << tr (table[j].name) << " share a key");
             CHECK_FALSE (sameStroke (table[i].stroke, table[j].stroke));
         }
 
@@ -76,7 +76,7 @@ TEST_CASE ("no two commands answer to the same key", "[ui][hotkeys]")
         for (size_t j = i + 1; j < views.size(); ++j)
             if (sameStroke (views[i].stroke, views[j].stroke))
             {
-                INFO (views[i].name << " and " << views[j].name << " share a key");
+                INFO (tr (views[i].name) << " and " << tr (views[j].name) << " share a key");
                 CHECK (views[i].action == views[j].action);
             }
 }
@@ -147,7 +147,7 @@ TEST_CASE ("a binding is reachable by code and by character", "[ui][hotkeys]")
     // both. A map reachable only one way is either untestable or broken in use.
     for (const auto& binding : hotkeys::timeline())
     {
-        INFO (binding.name);
+        INFO (tr (binding.name));
 
         const auto fromCode = hotkeys::keyPressFor (binding.stroke);
         CHECK (hotkeys::matches (binding.stroke, fromCode));
