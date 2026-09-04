@@ -94,7 +94,7 @@ picture and nearly invisible in code.
 ## Test
 
 ```sh
-ctest --preset release        # 1046 tests
+ctest --preset release        # 1264 tests
 ```
 
 The gate, which is what CI runs and what a change has to pass:
@@ -133,7 +133,7 @@ correct and the CI runners are an older macOS; they have not been run here.
 and PCG32 because libstdc++ and libc++ generate different numbers, and until there was a
 second standard library in the loop that was an assertion rather than a test. It is cheap
 because `dew_lang` links nothing — JUCE included — so the container needs a compiler and
-CMake and no system libraries at all. The same eleven files build as `dew_lang_tests`,
+CMake and no system libraries at all. The same thirteen files build as `dew_lang_tests`,
 which is also a faster inner loop for language work than the full suite.
 
 MP3 is the one thing needing a tool dew does not ship: JUCE can only decode it, so
@@ -379,7 +379,23 @@ dew_model    ProjectDocument (FileBasedDocument) ── ValueTree ── Project
 
 Several tests enforce a convention by scanning the sources, and each passes silently when
 it finds nothing; `SourceGateTests` checks that walk against the libraries' own source
-lists, so code that moves out of `src/` cannot quietly disarm them.
+lists in both directions, so code that moves out of `src/` cannot quietly disarm them and
+a file that never joins a library cannot sit there uncompiled while appearing to be built.
+
+**No file is over 400 lines of code**, and a gate says so. The number is the tree's own
+p90 rather than a preference — the same way `ColumnLimit` is 100 because the p99 line is
+96 characters — and it counts CODE, comments and blanks removed, because these headers
+carry long doc comments on purpose and a raw count would punish them. There is no
+exemption list: a gate with one is a ratchet, and this is meant to be a rule. Tests and
+tools are held to it too.
+
+Getting there took thirty commits. The largest file was `lang/Resolver.cpp` at 1,740
+lines and is now 441; `PlaylistComponent.cpp` was 1,894 and the class is now five files —
+component, view, paint, gestures and menus — with its track header a class of its own.
+Three shapes did the work — the same class in a second translation unit, a nested class
+promoted to its own, and a file-local state machine given a name so it can be defined in
+more than one place — and which one applies is a judgement about how much of its host a
+piece of code actually reads.
 
 ### Instruments and effects are modules
 
