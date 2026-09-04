@@ -313,6 +313,7 @@ target_link_libraries(dew_app
 # dew_ui - the editors.
 # ------------------------------------------------------------------------------
 add_library(dew_ui STATIC
+  ui/DewDialog.cpp
   ui/EffectChainComponent.cpp
   ui/OscillatorSection.cpp
   ui/SampleSection.cpp

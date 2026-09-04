@@ -1,4 +1,5 @@
 #include "ui/RandomizePanel.h"
+#include "ui/DewDialog.h"
 
 #include "ui/design/Tokens.h"
 
@@ -69,15 +70,7 @@ void RandomizePanel::show (NoteTools::RandomizeOptions initial, juce::String sco
     auto* panel = new RandomizePanel (initial, std::move (scopeText));
     panel->onApply = std::move (onApply);
 
-    juce::DialogWindow::LaunchOptions options;
-    options.content.setOwned (panel);
-    options.dialogTitle = "Randomize";
-    options.dialogBackgroundColour = tokens::colour::background;
-    options.componentToCentreAround = parent;
-    options.escapeKeyTriggersCloseButton = true;
-    options.useNativeTitleBar = true;
-    options.resizable = false;
-    options.launchAsync();
+    dialog::launch (panel, "Randomize", parent);
 }
 
 void RandomizePanel::paint (juce::Graphics& g)

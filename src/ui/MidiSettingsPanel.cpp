@@ -1,4 +1,5 @@
 #include "ui/MidiSettingsPanel.h"
+#include "ui/DewDialog.h"
 
 #include "ui/design/Tokens.h"
 
@@ -302,17 +303,7 @@ void MidiSettingsPanel::paint (juce::Graphics& g)
 void MidiSettingsPanel::show (MidiInputHost& hostToUse, Settings* settingsToUse,
                               juce::Component* parent)
 {
-    juce::DialogWindow::LaunchOptions options;
-
-    options.content.setOwned (new MidiSettingsPanel (hostToUse, settingsToUse));
-    options.dialogTitle = "MIDI Settings";
-    options.dialogBackgroundColour = colour::background;
-    options.componentToCentreAround = parent;
-    options.escapeKeyTriggersCloseButton = true;
-    options.useNativeTitleBar = true;
-    options.resizable = false;
-
-    options.launchAsync();
+    dialog::launch (new MidiSettingsPanel (hostToUse, settingsToUse), "MIDI Settings", parent);
 }
 
 } // namespace dew

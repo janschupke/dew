@@ -1,4 +1,5 @@
 #include "ui/AudioSettingsPanel.h"
+#include "ui/DewDialog.h"
 
 #include "ui/primitives/DewMeter.h"
 #include "ui/design/Tokens.h"
@@ -351,17 +352,7 @@ void AudioSettingsPanel::paint (juce::Graphics& g)
 
 void AudioSettingsPanel::show (LiveAudioHost& host, AudioEngine& engine, juce::Component* parent)
 {
-    juce::DialogWindow::LaunchOptions options;
-
-    options.content.setOwned (new AudioSettingsPanel (host, engine));
-    options.dialogTitle = "Audio Settings";
-    options.dialogBackgroundColour = colour::background;
-    options.componentToCentreAround = parent;
-    options.escapeKeyTriggersCloseButton = true;
-    options.useNativeTitleBar = true;
-    options.resizable = false;
-
-    options.launchAsync();
+    dialog::launch (new AudioSettingsPanel (host, engine), "Audio Settings", parent);
 }
 
 } // namespace dew

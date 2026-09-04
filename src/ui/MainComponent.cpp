@@ -1,4 +1,5 @@
 #include "ui/MainComponent.h"
+#include "ui/DewDialog.h"
 
 #include <cmath>
 
@@ -560,15 +561,7 @@ void MainComponent::showMidiSettings()
     panel->onDevicesChanged = [this]
     { statusBar.showMessage (midiHost.describeInputs(), StatusBar::Severity::info); };
 
-    juce::DialogWindow::LaunchOptions options;
-    options.content.setOwned (panel);
-    options.dialogTitle = "MIDI Settings";
-    options.dialogBackgroundColour = tokens::colour::background;
-    options.componentToCentreAround = this;
-    options.escapeKeyTriggersCloseButton = true;
-    options.useNativeTitleBar = true;
-    options.resizable = false;
-    options.launchAsync();
+    dialog::launch (panel, "MIDI Settings", this);
 }
 
 void MainComponent::startRender (const RenderPanel::Request& request, Settings* settingsToUpdate)
@@ -703,15 +696,7 @@ void MainComponent::showRenderDialog (Settings* settingsToUpdate)
         close();
     };
 
-    juce::DialogWindow::LaunchOptions options;
-    options.content.setOwned (panel);
-    options.dialogTitle = "Render";
-    options.dialogBackgroundColour = tokens::colour::background;
-    options.componentToCentreAround = this;
-    options.escapeKeyTriggersCloseButton = true;
-    options.useNativeTitleBar = true;
-    options.resizable = false;
-    options.launchAsync();
+    dialog::launch (panel, "Render", this);
 }
 
 void MainComponent::showAudioSettings()
@@ -721,15 +706,7 @@ void MainComponent::showAudioSettings()
     panel->onDeviceChanged = [this]
     { statusBar.showMessage (audioHost.describeDevice(), StatusBar::Severity::info); };
 
-    juce::DialogWindow::LaunchOptions options;
-    options.content.setOwned (panel);
-    options.dialogTitle = "Audio Settings";
-    options.dialogBackgroundColour = tokens::colour::background;
-    options.componentToCentreAround = this;
-    options.escapeKeyTriggersCloseButton = true;
-    options.useNativeTitleBar = true;
-    options.resizable = false;
-    options.launchAsync();
+    dialog::launch (panel, "Audio Settings", this);
 }
 
 void MainComponent::resized()
