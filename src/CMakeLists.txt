@@ -138,11 +138,14 @@ juce_add_binary_data(dew_preset_data
 add_library(dew_lang STATIC
   lang/SourceRange.cpp
   lang/Diagnostics.cpp
+  lang/Numbers.cpp
   lang/Lexer.cpp
   lang/Grid.cpp
   lang/Music.cpp
+  lang/Model.cpp
   lang/Parser.cpp
   lang/Schema.cpp
+  lang/Score.cpp
   lang/Resolver.cpp
   lang/Harmony.cpp
   lang/Voicing.cpp
