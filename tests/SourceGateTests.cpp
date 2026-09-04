@@ -426,6 +426,80 @@ TEST_CASE ("no layer includes a header a layer above it owns", "[build][layering
     CHECK (climbing.isEmpty());
 }
 
+/** True when `line` hands a non-ASCII literal to juce::String's const char*
+    constructor, which is the one place JUCE decodes those bytes as ASCII.
+
+    Hoisted out of the gate so the gate can be pointed at a line it should catch
+    and a line it should not, which is the only way to know a scanner works.
+*/
+static bool feedsAsciiConstructor (const juce::String& line)
+{
+    const auto trimmed = line.trim();
+
+    if (trimmed.startsWith ("//") || trimmed.startsWith ("*") || trimmed.startsWith ("/*"))
+        return false;
+
+    for (int i = 0; i < line.length();)
+    {
+        if (line[i] != '"')
+        {
+            ++i;
+            continue;
+        }
+
+        const auto open = i;
+        auto close = -1;
+
+        for (int j = i + 1; j < line.length(); ++j)
+        {
+            if (line[j] == '\\')
+            {
+                ++j;
+                continue;
+            }
+
+            if (line[j] == '"')
+            {
+                close = j;
+                break;
+            }
+        }
+
+        if (close < 0)
+            return false;
+
+        auto holdsNonAscii = false;
+
+        for (int j = open + 1; j < close; ++j)
+            if (line[j] > 127)
+                holdsNonAscii = true;
+
+        if (holdsNonAscii)
+        {
+            const auto before = line.substring (0, open).trimEnd();
+            const auto after = line.substring (close + 1).trim();
+
+            // Opening a concatenation means the literal is the LEFT operand, so
+            // operator+ (const char*, const String&) builds a String from it
+            // first. A literal already on the right of a + goes through
+            // operator+=, which reads UTF-8 and is correct.
+            if (after.startsWith ("+") && ! before.endsWith ("+") && ! before.endsWith ("<<"))
+                return true;
+
+            // The same constructor, reached directly. String (CharPointer_UTF8
+            // ("...")) is the escape hatch and does not match: it does not end
+            // in "String (".
+            if (before.endsWith ("juce::String (") || before.endsWith ("juce::String(")
+                || before.endsWith ("String (") || before.endsWith ("String("))
+                return true;
+        }
+
+        i = close + 1;
+    }
+
+    return false;
+}
+
 TEST_CASE ("no source declares a bare juce::ToggleButton", "[build][gate]")
 {
     // juce::Button completes a click for whichever mouse button pressed it, so

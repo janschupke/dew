@@ -165,7 +165,21 @@ void DewApplication::updateWindowTitle()
     const auto name = file != juce::File() ? file.getFileNameWithoutExtension()
                                            : document->getDocumentTitle();
 
-    mainWindow->setName ("dew — " + name + (document->hasChangedSinceSaved() ? " •" : ""));
+    // Appended, never concatenated onto: juce::String's const char* CONSTRUCTOR
+    // reads its bytes as ASCII while operator+= reads them as UTF-8, so
+    // `"dew — " + name` builds the em dash through the wrong one and puts three
+    // mojibake characters in the title bar. `String + const char*` is the safe
+    // direction, which is why the bullet below was right and the dash was not.
+    // The gate "no source starts a concatenation with a non-ASCII literal" is
+    // what keeps this from coming back.
+    juce::String title ("dew");
+    title += " — ";
+    title += name;
+
+    if (document->hasChangedSinceSaved())
+        title += " •";
+
+    mainWindow->setName (title);
 }
 
 void DewApplication::systemRequestedQuit()
