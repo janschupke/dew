@@ -12,6 +12,7 @@
 #include "ui/TimelinePaint.h"
 #include "ui/AutomationLane.h"
 #include "ui/TimelineView.h"
+#include "ui/RowView.h"
 #include "ui/primitives/DewControls.h"
 
 namespace dew
@@ -175,7 +176,7 @@ public:
     */
     int getTrackHeight() const noexcept
     {
-        return trackHeight;
+        return rows.height;
     }
 
     /** How far the lanes are scrolled, in pixels. Public so a test can ask how
@@ -183,7 +184,7 @@ public:
         from it. */
     double getTrackScrollPx() const noexcept
     {
-        return trackScrollPx;
+        return rows.scrollPx;
     }
 
     /** The one mutator. Clamps to the ladder, keeps the lane under the middle of
@@ -294,7 +295,7 @@ private:
     */
     float laneY (int index) const noexcept
     {
-        return (float) lanesTop() + (float) index * (float) trackHeight - (float) trackScrollPx;
+        return (float) lanesTop() + rows.yForRow (index);
     }
 
     /** The bottom of the strip lanes may be drawn in: the last lane's bottom, or
@@ -424,9 +425,13 @@ private:
         are children.
     */
     juce::ScrollBar verticalScroll { true };
-    double trackScrollPx = 0.0;
 
-    int trackHeight = tokens::size::trackHeightDefault;
+    /** The lanes: their height, the scroll down them, and the clamps. Shared
+        with the piano roll's pitch rows rather than written here a second
+        time - see RowView.
+    */
+    RowView rows { tokens::size::trackHeightDefault, 0.0, tokens::size::trackHeightMin,
+                   tokens::size::trackHeightMax };
 
     /** Latched for the length of a resize drag. See beginRowHeightDrag. */
     bool resizingRows = false;
@@ -440,7 +445,7 @@ private:
 
         JUCE clips a child to its parent, and a header scrolled half off the top
         would otherwise be drawn over the ruler. It carries no scroll position of
-        its own - trackScrollPx stays the single source of truth, which is what
+        its own - rows.scrollPx stays the single source of truth, which is what
         keeps the headers in step with lanes that are painted rather than laid
         out.
     */

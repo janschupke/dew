@@ -113,7 +113,7 @@ PianoRollComponent::PianoRollComponent (ProjectDocument& d, AudioEngine& e, Edit
 
     // Middle C somewhere near the middle, rather than at the very top where the
     // default scroll position would leave it.
-    pitchScrollPx = (double) ((highestPitch - 72) * rowHeight);
+    rows.scrollPx = (double) ((highestPitch - 72) * rows.height);
 
     startTimerHz (tokens::motion::playheadHz);
 }
@@ -248,13 +248,13 @@ int PianoRollComponent::stepAtX (int x) const
 
 int PianoRollComponent::firstVisiblePitch() const
 {
-    return highestPitch - (int) (pitchScrollPx / rowHeight);
+    return highestPitch - (int) (rows.scrollPx / rows.height);
 }
 
 int PianoRollComponent::pitchAtY (int y) const
 {
-    const auto rowsDown = (int) std::floor (((double) (y - noteArea().getY()) + pitchScrollPx)
-                                            / rowHeight);
+    const auto rowsDown = rows.rowAtY ((double) (y - noteArea().getY()));
+
     return juce::jlimit (lowestPitch, highestPitch, highestPitch - rowsDown);
 }
 
@@ -266,10 +266,9 @@ juce::Rectangle<float> PianoRollComponent::boundsForNote (const juce::ValueTree&
 
     const auto notes = noteArea();
     const auto x = (float) size::gutterKeyboard + timeline.xForStep ((double) step);
-    const auto y = (float) notes.getY() + (float) ((highestPitch - pitch) * rowHeight)
-                   - (float) pitchScrollPx;
+    const auto y = (float) notes.getY() + rows.yForRow (highestPitch - pitch);
 
-    return { x, y, (float) (length * timeline.pixelsPerStep), (float) rowHeight };
+    return { x, y, (float) (length * timeline.pixelsPerStep), (float) rows.height };
 }
 
 bool PianoRollComponent::isOnRightEdge (const juce::ValueTree& note,
@@ -552,12 +551,10 @@ void PianoRollComponent::updateScrollBars()
                                       timeline.visibleSteps (contentWidth()),
                                       juce::dontSendNotification);
 
-    const auto contentHeight = (double) (numRows * rowHeight);
-    pitchScrollPx = juce::jlimit (0.0, juce::jmax (0.0, contentHeight - notes.getHeight()),
-                                  pitchScrollPx);
+    rows.clampScroll ((double) notes.getHeight(), numRows);
 
-    verticalScroll.setRangeLimits (0.0, contentHeight, juce::dontSendNotification);
-    verticalScroll.setCurrentRange (pitchScrollPx, (double) notes.getHeight(),
+    verticalScroll.setRangeLimits (0.0, rows.contentHeight (numRows), juce::dontSendNotification);
+    verticalScroll.setCurrentRange (rows.scrollPx, (double) notes.getHeight(),
                                     juce::dontSendNotification);
 }
 
@@ -569,7 +566,7 @@ void PianoRollComponent::scrollBarMoved (juce::ScrollBar* bar, double start)
     if (bar == &horizontalScroll)
         timeline.scrollOffsetSteps = start;
     else
-        pitchScrollPx = start;
+        rows.scrollPx = start;
 
     repaint();
 }
@@ -577,8 +574,8 @@ void PianoRollComponent::scrollBarMoved (juce::ScrollBar* bar, double start)
 void PianoRollComponent::centreOnPitch (int pitch)
 {
     const auto rowTop = (double) ((highestPitch - juce::jlimit (lowestPitch, highestPitch, pitch))
-                                  * rowHeight);
-    pitchScrollPx = rowTop - noteArea().getHeight() * 0.5 + rowHeight * 0.5;
+                                  * rows.height);
+    rows.scrollPx = rowTop - noteArea().getHeight() * 0.5 + rows.height * 0.5;
     updateScrollBars();
 }
 
@@ -626,7 +623,7 @@ void PianoRollComponent::captureView (double& zoom, double& scroll, double& pitc
 {
     zoom = timeline.pixelsPerStep;
     scroll = timeline.scrollOffsetSteps;
-    pitchScroll = pitchScrollPx;
+    pitchScroll = rows.scrollPx;
 }
 
 void PianoRollComponent::applyView (double zoom, double scroll, double pitchScroll)
@@ -634,7 +631,7 @@ void PianoRollComponent::applyView (double zoom, double scroll, double pitchScro
     timeline.pixelsPerStep = juce::jlimit (TimelineView::minPixelsPerStep,
                                            TimelineView::maxPixelsPerStep, zoom);
     timeline.scrollOffsetSteps = juce::jmax (0.0, scroll);
-    pitchScrollPx = juce::jmax (0.0, pitchScroll);
+    rows.scrollPx = juce::jmax (0.0, pitchScroll);
 
     // A restored view is the user's, not something to reframe over.
     didFitOnce = true;
@@ -652,26 +649,13 @@ void PianoRollComponent::zoomToFit()
 
 void PianoRollComponent::setRowHeight (int wanted)
 {
-    const auto clamped = juce::jlimit (size::pianoRowMin, size::pianoRowMax, wanted);
-
-    if (clamped == rowHeight)
+    // The anchor, the clamp and the "it already fits" case are RowView's, and
+    // the playlist's lanes run the same arithmetic. Ninety-seven rows at the
+    // densest height still overflow any window dew will open, so the fitting
+    // case cannot arise here - but it is RowView's to handle rather than an
+    // assumption written into one of its two callers.
+    if (! rows.setHeight (wanted, (double) noteArea().getHeight(), numRows))
         return;
-
-    // Anchor on the pitch in the middle of the note area, for the same reason
-    // TimelineView::zoomAround anchors on the pointer: growing the rows from
-    // the top walks the music out from under whatever you were looking at.
-    //
-    // Only when there is something to anchor TO. Ninety-seven rows at the
-    // densest height still overflow any window dew will open, so unlike the
-    // playlist there is no "it already fits" case - but the guard is written
-    // rather than assumed, because a future minimum could make one.
-    const auto viewHeight = (double) noteArea().getHeight();
-    const auto scrollable = (double) (numRows * rowHeight) > viewHeight;
-    const auto anchorRow = (pitchScrollPx + viewHeight * 0.5) / (double) rowHeight;
-
-    rowHeight = clamped;
-    pitchScrollPx = scrollable ? juce::jmax (0.0, anchorRow * (double) rowHeight - viewHeight * 0.5)
-                               : 0.0;
 
     // A height change is the user taking the view, exactly as a zoom is -
     // otherwise the next channel change would reframe over it.
@@ -689,7 +673,7 @@ void PianoRollComponent::zoomRowsBy (double factor)
         return;
     }
 
-    setRowHeight ((int) std::lround ((double) rowHeight * factor));
+    setRowHeight (rows.zoomedHeight (factor));
 }
 
 void PianoRollComponent::fitRowsToWindow()
@@ -720,10 +704,8 @@ void PianoRollComponent::fitRowsToWindow()
         highest = base + semitonesPerOctave / 2;
     }
 
-    const auto rows = juce::jmax (1, highest - lowest + 1);
-    const auto viewHeight = noteArea().getHeight();
-
-    setRowHeight (viewHeight > 0 ? viewHeight / rows : size::pianoRowDefault);
+    setRowHeight (rows.heightToFit (highest - lowest + 1, (double) noteArea().getHeight(),
+                                    size::pianoRowDefault));
     centreOnPitch ((lowest + highest) / 2);
 }
 
@@ -752,7 +734,7 @@ void PianoRollComponent::mouseWheelMove (const juce::MouseEvent& event,
         // Pixels, not rows. A notch used to be three rows, which was 42px here
         // and one lane - 34px to 204px - in the playlist, for the same flick of
         // the same wheel.
-        pitchScrollPx -= delta.y * gesture::wheelPixelsPerNotch;
+        rows.scrollPx -= delta.y * gesture::wheelPixelsPerNotch;
         timeline.scrollOffsetSteps -= timeline.stepsForPixels (delta.x
                                                                * gesture::wheelPixelsPerNotch);
     }

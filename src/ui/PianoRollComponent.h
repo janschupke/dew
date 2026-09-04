@@ -10,6 +10,7 @@
 #include "ui/TimelineRuler.h"
 #include "ui/TimelinePaint.h"
 #include "ui/TimelineView.h"
+#include "ui/RowView.h"
 #include "ui/design/Tokens.h"
 
 namespace dew
@@ -171,7 +172,7 @@ public:
     */
     int getRowHeight() const noexcept
     {
-        return rowHeight;
+        return rows.height;
     }
     void setRowHeight (int);
 
@@ -384,10 +385,11 @@ private:
     juce::ScrollBar verticalScroll { true };
     bool updatingScrollBars = false;
 
-    double pitchScrollPx = 0.0;
-
-    /** Not static any more, and not const. See getRowHeight. */
-    int rowHeight = tokens::size::pianoRowDefault;
+    /** The pitch rows: their height, the scroll down them, and the clamps.
+        Not static any more, and not const. See getRowHeight.
+    */
+    RowView rows { tokens::size::pianoRowDefault, 0.0, tokens::size::pianoRowMin,
+                   tokens::size::pianoRowMax };
 
     juce::Array<juce::ValueTree> selection;
     juce::ValueTree draggedNote;

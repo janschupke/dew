@@ -42,14 +42,14 @@ void PianoRollComponent::paintKeyboard (juce::Graphics& g)
     g.setColour (colour::wellDeep);
     g.fillRect (keys);
 
-    const auto firstRow = juce::jmax (0, (int) (pitchScrollPx / rowHeight));
+    const auto firstRow = juce::jmax (0, (int) (rows.scrollPx / rows.height));
     const auto lastRow = juce::jmin (numRows - 1,
-                                     (int) ((pitchScrollPx + keys.getHeight()) / rowHeight));
+                                     (int) ((rows.scrollPx + keys.getHeight()) / rows.height));
 
     for (int row = firstRow; row <= lastRow; ++row)
     {
         const auto pitch = highestPitch - row;
-        const auto y = (float) keys.getY() + (float) (row * rowHeight) - (float) pitchScrollPx;
+        const auto y = (float) keys.getY() + (float) (row * rows.height) - (float) rows.scrollPx;
         const auto black = isBlackKey (pitch);
 
         auto colourValue = black ? colour::keyBlack : colour::keyWhite;
@@ -60,7 +60,8 @@ void PianoRollComponent::paintKeyboard (juce::Graphics& g)
             colourValue = colour::accent;
 
         g.setColour (colourValue);
-        g.fillRect ((float) keys.getX(), y, (float) (keys.getWidth() - 1), (float) (rowHeight - 1));
+        g.fillRect ((float) keys.getX(), y, (float) (keys.getWidth() - 1),
+                    (float) (rows.height - 1));
 
         // Every C always, and every key once the rows are tall enough to hold a
         // name without the letters touching. That threshold is what makes a
@@ -69,14 +70,14 @@ void PianoRollComponent::paintKeyboard (juce::Graphics& g)
         // upwards from a C.
         const auto isC = pitch % semitonesPerOctave == 0;
 
-        if (isC || rowHeight >= size::pianoRowRoomy)
+        if (isC || rows.height >= size::pianoRowRoomy)
         {
             // Dark on a white key, light on a black one. One colour was fine
             // while only C was named, because C is never a black key.
             g.setColour (black ? colour::keyWhite : colour::textOnAccent);
             g.setFont (type::font (type::caption));
-            g.drawText (noteName (pitch), keys.getX() + 3, (int) y, keys.getWidth() - 6, rowHeight,
-                        juce::Justification::centredLeft, false);
+            g.drawText (noteName (pitch), keys.getX() + 3, (int) y, keys.getWidth() - 6,
+                        rows.height, juce::Justification::centredLeft, false);
         }
     }
 
@@ -140,25 +141,25 @@ void PianoRollComponent::paintNotes (juce::Graphics& g)
     const auto stepsPerBar = meter.stepsPerBar();
 
     // --- rows ----------------------------------------------------------------
-    const auto firstRow = juce::jmax (0, (int) (pitchScrollPx / rowHeight));
+    const auto firstRow = juce::jmax (0, (int) (rows.scrollPx / rows.height));
     const auto lastRow = juce::jmin (numRows - 1,
-                                     (int) ((pitchScrollPx + area.getHeight()) / rowHeight));
+                                     (int) ((rows.scrollPx + area.getHeight()) / rows.height));
 
     // Where the last pitch row ends. Only below the note area on a window tall
     // enough to show all 97 rows at once, but if it ever is, that strip should
     // be marked out rather than left as bare background.
-    const auto rowsBottom = (float) area.getY() + (float) (numRows * rowHeight)
-                            - (float) pitchScrollPx;
+    const auto rowsBottom = (float) area.getY() + (float) (numRows * rows.height)
+                            - (float) rows.scrollPx;
 
     for (int row = firstRow; row <= lastRow; ++row)
     {
         const auto pitch = highestPitch - row;
-        const auto y = (float) area.getY() + (float) (row * rowHeight) - (float) pitchScrollPx;
+        const auto y = (float) area.getY() + (float) (row * rows.height) - (float) rows.scrollPx;
 
         if (isBlackKey (pitch))
         {
             g.setColour (colour::well);
-            g.fillRect ((float) area.getX(), y, (float) area.getWidth(), (float) rowHeight);
+            g.fillRect ((float) area.getX(), y, (float) area.getWidth(), (float) rows.height);
         }
 
         g.setColour (pitch % 12 == 0 ? colour::dividerStrong

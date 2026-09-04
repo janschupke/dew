@@ -456,7 +456,7 @@ juce::ValueTree PlaylistComponent::trackAt (int index) const
 
 void PlaylistComponent::scrollTracksTo (double offsetPx)
 {
-    trackScrollPx = juce::jmax (0.0, offsetPx);
+    rows.scrollPx = juce::jmax (0.0, offsetPx);
     viewIsUsers = true;
 
     // updateScrollBar re-clamps against the content height, so an offset past
@@ -468,39 +468,22 @@ void PlaylistComponent::scrollTracksTo (double offsetPx)
 
 void PlaylistComponent::setTrackHeight (int wanted)
 {
-    const auto clamped = juce::jlimit (size::trackHeightMin, size::trackHeightMax, wanted);
-
-    if (clamped == trackHeight)
+    // The clamp, the anchor on the middle of the view, and the "already fits"
+    // case are RowView's, and the piano roll's pitch rows run the same
+    // arithmetic. The add-track row counts as a lane: scrolling to a bottom
+    // that hid the button that adds the next track would be the same as not
+    // having one.
+    if (! rows.setHeight (wanted, (double) laneViewHeight(), getNumTracks() + 1))
         return;
 
-    // Anchor on the middle of the lane view, for the same reason
-    // TimelineView::zoomAround anchors on the pointer: growing the rows from the
-    // top walks the arrangement out from under whatever you were looking at.
-    //
-    // Only when there is something to anchor TO. With the tracks already fitting
-    // there is no scroll position to preserve, and the centre of the view is
-    // then a lane that does not exist - four tracks in a window six rows tall
-    // put the anchor on lane six, and growing the rows scrolled the whole
-    // arrangement off the top.
-    //
-    // And NOT during a resize drag, where the anchor is the edge under the
-    // pointer rather than the middle of the view. Re-centring between drag
-    // samples moves the grabbed edge away from the hand holding it, which is
-    // the one thing a drag must not do.
-    const auto contentHeight = (double) ((getNumTracks() + 1) * trackHeight);
-    const auto wasScrollable = contentHeight > (double) laneViewHeight();
-
-    const auto anchorLane = (trackScrollPx + (double) laneViewHeight() * 0.5)
-                            / (double) trackHeight;
-
-    trackHeight = clamped;
-
+    // The one thing that is this view's alone: NOT re-centring during a resize
+    // drag, where the anchor is the edge under the pointer rather than the
+    // middle of the view. Re-centring between drag samples moves the grabbed
+    // edge away from the hand holding it, which is the one thing a drag must
+    // not do. So the scroll RowView just computed is discarded for the one it
+    // was held at when the drag began.
     if (resizingRows)
-        trackScrollPx = heightDragScrollPx;
-    else
-        trackScrollPx = wasScrollable ? juce::jmax (0.0, anchorLane * (double) trackHeight
-                                                             - (double) laneViewHeight() * 0.5)
-                                      : 0.0;
+        rows.scrollPx = heightDragScrollPx;
 
     // A height change is the user taking the view, exactly as a zoom is -
     // otherwise the next resize would re-fit and undo it.
@@ -513,8 +496,8 @@ void PlaylistComponent::setTrackHeight (int wanted)
 
 void PlaylistComponent::beginRowHeightDrag()
 {
-    heightAtDragStart = trackHeight;
-    heightDragScrollPx = trackScrollPx;
+    heightAtDragStart = rows.height;
+    heightDragScrollPx = rows.scrollPx;
     resizingRows = true;
 }
 
@@ -554,16 +537,18 @@ void PlaylistComponent::zoomTracksBy (double factor)
         return;
     }
 
-    setTrackHeight ((int) std::lround ((double) trackHeight * factor));
+    setTrackHeight (rows.zoomedHeight (factor));
 }
 
 void PlaylistComponent::fitTracksToWindow()
 {
     // The add-track row counts: fitting to the tracks alone would push the
     // button that adds the next one just off the bottom.
-    const auto rows = juce::jmax (1, getNumTracks() + 1);
-
-    setTrackHeight (laneViewHeight() / rows);
+    //
+    // Zero is the fallback for an unlaid-out view because that is what the
+    // integer division answered before, and setTrackHeight clamps it up to the
+    // shortest lane on the ladder.
+    setTrackHeight (rows.heightToFit (getNumTracks() + 1, (double) laneViewHeight(), 0));
 }
 
 int PlaylistComponent::tracksBottom() const
@@ -604,11 +589,9 @@ int PlaylistComponent::barAtX (int x) const
 
 int PlaylistComponent::trackAtY (int y) const
 {
-    // std::floor, not integer division: division truncates toward zero, so a y
-    // one pixel above the lanes reported track 0 rather than -1. Every caller
-    // guards on y < lanesTop() first, which is why it never showed - keep the
-    // guards, and do the arithmetic correctly anyway.
-    return (int) std::floor (((double) (y - lanesTop()) + trackScrollPx) / (double) trackHeight);
+    // Negative above the lanes, which RowView::rowAtY documents and every
+    // caller guards on by testing y < lanesTop() first.
+    return rows.rowAtY ((double) (y - lanesTop()));
 }
 
 juce::Rectangle<float> PlaylistComponent::boundsForClip (const juce::ValueTree& clip,
@@ -618,7 +601,7 @@ juce::Rectangle<float> PlaylistComponent::boundsForClip (const juce::ValueTree& 
     const auto length = juce::jmax (1, (int) clip[ids::lengthBars]);
 
     return { (float) size::gutterTrack + timeline.xForStep ((double) start), laneY (trackIndex),
-             (float) (length * timeline.pixelsPerStep), (float) trackHeight };
+             (float) (length * timeline.pixelsPerStep), (float) rows.height };
 }
 
 bool PlaylistComponent::isOnRightEdge (const juce::ValueTree& clip, int trackIndex,
@@ -683,20 +666,19 @@ void PlaylistComponent::updateScrollBar()
     // The content is the tracks PLUS the add-track row: fitting or scrolling to
     // a bottom that hid the button that adds the next track would be the same
     // as not having one.
-    const auto contentHeight = (double) ((getNumTracks() + 1) * trackHeight);
+    const auto contentHeight = rows.contentHeight (getNumTracks() + 1);
     const auto laneView = (double) laneViewHeight();
-    const auto overflows = contentHeight > laneView + 1e-9;
 
-    verticalScroll.setVisible (overflows);
+    verticalScroll.setVisible (contentHeight > laneView + 1e-9);
 
-    trackScrollPx = overflows ? juce::jlimit (0.0, contentHeight - laneView, trackScrollPx) : 0.0;
+    rows.clampScroll (laneView, getNumTracks() + 1);
 
     const juce::ScopedValueSetter<bool> quiet (updatingScrollBar, true);
     horizontalScroll.setRangeLimits (0.0, (double) numBars(), juce::dontSendNotification);
     horizontalScroll.setCurrentRange (timeline.scrollOffsetSteps, visible,
                                       juce::dontSendNotification);
     verticalScroll.setRangeLimits (0.0, contentHeight, juce::dontSendNotification);
-    verticalScroll.setCurrentRange (trackScrollPx, laneView, juce::dontSendNotification);
+    verticalScroll.setCurrentRange (rows.scrollPx, laneView, juce::dontSendNotification);
 }
 
 void PlaylistComponent::rebuildHeaders()
@@ -742,7 +724,7 @@ void PlaylistComponent::resized()
     const auto rowTop = [this] (int index) { return (int) laneY (index) - lanesTop(); };
 
     for (int i = 0; i < headers.size(); ++i)
-        headers[i]->setBounds (0, rowTop (i), size::gutterTrack, trackHeight);
+        headers[i]->setBounds (0, rowTop (i), size::gutterTrack, rows.height);
 
     // Directly below the last track: the next empty row of the list, where the
     // track it adds will appear. Always present now rather than hidden when the
@@ -755,9 +737,9 @@ void PlaylistComponent::resized()
     // take the whole row, so at the tallest lane height "+ Track" was a
     // two-hundred-pixel rectangle.
     const auto addRow = juce::Rectangle<int> (0, rowTop (headers.size()), size::gutterTrack,
-                                              trackHeight);
+                                              rows.height);
 
-    addTrackButton.setBounds (addRow.withHeight (juce::jmin (trackHeight, size::rowHeight))
+    addTrackButton.setBounds (addRow.withHeight (juce::jmin (rows.height, size::rowHeight))
                                   .reduced (space::sm, space::xs));
 
     // Until someone has zoomed or scrolled, a layout frames the whole song.
@@ -835,7 +817,7 @@ void PlaylistComponent::mouseWheelMove (const juce::MouseEvent& event,
     // Pixels, not lanes. A notch used to move exactly one lane, so the same
     // gesture travelled 34px or 204px depending on a height this very wheel
     // can change.
-    scrollTracksTo (trackScrollPx - delta.y * gesture::wheelPixelsPerNotch);
+    scrollTracksTo (rows.scrollPx - delta.y * gesture::wheelPixelsPerNotch);
 }
 
 void PlaylistComponent::mouseMagnify (const juce::MouseEvent& event, float scaleFactor)

@@ -162,7 +162,7 @@ int PlaylistComponent::paintLanes (juce::Graphics& g, int bottom, bool anySolo)
 
         // A lane wholly outside the view paints nothing. Twenty tracks at the
         // tallest height would otherwise paint twenty lanes to show three.
-        if (y >= viewBottom() || y + trackHeight <= lanesTop())
+        if (y >= viewBottom() || y + rows.height <= lanesTop())
         {
             ++trackIndex;
             continue;
@@ -173,7 +173,7 @@ int PlaylistComponent::paintLanes (juce::Graphics& g, int bottom, bool anySolo)
         if (trackIndex % 2 == 1)
         {
             g.setColour (colour::wellDeep.withAlpha (emphasis::dimmed));
-            g.fillRect (size::gutterTrack, y, getWidth() - size::gutterTrack, trackHeight);
+            g.fillRect (size::gutterTrack, y, getWidth() - size::gutterTrack, rows.height);
         }
 
         // The lane a clip is being dragged onto, so a cross-track drop lands
@@ -181,7 +181,7 @@ int PlaylistComponent::paintLanes (juce::Graphics& g, int bottom, bool anySolo)
         if (gesture == Gesture::moving && trackIndex == dropTrackIndex)
         {
             g.setColour (colour::accent.withAlpha (emphasis::tint));
-            g.fillRect (size::gutterTrack, y, getWidth() - size::gutterTrack, trackHeight);
+            g.fillRect (size::gutterTrack, y, getWidth() - size::gutterTrack, rows.height);
         }
 
         g.setColour (colour::divider);
