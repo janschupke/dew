@@ -140,32 +140,26 @@ TEST_CASE ("a section heading is not the same size as a control caption", "[desi
 
 TEST_CASE ("no source file constructs a font outside the design system", "[design][type]")
 {
-    const auto files = sourceFiles();
+    // This gate is the one that proved the idea, and it was still the one gate
+    // scanning the tree by hand - its own walk, its own report format, and its
+    // own exemption written as a bare file name. It exempted Tokens.cpp while
+    // every design gate in SourceGateDesignTests.cpp exempted Tokens.h, in a
+    // different file, by a different mechanism, with nothing recording that the
+    // two are one convention.
+    //
+    // Tokens.cpp is where type::font and type::monospaced are defined, so it is
+    // the one place a raw FontOptions is the point rather than a leak.
+    //
+    // offenders() has no control case of its own, so the walk is still asserted
+    // here: a gate that scanned nothing passes silently.
+    REQUIRE (sourceFiles().size() > 20);
 
-    REQUIRE (files.size() > 20);
-
-    juce::StringArray offenders;
-
-    for (const auto& file : files)
-    {
-        // Tokens.cpp is where type::font and type::monospaced are defined, so it
-        // is the one place a raw FontOptions is the point rather than a leak.
-        if (file.getFileName() == "Tokens.cpp")
-            continue;
-
-        auto lines = juce::StringArray::fromLines (file.loadFileAsString());
-
-        for (int i = 0; i < lines.size(); ++i)
-        {
-            const auto& line = lines[i];
-
-            if (line.contains ("FontOptions") || line.contains ("juce::Font ("))
-                offenders.add (file.getFileName() + ":" + juce::String (i + 1) + "  "
-                               + line.trim());
-        }
-    }
+    const auto found = offenders (
+        [] (const juce::String& line)
+        { return line.contains ("FontOptions") || line.contains ("juce::Font ("); },
+        { "ui/design/Tokens.cpp" });
 
     INFO ("Fonts must come from tokens::type::font / type::monospaced:\n"
-          << offenders.joinIntoString ("\n"));
-    CHECK (offenders.isEmpty());
+          << found.joinIntoString ("\n"));
+    CHECK (found.isEmpty());
 }

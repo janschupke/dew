@@ -53,8 +53,7 @@ TEST_CASE ("the render path takes no snapshot entry by value", "[realtime][snaps
 
             return trimmed.contains ("snapshot.channels[")
                    || trimmed.contains ("snapshot.mixerTracks[");
-        },
-        {});
+        });
 
     INFO ("snapshot entries copied rather than referenced:\n" << found.joinIntoString ("\n"));
     CHECK (found.isEmpty());

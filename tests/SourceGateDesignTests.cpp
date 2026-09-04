@@ -124,10 +124,11 @@ TEST_CASE ("no source states a radius or a stroke as a bare number", "[build][ga
     // a component that was written without the scale open. drawButtonBackground
     // had exactly that.
     //
-    // Icons.cpp is exempt: its numbers are path GEOMETRY in the icon's own 0..1
-    // space - where 0.22 is a position, not a width - and its stroke weights
-    // already come from icon::. A gate that read them as pixel values would be
-    // reading a different coordinate system.
+    // ui/design/icons is exempt - the directory, not the three files in it:
+    // their numbers are path GEOMETRY in the icon's own 0..1 space, where 0.22
+    // is a position and not a width, and their stroke weights already come from
+    // icon::. A gate that read those as pixel values would be reading a
+    // different coordinate system.
     const auto found = offenders (
         [] (const juce::String& line)
         {
@@ -405,8 +406,12 @@ TEST_CASE ("every token the design system declares is one the app uses", "[build
             // palettes, written as designated initialisers, so every token
             // name appears there as `.accent =` and would satisfy the search
             // below without the application referring to it at all.
-            if (const auto name = entry.getFile().getFileName();
-                name != "Tokens.h" && name != "Tokens.cpp")
+            //
+            // By full path, because this corpus spans src, tests and tools: a
+            // second file called Tokens.h anywhere in any of the three would
+            // have silently excluded itself from the usage search.
+            if (const auto file = entry.getFile();
+                file != tokensFile && file != tokensFile.withFileExtension (".cpp"))
                 everythingElse += entry.getFile().loadFileAsString();
 
     juce::StringArray unused;

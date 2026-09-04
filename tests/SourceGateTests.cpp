@@ -23,13 +23,18 @@ TEST_CASE ("the source gates can see every source directory", "[build][gate]")
 
     REQUIRE (files.size() > 90);
 
+    // Paths, not names. A canary that only knows what a file is CALLED is
+    // satisfied by a file of that name anywhere, which is the opposite of
+    // checking that the walk still reaches the places it is meant to: these
+    // eight are one per layer, and the layer is the half that matters.
     for (const auto* expected :
-         { "Tokens.h", "DewControls.cpp", "PianoRollComponent.cpp", "AudioEngine.cpp",
-           "ProjectSchema.cpp", "Settings.cpp", "EffectModules.cpp", "MainComponent.cpp" })
+         { "ui/design/Tokens.h", "ui/primitives/DewControls.cpp", "ui/PianoRollComponent.cpp",
+           "engine/AudioEngine.cpp", "model/ProjectSchema.cpp", "app/Settings.cpp",
+           "engine/modules/EffectModules.cpp", "ui/MainComponent.cpp" })
     {
-        INFO ("expected a file named " << expected << " under DEW_SOURCE_DIR");
+        INFO ("expected " << expected << " under DEW_SOURCE_DIR");
         REQUIRE (std::any_of (files.begin(), files.end(), [expected] (const juce::File& f)
-                              { return f.getFileName() == expected; }));
+                              { return relativePathOf (f) == expected; }));
     }
 }
 
@@ -52,7 +57,7 @@ TEST_CASE ("every compiled source is one the gates can see", "[build][gate]")
     juce::StringArray walked;
 
     for (const auto& f : sourceFiles())
-        walked.add (f.getFileName());
+        walked.add (relativePathOf (f));
 
     juce::StringArray missing;
     auto ours = 0;
@@ -72,9 +77,11 @@ TEST_CASE ("every compiled source is one the gates can see", "[build][gate]")
 
         ++ours;
 
-        const auto name = source.fromLastOccurrenceOf ("/", false, false);
-
-        if (! walked.contains (name))
+        // The manifest lists a source relative to src/, and so does the walk
+        // now, so they are compared as written. This used to drop everything
+        // before the last slash and compare base names, which would have let an
+        // uncompiled file hide behind a namesake in another layer.
+        if (! walked.contains (source))
             missing.add (source);
     }
 
@@ -189,20 +196,17 @@ TEST_CASE ("every source under src is one a library compiles", "[build][gate]")
     juce::StringArray compiled;
     compiled.addLines (list.loadFileAsString());
 
-    juce::StringArray names;
+    juce::StringArray compiledPaths;
 
     for (const auto& line : compiled)
-    {
-        const auto source = line.fromFirstOccurrenceOf (" ", false, false);
-        names.add (source.fromLastOccurrenceOf ("/", false, false));
-    }
+        compiledPaths.add (line.fromFirstOccurrenceOf (" ", false, false));
 
     juce::StringArray orphans;
 
     for (const auto& file : sourceFiles())
     {
         // Headers are not compiled on their own, and the application target is
-        // not in the manifest's foreach - see the layering gate above, which
+        // not in the manifest's foreach - see the layering gate BELOW, which
         // exempts the same two by name.
         if (file.getFileExtension() != ".cpp")
             continue;
@@ -212,8 +216,10 @@ TEST_CASE ("every source under src is one a library compiles", "[build][gate]")
         if (name == "main.cpp" || name.startsWith ("DewApplication"))
             continue;
 
-        if (! names.contains (name))
-            orphans.add (name);
+        const auto path = relativePathOf (file);
+
+        if (! compiledPaths.contains (path))
+            orphans.add (path);
     }
 
     INFO ("under src/ but in no library's SOURCES - never compiled:\n"
@@ -225,13 +231,16 @@ TEST_CASE ("every layer is represented in the scanned sources", "[build][gate]")
 {
     // Named directories rather than a count, so moving one layer out cannot be
     // masked by another growing.
+    //
+    // Matched on the path relative to src/, not the absolute one. This asked
+    // whether the full path CONTAINED "/ui/", which a checkout living in a
+    // directory called ui satisfies without a single dew source being there.
     for (const auto* layer : { "lang", "model", "engine", "io", "ui", "app" })
     {
         auto seen = false;
 
         for (const auto& f : sourceFiles())
-            if (f.getParentDirectory().getFileName() == layer
-                || f.getFullPathName().contains (juce::String ("/") + layer + "/"))
+            if (relativePathOf (f).startsWith (juce::String (layer) + "/"))
                 seen = true;
 
         INFO ("no scanned source lives under src/" << layer);
