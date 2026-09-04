@@ -88,6 +88,103 @@ TEST_CASE ("every compiled source is one the gates can see", "[build][gate]")
     CHECK (missing.isEmpty());
 }
 
+TEST_CASE ("no source file is longer than the tree already is", "[build][gate]")
+{
+    // 400 lines of CODE - comments and blanks removed by codeLinesOf.
+    //
+    // The number is measured, not chosen. It is the tree's own p90: nine files
+    // in ten were already under it when this gate was written, and the median
+    // is 108. It is the same reasoning .clang-format gives for ColumnLimit 100
+    // - "the tree's own p99 line is 96 characters, so 100 is a description
+    // rather than a new rule".
+    //
+    // CODE lines rather than raw ones, and that distinction is the whole reason
+    // the number is usable. dew's headers carry long doc comments by design -
+    // PlaylistComponent.h is 512 lines and 173 of them are code - so a raw
+    // count would punish exactly the documentation the house style asks for,
+    // and would let a dense file with none of it through.
+    //
+    // There is NO exemption list, deliberately. A gate with one is a ratchet
+    // somebody edits; this one is a rule. Getting here took thirty commits and
+    // the largest file in the tree went from 1,740 lines to 449 - so if a file
+    // cannot reasonably get under 400, that is an argument about the number,
+    // to be had once and in the open, rather than a quiet entry in a list.
+    //
+    // Tests and tools are held to it too. A 1,788-line test file is exactly as
+    // hard to find your way around as a 1,788-line editor, and this codebase
+    // had both.
+    constexpr int maximumCodeLines = 400;
+
+    juce::StringArray tooLong;
+    auto scanned = 0;
+
+    for (const auto& file : allDewFiles())
+    {
+        ++scanned;
+
+        if (const auto lines = codeLinesOf (file).size(); lines > maximumCodeLines)
+            tooLong.add (file.getFileName() + "  " + juce::String (lines) + " code lines");
+    }
+
+    // A gate that scanned nothing passes silently, which is the failure mode
+    // every other gate here is written to avoid.
+    INFO ("scanned " << scanned << " files");
+    REQUIRE (scanned > 300);
+
+    INFO ("files over " << maximumCodeLines << " code lines:\n" << tooLong.joinIntoString ("\n"));
+    CHECK (tooLong.isEmpty());
+}
+
+TEST_CASE ("every source under src is one a library compiles", "[build][gate]")
+{
+    // The other direction of "every compiled source is one the gates can see"
+    // above, which checks manifest -> walk. This checks walk -> manifest.
+    //
+    // A .cpp that sits under src/ and is in no library's SOURCES is never
+    // compiled, and passes every other gate in this file silently: they all
+    // scan the directory, so an un-built file is scanned and found clean. That
+    // was harmless while nobody added files. The work that split this tree
+    // added ninety, several of them in one commit, and forgetting one line of
+    // CMakeLists would have meant deleting code that still appeared to be
+    // there.
+    const juce::File list { DEW_COMPILED_SOURCES_FILE };
+    REQUIRE (list.existsAsFile());
+
+    juce::StringArray compiled;
+    compiled.addLines (list.loadFileAsString());
+
+    juce::StringArray names;
+
+    for (const auto& line : compiled)
+    {
+        const auto source = line.fromFirstOccurrenceOf (" ", false, false);
+        names.add (source.fromLastOccurrenceOf ("/", false, false));
+    }
+
+    juce::StringArray orphans;
+
+    for (const auto& file : sourceFiles())
+    {
+        // Headers are not compiled on their own, and the application target is
+        // not in the manifest's foreach - see the layering gate above, which
+        // exempts the same two by name.
+        if (file.getFileExtension() != ".cpp")
+            continue;
+
+        const auto name = file.getFileName();
+
+        if (name == "main.cpp" || name.startsWith ("DewApplication"))
+            continue;
+
+        if (! names.contains (name))
+            orphans.add (name);
+    }
+
+    INFO ("under src/ but in no library's SOURCES - never compiled:\n"
+          << orphans.joinIntoString ("\n"));
+    CHECK (orphans.isEmpty());
+}
+
 TEST_CASE ("every layer is represented in the scanned sources", "[build][gate]")
 {
     // Named directories rather than a count, so moving one layer out cannot be

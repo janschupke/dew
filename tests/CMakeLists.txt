@@ -136,7 +136,14 @@ target_link_libraries(dew_tests
 target_compile_definitions(dew_tests PRIVATE
   DEW_EXAMPLES_DIR="${CMAKE_SOURCE_DIR}/examples"
     DEW_PRESETS_DIR="${CMAKE_SOURCE_DIR}/presets"
-  DEW_SOURCE_DIR="${CMAKE_SOURCE_DIR}/src")
+  DEW_SOURCE_DIR="${CMAKE_SOURCE_DIR}/src"
+
+  # The size gate is the one that reads more than src/. A test file and a tool
+  # are held to the same length as a source file, because a 1,700-line test is
+  # exactly as hard to find your way around as a 1,700-line editor - and both
+  # happened here.
+  DEW_TESTS_DIR="${CMAKE_CURRENT_SOURCE_DIR}"
+  DEW_TOOLS_DIR="${CMAKE_SOURCE_DIR}/tools")
 
 # What is actually COMPILED, as opposed to what happens to sit under src/.
 #
