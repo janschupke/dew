@@ -1,6 +1,7 @@
 #include "ui/SampleSection.h"
 
 #include "model/ProjectEdits.h"
+#include "ui/design/Cursors.h"
 #include "ui/design/Tokens.h"
 
 namespace dew
@@ -248,8 +249,7 @@ void SampleSection::mouseMove (const juce::MouseEvent& event)
 
     if (std::exchange (hovering, over) != over)
     {
-        setMouseCursor (over == Handle::none ? juce::MouseCursor::NormalCursor
-                                             : juce::MouseCursor::LeftRightResizeCursor);
+        setMouseCursor (over == Handle::none ? cursor::idle : cursor::resizeX);
         repaint (getWaveformBounds());
     }
 }

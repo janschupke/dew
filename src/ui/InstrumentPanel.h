@@ -158,7 +158,7 @@ private:
     DewKnob volumeKnob { requireInstrumentParamSpec (ids::volume) };
     DewKnob panKnob { requireInstrumentParamSpec (ids::pan) };
 
-    juce::ComboBox mixerBox;
+    DewDropdown mixerBox;
     juce::Label mixerLabel;
 
     /** The selected channel's effect chain, edited by the same component the

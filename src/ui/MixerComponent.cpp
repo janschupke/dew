@@ -6,6 +6,7 @@
 
 #include "model/ProjectEdits.h"
 #include "ui/primitives/DewMeter.h"
+#include "ui/design/Cursors.h"
 #include "ui/design/Tokens.h"
 #include "ui/primitives/HoverTracker.h"
 
@@ -50,6 +51,10 @@ public:
         };
         addAndMakeVisible (nameLabel);
 
+        // The strip sets clickable on itself, and JUCE asks the DEEPEST
+        // component, so the fader has to say what it is or it inherits nothing
+        // and shows an arrow in the middle of a strip that says "clickable".
+        gainSlider.setMouseCursor (cursor::value);
         gainSlider.setSliderStyle (juce::Slider::LinearVertical);
         gainSlider.setTextBoxStyle (juce::Slider::TextBoxBelow, false, 60,
                                     tokens::size::controlHeightSm);
@@ -124,7 +129,7 @@ public:
         }
 
         forwardChildMouseEventsTo (*this);
-        setMouseCursor (juce::MouseCursor::PointingHandCursor);
+        setMouseCursor (cursor::clickable);
 
         track.addListener (this);
     }

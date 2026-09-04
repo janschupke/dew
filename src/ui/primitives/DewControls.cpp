@@ -1,5 +1,6 @@
 #include "ui/primitives/DewControls.h"
 
+#include "ui/design/Cursors.h"
 #include "ui/design/Gestures.h"
 
 #include <cmath>
@@ -57,6 +58,7 @@ DewButton::DewButton (const juce::String& text, Role r)
     , role (r)
 {
     setButtonText (text);
+    setMouseCursor (cursor::clickable);
 }
 
 void DewButton::setRole (Role r)
@@ -123,6 +125,7 @@ DewIconButton::DewIconButton (juce::Path i, const juce::String& tooltipText, Rol
     , role (r)
 {
     setTooltip (tooltipText);
+    setMouseCursor (cursor::clickable);
 }
 
 void DewIconButton::setRole (Role r)
@@ -197,6 +200,7 @@ DewLetterToggle::DewLetterToggle (const juce::String& l, juce::Colour c,
 {
     setClickingTogglesState (true);
     setTooltip (tooltipText);
+    setMouseCursor (cursor::clickable);
 }
 
 void DewLetterToggle::paintButton (juce::Graphics& g, bool, bool)
@@ -245,6 +249,11 @@ DewKnob::DewKnob (const juce::String& c, double minimum, double maximum, double 
 {
     slider.setRange (minimum, maximum, interval);
     slider.setLookAndFeel (&invisibleRotary());
+
+    // On the SLIDER, not on the knob: the slider fills the knob and is what the
+    // pointer is actually over, and JUCE asks the deepest component for its
+    // cursor rather than walking up to a parent.
+    slider.setMouseCursor (cursor::value);
 
     // Never called anywhere before this, so every knob in dew sat on JUCE's
     // default of 250 - which is not the same as having chosen 250.
@@ -325,6 +334,18 @@ void DewLetterToggle::mouseDown (const juce::MouseEvent& event)
         return;
 
     juce::Button::mouseDown (event);
+}
+
+DewCheckbox::DewCheckbox (const juce::String& text)
+    : juce::ToggleButton (text)
+{
+    setMouseCursor (cursor::clickable);
+}
+
+DewDropdown::DewDropdown (const juce::String& name)
+    : juce::ComboBox (name)
+{
+    setMouseCursor (cursor::clickable);
 }
 
 void DewCheckbox::mouseDown (const juce::MouseEvent& event)

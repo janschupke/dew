@@ -113,7 +113,7 @@ private:
         denominator is a note value, so only five values are legal, and the pair
         reads as one thing - "4/4" - rather than as two numbers to reconcile.
     */
-    juce::ComboBox meterBox;
+    DewDropdown meterBox;
 
     DewButton modeButton { "Pattern", DewButton::Role::normal };
 
@@ -121,7 +121,7 @@ private:
     // pattern used to be reachable only from a menu shortcut, which meant it
     // read as "you cannot add more patterns".
     juce::Label patternCaption;
-    juce::ComboBox patternBox;
+    DewDropdown patternBox;
     DewIconButton addPatternButton { icons::plus(), "Add a pattern" };
     DewIconButton clonePatternButton { icons::duplicate(), "Duplicate this pattern" };
     DewIconButton deletePatternButton { icons::trash(), "Delete this pattern",

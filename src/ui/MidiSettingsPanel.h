@@ -84,7 +84,7 @@ private:
     juce::Component listHolder;
     juce::OwnedArray<DeviceRow> rows;
 
-    juce::ComboBox channelBox, transposeBox;
+    DewDropdown channelBox, transposeBox;
     juce::Array<juce::Rectangle<int>> labelBounds;
     juce::StringArray labels;
 

@@ -14,6 +14,7 @@
 #include "model/Meter.h"
 #include "model/ProjectEdits.h"
 #include "ui/TimelineRuler.h"
+#include "ui/design/Cursors.h"
 #include "ui/design/Gestures.h"
 #include "ui/Hotkeys.h"
 #include "ui/ColourMenu.h"
@@ -170,8 +171,7 @@ public:
 
     void mouseMove (const juce::MouseEvent& event) override
     {
-        setMouseCursor (isOnResizeEdge (event.getPosition()) ? juce::MouseCursor::UpDownResizeCursor
-                                                             : juce::MouseCursor::NormalCursor);
+        setMouseCursor (isOnResizeEdge (event.getPosition()) ? cursor::value : cursor::idle);
     }
 
     void mouseDrag (const juce::MouseEvent& event) override
@@ -918,7 +918,7 @@ void PlaylistComponent::mouseMove (const juce::MouseEvent& event)
 
     if (hit.kind == automationLane::Hit::Kind::point)
     {
-        setMouseCursor (juce::MouseCursor::PointingHandCursor);
+        setMouseCursor (cursor::clickable);
         return;
     }
 
@@ -927,13 +927,42 @@ void PlaylistComponent::mouseMove (const juce::MouseEvent& event)
         // The cursor DewNumberField already uses for "drag vertically to change
         // a value" - the same gesture, so the same cursor. A stepped segment
         // keeps the normal cursor, because it does not answer to the drag.
-        setMouseCursor (juce::MouseCursor::UpDownResizeCursor);
+        setMouseCursor (cursor::value);
         return;
     }
 
-    setMouseCursor (clip.isValid() && isOnRightEdge (clip, trackIndex, event.getPosition())
-                        ? juce::MouseCursor::LeftRightResizeCursor
-                        : juce::MouseCursor::NormalCursor);
+    if (getRulerArea().contains (event.getPosition()))
+    {
+        setMouseCursor (cursor::clickable);
+        return;
+    }
+
+    // A tool outranks what is under the pointer: with the paint tool a clip is
+    // not something to pick up, it is somewhere to put one.
+    if (getTool() != PlaylistTool::select)
+    {
+        setMouseCursor (cursor::nib);
+        return;
+    }
+
+    if (! clip.isValid())
+    {
+        setMouseCursor (cursor::idle);
+        return;
+    }
+
+    // A clip's BODY is draggable, which the cursor never said - the only thing
+    // it distinguished was the resize edge, so the gesture a person uses most
+    // was the one with no feedback at all.
+    setMouseCursor (isOnRightEdge (clip, trackIndex, event.getPosition()) ? cursor::resizeX
+                                                                          : cursor::move);
+}
+
+void PlaylistComponent::mouseExit (const juce::MouseEvent&)
+{
+    // Without this the last cursor the arrangement chose survives the pointer
+    // leaving it.
+    setMouseCursor (cursor::idle);
 }
 
 void PlaylistComponent::openPatternOf (const juce::ValueTree& clip)

@@ -153,7 +153,7 @@ private:
     EditorState& editorState;
     Settings* settings = nullptr;
 
-    juce::ComboBox scopeBox, formatBox, rateBox, depthBox, mp3QualityBox;
+    DewDropdown scopeBox, formatBox, rateBox, depthBox, mp3QualityBox;
     DewNumberField tailField, peakField;
     DewCheckbox normalizeToggle { "Normalize" };
     DewCheckbox fadeToggle { "Fade in and out" };

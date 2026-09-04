@@ -1,6 +1,7 @@
 #include "ui/primitives/DewNumberField.h"
 
 #include "ui/design/Gestures.h"
+#include "ui/design/Cursors.h"
 #include "ui/design/Tokens.h"
 #include "ui/primitives/DewControls.h"
 
@@ -18,7 +19,7 @@ namespace
 
 DewNumberField::DewNumberField()
 {
-    setMouseCursor (juce::MouseCursor::UpDownResizeCursor);
+    setMouseCursor (cursor::value);
     setWantsKeyboardFocus (true);
 }
 

@@ -4,6 +4,7 @@
 #include "model/Ids.h"
 #include "model/ProjectEdits.h"
 #include "model/ProjectSchema.h"
+#include "ui/design/Cursors.h"
 
 namespace dew
 {
@@ -210,6 +211,7 @@ OscillatorSection::OscillatorSection (ProjectDocument& d, EditorState& s)
         octaveSlider.setRange (spec.minimum, spec.maximum, spec.interval);
     }
 
+    octaveSlider.setMouseCursor (cursor::clickable);
     octaveSlider.setTextBoxStyle (juce::Slider::TextBoxLeft, false, 44, size::controlHeightSm);
     octaveSlider.onDragStart = [this]
     {

@@ -9,6 +9,7 @@
 #include "ui/design/Icons.h"
 #include "ui/design/Gestures.h"
 #include "ui/Hotkeys.h"
+#include "ui/design/Cursors.h"
 #include "ui/design/Tokens.h"
 #include "ui/primitives/HoverTracker.h"
 
@@ -243,8 +244,7 @@ public:
         // drawn, which is half of why nobody found the drag.
         const auto overGrip = gripBounds.contains (event.getEventRelativeTo (this).getPosition());
 
-        setMouseCursor (overGrip ? juce::MouseCursor::DraggingHandCursor
-                                 : juce::MouseCursor::NormalCursor);
+        setMouseCursor (overGrip ? cursor::move : cursor::idle);
     }
 
     void mouseEnter (const juce::MouseEvent&) override
@@ -457,7 +457,7 @@ private:
     {
         if (type == EffectType::filter)
         {
-            modeBox = std::make_unique<juce::ComboBox>();
+            modeBox = std::make_unique<DewDropdown>();
             modeBox->addItem ("Low pass", 1);
             modeBox->addItem ("High pass", 2);
             modeBox->addItem ("Band pass", 3);
@@ -584,7 +584,7 @@ private:
                                  DewIconButton::Role::danger };
 
     juce::OwnedArray<ParamWidget> params;
-    std::unique_ptr<juce::ComboBox> modeBox;
+    std::unique_ptr<DewDropdown> modeBox;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (Card)
 };

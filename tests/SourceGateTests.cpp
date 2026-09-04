@@ -500,6 +500,59 @@ static bool feedsAsciiConstructor (const juce::String& line)
     return false;
 }
 
+TEST_CASE ("no source declares a bare juce::ComboBox", "[build][gate]")
+{
+    // Same rule as the checkbox above, and the same reason: DewLookAndFeel
+    // paints the box, the arrow and the menu, so what a stock ComboBox lacks is
+    // not an appearance but a cursor - and JUCE does not inherit one from a
+    // parent, so a dropdown left alone shows an arrow beside a button showing a
+    // hand. Sixteen boxes in seven panels is past the count at which a habit
+    // stays reliable.
+    //
+    // Declarations only. A function taking a juce::ComboBox& is taking the base
+    // class of a DewDropdown, which is correct.
+    const auto found = offenders (
+        [] (const juce::String& line)
+        {
+            const auto trimmed = line.trim();
+
+            if (trimmed.startsWith ("//") || trimmed.startsWith ("*") || trimmed.startsWith ("/*"))
+                return false;
+
+            return trimmed.startsWith ("juce::ComboBox ") || trimmed.contains ("juce::ComboBox>()")
+                   || trimmed.contains ("new juce::ComboBox");
+        },
+        { "DewControls.h" });
+
+    INFO ("stock combo boxes:\n" << found.joinIntoString ("\n"));
+    CHECK (found.isEmpty());
+}
+
+TEST_CASE ("no source names a mouse cursor outside the vocabulary", "[build][gate][design]")
+{
+    // Nine call sites picked a juce::MouseCursor by hand, and two of them
+    // disagreed about what a draggable thing looks like: the effect chain's
+    // grip said DraggingHand and the playlist's clips said nothing at all, so
+    // the gesture a person uses most had no feedback while a rarer one did.
+    //
+    // Cursors.h names them for the GESTURE - clickable, value, move, resizeX,
+    // nib, idle - the same way the colours are named for their role.
+    const auto found = offenders (
+        [] (const juce::String& line)
+        {
+            const auto trimmed = line.trim();
+
+            if (trimmed.startsWith ("//") || trimmed.startsWith ("*") || trimmed.startsWith ("/*"))
+                return false;
+
+            return line.contains ("juce::MouseCursor::");
+        },
+        { "Cursors.h" });
+
+    INFO ("cursors chosen outside the vocabulary:\n" << found.joinIntoString ("\n"));
+    CHECK (found.isEmpty());
+}
+
 TEST_CASE ("no source declares a bare juce::ToggleButton", "[build][gate]")
 {
     // juce::Button completes a click for whichever mouse button pressed it, so

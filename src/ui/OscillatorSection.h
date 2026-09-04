@@ -214,11 +214,11 @@ private:
 
     DewIconButton enableButton { icons::power(), "Turn this oscillator on or off" };
 
-    juce::ComboBox modeBox;
+    DewDropdown modeBox;
 
-    juce::ComboBox waveBox;
+    DewDropdown waveBox;
 
-    juce::ComboBox tableBox, sourceBox;
+    DewDropdown tableBox, sourceBox;
 
     juce::Slider octaveSlider { juce::Slider::IncDecButtons, juce::Slider::TextBoxLeft };
     juce::Label octaveLabel;

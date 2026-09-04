@@ -221,17 +221,17 @@ DewGallery::DewGallery()
     // --- dropdowns -----------------------------------------------------------
     // Stock JUCE widgets styled by DewLookAndFeel rather than dew primitives,
     // so this is where a change to that styling gets seen.
-    auto* wave = new juce::ComboBox();
+    auto* wave = new DewDropdown();
     wave->addItemList ({ "Sine", "Saw", "Square", "Triangle" }, 1);
     wave->setSelectedId (2, juce::dontSendNotification);
     add (wave);
 
-    auto* routing = new juce::ComboBox();
+    auto* routing = new DewDropdown();
     routing->addItemList ({ "Insert 1", "Insert 2", "Insert 3", "Insert 4" }, 1);
     routing->setSelectedId (1, juce::dontSendNotification);
     add (routing);
 
-    auto* unavailable = new juce::ComboBox();
+    auto* unavailable = new DewDropdown();
     unavailable->addItem ("Unavailable", 1);
     unavailable->setSelectedId (1, juce::dontSendNotification);
     unavailable->setEnabled (false);

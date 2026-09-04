@@ -235,11 +235,32 @@ private:
 class DewCheckbox : public juce::ToggleButton
 {
 public:
-    using juce::ToggleButton::ToggleButton;
+    explicit DewCheckbox (const juce::String& text = {});
 
     void mouseDown (const juce::MouseEvent&) override;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (DewCheckbox)
+};
+
+// -----------------------------------------------------------------------------
+
+/** juce::ComboBox, told what it looks like under the pointer.
+
+    The same shape as DewCheckbox and for the same reason: DewLookAndFeel
+    already paints the box, the arrow and the menu, so what the stock control
+    lacks is not an appearance but a cursor - and JUCE does not inherit one from
+    a parent, so a dropdown left alone shows an arrow while the button beside it
+    shows a hand.
+
+    Sixteen boxes in seven panels, which is exactly the count at which a habit
+    stops being reliable, so a gate refuses a bare juce::ComboBox.
+*/
+class DewDropdown : public juce::ComboBox
+{
+public:
+    explicit DewDropdown (const juce::String& name = {});
+
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (DewDropdown)
 };
 
 // -----------------------------------------------------------------------------

@@ -8,6 +8,7 @@
 #include "model/Ids.h"
 #include "model/ModuleCatalog.h"
 #include "model/ProjectEdits.h"
+#include "ui/design/Cursors.h"
 #include "ui/design/DewLookAndFeel.h"
 
 namespace dew
@@ -70,6 +71,9 @@ InstrumentPanel::InstrumentPanel (ProjectDocument& d, EditorState& s, SamplePool
     { return selectedChannel().getChildWithName (ids::INSTRUMENT).getChildWithName (ids::AMP); };
     const auto channelOf = [this] { return selectedChannel(); };
 
+    // Clickable rather than value: a stepper's visible parts are two little
+    // buttons, and it is pressed rather than dragged.
+    basePitchSlider.setMouseCursor (cursor::clickable);
     basePitchSlider.setSliderStyle (juce::Slider::IncDecButtons);
     attachStepper (basePitchSlider, basePitchLabel, "PITCH", channelOf, ids::basePitch,
                    "Change base pitch");

@@ -10,6 +10,7 @@
 #include "ui/Hotkeys.h"
 #include "ui/ZoomButtons.h"
 #include "ui/TimelinePaint.h"
+#include "ui/design/Cursors.h"
 #include "ui/design/Tokens.h"
 #include "ui/primitives/DewControls.h"
 
@@ -484,6 +485,10 @@ void StepGridComponent::mouseMove (const juce::MouseEvent& event)
     const auto valid = event.y < getRowsHeight() && channel.isValid()
                        && ! ProjectEdits::isAudioChannel (channel);
     const auto wanted = valid ? cell : juce::Point<int> (-1, -1);
+
+    // The grid had a hover highlight and no cursor at all, so the one surface in
+    // dew whose whole purpose is being clicked said nothing about it.
+    setMouseCursor (valid ? cursor::clickable : cursor::idle);
 
     if (wanted != hoverCell)
     {

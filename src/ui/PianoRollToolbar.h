@@ -103,13 +103,13 @@ private:
         word beside them means you do not have to hover to find out. */
     juce::Label channelCaption, snapCaption;
 
-    juce::ComboBox snapBox;
+    DewDropdown snapBox;
 
     /** Which channel the roll is editing. The roll used to be a passive
         consumer of a selection made in the channel rack, so its own empty state
         could tell you to go and pick a channel but offered no way to do it.
     */
-    juce::ComboBox channelBox;
+    DewDropdown channelBox;
 
     ZoomButtons zoomButtons { "Fit the pattern to the window (0)" };
 

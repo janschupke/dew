@@ -6,6 +6,7 @@
 #include "model/Ids.h"
 #include "model/Meter.h"
 #include "model/ProjectEdits.h"
+#include "ui/design/Cursors.h"
 #include "ui/design/DewLookAndFeel.h"
 #include "ui/RandomizePanel.h"
 #include "ui/TimelineRuler.h"
@@ -46,7 +47,7 @@ PianoRollComponent::PianoRollComponent (ProjectDocument& d, AudioEngine& e, Edit
     {
         // The tool does not change what is selected. Clearing here would throw
         // away the selection the next quantize or transpose is aimed at.
-        setMouseCursor (juce::MouseCursor::NormalCursor);
+        setMouseCursor (cursor::idle);
         repaint();
     };
     toolbar.onSnapChanged = [this] { repaint(); };
@@ -852,17 +853,45 @@ bool PianoRollComponent::keyPressed (const juce::KeyPress& key)
 
 void PianoRollComponent::mouseMove (const juce::MouseEvent& event)
 {
-    if (! noteArea().contains (event.getPosition()))
-    {
-        setMouseCursor (juce::MouseCursor::NormalCursor);
-        return;
-    }
+    setMouseCursor (cursorFor (event.getPosition()));
+}
 
-    const auto note = noteAt (event.getPosition());
+/** One hit test decides both what a press does and what the pointer looks like.
 
-    setMouseCursor (note.isValid() && isOnRightEdge (note, event.getPosition())
-                        ? juce::MouseCursor::LeftRightResizeCursor
-                        : juce::MouseCursor::NormalCursor);
+    Notes are not components - the whole roll is painted into this one - so the
+    cursor cannot come from a child and has to be derived here. Sharing the test
+    is what keeps the two honest: a cursor that says "drag me" where a press
+    does something else is worse than no cursor at all.
+*/
+juce::MouseCursor PianoRollComponent::cursorFor (juce::Point<int> position) const
+{
+    if (rulerArea().contains (position) || keyboardArea().contains (position))
+        return cursor::clickable;
+
+    if (velocityArea().contains (position))
+        return cursor::value;
+
+    if (! noteArea().contains (position))
+        return cursor::idle;
+
+    // A tool outranks what is under the pointer: with the eraser or the slice
+    // tool a note is not something to pick up, it is something to act on.
+    if (getTool() != RollTool::select)
+        return cursor::nib;
+
+    const auto note = noteAt (position);
+
+    if (! note.isValid())
+        return cursor::idle;
+
+    return isOnRightEdge (note, position) ? cursor::resizeX : cursor::move;
+}
+
+void PianoRollComponent::mouseExit (const juce::MouseEvent&)
+{
+    // Without this the last cursor the roll chose survives the pointer leaving
+    // it, and a window edge keeps a resize arrow that means nothing there.
+    setMouseCursor (cursor::idle);
 }
 
 void PianoRollComponent::mouseDoubleClick (const juce::MouseEvent& event)

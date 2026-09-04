@@ -86,7 +86,7 @@ private:
     juce::AudioDeviceManager& deviceManager;
     AudioEngine& engine;
 
-    juce::ComboBox typeBox, outputBox, inputBox, inputChannelBox, rateBox, bufferBox;
+    DewDropdown typeBox, outputBox, inputBox, inputChannelBox, rateBox, bufferBox;
 
     /** Falls back rather than snapping, so a meter reads as a level rather than
         as a flicker. Decay per frame at the refresh rate the tokens declare.

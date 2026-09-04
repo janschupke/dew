@@ -15,6 +15,7 @@
 #include "ui/design/Tokens.h"
 #include "model/AutomationCurve.h"
 #include "ui/AutomationLane.h"
+#include "ui/design/Cursors.h"
 #include "ui/design/Gestures.h"
 #include "ui/PlaylistComponent.h"
 
@@ -1724,4 +1725,59 @@ TEST_CASE ("each wheel modifier moves a different axis", "[ui][playlist][height]
 
     CHECK (h.playlist.getTimeline().pixelsPerStep > zoomBefore);
     CHECK (h.playlist.getTrackHeight() == heightNow);
+}
+
+TEST_CASE ("the pointer says what a clip will do", "[ui][playlist][cursor]")
+{
+    const juce::ScopedJuceInitialiser_GUI juceInit;
+    PlaylistHarness h;
+
+    juce::UndoManager undo;
+    ProjectEdits::addClip (h.track (0), 1, 1, 2, &undo);
+    h.playlist.refresh();
+    h.playlist.resized();
+
+    const auto cursorAt = [&h] (juce::Point<int> at)
+    {
+        h.playlist.mouseMove (eventAt (h.playlist, at));
+        return h.playlist.getMouseCursor();
+    };
+
+    const auto clip = ProjectEdits::findClipAtBar (h.track (0), 1);
+    REQUIRE (clip.isValid());
+
+    const auto bounds = h.playlist.getBoundsForClip (clip, 0);
+
+    // A clip's BODY is what a person drags, and it was the one gesture with no
+    // cursor at all: only the resize edge said anything.
+    CHECK (
+        cursorAt ({ (int) (bounds.getX() + bounds.getWidth() * 0.3f), (int) bounds.getCentreY() })
+        == cursor::move);
+
+    CHECK (cursorAt ({ (int) bounds.getRight() - 2, (int) bounds.getCentreY() })
+           == cursor::resizeX);
+
+    // Control case: an empty lane is not draggable, and says so. Without this
+    // the two checks above would pass on a component that returned `move` for
+    // every point in the arrangement.
+    CHECK (cursorAt (pointFor (h, 6, 1)) == cursor::idle);
+
+    CHECK (cursorAt (rulerPointFor (h, 1)) == cursor::clickable);
+
+    // A tool outranks what is under the pointer: with the paint tool a clip is
+    // somewhere to put one, not something to pick up.
+    h.playlist.getToolbar().setTool (PlaylistTool::paint);
+    CHECK (
+        cursorAt ({ (int) (bounds.getX() + bounds.getWidth() * 0.3f), (int) bounds.getCentreY() })
+        == cursor::nib);
+    h.playlist.getToolbar().setTool (PlaylistTool::select);
+
+    // And it is given back when the pointer leaves, or a window edge keeps a
+    // resize arrow that means nothing there.
+    h.playlist.mouseMove (
+        eventAt (h.playlist, { (int) bounds.getRight() - 2, (int) bounds.getCentreY() }));
+    REQUIRE (h.playlist.getMouseCursor() == cursor::resizeX);
+
+    h.playlist.mouseExit (eventAt (h.playlist, { -1, -1 }));
+    CHECK (h.playlist.getMouseCursor() == cursor::idle);
 }

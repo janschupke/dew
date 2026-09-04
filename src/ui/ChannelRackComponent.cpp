@@ -6,6 +6,7 @@
 #include "model/Meter.h"
 #include "model/ProjectEdits.h"
 #include "ui/design/Icons.h"
+#include "ui/design/Cursors.h"
 #include "ui/design/Tokens.h"
 #include "ui/ColourMenu.h"
 #include "ui/HeaderRow.h"
@@ -97,7 +98,7 @@ public:
 
         // Hover only - see forwardChildMouseEventsTo.
         forwardChildMouseEventsTo (*this);
-        setMouseCursor (juce::MouseCursor::PointingHandCursor);
+        setMouseCursor (cursor::clickable);
     }
 
     int getChannelId() const

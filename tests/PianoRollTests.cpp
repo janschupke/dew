@@ -6,6 +6,7 @@
 #include "model/EntityColour.h"
 #include "ui/ChannelRackComponent.h"
 #include "ui/ZoomButtons.h"
+#include "ui/design/Cursors.h"
 #include "ui/design/Tokens.h"
 #include "FixtureProject.h"
 
@@ -1306,4 +1307,63 @@ TEST_CASE ("alt and the zoom keys change the OTHER axis", "[ui][pianoroll][heigh
     h.roll.keyPressed (juce::KeyPress ('='));
     CHECK (h.roll.getTimeline().pixelsPerStep > zoomBefore);
     CHECK (h.roll.getRowHeight() == tokens::size::pianoRowDefault);
+}
+
+TEST_CASE ("the pointer says what a note will do", "[ui][pianoroll][cursor]")
+{
+    const juce::ScopedJuceInitialiser_GUI juceInit;
+    RollHarness h;
+
+    const auto cursorAt = [&h] (juce::Point<int> at)
+    {
+        h.roll.mouseMove (eventAt (h.roll, at));
+        return h.roll.getMouseCursor();
+    };
+
+    // Written through the component, so the note lands where the roll would
+    // paint it rather than where the test guessed.
+    const auto noteArea = h.roll.getNoteArea();
+    const auto placed = noteArea.getCentre();
+
+    clickAndRelease (h.roll, placed);
+    REQUIRE (h.countNotes() > 0);
+
+    juce::ValueTree note;
+
+    for (const auto& child : h.pattern())
+        if (child.hasType (ids::NOTE))
+            note = child;
+
+    REQUIRE (note.isValid());
+    const auto bounds = h.roll.getBoundsForNote (note);
+
+    // A note's BODY is what a person drags, and it had no cursor: only the
+    // resize edge said anything.
+    CHECK (
+        cursorAt ({ (int) (bounds.getX() + bounds.getWidth() * 0.3f), (int) bounds.getCentreY() })
+        == cursor::move);
+
+    CHECK (cursorAt ({ (int) bounds.getRight() - 2, (int) bounds.getCentreY() })
+           == cursor::resizeX);
+
+    // Control case: empty grid is not draggable. Without it the two above would
+    // pass on a roll that returned `move` everywhere.
+    CHECK (cursorAt ({ noteArea.getRight() - 4, noteArea.getY() + 4 }) == cursor::idle);
+
+    CHECK (cursorAt (h.roll.getKeyboardArea().getCentre()) == cursor::clickable);
+    CHECK (cursorAt (h.roll.getRulerArea().getCentre()) == cursor::clickable);
+    CHECK (cursorAt (h.roll.getVelocityArea().getCentre()) == cursor::value);
+
+    // A tool outranks what is under the pointer.
+    h.roll.getToolbar().setTool (RollTool::slice);
+    CHECK (
+        cursorAt ({ (int) (bounds.getX() + bounds.getWidth() * 0.3f), (int) bounds.getCentreY() })
+        == cursor::nib);
+    h.roll.getToolbar().setTool (RollTool::select);
+
+    h.roll.mouseMove (eventAt (h.roll, { (int) bounds.getRight() - 2, (int) bounds.getCentreY() }));
+    REQUIRE (h.roll.getMouseCursor() == cursor::resizeX);
+
+    h.roll.mouseExit (eventAt (h.roll, { -1, -1 }));
+    CHECK (h.roll.getMouseCursor() == cursor::idle);
 }

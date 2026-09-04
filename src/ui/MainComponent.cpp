@@ -10,6 +10,7 @@
 #include "ui/MidiSettingsPanel.h"
 
 #include "model/ProjectEdits.h"
+#include "ui/design/Cursors.h"
 #include "ui/design/Tokens.h"
 
 #include "model/Ids.h"
@@ -211,13 +212,13 @@ void MainComponent::paint (juce::Graphics& g)
 MainComponent::PanelDivider::PanelDivider (MainComponent& o)
     : owner (o)
 {
-    setMouseCursor (juce::MouseCursor::LeftRightResizeCursor);
+    setMouseCursor (cursor::resizeX);
 
     setComponentID ("panelDivider");
 
     toggleButton.setComponentID ("panelToggle");
     toggleButton.setWantsKeyboardFocus (false);
-    toggleButton.setMouseCursor (juce::MouseCursor::PointingHandCursor);
+    toggleButton.setMouseCursor (cursor::clickable);
     toggleButton.onClick = [this] { owner.setPanelCollapsed (! owner.panelCollapsed); };
     addAndMakeVisible (toggleButton);
 }

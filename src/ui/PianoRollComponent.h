@@ -81,6 +81,7 @@ public:
     void mouseDrag (const juce::MouseEvent&) override;
     void mouseUp (const juce::MouseEvent&) override;
     void mouseMove (const juce::MouseEvent&) override;
+    void mouseExit (const juce::MouseEvent&) override;
     void mouseDoubleClick (const juce::MouseEvent&) override;
     void mouseWheelMove (const juce::MouseEvent&, const juce::MouseWheelDetails&) override;
     void mouseMagnify (const juce::MouseEvent&, float scaleFactor) override;
@@ -295,6 +296,11 @@ private:
     */
     juce::Rectangle<int> toolbarArea() const;
     juce::Rectangle<int> contentArea() const;
+
+    /** The cursor for a point in the roll, from the same hit test a press uses.
+        Private: a test drives mouseMove and reads getMouseCursor(), which is
+        the path the pointer actually takes. */
+    juce::MouseCursor cursorFor (juce::Point<int> position) const;
 
     juce::Rectangle<int> rulerArea() const;
     juce::Rectangle<int> keyboardArea() const;

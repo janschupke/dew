@@ -3,6 +3,7 @@
 #include <cmath>
 
 #include "ui/TimelinePaint.h"
+#include "ui/design/Cursors.h"
 #include "ui/design/Tokens.h"
 
 namespace dew
@@ -246,7 +247,7 @@ bool Gesture::mouseDoubleClick (const juce::MouseEvent&)
 
 RulerStrip::RulerStrip()
 {
-    setMouseCursor (juce::MouseCursor::PointingHandCursor);
+    setMouseCursor (cursor::clickable);
     startTimerHz (motion::playheadHz);
 }
 
