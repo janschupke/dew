@@ -1128,6 +1128,12 @@ TEST_CASE ("no editor writes an undoable property by hand", "[build][gate][undo]
     // A write with no UndoManager is not caught, and deliberately: writing to a
     // detached copy nobody can undo is a different thing, and it says so where
     // it happens.
+    //
+    // The exemption is the DIRECTORY model/edits, not the files in it. It used
+    // to name ProjectEdits.cpp, and when that file became seven the list would
+    // have had to name all seven - which is the shape SourceScan.h warns about
+    // above offenders(): a list of five that the sixth silently escapes. An
+    // eighth edit file is exempt by being where the edits are.
     const auto found = offenders (
         [] (const juce::String& line)
         {
@@ -1141,7 +1147,7 @@ TEST_CASE ("no editor writes an undoable property by hand", "[build][gate][undo]
 
             return line.contains ("&undo") || line.contains ("getUndoManager()");
         },
-        { "ProjectEdits.cpp", "ProjectFactory.cpp", "ProjectSchema.cpp" });
+        { "edits", "ProjectFactory.cpp", "ProjectSchema.cpp" });
 
     INFO ("undoable property writes outside ProjectEdits:\n" << found.joinIntoString ("\n"));
     CHECK (found.isEmpty());

@@ -184,7 +184,13 @@ add_library(dew_model STATIC
   model/DemoBuilders.cpp
   model/ProjectFactory.cpp
   model/Demos.cpp
-  model/ProjectEdits.cpp
+  model/edits/Arrangement.cpp
+  model/edits/Automation.cpp
+  model/edits/Channels.cpp
+  model/edits/Effects.cpp
+  model/edits/Lookup.cpp
+  model/edits/Presets.cpp
+  model/edits/Structure.cpp
   model/NoteTools.cpp
   model/Meter.cpp
   model/AssetPaths.cpp
