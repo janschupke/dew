@@ -10,12 +10,16 @@ add_executable(dew_tests
   FixtureProject.cpp
   FixtureProjectTests.cpp
   DesignSystemTests.cpp
+  DesignDropdownTests.cpp
+  DesignGalleryTests.cpp
   SchemaTests.cpp
   SettingsTests.cpp
   SelectionTests.cpp
   StatusBarTests.cpp
   ProjectEditsTests.cpp
   PresetTests.cpp
+  PresetLibraryTests.cpp
+  PresetUiTests.cpp
   NoteToolsTests.cpp
   TempoMapTests.cpp
   TransportTests.cpp
@@ -34,6 +38,8 @@ add_executable(dew_tests
   PitchBendTests.cpp
   AutomationLaneTests.cpp
   AutomationTests.cpp
+  AutomationDocumentTests.cpp
+  AutomationTargetTests.cpp
   AutomationRenderTests.cpp
   EffectTests.cpp
   EffectDragTests.cpp
@@ -55,6 +61,8 @@ add_executable(dew_tests
   TimelineRulerTests.cpp
   TypographyTests.cpp
   PianoRollTests.cpp
+  PianoRollVelocityTests.cpp
+  PianoRollViewTests.cpp
   PianoRollEraseTests.cpp
   PianoRollLoopTests.cpp
   PianoRollToolsTests.cpp
