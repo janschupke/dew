@@ -1,0 +1,18 @@
+{
+    "format": "dew-preset",
+    "formatVersion": 1,
+    "kind": "instrument",
+    "type": "soundfont",
+    "name": "Stepped",
+    "description": "Every note at full level and cut short, for playing a kit from the grid.",
+    "state": {
+      "soundfont": {
+        "transpose": 0.0,
+        "tuneCents": 0.0,
+        "filterOffset": 0.0,
+        "attackScale": 1.0,
+        "releaseScale": 0.4,
+        "velocitySens": 0.0
+      }
+    }
+  }

@@ -6,6 +6,7 @@
 #include "io/LiveAudioHost.h"
 #include "io/MidiInputHost.h"
 #include "io/SamplePool.h"
+#include "io/SoundFontPool.h"
 #include "app/ProjectDocument.h"
 #include "ui/ChannelRackComponent.h"
 #include "ui/design/DewLookAndFeel.h"
@@ -203,6 +204,10 @@ private:
         thread was still using it.
     */
     SamplePool samplePool;
+
+    /** Soundfonts, cached the way samples are. Declared beside the sample pool
+        so it outlives the render job that borrows it - see RenderJob below. */
+    SoundFontPool soundFontPool;
 
     /** The one render running, if any. Owned here rather than by the dialog so
         that closing the dialog does not kill the render, and so its destructor

@@ -209,6 +209,40 @@ const NodeSpec& sampleSpec()
     return spec;
 }
 
+/** The soundfont a "soundfont" channel plays.
+
+    Built the way sampleSpec() is, and spliced the same way: the first four
+    properties say WHICH sound - a path, a bank, a program, and the name it had
+    when it was chosen - and the catalog declares the handful of offsets a
+    person sets. A synth channel carries this node too, inert, exactly as every
+    channel already carries a SAMPLE it may never use.
+
+    `presetName` is stored rather than derived so a channel can still say what
+    it was pointed at on a machine that does not have the font. The other three
+    are here rather than in the catalog for the reason a sample's `file` is:
+    they say which sound, not what is done to it, so they do not belong in a
+    preset.
+*/
+const NodeSpec& soundFontSpec()
+{
+    static const NodeSpec spec = []
+    {
+        std::vector<PropSpec> props {
+            { ids::file, "" },
+            { ids::bank, 0 },
+            { ids::program, 0 },
+            { ids::presetName, "" },
+        };
+
+        appendGroup (props,
+                     groupFor (instrumentDescriptor (InstrumentType::soundfont), ids::SOUNDFONT));
+
+        return NodeSpec { ids::SOUNDFONT, std::move (props), {} };
+    }();
+
+    return spec;
+}
+
 const NodeSpec& channelSpec()
 {
     static const NodeSpec spec = []
@@ -245,6 +279,7 @@ const NodeSpec& channelSpec()
                           std::move (props),
                           { { "instrument", &instrumentSpec(), false },
                             { "sample", &sampleSpec(), false },
+                            { "soundfont", &soundFontSpec(), false },
                             { "effects", &effectSpec(), true } } };
     }();
 

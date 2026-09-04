@@ -77,6 +77,15 @@ struct InstrumentContext
     const SampleSettings* sample = nullptr;
     const juce::AudioBuffer<float>* audio = nullptr;
 
+    /** The soundfont a soundfont channel plays, and how its knobs bend it.
+
+        A raw pointer into the snapshot's shared_ptr, which is safe for the
+        reason every other pointer in here is: the audio thread never releases
+        a snapshot, so nothing it is handed can be freed underneath it.
+    */
+    const SoundFontData* soundFont = nullptr;
+    const SoundFontSettings* soundFontSettings = nullptr;
+
     /** Every clip in the arrangement, in the snapshot's own order, plus which
         channel is asking. Deliberately not pre-filtered: Sequencer walks this
         same vector and its iteration order decides note-trigger order, which

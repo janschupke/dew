@@ -63,7 +63,7 @@ TEST_CASE ("an audio channel and its clip round-trip through JSON", "[schema][au
     auto project = ProjectFactory::createDefault();
 
     auto channel = ProjectEdits::addAudioChannel (project, "Take", nullptr);
-    REQUIRE (ProjectEdits::isAudioChannel (channel));
+    REQUIRE (ProjectEdits::playsClips (channel));
 
     ProjectEdits::setSampleSource (channel, "Song Assets/Take 001.wav", 48000, 96000, nullptr);
 
@@ -88,7 +88,7 @@ TEST_CASE ("an audio channel and its clip round-trip through JSON", "[schema][au
     REQUIRE (loaded.tree.isValid());
 
     auto reloaded = ProjectEdits::findChannel (loaded.tree, (int) channel[ids::id]);
-    REQUIRE (ProjectEdits::isAudioChannel (reloaded));
+    REQUIRE (ProjectEdits::playsClips (reloaded));
 
     auto reloadedSample = reloaded.getChildWithName (ids::SAMPLE);
     REQUIRE (reloadedSample[ids::file].toString() == "Song Assets/Take 001.wav");
@@ -122,7 +122,7 @@ TEST_CASE ("a synth channel still carries an inert sample node", "[schema][audio
 
         REQUIRE (sample.isValid());
         REQUIRE (sample[ids::file].toString().isEmpty());
-        REQUIRE (! ProjectEdits::isAudioChannel (channel));
+        REQUIRE (! ProjectEdits::playsClips (channel));
     }
 }
 
@@ -193,7 +193,7 @@ TEST_CASE ("a file written before audio existed still loads", "[schema][audio]")
 
         sawChannel = true;
         REQUIRE (channel.getChildWithName (ids::SAMPLE).isValid());
-        REQUIRE (! ProjectEdits::isAudioChannel (channel));
+        REQUIRE (! ProjectEdits::playsClips (channel));
     }
 
     REQUIRE (sawChannel);
@@ -209,7 +209,7 @@ TEST_CASE ("adding an audio channel is one undo step", "[edits][audio]")
     undo.beginNewTransaction ("Add audio channel");
     const auto channel = ProjectEdits::addAudioChannel (document.getState(), "Take", &undo);
 
-    REQUIRE (ProjectEdits::isAudioChannel (channel));
+    REQUIRE (ProjectEdits::playsClips (channel));
 
     // The kind is set inside the same transaction, so undo cannot leave a synth
     // channel behind where an audio one was asked for.

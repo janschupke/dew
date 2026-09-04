@@ -19,6 +19,13 @@ public:
         z1 = z2 = 0.0f;
     }
 
+    /** A resonant low-pass, which is the shape a sampler's per-region filter
+        is: SoundFont declares a cutoff in absolute cents and a Q in decibels,
+        and has no other filter type. The three shelving shapes above are the
+        EQ effect's; this one is here beside them rather than in the sampler
+        because a biquad is a biquad. */
+    void setLowPass (double sampleRate, float frequency, float qDb) noexcept;
+
     void setLowShelf (double sampleRate, float frequency, float gainDb) noexcept;
     void setPeak (double sampleRate, float frequency, float q, float gainDb) noexcept;
     void setHighShelf (double sampleRate, float frequency, float gainDb) noexcept;

@@ -240,7 +240,7 @@ void InstrumentPanel::refresh()
     // The one place the panel decides which face it is showing. resized() reads
     // the cached answer rather than asking the document again, so the layout
     // and the visibility can never disagree.
-    showingAudio = valid && ProjectEdits::isAudioChannel (channel);
+    showingAudio = valid && ProjectEdits::playsClips (channel);
 
     oscSection.setOwner (showingAudio ? juce::ValueTree()
                                       : channel.getChildWithName (ids::INSTRUMENT));

@@ -397,6 +397,55 @@ const ParamSpec sampleSpecs[] {
     toggleSpec (&ids::loop, "Loop", "LOOP", /*automatable*/ false),
 };
 
+/** A soundfont channel's own settings.
+
+    Every one of them is an OFFSET, not a value, and that is the whole design.
+    An SF2 preset colours an instrument it does not own by adding to the
+    instrument's generators rather than replacing them; these knobs are the same
+    mechanism with a person on the other end, so the font stays authoritative and
+    a channel bends it. A knob that SET a cutoff would silently discard whatever
+    the font's author chose, per region, and there is no honest value to show
+    when a preset spans forty regions that disagree.
+
+    `transpose` is deliberately the same identifier the sample table uses. It
+    means the same thing, in the same units, over the same range - two spellings
+    of one idea is exactly what the rest of this file exists to stop.
+
+    None of them automatable yet: a curve needs a scope to point at, and a
+    SOUNDFONT node has none. The times could not have one anyway - an envelope's
+    stages are latched when a note starts, so a curve moving them halfway through
+    a note that is already sounding has nothing to mean.
+*/
+const ParamSpec soundFontSpecs[] {
+    // A double in the schema, so not integral here - see detuneCents.
+    { &ids::transpose, "Pitch", "PITCH", "", -24.0, 24.0, 0.0, 1.0, 0, ParamCurve::linear,
+      ParamControl::knob, /*bipolar*/ true, /*automatable*/ false },
+
+    { &ids::tuneCents, "Tune", "TUNE", " c", -100.0, 100.0, 0.0, 1.0, 0, ParamCurve::linear,
+      ParamControl::knob, /*bipolar*/ true, /*automatable*/ false },
+
+    // Linear, and that is not an oversight: a cent IS a logarithmic unit, so
+    // this offset is already in the domain ParamCurve::logarithmic exists to
+    // reach. That curve could not be used here anyway - it maps min*(max/min)^v,
+    // which needs a positive minimum, and half of this range is below zero.
+    { &ids::filterOffset, "Filter", "FILTER", " c", -2400.0, 2400.0, 0.0, 10.0, 0,
+      ParamCurve::linear, ParamControl::knob, /*bipolar*/ true, /*automatable*/ false },
+
+    // Multipliers rather than times, because that is what an offset in timecents
+    // IS: the format stores envelope stages logarithmically, so adding to one
+    // scales it. A quarter to four times, with 1 in the middle of the travel.
+    { &ids::attackScale, "Attack", "ATTACK", "x", 0.25, 4.0, 1.0, 0.01, 2, ParamCurve::logarithmic,
+      ParamControl::knob, /*bipolar*/ false, /*automatable*/ false },
+    { &ids::releaseScale, "Release", "RELEASE", "x", 0.25, 4.0, 1.0, 0.01, 2,
+      ParamCurve::logarithmic, ParamControl::knob, /*bipolar*/ false, /*automatable*/ false },
+
+    // How much of the format's velocity-to-attenuation curve is applied. 1 is
+    // what the SF2 specification says; 0 plays every note at full level, which
+    // is what a stepped pattern usually wants.
+    { &ids::velocitySens, "Velocity", "VEL", "", 0.0, 1.0, 1.0, 0.01, 2, ParamCurve::linear,
+      ParamControl::knob, /*bipolar*/ false, /*automatable*/ false },
+};
+
 /** The arrangement's own parameters. One: the tempo.
 
     20..999 reconciles the FOURTH disagreement of the same kind the rest of this
@@ -446,6 +495,20 @@ const ParamGroup audioGroups[] {
     { &ids::SAMPLE, "sample", "Sample", sampleSpecs, (int) std::size (sampleSpecs) },
 };
 
+/** The soundfont channel's. Thin for the same reason the audio one is: what
+    makes one soundfont differ from another is the file, and these are the
+    handful of things done TO it.
+
+    The file, the bank and the program are deliberately NOT here, so they do not
+    travel in a preset - the same line the audio instrument draws. A preset
+    carrying a path points at somebody else's disk, and a bank and program mean
+    nothing against another font. */
+const ParamGroup soundFontGroups[] {
+    { &ids::CHANNEL, "", "Channel", channelSpecs, (int) std::size (channelSpecs), 1,
+      /*inPreset*/ false },
+    { &ids::SOUNDFONT, "soundfont", "SoundFont", soundFontSpecs, (int) std::size (soundFontSpecs) },
+};
+
 /** One declared table, as the vector the accessors hand out.
 
     Returns BY VALUE, and the static that caches it belongs to the accessor
@@ -485,6 +548,7 @@ DEW_PARAM_TABLE (ampParamSpecs, ampSpecs)
 DEW_PARAM_TABLE (oscParamSpecs, oscSpecs)
 DEW_PARAM_TABLE (mixerTrackParamSpecs, mixerTrackSpecs)
 DEW_PARAM_TABLE (sampleParamSpecs, sampleSpecs)
+DEW_PARAM_TABLE (soundFontParamSpecs, soundFontSpecs)
 DEW_PARAM_TABLE (projectParamSpecs, projectSpecs)
 
 #undef DEW_PARAM_TABLE
@@ -494,6 +558,8 @@ const std::vector<InstrumentDescriptor>& instrumentDescriptors()
     static const std::vector<InstrumentDescriptor> all {
         { InstrumentType::synth, "synth", "Synth", synthGroups, (int) std::size (synthGroups) },
         { InstrumentType::audio, "audio", "Audio", audioGroups, (int) std::size (audioGroups) },
+        { InstrumentType::soundfont, "soundfont", "SoundFont", soundFontGroups,
+          (int) std::size (soundFontGroups) },
     };
 
     // The same assertion effectDescriptors() makes, and for the same reason:
@@ -549,8 +615,8 @@ const ParamSpec* instrumentParamSpec (const juce::Identifier& property) noexcept
     // oscillator's level and a mixer track's fader, and `pan` is both a
     // channel's and a track's; the instrument tables are searched first
     // because this is the INSTRUMENT lookup, and the mixer asks for its own.
-    for (const auto* table :
-         { &channelParamSpecs(), &ampParamSpecs(), &oscParamSpecs(), &sampleParamSpecs() })
+    for (const auto* table : { &channelParamSpecs(), &ampParamSpecs(), &oscParamSpecs(),
+                               &sampleParamSpecs(), &soundFontParamSpecs() })
         for (const auto& spec : *table)
             if (*spec.property == property)
                 return &spec;

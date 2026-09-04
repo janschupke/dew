@@ -380,7 +380,7 @@ void StepGridComponent::paint (juce::Graphics& g)
         // Drawn over the WHOLE row rather than only the visible note range,
         // because a sample is continuous and a gap at the edge would read as
         // silence in the recording.
-        if (ProjectEdits::isAudioChannel (channel))
+        if (ProjectEdits::playsClips (channel))
         {
             paintWaveformRow (g, channel, rowBounds, colourValue, muted);
             continue;
@@ -480,10 +480,10 @@ void StepGridComponent::mouseMove (const juce::MouseEvent& event)
     const auto cell = juce::Point<int> (stepAtX (event.x), rowAtY (event.y));
     const auto channel = channelForRow (cell.y);
 
-    // No cell highlight over a waveform: the hover exists to say "a click lands
-    // here", and on an audio row it does not.
+    // No cell highlight on a row that takes no notes: the hover exists to say
+    // "a click lands here", and on a waveform row it does not.
     const auto valid = event.y < getRowsHeight() && channel.isValid()
-                       && ! ProjectEdits::isAudioChannel (channel);
+                       && ProjectEdits::playsNotes (channel);
     const auto wanted = valid ? cell : juce::Point<int> (-1, -1);
 
     // The grid had a hover highlight and no cursor at all, so the one surface in
@@ -540,10 +540,10 @@ void StepGridComponent::applyPaint (const juce::MouseEvent& event)
     if (! channel.isValid())
         return;
 
-    // Checked again here, not only in mouseDown: a drag that began on a synth
-    // row can travel across an audio one, and the run-filling below would paint
-    // right through it.
-    if (ProjectEdits::isAudioChannel (channel))
+    // Checked again here, not only in mouseDown: a drag that began on a row
+    // that takes notes can travel across one that does not, and the run-filling
+    // below would paint right through it.
+    if (! ProjectEdits::playsNotes (channel))
         return;
 
     // A drag reports a handful of positions per second, so at speed it jumps
@@ -594,10 +594,10 @@ void StepGridComponent::mouseDown (const juce::MouseEvent& event)
     if (! channel.isValid())
         return;
 
-    // An audio row is a waveform, not a sequence of cells. Clicking it selects
-    // the channel - that is what clicking a row means everywhere else - but it
-    // must not write a note onto a channel that has no notes to play.
-    if (ProjectEdits::isAudioChannel (channel))
+    // A waveform row is not a sequence of cells. Clicking it selects the
+    // channel - that is what clicking a row means everywhere else - but it must
+    // not write a note onto a channel that has no notes to play.
+    if (! ProjectEdits::playsNotes (channel))
     {
         dragging = false;
         editorState.setSelectedChannelId ((int) channel[ids::id]);

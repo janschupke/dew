@@ -473,6 +473,7 @@ TEST_CASE ("every shipped preset actually applies to its own kind of node", "[pr
     auto project = ProjectFactory::createDefault();
     auto channel = firstChannel (project);
     auto audio = ProjectEdits::addAudioChannel (project, "Take", nullptr);
+    auto soundfont = ProjectEdits::addSoundFontChannel (project, "Font", nullptr);
 
     for (const auto& preset : PresetLibrary::all())
     {
@@ -480,7 +481,12 @@ TEST_CASE ("every shipped preset actually applies to its own kind of node", "[pr
 
         if (preset.isInstrument())
         {
-            const auto target = preset.typeId == "audio" ? audio : channel;
+            // A target of the preset's own kind: applyInstrumentPreset refuses
+            // a mismatch, which is the point of it, so one shared target would
+            // be testing the refusal rather than the preset.
+            const auto target = preset.typeId == "audio"       ? audio
+                                : preset.typeId == "soundfont" ? soundfont
+                                                               : channel;
             CHECK (ProjectEdits::applyInstrumentPreset (target, preset, nullptr));
             continue;
         }

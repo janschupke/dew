@@ -1,5 +1,9 @@
 #pragma once
 
+#include <optional>
+
+#include "model/InstrumentType.h"
+
 #include <juce_data_structures/juce_data_structures.h>
 
 #include "model/AutomationCurve.h"
@@ -112,7 +116,28 @@ struct ProjectEdits
     static juce::ValueTree addAudioChannel (juce::ValueTree project, const juce::String& name,
                                             juce::UndoManager*);
 
-    static bool isAudioChannel (const juce::ValueTree& channel);
+    /** A channel that plays a soundfont. The same in every other respect. */
+    static juce::ValueTree addSoundFontChannel (juce::ValueTree project, const juce::String& name,
+                                                juce::UndoManager*);
+
+    /** What kind of instrument a channel carries, or nothing if its stored
+        `source` is one this build does not know. An optional rather than a
+        fallback, for the reason instrumentTypeFor returns one. */
+    static std::optional<InstrumentType> instrumentTypeOf (const juce::ValueTree& channel);
+
+    /** Whether notes drive this channel - a step grid, a piano roll, a pattern.
+
+        Named for the question rather than for the kind, because it was
+        `isAudioChannel` negated at four call sites that each meant something
+        different by it, and a third kind of instrument made two of those
+        answers wrong. A soundfont channel takes notes; an audio channel does
+        not.
+    */
+    static bool playsNotes (const juce::ValueTree& channel);
+
+    /** Whether this channel's sound is clips on the playlist: whether it draws
+        a waveform instead of steps, and whether it can be recorded into. */
+    static bool playsClips (const juce::ValueTree& channel);
 
     /** Points an audio channel at a file, and records what was found in it.
 
@@ -123,6 +148,17 @@ struct ProjectEdits
     static void setSampleSource (juce::ValueTree channel,
                                  const juce::String& relativeOrAbsolutePath, int sourceSampleRate,
                                  int lengthSamples, juce::UndoManager*);
+
+    /** Points a soundfont channel at a file and a sound inside it.
+
+        The name is stored alongside the bank and program so the channel can
+        still say what it was pointed at on a machine that does not have the
+        font - a bank and a program alone read as "0:0".
+    */
+    static void setSoundFontSource (juce::ValueTree channel,
+                                    const juce::String& relativeOrAbsolutePath, int bank,
+                                    int program, const juce::String& presetName,
+                                    juce::UndoManager*);
 
     static void removeChannel (juce::ValueTree project, juce::ValueTree channel,
                                juce::UndoManager*);

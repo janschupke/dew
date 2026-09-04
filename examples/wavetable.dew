@@ -1,5 +1,5 @@
 {
-    "formatVersion": 12,
+    "formatVersion": 13,
     "name": "Drift",
     "tempoBpm": 84.0,
     "stepsPerBeat": 4,
@@ -85,6 +85,18 @@
           "transpose": 0.0,
           "reverse": false,
           "loop": false
+        },
+        "soundfont": {
+          "file": "",
+          "bank": 0,
+          "program": 0,
+          "presetName": "",
+          "transpose": 0.0,
+          "tuneCents": 0.0,
+          "filterOffset": 0.0,
+          "attackScale": 1.0,
+          "releaseScale": 1.0,
+          "velocitySens": 1.0
         },
         "effects": [
           {
@@ -212,6 +224,18 @@
           "reverse": false,
           "loop": false
         },
+        "soundfont": {
+          "file": "",
+          "bank": 0,
+          "program": 0,
+          "presetName": "",
+          "transpose": 0.0,
+          "tuneCents": 0.0,
+          "filterOffset": 0.0,
+          "attackScale": 1.0,
+          "releaseScale": 1.0,
+          "velocitySens": 1.0
+        },
         "effects": []
       },
       {
@@ -292,6 +316,18 @@
           "transpose": 0.0,
           "reverse": false,
           "loop": false
+        },
+        "soundfont": {
+          "file": "",
+          "bank": 0,
+          "program": 0,
+          "presetName": "",
+          "transpose": 0.0,
+          "tuneCents": 0.0,
+          "filterOffset": 0.0,
+          "attackScale": 1.0,
+          "releaseScale": 1.0,
+          "velocitySens": 1.0
         },
         "effects": []
       },
@@ -374,6 +410,18 @@
           "reverse": false,
           "loop": false
         },
+        "soundfont": {
+          "file": "",
+          "bank": 0,
+          "program": 0,
+          "presetName": "",
+          "transpose": 0.0,
+          "tuneCents": 0.0,
+          "filterOffset": 0.0,
+          "attackScale": 1.0,
+          "releaseScale": 1.0,
+          "velocitySens": 1.0
+        },
         "effects": []
       },
       {
@@ -454,6 +502,18 @@
           "transpose": 0.0,
           "reverse": false,
           "loop": false
+        },
+        "soundfont": {
+          "file": "",
+          "bank": 0,
+          "program": 0,
+          "presetName": "",
+          "transpose": 0.0,
+          "tuneCents": 0.0,
+          "filterOffset": 0.0,
+          "attackScale": 1.0,
+          "releaseScale": 1.0,
+          "velocitySens": 1.0
         },
         "effects": []
       }

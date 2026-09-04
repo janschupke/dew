@@ -117,8 +117,16 @@ struct NodeSpec
     as it did, and a v12 file opened in an older build loses a colour somebody
     chose rather than being misread. Bumped for that: losing it silently on the
     next save is what the version gate is for.
+
+    v13 gave every channel a SOUNDFONT node, so a channel can play a soundfont
+    file the way it can play a recording. Additive, and inert on the channels
+    that do not use it - the same shape the SAMPLE node has had since v7, and
+    for the same reason: the canonical tree is one shape whatever a channel
+    turns out to be. An earlier file loads as what it was, and a v13 file opened
+    in an older build loses the font a channel was pointed at rather than
+    misreading it. Bumped for that.
 */
-inline constexpr int kFormatVersion = 12;
+inline constexpr int kFormatVersion = 13;
 
 /** How many effects one channel or mixer track may carry. A document limit
     rather than an engine one: a chain longer than this cannot be saved, so it

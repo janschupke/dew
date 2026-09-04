@@ -1,0 +1,18 @@
+{
+    "format": "dew-preset",
+    "formatVersion": 1,
+    "kind": "instrument",
+    "type": "soundfont",
+    "name": "Softened",
+    "description": "Slower on and off, and a little darker, for a font that starts too hard.",
+    "state": {
+      "soundfont": {
+        "transpose": 0.0,
+        "tuneCents": 0.0,
+        "filterOffset": -600.0,
+        "attackScale": 2.5,
+        "releaseScale": 2.0,
+        "velocitySens": 1.0
+      }
+    }
+  }

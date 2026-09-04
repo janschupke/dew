@@ -20,6 +20,23 @@ void Biquad::setCoefficients (double b0n, double b1n, double b2n, double a0n, do
     a2 = (float) (a2n * inverse);
 }
 
+void Biquad::setLowPass (double sampleRate, float frequency, float qDb) noexcept
+{
+    const auto w = juce::MathConstants<double>::twoPi
+                   * juce::jlimit (10.0, sampleRate * 0.49, (double) frequency) / sampleRate;
+    const auto cosw = std::cos (w), sinw = std::sin (w);
+
+    // SoundFont states resonance in decibels of peak gain, not as a Q, so it is
+    // converted here rather than at every call site. 0dB is Q = 1/sqrt(2), the
+    // flattest a low-pass gets, which is what the format's default means.
+    const auto q = std::pow (10.0, (double) juce::jlimit (0.0f, 96.0f, qDb) / 20.0)
+                   * juce::MathConstants<double>::sqrt2 / 2.0;
+    const auto alpha = sinw / (2.0 * juce::jmax (0.05, q));
+
+    setCoefficients ((1.0 - cosw) / 2.0, 1.0 - cosw, (1.0 - cosw) / 2.0, 1.0 + alpha, -2.0 * cosw,
+                     1.0 - alpha);
+}
+
 void Biquad::setLowShelf (double sampleRate, float frequency, float gainDb) noexcept
 {
     const auto A = std::pow (10.0, (double) gainDb / 40.0);

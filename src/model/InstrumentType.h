@@ -19,11 +19,12 @@ namespace dew
 enum class InstrumentType
 {
     synth,
-    audio
+    audio,
+    soundfont
 };
 
 // clang-format on
-inline constexpr int kNumInstrumentTypes = 2;
+inline constexpr int kNumInstrumentTypes = 3;
 
 // clang-format off
 /** An oscillator slot's closed string enums, here for the same reason

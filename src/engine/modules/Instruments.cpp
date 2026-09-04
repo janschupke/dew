@@ -56,4 +56,46 @@ void SampleInstrument::processAddMono (const InstrumentContext& ctx, float* out,
                              *ctx.transport.tempoMap, ctx.transport.sampleRate);
 }
 
+void SoundFontInstrument::prepare (double sampleRate, int)
+{
+    channel.prepare (sampleRate);
+}
+
+void SoundFontInstrument::reset() noexcept
+{
+    channel.reset();
+}
+
+void SoundFontInstrument::processAdd (const InstrumentContext& ctx, StereoView out) noexcept
+{
+    // A channel whose font is missing from this machine plays nothing, and says
+    // so through the snapshot's warnings rather than here - the audio thread is
+    // not where a person finds out that a file has moved.
+    if (ctx.soundFont == nullptr || ctx.soundFontSettings == nullptr)
+        return;
+
+    const auto* preset = ctx.soundFont->presetFor (ctx.soundFontSettings->bank,
+                                                   ctx.soundFontSettings->program);
+
+    if (preset == nullptr)
+        return;
+
+    for (const auto& event : ctx.events)
+    {
+        switch (event.kind)
+        {
+            case NoteEvent::Kind::on:
+                channel.noteOn (*ctx.soundFont, *preset, event.pitch, event.velocity,
+                                *ctx.soundFontSettings, event.durationSamples, event.sampleOffset);
+                break;
+
+            case NoteEvent::Kind::off: channel.noteOff (event.pitch); break;
+
+            case NoteEvent::Kind::allOff: channel.allNotesOff(); break;
+        }
+    }
+
+    channel.renderAdd (out.left, out.right, out.numSamples);
+}
+
 } // namespace dew

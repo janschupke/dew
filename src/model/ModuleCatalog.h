@@ -179,6 +179,11 @@ const std::vector<ParamSpec>& projectParamSpecs();
     its decimals and its default from. */
 const std::vector<ParamSpec>& sampleParamSpecs();
 
+/** A soundfont channel's offsets onto the font: pitch, tuning, filter, the two
+    envelope multipliers and velocity sensitivity. Offsets rather than values,
+    because an SF2 preset colours an instrument the same way - see the table. */
+const std::vector<ParamSpec>& soundFontParamSpecs();
+
 /** A mixer track's fader and pan.
 
     Separate from the channel's, because `gain` and `pan` mean different things

@@ -9,6 +9,8 @@
 #include "engine/TempoMap.h"
 #include "model/AutomationCurve.h"
 #include "model/AutomationTargets.h"
+#include "engine/SoundFontProvider.h"
+#include "engine/SoundFontVoice.h"
 #include "model/InstrumentType.h"
 #include "model/ProjectSchema.h"
 #include "engine/Effects.h"
@@ -202,6 +204,7 @@ struct ChannelSnapshot
 
     InstrumentType source = InstrumentType::synth;
     SampleSettings sample;
+    SoundFontSettings soundFontSettings;
 
     /** The audio an "audio" channel plays, or null.
 
@@ -217,6 +220,17 @@ struct ChannelSnapshot
         would be a correctness bug, not a style question.
     */
     std::shared_ptr<const juce::AudioBuffer<float>> audio;
+
+    /** The soundfont a "soundfont" channel plays, or null.
+
+        The SECOND member that is not trivially copyable, and it is safe for
+        exactly the reason `audio` above is - every copy and every release
+        happens on the message thread, inside publish(). The warning there
+        applies to both: a change that copied a snapshot on the audio thread
+        would turn a refcount decrement into a possible deallocation in the
+        render path.
+    */
+    std::shared_ptr<const SoundFontData> soundFont;
 };
 
 struct NoteSnapshot
@@ -452,6 +466,7 @@ struct SampleProvider;
     channels silent rather than reading files from the render path.
 */
 EngineSnapshot buildSnapshot (const juce::ValueTree& project, juce::StringArray* warnings = nullptr,
-                              SampleProvider* samples = nullptr);
+                              SampleProvider* samples = nullptr,
+                              SoundFontProvider* soundFonts = nullptr);
 
 } // namespace dew

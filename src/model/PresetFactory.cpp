@@ -69,6 +69,25 @@ Preset audioPreset (const char* name, const char* description,
     return { "instrument", "audio", name, description, juce::var (state) };
 }
 
+// clang-format off
+/** A soundfont preset: the offsets, and nothing that says which font.
+
+    The file, the bank and the program are deliberately outside a preset - the
+    same line the audio instrument draws, and for the same reason. A preset
+    carrying a path points at somebody else's disk, and a bank and program mean
+    nothing against another font. So what a soundfont preset can honestly carry
+    is how the font is BENT, which is exactly what these six knobs are.
+*/
+Preset soundFontPreset (const char* name, const char* description,
+                        std::initializer_list<Value> soundfont)
+{
+    auto* state = new juce::DynamicObject();
+    state->setProperty ("soundfont", objectOf (soundfont));
+
+    // clang-format on
+    return { "instrument", "soundfont", name, description, juce::var (state) };
+}
+
 /** A classic oscillator slot. Gains are well under the 0.8 a single slot
     defaults to wherever more than one is on: three at full gain is three times
     the level of everything else, which is why makeOscillatorSlot switches all
@@ -253,6 +272,18 @@ Preset reverseSwell() { return audioPreset ("Reverse Swell",
                               { &ids::transpose, 0.0 }, { &ids::reverse, true },
                               { &ids::loop, false } }); }
 
+Preset softenedFont()  { return soundFontPreset ("Softened",
+                            "Slower on and off, and a little darker, for a font that starts too hard.",
+                            { { &ids::transpose, 0.0 }, { &ids::tuneCents, 0.0 },
+                              { &ids::filterOffset, -600.0 }, { &ids::attackScale, 2.5 },
+                              { &ids::releaseScale, 2.0 }, { &ids::velocitySens, 1.0 } }); }
+
+Preset steppedFont()   { return soundFontPreset ("Stepped",
+                            "Every note at full level and cut short, for playing a kit from the grid.",
+                            { { &ids::transpose, 0.0 }, { &ids::tuneCents, 0.0 },
+                              { &ids::filterOffset, 0.0 }, { &ids::attackScale, 1.0 },
+                              { &ids::releaseScale, 0.4 }, { &ids::velocitySens, 0.0 } }); }
+
 } // namespace
 
 const std::vector<PresetFactory::Entry>& PresetFactory::presets()
@@ -283,6 +314,8 @@ const std::vector<PresetFactory::Entry>& PresetFactory::presets()
         { "morphing-sweep.dewpreset", &morphingSweep },
         { "looped-bed.dewpreset",     &loopedBed },
         { "reverse-swell.dewpreset",  &reverseSwell },
+        { "softened.dewpreset",       &softenedFont },
+        { "stepped.dewpreset",        &steppedFont },
     };
 
     // clang-format on

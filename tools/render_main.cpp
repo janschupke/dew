@@ -3,6 +3,7 @@
 #include "BuildInfo.h"
 #include "io/OfflineRenderer.h"
 #include "io/SamplePool.h"
+#include "io/SoundFontPool.h"
 #include "model/PresetFactory.h"
 #include "model/PresetSerializer.h"
 #include "model/ProjectFactory.h"
@@ -242,6 +243,10 @@ int main (int argc, char* argv[])
     dew::SamplePool samplePool;
     samplePool.setProjectFile (projectFile);
     options.samplePool = &samplePool;
+
+    dew::SoundFontPool soundFontPool;
+    soundFontPool.setProjectFile (projectFile);
+    options.soundFontPool = &soundFontPool;
 
     // --- format ---------------------------------------------------------------
     if (args.has ("--format") && ! parseFormat (args.value ("--format"), options.format))

@@ -93,7 +93,7 @@ void AudioEngine::releaseResources()
 
 void AudioEngine::setProject (const juce::ValueTree& project, juce::StringArray* warnings)
 {
-    publish (buildSnapshot (project, warnings, samplePool));
+    publish (buildSnapshot (project, warnings, samplePool, soundFontPool));
 }
 
 void AudioEngine::publish (EngineSnapshot snapshot)
@@ -923,6 +923,8 @@ void AudioEngine::renderChannels (const EngineSnapshot& snapshot, int numChannel
             blockContext.amp = &channel.amp;
             blockContext.sample = &channel.sample;
             blockContext.audio = channel.audio.get();
+            blockContext.soundFont = channel.soundFont.get();
+            blockContext.soundFontSettings = &channel.soundFontSettings;
             blockContext.channelIndex = i;
 
             instrument->processAdd (blockContext, { sourceLeft, sourceRight, numSamples });

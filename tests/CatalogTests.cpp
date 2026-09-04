@@ -219,7 +219,8 @@ TEST_CASE ("every parameter has a place in its block, and mix is first", "[catal
 namespace
 {
 
-const juce::Array<InstrumentType> allInstruments { InstrumentType::synth, InstrumentType::audio };
+const juce::Array<InstrumentType> allInstruments { InstrumentType::synth, InstrumentType::audio,
+                                                   InstrumentType::soundfont };
 
 } // namespace
 

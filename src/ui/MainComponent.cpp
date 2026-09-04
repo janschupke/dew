@@ -61,6 +61,7 @@ MainComponent::MainComponent (bool openAudioDevice)
     // Before the first projectChanged(), or the opening snapshot would resolve
     // every audio channel to silence.
     engine.setSamplePool (&samplePool);
+    engine.setSoundFontPool (&soundFontPool);
 
     addAndMakeVisible (transportBar);
     addAndMakeVisible (tabs);
@@ -158,6 +159,7 @@ void MainComponent::projectChanged()
     // Before the snapshot: a relative audio path can only be resolved against
     // where the document lives, and Save As moves that out from under it.
     samplePool.setProjectFile (document.getFile());
+    soundFontPool.setProjectFile (document.getFile());
 
     juce::StringArray warnings;
     engine.setProject (document.getState(), &warnings);
@@ -398,7 +400,7 @@ juce::String MainComponent::toggleRecording()
     const auto channel = ProjectEdits::findChannel (document.getState(),
                                                     editorState.getArmedChannelId());
 
-    if (! channel.isValid() || ! ProjectEdits::isAudioChannel (channel))
+    if (! channel.isValid() || ! ProjectEdits::playsClips (channel))
         return "Arm an audio channel first: add one with + Audio, then click its R button.";
 
     // Asked for here rather than at startup, so the microphone prompt arrives
@@ -623,6 +625,7 @@ void MainComponent::startRender (const RenderPanel::Request& request, Settings* 
             // alone, and says nothing about it. The pool outlives the job - see the
             // declaration order in the header.
             job.options.samplePool = &samplePool;
+            job.options.soundFontPool = &soundFontPool;
 
             statusBar.showMessage ("Rendering " + destination.getFileName() + "...",
                                    StatusBar::Severity::info);

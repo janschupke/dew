@@ -27,6 +27,7 @@ std::unique_ptr<InstrumentModule> createInstrumentModule (InstrumentType type)
     {
         case InstrumentType::synth: return std::make_unique<SynthInstrument>();
         case InstrumentType::audio: return std::make_unique<SampleInstrument>();
+        case InstrumentType::soundfont: return std::make_unique<SoundFontInstrument>();
     }
 
     return {};

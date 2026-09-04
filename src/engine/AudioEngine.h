@@ -53,6 +53,22 @@ public:
         return samplePool;
     }
 
+    /** The same, for soundfont channels. A second pointer rather than one
+        provider that answers both questions: reading a WAV and reading a
+        soundfont share nothing but the word "file", and one interface with two
+        unrelated methods would make every caller that has only one of them
+        implement a stub. Null leaves soundfont channels silent.
+    */
+    void setSoundFontPool (SoundFontProvider* provider) noexcept
+    {
+        soundFontPool = provider;
+    }
+
+    SoundFontProvider* getSoundFontPool() const noexcept
+    {
+        return soundFontPool;
+    }
+
     /** How many effect modules exist. For the test that pins the laziness: the
         pool used to build every type in every unit up front, whether or not a
         project used one. */
@@ -285,6 +301,7 @@ private:
     Transport transport;
 
     SampleProvider* samplePool = nullptr;
+    SoundFontProvider* soundFontPool = nullptr;
 
     /** Each channel's instruments, made on the message thread and never
         destroyed - the same lifetime rule the effect pool follows, and for the

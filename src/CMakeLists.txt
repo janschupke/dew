@@ -117,6 +117,8 @@ juce_add_binary_data(dew_preset_data
     "${CMAKE_SOURCE_DIR}/presets/morphing-sweep.dewpreset"
     "${CMAKE_SOURCE_DIR}/presets/looped-bed.dewpreset"
     "${CMAKE_SOURCE_DIR}/presets/reverse-swell.dewpreset"
+    "${CMAKE_SOURCE_DIR}/presets/softened.dewpreset"
+    "${CMAKE_SOURCE_DIR}/presets/stepped.dewpreset"
 )
 
 # ------------------------------------------------------------------------------
@@ -225,6 +227,8 @@ add_library(dew_engine STATIC
   engine/SynthVoice.cpp
   engine/SynthChannel.cpp
   engine/SamplePlayer.cpp
+    engine/SoundFontChannel.cpp
+    engine/SoundFontVoice.cpp
   engine/MixerBus.cpp
   engine/AudioEngine.cpp
   engine/RenderPost.cpp
@@ -245,6 +249,8 @@ target_link_libraries(dew_engine
 # ------------------------------------------------------------------------------
 add_library(dew_io STATIC
   io/SamplePool.cpp
+    io/SoundFontFile.cpp
+    io/SoundFontPool.cpp
   io/OfflineRenderer.cpp
   io/MidiExporter.cpp
   io/RenderJob.cpp

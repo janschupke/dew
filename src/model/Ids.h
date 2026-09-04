@@ -14,6 +14,7 @@
               OSC (x kMaxOscillators)  -> "oscillators": []
               AMP                      -> "amp": {}
             SAMPLE                     -> "sample": {}
+            SOUNDFONT                  -> "soundfont": {}
             EFFECT*                    -> "effects": []
           PATTERN*                     -> "patterns": []
             NOTE*                      -> "notes": []
@@ -50,6 +51,7 @@ DEW_DECLARE_ID (INSTRUMENT)
 DEW_DECLARE_ID (OSC)
 DEW_DECLARE_ID (AMP)
 DEW_DECLARE_ID (SAMPLE)
+DEW_DECLARE_ID (SOUNDFONT)
 DEW_DECLARE_ID (PATTERN)
 DEW_DECLARE_ID (NOTE)
 DEW_DECLARE_ID (PLAYLIST)
@@ -128,6 +130,24 @@ DEW_DECLARE_ID (fadeOutMs)
 DEW_DECLARE_ID (transpose)
 DEW_DECLARE_ID (reverse)
 DEW_DECLARE_ID (loop)
+
+// --- soundfont channels ------------------------------------------------------
+// Which sound inside the file. `file` above is reused - a stored path is a
+// stored path - but one soundfont holds many presets, so a path alone does not
+// say what to play. `presetName` is stored rather than looked up so a channel
+// can still say what it was pointed at when the font is missing from a machine.
+DEW_DECLARE_ID (bank)
+DEW_DECLARE_ID (program)
+DEW_DECLARE_ID (presetName)
+
+// The knobs. Each is an SF2 preset-level generator OFFSET - the mechanism the
+// format itself uses to let a preset colour an instrument it does not own - so
+// the font stays authoritative and these bend it.
+DEW_DECLARE_ID (tuneCents)
+DEW_DECLARE_ID (filterOffset)
+DEW_DECLARE_ID (attackScale)
+DEW_DECLARE_ID (releaseScale)
+DEW_DECLARE_ID (velocitySens)
 
 // --- automation --------------------------------------------------------------
 DEW_DECLARE_ID (scope)

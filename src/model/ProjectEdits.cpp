@@ -247,9 +247,34 @@ juce::ValueTree ProjectEdits::addAudioChannel (juce::ValueTree project, const ju
     return channel;
 }
 
-bool ProjectEdits::isAudioChannel (const juce::ValueTree& channel)
+juce::ValueTree ProjectEdits::addSoundFontChannel (juce::ValueTree project,
+                                                   const juce::String& name,
+                                                   juce::UndoManager* undo)
 {
-    return channel[ids::source].toString() == "audio";
+    auto channel = addChannel (project, name.isNotEmpty() ? name : "SoundFont", undo);
+
+    // In the same transaction, for the reason addAudioChannel does it here.
+    channel.setProperty (ids::source, instrumentTypeToString (InstrumentType::soundfont), undo);
+    return channel;
+}
+
+std::optional<InstrumentType> ProjectEdits::instrumentTypeOf (const juce::ValueTree& channel)
+{
+    return instrumentTypeFor (channel[ids::source].toString());
+}
+
+bool ProjectEdits::playsNotes (const juce::ValueTree& channel)
+{
+    // An unknown source plays as a synth, which buildSnapshot already decided;
+    // agreeing with it here is what keeps the editor and the engine showing the
+    // same channel.
+    const auto type = instrumentTypeOf (channel).value_or (InstrumentType::synth);
+    return type == InstrumentType::synth || type == InstrumentType::soundfont;
+}
+
+bool ProjectEdits::playsClips (const juce::ValueTree& channel)
+{
+    return instrumentTypeOf (channel).value_or (InstrumentType::synth) == InstrumentType::audio;
 }
 
 void ProjectEdits::setSampleSource (juce::ValueTree channel, const juce::String& path,
@@ -269,6 +294,21 @@ void ProjectEdits::setSampleSource (juce::ValueTree channel, const juce::String&
     // recording whose predecessor was trimmed to a shorter region.
     sample.setProperty (ids::startSample, 0, undo);
     sample.setProperty (ids::endSample, 0, undo);
+}
+
+void ProjectEdits::setSoundFontSource (juce::ValueTree channel, const juce::String& path, int bank,
+                                       int program, const juce::String& presetName,
+                                       juce::UndoManager* undo)
+{
+    auto node = channel.getChildWithName (ids::SOUNDFONT);
+
+    if (! node.isValid())
+        return;
+
+    node.setProperty (ids::file, path, undo);
+    node.setProperty (ids::bank, juce::jlimit (0, 128, bank), undo);
+    node.setProperty (ids::program, juce::jlimit (0, 127, program), undo);
+    node.setProperty (ids::presetName, presetName, undo);
 }
 
 void ProjectEdits::removeChannel (juce::ValueTree project, juce::ValueTree channel,
@@ -1375,7 +1415,12 @@ bool ProjectEdits::applyInstrumentPreset (juce::ValueTree channel, const Preset&
             continue;
 
         const auto value = object->getProperty (juce::Identifier (group.jsonKey));
-        const auto parent = (*group.node == ids::SAMPLE) ? channel : instrument;
+        // Which node a group lives on, not which name it happens to have. It
+        // was a compare against ids::SAMPLE alone, and a third instrument whose
+        // parameters also hang off the CHANNEL would have had every one of them
+        // written into an INSTRUMENT child that does not contain them - a
+        // preset that loaded, reported success and changed nothing.
+        const auto parent = channel.getChildWithName (*group.node).isValid() ? channel : instrument;
 
         if (group.count <= 1)
         {

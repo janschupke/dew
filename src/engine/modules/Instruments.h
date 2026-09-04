@@ -2,6 +2,7 @@
 
 #include "engine/InstrumentModule.h"
 #include "engine/SamplePlayer.h"
+#include "engine/SoundFontChannel.h"
 #include "engine/SynthChannel.h"
 
 namespace dew
@@ -39,6 +40,24 @@ public:
 
 private:
     void processAddMono (const InstrumentContext&, float* out, int numSamples) noexcept override;
+};
+
+/** A soundfont's regions, played from note events.
+
+    The one instrument that writes a genuinely different left and right: a
+    region carries a pan, and a fifth of the samples in a real library are one
+    half of a stereo pair. It therefore implements the stereo ABI directly
+    rather than widening through MonoInstrumentModule.
+*/
+class SoundFontInstrument final : public InstrumentModule
+{
+public:
+    void prepare (double sampleRate, int maximumBlockSize) override;
+    void reset() noexcept override;
+    void processAdd (const InstrumentContext&, StereoView out) noexcept override;
+
+private:
+    SoundFontChannel channel;
 };
 
 } // namespace dew

@@ -119,7 +119,7 @@ public:
         volumeKnob.setValue ((double) channel[ids::volume], juce::dontSendNotification);
         panKnob.setValue ((double) channel[ids::pan], juce::dontSendNotification);
 
-        const auto audio = ProjectEdits::isAudioChannel (channel);
+        const auto audio = ProjectEdits::playsClips (channel);
         armButton.setVisible (audio);
         armButton.setToggleState (audio && editorState.getArmedChannelId() == getChannelId(),
                                   juce::dontSendNotification);
@@ -161,7 +161,7 @@ public:
         // cannot drift into the mute and solo buttons. An audio channel has the
         // arm toggle in this slot instead: a recording has no base pitch, and a
         // number that means nothing is worse than no number.
-        if (! ProjectEdits::isAudioChannel (channel))
+        if (ProjectEdits::playsNotes (channel))
         {
             g.setColour (colour::textDisabled);
             g.setFont (type::font (type::caption));

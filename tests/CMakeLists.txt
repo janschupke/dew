@@ -61,6 +61,10 @@ add_executable(dew_tests
   WaveformPeaksTests.cpp
   AudioClipTests.cpp
   SamplePlayerTests.cpp
+  FixtureSoundFont.cpp
+  SoundFontCorpusTests.cpp
+  SoundFontFileTests.cpp
+  SoundFontTests.cpp
   AssetPathTests.cpp
   AudioRecorderTests.cpp
   AudioUiTests.cpp

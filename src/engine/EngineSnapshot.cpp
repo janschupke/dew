@@ -391,6 +391,64 @@ namespace
     against what the document claims, so a trim left over from a longer take
     cannot make the render path read off the end of a shorter one.
 */
+/** Fills in a soundfont channel's offsets, and fetches its font.
+
+    The knobs are read as OFFSETS - the SF2 mechanism for colouring an
+    instrument you do not own - so nothing here has to be clamped against the
+    font. What it plays is decided per region when a note starts, against
+    values the loader already validated against the sample pool.
+*/
+void readSoundFont (ChannelSnapshot& c, const juce::ValueTree& channel,
+                    SoundFontProvider* soundFonts,
+                    const std::function<void (const juce::String&)>& warn)
+{
+    const auto node = channel.getChildWithName (ids::SOUNDFONT);
+
+    if (! node.isValid())
+        return;
+
+    auto& settings = c.soundFontSettings;
+
+    const auto read = [&node] (const juce::Identifier& property)
+    {
+        const auto& spec = requireInstrumentParamSpec (property);
+        return (float) juce::jlimit (spec.minimum, spec.maximum, (double) node[property]);
+    };
+
+    settings.bank = juce::jlimit (0, 128, (int) node[ids::bank]);
+    settings.program = juce::jlimit (0, 127, (int) node[ids::program]);
+    settings.transposeSemitones = read (ids::transpose);
+    settings.tuneCents = read (ids::tuneCents);
+    settings.filterOffsetCents = read (ids::filterOffset);
+    settings.attackScale = read (ids::attackScale);
+    settings.releaseScale = read (ids::releaseScale);
+    settings.velocitySensitivity = read (ids::velocitySens);
+
+    const auto path = node[ids::file].toString();
+
+    if (path.isEmpty() || soundFonts == nullptr)
+        return;
+
+    auto font = soundFonts->soundFontFor (path);
+
+    if (font == nullptr)
+    {
+        warn ("Channel \"" + channel[ids::name].toString() + "\" refers to soundfont \"" + path
+              + "\", which could not be read; it will not play.");
+        return;
+    }
+
+    if (font->presetFor (settings.bank, settings.program) == nullptr)
+    {
+        warn ("Channel \"" + channel[ids::name].toString() + "\" asks for \""
+              + node[ids::presetName].toString() + "\", which \"" + path
+              + "\" does not contain; it will not play.");
+        return;
+    }
+
+    c.soundFont = font;
+}
+
 void readSample (ChannelSnapshot& c, const juce::ValueTree& channel, SampleProvider* samples,
                  const std::function<void (const juce::String&)>& warn)
 {
@@ -456,7 +514,7 @@ void readSample (ChannelSnapshot& c, const juce::ValueTree& channel, SampleProvi
 } // namespace
 
 EngineSnapshot buildSnapshot (const juce::ValueTree& project, juce::StringArray* warnings,
-                              SampleProvider* samples)
+                              SampleProvider* samples, SoundFontProvider* soundFonts)
 {
     const auto warn = [warnings] (const juce::String& message)
     {
@@ -587,6 +645,8 @@ EngineSnapshot buildSnapshot (const juce::ValueTree& project, juce::StringArray*
 
         if (c.source == InstrumentType::audio)
             readSample (c, channel, samples, warn);
+        else if (c.source == InstrumentType::soundfont)
+            readSoundFont (c, channel, soundFonts, warn);
 
         snapshot.channels.push_back (c);
     }

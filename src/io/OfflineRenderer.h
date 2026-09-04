@@ -56,6 +56,7 @@ struct BarRange
     playback works, and a changed default would move them all at once.
 */
 class SamplePool;
+class SoundFontPool;
 
 struct RenderOptions
 {
@@ -67,6 +68,16 @@ struct RenderOptions
         synth parts alone, and say nothing about it.
     */
     SamplePool* samplePool = nullptr;
+
+    /** Where soundfont channels get their fonts.
+
+        The same rule, and the same failure if it is forgotten: a song using a
+        soundfont would export as everything else, and say nothing about it.
+        OfflineRenderer builds its OWN snapshot, so anything buildSnapshot needs
+        has to arrive through here or be silently dropped from every render and
+        every stem.
+    */
+    SoundFontPool* soundFontPool = nullptr;
 
     double sampleRate = kDefaultSampleRate;
     int blockSize = kDefaultBlockSize;
