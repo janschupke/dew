@@ -147,6 +147,8 @@ add_library(dew_lang STATIC
   lang/Schema.cpp
   lang/Score.cpp
   lang/Resolver.cpp
+  lang/ResolverParts.cpp
+  lang/ResolverVoices.cpp
   lang/Harmony.cpp
   lang/Voicing.cpp
   lang/Melody.cpp
