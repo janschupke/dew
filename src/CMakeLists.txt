@@ -339,6 +339,7 @@ add_library(dew_ui STATIC
   ui/TimelineRuler.cpp
   ui/StepGridComponent.cpp
   ui/ChannelRackComponent.cpp
+  ui/ChannelRackHeader.cpp
   ui/PianoRollToolbar.cpp
   ui/RandomizePanel.cpp
   ui/PianoRollComponent.cpp

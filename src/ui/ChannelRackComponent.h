@@ -5,6 +5,7 @@
 #include "engine/AudioEngine.h"
 #include "app/ProjectDocument.h"
 #include "ui/ConfirmPanel.h"
+#include "ui/ChannelRackHeader.h"
 #include "ui/EditorState.h"
 #include "ui/ParamContextMenu.h"
 #include "ui/TimelineRuler.h"
@@ -63,8 +64,6 @@ public:
     juce::StringArray channelMenuItems (int channelId) const;
 
 private:
-    class ChannelHeader;
-
     void valueTreeChildAdded (juce::ValueTree&, juce::ValueTree&) override;
     void valueTreeChildRemoved (juce::ValueTree&, juce::ValueTree&, int) override;
     void valueTreePropertyChanged (juce::ValueTree&, const juce::Identifier&) override;
@@ -80,7 +79,7 @@ private:
     AudioEngine& engine;
     EditorState& editorState;
 
-    juce::OwnedArray<ChannelHeader> headers;
+    juce::OwnedArray<ChannelRackHeader> headers;
     StepGridComponent grid;
 
     /** The rack's ruler spans the step columns, which leaves its header-column
