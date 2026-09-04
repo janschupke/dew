@@ -82,18 +82,22 @@ if(APPLE)
   # is dragged somewhere on its own and anything left in the image is left
   # behind. A licence that does not travel with the binary is not an offer.
   target_sources(dew PRIVATE ${DEW_STAGED_DOCS})
+
+  # TARGET_DIRECTORY, and it is load-bearing. Source file properties are scoped
+  # to the DIRECTORY that sets them, and this file is included from the top
+  # level while `dew` is defined in src/ - so the plain form set the property
+  # somewhere nothing would ever read it, and the first .dmg came out with a
+  # Resources folder holding JUCE's nib and neither licence.
   set_source_files_properties(${DEW_STAGED_DOCS}
+    TARGET_DIRECTORY dew
     PROPERTIES MACOSX_PACKAGE_LOCATION Resources)
 
-  install(TARGETS dew BUNDLE DESTINATION ".")
-
-  # The drag target, as a symlink in the staged tree - which is all "drag to
-  # Applications" has ever been. The alternative is a .DS_Store laying out icon
-  # positions, and the popular way to make one drives Finder over Apple events,
-  # which cannot run on a headless runner at all.
-  install(CODE [[
-    file(CREATE_LINK "/Applications" "${CMAKE_INSTALL_PREFIX}/Applications" SYMBOLIC)
-  ]])
+  # No /Applications symlink here: the DragNDrop generator creates one itself
+  # for a package holding a bundle, and a second attempt fails the pack with
+  # "File exists". The drag target is all that affordance has ever been - the
+  # alternative, a committed .DS_Store laying out icon positions, is usually
+  # made by driving Finder over Apple events, which cannot run headless at all.
+  install(TARGETS dew BUNDLE DESTINATION "." COMPONENT dew)
 else()
   # Flat on Windows, so the zip extracts to one folder holding dew.exe and the
   # installer has nothing to nest. Under bin/ on Linux, which is where
@@ -106,13 +110,24 @@ else()
     set(DEW_DOC_DIR "share/doc/dew")
   endif()
 
-  install(TARGETS dew RUNTIME DESTINATION "${DEW_RUNTIME_DIR}")
-  install(FILES ${DEW_STAGED_DOCS} DESTINATION "${DEW_DOC_DIR}")
+  install(TARGETS dew RUNTIME DESTINATION "${DEW_RUNTIME_DIR}" COMPONENT dew)
+  install(FILES ${DEW_STAGED_DOCS} DESTINATION "${DEW_DOC_DIR}" COMPONENT dew)
 endif()
 
 # ------------------------------------------------------------------------------
 # CPack.
 # ------------------------------------------------------------------------------
+# ONE component, named, and every install() above joins it.
+#
+# Not tidiness: JUCE and Catch2 are added by CPM as ordinary subprojects and
+# bring their own install() rules, so a monolithic pack put bin/, include/ and
+# lib/ beside dew.app in the first .dmg this produced. Naming the component dew
+# leaves everything they install in the Unspecified one, which CPack then does
+# not pack.
+set(CPACK_COMPONENTS_ALL dew)
+set(CPACK_COMPONENTS_GROUPING ALL_COMPONENTS_IN_ONE)
+set(CPACK_ARCHIVE_COMPONENT_INSTALL OFF)
+
 set(CPACK_PACKAGE_NAME "dew")
 set(CPACK_PACKAGE_VENDOR "dew")
 set(CPACK_PACKAGE_VERSION "${DEW_PACKAGE_VERSION}")
@@ -150,7 +165,6 @@ elseif(WIN32)
 else()
   set(CPACK_GENERATOR "TGZ")
   set(CPACK_PACKAGE_FILE_NAME "dew-linux-${CMAKE_SYSTEM_PROCESSOR}")
-  set(CPACK_ARCHIVE_COMPONENT_INSTALL OFF)
 endif()
 
 include(CPack)

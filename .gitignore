@@ -2,6 +2,9 @@
 /build/
 /out/
 
+# What ./scripts/package.sh writes: the .dmg, the installer, the AppImage.
+/dist/
+
 # macOS
 .DS_Store
 
