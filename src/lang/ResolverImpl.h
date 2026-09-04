@@ -73,23 +73,28 @@ private:
 
             if (spec == nullptr)
             {
-                auto& d = diagnostics.error ("E204",
-                                             std::string ("`") + std::string (statement.key)
-                                                 + "` is not a key of `" + nameOf (kind) + "`",
-                                             statement.keyRange, "unknown key");
+                auto& d = diagnostics.error (
+                    "E204",
+                    diagnostics.text (
+                        Msg::resolver_unknownKey_message,
+                        MsgArgs {}.with ("key", statement.key).with ("kind", nameOf (kind))),
+                    statement.keyRange, diagnostics.text (Msg::resolver_unknownKey_label));
 
                 if (const auto suggestion = closestKeyTo (kind, statement.key);
                     ! suggestion.empty())
-                    d.helps.push_back ("did you mean `" + std::string (suggestion) + "`?");
+                    d.helps.push_back (diagnostics.text (Msg::shared_didYouMean_help,
+                                                         MsgArgs {}.with ("name", suggestion)));
 
                 continue;
             }
 
             if (contains (seen, statement.key))
             {
-                diagnostics.error (
-                    "E205", std::string ("`") + std::string (statement.key) + "` is set twice",
-                    statement.keyRange, "set again here");
+                diagnostics.error ("E205",
+                                   diagnostics.text (Msg::resolver_setTwice_message,
+                                                     MsgArgs {}.with ("key", statement.key)),
+                                   statement.keyRange,
+                                   diagnostics.text (Msg::resolver_setTwice_label));
                 continue;
             }
 
@@ -110,18 +115,27 @@ private:
 
         if (! missing.empty())
         {
+            // The two joiners are catalogue entries rather than literals.
+            // "a, b and c" is English's shape; a locale that writes it
+            // differently - or with no final conjunction at all - changes two
+            // strings rather than this loop.
             std::string list;
 
             for (std::size_t i = 0; i < missing.size(); ++i)
             {
                 if (i > 0)
-                    list += i + 1 == missing.size() ? " and " : ", ";
+                    list += diagnostics.text (i + 1 == missing.size()
+                                                  ? Msg::shared_listFinalSeparator_text
+                                                  : Msg::shared_listSeparator_text);
 
                 list += "`" + std::string (missing[i]) + "`";
             }
 
-            diagnostics.error ("E206", std::string ("`") + nameOf (kind) + "` needs " + list,
-                               block.keywordRange, "missing here");
+            diagnostics.error (
+                "E206",
+                diagnostics.text (Msg::resolver_missingKeys_message,
+                                  MsgArgs {}.with ("kind", nameOf (kind)).with ("list", list)),
+                block.keywordRange, diagnostics.text (Msg::resolver_missingKeys_label));
         }
     }
 
@@ -144,9 +158,16 @@ private:
 
     void noteDuration (Duration duration, SourceRange range);
 
+    /** The name a statement refers to, or "" with `notFound` reported.
+
+        The message is a whole sentence rather than a frame with the noun
+        spliced into it. `code` stays a parameter because the same lookup is
+        reported under two of them, which is the whole reason a code cannot key
+        a catalogue.
+    */
     std::string_view resolveName (const Statement& statement,
                                   const std::vector<std::string>& declared, const char* code,
-                                  const char* what);
+                                  Msg notFound);
 
     // --- song ---------------------------------------------------------------
     void resolveSong (const Block& block);

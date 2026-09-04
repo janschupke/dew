@@ -48,7 +48,7 @@ Diagnostic& DiagnosticBag::add (Severity severity, std::string code, std::string
             const auto end = (std::uint32_t) source.size();
             items.push_back ({ Severity::error,
                                "E999",
-                               "too many errors; stopping here",
+                               text (Msg::diagnostics_tooManyErrors_message),
                                { end, end },
                                {},
                                {},

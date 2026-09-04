@@ -450,7 +450,13 @@ void ScoreEditorComponent::paintListBoxItem (int row, juce::Graphics& g, int wid
 
     g.setFont (tokens::type::font (tokens::type::small));
     g.setColour (tokens::colour::textPrimary);
-    g.drawText (juce::String (diagnostic.message), area, juce::Justification::centredLeft, true);
+    // CharPointer_UTF8, not the const char* constructor. A Diagnostic's message
+    // is now catalogue text, so the first locale with an accent in it would have
+    // rendered here as mojibake - the trap cpp-style.md names, reached through a
+    // door the concatenation gate does not watch, because there is no
+    // concatenation.
+    g.drawText (juce::String (juce::CharPointer_UTF8 (diagnostic.message.c_str())), area,
+                juce::Justification::centredLeft, true);
 }
 
 void ScoreEditorComponent::listBoxItemClicked (int row, const juce::MouseEvent&)

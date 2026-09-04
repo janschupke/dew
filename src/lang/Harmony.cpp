@@ -78,10 +78,12 @@ std::vector<ChordSpan> layOutHarmony (const HarmonySpec& harmony, const Key& son
             }
         }
 
-        auto& d = diagnostics.error ("E301", "this harmony is longer than its section", culprit,
-                                     "the section is already full here");
-        d.notes.push_back ("the section holds " + std::to_string (totalSteps)
-                           + " steps; the chords need " + std::to_string (absolute));
+        auto& d = diagnostics.error (
+            "E301", diagnostics.text (Msg::harmony_longerThanSection_message), culprit,
+            diagnostics.text (Msg::harmony_longerThanSection_label));
+        d.notes.push_back (diagnostics.text (
+            Msg::harmony_longerThanSection_note,
+            MsgArgs {}.with ("held", totalSteps).with ("needed", (std::int64_t) absolute)));
         return spans;
     }
 
@@ -89,13 +91,11 @@ std::vector<ChordSpan> layOutHarmony (const HarmonySpec& harmony, const Key& son
 
     if (weightTotal == 0 && remaining > 0)
     {
-        auto& d = diagnostics.error ("E302", "this harmony does not fill its section",
-                                     harmony.range,
-                                     std::to_string (remaining) + " steps left over");
-        d.notes.push_back ("give a chord `xN` to let it take up the slack, or make "
-                           "the section shorter");
-        d.helps.push_back ("silence nobody asked for sounds plausible, which is why "
-                           "this is an error rather than padding");
+        auto& d = diagnostics.error (
+            "E302", diagnostics.text (Msg::harmony_doesNotFill_message), harmony.range,
+            diagnostics.text (Msg::harmony_doesNotFill_label, MsgArgs {}.count (remaining)));
+        d.notes.push_back (diagnostics.text (Msg::harmony_doesNotFill_note));
+        d.helps.push_back (diagnostics.text (Msg::harmony_doesNotFill_help));
         return spans;
     }
 
@@ -150,12 +150,13 @@ std::vector<ChordSpan> layOutHarmony (const HarmonySpec& harmony, const Key& son
 
         if (fixed[i] <= 0)
         {
-            auto& d = diagnostics.error ("E303", "this chord gets no time at all", chord.range,
-                                         "rounds to zero steps");
-            d.notes.push_back ("there are " + std::to_string (remaining)
-                               + " steps to share between " + std::to_string (weightTotal)
-                               + " parts");
-            d.helps.push_back ("use coarser weights, or a longer section");
+            auto& d = diagnostics.error (
+                "E303", diagnostics.text (Msg::harmony_noTimeAtAll_message), chord.range,
+                diagnostics.text (Msg::harmony_noTimeAtAll_label));
+            d.notes.push_back (
+                diagnostics.text (Msg::harmony_noTimeAtAll_note,
+                                  MsgArgs {}.count (remaining).with ("parts", weightTotal)));
+            d.helps.push_back (diagnostics.text (Msg::harmony_noTimeAtAll_help));
             return {};
         }
 
@@ -183,10 +184,11 @@ std::vector<ChordSpan> layOutHarmony (const HarmonySpec& harmony, const Key& son
             const auto bar = position / stepsPerBar + 1;
             const auto intoBar = position % stepsPerBar;
 
-            auto& d = diagnostics.error ("E304", "this `|` is not on a bar line", chord.range,
-                                         "the bar check is here");
-            d.notes.push_back ("the position here is bar " + std::to_string (bar) + ", "
-                               + std::to_string (intoBar) + " steps in");
+            auto& d = diagnostics.error (
+                "E304", diagnostics.text (Msg::harmony_barCheckOffLine_message), chord.range,
+                diagnostics.text (Msg::harmony_barCheckOffLine_label));
+            d.notes.push_back (diagnostics.text (Msg::harmony_barCheckOffLine_note,
+                                                 MsgArgs {}.with ("bar", bar).count (intoBar)));
         }
     }
 

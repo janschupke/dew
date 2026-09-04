@@ -34,10 +34,8 @@ Document Parser::parseDocument()
         }
         else
         {
-            diagnostics.error ("E101",
-                               "expected one of song, channel, voicing, rhythm, "
-                               "harmony, section or arrangement",
-                               peek().range, "not a block keyword");
+            diagnostics.error ("E101", diagnostics.text (Msg::parser_expectedBlock_message),
+                               peek().range, diagnostics.text (Msg::parser_expectedBlock_label));
             resyncToTopLevel();
         }
 
@@ -155,8 +153,10 @@ Block Parser::parseBlock (int depth)
 
     if (peek().kind != TokenKind::braceOpen)
     {
-        diagnostics.error ("E102", "`" + std::string (block.keyword) + "` needs a body",
-                           block.range, "expected `{` after this");
+        diagnostics.error ("E102",
+                           diagnostics.text (Msg::parser_needsBody_message,
+                                             MsgArgs {}.with ("keyword", block.keyword)),
+                           block.range, diagnostics.text (Msg::parser_needsBody_label));
 
         block.range.end = block.header.empty() ? block.range.end : block.header.back().range.end;
         return block;
@@ -167,7 +167,7 @@ Block Parser::parseBlock (int depth)
 
     if (depth >= maxNesting)
     {
-        diagnostics.error ("E103", "blocks are nested too deeply here", openRange);
+        diagnostics.error ("E103", diagnostics.text (Msg::parser_tooDeep_message), openRange);
         skipBalancedBody();
         block.range.end = peek().range.end;
         return block;
@@ -192,8 +192,10 @@ Block Parser::parseBlock (int depth)
         // Reported ONCE, at the brace that was never closed, with the end of
         // the file as the second witness. A cascade of "unexpected token" on
         // every following line is what this replaces.
-        auto& d = diagnostics.error ("E104", "this `{` is never closed", openRange);
-        d.related.push_back ({ peek().range, "the file ends" });
+        auto& d = diagnostics.error (
+            "E104", diagnostics.text (Msg::parser_braceNeverClosed_message), openRange);
+        d.related.push_back (
+            { peek().range, diagnostics.text (Msg::parser_braceNeverClosed_related) });
 
         block.range.end = peek().range.end;
     }
@@ -209,8 +211,8 @@ void Parser::parseStatementBody (Block& block, int depth)
 
         if (peek().kind != TokenKind::word)
         {
-            diagnostics.error ("E105", "expected a key", peek().range,
-                               "a statement starts with a name");
+            diagnostics.error ("E105", diagnostics.text (Msg::parser_expectedKey_message),
+                               peek().range, diagnostics.text (Msg::parser_expectedKey_label));
             skipToEndOfLine();
 
             if (position == before)

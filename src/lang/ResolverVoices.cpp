@@ -30,8 +30,9 @@ void Resolver::resolveChannel (const Block& block)
 
     if (channel.name.empty())
     {
-        diagnostics.error ("E213", "a channel needs a name", block.keywordRange,
-                           "try `channel lead {`");
+        diagnostics.error ("E213", diagnostics.text (Msg::voices_channelNeedsName_message),
+                           block.keywordRange,
+                           diagnostics.text (Msg::voices_channelNeedsName_label));
         return;
     }
 
@@ -55,7 +56,9 @@ void Resolver::resolveChannel (const Block& block)
                 if (! value.has_value())
                     wrongValue (statement, spec.kind);
                 else if (*value < 1 || *value > 32)
-                    diagnostics.error ("E240", "a mixer track is 1 to 32", statement.range);
+                    diagnostics.error ("E240",
+                                       diagnostics.text (Msg::voices_mixerTrackRange_message),
+                                       statement.range);
                 else
                     channel.mixerTrack = *value;
             }
@@ -64,7 +67,8 @@ void Resolver::resolveChannel (const Block& block)
                 const auto value = asInteger (statement);
 
                 if (! value.has_value() || *value < -4 || *value > 4)
-                    diagnostics.error ("E231", "an octave shift is -4 to 4", statement.range);
+                    diagnostics.error ("E231", diagnostics.text (Msg::voices_octaveRange_message),
+                                       statement.range);
                 else
                     channel.octave = *value;
             }
@@ -101,15 +105,18 @@ bool Resolver::readScope (const Statement& statement, std::size_t at, Scope& out
         }
 
     auto& d = diagnostics.error (
-        "E251", std::string ("`") + std::string (statement.values[at].text) + "` is not a scope",
+        "E251",
+        diagnostics.text (Msg::voices_notAScope_message,
+                          MsgArgs {}.with ("name", statement.values[at].text)),
         statement.values[at].range);
 
     std::string list;
 
     for (const auto& member : members)
-        list += (list.empty() ? "" : ", ") + std::string (member);
+        list += (list.empty() ? "" : diagnostics.text (Msg::shared_listSeparator_text))
+                + std::string (member);
 
-    d.helps.push_back ("one of: " + list);
+    d.helps.push_back (diagnostics.text (Msg::shared_oneOf_note, MsgArgs {}.with ("list", list)));
     return false;
 }
 
@@ -142,9 +149,9 @@ void Resolver::readVelocity (ChannelSpec& channel, const Statement& statement, c
 
     if (! base.has_value() || *base < 1 || *base > 127)
     {
-        auto& d = diagnostics.error ("E214", "a velocity is 1 to 127", statement.range);
-        d.notes.push_back ("zero IS a note-off in MIDI, so it can never be a "
-                           "note's velocity");
+        auto& d = diagnostics.error ("E214", diagnostics.text (Msg::voices_velocityRange_message),
+                                     statement.range);
+        d.notes.push_back (diagnostics.text (Msg::voices_velocityRange_note));
         return;
     }
 
@@ -178,8 +185,9 @@ void Resolver::resolveVoicing (const Block& block)
 
     if (voicing.name.empty())
     {
-        diagnostics.error ("E213", "a voicing needs a name", block.keywordRange,
-                           "try `voicing warm {`");
+        diagnostics.error ("E213", diagnostics.text (Msg::voices_voicingNeedsName_message),
+                           block.keywordRange,
+                           diagnostics.text (Msg::voices_voicingNeedsName_label));
         return;
     }
 
@@ -201,7 +209,8 @@ void Resolver::resolveVoicing (const Block& block)
                 const auto value = readInteger (statement.values.front().text);
 
                 if (! value.has_value() || *value < 1 || *value > 8)
-                    diagnostics.error ("E215", "a voicing holds 1 to 8 voices", statement.range);
+                    diagnostics.error ("E215", diagnostics.text (Msg::voices_voicingSize_message),
+                                       statement.range);
                 else
                     voicing.voices = (int) *value;
             }
@@ -273,7 +282,8 @@ RhythmSpec Resolver::resolveRhythm (const Block& block)
         if (! duration.has_value())
         {
             diagnostics.error ("E216",
-                               std::string ("`") + std::string (entry.text) + "` is not a duration",
+                               diagnostics.text (Msg::voices_notADuration_message,
+                                                 MsgArgs {}.with ("text", entry.text)),
                                entry.range);
             continue;
         }
@@ -283,7 +293,8 @@ RhythmSpec Resolver::resolveRhythm (const Block& block)
 
         if (entry.repeat > 256)
         {
-            diagnostics.error ("E241", "a rhythm entry repeats at most 256 times", entry.range);
+            diagnostics.error ("E241", diagnostics.text (Msg::voices_rhythmRepeatLimit_message),
+                               entry.range);
             continue;
         }
 
@@ -294,7 +305,8 @@ RhythmSpec Resolver::resolveRhythm (const Block& block)
     }
 
     if (rhythm.steps.empty())
-        diagnostics.error ("E217", "a rhythm needs at least one duration", block.keywordRange);
+        diagnostics.error ("E217", diagnostics.text (Msg::voices_rhythmNeedsDuration_message),
+                           block.keywordRange);
 
     return rhythm;
 }
@@ -327,9 +339,11 @@ HarmonySpec Resolver::resolveHarmony (const Block& block)
         // rather than at generation time when its range is long gone.
         std::string reason;
 
-        if (! resolveChord (chord.symbol, key, &reason).has_value())
+        if (! resolveChord (chord.symbol, key, &reason, diagnostics.locale()).has_value())
         {
-            diagnostics.error ("E218", reason.empty() ? "not a chord" : reason, entry.rootRange);
+            diagnostics.error (
+                "E218", reason.empty() ? diagnostics.text (Msg::voices_notAChord_message) : reason,
+                entry.rootRange);
             continue;
         }
 
@@ -337,7 +351,8 @@ HarmonySpec Resolver::resolveHarmony (const Block& block)
         {
             if (entry.weight < 1)
             {
-                diagnostics.error ("E219", "a weight must be at least 1", entry.range);
+                diagnostics.error ("E219", diagnostics.text (Msg::voices_weightAtLeastOne_message),
+                                   entry.range);
                 continue;
             }
 
@@ -353,7 +368,8 @@ HarmonySpec Resolver::resolveHarmony (const Block& block)
     }
 
     if (harmony.chords.empty())
-        diagnostics.error ("E220", "a harmony needs at least one chord", block.keywordRange);
+        diagnostics.error ("E220", diagnostics.text (Msg::voices_harmonyNeedsChord_message),
+                           block.keywordRange);
 
     return harmony;
 }
@@ -369,7 +385,8 @@ void Resolver::readChordLength (ChordSpec& chord, const ChordEntry& entry)
 
         if (! count.has_value() || *count < 1 || *count > 512)
         {
-            diagnostics.error ("E221", "a chord spans 1 to 512 bars", entry.range);
+            diagnostics.error ("E221", diagnostics.text (Msg::voices_chordBarsRange_message),
+                               entry.range);
             return;
         }
 
@@ -383,7 +400,8 @@ void Resolver::readChordLength (ChordSpec& chord, const ChordEntry& entry)
 
         if (! duration.has_value())
         {
-            diagnostics.error ("E216", "not a duration", values[0].range);
+            diagnostics.error ("E216", diagnostics.text (Msg::voices_notADurationHere_message),
+                               values[0].range);
             return;
         }
 
@@ -392,8 +410,8 @@ void Resolver::readChordLength (ChordSpec& chord, const ChordEntry& entry)
         return;
     }
 
-    diagnostics.error ("E222", "a chord takes `xN`, `N bars` or a note value", entry.range,
-                       "not that");
+    diagnostics.error ("E222", diagnostics.text (Msg::voices_chordLength_message), entry.range,
+                       diagnostics.text (Msg::voices_chordLength_label));
 }
 
 void Resolver::resolveSection (const Block& block)
@@ -404,36 +422,40 @@ void Resolver::resolveSection (const Block& block)
 
     if (section.name.empty())
     {
-        diagnostics.error ("E213", "a section needs a name", block.keywordRange,
-                           "try `section verse {`");
+        diagnostics.error ("E213", diagnostics.text (Msg::voices_sectionNeedsName_message),
+                           block.keywordRange,
+                           diagnostics.text (Msg::voices_sectionNeedsName_label));
         return;
     }
 
-    forEachStatement (
-        block, BlockKind::section,
-        [&] (const KeySpec& spec, const Statement& statement)
-        {
-            if (statement.key == "length")
-            {
-                const auto bars = asBars (statement);
+    forEachStatement (block, BlockKind::section,
+                      [&] (const KeySpec& spec, const Statement& statement)
+                      {
+                          if (statement.key == "length")
+                          {
+                              const auto bars = asBars (statement);
 
-                if (! bars.has_value())
-                    wrongValue (statement, spec.kind);
-                else if (*bars < 1 || *bars > 512)
-                    diagnostics.error ("E223", "a section spans 1 to 512 bars", statement.range);
-                else
-                    section.bars = *bars;
-            }
-            else if (statement.key == "harmony")
-            {
-                const auto name = resolveName (statement, symbols.harmonies, "E224", "harmony");
+                              if (! bars.has_value())
+                                  wrongValue (statement, spec.kind);
+                              else if (*bars < 1 || *bars > 512)
+                                  diagnostics.error (
+                                      "E223",
+                                      diagnostics.text (Msg::voices_sectionBarsRange_message),
+                                      statement.range);
+                              else
+                                  section.bars = *bars;
+                          }
+                          else if (statement.key == "harmony")
+                          {
+                              const auto name = resolveName (statement, symbols.harmonies, "E224",
+                                                             Msg::resolver_noHarmonyCalled_message);
 
-                if (! name.empty())
-                    section.harmony = std::string (name);
-                else if (statement.values.size() != 1)
-                    wrongValue (statement, spec.kind);
-            }
-        });
+                              if (! name.empty())
+                                  section.harmony = std::string (name);
+                              else if (statement.values.size() != 1)
+                                  wrongValue (statement, spec.kind);
+                          }
+                      });
 
     for (const auto& child : block.children)
     {
@@ -445,18 +467,20 @@ void Resolver::resolveSection (const Block& block)
             section.parts.push_back (resolvePart (child));
         else
             diagnostics.error ("E225",
-                               std::string ("`") + std::string (child.keyword)
-                                   + "` is not part of a section",
+                               diagnostics.text (Msg::voices_notPartOfSection_message,
+                                                 MsgArgs {}.with ("keyword", child.keyword)),
                                child.keywordRange);
     }
 
     if (section.harmony.empty() && ! section.inlineHarmony.has_value())
-        diagnostics.error ("E226", "a section needs a harmony", block.keywordRange,
-                           "name one, or write `harmony { ... }` here");
+        diagnostics.error ("E226", diagnostics.text (Msg::voices_sectionNeedsHarmony_message),
+                           block.keywordRange,
+                           diagnostics.text (Msg::voices_sectionNeedsHarmony_label));
 
     if (section.parts.empty())
-        diagnostics.error ("E242", "a section needs a part", block.keywordRange,
-                           "nothing would sound");
+        diagnostics.error ("E242", diagnostics.text (Msg::voices_sectionNeedsPart_message),
+                           block.keywordRange,
+                           diagnostics.text (Msg::voices_sectionNeedsPart_label));
 
     model.sections.push_back (section);
 }

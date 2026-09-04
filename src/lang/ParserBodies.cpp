@@ -39,7 +39,9 @@ void Parser::parseChordBody (Block& block)
             if (! block.chords.empty())
                 block.chords.back().barCheckAfter = true;
             else
-                diagnostics.error ("E106", "a bar check needs a chord before it", peek().range);
+                diagnostics.error ("E106",
+                                   diagnostics.text (Msg::parser_barCheckNeedsChord_message),
+                                   peek().range);
 
             advance();
             continue;
@@ -47,7 +49,8 @@ void Parser::parseChordBody (Block& block)
 
         if (peek().kind != TokenKind::word)
         {
-            diagnostics.error ("E107", "expected a chord", peek().range, "not a chord symbol");
+            diagnostics.error ("E107", diagnostics.text (Msg::parser_expectedChord_message),
+                               peek().range, diagnostics.text (Msg::parser_expectedChord_label));
             skipToEndOfLine();
 
             if (position == before)
@@ -85,7 +88,9 @@ ChordEntry Parser::parseChordEntry()
         }
         else
         {
-            diagnostics.error ("E108", "`^` needs an inversion number", caretRange, "try `^1`");
+            diagnostics.error ("E108", diagnostics.text (Msg::parser_inversionNeedsNumber_message),
+                               caretRange,
+                               diagnostics.text (Msg::parser_inversionNeedsNumber_label));
         }
     }
 
@@ -102,7 +107,9 @@ ChordEntry Parser::parseChordEntry()
         }
         else
         {
-            diagnostics.error ("E109", "`/` needs a chord to tonicise", slashRange, "try `/V`");
+            diagnostics.error (
+                "E109", diagnostics.text (Msg::parser_tonicisationNeedsChord_message), slashRange,
+                diagnostics.text (Msg::parser_tonicisationNeedsChord_label));
         }
     }
 
@@ -166,12 +173,17 @@ void Parser::parseRhythmBody (Block& block)
 
             if (peek().kind != TokenKind::ratio)
             {
+                // Two whole messages rather than one with a noun spliced in.
+                // A language whose word order differs cannot recover a sentence
+                // from a frame and a noun, and both of these are short.
+                const auto isRest = entry.kind == RhythmEntry::Kind::rest;
+
                 diagnostics.error ("E114",
-                                   entry.kind == RhythmEntry::Kind::rest ? "a rest needs a length"
-                                                                         : "a tie needs a length",
+                                   diagnostics.text (isRest ? Msg::parser_restNeedsLength_message
+                                                            : Msg::parser_tieNeedsLength_message),
                                    markRange,
-                                   entry.kind == RhythmEntry::Kind::rest ? "try `- 1/4`"
-                                                                         : "try `~ 1/2`");
+                                   diagnostics.text (isRest ? Msg::parser_restNeedsLength_label
+                                                            : Msg::parser_tieNeedsLength_label));
                 continue;
             }
 
@@ -181,8 +193,9 @@ void Parser::parseRhythmBody (Block& block)
         }
         else
         {
-            diagnostics.error ("E110", "expected a duration, `-` or `~`", peek().range,
-                               "not a rhythm entry");
+            diagnostics.error ("E110", diagnostics.text (Msg::parser_expectedRhythmEntry_message),
+                               peek().range,
+                               diagnostics.text (Msg::parser_expectedRhythmEntry_label));
             skipToEndOfLine();
 
             if (position == before)
@@ -213,7 +226,8 @@ void Parser::parseArrangementBody (Block& block, int depth)
 
         if (peek().kind != TokenKind::word)
         {
-            diagnostics.error ("E111", "expected a section name", peek().range);
+            diagnostics.error ("E111", diagnostics.text (Msg::parser_expectedSectionName_message),
+                               peek().range);
             skipToEndOfLine();
 
             if (position == before)
@@ -260,7 +274,8 @@ void Parser::parseArrangementBody (Block& block, int depth)
                 }
                 else
                 {
-                    diagnostics.error ("E112", "`as` needs a label", asRange, "try `as verse_b`");
+                    diagnostics.error ("E112", diagnostics.text (Msg::parser_labelNeeded_message),
+                                       asRange, diagnostics.text (Msg::parser_labelNeeded_label));
                 }
             }
             else if (peek().kind == TokenKind::braceOpen)
@@ -274,7 +289,9 @@ void Parser::parseArrangementBody (Block& block, int depth)
             }
             else
             {
-                diagnostics.error ("E113", "unexpected in an arrangement entry", peek().range);
+                diagnostics.error ("E113",
+                                   diagnostics.text (Msg::parser_unexpectedInArrangement_message),
+                                   peek().range);
                 skipToEndOfLine();
                 break;
             }
@@ -303,7 +320,7 @@ Block Parser::parseOverrideBlock (int depth)
     }
     else
     {
-        diagnostics.error ("E103", "blocks are nested too deeply here", openRange);
+        diagnostics.error ("E103", diagnostics.text (Msg::parser_tooDeep_message), openRange);
     }
 
     if (peek().kind == TokenKind::braceClose)
@@ -313,8 +330,10 @@ Block Parser::parseOverrideBlock (int depth)
     }
     else
     {
-        auto& d = diagnostics.error ("E104", "this `{` is never closed", openRange);
-        d.related.push_back ({ peek().range, "the file ends" });
+        auto& d = diagnostics.error (
+            "E104", diagnostics.text (Msg::parser_braceNeverClosed_message), openRange);
+        d.related.push_back (
+            { peek().range, diagnostics.text (Msg::parser_braceNeverClosed_related) });
         block.range.end = peek().range.end;
     }
 

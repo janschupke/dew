@@ -24,6 +24,32 @@
 namespace dew::testing
 {
 
+/** Whether `rendered` still carries a placeholder nobody bound.
+
+    Not "does it contain a brace". A message is allowed to SAY what a brace
+    looks like - "try `channel lead '{'`" is a real diagnostic label - and ICU's
+    quoting turns that into a brace in the output, so a bare containsChar('{')
+    reports the four labels that do it as defects and has to be silenced with a
+    list of keys.
+
+    What is actually being refused is a PLACEHOLDER that survived formatting,
+    and every one of those is a brace followed by the first letter of an
+    argument name. A quoted brace is followed by whatever the sentence puts
+    there - a backtick, a space, an ellipsis - and never by a letter, because
+    a brace that names something is exactly what the formatter would have
+    substituted.
+
+    Shared, so the two formatters' gates cannot disagree about what a defect is.
+*/
+inline bool holdsAPlaceholder (const char* rendered) noexcept
+{
+    for (auto i = 0; rendered[i] != '\0'; ++i)
+        if (rendered[i] == '{' && rendered[i + 1] >= 'a' && rendered[i + 1] <= 'z')
+            return true;
+
+    return false;
+}
+
 /** One case: a message, a locale, at most one text argument and at most one
     count, and what the formatter must produce.
 

@@ -61,9 +61,56 @@ juce::String withoutArgumentNames (const juce::String& line)
     return kept;
 }
 
+/** `line` with every diagnostic CODE removed.
+
+    "E401" is not a sentence. It is an identifier that happens to be spelled in
+    quotes - stable, documented and greppable, and the same four characters in
+    every language - and it is the FIRST argument of the call whose SECOND
+    argument is the message. Without this the gate reports the code of every
+    diagnostic in the tree and the only way to quieten it is a list of files,
+    which is the ratchet the exemption rule exists to remove.
+
+    Matched on the shape rather than on a list: a letter, three digits, nothing
+    else between the quotes. No sentence dew says is four characters long.
+*/
+juce::String withoutDiagnosticCodes (const juce::String& line)
+{
+    juce::String kept;
+    auto i = 0;
+
+    while (i < line.length())
+    {
+        const auto quote = line.indexOfChar (i, '"');
+
+        if (quote < 0 || quote + 5 >= line.length())
+        {
+            kept += line.substring (i);
+            break;
+        }
+
+        const auto candidate = line.substring (quote, quote + 6);
+        const auto isCode = (candidate[1] == 'E' || candidate[1] == 'W') && candidate[5] == '"'
+                            && juce::CharacterFunctions::isDigit (candidate[2])
+                            && juce::CharacterFunctions::isDigit (candidate[3])
+                            && juce::CharacterFunctions::isDigit (candidate[4]);
+
+        if (! isCode)
+        {
+            kept += line.substring (i, quote + 1);
+            i = quote + 1;
+            continue;
+        }
+
+        kept += line.substring (i, quote);
+        i = quote + 6;
+    }
+
+    return kept;
+}
+
 bool showsALiteral (const juce::String& raw)
 {
-    const auto line = withoutArgumentNames (raw);
+    const auto line = withoutDiagnosticCodes (withoutArgumentNames (raw));
 
     // Sinks whose text is the FIRST argument.
     //
@@ -73,8 +120,9 @@ bool showsALiteral (const juce::String& raw)
     // the tests calls - dew's Edit menu shows the COMMAND's name, not the
     // transaction's. Translating a string nobody displays is paying a
     // translator for a key the orphan gate would then have to allow.
-    for (const auto* sink : { "setTooltip (", "setButtonText (", "setText (", "setTitle (",
-                              "setSuffix (", "showMessage (" })
+    for (const auto* sink :
+         { "setTooltip (", "setButtonText (", "setText (", "setTitle (", "setSuffix (",
+           "showMessage (", "notes.push_back (", "helps.push_back (" })
     {
         if (! line.contains (sink))
             continue;
@@ -90,8 +138,18 @@ bool showsALiteral (const juce::String& raw)
     // covered none of the thirty menu items in the tree while looking exactly
     // like one that did, which is the failure "ask a shape, not a spelling"
     // names.
+    //
+    // A diagnostic's message is its second argument too, and its label its
+    // fourth. The score language reaches its own catalogue rather than tr() -
+    // src/lang/MessageCatalog.h says why - but a sentence written into
+    // src/lang/ is exactly as invisible to a translator as one written into
+    // src/ui/, so the sinks belong in the same list. The code is a literal and
+    // stays one: "E401" is not a sentence, it is an identifier that happens to
+    // be spelled in quotes, and it is the first argument rather than the
+    // second.
     for (const auto* sink : { "addItem (", "addSubMenu (", "drawText (", "drawFittedText (",
-                              "FileChooser> (", "FileBasedDocument (" })
+                              "FileChooser> (", "FileBasedDocument (", "diagnostics.error (",
+                              "diagnostics.warning (", "diagnostics.add (", "related.push_back (" })
     {
         if (! line.contains (sink))
             continue;
@@ -140,6 +198,21 @@ TEST_CASE ("no source shows a person a string literal", "[build][gate][i18n]")
     // would leave a list of files as the only way to quieten the gate.
     CHECK_FALSE (showsALiteral (
         "    box.addItem (tr (StringId::unitHertz, Args{}.with (\"value\", rate)), rate);"));
+
+    // A diagnostic. Its code is an identifier and stays a literal; its message
+    // and its label are sentences and must not be.
+    CHECK (showsALiteral (
+        "    diagnostics.error (\"E210\", \"a bar holds 1 to 16 beats\", statement.range);"));
+    CHECK_FALSE (showsALiteral (
+        "    diagnostics.error (\"E210\", diagnostics.text (Msg::x), statement.range);"));
+    CHECK (showsALiteral ("    d.notes.push_back (\"rename one of them\");"));
+    CHECK_FALSE (showsALiteral ("    d.notes.push_back (diagnostics.text (Msg::x));"));
+    CHECK (showsALiteral ("    d.related.push_back ({ peek().range, \"the file ends\" });"));
+
+    // A code on its own is not a sentence, and neither is a musical note.
+    CHECK_FALSE (showsALiteral ("    diagnostics.error (\"E217\", diagnostics.text (m), r);"));
+    CHECK_FALSE (
+        showsALiteral ("    result.notes.push_back ({ onset.startStep, length, pitch });"));
 
     // And the menu-item shape, which the prefix test above cannot see.
     CHECK (showsALiteral ("    menu.addItem ((int) MenuItem::rename, \"Rename\");"));

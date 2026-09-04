@@ -70,7 +70,7 @@ TEST_CASE ("a message the catalogue does not hold answers with its key", "[score
     }
 }
 
-TEST_CASE ("every message is answerable with the arguments it names", "[score][i18n][gate]")
+TEST_CASE ("every score message is answerable with the arguments it names", "[score][i18n][gate]")
 {
     // The generator records what each message asks for, so this can answer all
     // of them without knowing what any of them say. A brace left in a rendered
@@ -105,9 +105,15 @@ TEST_CASE ("every message is answerable with the arguments it names", "[score][i
         const auto rendered = msg (id, arguments);
 
         INFO (messageKey (id) << "  ->  " << rendered);
-        CHECK (rendered.find ('{') == std::string::npos);
+        CHECK_FALSE (dew::testing::holdsAPlaceholder (rendered.c_str()));
         CHECK (isWellFormedMessage (messageText (id)));
     }
+
+    // Control case: the gate has to be able to SEE an unanswered placeholder,
+    // and has to leave a quoted brace alone.
+    CHECK (dew::testing::holdsAPlaceholder (formatMessage ("Reset {param}", {}, "en").c_str()));
+    CHECK_FALSE (dew::testing::holdsAPlaceholder (
+        formatMessage ("try `channel lead '{'`", {}, "en").c_str()));
 }
 
 TEST_CASE ("a locale is chosen by tag and then by language", "[score][i18n]")

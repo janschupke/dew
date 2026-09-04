@@ -42,8 +42,9 @@ void Resolver::readLeap (MelodySpec& melody, const Statement& statement, const K
 
     if (! widest.has_value() || *widest < 1 || *widest > 24)
     {
-        auto& d = diagnostics.error ("E247", "a leap limit is 1 to 24 semitones", values[1].range);
-        d.helps.push_back ("12 is an octave");
+        auto& d = diagnostics.error ("E247", diagnostics.text (Msg::melody_leapRange_message),
+                                     values[1].range);
+        d.helps.push_back (diagnostics.text (Msg::melody_leapRange_help));
         return;
     }
 
@@ -79,8 +80,9 @@ void Resolver::readCadence (MelodySpec& melody, const Statement& statement, cons
         // rounding it to one.
         if (! degree.has_value() || (*degree != 1 && *degree != 3 && *degree != 5 && *degree != 7))
         {
-            auto& d = diagnostics.error ("E252", "a cadence ends on a chord tone", value.range);
-            d.helps.push_back ("1 is the root, 3 the third, 5 the fifth, 7 the seventh");
+            auto& d = diagnostics.error (
+                "E252", diagnostics.text (Msg::melody_cadenceChordTone_message), value.range);
+            d.helps.push_back (diagnostics.text (Msg::melody_cadenceChordTone_help));
             (void) statement;
             return std::nullopt;
         }
@@ -120,14 +122,15 @@ void Resolver::readCadence (MelodySpec& melody, const Statement& statement, cons
 
     if (i >= values.size() || values[i].kind != TokenKind::bracketClose)
     {
-        diagnostics.error ("E253", "this list is never closed", statement.range,
-                           "a `[` needs a `]`");
+        diagnostics.error ("E253", diagnostics.text (Msg::melody_listNeverClosed_message),
+                           statement.range, diagnostics.text (Msg::melody_listNeverClosed_label));
         return;
     }
 
     if (degrees.empty())
     {
-        diagnostics.error ("E243", "a choice needs something to choose from", statement.range);
+        diagnostics.error ("E243", diagnostics.text (Msg::melody_choiceIsEmpty_message),
+                           statement.range);
         return;
     }
 
@@ -160,7 +163,8 @@ MelodySpec Resolver::resolveMelody (const Block& block, PartSpec& part)
         {
             if (statement.key == "rhythm")
             {
-                const auto name = resolveName (statement, symbols.rhythms, "E233", "rhythm");
+                const auto name = resolveName (statement, symbols.rhythms, "E233",
+                                               Msg::resolver_noRhythmCalled_message);
 
                 if (! name.empty())
                     melody.rhythm = std::string (name);
@@ -232,8 +236,8 @@ MelodySpec Resolver::resolveMelody (const Block& block, PartSpec& part)
             part.inlineRhythm = resolveRhythm (child);
         else
             diagnostics.error ("E225",
-                               std::string ("`") + std::string (child.keyword)
-                                   + "` is not part of a melody",
+                               diagnostics.text (Msg::melody_notPartOfMelody_message,
+                                                 MsgArgs {}.with ("keyword", child.keyword)),
                                child.keywordRange);
     }
 
@@ -252,9 +256,9 @@ void Resolver::readVariance (MelodySpec& melody, const Statement& statement, con
 
     if (! value.has_value() || *value < 0.0 || *value > 1.0)
     {
-        auto& d = diagnostics.error ("E234", "variance is 0 to 1", statement.range);
-        d.notes.push_back ("0 is the same notes every compile; above 0 explores, "
-                           "still reproducibly");
+        auto& d = diagnostics.error ("E234", diagnostics.text (Msg::melody_varianceRange_message),
+                                     statement.range);
+        d.notes.push_back (diagnostics.text (Msg::melody_varianceRange_note));
         return;
     }
 
@@ -281,10 +285,11 @@ void Resolver::readMuteBudget (MelodySpec& melody, const Statement& statement, c
 
     if (*count >= *window)
     {
-        auto& d = diagnostics.error ("E235", "a mute budget has to leave a note sounding",
+        auto& d = diagnostics.error ("E235", diagnostics.text (Msg::melody_muteBudget_message),
                                      statement.range);
-        d.notes.push_back ("`" + std::to_string (*count) + " of " + std::to_string (*window)
-                           + "` would silence every window");
+        d.notes.push_back (
+            diagnostics.text (Msg::melody_muteBudget_note,
+                              MsgArgs {}.with ("count", *count).with ("window", *window)));
         return;
     }
 

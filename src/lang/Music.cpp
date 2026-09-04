@@ -149,18 +149,19 @@ struct RootAndShape
 };
 
 std::optional<RootAndShape> resolveRoot (std::string_view text, const Key& key,
-                                         std::string* failureReason)
+                                         std::string* failureReason, Locale locale)
 {
-    auto fail = [failureReason] (std::string reason) -> std::optional<RootAndShape>
+    auto fail = [failureReason,
+                 locale] (Msg id, const MsgArgs& arguments = {}) -> std::optional<RootAndShape>
     {
         if (failureReason != nullptr)
-            *failureReason = std::move (reason);
+            *failureReason = msg (id, arguments, locale);
 
         return std::nullopt;
     };
 
     if (text.empty())
-        return fail ("an empty chord");
+        return fail (Msg::music_emptyChord_message);
 
     std::size_t i = 0;
 
@@ -174,8 +175,8 @@ std::optional<RootAndShape> resolveRoot (std::string_view text, const Key& key,
     if (const auto numeral = readNumeral (text, i))
     {
         if (! supportsRomanNumerals (key.mode))
-            return fail (std::string ("`") + std::string (text) + "` names a scale degree, which "
-                         + nameOf (key.mode) + " does not have seven of");
+            return fail (Msg::music_modeHasNoDegrees_message,
+                         MsgArgs {}.with ("text", text).with ("mode", nameOf (key.mode)));
 
         // AN ACCIDENTAL IS RELATIVE TO THE MAJOR SCALE. A bare numeral is
         // relative to the mode.
@@ -203,7 +204,7 @@ std::optional<RootAndShape> resolveRoot (std::string_view text, const Key& key,
         const auto& intervals = intervalsForSuffix (suffix, ! numeral->upper, &recognised);
 
         if (! recognised)
-            return fail (std::string ("`") + std::string (suffix) + "` is not a chord quality");
+            return fail (Msg::music_notAChordQuality_message, MsgArgs {}.with ("text", suffix));
 
         RootAndShape out;
         out.rootPc = rootPc;
@@ -217,13 +218,13 @@ std::optional<RootAndShape> resolveRoot (std::string_view text, const Key& key,
     }
 
     if (hadPrefix)
-        return fail (std::string ("`") + std::string (text) + "` is not a chord");
+        return fail (Msg::music_notAChord_message, MsgArgs {}.with ("text", text));
 
     // Absolute: a letter, then any accidentals, then a quality.
     const auto letterPc = spelling::letterToPitchClass (text[0]);
 
     if (! letterPc.has_value() || ! (text[0] >= 'A' && text[0] <= 'G'))
-        return fail (std::string ("`") + std::string (text) + "` is not a chord");
+        return fail (Msg::music_notAChord_message, MsgArgs {}.with ("text", text));
 
     i = 1;
     const auto shift = spelling::readAccidentals (text, i);
@@ -244,7 +245,7 @@ std::optional<RootAndShape> resolveRoot (std::string_view text, const Key& key,
     const auto& intervals = intervalsForSuffix (suffix, minorBase, &recognised);
 
     if (! recognised)
-        return fail (std::string ("`") + std::string (suffix) + "` is not a chord quality");
+        return fail (Msg::music_notAChordQuality_message, MsgArgs {}.with ("text", suffix));
 
     RootAndShape out;
     out.rootPc = rootPc;
@@ -300,7 +301,7 @@ bool Chord::containsPitchClass (int pc) const noexcept
 }
 
 std::optional<ResolvedChord> resolveChord (const ChordSymbol& symbol, const Key& key,
-                                           std::string* failureReason)
+                                           std::string* failureReason, Locale locale)
 {
     auto localKey = key;
 
@@ -310,7 +311,7 @@ std::optional<ResolvedChord> resolveChord (const ChordSymbol& symbol, const Key&
     if (! symbol.of.empty())
     {
         std::string reason;
-        const auto target = resolveRoot (symbol.of, key, &reason);
+        const auto target = resolveRoot (symbol.of, key, &reason, locale);
 
         if (! target.has_value())
         {
@@ -328,7 +329,7 @@ std::optional<ResolvedChord> resolveChord (const ChordSymbol& symbol, const Key&
         localKey = Key { target->rootPc, target->minorBase ? Mode::harmonicMinor : Mode::major };
     }
 
-    const auto shape = resolveRoot (symbol.root, localKey, failureReason);
+    const auto shape = resolveRoot (symbol.root, localKey, failureReason, locale);
 
     if (! shape.has_value())
         return std::nullopt;
@@ -342,8 +343,10 @@ std::optional<ResolvedChord> resolveChord (const ChordSymbol& symbol, const Key&
     if (symbol.inversion < 0 || (std::size_t) symbol.inversion >= chord.intervals.size())
     {
         if (failureReason != nullptr)
-            *failureReason = "`" + shape->label + "` has no inversion "
-                             + std::to_string (symbol.inversion);
+            *failureReason = msg (
+                Msg::music_noSuchInversion_message,
+                MsgArgs {}.with ("chord", shape->label).with ("inversion", symbol.inversion),
+                locale);
 
         return std::nullopt;
     }

@@ -29,11 +29,14 @@ PartSpec Resolver::resolvePart (const Block& block)
     part.range = block.nameRange();
 
     if (part.channel.empty())
-        diagnostics.error ("E227", "a part needs a channel", block.keywordRange,
-                           "try `part lead {`");
+        diagnostics.error ("E227", diagnostics.text (Msg::parts_partNeedsChannel_message),
+                           block.keywordRange,
+                           diagnostics.text (Msg::parts_partNeedsChannel_label));
     else if (! contains (symbols.channels, part.channel))
-        diagnostics.error ("E228", "no channel called `" + part.channel + "`", block.nameRange(),
-                           "not declared");
+        diagnostics.error ("E228",
+                           diagnostics.text (Msg::parts_noChannelCalled_message,
+                                             MsgArgs {}.with ("name", part.channel)),
+                           block.nameRange(), diagnostics.text (Msg::shared_notDeclared_label));
 
     auto sawKind = false;
 
@@ -46,7 +49,8 @@ PartSpec Resolver::resolvePart (const Block& block)
                 // `chords with warm`.
                 if (statement.values.size() != 2 || statement.values[0].text != "with")
                 {
-                    diagnostics.error ("E229", "`chords` takes `with <voicing>`", statement.range);
+                    diagnostics.error ("E229", diagnostics.text (Msg::parts_chordsSyntax_message),
+                                       statement.range);
                     return;
                 }
 
@@ -54,8 +58,11 @@ PartSpec Resolver::resolvePart (const Block& block)
 
                 if (! contains (symbols.voicings, name))
                 {
-                    diagnostics.error ("E230", "no voicing called `" + std::string (name) + "`",
-                                       statement.values[1].range, "not declared");
+                    diagnostics.error ("E230",
+                                       diagnostics.text (Msg::parts_noVoicingCalled_message,
+                                                         MsgArgs {}.with ("name", name)),
+                                       statement.values[1].range,
+                                       diagnostics.text (Msg::shared_notDeclared_label));
                     return;
                 }
 
@@ -78,7 +85,8 @@ PartSpec Resolver::resolvePart (const Block& block)
             }
             else if (statement.key == "rhythm")
             {
-                const auto name = resolveName (statement, symbols.rhythms, "E233", "rhythm");
+                const auto name = resolveName (statement, symbols.rhythms, "E233",
+                                               Msg::resolver_noRhythmCalled_message);
 
                 if (! name.empty())
                     part.rhythm = std::string (name);
@@ -90,7 +98,8 @@ PartSpec Resolver::resolvePart (const Block& block)
                 const auto value = asInteger (statement);
 
                 if (! value.has_value() || *value < -4 || *value > 4)
-                    diagnostics.error ("E231", "an octave shift is -4 to 4", statement.range);
+                    diagnostics.error ("E231", diagnostics.text (Msg::voices_octaveRange_message),
+                                       statement.range);
                 else
                     part.octave = *value;
             }
@@ -124,17 +133,16 @@ PartSpec Resolver::resolvePart (const Block& block)
         }
         else
         {
-            diagnostics.error (
-                "E225", std::string ("`") + std::string (child.keyword) + "` is not part of a part",
-                child.keywordRange);
+            diagnostics.error ("E225",
+                               diagnostics.text (Msg::parts_notPartOfPart_message,
+                                                 MsgArgs {}.with ("keyword", child.keyword)),
+                               child.keywordRange);
         }
     }
 
     if (! sawKind)
-        diagnostics.error ("E232",
-                           "a part needs `chords`, `line`, a `melody`, a "
-                           "`counterpoint` or an `imitate` block",
-                           block.keywordRange, "nothing here says what to play");
+        diagnostics.error ("E232", diagnostics.text (Msg::parts_partNeedsKind_message),
+                           block.keywordRange, diagnostics.text (Msg::parts_partNeedsKind_label));
 
     return part;
 }
@@ -149,16 +157,20 @@ ImitationSpec Resolver::resolveImitation (const Block& block, PartSpec& part)
         spec.sourceRange = block.header.front().range;
 
         if (! contains (symbols.channels, spec.source))
-            diagnostics.error ("E248", std::string ("no channel called `") + spec.source + "`",
+            diagnostics.error ("E248",
+                               diagnostics.text (Msg::parts_noChannelCalled_message,
+                                                 MsgArgs {}.with ("name", spec.source)),
                                spec.sourceRange);
         else if (spec.source == part.channel)
-            diagnostics.error ("E249", "a voice cannot imitate itself", spec.sourceRange,
-                               "name a different channel");
+            diagnostics.error ("E249", diagnostics.text (Msg::parts_cannotImitateItself_message),
+                               spec.sourceRange,
+                               diagnostics.text (Msg::parts_cannotImitateItself_label));
     }
     else
     {
-        auto& d = diagnostics.error ("E250", "imitation needs a voice to copy", block.keywordRange);
-        d.helps.push_back ("write `imitate <channel> { delay 1 bar }`");
+        auto& d = diagnostics.error (
+            "E250", diagnostics.text (Msg::parts_imitationNeedsVoice_message), block.keywordRange);
+        d.helps.push_back (diagnostics.text (Msg::parts_imitationNeedsVoice_help));
     }
 
     forEachStatement (
@@ -208,17 +220,21 @@ CounterpointSpec Resolver::resolveCounterpoint (const Block& block, PartSpec& pa
         spec.againstRange = block.header[1].range;
 
         if (! contains (symbols.channels, spec.against))
-            diagnostics.error ("E244", std::string ("no channel called `") + spec.against + "`",
+            diagnostics.error ("E244",
+                               diagnostics.text (Msg::parts_noChannelCalled_message,
+                                                 MsgArgs {}.with ("name", spec.against)),
                                block.header[1].range);
         else if (spec.against == part.channel)
-            diagnostics.error ("E245", "a voice cannot answer itself", block.header[1].range,
-                               "name a different channel");
+            diagnostics.error ("E245", diagnostics.text (Msg::parts_cannotAnswerItself_message),
+                               block.header[1].range,
+                               diagnostics.text (Msg::parts_cannotAnswerItself_label));
     }
     else
     {
-        auto& d = diagnostics.error ("E246", "counterpoint needs a voice to answer",
+        auto& d = diagnostics.error ("E246",
+                                     diagnostics.text (Msg::parts_counterpointNeedsVoice_message),
                                      block.keywordRange);
-        d.helps.push_back ("write `counterpoint against <channel> { ... }`");
+        d.helps.push_back (diagnostics.text (Msg::parts_counterpointNeedsVoice_help));
     }
 
     forEachStatement (
@@ -227,7 +243,8 @@ CounterpointSpec Resolver::resolveCounterpoint (const Block& block, PartSpec& pa
         {
             if (statement.key == "rhythm")
             {
-                const auto name = resolveName (statement, symbols.rhythms, "E233", "rhythm");
+                const auto name = resolveName (statement, symbols.rhythms, "E233",
+                                               Msg::resolver_noRhythmCalled_message);
 
                 if (! name.empty())
                     spec.rhythm = std::string (name);

@@ -216,7 +216,7 @@ TEST_CASE ("every message is answerable with the arguments it names", "[i18n][ga
         for (const auto& name : argumentNamesOf (id))
             supplied.with (name.toRawUTF8(), (juce::int64) 1);
 
-        if (tr (id, supplied).containsChar ('{'))
+        if (testing::holdsAPlaceholder (tr (id, supplied).toRawUTF8()))
             unresolved.add (keyOf (id) + "  ->  " + tr (id, supplied));
     }
 
@@ -226,10 +226,15 @@ TEST_CASE ("every message is answerable with the arguments it names", "[i18n][ga
     INFO ("braces that reach the screen:\n" << unresolved.joinIntoString ("\n"));
     CHECK (unresolved.isEmpty());
 
-    // Control case: the gate has to be able to SEE an unanswered placeholder.
-    CHECK (formatMessage ("Reset {param}", {}, "en").containsChar ('{'));
-    CHECK_FALSE (
-        formatMessage ("Reset {param}", Args {}.with ("param", "Cutoff"), "en").containsChar ('{'));
+    // Control case: the gate has to be able to SEE an unanswered placeholder,
+    // and has to leave a quoted brace alone - see holdsAPlaceholder, which both
+    // formatters' gates share so that they cannot disagree about what a defect
+    // is.
+    CHECK (testing::holdsAPlaceholder (formatMessage ("Reset {param}", {}, "en").toRawUTF8()));
+    CHECK_FALSE (testing::holdsAPlaceholder (
+        formatMessage ("Reset {param}", Args {}.with ("param", "Cutoff"), "en").toRawUTF8()));
+    CHECK_FALSE (testing::holdsAPlaceholder (
+        formatMessage ("try `channel lead '{'`", {}, "en").toRawUTF8()));
 }
 
 TEST_CASE ("the catalogue is decoded as UTF-8, not as ASCII", "[i18n][gate]")

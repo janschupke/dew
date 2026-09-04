@@ -908,6 +908,334 @@
       "ruleRelaxed": {
         "message": "`{rule}` had to be given up in bar {bar}"
       }
+    },
+    "parser": {
+      "expectedBlock": {
+        "message": "expected one of song, channel, voicing, rhythm, harmony, section or arrangement",
+        "label": "not a block keyword"
+      },
+      "needsBody": {
+        "message": "`{keyword}` needs a body",
+        "label": "expected `'{'` after this"
+      },
+      "tooDeep": {
+        "message": "blocks are nested too deeply here"
+      },
+      "braceNeverClosed": {
+        "message": "this `'{'` is never closed",
+        "related": "the file ends"
+      },
+      "expectedKey": {
+        "message": "expected a key",
+        "label": "a statement starts with a name"
+      },
+      "barCheckNeedsChord": {
+        "message": "a bar check needs a chord before it"
+      },
+      "expectedChord": {
+        "message": "expected a chord",
+        "label": "not a chord symbol"
+      },
+      "inversionNeedsNumber": {
+        "message": "`^` needs an inversion number",
+        "label": "try `^1`"
+      },
+      "tonicisationNeedsChord": {
+        "message": "`/` needs a chord to tonicise",
+        "label": "try `/V`"
+      },
+      "restNeedsLength": {
+        "message": "a rest needs a length",
+        "label": "try `- 1/4`"
+      },
+      "tieNeedsLength": {
+        "message": "a tie needs a length",
+        "label": "try `~ 1/2`"
+      },
+      "expectedRhythmEntry": {
+        "message": "expected a duration, `-` or `~`",
+        "label": "not a rhythm entry"
+      },
+      "expectedSectionName": {
+        "message": "expected a section name"
+      },
+      "labelNeeded": {
+        "message": "`as` needs a label",
+        "label": "try `as verse_b`"
+      },
+      "unexpectedInArrangement": {
+        "message": "unexpected in an arrangement entry"
+      }
+    },
+    "shared": {
+      "notDeclared": {
+        "label": "not declared"
+      },
+      "declaredAgainHere": {
+        "label": "declared again here"
+      },
+      "didYouMean": {
+        "help": "did you mean `{name}`?"
+      },
+      "oneOf": {
+        "note": "one of: {list}"
+      },
+      "listSeparator": {
+        "text": ", "
+      },
+      "listFinalSeparator": {
+        "text": " and "
+      }
+    },
+    "resolver": {
+      "declaredTwice": {
+        "message": "`{name}` is declared twice",
+        "note": "rename one of them"
+      },
+      "oneSongBlock": {
+        "message": "a score has one `song` block"
+      },
+      "needsSongBlock": {
+        "message": "a score needs a `song` block"
+      },
+      "unknownKey": {
+        "message": "`{key}` is not a key of `{kind}`",
+        "label": "unknown key"
+      },
+      "setTwice": {
+        "message": "`{key}` is set twice",
+        "label": "set again here"
+      },
+      "missingKeys": {
+        "message": "`{kind}` needs {list}",
+        "label": "missing here"
+      },
+      "wrongValue": {
+        "message": "`{key}` takes {kind}",
+        "label": "not that"
+      },
+      "rangeBackwards": {
+        "message": "this range runs backwards",
+        "label": "{low} is above {high}"
+      },
+      "noRhythmCalled": {
+        "message": "no rhythm called `{name}`"
+      },
+      "noHarmonyCalled": {
+        "message": "no harmony called `{name}`"
+      },
+      "tempoRange": {
+        "message": "a tempo must be 20 to 400",
+        "note": "dew stores one tempo for the whole song"
+      },
+      "beatsPerBar": {
+        "message": "a bar holds 1 to 16 beats"
+      },
+      "beatUnit": {
+        "message": "a beat unit must be 1, 2, 4, 8 or 16",
+        "note": "MIDI stores the unit's base-2 logarithm, so it has to be a power of two"
+      },
+      "grid": {
+        "message": "a grid is `auto` or 1 to 16 steps per beat",
+        "note": "dew stores a note's position as a whole number of steps, and stepsPerBeat runs to 16"
+      },
+      "noSectionCalled": {
+        "message": "no section called `{name}`"
+      },
+      "sectionRepeatLimit": {
+        "message": "a section repeats at most 256 times"
+      },
+      "overrideOnlyPart": {
+        "message": "an instance can only override a `part`"
+      },
+      "arrangementEmpty": {
+        "message": "the arrangement is empty",
+        "label": "nothing would play"
+      }
+    },
+    "voices": {
+      "channelNeedsName": {
+        "message": "a channel needs a name",
+        "label": "try `channel lead '{'`"
+      },
+      "voicingNeedsName": {
+        "message": "a voicing needs a name",
+        "label": "try `voicing warm '{'`"
+      },
+      "sectionNeedsName": {
+        "message": "a section needs a name",
+        "label": "try `section verse '{'`"
+      },
+      "mixerTrackRange": {
+        "message": "a mixer track is 1 to 32"
+      },
+      "octaveRange": {
+        "message": "an octave shift is -4 to 4"
+      },
+      "notAScope": {
+        "message": "`{name}` is not a scope"
+      },
+      "velocityRange": {
+        "message": "a velocity is 1 to 127",
+        "note": "zero IS a note-off in MIDI, so it can never be a note's velocity"
+      },
+      "voicingSize": {
+        "message": "a voicing holds 1 to 8 voices"
+      },
+      "notADuration": {
+        "message": "`{text}` is not a duration"
+      },
+      "notADurationHere": {
+        "message": "not a duration"
+      },
+      "rhythmRepeatLimit": {
+        "message": "a rhythm entry repeats at most 256 times"
+      },
+      "rhythmNeedsDuration": {
+        "message": "a rhythm needs at least one duration"
+      },
+      "notAChord": {
+        "message": "not a chord"
+      },
+      "weightAtLeastOne": {
+        "message": "a weight must be at least 1"
+      },
+      "harmonyNeedsChord": {
+        "message": "a harmony needs at least one chord"
+      },
+      "chordBarsRange": {
+        "message": "a chord spans 1 to 512 bars"
+      },
+      "chordLength": {
+        "message": "a chord takes `xN`, `N bars` or a note value",
+        "label": "not that"
+      },
+      "notPartOfSection": {
+        "message": "`{keyword}` is not part of a section"
+      },
+      "sectionNeedsHarmony": {
+        "message": "a section needs a harmony",
+        "label": "name one, or write `harmony '{' ... '}'` here"
+      },
+      "sectionNeedsPart": {
+        "message": "a section needs a part",
+        "label": "nothing would sound"
+      },
+      "sectionBarsRange": {
+        "message": "a section spans 1 to 512 bars"
+      }
+    },
+    "parts": {
+      "partNeedsChannel": {
+        "message": "a part needs a channel",
+        "label": "try `part lead '{'`"
+      },
+      "noChannelCalled": {
+        "message": "no channel called `{name}`"
+      },
+      "noVoicingCalled": {
+        "message": "no voicing called `{name}`"
+      },
+      "chordsSyntax": {
+        "message": "`chords` takes `with <voicing>`"
+      },
+      "notPartOfPart": {
+        "message": "`{keyword}` is not part of a part"
+      },
+      "partNeedsKind": {
+        "message": "a part needs `chords`, `line`, a `melody`, a `counterpoint` or an `imitate` block",
+        "label": "nothing here says what to play"
+      },
+      "cannotImitateItself": {
+        "message": "a voice cannot imitate itself",
+        "label": "name a different channel"
+      },
+      "imitationNeedsVoice": {
+        "message": "imitation needs a voice to copy",
+        "help": "write `imitate <channel> '{' delay 1 bar '}'`"
+      },
+      "cannotAnswerItself": {
+        "message": "a voice cannot answer itself",
+        "label": "name a different channel"
+      },
+      "counterpointNeedsVoice": {
+        "message": "counterpoint needs a voice to answer",
+        "help": "write `counterpoint against <channel> '{' ... '}'`"
+      }
+    },
+    "melody": {
+      "leapRange": {
+        "message": "a leap limit is 1 to 24 semitones",
+        "help": "12 is an octave"
+      },
+      "cadenceChordTone": {
+        "message": "a cadence ends on a chord tone",
+        "help": "1 is the root, 3 the third, 5 the fifth, 7 the seventh"
+      },
+      "listNeverClosed": {
+        "message": "this list is never closed",
+        "label": "a `[` needs a `]`"
+      },
+      "choiceIsEmpty": {
+        "message": "a choice needs something to choose from"
+      },
+      "notPartOfMelody": {
+        "message": "`{keyword}` is not part of a melody"
+      },
+      "varianceRange": {
+        "message": "variance is 0 to 1",
+        "note": "0 is the same notes every compile; above 0 explores, still reproducibly"
+      },
+      "muteBudget": {
+        "message": "a mute budget has to leave a note sounding",
+        "note": "`{count} of {window}` would silence every window"
+      }
+    },
+    "harmony": {
+      "longerThanSection": {
+        "message": "this harmony is longer than its section",
+        "label": "the section is already full here",
+        "note": "the section holds {held, plural, one {# step} other {# steps}}; the chords need {needed}"
+      },
+      "doesNotFill": {
+        "message": "this harmony does not fill its section",
+        "label": "{count, plural, one {# step} other {# steps}} left over",
+        "note": "give a chord `xN` to let it take up the slack, or make the section shorter",
+        "help": "silence nobody asked for sounds plausible, which is why this is an error rather than padding"
+      },
+      "noTimeAtAll": {
+        "message": "this chord gets no time at all",
+        "label": "rounds to zero steps",
+        "note": "there are {count, plural, one {# step} other {# steps}} to share between {parts, plural, one {# part} other {# parts}}",
+        "help": "use coarser weights, or a longer section"
+      },
+      "barCheckOffLine": {
+        "message": "this `|` is not on a bar line",
+        "label": "the bar check is here",
+        "note": "the position here is bar {bar}, {count, plural, one {# step} other {# steps}} in"
+      }
+    },
+    "diagnostics": {
+      "tooManyErrors": {
+        "message": "too many errors; stopping here"
+      }
+    },
+    "music": {
+      "emptyChord": {
+        "message": "an empty chord"
+      },
+      "modeHasNoDegrees": {
+        "message": "`{text}` names a scale degree, which {mode} does not have seven of"
+      },
+      "notAChordQuality": {
+        "message": "`{text}` is not a chord quality"
+      },
+      "notAChord": {
+        "message": "`{text}` is not a chord"
+      },
+      "noSuchInversion": {
+        "message": "`{chord}` has no inversion {inversion}"
+      }
     }
   }
 }

@@ -5,6 +5,8 @@
 #include <string_view>
 #include <vector>
 
+#include "lang/Messages.h"
+
 namespace dew::lang
 {
 
@@ -129,9 +131,16 @@ struct ResolvedChord
 /** Resolves a chord symbol against a key.
 
     Returns nothing when the symbol is not a chord at all; `failureReason` says
-    why, in the voice a diagnostic wants ("`vii` needs a seven-note mode").
+    why, in the voice a diagnostic wants ("`vii` needs a seven-note mode"), and
+    in `locale`.
+
+    The locale is a parameter rather than something held, as it is on
+    DiagnosticBag and for the same reason: this becomes E218's message, and a
+    resolver in one language must not be able to make a second resolver in the
+    same process speak another.
 */
 std::optional<ResolvedChord> resolveChord (const ChordSymbol&, const Key&,
-                                           std::string* failureReason = nullptr);
+                                           std::string* failureReason = nullptr,
+                                           Locale locale = referenceLocale);
 
 } // namespace dew::lang

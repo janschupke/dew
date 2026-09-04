@@ -28,17 +28,20 @@ juce::var diagnosticsOf (const lang::CompileResult& result, const juce::String& 
         Obj row;
         row.set ("severity", diagnostic.severity == lang::Severity::error ? "error" : "warning")
             .set ("code", juce::String (diagnostic.code))
-            .set ("message", juce::String (diagnostic.message))
+            .set ("message", juce::String (juce::CharPointer_UTF8 (diagnostic.message.c_str())))
             .set ("line", lines.lineAt (diagnostic.primary.begin))
             .set ("column", lines.columnAt (diagnostic.primary.begin));
 
         juce::Array<juce::var> helps;
 
+        // UTF-8 all the way, for the reason ScoreEditorComponent gives: these
+        // are catalogue sentences, and juce::String's const char* constructor
+        // decodes ASCII.
         for (const auto& help : diagnostic.helps)
-            helps.add (juce::String (help));
+            helps.add (juce::String (juce::CharPointer_UTF8 (help.c_str())));
 
         for (const auto& note : diagnostic.notes)
-            helps.add (juce::String (note));
+            helps.add (juce::String (juce::CharPointer_UTF8 (note.c_str())));
 
         rows.add (row.set ("help", arrayOf (helps)));
     }

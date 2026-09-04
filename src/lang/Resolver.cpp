@@ -60,9 +60,11 @@ void Resolver::addName (std::vector<std::string>& names, const std::string& name
     {
         // Reported at the SECOND declaration: the first is not the mistake,
         // and pointing there sends you to the wrong line.
-        auto& d = diagnostics.error ("E201", "`" + name + "` is declared twice", block.nameRange(),
-                                     "declared again here");
-        d.notes.push_back ("rename one of them");
+        auto& d = diagnostics.error (
+            "E201",
+            diagnostics.text (Msg::resolver_declaredTwice_message, MsgArgs {}.with ("name", name)),
+            block.nameRange(), diagnostics.text (Msg::shared_declaredAgainHere_label));
+        d.notes.push_back (diagnostics.text (Msg::resolver_declaredTwice_note));
         return;
     }
 
@@ -80,8 +82,9 @@ void Resolver::resolveBlocks (const Document& document)
         if (kind == BlockKind::song)
         {
             if (sawSong)
-                diagnostics.error ("E202", "a score has one `song` block", block.keywordRange,
-                                   "declared again here");
+                diagnostics.error ("E202", diagnostics.text (Msg::resolver_oneSongBlock_message),
+                                   block.keywordRange,
+                                   diagnostics.text (Msg::shared_declaredAgainHere_label));
 
             sawSong = true;
             resolveSong (block);
@@ -103,29 +106,35 @@ void Resolver::resolveBlocks (const Document& document)
     if (! sawSong)
     {
         const auto end = (std::uint32_t) source.size();
-        diagnostics.error ("E203", "a score needs a `song` block", { end, end });
+        diagnostics.error ("E203", diagnostics.text (Msg::resolver_needsSongBlock_message),
+                           { end, end });
     }
 }
 
 void Resolver::wrongValue (const Statement& statement, ValueKind kind)
 {
     auto& d = diagnostics.error (
-        "E207", std::string ("`") + std::string (statement.key) + "` takes " + nameOf (kind),
-        statement.range, "not that");
+        "E207",
+        diagnostics.text (Msg::resolver_wrongValue_message,
+                          MsgArgs {}.with ("key", statement.key).with ("kind", nameOf (kind))),
+        statement.range, diagnostics.text (Msg::resolver_wrongValue_label));
 
     if (const auto& members = membersOf (kind); ! members.empty())
     {
         std::string list;
 
         for (const auto& member : members)
-            list += (list.empty() ? "" : ", ") + std::string (member);
+            list += (list.empty() ? "" : diagnostics.text (Msg::shared_listSeparator_text))
+                    + std::string (member);
 
-        d.notes.push_back ("one of: " + list);
+        d.notes.push_back (
+            diagnostics.text (Msg::shared_oneOf_note, MsgArgs {}.with ("list", list)));
 
         if (statement.values.size() == 1)
             if (const auto suggestion = closestMemberTo (kind, statement.values.front().text);
                 ! suggestion.empty())
-                d.helps.push_back ("did you mean `" + std::string (suggestion) + "`?");
+                d.helps.push_back (diagnostics.text (Msg::shared_didYouMean_help,
+                                                     MsgArgs {}.with ("name", suggestion)));
     }
 }
 
@@ -155,9 +164,12 @@ std::optional<std::pair<int, int>> Resolver::asPitchRange (const Statement& stat
 
     if (*high < *low)
     {
-        diagnostics.error ("E208", "this range runs backwards", statement.range,
-                           std::string (statement.values[0].text) + " is above "
-                               + std::string (statement.values[2].text));
+        diagnostics.error ("E208", diagnostics.text (Msg::resolver_rangeBackwards_message),
+                           statement.range,
+                           diagnostics.text (Msg::resolver_rangeBackwards_label,
+                                             MsgArgs {}
+                                                 .with ("low", statement.values[0].text)
+                                                 .with ("high", statement.values[2].text)));
         return std::nullopt;
     }
 
@@ -207,7 +219,7 @@ void Resolver::noteDuration (Duration duration, SourceRange range)
 
 std::string_view Resolver::resolveName (const Statement& statement,
                                         const std::vector<std::string>& declared, const char* code,
-                                        const char* what)
+                                        Msg notFound)
 {
     if (statement.values.size() != 1)
         return {};
@@ -216,9 +228,13 @@ std::string_view Resolver::resolveName (const Statement& statement,
 
     if (! contains (declared, name))
     {
-        diagnostics.error (code,
-                           std::string ("no ") + what + " called `" + std::string (name) + "`",
-                           statement.values.front().range, "not declared");
+        // A whole message per noun, rather than "no " + what + " called". The
+        // noun was spliced into the middle of an English sentence, which is a
+        // shape no other language is obliged to have - and there are two of
+        // them, so the frame was never buying much.
+        diagnostics.error (code, diagnostics.text (notFound, MsgArgs {}.with ("name", name)),
+                           statement.values.front().range,
+                           diagnostics.text (Msg::shared_notDeclared_label));
         return {};
     }
 
@@ -294,8 +310,9 @@ void Resolver::readTempo (const Statement& statement, const KeySpec& spec)
 
     if (! value.has_value() || *value < 20.0 || *value > 400.0)
     {
-        auto& d = diagnostics.error ("E209", "a tempo must be 20 to 400", statement.range);
-        d.notes.push_back ("dew stores one tempo for the whole song");
+        auto& d = diagnostics.error ("E209", diagnostics.text (Msg::resolver_tempoRange_message),
+                                     statement.range);
+        d.notes.push_back (diagnostics.text (Msg::resolver_tempoRange_note));
         return;
     }
 
@@ -320,7 +337,8 @@ void Resolver::readMeter (const Statement& statement, const KeySpec& spec)
 
     if (meter->beatsPerBar < 1 || meter->beatsPerBar > 16)
     {
-        diagnostics.error ("E210", "a bar holds 1 to 16 beats", statement.range);
+        diagnostics.error ("E210", diagnostics.text (Msg::resolver_beatsPerBar_message),
+                           statement.range);
         return;
     }
 
@@ -329,10 +347,9 @@ void Resolver::readMeter (const Statement& statement, const KeySpec& spec)
     if (meter->beatUnit != 1 && meter->beatUnit != 2 && meter->beatUnit != 4 && meter->beatUnit != 8
         && meter->beatUnit != 16)
     {
-        auto& d = diagnostics.error ("E211", "a beat unit must be 1, 2, 4, 8 or 16",
+        auto& d = diagnostics.error ("E211", diagnostics.text (Msg::resolver_beatUnit_message),
                                      statement.range);
-        d.notes.push_back ("MIDI stores the unit's base-2 logarithm, "
-                           "so it has to be a power of two");
+        d.notes.push_back (diagnostics.text (Msg::resolver_beatUnit_note));
         return;
     }
 
@@ -359,10 +376,9 @@ void Resolver::readGrid (const Statement& statement, const KeySpec& spec)
 
     if (! value.has_value() || *value < 1 || *value > maxStepsPerBeat)
     {
-        auto& d = diagnostics.error ("E212", "a grid is `auto` or 1 to 16 steps per beat",
+        auto& d = diagnostics.error ("E212", diagnostics.text (Msg::resolver_grid_message),
                                      statement.range);
-        d.notes.push_back ("dew stores a note's position as a whole number of "
-                           "steps, and stepsPerBeat runs to 16");
+        d.notes.push_back (diagnostics.text (Msg::resolver_grid_note));
         return;
     }
 
@@ -385,21 +401,26 @@ void Resolver::resolveArrangement (const Block& block)
         {
             // At the REFERENCE, not at any definition: the reference is the
             // mistake, and pointing elsewhere sends you to the wrong line.
-            auto& d = diagnostics.error ("E236", "no section called `" + item.section + "`",
-                                         entry.sectionRange, "not declared");
+            auto& d = diagnostics.error ("E236",
+                                         diagnostics.text (Msg::resolver_noSectionCalled_message,
+                                                           MsgArgs {}.with ("name", item.section)),
+                                         entry.sectionRange,
+                                         diagnostics.text (Msg::shared_notDeclared_label));
 
             std::vector<std::string_view> names { symbols.sections.begin(),
                                                   symbols.sections.end() };
 
             if (const auto suggestion = closestOfNames (names, entry.section); ! suggestion.empty())
-                d.helps.push_back ("did you mean `" + std::string (suggestion) + "`?");
+                d.helps.push_back (diagnostics.text (Msg::shared_didYouMean_help,
+                                                     MsgArgs {}.with ("name", suggestion)));
 
             continue;
         }
 
         if (entry.repeat > 256)
         {
-            diagnostics.error ("E237", "a section repeats at most 256 times", entry.range);
+            diagnostics.error ("E237", diagnostics.text (Msg::resolver_sectionRepeatLimit_message),
+                               entry.range);
             continue;
         }
 
@@ -409,7 +430,8 @@ void Resolver::resolveArrangement (const Block& block)
                 if (blockKindFor (child.keyword) == BlockKind::part)
                     item.overrides.push_back (resolvePart (child));
                 else
-                    diagnostics.error ("E238", "an instance can only override a `part`",
+                    diagnostics.error ("E238",
+                                       diagnostics.text (Msg::resolver_overrideOnlyPart_message),
                                        child.keywordRange);
             }
 
@@ -417,8 +439,9 @@ void Resolver::resolveArrangement (const Block& block)
     }
 
     if (model.arrangement.empty())
-        diagnostics.error ("E239", "the arrangement is empty", block.keywordRange,
-                           "nothing would play");
+        diagnostics.error ("E239", diagnostics.text (Msg::resolver_arrangementEmpty_message),
+                           block.keywordRange,
+                           diagnostics.text (Msg::resolver_arrangementEmpty_label));
 }
 
 std::string_view Resolver::closestOfNames (const std::vector<std::string_view>& names,
