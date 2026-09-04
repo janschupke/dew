@@ -181,6 +181,7 @@ add_library(dew_model STATIC
   model/InstrumentType.cpp
   model/ModuleCatalog.cpp
   model/ProjectSchema.cpp
+  model/ProjectSchemaTrees.cpp
   model/ModuleState.cpp
   model/PresetSerializer.cpp
   model/PresetFactory.cpp
@@ -298,6 +299,8 @@ add_library(dew_design STATIC
   ui/design/Icons.cpp
   ui/design/DewGallery.cpp
   ui/primitives/DewControls.cpp
+  ui/primitives/DewKnob.cpp
+  ui/primitives/DewPaint.cpp
   ui/primitives/DewMeter.cpp
   ui/primitives/DewNumberField.cpp
   ui/design/DewLookAndFeel.cpp

@@ -1098,6 +1098,12 @@ TEST_CASE ("no view reads the wheel or the drag scale for itself", "[build][gate
     //
     // Gestures.h is where the reading happens, so it is the one place allowed
     // to touch the raw fields.
+    //
+    // The two primitives that APPLY the drag scale are exempt as well: a knob
+    // and a number field each hand JUCE the number Gestures.h names, which is
+    // the opposite of deciding one. DewKnob.cpp joined the list when the knob
+    // left DewControls.cpp - a name-based exemption is a list a moved file
+    // silently falls off, and this gate went red for exactly that reason.
     const auto found = offenders (
         [] (const juce::String& line)
         {
@@ -1110,7 +1116,7 @@ TEST_CASE ("no view reads the wheel or the drag scale for itself", "[build][gate
                    || line.contains ("wheel.isReversed")
                    || line.contains ("setMouseDragSensitivity");
         },
-        { "Gestures.h", "DewControls.cpp" });
+        { "Gestures.h", "DewControls.cpp", "DewKnob.cpp" });
 
     INFO ("views reading the wheel or the drag scale directly:\n" << found.joinIntoString ("\n"));
     CHECK (found.isEmpty());
