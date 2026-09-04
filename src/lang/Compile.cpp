@@ -29,12 +29,12 @@ std::string CompileResult::report (std::string_view source, std::string_view fil
     return out;
 }
 
-CompileResult compile (std::string_view source, std::string_view fileName)
+CompileResult compile (std::string_view source, std::string_view fileName, Locale locale)
 {
     (void) fileName;
 
     CompileResult result;
-    DiagnosticBag bag { source };
+    DiagnosticBag bag { source, locale };
 
     const auto document = parse (source, bag);
     const auto model = resolve (document, source, bag, result.symbols);

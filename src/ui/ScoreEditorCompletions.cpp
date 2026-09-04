@@ -5,6 +5,7 @@
 #include "lang/Completion.h"
 #include "lang/SourceRange.h"
 #include "ui/ScoreEditorLayout.h"
+#include "ui/ScoreLocale.h"
 
 /*  The completion popup, and the byte-versus-character arithmetic under it.
 
@@ -68,7 +69,7 @@ void ScoreEditorComponent::showCompletions()
     const auto text = source.getAllContent().toStdString();
     const auto offset = byteIndexForCharacter (text, editor.getCaretPos().getPosition());
 
-    const auto result = lang::completionsAt (text, (std::uint32_t) offset);
+    const auto result = lang::completionsAt (text, (std::uint32_t) offset, scoreLocale());
 
     if (result.items.empty())
     {
@@ -109,7 +110,7 @@ void ScoreEditorComponent::acceptCompletion()
 
     const auto text = source.getAllContent().toStdString();
     const auto offset = byteIndexForCharacter (text, editor.getCaretPos().getPosition());
-    const auto result = lang::completionsAt (text, (std::uint32_t) offset);
+    const auto result = lang::completionsAt (text, (std::uint32_t) offset, scoreLocale());
 
     // The partial word is REPLACED, not appended to, or accepting `channel`
     // after `cha` spells `chachannel`.

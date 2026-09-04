@@ -12,6 +12,7 @@
 #include "ui/design/Gestures.h"
 #include "ui/Hotkeys.h"
 #include "ui/ScoreEditorLayout.h"
+#include "ui/ScoreLocale.h"
 #include "ui/design/Tokens.h"
 
 namespace dew
@@ -310,7 +311,7 @@ void ScoreEditorComponent::checkNow()
     // this size, and it is where the errors worth seeing live - an overfull
     // progression, a grid that cannot be represented. Nothing is written.
     const auto result = lang::compile (
-        text, ProjectEdits::scoreSourceName (document.getState()).toStdString());
+        text, ProjectEdits::scoreSourceName (document.getState()).toStdString(), scoreLocale());
 
     diagnostics = result.diagnostics;
 
@@ -357,7 +358,8 @@ void ScoreEditorComponent::compileIntoProject()
 
     const auto text = source.getAllContent().toStdString();
     const auto name = ProjectEdits::scoreSourceName (document.getState());
-    const auto result = lang::compile (text, name.isEmpty() ? "score" : name.toStdString());
+    const auto result = lang::compile (text, name.isEmpty() ? "score" : name.toStdString(),
+                                       scoreLocale());
 
     if (! result.ok())
     {

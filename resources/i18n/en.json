@@ -1501,6 +1501,122 @@
       "unknown": {
         "name": "a value"
       }
+    },
+    "completion": {
+      "quarter": {
+        "detail": "a quarter"
+      },
+      "eighth": {
+        "detail": "an eighth"
+      },
+      "half": {
+        "detail": "a half"
+      },
+      "whole": {
+        "detail": "a whole bar in 4/4"
+      },
+      "sixteenth": {
+        "detail": "a sixteenth"
+      },
+      "dottedQuarter": {
+        "detail": "a dotted quarter"
+      },
+      "dottedEighth": {
+        "detail": "a dotted eighth"
+      },
+      "eighthTriplet": {
+        "detail": "an eighth-note triplet - needs a grid divisible by 3"
+      },
+      "sixteenthTriplet": {
+        "detail": "a sixteenth-note triplet"
+      },
+      "thirtySecond": {
+        "detail": "a thirty-second - will not fit with any triplet"
+      },
+      "rest": {
+        "detail": "a rest; give it a length, as in `- 1/4`"
+      },
+      "tie": {
+        "detail": "tie to the note before; give it a length"
+      },
+      "repeatEntry": {
+        "detail": "repeat the entry before this one"
+      },
+      "root": {
+        "detail": "a root"
+      },
+      "mode": {
+        "detail": "a mode"
+      },
+      "gridAuto": {
+        "detail": "derive it from the durations written"
+      },
+      "gridSteps": {
+        "detail": "steps per beat"
+      },
+      "aRhythm": {
+        "detail": "a rhythm"
+      },
+      "aVoicing": {
+        "detail": "a voicing"
+      },
+      "aHarmony": {
+        "detail": "a harmony"
+      },
+      "aChannel": {
+        "detail": "a channel"
+      },
+      "aSection": {
+        "detail": "a section"
+      },
+      "aScope": {
+        "detail": "a scope"
+      },
+      "meter": {
+        "detail": "beats per bar over the beat unit"
+      },
+      "pitchRange": {
+        "detail": "a range of pitches"
+      },
+      "endOnRoot": {
+        "detail": "end on the root"
+      },
+      "endOnThird": {
+        "detail": "end on the third"
+      },
+      "endOnFifth": {
+        "detail": "end on the fifth"
+      },
+      "endOnSeventh": {
+        "detail": "end on the seventh"
+      },
+      "chooseCadence": {
+        "detail": "a different ending in each instance, the same one every compile"
+      },
+      "perScope": {
+        "detail": "how often to re-draw it"
+      },
+      "leapMax": {
+        "detail": "and then a number of semitones"
+      },
+      "leapResolve": {
+        "detail": "and then `step` or `free`"
+      },
+      "ruleForbid": {
+        "detail": "remove the candidate outright"
+      },
+      "ruleSoft": {
+        "detail": "charge it, and follow with a weight"
+      },
+      "repeatSection": {
+        "detail": "play it twice, re-rolling what is random"
+      },
+      "identicalSection": {
+        "detail": "play the SAME notes again, as one pattern"
+      },
+      "labelInstance": {
+        "detail": "name this instance so inserting before it cannot move it"
+      }
     }
   }
 }

@@ -19,11 +19,11 @@ void add (std::vector<Completion>& out, std::string text, std::string detail, Co
     out.push_back ({ std::move (text), std::move (detail), kind });
 }
 
-void addAll (std::vector<Completion>& out, const std::vector<std::string>& names,
-             const char* detail)
+void addAll (std::vector<Completion>& out, const std::vector<std::string>& names, Msg detail,
+             Locale locale)
 {
     for (const auto& name : names)
-        add (out, name, detail, CompletionKind::name);
+        add (out, name, msg (detail, locale), CompletionKind::name);
 }
 
 /** The chords worth offering first, in the mode the caret is in.
@@ -108,48 +108,54 @@ std::string spell (std::string_view numeral, const Key& key)
     return {};
 }
 
-/** Durations, plus the two things that are not notes. */
-void addDurations (std::vector<Completion>& out)
+/** Durations, plus the two things that are not notes.
+
+    The text is the language's own spelling and never moves; only the detail
+    beside it is a sentence.
+*/
+void addDurations (std::vector<Completion>& out, Locale locale)
 {
     struct Entry
     {
         const char* text;
-        const char* detail;
+        Msg detail;
     };
 
     static const Entry entries[] = {
-        { "1/4", "a quarter" },
-        { "1/8", "an eighth" },
-        { "1/2", "a half" },
-        { "1/1", "a whole bar in 4/4" },
-        { "1/16", "a sixteenth" },
-        { "1/4.", "a dotted quarter" },
-        { "1/8.", "a dotted eighth" },
-        { "1/8t", "an eighth-note triplet - needs a grid divisible by 3" },
-        { "1/16t", "a sixteenth-note triplet" },
-        { "1/32", "a thirty-second - will not fit with any triplet" },
-        { "-", "a rest; give it a length, as in `- 1/4`" },
-        { "~", "tie to the note before; give it a length" },
-        { "x2", "repeat the entry before this one" },
+        { "1/4", Msg::completion_quarter_detail },
+        { "1/8", Msg::completion_eighth_detail },
+        { "1/2", Msg::completion_half_detail },
+        { "1/1", Msg::completion_whole_detail },
+        { "1/16", Msg::completion_sixteenth_detail },
+        { "1/4.", Msg::completion_dottedQuarter_detail },
+        { "1/8.", Msg::completion_dottedEighth_detail },
+        { "1/8t", Msg::completion_eighthTriplet_detail },
+        { "1/16t", Msg::completion_sixteenthTriplet_detail },
+        { "1/32", Msg::completion_thirtySecond_detail },
+        { "-", Msg::completion_rest_detail },
+        { "~", Msg::completion_tie_detail },
+        { "x2", Msg::completion_repeatEntry_detail },
     };
 
     for (const auto& entry : entries)
-        add (out, entry.text, entry.detail, CompletionKind::value);
+        add (out, entry.text, msg (entry.detail, locale), CompletionKind::value);
 }
 
-void addRoots (std::vector<Completion>& out)
+void addRoots (std::vector<Completion>& out, Locale locale)
 {
     for (const auto* root :
          { "C", "C#", "Db", "D", "Eb", "E", "F", "F#", "Gb", "G", "Ab", "A", "Bb", "B" })
-        add (out, root, "a root", CompletionKind::value);
+        add (out, root, msg (Msg::completion_root_detail, locale), CompletionKind::value);
 }
 
-void addModes (std::vector<Completion>& out)
+void addModes (std::vector<Completion>& out, Locale locale)
 {
+    // The mode NAMES are keywords - `key F dorian` is written exactly so - and
+    // are never translated. Only the word for what they are is.
     for (const auto* mode : { "major", "minor", "dorian", "phrygian", "lydian", "mixolydian",
                               "locrian", "harmonic-minor", "melodic-minor", "major-pentatonic",
                               "minor-pentatonic", "blues", "chromatic" })
-        add (out, mode, "a mode", CompletionKind::value);
+        add (out, mode, msg (Msg::completion_mode_detail, locale), CompletionKind::value);
 }
 
 /** Candidates for one value position, from its declared kind and nothing else.
@@ -173,50 +179,64 @@ void addForKind (std::vector<Completion>& out, ValueKind kind, int wordsAlready,
     {
         case ValueKind::key:
             if (wordsAlready == 0)
-                addRoots (out);
+                addRoots (out, locale);
             else
-                addModes (out);
+                addModes (out, locale);
             break;
 
         case ValueKind::grid:
-            add (out, "auto", "derive it from the durations written", CompletionKind::value);
+            add (out, "auto", msg (Msg::completion_gridAuto_detail, locale), CompletionKind::value);
             for (const auto* n : { "4", "8", "12", "16" })
-                add (out, n, "steps per beat", CompletionKind::value);
+                add (out, n, msg (Msg::completion_gridSteps_detail, locale), CompletionKind::value);
             break;
 
-        case ValueKind::rhythmRef: addAll (out, symbols.rhythms, "a rhythm"); break;
-        case ValueKind::voicingRef: addAll (out, symbols.voicings, "a voicing"); break;
-        case ValueKind::harmonyRef: addAll (out, symbols.harmonies, "a harmony"); break;
-        case ValueKind::channelRef: addAll (out, symbols.channels, "a channel"); break;
+        case ValueKind::rhythmRef:
+            addAll (out, symbols.rhythms, Msg::completion_aRhythm_detail, locale);
+            break;
+        case ValueKind::voicingRef:
+            addAll (out, symbols.voicings, Msg::completion_aVoicing_detail, locale);
+            break;
+        case ValueKind::harmonyRef:
+            addAll (out, symbols.harmonies, Msg::completion_aHarmony_detail, locale);
+            break;
+        case ValueKind::channelRef:
+            addAll (out, symbols.channels, Msg::completion_aChannel_detail, locale);
+            break;
 
         case ValueKind::meter:
             for (const auto* m : { "4/4", "3/4", "6/8", "5/4", "7/8" })
-                add (out, m, "beats per bar over the beat unit", CompletionKind::value);
+                add (out, m, msg (Msg::completion_meter_detail, locale), CompletionKind::value);
             break;
 
         case ValueKind::pitchRange:
             for (const auto* r : { "C3..C5", "C2..C4", "C4..C6", "E1..E3" })
-                add (out, r, "a range of pitches", CompletionKind::value);
+                add (out, r, msg (Msg::completion_pitchRange_detail, locale),
+                     CompletionKind::value);
             break;
 
         case ValueKind::cadence:
             if (wordsAlready == 0)
             {
-                add (out, "1", "end on the root", CompletionKind::value);
-                add (out, "3", "end on the third", CompletionKind::value);
-                add (out, "5", "end on the fifth", CompletionKind::value);
-                add (out, "7", "end on the seventh", CompletionKind::value);
-                add (out, "choose [1 3 5] per instance",
-                     "a different ending in each instance, the same one every compile",
+                add (out, "1", msg (Msg::completion_endOnRoot_detail, locale),
                      CompletionKind::value);
+                add (out, "3", msg (Msg::completion_endOnThird_detail, locale),
+                     CompletionKind::value);
+                add (out, "5", msg (Msg::completion_endOnFifth_detail, locale),
+                     CompletionKind::value);
+                add (out, "7", msg (Msg::completion_endOnSeventh_detail, locale),
+                     CompletionKind::value);
+                add (out, "choose [1 3 5] per instance",
+                     msg (Msg::completion_chooseCadence_detail, locale), CompletionKind::value);
             }
             else
             {
                 // Past `choose [...] `, the only thing left to write is a scope.
-                add (out, "per", "how often to re-draw it", CompletionKind::value);
+                add (out, "per", msg (Msg::completion_perScope_detail, locale),
+                     CompletionKind::value);
 
                 for (const auto& member : membersOf (ValueKind::scope))
-                    add (out, std::string (member), "a scope", CompletionKind::value);
+                    add (out, std::string (member), msg (Msg::completion_aScope_detail, locale),
+                         CompletionKind::value);
             }
             break;
 
@@ -245,14 +265,17 @@ void addForKind (std::vector<Completion>& out, ValueKind kind, int wordsAlready,
 
         case ValueKind::leapRule:
             if (wordsAlready == 0)
-                add (out, "max", "and then a number of semitones", CompletionKind::value);
+                add (out, "max", msg (Msg::completion_leapMax_detail, locale),
+                     CompletionKind::value);
             else
-                add (out, "resolve", "and then `step` or `free`", CompletionKind::value);
+                add (out, "resolve", msg (Msg::completion_leapResolve_detail, locale),
+                     CompletionKind::value);
             break;
 
         case ValueKind::rule:
-            add (out, "forbid", "remove the candidate outright", CompletionKind::value);
-            add (out, "soft", "charge it, and follow with a weight", CompletionKind::value);
+            add (out, "forbid", msg (Msg::completion_ruleForbid_detail, locale),
+                 CompletionKind::value);
+            add (out, "soft", msg (Msg::completion_ruleSoft_detail, locale), CompletionKind::value);
             break;
     }
 }
@@ -421,24 +444,25 @@ CompletionResult completionsAt (std::string_view source, std::uint32_t byteOffse
                  CompletionKind::value);
 
         if (atStatementStart)
-            add (items, "key", "the key these numerals are read in", CompletionKind::key);
+            add (items, "key", msg (Msg::doc_harmonyKey_doc, locale), CompletionKind::key);
     }
     else if (result.block == BlockKind::rhythm)
     {
-        addDurations (items);
+        addDurations (items, locale);
     }
     else if (result.block == BlockKind::arrangement)
     {
         if (atStatementStart)
         {
-            addAll (items, symbols.sections, "a section");
+            addAll (items, symbols.sections, Msg::completion_aSection_detail, locale);
         }
         else
         {
-            add (items, "x2", "play it twice, re-rolling what is random", CompletionKind::value);
-            add (items, "identical", "play the SAME notes again, as one pattern",
+            add (items, "x2", msg (Msg::completion_repeatSection_detail, locale),
                  CompletionKind::value);
-            add (items, "as", "name this instance so inserting before it cannot move it",
+            add (items, "identical", msg (Msg::completion_identicalSection_detail, locale),
+                 CompletionKind::value);
+            add (items, "as", msg (Msg::completion_labelInstance_detail, locale),
                  CompletionKind::value);
         }
     }
@@ -472,7 +496,7 @@ CompletionResult completionsAt (std::string_view source, std::uint32_t byteOffse
     {
         // `part <channel>` - the one block whose name has to be something
         // already declared.
-        addAll (items, symbols.channels, "a channel");
+        addAll (items, symbols.channels, Msg::completion_aChannel_detail, locale);
     }
 
     // --- filter ---------------------------------------------------------------
