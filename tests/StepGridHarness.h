@@ -66,6 +66,24 @@ struct GridHarness
     StepGridComponent grid { document, engine, editorState };
 };
 
+/** The centre of a cell, ASKED of the grid rather than recomputed.
+
+    The comment on this harness has claimed since it was written that both its
+    users "aim at a cell by asking the component where it is". Until
+    getBoundsForCell existed there was nothing to ask, and the two of them each
+    rebuilt the rectangle from xForStep and rowHeight instead - which is the
+    duplication the claim was about.
+*/
+inline juce::Point<int> pointFor (GridHarness& h, int step, int row)
+{
+    const auto cell = h.grid.getBoundsForCell (row, step);
+
+    REQUIRE (cell.getWidth() > 0.0f);
+    REQUIRE (cell.getBottom() <= (float) h.grid.getRowsHeight());
+
+    return cell.getCentre().roundToInt();
+}
+
 inline juce::MouseEvent eventAt (juce::Component& target, juce::Point<int> local,
                                  juce::ModifierKeys mods = juce::ModifierKeys())
 {

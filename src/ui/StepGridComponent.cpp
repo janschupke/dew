@@ -210,6 +210,12 @@ int StepGridComponent::rowAtY (int y) const
     return y / size::rowHeight;
 }
 
+juce::Rectangle<float> StepGridComponent::getBoundsForCell (int row, int step) const
+{
+    return { timeline.xForStep ((double) step), (float) (row * size::rowHeight),
+             (float) timeline.pixelsPerStep, (float) size::rowHeight };
+}
+
 int StepGridComponent::getNumRows() const
 {
     int rows = 0;
@@ -296,10 +302,10 @@ void StepGridComponent::repaintCell (juce::Point<int> cell)
     if (cell.x < 0 || cell.y < 0)
         return;
 
-    repaint (juce::Rectangle<int> ((int) timeline.xForStep ((double) cell.x),
-                                   cell.y * size::rowHeight,
-                                   (int) std::ceil (timeline.pixelsPerStep) + 2, size::rowHeight)
-                 .expanded (space::xxs));
+    // Rounded OUT, then given the same margin it always had: a repaint region
+    // has to cover the pixels the cell touches, and a cell's width is
+    // fractional at most zooms.
+    repaint (getBoundsForCell (cell.y, cell.x).getSmallestIntegerContainer().expanded (space::xxs));
 }
 
 void StepGridComponent::mouseExit (const juce::MouseEvent&)

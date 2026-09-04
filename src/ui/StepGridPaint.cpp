@@ -150,10 +150,7 @@ void StepGridComponent::paint (juce::Graphics& g)
 
         for (int step = visible.getStart(); step < visible.getEnd(); ++step)
         {
-            const auto cell = juce::Rectangle<float> (timeline.xForStep ((double) step),
-                                                      (float) (row * size::rowHeight), width,
-                                                      (float) size::rowHeight)
-                                  .reduced (2.0f, 4.0f);
+            const auto cell = getBoundsForCell (row, step).reduced (2.0f, 4.0f);
 
             // Hover: show where a click would land, so an empty grid still
             // signals that it is interactive. The WHOLE cell lights, not the
@@ -161,9 +158,7 @@ void StepGridComponent::paint (juce::Graphics& g)
             // as a small block appearing rather than as this square being live.
             if (hoverCell.x == step && hoverCell.y == row)
             {
-                const auto full = juce::Rectangle<float> (timeline.xForStep ((double) step),
-                                                          (float) (row * size::rowHeight), width,
-                                                          (float) size::rowHeight);
+                const auto full = getBoundsForCell (row, step);
 
                 g.setColour (colour::surfaceRaised.withAlpha (emphasis::strong));
                 g.fillRect (full.reduced (stroke::whisper));

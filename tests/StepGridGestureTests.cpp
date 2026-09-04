@@ -21,19 +21,10 @@ using namespace dew::testing;
 namespace
 {
 
-/** The centre of a cell, asked of the grid's own timeline rather than
-    recomputed, so a layout change breaks the test instead of silently moving
-    it somewhere harmless.
-*/
+/** The centre of a cell. Asks the harness, which asks the grid. */
 juce::Point<int> cellCentre (GridHarness& h, int step, int row)
 {
-    const auto x = (int) (h.grid.getTimeline().xForStep ((double) step + 0.5));
-    const auto y = row * tokens::size::rowHeight + tokens::size::rowHeight / 2;
-
-    REQUIRE (x > 0);
-    REQUIRE (y < h.grid.getRowsHeight());
-
-    return { x, y };
+    return pointFor (h, step, row);
 }
 
 int stepsLitOnRow (GridHarness& h, int channelId)

@@ -63,6 +63,20 @@ public:
     /** Frames the whole pattern, and counts as taking the view. */
     void zoomToFit();
 
+    /** Where one cell sits, which is the inverse of stepAtX and rowAtY.
+
+        Written out three times before it was named - the hover highlight, the
+        note fill and repaintCell each rebuilt the same rectangle from
+        xForStep and rowHeight - and the roll and the playlist have had
+        getBoundsForNote and getBoundsForClip all along. A test that wants to
+        click a cell should ask for this rather than recompute it, the way
+        RollHarness::pointFor asks for a note's bounds.
+
+        Valid for any row and step: the grid is a lattice, so a cell exists at
+        a coordinate whether or not anything is drawn in it.
+    */
+    juce::Rectangle<float> getBoundsForCell (int row, int step) const;
+
     /** Number of channel rows currently drawn. */
     int getNumRows() const;
 
