@@ -289,12 +289,13 @@ jobs:
     steps:
       # webkit2gtk and libcurl are deliberately absent: JUCE_WEB_BROWSER=0 and
       # JUCE_USE_CURL=0 mean JUCE finds them missing at configure time and
-      # carries on. xvfb because juce_gui_basics opens a display in the suite.
+      # carries on. xvfb because juce_gui_basics opens a display in the suite,
+      # and openbox because a bare one is not enough - see the Test step.
       - name: Toolchain
         run: |
           apt-get update -qq
           DEBIAN_FRONTEND=noninteractive apt-get install -y -qq --no-install-recommends \
-            build-essential ninja-build git pkg-config ca-certificates curl xvfb \
+            build-essential ninja-build git pkg-config ca-certificates curl xvfb openbox x11-utils \
             libasound2-dev libfreetype-dev libfontconfig1-dev \
             libx11-dev libxext-dev libxinerama-dev libxrandr-dev libxcursor-dev \
             libxcomposite-dev libxrender-dev libxi-dev \
@@ -335,7 +336,28 @@ jobs:
           chown -R suite .
           # PATH explicitly: su starts a login-ish shell and resets it, which
           # drops the /opt CMake installed above and makes ctest "not found".
-          su suite -c "PATH='$PATH' xvfb-run -a ctest --test-dir build/linux-app --output-on-failure --parallel 4"
+          #
+          # And a window manager, which is not decoration. An X server RESETS
+          # when its last client disconnects, throwing away every atom it has
+          # interned. Under a bare xvfb-run nothing stays connected between
+          # test processes, so each one starts on a wiped server where
+          # WM_PROTOCOLS does not exist. JUCE asks for that atom with
+          # only_if_exists and writes back the None it gets, which fails the
+          # first native window with BadAtom - so any test that opens a real
+          # popup dies. openbox both holds the connection open and interns the
+          # atom, which is why the wait below is for the atom and not a timer.
+          cat > /tmp/run-suite.sh <<'SH'
+          #!/usr/bin/env bash
+          set -euo pipefail
+          openbox >/dev/null 2>&1 &
+          for _ in $(seq 1 200); do
+            if xlsatoms -name WM_PROTOCOLS >/dev/null 2>&1; then ready=1; break; fi
+          done
+          [[ -n "${ready:-}" ]] || { echo "the window manager never interned WM_PROTOCOLS"; exit 1; }
+          exec ctest --test-dir build/linux-app --output-on-failure --parallel 4
+          SH
+          chmod 755 /tmp/run-suite.sh
+          su suite -c "PATH='$PATH' xvfb-run -a /tmp/run-suite.sh"
 
   # ----------------------------------------------------------------------------
   # Sanitizers. Separate jobs because ASan and TSan cannot share a build, and
