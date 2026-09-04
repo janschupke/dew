@@ -16,14 +16,14 @@ of 2.0, which is why a parameter is one `ParamSpec` row now.
 
 | Surface | Owns | Never |
 | --- | --- | --- |
-| Inline comment | Why *this code* is shaped this way — a JUCE trap, a measurement local to the file, an alternative deleted here | Restating the README's argument. Link to it. |
-| `README.md` | The reasoning: what dew is, why the layers are libraries, why there is no command queue, why animation is off by default. dew has no `docs/adr/` — this is where a decision is argued | Telling you what to do before writing code. That is a rule's job. |
-| `.ai/rules/` | What you must do before writing code, and what will fail if you do not | Reasoning at length. Name the README section instead. |
+| Inline comment | Why *this code* is shaped this way — a JUCE trap, a measurement local to the file, an alternative deleted here | Restating a rule's argument. Link to it. |
+| `README.md` | The tour: what dew is, how to build it, run it and test it, what it does, the layer diagram, and the score language by example. The first thing a reader sees, and short enough to be read | Arguing a decision at length, or holding a subject a rule file owns. Link to the rule. |
+| `.ai/rules/` | Its subject, whole: what you must do before writing code and what will fail if you do not, then the argument for it under a final `## Why it is this way`. dew has no `docs/adr/` — a decision is argued in the rule file for the thing it decides | Repeating a fact another rule file owns, or an argument the code could make as a gate |
 | `THIRD_PARTY.md` | Nothing. CMake writes it at configure time | Being hand-edited — `scripts/check.sh` diffs it |
 | `AGENTS.md` | An index, and the excerpt an agent trips over first | Anything not derivable from the files it links |
 | `.cursor/rules/main.mdc` | Nothing. It is generated from `AGENTS.md` | Being edited by hand — `./scripts/gen-cursor-rules.sh --check` fails |
 | `CLAUDE.md` | Nothing. One line, `@AGENTS.md` | Growing content of its own |
-| `website/src/content/` | The claim, for a reader who has not cloned anything — what dew is and what it does | Arguing a decision. The README owns every "why"; link to it |
+| `website/src/content/` | The claim, for a reader who has not cloned anything — what dew is, what it does, and how to build it | Arguing a decision. A rule file owns every "why" |
 | `website/src/generated/` | Nothing. `dew_docs` and `dew_shot` write it | Being hand-edited — a test in `dew_tests` diffs it |
 | `website/src/messages/en.json` | Every sentence the site's own chrome says | Holding reference content — that is generated |
 
@@ -44,6 +44,14 @@ Three kinds, and they are not the same:
   quoting it: `Tokens.h`, `cmake/DependencyPins.cmake`, `CMakePresets.json`.
 
 ## What is enforced, and by what
+
+Two rows of that table moved in the commit that split the README up. The argument for a
+subject now lives in the rule file for that subject, under a final `## Why it is this
+way`, rather than in a README section the rule pointed at: someone who opens
+[`design-system.md`](design-system.md) to find out what a gate refuses gets the reason it
+refuses without leaving the file, and there is no anchor between the two left to go stale.
+The README keeps what a reader wants before they have cloned anything — what this is, how
+to build it, what it does.
 
 dew ships **no linter and no `.clang-tidy`**. Everything beyond `clang-format` is enforced
 by a test. Before adding a rule to one of these files, ask which of the three it is:

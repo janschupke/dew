@@ -2,7 +2,9 @@
 
 `dew_lang` (`src/lang/`, namespace `dew::lang`) compiles `.score` text to real patterns,
 notes and clips in a project. CLI: `dew_score`. In-app: the Score tab, Command-R.
-[README.md](../../README.md#the-score-language) is the reference for the language itself.
+[README.md](../../README.md#the-score-language) is the annotated example; the site's
+`/score/reference/` is the generated reference, and [Why it is this
+way](#why-it-is-this-way) below is the reasoning.
 
 ## Determinism is the whole point
 
@@ -76,3 +78,166 @@ escape hatch, and `--json` golden files were cut and stay cut.
   `src/lang/Numbers.*`.
 - **A grid test needs a score with `1/16` and `1/8t`** (lcm 12). `examples/amber.score`
   needs grid 4, so it proves nothing about the grid.
+
+## Why it is this way
+
+### Determinism
+
+`seed` is the root of a tree of keys, and every random choice draws from a stream derived
+from its own **structural path** — section, instance, channel, site, bar, onset — never
+from a byte offset and never from a shared stream. So editing one section leaves every
+other section's notes bit-identical, inserting a blank line changes nothing, and adding a
+`choose` at bar 3 cannot rewrite bar 4. `variance 0` is a pure argmin: the same notes
+every compile, from any seed.
+
+A melody can also be told how far it may jump and whether a jump has to be answered
+(`leap max 7 resolve step`), and whether its rhythm restarts at each bar line or runs on
+against it (`align bar` / `align continuous`). A voicing can be told which note goes at
+the bottom — `bass from-inversion` is the default and is what makes writing `i^1` move a
+note rather than decorate the page.
+
+splitmix64 and PCG32 are written out rather than delegated. `std::uniform_int_distribution`
+and `std::shuffle` specify their *statistics*, not their algorithms, so libstdc++ and
+libc++ render different music from one seed; `juce::Random` is an LCG whose exact sequence
+would become part of the file format. A test pins literal outputs, because those numbers
+are now the format.
+
+### The shape of it
+
+`src/lang/` is `dew_lang`, a static library that links **nothing at all**, JUCE included —
+a compiler that cannot reach into the document is one whose only output is its IR. A source
+gate enforces it, because a header-only include would still link. The parser is hand-written
+recursive descent; a generator would have cost a pinned dependency, a manifest row and a
+Java-at-build-time decision for fifteen productions, and would have made byte-accurate
+diagnostics harder rather than easier. Same argument as "Why not vcpkg or Conan" below.
+
+Output is **baked** into the project as ordinary channels, patterns, notes and
+`kind="pattern"` clips, so playback, the piano roll, the renderer, stems and MIDI export
+all work on it unchanged and no new clip kind exists to be taught to the four places that
+would need it. The language owns notes, patterns and clips; the user owns channels,
+instruments, effects and the mixer — a track adopts a channel by name and reads nothing
+from it but the name, so a sound you dialled in survives a recompile.
+
+### Counterpoint, and choices a seed makes
+
+A part may answer another rather than being written on its own:
+
+```
+part answer {
+  counterpoint against lead {
+    rhythm               pulse
+    parallel-fifths      forbid
+    parallel-octaves     forbid
+    voice-crossing       forbid
+    dissonance-on-strong soft 3
+    leaps                soft 1.5
+  }
+}
+```
+
+A **beam search of width 8** over the onsets, scored against the voices already
+written — not a constraint solver. A solver's failure modes are "unsatisfiable" and
+"twenty seconds", both fatal in an editor that recompiles as you type; the cases a beam
+loses are close to inaudible next to the machinery; and a beam's choice can be explained
+in a diagnostic. Cost is additive along the timeline, so the beam is an exact dynamic
+program over the states it keeps.
+
+The seven rules are a closed set, each `forbid` or `soft <weight>` — closed because
+completion depends on it, and because an open-ended rule language is a solver by another
+name. When the hard rules leave nothing to sing they are **given up in a declared order,
+one at a time, and every one is reported by bar**. The line never falls silent without
+saying so. `species` is deliberately absent: Fux's rules are the easy fifth of it, and a
+number in the language would imply a guarantee this cannot make.
+
+**Imitation is an operator, not a search target:**
+
+```
+part echo {
+  imitate lead {
+    delay     1 bar
+    transpose 2
+    mode      diatonic     // stays in the key; `chromatic` moves exactly
+  }
+}
+```
+
+A beam search will essentially never *discover* imitation, because imitation constrains
+the whole line's identity rather than local transitions — so asking a search for it is
+asking for the one thing it cannot do. Written out it is exact, and it is fifteen lines.
+Anything falling past the section's end is dropped rather than wrapped: a canon that
+wrapped would answer itself from the future.
+
+**A value can be chosen rather than set**, and say how often it is re-drawn:
+
+```
+cadence  choose [1 3 5] per instance   // a different ending in each verse
+velocity 80 +- 20 per bar
+```
+
+The scope *is* the identity of the draw, not a knob on how random it is: `per song`
+derives one key for the whole song, `per instance` one for each rendered instance, `per
+bar` and `per note` go deeper. Same seed tree, different depth. `choose` takes a list and
+nothing computable — the moment a value can be *computed*, completion stops being a table
+lookup and the grid stops being statically knowable.
+
+### The editor
+
+Two things happen in the Score tab and they are deliberately not the same thing.
+**Checking** runs on a debounce as you type: it lexes, parses, resolves and generates, and
+it writes nothing - no notes, no undo entry. **Compiling** happens only when you ask, and
+writes patterns, notes and clips in one undo transaction. A debounced auto-compile would
+put an undo step full of notes on every pause in typing and would replace hand edits
+without being asked, which is the one thing the recompile policy exists to prevent. The
+source text itself *is* saved on the debounce, one transaction per typing run.
+
+Errors surface in three places doing three jobs: the squiggle says **where**, the list
+under the editor says **what** and scrolls the editor to it when clicked, and the status
+bar says whether the project was written to at all.
+
+Control-Space completes. Keys and block keywords come from the same schema table the
+resolver validates against, names from the same resolve the compiler runs, and chords
+through the same `resolveChord` that writes the notes — so nothing can be offered that the
+compiler would then reject, and a key cannot be added without being completable. Chords are
+ranked by the key that is written and **spelled beside the numeral**: in A minor `bVI`
+reads `F`.
+
+The highlighter is not a second grammar. `lang::scanOne` is a template over a minimal
+cursor concept, and the editor's tokeniser is its second instantiation - the first walks a
+`std::string_view` for the compiler, this one walks a `juce::CodeDocument::Iterator`. A
+test asserts both produce the same token kinds over the example score, because a
+highlighter that disagrees with the compiler is worse than none. Keywords are coloured from
+the schema table rather than from a keyword list, so a key cannot exist without being
+highlighted.
+
+Compiling into a project that already has music refuses a grid or meter mismatch, as
+described below. Compiling into an *empty* one applies both: nothing there has a meaning
+they could change, and a new project sits at four steps per beat.
+
+### Recompiling, and what happens to what you changed
+
+The source lives **inside** the `.dew`, one node per line so it reads as a diff rather than
+as one enormous string. A project and the score it came from are one document; the moment
+they can travel separately, "which of these two files is current" becomes a question
+somebody has to answer.
+
+So compiling twice is an update, not a second copy. Every node a compile writes carries a
+`genId` naming the part of the score that produced it — a section plus either its
+occurrence number or its `as` label, the same identity the random draws use, so what pins
+an instance's music also pins its document node. A pattern also carries the hash its notes
+had when they were written. Recompiling hashes them again, which sorts every generated
+pattern into three:
+
+| State | What happens |
+|---|---|
+| hash matches | nobody has touched it — replaced |
+| hash differs | edited in the piano roll — **kept**, counted, and reported |
+| no longer produced | removed, unless it was edited, in which case it stays without a clip |
+
+`dew_score --discard-edits` takes the other branch. Both are one undo transaction either
+way. The hash covers the length and the notes and deliberately not the name: renaming a
+pattern is not a musical change, and letting it read as one would mean labelling a pattern
+quietly stopped the compiler ever updating it again.
+
+The honest limit: a clip on the generated lane is rebuilt every time, because where a
+section sits is the arrangement's to say. Drag one to another lane and it is yours.
+

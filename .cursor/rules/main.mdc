@@ -12,19 +12,20 @@ piano roll, a playlist of clips and a mixer, driven by a three-oscillator synth 
 CMake, Catch2. Eight static libraries rather than eight directories, so a layering mistake
 is a link error.
 
-[README.md](../../README.md) is the tour and the reasoning: what the app does, why each decision
-was taken, and what was rejected. All detailed rules live in [`.ai/rules/`](../../.ai/rules/) —
-the single source of truth for what you must do before writing code.
+[README.md](../../README.md) is the tour: what the app does, how to build it, run it and test
+it, the layer diagram, and the score language by example. Everything else — what you must
+do before writing code, and the argument for it under each file's final `## Why it is this
+way` — lives in [`.ai/rules/`](../../.ai/rules/), one file per subject.
 [`.ai/rules/README.md`](../../.ai/rules/README.md) states the rule about the rules: one fact, one
 home, and every other mention is a sentence and a link. Read it before adding to any of
 these files.
 
 ## Rules
 
-- [Architecture](../../.ai/rules/architecture.md) — the eight libraries and what each may depend on, rooted includes, one `ParamSpec` per parameter, every edit through `ProjectEdits`, and the two things that fail silently (a new clip kind, a metre that is not a tempo)
-- [The audio thread](../../.ai/rules/realtime.md) — the render path allocates nothing, effect modules are never destroyed, no command queue, and the three queues with three different contracts
+- [Architecture](../../.ai/rules/architecture.md) — the eight libraries and what each may depend on, rooted includes, one `ParamSpec` per parameter, every edit through `ProjectEdits`, the two things that fail silently (a new clip kind, a metre that is not a tempo), and how a module and the project file are shaped
+- [The audio thread](../../.ai/rules/realtime.md) — the render path allocates nothing, effect modules are never destroyed, why there is no command queue, and the three queues with three different contracts
 - [Design system](../../.ai/rules/design-system.md) — everything from `Tokens.h`; no hex colour, no bare radius or gap, no size the ladder already names, no orphan token, no colour pair below its contrast ratio in EITHER palette; icons as `juce::Path`; motion off unless the application turns it on; a control reachable by tab, ringed when focused, and named for a screen reader
-- [Gestures and hotkeys](../../.ai/rules/gestures-and-hotkeys.md) — every key a row in `Hotkeys.h`, `matches()` ignores shift, a wheel notch is pixels divided at the point of use, and view geometry lives on the view
+- [Gestures and hotkeys](../../.ai/rules/gestures-and-hotkeys.md) — every key a row in `Hotkeys.h`, `matches()` ignores shift, a wheel notch is pixels divided at the point of use, a rotary answers vertical travel alone, view geometry lives on the view, and the per-editor key table
 - [Testing](../../.ai/rules/testing.md) — `release` is not the gate, `juce::exactlyEqual` not `==`, and the four ways a headless test passes while proving nothing
 - [The score language](../../.ai/rules/score-language.md) — `dew_lang` links nothing, hand-written RNG keyed on the structural path, byte-identical **across processes**, the three host walls, and what is settled
 - [Rendering and export](../../.ai/rules/render-and-export.md) — a bar range renders from sample 0, stems mute rather than solo, LAME encodes in its writer's destructor, and the post-processing order

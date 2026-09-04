@@ -38,8 +38,9 @@ queue** — do not add one.
 `PreviewQueue` (single-producer ring), `SnapshotBridge` (triple-buffered publish through
 one compare-and-swap) and `SignalTap` (overwrite-without-asking, `std::atomic<float>`
 slots, one monotonic count) each answer a different question, and none of the three is a
-default choice. Read [README.md](../../README.md#three-queues-three-different-contracts)
-before touching any of them or adding a fourth.
+default choice. Read [Three queues, three different
+contracts](#three-queues-three-different-contracts), below, before touching any of them or
+adding a fourth.
 
 `ctest --preset tsan` exists for exactly these three, and is **CI-only** — the TSan runtime
 does not work on this machine. A race here looks like a flake rather than a failure.
@@ -47,3 +48,46 @@ does not work on this machine. A race here looks like a flake rather than a fail
 The engine knows nothing about audio devices: it is prepared with a sample rate and a
 block size and fills a buffer, which is why live playback and offline rendering run the
 same code and a passing render says something about the real engine. Keep it that way.
+
+## Why it is this way
+
+### Effects without a command queue
+
+Effect *parameters* travel in the snapshot like everything else. Effect *instances* own
+state — delay lines, reverb tanks — that has to survive a snapshot swap, and the usual
+answer is a lock-free command queue.
+
+dew does not have one. Modules are built on the message thread on first use, keyed on
+(slot, type), and **never destroyed while the engine lives**. That is a correctness
+argument rather than thrift: `SnapshotBridge` has no acknowledgement path, so the message
+thread cannot learn when the audio thread has finished with an old snapshot, and anything
+a snapshot points at must outlive every snapshot. Freeing an "unused" module hands the
+audio thread a dangling pointer that no test catches reliably.
+
+Slots are keyed on each effect's persistent id by open addressing, so the mapping is a
+pure function of the ids in the document: adding an effect to an earlier channel does not
+renumber the later ones and cut the reverb tail they were in the middle of.
+
+### Three queues, three different contracts
+
+Clicking a piano key has to make a sound without the sequencer running, so preview notes
+reach the audio thread through **`PreviewQueue`** — a single-producer ring, not a
+latest-wins atomic, because both halves of a fast click can land inside one 5.8ms block
+and latest-wins would let the release overwrite the press.
+
+**`SnapshotBridge`** hands over whole states, because half a state is nonsense: a
+triple-buffered publish through a single compare-and-swap.
+
+**`SignalTap`** is the only thing that runs audio → message, and it wants the opposite of
+both: a visualiser needs the newest two thousand samples and nothing older. So it is a
+ring that overwrites without asking, plus one monotonic count. The writer never waits.
+The reader works out which *absolute* sample indices it is copying, copies them, and asks
+the count again — if the writer has moved on by more than the ring holds, the display
+keeps the frame it had. The slots are `std::atomic<float>` rather than a plain array, and
+that is the safety argument rather than a decoration: copy-then-check over a plain array
+is a data race, which is undefined behaviour rather than a merely stale value.
+
+The engine knows nothing about audio devices. It is prepared with a sample rate and a
+block size and fills a buffer, so live playback and offline rendering run the same code
+and a passing render says something about the real engine.
+

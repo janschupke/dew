@@ -7,7 +7,7 @@ first. A new component must take every dimension, colour, duration and gesture f
 
 The vocabulary is `dew::tokens`, split into `colour`, `emphasis`, `space`, `radius`,
 `stroke`, `icon`, `type`, `size` and `motion`. `src/ui/primitives/` holds the controls
-built on it. [README.md](../../README.md#design-system) argues why.
+built on it. [Why it is this way](#why-it-is-this-way), below, argues why.
 
 ## What a gate will refuse
 
@@ -121,3 +121,140 @@ pointer.
   not to the palette.
 - **`dew_shot --theme highContrast`** renders any tab or the gallery under a theme. Look at
   it after touching a colour.
+
+## Why it is this way
+
+`src/ui/design/` holds the vocabulary — colour roles, spacing, type, a size ladder, an
+*emphasis* scale, motion durations, and forty-odd icons drawn as `juce::Path` rather
+than shipped as assets. `src/ui/primitives/` holds the controls built on it.
+
+`dew_shot gallery out.png` renders every token, icon and primitive in every state onto one
+page, which is both how the design system is reviewed and how it is tested.
+
+Eight source-scanning tests keep the vocabulary whole, and each one exists because a
+second vocabulary had grown beside the first: no colour written as hex, no emphasis as a
+bare number, no radius or stroke as a bare number, no gap or inset off the spacing scale,
+no component redeclaring a dimension the ladder already names, no timer picking its own
+refresh rate, no font built outside `Tokens.cpp` — and one that refuses the opposite
+mistake, a token nothing refers to.
+
+Four more hold coverage rather than vocabulary, and each exists because a control added to
+a panel without them is exactly the omission nobody notices: every spec-built knob in the
+window has a right-click menu, and every control in all five tabs has help text, an
+accessible name, and a way for the keyboard to reach it. The second found thirty of
+sixty-three silent when it was written; the third and fourth are below.
+
+A fifth holds the palette to a number rather than to a vocabulary. Colours are named for
+their ROLE, which is what makes a theme one assignment — but a role says nothing about
+whether the pair is legible, and five of them were not. `ContrastTests` states the pairs
+that are actually painted and the ratio each needs, **for every palette at that palette's
+own thresholds**, so a token cannot be darkened back without an argument and a new theme
+cannot be added without clearing the same bar. The worst of the original five was the
+hover-help line itself: the app's only always-on explanation of the control under the
+pointer, drawn in the palette's least readable colour at 2.6:1.
+
+### Two palettes
+
+**View → Theme.** The default is dew as it has always looked, held to WCAG AA — 4.5:1 for
+anything read, 3:1 for an edge you have to find. **High contrast** is the same design with
+the distances opened up, held to AAA: 7:1 and 4.5:1.
+
+Every value in it is derived rather than chosen by eye. The surfaces were pushed down and
+apart first; then each meaning and function colour kept its hue and saturation and had
+only its lightness raised, by bisection, until it cleared its target against `surfaceHover`
+— the lightest ground anything is drawn on, so clearing it clears the other five. Keeping
+hue and saturation is the point: a high-contrast theme that also re-hued everything would
+be a second design to maintain, and this one is the same design further apart.
+
+It stays **dark**, and that is what makes it small. A light theme is a different job:
+`emphasis::silenced` and `emphasis::disabled` both multiply brightness downward, the four
+lift rungs mean "how much brighter", and `wellDeep` is used as a scrim at four sites. All
+of that is correct on a dark ground and inverts on a light one.
+
+`channelRamp` is **not** themed. Those eight colours are document data — `entityColour`
+writes them into every `.dew` file, `dew_model` restates them as strings, and the colour
+picker offers them — so repainting them would make every saved project disagree with the
+swatch it was chosen from. What varies is `textOnAccent`, drawn on top, and that is why
+the clip-label pair is the one thing held to AA in both themes.
+
+The mechanism is worth knowing before adding a colour. The names in `tokens::colour` are
+**references** into the palette in force, so the 437 places that read one need no edit and
+a theme is a single assignment. Two thirds of those reads happen inside `paint()` and
+follow it for free; the rest COPIED a colour when they were built — a LookAndFeel's
+ColourIds, a Label's `textColourId`, a toggle's on-colour — and a copy follows nothing.
+`theme::apply` re-seeds the look and feel and then calls `sendLookAndFeelChange`, which is
+JUCE's own hook for exactly this, and a gate walks the window after a switch and fails on
+anything still holding a colour from the palette it was built under. That gate found ten
+sites the first time it ran.
+
+### Reaching it without a mouse
+
+`juce::Slider`'s constructor turns keyboard focus off, so every knob in dew was
+unreachable by tab and `Slider::keyPressed` — the arrows, page up and down — was dead code
+in all of them. The editor toolbars then refused focus outright, to stop a *click* moving
+focus off the roll and killing the shortcuts it owns; that is what
+`setMouseClickGrabsKeyboardFocus` is for, and the two things were being spelled with one
+call. Both are gates now: every control in all five tabs wants keyboard focus, unless it
+is disabled.
+
+A focused control draws an accent ring. It is painted by the primitive rather than through
+`LookAndFeel::createFocusOutlineForComponent`, which puts the ring in its own overlay
+window and so needs a `ComponentPeer` — the same reason the animator is a `Timer`. JUCE's
+version would be invisible to the suite and to `dew_shot`, which is to say untestable in
+the two places this codebase looks at its own pixels. `paint::focusRing` takes the focus
+flag as an argument for the same reason: `grabKeyboardFocus` does nothing without a peer,
+so a helper that asked for itself could never be shown to draw.
+
+The tooltip is the accessible name. dew already had one curated sentence per control and a
+gate refusing a control without one, so a screen reader reads that sentence rather than a
+second vocabulary nobody keeps in step — `setTooltip` sets both on every primitive. It is
+an override rather than a convention because the convention had already failed: three zoom
+buttons were constructed with an empty label and given their tooltip a line later, so the
+status bar explained them and a screen reader found nothing. A knob is the awkward case —
+it is a `juce::Component` wrapping the `juce::Slider` that carries the role, the range and
+the value — so the wrapper returns an *ignored* handler. Not `setAccessible (false)`:
+`Component::isAccessible` walks up to its parent, so switching the wrapper off would take
+the slider inside it off too.
+
+Everything above is plain portable code. JUCE implements accessibility natively on macOS
+and Windows and compiles the same calls to nothing where there is no backend, so none of
+it is behind an `#ifdef`.
+
+`dew_shot gallery` earns its place the same way. The icon grid's height was a hard-coded
+two rows, so three new icons drew straight over the section below — on the one page whose
+whole job is to show what the design system looks like.
+
+### Motion
+
+Every eased value is stepped from one clock. Two decisions shape it.
+
+It is a `juce::Timer` rather than a `VBlankAttachment`, because a vblank needs a
+`ComponentPeer` and every UI test here paints into an `Image` with no peer and no message
+loop: a design that cannot run where the suite runs is one the suite cannot check.
+
+And **animation is off unless the application turns it on** — deliberately the wrong way
+round from how it looks, so every headless test and every `dew_shot` render behaves
+exactly as it did before the animator existed. Motion is a property of a running
+application, not of a widget. `Animator::advance (deltaMs)` steps every client by a
+chosen number of milliseconds with no wall clock, so a test walks a whole interaction
+frame by frame rather than sampling it at the ends. Reduce motion sets every duration to
+zero, which makes `animateTo` identical to `snapTo` — no call site needs a branch.
+
+Reduce motion is **View → Motion**, and it is three states rather than two: follow the
+system, full motion, reduce motion. A stored boolean cannot say "follow the OS", so
+reading the preference into one at startup would silently overwrite a choice made in dew,
+and reading it only when the file had no value would mean a preference turned on later
+never arrived. `system` is the default.
+
+Asking the OS is dew's one piece of per-OS code — `systemPrefersReducedMotion`, in
+`ui/design/`. JUCE wraps dark mode portably and stops there, so this is a preference read
+on macOS and on Windows and `false` where there is nothing to ask. It is a `.cpp` reading
+CFPreferences rather than a `.mm` reading `NSWorkspace`, because the Objective-C version
+would put `OBJCXX` in the project's languages for one boolean.
+
+A knob has three rules, in priority order: animation is off unless turned on; a **drag is
+never eased**, because a needle trailing the pointer moving it feels broken; and the
+**first** value a knob is given snaps, or a panel built from a document sweeps every knob
+up from zero. The wheel is never eased at all — adding lag to the one gesture that must
+feel direct is a regression, not a polish.
+

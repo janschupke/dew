@@ -8,6 +8,11 @@ Status: **working prototype**. New, open, edit, save and playback work end to en
 effects and automation on top. It is not a product, but every layer is real and wired to
 the next. macOS only: nothing has been built or run on another platform.
 
+- **Source** — <https://github.com/janschupke/dew>
+- **The site** — what it does, the design system, and the score language's generated
+  reference. Built from `website/`; `/setup/` there is this page's Build section, kept in
+  step by a test.
+
 ## Build
 
 ```sh
@@ -237,131 +242,13 @@ licence question. Without it the format reports itself unavailable and the rest 
 ## Keyboard and mouse
 
 ⌘N ⌘O ⌘S ⇧⌘S · ⌘E render · ⌘R compile score · ⌘Z ⇧⌘Z · Space play · R record · ⌘L
-pattern/song · ⌘K add channel.
+pattern/song · ⌘K add channel. ⌘1 – ⌘5 go to the five tabs, ⌃⇥ cycles them, ⌘\ folds the
+instrument panel away.
 
-⌘1 – ⌘5 go to the channel rack, piano roll, playlist, mixer and score; ⌃⇥ and ⌃⇧⇥ cycle
-them, and ⌘\ folds the instrument panel away. They are in the **View** menu, which is
-where the rest of them are too.
-
-Every one of those is a row in `src/ui/Hotkeys.h`, and so is every key the timeline
-editors read. There used to be two key tables that could not see each other — the menu
-bar's and the editors' — and between them ⌘1 was swallowed by whichever editor had focus
-and `R` meant two different things. A source-scanning test now refuses a key spelled
-anywhere else.
-
-In a timeline editor — the step grid, the piano roll, the playlist — `+` `-` `0` zoom in,
-out and to fit. They read one keyboard map, so a key that means something in two of them
-means the same thing in both; each implements the commands it has, and the map is not a
-promise that every view has every command.
-
-The step grid takes keyboard focus when you click it, which it never used to: its zoom
-keys were live in the tests and nowhere else.
-
-| | step grid | piano roll | playlist | score |
-|---|---|---|---|---|
-| `+` `-` `0` zoom | ✓ | ✓ | ✓ | — |
-| ⌥`+` ⌥`-` ⌥`0` the other size | — | pitch rows | lanes | text |
-| `1` `2` `3` tools | — | select · paint · slice | select · paint | — |
-| `esc` clear selection | — | ✓ | ✓ | — |
-| `del` delete selection | — | ✓ | — | — |
-| ⌘A select all | — | ✓ | — | — |
-| ← → ↑ ↓ move the cursor | ✓ | ✓ | ✓ | — |
-| `return` act on the cursor | toggle a step | toggle a note | open the clip | — |
-| ⌥↑ ⌥↓ transpose | — | ±1, ⌥⇧ for ±12 | — | — |
-
-**Tab reaches every control**, and the one holding the keyboard draws an accent ring.
-Neither used to be true: knobs refused focus because `juce::Slider` does, and the toolbars
-refused it deliberately to keep a click from moving focus off the editor. Both are gates
-now — see [Reaching it without a mouse](#reaching-it-without-a-mouse).
-
-**The three timelines have a cursor.** They paint their notes, clips and cells rather than
-parenting them, so until it existed there was nothing for a keyboard to land on: three of
-the five tabs could only be edited with a mouse, and a screen reader met a rectangle with a
-name and no contents. The arrows move it, `return` acts on what is under it, and it is
-drawn in the accent and said out loud when it moves.
-
-It is a **coordinate**, never a `juce::ValueTree`. A position survives the edit made under
-it, and — the one that would have cost a day — `ProjectEdits::moveClipToTrack` returns a
-*new* tree and detaches the one it was given, so a cursor holding a clip would be pointing
-at a corpse the moment somebody dragged it to another track. It is also not the selection:
-the cursor is where you are, the selection is what you have chosen, and the step grid has
-no selection at all and still wants one.
-
-The piano roll's transpose gave up the bare arrows for this and moved to ⌥, which is the
-modifier dew already spends on a view's other axis. That is a deliberate change to a
-binding somebody may have in their fingers.
-
-**The pointer says what is under it.** `ui/design/Cursors.h` names six cursors for the
-gesture rather than for the arrow — `idle`, `clickable`, `value`, `move`, `resizeX`,
-`nib` — the way the colours are named for their role, and a source gate refuses a
-`juce::MouseCursor::` spelled anywhere else. A clip's or a note's body says it can be
-dragged; its right edge says it can be resized; a fader, a knob and a number field say a
-vertical drag changes them; a tool outranks all of it, so with paint or slice selected
-both canvases show a nib. Clips and notes are not components — each editor paints all of
-them into one canvas — so their cursor comes from the same hit test that decides what a
-press does, which is what stops it promising something the press will not do.
-
-**A right-click never presses a button.** `juce::Button` completes a click for whichever
-mouse button pressed it, so a right-click ran every dew button that had no context menu
-of its own. Every button consumes a popup press now, menu or no menu.
-
-**Deleting something that takes others with it asks first** — a pattern and its clips, a
-channel and its notes, a playlist track and its clips, a mixer insert and its effects.
-Removing an effect does not: it destroys only itself. It is all undoable either way; the
-question is about blast radius.
-
-Scrolling and zooming: wheel to scroll, ⌘-wheel or a trackpad pinch to zoom around the
-pointer, shift-wheel to scroll in time, ⌘⇧-wheel to zoom the OTHER axis — lane height in
-the playlist, pitch-row height in the piano roll. Natural scrolling is honoured, because
-the system reports it rather than applying it.
-
-**A notch is a fixed number of pixels, everywhere.** It used to be six *steps*
-horizontally, which is 18px zoomed out and 720px zoomed in; one *lane* down the playlist,
-which is 34px or 204px; three *rows* down the piano roll, which is 42px; and whatever
-JUCE picked in the channel rack and the score tab, which handled the wheel not at all.
-Six defensible speeds that disagreed with each other, and about five times slower than
-the rest of the machine. Pixels is the only unit all six share, so `wheelPixelsPerNotch`
-is the number and each view divides into its own at the point of use.
-
-Zoom is horizontal in every timeline dew has, because time is. **⌥`=`, ⌥`-` and ⌥`0`
-size the other axis**: a lane in the playlist, a pitch row in the piano roll, and the
-text in the score tab, which has a second size precisely because it has no timeline. One
-trio rather than two, on the modifier that leaves a bare `=` free to be an `=` somebody
-is typing. Each editor also has the three buttons on its toolbar, and a playlist lane can
-be dragged by the bottom edge of its header — one height for every lane, so the edge you
-grabbed is only the one the pointer was nearest.
-
-**View → UI Scale** draws the whole interface 100%, 125%, 150% or 175% larger. A
-multiplier on the window rather than on the type scale: dew's layout is a ladder of pixel
-sizes that a font has to fit inside, so scaling only the text is how a caption ends up
-clipped by the box it was measured for.
-
-**Every control says what it is.** The status bar names whatever is under the pointer at
-once, and the floating tooltip still arrives after 600ms for anyone who stops — one help
-string, two surfaces, both read from the control's own tooltip. A test walks all five
-tabs and fails on any control with nothing to say.
-
-Dragging a value: **shift is finer**, on every knob, fader and number field. Shift means
-five other things in dew — suspend snap, extend a selection, make a copy unique, transpose
-an octave — and every one of them changes a *selection* or a *position*. None changes a
-value. That is what keeps the sixth meaning from being one too many. A whole drag is one
-undo step.
-
-Right-drag erases in the piano roll and the step grid, and means the same thing in both:
-one undo step for the sweep, filling the cells between drag samples so a quick flick
-leaves no survivors. Alt-drag is the same gesture. A right-press that erased nothing was
-never an erase, so in the piano roll it clears the selection instead. In the playlist,
-right-click opens a menu instead — a clip is an object with properties and a step is not.
-
-On any ruler: drag to scrub, shift-drag to select a span, ⌘-click to span from the
-playhead, shift-click or double-click to drop it. **The span is what plays.**
-
-Right-click a rack row or a track header to rename, add or remove it. **+ Channel** and
-**+ Track** sit under the last one, where the next will appear.
-
-In the piano roll: ↑ ↓ transpose a semitone and ⇧↑ ⇧↓ an octave; Q quantizes, ⇧R opens
-randomize — bare `R` is Record, which has to work from wherever you happen to be looking. Holding shift suspends the snap grid for a drag, which is the only way to
-reach an off-grid position without changing the dropdown.
+Every key dew binds is a row in `src/ui/Hotkeys.h` and a gate refuses one spelled anywhere
+else. The full table — what each editor's keys mean, the tools, the canvas cursor, what a
+wheel notch is worth and where shift means *finer* — is in
+[`.ai/rules/gestures-and-hotkeys.md`](.ai/rules/gestures-and-hotkeys.md).
 
 ## Architecture
 
@@ -410,382 +297,30 @@ dew_i18n     StringIds (generated) · Catalogs (generated) · MessageFormat · P
 dew_lang     The score language. Links nothing at all, JUCE included.
 ```
 
-### Strings
-
-Every sentence a person reads is a key in `resources/i18n/en.json` —
-`transport.tempo.help`, `param.cutoff.caption` — and the code names the key, never the
-sentence. `StringIds.h` and the catalogue tables are generated from that file into the
-build tree by a CMake script, so a key the app names and the catalogue does not hold is a
-compile error rather than a blank label.
-
-**JUCE's own mechanism was rejected rather than overlooked.** `TRANS("Save As...")` keys
-the translation on the English sentence, so correcting a typo orphans every translation of
-it, two identical English strings with different meanings collapse into one entry, and
-nothing can enumerate the keys that exist. Keys are structural here; the English text is
-just the first translation.
-
-**The message syntax is ICU MessageFormat, and the implementation is not ICU.** Plurals
-and substitutions use the syntax i18next, Fluent, Android and iOS have all converged on, so
-the catalogue is a shape a translator's tooling already reads — but ICU itself is a pinned
-dependency, a `THIRD_PARTY.md` row and tens of megabytes of CLDR data for the three
-constructs dew uses. The subset is a few hundred lines and the plural table is written out
-per language, because `cs` and `pl` agree on small numbers and diverge above them and
-folding them together is how a locale silently inherits another's rule.
-
-**The catalogue is compiled in, not loaded.** `dew_i18n` links `juce_core` and nothing
-else, so it cannot read itself off disk — which would also be file I/O two layers below
-`dew_io`, the only layer allowed to touch a file. A catalogue that has to be compiled in
-cannot drift from the build that ships it.
-
-**The locale is fixed at launch.** `tr` returns a *reference* into a table built once when
-the locale is chosen, so drawing a label costs no allocation — cheaper than the literal it
-replaced, since `juce::String` has no small-string optimisation. The price is that changing
-language needs a relaunch, and the menu says so; the alternative was handing every caller a
-copy, forever.
-
-A missing row returns its own dotted key rather than an empty string, which is visible in a
-`dew_shot` render. That is not politeness: two coverage gates read a control's tooltip and
-treat blank as silence, so a fallback of `""` would turn both into tests that pass over
-nothing.
-
-Several tests enforce a convention by scanning the sources, and each passes silently when
-it finds nothing; `SourceGateTests` checks that walk against the libraries' own source
-lists in both directions, so code that moves out of `src/` cannot quietly disarm them and
-a file that never joins a library cannot sit there uncompiled while appearing to be built.
-
-Each of those gates lets one or two places break its rule, because a rule has to be
-declared somewhere. **An exemption names a path and has to earn its place**: an entry that
-suppresses nothing is reported as an offence of its own, so a definition site that moves
-is named rather than silently escaping. It used to be a bare file name — and a name is not
-a property a file keeps, which is how five gates went red during the split above, each for
-a file that had done nothing wrong. Ten of the twenty-one entries turned out to suppress
-nothing at all: `Tokens.h` was exempt from the gate on drawn radii while drawing nothing,
-`Ids.h` from a gate on names it spells with the preprocessor, and two files that build the
-document held a standing licence to write an undoable property by hand.
-
-Those gates read stripped code, not the file as written. Every one of them used to ask
-whether a line began with a comment marker, which dew's doc comments — continuing without
-a leading asterisk — defeat, so three gates were held green by a wrapped sentence. The
-reader tracks strings as well, and that mattered most: a gate quoting a comment marker in
-its own predicate opened a comment that swallowed the rest of the file, which is why
-`SourceGateTests.cpp` measured 301 code lines while holding 667.
-
-**No file is over 400 lines of code**, and a gate says so. The number is the tree's own
-p90 rather than a preference — the same way `ColumnLimit` is 100 because the p99 line is
-96 characters — and it counts CODE, comments and blanks removed, because these headers
-carry long doc comments on purpose and a raw count would punish them. There is no
-exemption list: a gate with one is a ratchet, and this is meant to be a rule. Tests and
-tools are held to it too.
-
-Getting there took thirty commits. The largest file was `lang/Resolver.cpp` at 1,740
-lines and is now 441; `PlaylistComponent.cpp` was 1,894 and the class is now five files —
-component, view, paint, gestures and menus — with its track header a class of its own.
-Three shapes did the work — the same class in a second translation unit, a nested class
-promoted to its own, and a file-local state machine given a name so it can be defined in
-more than one place — and which one applies is a judgement about how much of its host a
-piece of code actually reads.
-
-### Instruments and effects are modules
-
-Each is a class behind a small interface — `prepare` / `reset` / `process` /
-`releaseResources` — that maps one-to-one onto `AudioProcessor`, so hosting dew's effects
-elsewhere later is a wrapper rather than a rewrite. There is no VST3 SDK here and no
-plugin hosting; the boundary is drawn so that adding them does not mean starting again.
-
-Deliberately no `get/setStateInformation`: a dew module owns no state the document owns.
-Every parameter lives in the `ValueTree`, and DSP state is not persisted — so
-serialisation is a property of the *descriptor*, generic over every type. That is
-`stateFor` and `validateState` in `ModuleState`, written once over both descriptors, and a
-preset is one call to each.
-
-Both kinds of module have a descriptor now. An `EffectDescriptor` joins a type to its id,
-its display name and its parameters; an `InstrumentDescriptor` does the same through
-`ParamGroup`, which says which *node* a run of parameters lives on — because an effect is
-one node with a flat list and an instrument is a channel, three oscillator slots and an
-envelope. That asymmetry is named rather than flattened, and `effectGroup` presents an
-effect as the degenerate case, so one walk covers both. The schema's `oscSpec`, `ampSpec`,
-`channelSpec` and `sampleSpec` are generated from those tables, and a test compares the
-committed `examples/` byte for byte against what the factory writes — `isEquivalentTo`
-does not compare property order, so without it a reshuffle would leave every example stale
-and fail nothing.
-
-A parameter is declared once, as a `ParamSpec` in `ModuleCatalog`. The schema's defaults,
-the engine's clamps, the automation ranges and the UI's controls are all views of that
-one row. They used to be four tables that had drifted: `cutoff` stopped at 18kHz in two
-of them and 20kHz in the engine, and a mixer fader offered 0–1.5 against an engine clamp
-of 2.0 and an automation range of 0–1, so automating a fader swept two thirds of it and
-stopped.
-
-### Soundfonts
-
-A channel plays its oscillators, a recording, or a **soundfont**. The third is a keyed
-multisampler: a `.sf2` file, one sound chosen inside it, and six knobs that *bend* what
-the font already says rather than replacing it — a pitch and a tuning, a filter offset,
-attack and release multipliers, and how much of the format's velocity curve to apply.
-They are offsets because that is the mechanism SF2 itself uses to let a preset colour an
-instrument it does not own, and because a preset spanning forty regions that disagree has
-no single value a knob could honestly show.
-
-The reader is written here, in `dew_io`, rather than taken from a library. A soundfont
-player from outside is a second synth engine with its own envelopes, filter and voice
-stealing, and none of its parameters would be `ParamSpec` rows. What was needed is a
-reader, and the format's sampler core is bounded.
-
-What it reads and what it cuts was **measured** against a 446-font library rather than
-decided from the specification. Modulators appear in four files of 446. Both LFOs are
-configured constantly and routed almost never — every destination that makes one audible
-is 1.2% of zones — so they are cut. The modulation envelope is not: `modEnvToFilterFc`
-alone is 173 zones, more than every LFO route put together, and it is what gives those
-fonts their sweeps. Two files in that library are spelled `.SF2`, so every extension
-test is case-insensitive.
-
-A soundfont is **referenced, never gathered**. `gatherAssetsInto` copies recordings into
-`<Project> Assets/` on save; a font is a library you own, like a plugin, not a take that
-belongs to one song — and it can be five hundred megabytes. So a project can arrive
-before its fonts, and a channel whose font is missing is silent with a warning.
-
-The file is parsed as something hostile, because it is something a person chose off their
-disk: every chunk length, bag index, sample id and loop point is checked against what was
-actually read, and a malformed font yields warnings and no presets. `SoundFontCorpusTests`
-walks a real library when `DEW_SOUNDFONT_CORPUS` points at one — 448 fonts, 7231 regions,
-every one in bounds.
-
-An instrument therefore writes a **stereo** pair. A fifth of the samples in a real library
-are one half of a stereo pair, and summing them would flatten all of it. The two mono
-instruments widen through a `MonoInstrumentModule` base that renders into a scratch and
-adds it into both sides, which leaves every rendered sample bit-identical — the render
-tests passed the change with no edit to a single pinned value.
-
-### Effects without a command queue
-
-Effect *parameters* travel in the snapshot like everything else. Effect *instances* own
-state — delay lines, reverb tanks — that has to survive a snapshot swap, and the usual
-answer is a lock-free command queue.
-
-dew does not have one. Modules are built on the message thread on first use, keyed on
-(slot, type), and **never destroyed while the engine lives**. That is a correctness
-argument rather than thrift: `SnapshotBridge` has no acknowledgement path, so the message
-thread cannot learn when the audio thread has finished with an old snapshot, and anything
-a snapshot points at must outlive every snapshot. Freeing an "unused" module hands the
-audio thread a dangling pointer that no test catches reliably.
-
-Slots are keyed on each effect's persistent id by open addressing, so the mapping is a
-pure function of the ids in the document: adding an effect to an earlier channel does not
-renumber the later ones and cut the reverb tail they were in the middle of.
-
-### Three queues, three different contracts
-
-Clicking a piano key has to make a sound without the sequencer running, so preview notes
-reach the audio thread through **`PreviewQueue`** — a single-producer ring, not a
-latest-wins atomic, because both halves of a fast click can land inside one 5.8ms block
-and latest-wins would let the release overwrite the press.
-
-**`SnapshotBridge`** hands over whole states, because half a state is nonsense: a
-triple-buffered publish through a single compare-and-swap.
-
-**`SignalTap`** is the only thing that runs audio → message, and it wants the opposite of
-both: a visualiser needs the newest two thousand samples and nothing older. So it is a
-ring that overwrites without asking, plus one monotonic count. The writer never waits.
-The reader works out which *absolute* sample indices it is copying, copies them, and asks
-the count again — if the writer has moved on by more than the ring holds, the display
-keeps the frame it had. The slots are `std::atomic<float>` rather than a plain array, and
-that is the safety argument rather than a decoration: copy-then-check over a plain array
-is a data race, which is undefined behaviour rather than a merely stale value.
-
-The engine knows nothing about audio devices. It is prepared with a sample rate and a
-block size and fills a buffer, so live playback and offline rendering run the same code
-and a passing render says something about the real engine.
-
 ## Design system
 
 `src/ui/design/` holds the vocabulary — colour roles, spacing, type, a size ladder, an
-*emphasis* scale, motion durations, and forty-odd icons drawn as `juce::Path` rather
-than shipped as assets. `src/ui/primitives/` holds the controls built on it.
+*emphasis* scale, motion durations, and forty-odd icons drawn as `juce::Path` rather than
+shipped as assets. `src/ui/primitives/` holds the controls built on it. `dew_shot gallery`
+renders the whole set to a PNG, which is how it is reviewed.
 
-`dew_shot gallery out.png` renders every token, icon and primitive in every state onto one
-page, which is both how the design system is reviewed and how it is tested.
-
-Eight source-scanning tests keep the vocabulary whole, and each one exists because a
-second vocabulary had grown beside the first: no colour written as hex, no emphasis as a
-bare number, no radius or stroke as a bare number, no gap or inset off the spacing scale,
-no component redeclaring a dimension the ladder already names, no timer picking its own
-refresh rate, no font built outside `Tokens.cpp` — and one that refuses the opposite
-mistake, a token nothing refers to.
-
-Four more hold coverage rather than vocabulary, and each exists because a control added to
-a panel without them is exactly the omission nobody notices: every spec-built knob in the
-window has a right-click menu, and every control in all five tabs has help text, an
-accessible name, and a way for the keyboard to reach it. The second found thirty of
-sixty-three silent when it was written; the third and fourth are below.
-
-A fifth holds the palette to a number rather than to a vocabulary. Colours are named for
-their ROLE, which is what makes a theme one assignment — but a role says nothing about
-whether the pair is legible, and five of them were not. `ContrastTests` states the pairs
-that are actually painted and the ratio each needs, **for every palette at that palette's
-own thresholds**, so a token cannot be darkened back without an argument and a new theme
-cannot be added without clearing the same bar. The worst of the original five was the
-hover-help line itself: the app's only always-on explanation of the control under the
-pointer, drawn in the palette's least readable colour at 2.6:1.
-
-### Two palettes
-
-**View → Theme.** The default is dew as it has always looked, held to WCAG AA — 4.5:1 for
-anything read, 3:1 for an edge you have to find. **High contrast** is the same design with
-the distances opened up, held to AAA: 7:1 and 4.5:1.
-
-Every value in it is derived rather than chosen by eye. The surfaces were pushed down and
-apart first; then each meaning and function colour kept its hue and saturation and had
-only its lightness raised, by bisection, until it cleared its target against `surfaceHover`
-— the lightest ground anything is drawn on, so clearing it clears the other five. Keeping
-hue and saturation is the point: a high-contrast theme that also re-hued everything would
-be a second design to maintain, and this one is the same design further apart.
-
-It stays **dark**, and that is what makes it small. A light theme is a different job:
-`emphasis::silenced` and `emphasis::disabled` both multiply brightness downward, the four
-lift rungs mean "how much brighter", and `wellDeep` is used as a scrim at four sites. All
-of that is correct on a dark ground and inverts on a light one.
-
-`channelRamp` is **not** themed. Those eight colours are document data — `entityColour`
-writes them into every `.dew` file, `dew_model` restates them as strings, and the colour
-picker offers them — so repainting them would make every saved project disagree with the
-swatch it was chosen from. What varies is `textOnAccent`, drawn on top, and that is why
-the clip-label pair is the one thing held to AA in both themes.
-
-The mechanism is worth knowing before adding a colour. The names in `tokens::colour` are
-**references** into the palette in force, so the 437 places that read one need no edit and
-a theme is a single assignment. Two thirds of those reads happen inside `paint()` and
-follow it for free; the rest COPIED a colour when they were built — a LookAndFeel's
-ColourIds, a Label's `textColourId`, a toggle's on-colour — and a copy follows nothing.
-`theme::apply` re-seeds the look and feel and then calls `sendLookAndFeelChange`, which is
-JUCE's own hook for exactly this, and a gate walks the window after a switch and fails on
-anything still holding a colour from the palette it was built under. That gate found ten
-sites the first time it ran.
-
-### Reaching it without a mouse
-
-`juce::Slider`'s constructor turns keyboard focus off, so every knob in dew was
-unreachable by tab and `Slider::keyPressed` — the arrows, page up and down — was dead code
-in all of them. The editor toolbars then refused focus outright, to stop a *click* moving
-focus off the roll and killing the shortcuts it owns; that is what
-`setMouseClickGrabsKeyboardFocus` is for, and the two things were being spelled with one
-call. Both are gates now: every control in all five tabs wants keyboard focus, unless it
-is disabled.
-
-A focused control draws an accent ring. It is painted by the primitive rather than through
-`LookAndFeel::createFocusOutlineForComponent`, which puts the ring in its own overlay
-window and so needs a `ComponentPeer` — the same reason the animator is a `Timer`. JUCE's
-version would be invisible to the suite and to `dew_shot`, which is to say untestable in
-the two places this codebase looks at its own pixels. `paint::focusRing` takes the focus
-flag as an argument for the same reason: `grabKeyboardFocus` does nothing without a peer,
-so a helper that asked for itself could never be shown to draw.
-
-The tooltip is the accessible name. dew already had one curated sentence per control and a
-gate refusing a control without one, so a screen reader reads that sentence rather than a
-second vocabulary nobody keeps in step — `setTooltip` sets both on every primitive. It is
-an override rather than a convention because the convention had already failed: three zoom
-buttons were constructed with an empty label and given their tooltip a line later, so the
-status bar explained them and a screen reader found nothing. A knob is the awkward case —
-it is a `juce::Component` wrapping the `juce::Slider` that carries the role, the range and
-the value — so the wrapper returns an *ignored* handler. Not `setAccessible (false)`:
-`Component::isAccessible` walks up to its parent, so switching the wrapper off would take
-the slider inside it off too.
-
-Everything above is plain portable code. JUCE implements accessibility natively on macOS
-and Windows and compiles the same calls to nothing where there is no backend, so none of
-it is behind an `#ifdef`.
-
-`dew_shot gallery` earns its place the same way. The icon grid's height was a hard-coded
-two rows, so three new icons drew straight over the section below — on the one page whose
-whole job is to show what the design system looks like.
-
-### Motion
-
-Every eased value is stepped from one clock. Two decisions shape it.
-
-It is a `juce::Timer` rather than a `VBlankAttachment`, because a vblank needs a
-`ComponentPeer` and every UI test here paints into an `Image` with no peer and no message
-loop: a design that cannot run where the suite runs is one the suite cannot check.
-
-And **animation is off unless the application turns it on** — deliberately the wrong way
-round from how it looks, so every headless test and every `dew_shot` render behaves
-exactly as it did before the animator existed. Motion is a property of a running
-application, not of a widget. `Animator::advance (deltaMs)` steps every client by a
-chosen number of milliseconds with no wall clock, so a test walks a whole interaction
-frame by frame rather than sampling it at the ends. Reduce motion sets every duration to
-zero, which makes `animateTo` identical to `snapTo` — no call site needs a branch.
-
-Reduce motion is **View → Motion**, and it is three states rather than two: follow the
-system, full motion, reduce motion. A stored boolean cannot say "follow the OS", so
-reading the preference into one at startup would silently overwrite a choice made in dew,
-and reading it only when the file had no value would mean a preference turned on later
-never arrived. `system` is the default.
-
-Asking the OS is dew's one piece of per-OS code — `systemPrefersReducedMotion`, in
-`ui/design/`. JUCE wraps dark mode portably and stops there, so this is a preference read
-on macOS and on Windows and `false` where there is nothing to ask. It is a `.cpp` reading
-CFPreferences rather than a `.mm` reading `NSWorkspace`, because the Objective-C version
-would put `OBJCXX` in the project's languages for one boolean.
-
-A knob has three rules, in priority order: animation is off unless turned on; a **drag is
-never eased**, because a needle trailing the pointer moving it feels broken; and the
-**first** value a knob is given snaps, or a panel built from a document sweeps every knob
-up from zero. The wheel is never eased at all — adding lag to the one gesture that must
-feel direct is a regression, not a polish.
+Nothing in it is optional: a source-scanning test refuses a hex colour, a bare radius or
+gap, a size the ladder already names, a timer picking its own refresh rate, and a token
+nothing refers to. Two palettes, both dark, both held to a contrast ratio in either
+direction. The rules, the gates and the argument for each are in
+[`.ai/rules/design-system.md`](.ai/rules/design-system.md).
 
 ## The website
 
-`website/` is a Next.js site: what dew is, what it does, and the score language's
-reference. `./scripts/check-website.sh` checks it and `./scripts/check.sh` runs that.
+`website/` is a Next.js site: what dew is, what it does, how to build it, and the score
+language's generated reference. `./scripts/check-website.sh` checks it and
+`./scripts/check.sh` runs that; `vercel.json` at the root is how it deploys.
 
-**The reference is generated, and that is the point.** `src/lang/Schema.h` has always
-declared the whole language as one table, and its own comment says the reference manual
-reads it — "so a key cannot exist without being completable and cannot be documented
-differently from how it is checked". Until now nothing read it but the completion popup and
-the editor's highlighter. `dew_docs` is the reader that was missing: it walks `schema()`
-and writes JSON, and the site renders every block, key, value kind and mode from it. A key
-added to `Schema.cpp` appears on the page with no page edit, and a page that stopped
-rendering one fails a test naming it.
-
-**The JSON is committed, not built.** So the site needs no C++ toolchain: its CI job runs
-on a Linux runner in about a minute instead of waiting behind a JUCE build, and a host that
-has never heard of CMake can serve the export. The cost is that the files can go stale,
-which is what the freshness test and CI's second-process `cmp` are for. Freshness is a test
-rather than `git diff --exit-code` because the manifest's trick — regenerate, then diff —
-would mean `check.sh` writing into the working tree before judging it.
-
-**Two emitters rather than one, because of the link line.** `dew_docs` links `dew_lang` and
-nothing else, JUCE included, so it is a second place that library's zero-dependency claim is
-proved rather than asserted. The design tokens live in `dew_design`, which publicly links
-`dew_engine` — one tool emitting both would have put `juce_gui_basics` on the score
-compiler's link line, which is the mistake `dew_render` already made once. So `dew_shot`
-emits the tokens, beside the picture of them it already renders.
-
-**It takes its colours from the application, not from a copy of them.** `dew_shot tokens`
-reads `darkPalette()` and `scripts/gen-theme.mjs` turns that into Tailwind's `@theme` block.
-The lifts are the interesting part: `juce::Colour::brighter` is per sRGB channel and
-truncates where CSS `color-mix` rounds, so the composed colours are computed by that same
-call and emitted, rather than re-derived in a browser. It also settles a trap — a hovered
-button is `surfaceRaised` lifted by `controlLift`, which is *not* `colour::surfaceHover`.
-
-The theme's namespace resets do the work a source gate does in the C++ tree:
-`--color-*: initial` deletes Tailwind's own palette and `--spacing: initial` its dynamic
-scale, so `bg-blue-500` and `p-7` are not wrong — they do not exist. That is a build that
-cannot express an off-vocabulary class, rather than a test that catches one.
-
-**It is dark, one palette.** Both of dew's palettes are dark for a stated reason, and the
-site inherits it: there is no `dark:` variant anywhere and a gate refuses one.
-
-**Nothing highlights anything.** The rule that the highlighter is not a second grammar is
-absolute, and a TypeScript tokenizer would have been a genuine third implementation. The
-site renders committed samples and never user input, so it does not need one: `dew_shot
-samples` scans with `lang::tokenize` and classifies with `ScoreTokeniser::colourFor`, and
-the page paints spans. A test asserts the rendered text is byte-identical to the source.
-
-**The screenshots are committed and are not gated on their bytes.** dew paints with the
-system typeface, so a shot depends on the macOS version and the installed fonts — a `cmp`
-would fail on somebody else's machine for a reason with nothing to do with dew. They are
-regenerated deliberately with `./scripts/gen-shots.sh`; a test holds that each decodes, is
-the size it was asked for, and is not one flat colour.
+Three of its inputs — the score schema, the design tokens and the highlighted samples —
+are JSON written by `dew_docs` and `dew_shot` and committed, so the site needs no C++
+toolchain to build and CI regenerates each in a second process and compares byte for byte.
+The rest, including why it is dark-only and what it may not do, is in
+[`.ai/rules/website.md`](.ai/rules/website.md).
 
 ## The score language
 
@@ -885,189 +420,26 @@ performing it. `stepsPerBeat` owns how long a step is, and `ProjectEdits::setMet
 rescales every clip and rounds, so either would silently move an arrangement the score did
 not write.
 
-### Determinism
+## Where the rest of it is written down
 
-`seed` is the root of a tree of keys, and every random choice draws from a stream derived
-from its own **structural path** — section, instance, channel, site, bar, onset — never
-from a byte offset and never from a shared stream. So editing one section leaves every
-other section's notes bit-identical, inserting a blank line changes nothing, and adding a
-`choose` at bar 3 cannot rewrite bar 4. `variance 0` is a pure argmin: the same notes
-every compile, from any seed.
+This file is the tour. The detail lives beside the thing it constrains, in
+[`.ai/rules/`](.ai/rules/) — one file per subject, each stating what you must do before
+writing code and then, under *Why it is this way*, the argument for it.
 
-A melody can also be told how far it may jump and whether a jump has to be answered
-(`leap max 7 resolve step`), and whether its rhythm restarts at each bar line or runs on
-against it (`align bar` / `align continuous`). A voicing can be told which note goes at
-the bottom — `bass from-inversion` is the default and is what makes writing `i^1` move a
-note rather than decorate the page.
-
-splitmix64 and PCG32 are written out rather than delegated. `std::uniform_int_distribution`
-and `std::shuffle` specify their *statistics*, not their algorithms, so libstdc++ and
-libc++ render different music from one seed; `juce::Random` is an LCG whose exact sequence
-would become part of the file format. A test pins literal outputs, because those numbers
-are now the format.
-
-### The shape of it
-
-`src/lang/` is `dew_lang`, a static library that links **nothing at all**, JUCE included —
-a compiler that cannot reach into the document is one whose only output is its IR. A source
-gate enforces it, because a header-only include would still link. The parser is hand-written
-recursive descent; a generator would have cost a pinned dependency, a manifest row and a
-Java-at-build-time decision for fifteen productions, and would have made byte-accurate
-diagnostics harder rather than easier. Same argument as "Why not vcpkg or Conan" below.
-
-Output is **baked** into the project as ordinary channels, patterns, notes and
-`kind="pattern"` clips, so playback, the piano roll, the renderer, stems and MIDI export
-all work on it unchanged and no new clip kind exists to be taught to the four places that
-would need it. The language owns notes, patterns and clips; the user owns channels,
-instruments, effects and the mixer — a track adopts a channel by name and reads nothing
-from it but the name, so a sound you dialled in survives a recompile.
-
-### Counterpoint, and choices a seed makes
-
-A part may answer another rather than being written on its own:
-
-```
-part answer {
-  counterpoint against lead {
-    rhythm               pulse
-    parallel-fifths      forbid
-    parallel-octaves     forbid
-    voice-crossing       forbid
-    dissonance-on-strong soft 3
-    leaps                soft 1.5
-  }
-}
-```
-
-A **beam search of width 8** over the onsets, scored against the voices already
-written — not a constraint solver. A solver's failure modes are "unsatisfiable" and
-"twenty seconds", both fatal in an editor that recompiles as you type; the cases a beam
-loses are close to inaudible next to the machinery; and a beam's choice can be explained
-in a diagnostic. Cost is additive along the timeline, so the beam is an exact dynamic
-program over the states it keeps.
-
-The seven rules are a closed set, each `forbid` or `soft <weight>` — closed because
-completion depends on it, and because an open-ended rule language is a solver by another
-name. When the hard rules leave nothing to sing they are **given up in a declared order,
-one at a time, and every one is reported by bar**. The line never falls silent without
-saying so. `species` is deliberately absent: Fux's rules are the easy fifth of it, and a
-number in the language would imply a guarantee this cannot make.
-
-**Imitation is an operator, not a search target:**
-
-```
-part echo {
-  imitate lead {
-    delay     1 bar
-    transpose 2
-    mode      diatonic     // stays in the key; `chromatic` moves exactly
-  }
-}
-```
-
-A beam search will essentially never *discover* imitation, because imitation constrains
-the whole line's identity rather than local transitions — so asking a search for it is
-asking for the one thing it cannot do. Written out it is exact, and it is fifteen lines.
-Anything falling past the section's end is dropped rather than wrapped: a canon that
-wrapped would answer itself from the future.
-
-**A value can be chosen rather than set**, and say how often it is re-drawn:
-
-```
-cadence  choose [1 3 5] per instance   // a different ending in each verse
-velocity 80 +- 20 per bar
-```
-
-The scope *is* the identity of the draw, not a knob on how random it is: `per song`
-derives one key for the whole song, `per instance` one for each rendered instance, `per
-bar` and `per note` go deeper. Same seed tree, different depth. `choose` takes a list and
-nothing computable — the moment a value can be *computed*, completion stops being a table
-lookup and the grid stops being statically knowable.
-
-### The editor
-
-Two things happen in the Score tab and they are deliberately not the same thing.
-**Checking** runs on a debounce as you type: it lexes, parses, resolves and generates, and
-it writes nothing - no notes, no undo entry. **Compiling** happens only when you ask, and
-writes patterns, notes and clips in one undo transaction. A debounced auto-compile would
-put an undo step full of notes on every pause in typing and would replace hand edits
-without being asked, which is the one thing the recompile policy exists to prevent. The
-source text itself *is* saved on the debounce, one transaction per typing run.
-
-Errors surface in three places doing three jobs: the squiggle says **where**, the list
-under the editor says **what** and scrolls the editor to it when clicked, and the status
-bar says whether the project was written to at all.
-
-Control-Space completes. Keys and block keywords come from the same schema table the
-resolver validates against, names from the same resolve the compiler runs, and chords
-through the same `resolveChord` that writes the notes — so nothing can be offered that the
-compiler would then reject, and a key cannot be added without being completable. Chords are
-ranked by the key that is written and **spelled beside the numeral**: in A minor `bVI`
-reads `F`.
-
-The highlighter is not a second grammar. `lang::scanOne` is a template over a minimal
-cursor concept, and the editor's tokeniser is its second instantiation - the first walks a
-`std::string_view` for the compiler, this one walks a `juce::CodeDocument::Iterator`. A
-test asserts both produce the same token kinds over the example score, because a
-highlighter that disagrees with the compiler is worse than none. Keywords are coloured from
-the schema table rather than from a keyword list, so a key cannot exist without being
-highlighted.
-
-Compiling into a project that already has music refuses a grid or meter mismatch, as
-described below. Compiling into an *empty* one applies both: nothing there has a meaning
-they could change, and a new project sits at four steps per beat.
-
-### Recompiling, and what happens to what you changed
-
-The source lives **inside** the `.dew`, one node per line so it reads as a diff rather than
-as one enormous string. A project and the score it came from are one document; the moment
-they can travel separately, "which of these two files is current" becomes a question
-somebody has to answer.
-
-So compiling twice is an update, not a second copy. Every node a compile writes carries a
-`genId` naming the part of the score that produced it — a section plus either its
-occurrence number or its `as` label, the same identity the random draws use, so what pins
-an instance's music also pins its document node. A pattern also carries the hash its notes
-had when they were written. Recompiling hashes them again, which sorts every generated
-pattern into three:
-
-| State | What happens |
+| | |
 |---|---|
-| hash matches | nobody has touched it — replaced |
-| hash differs | edited in the piano roll — **kept**, counted, and reported |
-| no longer produced | removed, unless it was edited, in which case it stays without a clip |
-
-`dew_score --discard-edits` takes the other branch. Both are one undo transaction either
-way. The hash covers the length and the notes and deliberately not the name: renaming a
-pattern is not a musical change, and letting it read as one would mean labelling a pattern
-quietly stopped the compiler ever updating it again.
-
-The honest limit: a clip on the generated lane is rebuilt every time, because where a
-section sits is the arrangement's to say. Drag one to another lane and it is yours.
-
-## The project file
-
-One JSON file, `formatVersion`-stamped. The schema is declared once in
-`src/model/ProjectSchema.cpp` as a table of node specs with per-property defaults, and
-that table drives reading, writing and validation — so there is no hand-written writer to
-drift out of step with a hand-written parser.
-
-- A property absent from the file takes its default, so older files load.
-- A property of the wrong type takes its default and warns, rather than failing.
-- A key the schema does not know is dropped and reported.
-- A newer `formatVersion` is refused outright instead of half-read. v12 is current: it
-  gave a playlist track and a mixer strip a `colour`, additively, with the empty string
-  as the declared default so an earlier file loads looking exactly as it did.
-
-Saving writes to a temporary and swaps, so an interrupted save cannot destroy the project
-it was overwriting.
-
-Audio is the one thing the file cannot hold. A project that references recordings gets a
-sidecar folder beside it — `Song.dew` and `Song Assets/` — and stores paths relative to
-itself, so the pair can be copied elsewhere intact. Saving gathers: every referenced file
-not already in the sidecar is copied in and its path rewritten. A sample imported from
-elsewhere on the disk keeps its absolute path rather than becoming a chain of `../`,
-which would be portable to nothing.
+| [Architecture](.ai/rules/architecture.md) | the eight libraries, modules, the project file |
+| [The audio thread](.ai/rules/realtime.md) | what the render path may not do, and the three queues |
+| [Design system](.ai/rules/design-system.md) | tokens, the gates, the two palettes, focus, motion |
+| [Gestures and hotkeys](.ai/rules/gestures-and-hotkeys.md) | every key, the wheel, the canvas cursor |
+| [Testing](.ai/rules/testing.md) | why `release` is not the gate, and how a headless test lies |
+| [The score language](.ai/rules/score-language.md) | determinism, counterpoint, the editor, recompiling |
+| [Rendering and export](.ai/rules/render-and-export.md) | bar ranges, stems, LAME, the post-processing order |
+| [Automation](.ai/rules/automation.md) | one evaluator, and what is deliberately not automatable |
+| [Strings](.ai/rules/i18n.md) | structural keys, the generated catalogue, adding a language |
+| [C++ style](.ai/rules/cpp-style.md) | `.clang-format`, includes, the `juce::String` UTF-8 trap |
+| [The website](.ai/rules/website.md) | its own gates, its generated JSON, what it may not do |
+| [Workflow](.ai/rules/workflow.md) | the gate, the generated files, commit style |
 
 ## Dependencies
 

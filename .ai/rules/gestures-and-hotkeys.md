@@ -84,3 +84,134 @@ The piano roll, the playlist and the step grid each hold a `CanvasCursor`
 - **`ControlWalkHarness` cannot see any of this.** It finds controls by type, and a cursor
   is not a component; cursor tests live in `tests/CanvasCursorTests.cpp` and drive the
   three existing view harnesses.
+
+## Why it is this way
+
+⌘N ⌘O ⌘S ⇧⌘S · ⌘E render · ⌘R compile score · ⌘Z ⇧⌘Z · Space play · R record · ⌘L
+pattern/song · ⌘K add channel.
+
+⌘1 – ⌘5 go to the channel rack, piano roll, playlist, mixer and score; ⌃⇥ and ⌃⇧⇥ cycle
+them, and ⌘\ folds the instrument panel away. They are in the **View** menu, which is
+where the rest of them are too.
+
+Every one of those is a row in `src/ui/Hotkeys.h`, and so is every key the timeline
+editors read. There used to be two key tables that could not see each other — the menu
+bar's and the editors' — and between them ⌘1 was swallowed by whichever editor had focus
+and `R` meant two different things. A source-scanning test now refuses a key spelled
+anywhere else.
+
+In a timeline editor — the step grid, the piano roll, the playlist — `+` `-` `0` zoom in,
+out and to fit. They read one keyboard map, so a key that means something in two of them
+means the same thing in both; each implements the commands it has, and the map is not a
+promise that every view has every command.
+
+The step grid takes keyboard focus when you click it, which it never used to: its zoom
+keys were live in the tests and nowhere else.
+
+| | step grid | piano roll | playlist | score |
+|---|---|---|---|---|
+| `+` `-` `0` zoom | ✓ | ✓ | ✓ | — |
+| ⌥`+` ⌥`-` ⌥`0` the other size | — | pitch rows | lanes | text |
+| `1` `2` `3` tools | — | select · paint · slice | select · paint | — |
+| `esc` clear selection | — | ✓ | ✓ | — |
+| `del` delete selection | — | ✓ | — | — |
+| ⌘A select all | — | ✓ | — | — |
+| ← → ↑ ↓ move the cursor | ✓ | ✓ | ✓ | — |
+| `return` act on the cursor | toggle a step | toggle a note | open the clip | — |
+| ⌥↑ ⌥↓ transpose | — | ±1, ⌥⇧ for ±12 | — | — |
+
+**Tab reaches every control**, and the one holding the keyboard draws an accent ring.
+Neither used to be true: knobs refused focus because `juce::Slider` does, and the toolbars
+refused it deliberately to keep a click from moving focus off the editor. Both are gates
+now — see [Reaching it without a
+mouse](design-system.md#reaching-it-without-a-mouse).
+
+**The three timelines have a cursor.** They paint their notes, clips and cells rather than
+parenting them, so until it existed there was nothing for a keyboard to land on: three of
+the five tabs could only be edited with a mouse, and a screen reader met a rectangle with a
+name and no contents. The arrows move it, `return` acts on what is under it, and it is
+drawn in the accent and said out loud when it moves.
+
+It is a **coordinate**, never a `juce::ValueTree`. A position survives the edit made under
+it, and — the one that would have cost a day — `ProjectEdits::moveClipToTrack` returns a
+*new* tree and detaches the one it was given, so a cursor holding a clip would be pointing
+at a corpse the moment somebody dragged it to another track. It is also not the selection:
+the cursor is where you are, the selection is what you have chosen, and the step grid has
+no selection at all and still wants one.
+
+The piano roll's transpose gave up the bare arrows for this and moved to ⌥, which is the
+modifier dew already spends on a view's other axis. That is a deliberate change to a
+binding somebody may have in their fingers.
+
+**The pointer says what is under it.** `ui/design/Cursors.h` names six cursors for the
+gesture rather than for the arrow — `idle`, `clickable`, `value`, `move`, `resizeX`,
+`nib` — the way the colours are named for their role, and a source gate refuses a
+`juce::MouseCursor::` spelled anywhere else. A clip's or a note's body says it can be
+dragged; its right edge says it can be resized; a fader, a knob and a number field say a
+vertical drag changes them; a tool outranks all of it, so with paint or slice selected
+both canvases show a nib. Clips and notes are not components — each editor paints all of
+them into one canvas — so their cursor comes from the same hit test that decides what a
+press does, which is what stops it promising something the press will not do.
+
+**A right-click never presses a button.** `juce::Button` completes a click for whichever
+mouse button pressed it, so a right-click ran every dew button that had no context menu
+of its own. Every button consumes a popup press now, menu or no menu.
+
+**Deleting something that takes others with it asks first** — a pattern and its clips, a
+channel and its notes, a playlist track and its clips, a mixer insert and its effects.
+Removing an effect does not: it destroys only itself. It is all undoable either way; the
+question is about blast radius.
+
+Scrolling and zooming: wheel to scroll, ⌘-wheel or a trackpad pinch to zoom around the
+pointer, shift-wheel to scroll in time, ⌘⇧-wheel to zoom the OTHER axis — lane height in
+the playlist, pitch-row height in the piano roll. Natural scrolling is honoured, because
+the system reports it rather than applying it.
+
+**A notch is a fixed number of pixels, everywhere.** It used to be six *steps*
+horizontally, which is 18px zoomed out and 720px zoomed in; one *lane* down the playlist,
+which is 34px or 204px; three *rows* down the piano roll, which is 42px; and whatever
+JUCE picked in the channel rack and the score tab, which handled the wheel not at all.
+Six defensible speeds that disagreed with each other, and about five times slower than
+the rest of the machine. Pixels is the only unit all six share, so `wheelPixelsPerNotch`
+is the number and each view divides into its own at the point of use.
+
+Zoom is horizontal in every timeline dew has, because time is. **⌥`=`, ⌥`-` and ⌥`0`
+size the other axis**: a lane in the playlist, a pitch row in the piano roll, and the
+text in the score tab, which has a second size precisely because it has no timeline. One
+trio rather than two, on the modifier that leaves a bare `=` free to be an `=` somebody
+is typing. Each editor also has the three buttons on its toolbar, and a playlist lane can
+be dragged by the bottom edge of its header — one height for every lane, so the edge you
+grabbed is only the one the pointer was nearest.
+
+**View → UI Scale** draws the whole interface 100%, 125%, 150% or 175% larger. A
+multiplier on the window rather than on the type scale: dew's layout is a ladder of pixel
+sizes that a font has to fit inside, so scaling only the text is how a caption ends up
+clipped by the box it was measured for.
+
+**Every control says what it is.** The status bar names whatever is under the pointer at
+once, and the floating tooltip still arrives after 600ms for anyone who stops — one help
+string, two surfaces, both read from the control's own tooltip. A test walks all five
+tabs and fails on any control with nothing to say.
+
+Dragging a value: **shift is finer**, on every knob, fader and number field. Shift means
+five other things in dew — suspend snap, extend a selection, make a copy unique, transpose
+an octave — and every one of them changes a *selection* or a *position*. None changes a
+value. That is what keeps the sixth meaning from being one too many. A whole drag is one
+undo step.
+
+Right-drag erases in the piano roll and the step grid, and means the same thing in both:
+one undo step for the sweep, filling the cells between drag samples so a quick flick
+leaves no survivors. Alt-drag is the same gesture. A right-press that erased nothing was
+never an erase, so in the piano roll it clears the selection instead. In the playlist,
+right-click opens a menu instead — a clip is an object with properties and a step is not.
+
+On any ruler: drag to scrub, shift-drag to select a span, ⌘-click to span from the
+playhead, shift-click or double-click to drop it. **The span is what plays.**
+
+Right-click a rack row or a track header to rename, add or remove it. **+ Channel** and
+**+ Track** sit under the last one, where the next will appear.
+
+In the piano roll: ↑ ↓ transpose a semitone and ⇧↑ ⇧↓ an octave; Q quantizes, ⇧R opens
+randomize — bare `R` is Record, which has to work from wherever you happen to be looking. Holding shift suspends the snap grid for a drag, which is the only way to
+reach an off-grid position without changing the dropdown.
+
