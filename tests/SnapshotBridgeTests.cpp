@@ -152,7 +152,29 @@ TEST_CASE ("a reader never sees a torn snapshot under a continuous writer", "[br
             }
         });
 
-    std::this_thread::sleep_for (std::chrono::milliseconds (1500));
+    // The budget is WORK, not time.
+    //
+    // This slept a wall-clock 1500ms and then required 1000 reads and 100
+    // generations - a duration and a rate, set independently, with nothing
+    // holding them in step. The suite runs at `ctest --parallel 4`, so how much
+    // of that 1500ms this thread actually gets is not the test's to know. It
+    // has not been caught failing, and the margin today is enormous; it is the
+    // SHAPE that is wrong, because the day it does fail it will fail on the
+    // machine rather than on the property, and the property - that no acquired
+    // snapshot is ever torn - is the only thing here worth failing on.
+    //
+    // So the two numbers become the TARGET and the clock becomes the escape.
+    // That also stops the suite sleeping a second and a half to prove something
+    // it has proved within a few milliseconds.
+    constexpr juce::uint64 readsWanted = 1000;
+    constexpr juce::uint64 generationsWanted = 100;
+
+    const auto deadline = juce::Time::getMillisecondCounter() + 30000;
+
+    while (juce::Time::getMillisecondCounter() < deadline
+           && (readsPerformed.load() < readsWanted || highestSeen.load() < generationsWanted))
+        juce::Thread::sleep (1);
+
     stop.store (true);
     writer.join();
     reader.join();
@@ -163,6 +185,6 @@ TEST_CASE ("a reader never sees a torn snapshot under a continuous writer", "[br
     REQUIRE (tornReads.load() == 0);
 
     // If the reader never saw anything published, the test proved nothing.
-    REQUIRE (readsPerformed.load() > 1000);
-    REQUIRE (highestSeen.load() > 100);
+    REQUIRE (readsPerformed.load() >= readsWanted);
+    REQUIRE (highestSeen.load() >= generationsWanted);
 }

@@ -156,9 +156,23 @@ TEST_CASE ("a reader never accepts a window the writer overtook", "[signaltap]")
         });
 
     std::vector<float> window ((size_t) SignalTap::maxWindow, 0.0f);
-    const auto until = juce::Time::getMillisecondCounter() + 200;
 
-    while (juce::Time::getMillisecondCounter() < until)
+    // The budget is WORK, not time.
+    //
+    // This ran for a wall-clock 200ms and then asked only that ONE window had
+    // come back accepted - a duration deciding how much of the property gets
+    // exercised, and a floor so low it would be met by a single scheduling
+    // slice. How much of that 200ms this thread gets is not the test's to know:
+    // the suite runs at `ctest --parallel 4`.
+    //
+    // So the count becomes the TARGET and the clock becomes the escape. The
+    // number of windows actually checked stops being a function of the machine,
+    // which is what makes a stress test mean the same thing twice.
+    constexpr int windowsWanted = 200;
+
+    const auto deadline = juce::Time::getMillisecondCounter() + 30000;
+
+    while (accepted.load() < windowsWanted && juce::Time::getMillisecondCounter() < deadline)
     {
         if (! tap.readLatest (window.data(), SignalTap::maxWindow))
         {
@@ -196,7 +210,7 @@ TEST_CASE ("a reader never accepts a window the writer overtook", "[signaltap]")
     INFO ("accepted " << accepted.load() << ", refused " << refused.load());
 
     // And it cannot have passed by refusing everything.
-    REQUIRE (accepted.load() > 0);
+    REQUIRE (accepted.load() >= windowsWanted);
 }
 
 TEST_CASE ("the tap reports the rate it was prepared at", "[signaltap]")
