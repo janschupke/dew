@@ -220,13 +220,14 @@ juce::PopupMenu MixerStrip::buildMenu() const
     // about and the master is part of it.
     if (! isMaster)
     {
-        menu.addItem ((int) MenuItem::rename, "Rename");
+        menu.addItem ((int) MenuItem::rename, tr (StringId::mixer_menu_rename));
         colourMenu::addTo (menu, track, colourBaseId);
     }
 
     const auto inserts = ProjectEdits::countMixerTracks (document.getState());
 
-    menu.addItem ((int) MenuItem::addInsert, "Add insert", inserts < kMaxMixerTracks);
+    menu.addItem ((int) MenuItem::addInsert, tr (StringId::mixer_menu_addInsert),
+                  inserts < kMaxMixerTracks);
 
     // Rename / Add / - / Remove, which is the shape the rack's and the
     // playlist's menus already have: the separator sits immediately above
@@ -234,7 +235,8 @@ juce::PopupMenu MixerStrip::buildMenu() const
     if (! isMaster)
     {
         menu.addSeparator();
-        menu.addItem ((int) MenuItem::removeInsert, "Remove insert", inserts > 1);
+        menu.addItem ((int) MenuItem::removeInsert, tr (StringId::mixer_menu_removeInsert),
+                      inserts > 1);
     }
 
     return menu;

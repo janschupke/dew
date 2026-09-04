@@ -315,7 +315,7 @@ void TransportBar::rebuildPatternList()
 
     // Well above any pattern id, so it can never collide with one.
     patternBox.addSeparator();
-    patternBox.addItem ("New pattern", newPatternItemId);
+    patternBox.addItem (tr (StringId::transport_newPattern), newPatternItemId);
 
     auto id = editorState.getCurrentPatternId();
 
@@ -390,8 +390,10 @@ void TransportBar::rebuildMeterList()
     for (int i = 0; i < numMeterChoices; ++i)
     {
         const auto& choice = meterChoices[i];
-        meterBox.addItem (juce::String (choice.beatsPerBar) + "/" + juce::String (choice.beatUnit),
-                          i + 1);
+        meterBox.addItem (
+            tr (StringId::transport_meter_format,
+                Args {}.with ("beats", choice.beatsPerBar).with ("unit", choice.beatUnit)),
+            i + 1);
     }
 }
 

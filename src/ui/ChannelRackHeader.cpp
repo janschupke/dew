@@ -122,11 +122,11 @@ void ChannelRackHeader::refresh()
 juce::PopupMenu ChannelRackHeader::buildMenu() const
 {
     juce::PopupMenu menu;
-    menu.addItem ((int) MenuItem::rename, "Rename");
+    menu.addItem ((int) MenuItem::rename, tr (StringId::channelRack_menu_rename));
     colourMenu::addTo (menu, channel, colourBaseId);
-    menu.addItem ((int) MenuItem::addChannel, "Add channel");
+    menu.addItem ((int) MenuItem::addChannel, tr (StringId::channelRack_menu_addChannel));
     menu.addSeparator();
-    menu.addItem ((int) MenuItem::removeChannel, "Remove channel");
+    menu.addItem ((int) MenuItem::removeChannel, tr (StringId::channelRack_menu_removeChannel));
     return menu;
 }
 

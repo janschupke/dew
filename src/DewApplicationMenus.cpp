@@ -16,6 +16,7 @@
 
 #include "DewApplication.h"
 
+#include "i18n/Strings.h"
 #include "model/DemoLibrary.h"
 #include "model/ProjectFactory.h"
 #include "ui/Hotkeys.h"
@@ -76,21 +77,21 @@ juce::PopupMenu DewApplication::getMenuForIndex (int, const juce::String& name)
         for (int step = 0; step < Settings::numUiScaleSteps; ++step)
             scales.addCommandItem (&commandManager, CommandIDs::viewUiScaleFirst + step);
 
-        menu.addSubMenu ("UI Scale", scales);
+        menu.addSubMenu (tr (StringId::menu_uiScale), scales);
 
         juce::PopupMenu motion;
 
         for (int step = 0; step < 3; ++step)
             motion.addCommandItem (&commandManager, CommandIDs::viewMotionFirst + step);
 
-        menu.addSubMenu ("Motion", motion);
+        menu.addSubMenu (tr (StringId::menu_motion), motion);
 
         juce::PopupMenu theme;
 
         for (int step = 0; step < 2; ++step)
             theme.addCommandItem (&commandManager, CommandIDs::viewThemeFirst + step);
 
-        menu.addSubMenu ("Theme", theme);
+        menu.addSubMenu (tr (StringId::menu_theme), theme);
     }
     else if (name == "Transport")
     {

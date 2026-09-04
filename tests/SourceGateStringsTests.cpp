@@ -24,8 +24,44 @@ namespace
     has never been red on the tree it guards - a gate landed before its subject
     is a gate somebody disables to get on with the extraction.
 */
-bool showsALiteral (const juce::String& line)
+/** `line` with every argument NAME removed.
+
+    args ("value", rate) names the placeholder a message interpolates; it is an
+    identifier that happens to be spelled as a literal, and no translator will
+    ever see it. Without this the gate reports every formatted message as an
+    offence and the only way to quieten it is a list of files - which is the
+    ratchet the exemption rule exists to remove.
+*/
+juce::String withoutArgumentNames (const juce::String& line)
 {
+    juce::String kept;
+    auto i = 0;
+
+    while (i < line.length())
+    {
+        const auto next = line.indexOf (i, ".with (\"");
+
+        if (next < 0)
+        {
+            kept += line.substring (i);
+            break;
+        }
+
+        const auto nameStart = next + 8;
+        const auto nameEnd = line.indexOfChar (nameStart, '"');
+
+        kept += line.substring (i, nameStart - 1);
+        i = nameEnd < 0 ? line.length() : nameEnd + 1;
+    }
+
+    return kept;
+}
+
+bool showsALiteral (const juce::String& raw)
+{
+    const auto line = withoutArgumentNames (raw);
+
+    // Sinks whose text is the FIRST argument.
     for (const auto* sink :
          { "setTooltip (", "setButtonText (", "setText (", "setTitle (", "setSuffix (" })
     {
@@ -35,6 +71,22 @@ bool showsALiteral (const juce::String& line)
         const auto rest = line.fromFirstOccurrenceOf (sink, false, false).trimStart();
 
         if (rest.startsWith ("\"") && ! rest.startsWith ("\"\""))
+            return true;
+    }
+
+    // A menu item's text is its SECOND argument - addItem (id, "Rename") - so
+    // asking what the call starts with finds nothing at all. A prefix test here
+    // covered none of the thirty menu items in the tree while looking exactly
+    // like one that did, which is the failure "ask a shape, not a spelling"
+    // names.
+    for (const auto* sink : { "addItem (", "addSubMenu (" })
+    {
+        if (! line.contains (sink))
+            continue;
+
+        const auto rest = line.fromFirstOccurrenceOf (sink, false, false);
+
+        if (rest.containsChar ('"') && ! rest.contains ("\"\""))
             return true;
     }
 
@@ -66,4 +118,19 @@ TEST_CASE ("no source shows a person a string literal", "[build][gate][i18n]")
         showsALiteral ("    tempoField.setTooltip (tr (StringId::transport_tempo_help));"));
     CHECK_FALSE (showsALiteral ("    icon.setTooltip (\"\");"));
     CHECK_FALSE (showsALiteral ("    button.setComponentID (\"mute\");"));
+
+    // And the menu-item shape, which the prefix test above cannot see.
+    CHECK (showsALiteral ("    menu.addItem ((int) MenuItem::rename, \"Rename\");"));
+    CHECK_FALSE (
+        showsALiteral ("    menu.addItem ((int) MenuItem::rename, tr (StringId::mixerRename));"));
+
+    // An argument name is an identifier spelled as a literal, and reporting one
+    // would leave a list of files as the only way to quieten the gate.
+    CHECK_FALSE (showsALiteral (
+        "    box.addItem (tr (StringId::unitHertz, Args{}.with (\"value\", rate)), rate);"));
+
+    // And the menu-item shape, which the prefix test above cannot see.
+    CHECK (showsALiteral ("    menu.addItem ((int) MenuItem::rename, \"Rename\");"));
+    CHECK_FALSE (
+        showsALiteral ("    menu.addItem ((int) MenuItem::rename, tr (StringId::mixerRename));"));
 }

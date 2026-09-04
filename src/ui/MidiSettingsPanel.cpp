@@ -91,10 +91,11 @@ MidiSettingsPanel::MidiSettingsPanel (MidiInputHost& h, Settings* s)
     listViewport.setScrollBarsShown (true, false);
     addAndMakeVisible (listViewport);
 
-    channelBox.addItem ("Omni (all channels)", 1);
+    channelBox.addItem (tr (StringId::midi_omni), 1);
 
     for (int channel = 1; channel <= 16; ++channel)
-        channelBox.addItem ("Channel " + juce::String (channel), channel + 1);
+        channelBox.addItem (tr (StringId::midi_channel, Args {}.with ("number", channel)),
+                            channel + 1);
 
     channelBox.onChange = [this]
     {

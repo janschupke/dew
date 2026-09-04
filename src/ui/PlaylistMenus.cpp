@@ -14,6 +14,7 @@
 // rather than inserted into.
 // =============================================================================
 
+#include "i18n/Strings.h"
 #include "ui/PlaylistComponent.h"
 
 #include "model/AutomationTargets.h"
@@ -88,15 +89,17 @@ juce::PopupMenu PlaylistComponent::buildClipMenu (const juce::ValueTree& track, 
         const auto bend = (double) owner[ids::curve];
         const auto straight = shape == SegmentShape::curve && juce::approximatelyEqual (bend, 0.0);
 
-        menu.addItem ((int) ClipMenuItem::shapeLine, "Line", true, straight);
-        menu.addItem ((int) ClipMenuItem::shapeCurve, "Curve", true,
+        menu.addItem ((int) ClipMenuItem::shapeLine, tr (StringId::playlist_clip_line), true,
+                      straight);
+        menu.addItem ((int) ClipMenuItem::shapeCurve, tr (StringId::playlist_clip_curve), true,
                       shape == SegmentShape::curve && ! straight);
-        menu.addItem ((int) ClipMenuItem::shapeStep, "Step", true, shape == SegmentShape::step);
+        menu.addItem ((int) ClipMenuItem::shapeStep, tr (StringId::playlist_clip_step), true,
+                      shape == SegmentShape::step);
     };
 
     if (menuPoint.isValid())
     {
-        menu.addItem ((int) ClipMenuItem::deletePoint, "Delete point");
+        menu.addItem ((int) ClipMenuItem::deletePoint, tr (StringId::playlist_clip_deletePoint));
         menu.addSeparator();
 
         // The shapes of the segment this point OWNS - the one to its right,
@@ -115,7 +118,7 @@ juce::PopupMenu PlaylistComponent::buildClipMenu (const juce::ValueTree& track, 
 
     if (! clip.isValid())
     {
-        menu.addItem ((int) ClipMenuItem::addClip, "Add clip here");
+        menu.addItem ((int) ClipMenuItem::addClip, tr (StringId::playlist_clip_addClip));
         return menu;
     }
 
@@ -124,19 +127,20 @@ juce::PopupMenu PlaylistComponent::buildClipMenu (const juce::ValueTree& track, 
     // arrangement.
     if (ProjectEdits::isMidiClip (clip))
     {
-        menu.addItem ((int) ClipMenuItem::openPattern, "Open pattern");
+        menu.addItem ((int) ClipMenuItem::openPattern, tr (StringId::playlist_clip_openPattern));
 
         // Gives THIS clip a pattern of its own. A pattern is shared by every
         // clip that names it, so the only way to vary one repeat of a phrase
         // was to make a pattern in the transport bar and re-point the clip by
         // hand.
-        menu.addItem ((int) ClipMenuItem::duplicatePattern, "Duplicate pattern");
+        menu.addItem ((int) ClipMenuItem::duplicatePattern,
+                      tr (StringId::playlist_clip_duplicatePattern));
     }
 
     if (menu.getNumItems() > 0)
         menu.addSeparator();
 
-    menu.addItem ((int) ClipMenuItem::deleteClip, "Delete clip");
+    menu.addItem ((int) ClipMenuItem::deleteClip, tr (StringId::playlist_clip_deleteClip));
     return menu;
 }
 
@@ -354,7 +358,8 @@ void PlaylistComponent::showAutomationMenu()
     // effect on every channel is unreadable by the third channel.
     for (const auto& target : targets)
     {
-        const auto group = target.displayName.upToFirstOccurrenceOf (" > ", false, false);
+        const auto group = target.displayName.upToFirstOccurrenceOf (
+            tr (StringId::automation_separator), false, false);
 
         if (group != currentGroup)
         {
@@ -365,7 +370,8 @@ void PlaylistComponent::showAutomationMenu()
             currentGroup = group;
         }
 
-        submenu.addItem (itemId++, target.displayName.fromFirstOccurrenceOf (" > ", false, false));
+        submenu.addItem (itemId++, target.displayName.fromFirstOccurrenceOf (
+                                       tr (StringId::automation_separator), false, false));
     }
 
     if (currentGroup.isNotEmpty())

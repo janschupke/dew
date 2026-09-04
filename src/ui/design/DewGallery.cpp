@@ -217,7 +217,7 @@ DewGallery::DewGallery()
     add (routing);
 
     auto* unavailable = new DewDropdown();
-    unavailable->addItem ("Unavailable", 1);
+    unavailable->addItem (tr (StringId::gallery_unavailable), 1);
     unavailable->setSelectedId (1, juce::dontSendNotification);
     unavailable->setEnabled (false);
     add (unavailable);

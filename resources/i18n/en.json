@@ -1,5 +1,10 @@
 {
   "audio": {
+    "input": {
+      "monoLeft": "Mono - left",
+      "monoRight": "Mono - right",
+      "stereo": "Stereo"
+    },
     "test": {
       "help": "Play a short note through the current device"
     },
@@ -9,6 +14,7 @@
     "master": "Master",
     "oscillator": "{channel} > Osc {slot}",
     "parameter": "{owner} > {param}",
+    "separator": " > ",
     "song": "Song"
   },
   "channelRack": {
@@ -24,7 +30,16 @@
     "arm": {
       "help": "Arm this channel for recording"
     },
+    "menu": {
+      "addChannel": "Add channel",
+      "removeChannel": "Remove channel",
+      "rename": "Rename"
+    },
     "title": "Channel rack"
+  },
+  "colour": {
+    "default": "Default",
+    "menu": "Colour"
   },
   "dialog": {
     "deletePattern": {
@@ -41,6 +56,9 @@
       "help": "Show or hide this effect's controls"
     }
   },
+  "gallery": {
+    "unavailable": "Unavailable"
+  },
   "instrument": {
     "empty": "No channel selected",
     "mixer": {
@@ -51,12 +69,24 @@
     },
     "title": "Instrument"
   },
+  "menu": {
+    "motion": "Motion",
+    "theme": "Theme",
+    "uiScale": "UI Scale"
+  },
   "midi": {
+    "channel": "Channel {number}",
+    "omni": "Omni (all channels)",
     "title": "MIDI settings"
   },
   "mixer": {
     "addInsert": {
       "help": "Add a mixer insert"
+    },
+    "menu": {
+      "addInsert": "Add insert",
+      "removeInsert": "Remove insert",
+      "rename": "Rename"
     },
     "pan": {
       "name": "Pan"
@@ -99,6 +129,12 @@
       "help": "The waveform this oscillator plays"
     }
   },
+  "param": {
+    "menu": {
+      "createClip": "Create automation clip",
+      "resetToDefault": "Reset to default"
+    }
+  },
   "pianoRoll": {
     "channel": {
       "help": "Channel being edited"
@@ -121,6 +157,22 @@
     "addTrack": {
       "help": "Add a track to the arrangement"
     },
+    "clip": {
+      "addClip": "Add clip here",
+      "curve": "Curve",
+      "deleteClip": "Delete clip",
+      "deletePoint": "Delete point",
+      "duplicatePattern": "Duplicate pattern",
+      "line": "Line",
+      "openPattern": "Open pattern",
+      "step": "Step"
+    },
+    "menu": {
+      "addTrack": "Add track",
+      "removeTrack": "Remove track",
+      "rename": "Rename",
+      "resetHeight": "Reset track height"
+    },
     "title": "Playlist"
   },
   "randomize": {
@@ -129,8 +181,18 @@
     }
   },
   "render": {
+    "depth": {
+      "bits16": "16-bit",
+      "bits24": "24-bit",
+      "float32": "32-bit float"
+    },
     "peak": {
       "help": "Where normalizing puts the loudest sample"
+    },
+    "scope": {
+      "pattern": "Pattern {id}",
+      "selection": "Selection: bars {from} to {to}",
+      "song": "Song"
     },
     "tail": {
       "help": "Time rendered after the music ends, so release tails are not cut off"
@@ -159,11 +221,13 @@
   },
   "transport": {
     "meter": {
+      "format": "{beats}/{unit}",
       "help": "Time signature - beats to the bar, and what a beat is"
     },
     "mode": {
       "help": "Play the whole arrangement, or the pattern on its own (cmd-L)"
     },
+    "newPattern": "New pattern",
     "pattern": {
       "help": "Which pattern the rack and the piano roll are editing"
     },
@@ -177,6 +241,8 @@
   "unit": {
     "bpm": " bpm",
     "decibels": " dB",
+    "hertzValue": "{value} Hz",
+    "samplesValue": "{value} samples",
     "seconds": " s",
     "steps": " steps"
   }

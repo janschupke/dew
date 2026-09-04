@@ -30,9 +30,9 @@ AudioSettingsPanel::AudioSettingsPanel (LiveAudioHost& host, AudioEngine& e)
     for (auto* box : { &typeBox, &outputBox, &inputBox, &inputChannelBox, &rateBox, &bufferBox })
         addAndMakeVisible (box);
 
-    inputChannelBox.addItem ("Mono - left", 1);
-    inputChannelBox.addItem ("Mono - right", 2);
-    inputChannelBox.addItem ("Stereo", 3);
+    inputChannelBox.addItem (tr (StringId::audio_input_monoLeft), 1);
+    inputChannelBox.addItem (tr (StringId::audio_input_monoRight), 2);
+    inputChannelBox.addItem (tr (StringId::audio_input_stereo), 3);
     inputChannelBox.setSelectedId (1, juce::dontSendNotification);
     inputChannelBox.setEnabled (false);
 
@@ -210,14 +210,15 @@ void AudioSettingsPanel::rebuildLists()
         for (const auto rate : device->getAvailableSampleRates())
         {
             const auto asInt = juce::roundToInt (rate);
-            rateBox.addItem (juce::String (asInt) + " Hz", asInt);
+            rateBox.addItem (tr (StringId::unit_hertzValue, Args {}.with ("value", asInt)), asInt);
         }
 
         rateBox.setSelectedId (juce::roundToInt (device->getCurrentSampleRate()),
                                juce::dontSendNotification);
 
         for (const auto size : device->getAvailableBufferSizes())
-            bufferBox.addItem (juce::String (size) + " samples", size);
+            bufferBox.addItem (tr (StringId::unit_samplesValue, Args {}.with ("value", size)),
+                               size);
 
         bufferBox.setSelectedId (device->getCurrentBufferSizeSamples(), juce::dontSendNotification);
     }

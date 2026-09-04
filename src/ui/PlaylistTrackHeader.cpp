@@ -1,5 +1,6 @@
 #include "ui/PlaylistTrackHeader.h"
 
+#include "i18n/Strings.h"
 #include "model/EntityColour.h"
 #include "model/Ids.h"
 #include "model/ProjectEdits.h"
@@ -55,16 +56,16 @@ PlaylistTrackHeader::PlaylistTrackHeader (ProjectDocument& d, juce::ValueTree t)
 juce::PopupMenu PlaylistTrackHeader::buildMenu() const
 {
     juce::PopupMenu menu;
-    menu.addItem ((int) MenuItem::rename, "Rename");
+    menu.addItem ((int) MenuItem::rename, tr (StringId::playlist_menu_rename));
     colourMenu::addTo (menu, track, colourBaseId);
-    menu.addItem ((int) MenuItem::addTrack, "Add track");
+    menu.addItem ((int) MenuItem::addTrack, tr (StringId::playlist_menu_addTrack));
     menu.addSeparator();
 
     // Here as well as on the toolbar and on alt-0, because this is the menu
     // you are already in when a drag on the edge above went too far.
-    menu.addItem ((int) MenuItem::resetHeight, "Reset track height");
+    menu.addItem ((int) MenuItem::resetHeight, tr (StringId::playlist_menu_resetHeight));
     menu.addSeparator();
-    menu.addItem ((int) MenuItem::removeTrack, "Remove track");
+    menu.addItem ((int) MenuItem::removeTrack, tr (StringId::playlist_menu_removeTrack));
     return menu;
 }
 

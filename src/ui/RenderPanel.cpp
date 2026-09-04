@@ -63,9 +63,9 @@ RenderPanel::RenderPanel (ProjectDocument& d, EditorState& state, Settings* sett
     peakField.setValue (-1.0, juce::dontSendNotification);
     peakField.setTooltip (tr (StringId::render_peak_help));
 
-    depthBox.addItem ("16-bit", 16);
-    depthBox.addItem ("24-bit", 24);
-    depthBox.addItem ("32-bit float", 32);
+    depthBox.addItem (tr (StringId::render_depth_bits16), 16);
+    depthBox.addItem (tr (StringId::render_depth_bits24), 24);
+    depthBox.addItem (tr (StringId::render_depth_float32), 32);
     depthBox.setSelectedId (24, juce::dontSendNotification);
 
     ditherToggle.setToggleState (true, juce::dontSendNotification);
@@ -263,7 +263,8 @@ void RenderPanel::rebuildFormats()
     rateBox.clear (juce::dontSendNotification);
 
     for (const auto rate : rates)
-        rateBox.addItem (juce::String (rate) + " Hz", rateIdBase + rate);
+        rateBox.addItem (tr (StringId::unit_hertzValue, Args {}.with ("value", rate)),
+                         rateIdBase + rate);
 
     rateBox.setSelectedId (rateIdBase + (rates.contains (previous) ? previous : 44100),
                            juce::dontSendNotification);
@@ -287,16 +288,19 @@ void RenderPanel::rebuildScopes()
     const auto wanted = scopeBox.getSelectedId();
 
     scopeBox.clear (juce::dontSendNotification);
-    scopeBox.addItem ("Song", songScope);
-    scopeBox.addItem ("Pattern " + juce::String (editorState.getCurrentPatternId()), patternScope);
+    scopeBox.addItem (tr (StringId::render_scope_song), songScope);
+    scopeBox.addItem (
+        tr (StringId::render_scope_pattern, Args {}.with ("id", editorState.getCurrentPatternId())),
+        patternScope);
 
     if (editorState.hasBarSelection())
     {
         const auto selection = editorState.getSelectedBarRange();
 
-        scopeBox.addItem ("Selection: bars " + juce::String (selection.getStart() + 1) + " to "
-                              + juce::String (selection.getEnd()),
-                          selectionScope);
+        scopeBox.addItem (
+            tr (StringId::render_scope_selection,
+                Args {}.with ("from", selection.getStart() + 1).with ("to", selection.getEnd())),
+            selectionScope);
     }
 
     const auto stillThere = wanted > 0 && scopeBox.indexOfItemId (wanted) >= 0;

@@ -1,5 +1,6 @@
 #include "ui/ParamContextMenu.h"
 
+#include "i18n/Strings.h"
 #include "model/Ids.h"
 #include "model/ProjectEdits.h"
 
@@ -30,9 +31,9 @@ juce::PopupMenu build (const juce::ValueTree& project, const juce::ValueTree& ow
     // nothing can automate - an envelope stage, a base pitch - simply has no
     // item, rather than one that opens and then fails.
     if (automationTargetFor (project, owner, *spec.property).has_value())
-        menu.addItem ((int) Item::createClip, "Create automation clip");
+        menu.addItem ((int) Item::createClip, tr (StringId::param_menu_createClip));
 
-    menu.addItem ((int) Item::resetToDefault, "Reset to default");
+    menu.addItem ((int) Item::resetToDefault, tr (StringId::param_menu_resetToDefault));
     return menu;
 }
 

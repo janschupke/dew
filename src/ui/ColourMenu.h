@@ -2,6 +2,7 @@
 
 #include <juce_gui_basics/juce_gui_basics.h>
 
+#include "i18n/Strings.h"
 #include "model/EntityColour.h"
 #include "app/ProjectDocument.h"
 #include "model/ProjectEdits.h"
@@ -58,9 +59,10 @@ inline void addTo (juce::PopupMenu& menu, const juce::ValueTree& node, int baseI
 
     // Ticked when nothing is stored, so "inherit" is a state the menu SHOWS
     // rather than one you can only infer from nothing else being ticked.
-    colours.addItem (defaultItemFor (baseId), "Default", true, ! chosen.has_value());
+    colours.addItem (defaultItemFor (baseId), tr (StringId::colour_default), true,
+                     ! chosen.has_value());
 
-    menu.addSubMenu ("Colour", colours);
+    menu.addSubMenu (tr (StringId::colour_menu), colours);
 }
 
 /** Applies a choice if it belongs to this submenu, and says whether it did.
