@@ -398,6 +398,15 @@ TEST_CASE ("every token the design system declares is one the app uses", "[build
 
     juce::String everythingElse;
 
+    // tools/DocsTokens.h joins them, and for the identical reason: it writes
+    // every token out for the website, so every name appears in it and would
+    // satisfy the search below without the application referring to one of
+    // them at all. Left in the corpus, this gate keeps reporting success and
+    // stops covering anything - which is the shape of hole this whole file
+    // exists to refuse. Emitting a token is not a use of it.
+    const juce::File docsTokensFile { juce::String (DEW_TOOLS_DIR) + "/DocsTokens.h" };
+    REQUIRE (docsTokensFile.existsAsFile());
+
     for (const auto* directory :
          { DEW_SOURCE_DIR, DEW_SOURCE_DIR "/../tests", DEW_SOURCE_DIR "/../tools" })
         for (const auto& entry :
@@ -410,8 +419,9 @@ TEST_CASE ("every token the design system declares is one the app uses", "[build
             // By full path, because this corpus spans src, tests and tools: a
             // second file called Tokens.h anywhere in any of the three would
             // have silently excluded itself from the usage search.
-            if (const auto file = entry.getFile();
-                file != tokensFile && file != tokensFile.withFileExtension (".cpp"))
+            if (const auto file = entry.getFile(); file != tokensFile
+                                                   && file != tokensFile.withFileExtension (".cpp")
+                                                   && file != docsTokensFile)
                 everythingElse += entry.getFile().loadFileAsString();
 
     juce::StringArray unused;

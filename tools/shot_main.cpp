@@ -14,6 +14,7 @@
 #include "ui/design/Theme.h"
 #include "ui/design/DewGallery.h"
 #include "CliArgs.h"
+#include "DocsTokens.h"
 
 namespace
 {
@@ -28,6 +29,7 @@ Usage:
   dew_shot editor <out.png> [options]
   dew_shot tabs <out-prefix> [options]      one PNG per tab
   dew_shot gallery <out.png> [options]      the design system
+  dew_shot tokens <out.json>                the design system, as data
   dew_shot audio <out.png>                  the audio settings panel
   dew_shot midi <out.png>                   the MIDI settings panel
   dew_shot render <out.png> [--project f] [--format wav|flac|mp3|midi]
@@ -128,6 +130,28 @@ int main (int argc, char* argv[])
 
     if (args.positional.size() < 2)
         return fail ("expected an output path");
+
+    // Before the GUI initialiser, and before applyPalette: this mode paints
+    // nothing and reads darkPalette() directly, so it needs neither. It lives
+    // here rather than in dew_docs because dew_docs links dew_lang and nothing
+    // else - the tokens are in dew_design, and dew_shot already links dew_ui
+    // and already exists to show what the design system looks like. This is
+    // that job in a second format.
+    if (mode == "tokens")
+    {
+        const auto destination = juce::File::getCurrentWorkingDirectory().getChildFile (
+            args.positional[1]);
+
+        // "\n" is passed, and that is not decoration. replaceWithText defaults
+        // its lineEndings parameter to "\r\n", so the obvious call writes CRLF -
+        // which the in-process gate would compare happily against itself while
+        // cmp in CI compared it against an LF copy and failed.
+        if (! destination.replaceWithText (dew::docs::tokensJson(), false, false, "\n"))
+            return fail ("could not write " + destination.getFullPathName());
+
+        std::cout << "wrote " << destination.getFullPathName() << std::endl;
+        return 0;
+    }
 
     const juce::ScopedJuceInitialiser_GUI juceInit;
 

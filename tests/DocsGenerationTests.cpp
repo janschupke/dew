@@ -3,7 +3,9 @@
 #include <algorithm>
 #include <juce_core/juce_core.h>
 
+#include "ui/design/Theme.h"
 #include "DocsSchema.h"
+#include "DocsTokens.h"
 
 using namespace dew;
 
@@ -104,4 +106,58 @@ TEST_CASE ("every block and key in the schema reaches the json", "[docs][website
     // schema is the size a reference is worth generating for.
     REQUIRE (lang::schema().size() > 10);
     REQUIRE (keys > 40);
+}
+
+TEST_CASE ("the website's design tokens are what the emitter writes", "[docs][website][gate]")
+{
+    const auto file = generatedFile ("design-tokens.json");
+
+    INFO ("file: " << file.getFullPathName());
+    INFO ("regenerate: cmake --build --preset ci --target dew_shot && "
+          "./build/ci/tools/dew_shot_artefacts/RelWithDebInfo/dew_shot tokens "
+          "website/src/generated/design-tokens.json");
+
+    REQUIRE (file.existsAsFile());
+    CHECK (file.loadFileAsString().toStdString() == docs::tokensJson());
+}
+
+TEST_CASE ("the token emitter writes the same bytes twice", "[docs][website][gate]")
+{
+    CHECK (docs::tokensJson() == docs::tokensJson());
+}
+
+TEST_CASE ("the emitted tokens are the dark palette, whatever theme is in force",
+           "[docs][website][gate]")
+{
+    // darkPalette() directly rather than colour::active, so the emitter does
+    // not depend on whether anything called theme::applyPalette first. dew_shot
+    // calls it for every other mode, and a token file that changed with a
+    // --theme flag would be a file whose content depended on how it was asked
+    // for.
+    const auto before = docs::tokensJson();
+
+    theme::applyPalette (theme::Kind::highContrast);
+    const auto during = docs::tokensJson();
+    theme::applyPalette (theme::Kind::dark);
+
+    CHECK (before == during);
+}
+
+TEST_CASE ("a lift is the colour the app actually paints", "[docs][website][gate]")
+{
+    // juce::Colour::brighter is 255 - (1/(1+amount)) * (255 - channel) per
+    // sRGB channel, TRUNCATED to a uint8. CSS color-mix rounds, and "6%
+    // lighter" is a third answer again - so the composed values are emitted
+    // rather than recomputed on the web, and this pins two of them.
+    const auto palette = tokens::colour::darkPalette();
+
+    // A hovered `normal` button. NOT colour::surfaceHover, which is a darker
+    // colour doing a different job - the trap a web control reaching for the
+    // token whose name says "hover" would fall into.
+    CHECK (docs::cssColour (palette.surfaceRaised.brighter (tokens::emphasis::controlLift))
+           == "#3e4148");
+    CHECK (docs::cssColour (palette.surfaceHover) == "#343941");
+
+    const auto json = juce::String (docs::tokensJson());
+    CHECK (json.contains ("\"surfaceRaisedHover\": \"#3e4148\""));
 }

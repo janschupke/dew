@@ -1,0 +1,107 @@
+{
+  "palette": "dark",
+  "colour": {
+    "wellDeep": "#0e1013",
+    "well": "#121417",
+    "background": "#17191d",
+    "surface": "#22252b",
+    "surfaceRaised": "#2b2f36",
+    "surfaceHover": "#343941",
+    "divider": "#2c3037",
+    "dividerStrong": "#3d434d",
+    "outline": "#7c838e",
+    "textPrimary": "#e6e8ec",
+    "textSecondary": "#9aa2ae",
+    "textDisabled": "#858c96",
+    "textOnAccent": "#10151c",
+    "accent": "#4fa3ff",
+    "accentMuted": "#4682bf",
+    "playhead": "#ffc857",
+    "recording": "#ff7a51",
+    "success": "#3ecf8e",
+    "warning": "#f2c14e",
+    "danger": "#ff7a51",
+    "funcTone": "#c9ab81",
+    "funcTime": "#abbf7c",
+    "funcLevel": "#80c4a0",
+    "funcStereo": "#7fc7c7",
+    "funcSpace": "#958fdb",
+    "funcModulation": "#c88ad1",
+    "funcPitch": "#d48ca4",
+    "keyBlack": "#1c1f24",
+    "keyWhite": "#d8dce3",
+    "beatShade": "#1b1e23",
+    "barShade": "#20242b"
+  },
+  "channelRamp": [
+    "#e4572e",
+    "#29a19c",
+    "#4fa3ff",
+    "#f2c14e",
+    "#b388eb",
+    "#3ecf8e",
+    "#ff7eb6",
+    "#76c7c0"
+  ],
+  "lift": {
+    "surfaceLifted": "#2e3136",
+    "surfaceRaisedHover": "#3e4148",
+    "surfaceRaisedPress": "#51545a",
+    "accentMutedHover": "#568dc4",
+    "accentMutedPress": "#6798ca",
+    "accentHover": "#5fabff",
+    "accentPress": "#6eb3ff"
+  },
+  "emphasis": {
+    "tint": 0.08,
+    "wash": 0.2,
+    "hatch": 0.25,
+    "subdued": 0.35,
+    "dimmed": 0.55,
+    "strong": 0.85,
+    "surfaceLift": 0.06,
+    "controlLift": 0.1,
+    "pressLift": 0.22,
+    "edgeLift": 0.35
+  },
+  "space": {
+    "xxs": 2,
+    "xs": 4,
+    "sm": 6,
+    "md": 8,
+    "lg": 12,
+    "xl": 16,
+    "xxl": 24
+  },
+  "radius": {
+    "xs": 2,
+    "sm": 3,
+    "md": 5,
+    "lg": 8
+  },
+  "stroke": {
+    "whisper": 0.5,
+    "hairline": 1,
+    "regular": 1.5,
+    "bold": 2
+  },
+  "type": {
+    "caption": 11,
+    "small": 12,
+    "body": 13,
+    "title": 15,
+    "display": 20,
+    "codeSmall": 12,
+    "codeBody": 14,
+    "codeLarge": 17,
+    "codeHuge": 21
+  },
+  "motion": {
+    "selectMs": 70,
+    "quickMs": 90,
+    "valueMs": 120,
+    "popupMs": 130,
+    "panelMs": 180,
+    "popupRisePx": 6
+  }
+}

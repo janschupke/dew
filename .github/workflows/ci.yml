@@ -109,7 +109,8 @@ jobs:
             editor "${RUNNER_TEMP}/roll.png" --project examples/melody.dew --tab piano-roll
           test -s "${RUNNER_TEMP}/roll.png"
 
-      # The website's copy of the score language, regenerated in a SECOND
+      # The website's copy of the score language and the design tokens,
+      # regenerated in a SECOND
       # PROCESS and compared byte for byte.
       #
       # dew_tests already holds the committed file against what the emitter
@@ -121,6 +122,9 @@ jobs:
         run: |
           ./build/ci/tools/dew_docs schema "${RUNNER_TEMP}/score-schema.json"
           cmp "${RUNNER_TEMP}/score-schema.json" website/src/generated/score-schema.json
+          ./build/ci/tools/dew_shot_artefacts/RelWithDebInfo/dew_shot \
+            tokens "${RUNNER_TEMP}/design-tokens.json"
+          cmp "${RUNNER_TEMP}/design-tokens.json" website/src/generated/design-tokens.json
 
       # The manifest is generated at configure time; if it differs from what is
       # committed, the two have drifted.
