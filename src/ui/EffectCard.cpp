@@ -293,7 +293,8 @@ void EffectCard::paint (juce::Graphics& g)
     {
         g.setColour (colour::warning);
         g.setFont (type::font (type::caption, true));
-        g.drawText ("BYPASSED", nameBounds, juce::Justification::centredRight, false);
+        g.drawText (tr (StringId::effect_bypassed), nameBounds, juce::Justification::centredRight,
+                    false);
     }
 
     // The mode box is the one control in a row that does not caption

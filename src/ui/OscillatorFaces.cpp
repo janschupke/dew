@@ -12,6 +12,7 @@
 // is enabled, and every write to the document. Neither face writes anything.
 // =============================================================================
 
+#include "i18n/Strings.h"
 #include "ui/OscillatorSection.h"
 
 #include "ui/OscillatorSlot.h"
@@ -169,7 +170,8 @@ void OscillatorSection::paint (juce::Graphics& g)
     {
         g.setColour (colour::textDisabled);
         g.setFont (type::font (type::caption));
-        g.drawText ("NOT PLAYING", offCaptionBounds, juce::Justification::centredRight, false);
+        g.drawText (tr (StringId::oscillator_notPlaying), offCaptionBounds,
+                    juce::Justification::centredRight, false);
     }
 
     if (showingWavetable && ! shapeBounds.isEmpty())

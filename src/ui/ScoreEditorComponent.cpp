@@ -445,7 +445,7 @@ void ScoreEditorComponent::paintListBoxItem (int row, juce::Graphics& g, int wid
 
     g.setFont (tokens::type::monospaced (tokens::type::small));
     g.setColour (colourFor (diagnostic.severity));
-    g.drawText (juce::String (line) + ":" + juce::String (column),
+    g.drawText (tr (StringId::score_position, Args {}.with ("line", line).with ("column", column)),
                 area.removeFromLeft (tokens::size::gutterLabel), juce::Justification::centredLeft);
 
     g.setColour (tokens::colour::textSecondary);

@@ -5,6 +5,7 @@
       "monoRight": "Mono - right",
       "stereo": "Stereo"
     },
+    "inputLevel": "INPUT LEVEL",
     "test": {
       "help": "Play a short note through the current device"
     },
@@ -49,6 +50,7 @@
     }
   },
   "effect": {
+    "bypassed": "BYPASSED",
     "chain": {
       "title": "Effect chain"
     },
@@ -57,6 +59,8 @@
     }
   },
   "gallery": {
+    "inertArea": "inert area",
+    "title": "dew design system",
     "unavailable": "Unavailable"
   },
   "instrument": {
@@ -76,6 +80,7 @@
   },
   "midi": {
     "channel": "Channel {number}",
+    "notConnected": "not connected",
     "omni": "Omni (all channels)",
     "title": "MIDI settings"
   },
@@ -83,6 +88,7 @@
     "addInsert": {
       "help": "Add a mixer insert"
     },
+    "empty": "no channels",
     "menu": {
       "addInsert": "Add insert",
       "removeInsert": "Remove insert",
@@ -100,6 +106,7 @@
     "mode": {
       "help": "Which generator this oscillator runs"
     },
+    "notPlaying": "NOT PLAYING",
     "octave": {
       "caption": "OCT"
     },
@@ -173,9 +180,11 @@
       "rename": "Rename",
       "resetHeight": "Reset track height"
     },
+    "missingAutomation": "missing automation",
     "title": "Playlist"
   },
   "randomize": {
+    "hint": "Zero leaves a property untouched.",
     "step": {
       "help": "How far a note can move in time, either way. Zero leaves timing alone"
     }
@@ -204,7 +213,8 @@
   "score": {
     "compile": {
       "help": "Turn this score into patterns, notes and clips (cmd-R)"
-    }
+    },
+    "position": "{line}:{column}"
   },
   "soundFont": {
     "load": {

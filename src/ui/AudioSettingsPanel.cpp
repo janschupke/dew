@@ -350,7 +350,7 @@ void AudioSettingsPanel::paint (juce::Graphics& g)
 
     g.setFont (type::font (type::caption));
     g.setColour (colour::textSecondary);
-    g.drawText ("INPUT LEVEL", meter.withX (space::xl).withWidth (66),
+    g.drawText (tr (StringId::audio_inputLevel), meter.withX (space::xl).withWidth (66),
                 juce::Justification::centredLeft, false);
 
     // The live state, under the controls: what the choices above added up to.

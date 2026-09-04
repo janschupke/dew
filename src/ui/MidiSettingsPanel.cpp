@@ -66,7 +66,7 @@ void MidiSettingsPanel::DeviceRow::paint (juce::Graphics& g)
     // is still set has an explanation beside it.
     g.setFont (type::font (type::caption));
     g.setColour (colour::warning);
-    g.drawText ("not connected", text, juce::Justification::centredRight, false);
+    g.drawText (tr (StringId::midi_notConnected), text, juce::Justification::centredRight, false);
 }
 
 // -----------------------------------------------------------------------------

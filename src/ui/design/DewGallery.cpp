@@ -425,7 +425,7 @@ void DewGallery::paint (juce::Graphics& g)
 
     g.setColour (colour::textPrimary);
     g.setFont (type::font (type::display, true));
-    g.drawText ("dew design system",
+    g.drawText (tr (StringId::gallery_title),
                 getLocalBounds().reduced (space::xxl).removeFromTop (titleHeight),
                 juce::Justification::centredLeft, false);
 
@@ -509,7 +509,7 @@ void DewGallery::paint (juce::Graphics& g)
         paint::inertArea (g, sample);
         g.setColour (colour::textDisabled);
         g.setFont (type::font (type::caption));
-        g.drawText ("inert area", sample, juce::Justification::centred, false);
+        g.drawText (tr (StringId::gallery_inertArea), sample, juce::Justification::centred, false);
     }
 }
 

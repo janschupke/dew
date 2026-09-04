@@ -488,7 +488,7 @@ void MixerStrip::paintRouting (juce::Graphics& g)
     {
         g.setColour (colour::textDisabled);
         g.setFont (type::font (type::caption));
-        g.drawText ("no channels", area, juce::Justification::centredTop, false);
+        g.drawText (tr (StringId::mixer_empty), area, juce::Justification::centredTop, false);
         return;
     }
 

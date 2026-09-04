@@ -10,6 +10,7 @@
 // this buys is a file about painting and a file about behaviour.
 // =============================================================================
 
+#include "i18n/Strings.h"
 #include "ui/PlaylistComponent.h"
 
 #include <cmath>
@@ -130,8 +131,9 @@ void PlaylistComponent::paintAutomationClip (juce::Graphics& g, const juce::Valu
     {
         g.setColour (colour::danger);
         g.setFont (type::font (type::caption));
-        g.drawText ("missing automation", bounds.toNearestInt().reduced (space::xs, 0),
-                    juce::Justification::centredLeft, true);
+        g.drawText (tr (StringId::playlist_missingAutomation),
+                    bounds.toNearestInt().reduced (space::xs, 0), juce::Justification::centredLeft,
+                    true);
         return;
     }
 

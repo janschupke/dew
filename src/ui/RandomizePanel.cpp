@@ -89,7 +89,7 @@ void RandomizePanel::paint (juce::Graphics& g)
 
     g.setColour (colour::textDisabled);
     g.setFont (type::font (type::caption));
-    g.drawText ("Zero leaves a property untouched.",
+    g.drawText (tr (StringId::randomize_hint),
                 getLocalBounds()
                     .reduced (space::xl)
                     .withTop (getHeight() - space::xl - size::controlHeight * 2 - space::sm)
