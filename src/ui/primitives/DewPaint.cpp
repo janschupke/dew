@@ -194,7 +194,12 @@ void emptyState (juce::Graphics& g, juce::Rectangle<int> bounds, const juce::Str
     // instruction the user has.
     g.setColour (colour::textSecondary);
     g.setFont (type::font (type::body));
-    g.drawText (text, bounds, justification, false);
+
+    // Ellipsised rather than hard-clipped. The step grid puts a whole
+    // missing-file path through here, into a row one rung tall, and a message
+    // cut mid-word reads as the whole message. The ellipsis at least says that
+    // there was more of it.
+    g.drawText (text, bounds, justification, true);
 }
 
 juce::Rectangle<float> bodyRect (const juce::Component& c)

@@ -177,10 +177,22 @@ void RenderPanel::applyRequiredHeight()
 
     // The dialog owns the size; telling only the content leaves the window at
     // its old height with the content clipped or floating inside it.
+    //
+    // Unless the panel is being scrolled, in which case the window's height is
+    // the SCREEN's business and not this panel's: growing it here is what put
+    // the Render button off the bottom edge of a short display, on a dialog
+    // that cannot be resized to bring it back.
     if (auto* window = findParentComponentOfClass<juce::DialogWindow>())
-        window->setContentComponentSize (getWidth(), wanted);
+    {
+        if (findParentComponentOfClass<juce::Viewport>() != nullptr)
+            setSize (getWidth(), wanted);
+        else
+            window->setContentComponentSize (getWidth(), wanted);
+    }
     else
+    {
         setSize (getWidth(), wanted);
+    }
 }
 
 RenderPanel::~RenderPanel()

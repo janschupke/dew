@@ -240,6 +240,25 @@ private:
 
     EditorTabs tabs;
     InstrumentPanel instrumentPanel;
+
+    /** Scrolls the instrument panel when the window is too short to hold it.
+
+        The panel stacks fixed-height rows and hands the effect chain whatever
+        is left, so at the smallest window the app can open there was nothing
+        left: the chain vanished and the last knob row was cut in half. A
+        viewport is what the channel rack, the mixer, the chain host and the
+        MIDI settings list already use for the same problem.
+
+        It changes nothing when there IS room - the panel is sized to the
+        greater of the viewport and its own required height, so at any ordinary
+        window size it is exactly as tall as the viewport and no scrollbar
+        appears.
+
+        Declared AFTER the panel so it is destroyed BEFORE it: it holds a
+        pointer it does not own.
+    */
+    juce::Viewport panelViewport;
+
     StatusBar statusBar;
 
     /** Puts what the pointer is over into the status bar, at once.

@@ -18,4 +18,18 @@ namespace dew::dialog
 */
 void launch (juce::Component* content, const juce::String& title, juce::Component* centreAround);
 
+/** The tallest a dialog's content may be and still fit on this screen.
+
+    dew's dialogs are not resizable, by convention, and the render panel grows
+    itself as rows appear. Neither fact is a problem until the interface is
+    scaled: at 1.75x a 470-tall panel wants 822 logical pixels of a screen that
+    has fewer, and because its buttons are laid out from the BOTTOM they are the
+    part that goes off the edge - on a dialog that cannot be resized or moved
+    far enough to bring them back.
+
+    So a dialog taller than this scrolls instead, and anything that resizes
+    itself clamps to it.
+*/
+int maxContentHeight();
+
 } // namespace dew::dialog

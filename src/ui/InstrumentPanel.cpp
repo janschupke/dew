@@ -373,6 +373,33 @@ void InstrumentPanel::showPresetMenu()
                         [this] (int choice) { applyPresetChoice (choice); });
 }
 
+int InstrumentPanel::getRequiredHeight() const
+{
+    // Mirrors resized() row for row. Every rung it names is the one resized()
+    // removes, in the same order, so the two cannot drift without the panel
+    // visibly disagreeing with its own scrollbar.
+    const auto faceHeight = [this]
+    {
+        switch (showing)
+        {
+            case InstrumentType::synth: return oscSection.getRequiredHeight();
+            case InstrumentType::audio: return SampleSection::requiredHeight;
+            case InstrumentType::soundfont: return SoundFontSection::requiredHeight;
+        }
+
+        return 0;
+    }();
+
+    // The face, the routing row, the level knobs, and the envelope knobs when
+    // there is an envelope - each followed by the gap `row` leaves behind.
+    auto rows = faceHeight + size::knob + size::knobRow + 3 * space::sm;
+
+    if (showing == InstrumentType::synth)
+        rows += size::knobRow + space::sm;
+
+    return space::md * 2 + size::iconButton + space::sm + rows + chainHost.getPreferredHeight();
+}
+
 void InstrumentPanel::resized()
 {
     auto area = getLocalBounds().reduced (space::md);

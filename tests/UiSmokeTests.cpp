@@ -63,7 +63,11 @@ TEST_CASE ("the instrument panel folds away, and comes back", "[ui][smoke]")
     dew::MainComponent component (false);
     component.setSize (1400, 900);
 
-    auto* panel = component.findChildWithID ("instrumentPanel");
+    // The VIEWPORT is what folds. The panel is the scrolled component inside
+    // it, so it keeps a width of its own while hidden - which is the whole
+    // point: the viewport is what stops the panel clipping when the window is
+    // too short to hold it.
+    auto* panel = component.findChildWithID ("instrumentPanelViewport");
     auto* divider = component.findChildWithID ("panelDivider");
 
     REQUIRE (panel != nullptr);

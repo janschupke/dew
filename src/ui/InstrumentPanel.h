@@ -47,6 +47,20 @@ public:
     void paint (juce::Graphics&) override;
     void resized() override;
 
+    /** How tall the panel needs to be to show everything it is holding.
+
+        Mirrors resized(), which is the only way the two can be trusted to
+        agree - the same reason RenderPanel::getRequiredHeight says so.
+
+        It exists because the panel used to give the effect chain "whatever is
+        left", and at the smallest window the app can open there is nothing
+        left: the chain vanished and the last knob row was cut in half. Nothing
+        said so, because a rectangle removed from an exhausted one is simply
+        empty. MainComponent scrolls the panel when it does not fit rather than
+        letting it clip, and this is the height it scrolls.
+    */
+    int getRequiredHeight() const;
+
     void refresh();
 
     /** What the preset button would offer, and what choosing item `choice`

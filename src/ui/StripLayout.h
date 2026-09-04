@@ -34,9 +34,26 @@ public:
     {
     }
 
-    /** Places a control and steps past it. */
+    /** Places a control and steps past it.
+
+        A control there is no room for is HIDDEN rather than given what is left.
+        removeFromLeft on an exhausted rectangle returns an empty one and then
+        keeps returning empty ones, so a strip narrower than its contents used
+        to paint the overflow as a column of zero-width slivers at its right
+        edge and say nothing. The transport bar cannot reach that today - the
+        window's own floor is wider than the bar needs - but "cannot reach it
+        today" is a property of setResizeLimits, not of this class.
+    */
     void place (juce::Component& c, int width)
     {
+        if (area.getWidth() < width)
+        {
+            c.setVisible (false);
+            area.removeFromLeft (area.getWidth());
+            return;
+        }
+
+        c.setVisible (true);
         c.setBounds (area.removeFromLeft (width).withHeight (controlHeight));
         area.removeFromLeft (tokens::space::xxs);
     }

@@ -66,7 +66,13 @@ MainComponent::MainComponent (bool openAudioDevice)
 
     addAndMakeVisible (transportBar);
     addAndMakeVisible (tabs);
-    addAndMakeVisible (instrumentPanel);
+
+    // Viewed rather than parented: see panelViewport's own comment. `false` -
+    // the viewport does not own the panel, MainComponent does.
+    panelViewport.setComponentID ("instrumentPanelViewport");
+    panelViewport.setViewedComponent (&instrumentPanel, false);
+    panelViewport.setScrollBarsShown (true, false);
+    addAndMakeVisible (panelViewport);
 
     // Any document change schedules a snapshot rebuild. Coalescing through the
     // AsyncUpdater means a knob drag costs one rebuild per message-loop turn
@@ -275,7 +281,9 @@ void MainComponent::setPanelWidth (int width)
 
 int MainComponent::getInstrumentPanelWidthForTesting() const
 {
-    return instrumentPanel.getWidth();
+    // The VIEWPORT's width, which is what the panel occupies. The panel inside
+    // it is a scrolled component and keeps a width of its own while folded.
+    return panelViewport.getWidth();
 }
 
 void MainComponent::setPanelCollapsed (bool collapsed)
@@ -451,8 +459,28 @@ void MainComponent::resized()
     // zero-width panel still lays its children out and still paints, and its
     // knobs would keep taking the clicks meant for the editor beside it -
     // while a panel hidden on the first frame of a fold just vanishes.
-    instrumentPanel.setVisible (width > 0);
-    instrumentPanel.setBounds (area.removeFromRight (width));
+    panelViewport.setVisible (width > 0);
+    panelViewport.setBounds (area.removeFromRight (width));
+
+    // The greater of what there is and what the panel needs. Equal to the
+    // viewport at any ordinary size, so no scrollbar appears and nothing moves;
+    // taller when the window is too short, so the chain scrolls into reach
+    // instead of being handed an empty rectangle.
+    if (width > 0)
+    {
+        // Decided from the viewport's BOUNDS, not from what it is currently
+        // showing. getMaximumVisibleWidth() is already reduced by a scrollbar
+        // that is up, so sizing from it while deciding whether that scrollbar
+        // is needed is a loop that settles on a bar nobody asked for - a stray
+        // ten pixels down the panel at every window size.
+        const auto required = instrumentPanel.getRequiredHeight();
+        const auto available = panelViewport.getHeight();
+        const auto scrolls = required > available;
+
+        instrumentPanel.setSize (panelViewport.getWidth()
+                                     - (scrolls ? panelViewport.getScrollBarThickness() : 0),
+                                 juce::jmax (available, required));
+    }
 
     // The divider stays whichever way the panel goes - it is what the panel is
     // brought back with.

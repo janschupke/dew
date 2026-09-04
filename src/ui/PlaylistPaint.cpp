@@ -90,9 +90,12 @@ void PlaylistComponent::paintAudioClip (juce::Graphics& g, const juce::ValueTree
 
     g.setColour (colour::textPrimary.withAlpha (audible ? emphasis::strong : emphasis::dimmed));
     g.setFont (type::font (type::small, true));
+    // Ellipsised, like the automation label below and the pattern name further
+    // down. A channel's name is whatever the user typed, and this was the one
+    // of the three that hard-clipped it.
     g.drawText (channel.isValid() ? channel[ids::name].toString()
                                   : "channel " + clip[ids::channelId].toString(),
-                bounds.reduced (6.0f, 2.0f).toNearestInt(), juce::Justification::topLeft, false);
+                bounds.reduced (6.0f, 2.0f).toNearestInt(), juce::Justification::topLeft, true);
 }
 
 void PlaylistComponent::paintAutomationClip (juce::Graphics& g, const juce::ValueTree& clip,
