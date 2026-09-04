@@ -321,6 +321,7 @@ target_link_libraries(dew_app
 add_library(dew_ui STATIC
   ui/DewDialog.cpp
   ui/ConfirmPanel.cpp
+  ui/EffectCard.cpp
   ui/EffectChainComponent.cpp
   ui/OscillatorSection.cpp
   ui/SampleSection.cpp

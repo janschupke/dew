@@ -12,6 +12,8 @@
 namespace dew
 {
 
+class EffectCard;
+
 /** The effect chain of one channel or mixer track.
 
     Deliberately owner-agnostic: a channel and a mixer track carry the same
@@ -67,6 +69,16 @@ public:
     {
         paramMenuHost = host;
     }
+
+    /** What a card attaches its knobs' right-click menus to. Public because
+        the cards are their own class now and read it when they build their
+        controls; it stays settable only through setParamMenuHost above.
+    */
+    const paramMenu::Host* getParamMenuHost() const noexcept
+    {
+        return paramMenuHost;
+    }
+
     ~EffectChainComponent() override;
 
     void paint (juce::Graphics&) override;
@@ -199,8 +211,6 @@ public:
     juce::Rectangle<int> getSlotBounds (int index) const;
 
 private:
-    class Card;
-
     /** A reorder in progress.
 
         `frozen` is the load-bearing part. Every hit test runs against where the
@@ -264,7 +274,7 @@ private:
     juce::ValueTree chainOwner;
 
     Orientation orientation = Orientation::vertical;
-    juce::OwnedArray<Card> cards;
+    juce::OwnedArray<EffectCard> cards;
 
     int selectedSlot = 0;
     bool rebuilding = false;
