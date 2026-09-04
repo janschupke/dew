@@ -103,7 +103,22 @@ void DewApplication::initialise (const juce::String&)
     commandManager.registerAllCommandsForTarget (this);
     commandManager.setFirstCommandTarget (this);
 
+    // A menu bar lives somewhere different on each platform and JUCE offers no
+    // one call for it. macOS has a single menu bar that belongs to the
+    // APPLICATION, and setMacMainMenu exists nowhere else - it is not merely a
+    // no-op off Apple, it is not declared, which is why this file was the
+    // second thing to stop the Linux build compiling. Everywhere else the menu
+    // belongs to the WINDOW, and DocumentWindow::setMenuBar puts a
+    // MenuBarComponent above the content and takes the height out of it.
+    //
+    // Neither call takes ownership of the model, and the model is this
+    // application object, so shutdown clears it before the window goes.
+#if JUCE_MAC
     juce::MenuBarModel::setMacMainMenu (this);
+#else
+    mainWindow->setMenuBar (this);
+#endif
+
     updateWindowTitle();
 }
 
@@ -117,7 +132,13 @@ void DewApplication::shutdown()
     stopTimer();
     saveSession();
 
+#if JUCE_MAC
     juce::MenuBarModel::setMacMainMenu (nullptr);
+#else
+    if (mainWindow != nullptr)
+        mainWindow->setMenuBar (nullptr);
+#endif
+
     mainWindow.reset();
     settings.reset();
 }
