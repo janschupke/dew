@@ -376,9 +376,11 @@ add_library(dew_ui STATIC
   ui/ScoreTokeniser.cpp
   ui/ScoreCompletionList.cpp
   ui/ScoreEditorComponent.cpp
+  ui/ScoreEditorPaint.cpp
   ui/InstrumentPanel.cpp
   ui/EditorTabs.cpp
   ui/MainComponent.cpp
+  ui/MainComponentJobs.cpp
 )
 
 target_link_libraries(dew_ui
