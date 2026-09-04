@@ -16,6 +16,7 @@
 
 #include <cmath>
 
+#include "model/ParamNames.h"
 #include "model/ModuleCatalog.h"
 #include "ui/design/Cursors.h"
 #include "ui/design/DewLookAndFeel.h"
@@ -105,7 +106,7 @@ DewKnob::DewKnob (const juce::String& c, double minimum, double maximum, double 
 }
 
 DewKnob::DewKnob (const ParamSpec& spec)
-    : DewKnob (spec.caption, spec.minimum, spec.maximum, spec.interval)
+    : DewKnob (tr (paramCaptionOf (*spec.property)), spec.minimum, spec.maximum, spec.interval)
 {
     // The catalog's displayName, which has said "the automation picker,
     // tooltips" in its own comment since it was written and reached only the
@@ -113,7 +114,7 @@ DewKnob::DewKnob (const ParamSpec& spec)
     // the status bar shows the moment the pointer arrives, and a compact knob
     // has no caption at all - its own header says so and it had nothing to say
     // it with.
-    setTooltip (spec.displayName);
+    setTooltip (tr (paramNameOf (*spec.property)));
 
     setNumDecimalPlaces (spec.decimals);
     setBipolar (spec.bipolar);

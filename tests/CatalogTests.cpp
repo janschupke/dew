@@ -3,6 +3,7 @@
 #include <catch2/catch_approx.hpp>
 #include <catch2/catch_test_macros.hpp>
 
+#include "i18n/Strings.h"
 #include "model/Ids.h"
 #include "model/AutomationTargets.h"
 #include "engine/Wavetable.h"
@@ -41,7 +42,7 @@ TEST_CASE ("every effect type has a descriptor", "[catalog]")
         INFO ("effect type " << (int) type);
         REQUIRE (descriptor.type == type);
         REQUIRE (juce::String (descriptor.id).isNotEmpty());
-        REQUIRE (juce::String (descriptor.displayName).isNotEmpty());
+        REQUIRE (tr (descriptor.displayName).isNotEmpty());
         REQUIRE (descriptor.numParams > 0);
     }
 }
@@ -242,14 +243,14 @@ TEST_CASE ("every instrument type has a descriptor", "[catalog][instrument]")
         INFO ("instrument type " << (int) type);
         REQUIRE (descriptor.type == type);
         REQUIRE (juce::String (descriptor.id).isNotEmpty());
-        REQUIRE (juce::String (descriptor.displayName).isNotEmpty());
+        REQUIRE (tr (descriptor.displayName).isNotEmpty());
         REQUIRE (descriptor.numGroups > 0);
 
         for (int i = 0; i < descriptor.numGroups; ++i)
         {
             const auto& group = descriptor.groups[i];
 
-            INFO ("group " << group.displayName);
+            INFO ("group " << tr (group.displayName));
             REQUIRE (group.node != nullptr);
             REQUIRE (group.numParams > 0);
             REQUIRE (group.count >= 1);

@@ -38,6 +38,40 @@
     },
     "title": "Channel rack"
   },
+  "choice": {
+    "distortionMode": {
+      "crush": "Bitcrush",
+      "fold": "Wavefolder",
+      "hardClip": "Hard clip",
+      "softClip": "Soft clip"
+    },
+    "filterMode": {
+      "bandpass": "Band pass",
+      "highpass": "High pass",
+      "lowpass": "Low pass"
+    },
+    "oscMode": {
+      "classic": "Classic",
+      "wavetable": "Wavetable"
+    },
+    "positionSource": {
+      "envelope": "Envelope",
+      "lfo": "LFO"
+    },
+    "wave": {
+      "saw": "Saw",
+      "sine": "Sine",
+      "square": "Square",
+      "triangle": "Triangle"
+    },
+    "wavetable": {
+      "basic": "Basic Shapes",
+      "fold": "Fold",
+      "formant": "Formant",
+      "harmonics": "Harmonics",
+      "pulse": "Pulse"
+    }
+  },
   "colour": {
     "default": "Default",
     "menu": "Colour"
@@ -278,8 +312,38 @@
     "chain": {
       "title": "Effect chain"
     },
+    "chorus": {
+      "name": "Chorus"
+    },
+    "compressor": {
+      "name": "Compressor"
+    },
+    "delay": {
+      "name": "Delay"
+    },
+    "distortion": {
+      "name": "Distortion"
+    },
+    "drive": {
+      "name": "Drive"
+    },
+    "eq": {
+      "name": "EQ"
+    },
     "expand": {
       "help": "Show or hide this effect's controls"
+    },
+    "filter": {
+      "name": "Filter"
+    },
+    "limiter": {
+      "name": "Limiter"
+    },
+    "phaser": {
+      "name": "Phaser"
+    },
+    "reverb": {
+      "name": "Reverb"
     }
   },
   "gallery": {
@@ -287,13 +351,42 @@
     "title": "dew design system",
     "unavailable": "Unavailable"
   },
+  "group": {
+    "amp": {
+      "name": "Envelope"
+    },
+    "channel": {
+      "name": "Channel"
+    },
+    "none": {
+      "name": ""
+    },
+    "oscillator": {
+      "name": "Oscillator"
+    },
+    "sample": {
+      "name": "Sample"
+    },
+    "soundfont": {
+      "name": "SoundFont"
+    }
+  },
   "instrument": {
+    "audio": {
+      "name": "Audio"
+    },
     "empty": "No channel selected",
     "mixer": {
       "help": "Which mixer track this channel plays through"
     },
     "preset": {
       "help": "Load a factory sound onto this channel"
+    },
+    "soundfont": {
+      "name": "SoundFont"
+    },
+    "synth": {
+      "name": "Synth"
     },
     "title": "Instrument"
   },
@@ -368,9 +461,253 @@
     }
   },
   "param": {
+    "attack": {
+      "caption": "ATTACK",
+      "name": "Attack"
+    },
+    "attackMs": {
+      "caption": "ATT",
+      "name": "Attack"
+    },
+    "attackScale": {
+      "caption": "ATTACK",
+      "name": "Attack"
+    },
+    "basePitch": {
+      "caption": "PITCH",
+      "name": "Base pitch"
+    },
+    "ceiling": {
+      "caption": "CEIL",
+      "name": "Ceiling"
+    },
+    "centreFreq": {
+      "caption": "CENTRE",
+      "name": "Centre"
+    },
+    "cutoff": {
+      "caption": "CUTOFF",
+      "name": "Cutoff"
+    },
+    "damping": {
+      "caption": "DAMP",
+      "name": "Damping"
+    },
+    "decay": {
+      "caption": "DECAY",
+      "name": "Decay"
+    },
+    "delayMs": {
+      "caption": "TIME",
+      "name": "Time"
+    },
+    "depth": {
+      "caption": "DEPTH",
+      "name": "Depth"
+    },
+    "detuneCents": {
+      "caption": "DETUNE",
+      "name": "Detune"
+    },
+    "distortionMode": {
+      "caption": "MODE",
+      "name": "Mode"
+    },
+    "drive": {
+      "caption": "DRIVE",
+      "name": "Drive"
+    },
+    "enabled": {
+      "caption": "ON",
+      "name": "Enabled"
+    },
+    "fadeInMs": {
+      "caption": "FADE IN",
+      "name": "Fade in"
+    },
+    "fadeOutMs": {
+      "caption": "FADE OUT",
+      "name": "Fade out"
+    },
+    "feedback": {
+      "caption": "FBK",
+      "name": "Feedback"
+    },
+    "filterMode": {
+      "caption": "MODE",
+      "name": "Mode"
+    },
+    "filterOffset": {
+      "caption": "FILTER",
+      "name": "Filter"
+    },
+    "gain": {
+      "caption": "GAIN",
+      "name": "Gain"
+    },
+    "highGainDb": {
+      "caption": "HIGH",
+      "name": "High"
+    },
+    "loop": {
+      "caption": "LOOP",
+      "name": "Loop"
+    },
+    "lowGainDb": {
+      "caption": "LOW",
+      "name": "Low"
+    },
+    "makeup": {
+      "caption": "MAKEUP",
+      "name": "Makeup"
+    },
     "menu": {
       "createClip": "Create automation clip",
       "resetToDefault": "Reset to default"
+    },
+    "midFreq": {
+      "caption": "FREQ",
+      "name": "Freq"
+    },
+    "midGainDb": {
+      "caption": "MID",
+      "name": "Mid"
+    },
+    "mix": {
+      "caption": "MIX",
+      "name": "Mix"
+    },
+    "mode": {
+      "caption": "MODE",
+      "name": "Mode"
+    },
+    "mute": {
+      "caption": "MUTE",
+      "name": "Mute"
+    },
+    "muted": {
+      "caption": "MUTE",
+      "name": "Mute"
+    },
+    "octave": {
+      "caption": "OCT",
+      "name": "Octave"
+    },
+    "outputGain": {
+      "caption": "OUT",
+      "name": "Output"
+    },
+    "pan": {
+      "caption": "PAN",
+      "name": "Pan"
+    },
+    "rate": {
+      "caption": "RATE",
+      "name": "Rate"
+    },
+    "ratio": {
+      "caption": "RATIO",
+      "name": "Ratio"
+    },
+    "release": {
+      "caption": "RELEASE",
+      "name": "Release"
+    },
+    "releaseMs": {
+      "caption": "REL",
+      "name": "Release"
+    },
+    "releaseScale": {
+      "caption": "RELEASE",
+      "name": "Release"
+    },
+    "resonance": {
+      "caption": "RES",
+      "name": "Resonance"
+    },
+    "reverse": {
+      "caption": "REV",
+      "name": "Reverse"
+    },
+    "roomSize": {
+      "caption": "SIZE",
+      "name": "Size"
+    },
+    "solo": {
+      "caption": "SOLO",
+      "name": "Solo"
+    },
+    "sustain": {
+      "caption": "SUSTAIN",
+      "name": "Sustain"
+    },
+    "tempoBpm": {
+      "caption": "TEMPO",
+      "name": "Tempo"
+    },
+    "threshold": {
+      "caption": "THRESH",
+      "name": "Threshold"
+    },
+    "tone": {
+      "caption": "TONE",
+      "name": "Tone"
+    },
+    "transpose": {
+      "caption": "PITCH",
+      "name": "Pitch"
+    },
+    "tuneCents": {
+      "caption": "TUNE",
+      "name": "Tune"
+    },
+    "unisonDetune": {
+      "caption": "SPREAD",
+      "name": "Spread"
+    },
+    "unisonVoices": {
+      "caption": "UNISON",
+      "name": "Unison"
+    },
+    "unknown": {
+      "caption": "?",
+      "name": "Unknown parameter"
+    },
+    "velocitySens": {
+      "caption": "VEL",
+      "name": "Velocity"
+    },
+    "volume": {
+      "caption": "VOLUME",
+      "name": "Volume"
+    },
+    "wave": {
+      "caption": "WAVE",
+      "name": "Wave"
+    },
+    "wavePosition": {
+      "caption": "POSITION",
+      "name": "Position"
+    },
+    "wavePositionMod": {
+      "caption": "MOD",
+      "name": "Mod"
+    },
+    "wavePositionRate": {
+      "caption": "RATE",
+      "name": "Rate"
+    },
+    "wavePositionSource": {
+      "caption": "SOURCE",
+      "name": "Source"
+    },
+    "wavetable": {
+      "caption": "TABLE",
+      "name": "Table"
+    },
+    "width": {
+      "caption": "WIDTH",
+      "name": "Width"
     }
   },
   "pianoRoll": {

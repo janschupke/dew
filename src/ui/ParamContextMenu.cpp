@@ -1,6 +1,7 @@
 #include "ui/ParamContextMenu.h"
 
 #include "i18n/Strings.h"
+#include "model/ParamNames.h"
 #include "model/Ids.h"
 #include "model/ProjectEdits.h"
 
@@ -75,9 +76,9 @@ void apply (int choice, const Context& context)
         }
 
         case Item::resetToDefault:
-            undo.beginNewTransaction ("Reset " + juce::String (spec.displayName));
+            undo.beginNewTransaction ("Reset " + tr (paramNameOf (*spec.property)));
             ProjectEdits::setProperty (owner, *spec.property, spec.defaultVar(), &undo,
-                                       "Reset " + juce::String (spec.displayName));
+                                       "Reset " + tr (paramNameOf (*spec.property)));
             break;
     }
 }

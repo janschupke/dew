@@ -2,6 +2,8 @@
 
 #include <juce_data_structures/juce_data_structures.h>
 
+#include "i18n/Strings.h"
+
 namespace dew
 {
 
@@ -33,8 +35,8 @@ enum class ParamControl
 
 struct ParamChoice
 {
-    const char* id; ///< what goes in the file
-    const char* displayName;
+    const char* id; ///< what goes in the file - never translated
+    StringId displayName;
 };
 
 /** One parameter, declared once.
@@ -59,9 +61,20 @@ struct ParamSpec
         disconnect anything, because there is nothing to keep in step. */
     const juce::Identifier* property = nullptr;
 
-    const char* displayName = ""; ///< "Cutoff" - the automation picker, tooltips
-    const char* caption = "";     ///< "CUTOFF" - the control's own label
-    const char* suffix = "";      ///< " Hz", or empty
+    /** " Hz", or empty.
+
+        Still a const char* while the name and the caption are not, and that is
+        a distinction rather than an oversight: every suffix in the catalog is
+        an SI symbol, which is not a thing anybody translates. The WORD suffixes
+        - " steps" - are set at the call site and come from the catalogue like
+        any other sentence.
+
+        What a parameter is CALLED lives in ParamNames.h, keyed on the property
+        identifier. Two StringIds in the middle of a positionally initialised
+        row would make declaring a channel's volume spell out the intervening
+        defaults to reach them.
+    */
+    const char* suffix = "";
 
     double minimum = 0.0;
     double maximum = 1.0;

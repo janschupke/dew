@@ -43,7 +43,7 @@ const ParamGroup& groupFor (const InstrumentDescriptor& descriptor, const juce::
     // one, and returning an empty group would generate a node with no
     // properties rather than saying so.
     jassertfalse;
-    static const ParamGroup empty { &node, "", "", nullptr, 0 };
+    static const ParamGroup empty { &node, "", StringId::group_none_name, nullptr, 0 };
     return empty;
 }
 

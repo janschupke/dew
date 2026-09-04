@@ -3,6 +3,7 @@
 #include <optional>
 #include <vector>
 
+#include "i18n/Strings.h"
 #include "model/EffectType.h"
 #include "model/InstrumentType.h"
 #include "model/ParamRole.h"
@@ -23,8 +24,8 @@ namespace dew
 struct EffectDescriptor
 {
     EffectType type;
-    const char* id;          ///< "filter" - what a .dew stores
-    const char* displayName; ///< "Filter"
+    const char* id; ///< "filter" - what a .dew stores
+    StringId displayName;
     const ParamSpec* params;
     int numParams;
 };
@@ -96,7 +97,7 @@ struct ParamGroup
 {
     const juce::Identifier* node; ///< ids::CHANNEL, ids::OSC, ids::AMP, ids::SAMPLE
     const char* jsonKey;          ///< "oscillators", "amp"; empty for the channel itself
-    const char* displayName;
+    StringId displayName;
     const ParamSpec* params;
     int numParams;
 
@@ -119,7 +120,7 @@ struct InstrumentDescriptor
 {
     InstrumentType type;
     const char* id; ///< "synth" - what a .dew stores in a channel's `source`
-    const char* displayName;
+    StringId displayName;
     const ParamGroup* groups;
     int numGroups;
 };

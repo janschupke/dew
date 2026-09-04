@@ -22,13 +22,13 @@ namespace
 {
 
 constexpr ParamChoice filterModes[] {
-    { "lowpass", "Low pass" },
-    { "highpass", "High pass" },
-    { "bandpass", "Band pass" },
+    { "lowpass", StringId::choice_filterMode_lowpass },
+    { "highpass", StringId::choice_filterMode_highpass },
+    { "bandpass", StringId::choice_filterMode_bandpass },
 };
 
 const ParamSpec commonParams[] {
-    { &ids::mix, "Mix", "MIX", "", 0.0, 1.0, 1.0, 0.01, 2 },
+    { &ids::mix, "", 0.0, 1.0, 1.0, 0.01, 2 },
 };
 
 /** The last mode's index, so the automation range is derived from the table
@@ -41,29 +41,29 @@ const ParamSpec filterParams[] {
     // slot's parameter block, and what every plugin API makes a discrete
     // parameter. Automatable now: it needed no engine plumbing at all, and it is
     // the proof that a stepped curve and a continuous one are one model.
-    { &ids::filterMode, "Mode", "MODE", "", 0.0, lastFilterMode, 0.0, 1.0, 0, ParamCurve::linear,
+    { &ids::filterMode, "", 0.0, lastFilterMode, 0.0, 1.0, 0, ParamCurve::linear,
       ParamControl::choice, false, /*automatable*/ true, /*integral*/ true, filterModes,
       (int) std::size (filterModes), "lowpass" },
-    { &ids::cutoff, "Cutoff", "CUTOFF", " Hz", 20.0, 20000.0, 1200.0, 1.0, 0,
-      ParamCurve::logarithmic, ParamControl::field },
-    { &ids::resonance, "Resonance", "RES", "", 0.05, 4.0, 0.4, 0.01, 2 },
+    { &ids::cutoff, " Hz", 20.0, 20000.0, 1200.0, 1.0, 0, ParamCurve::logarithmic,
+      ParamControl::field },
+    { &ids::resonance, "", 0.05, 4.0, 0.4, 0.01, 2 },
 };
 
 const ParamSpec reverbParams[] {
-    { &ids::roomSize, "Size", "SIZE", "", 0.0, 1.0, 0.5, 0.01, 2 },
-    { &ids::damping, "Damping", "DAMP", "", 0.0, 1.0, 0.5, 0.01, 2 },
-    { &ids::width, "Width", "WIDTH", "", 0.0, 1.0, 1.0, 0.01, 2 },
+    { &ids::roomSize, "", 0.0, 1.0, 0.5, 0.01, 2 },
+    { &ids::damping, "", 0.0, 1.0, 0.5, 0.01, 2 },
+    { &ids::width, "", 0.0, 1.0, 1.0, 0.01, 2 },
 };
 
 const ParamSpec delayParams[] {
-    { &ids::delayMs, "Time", "TIME", " ms", 1.0, 1000.0, 250.0, 1.0, 0, ParamCurve::logarithmic,
+    { &ids::delayMs, " ms", 1.0, 1000.0, 250.0, 1.0, 0, ParamCurve::logarithmic,
       ParamControl::field },
-    { &ids::feedback, "Feedback", "FBK", "", 0.0, 0.95, 0.35, 0.01, 2 },
+    { &ids::feedback, "", 0.0, 0.95, 0.35, 0.01, 2 },
 };
 
 const ParamSpec driveParams[] {
-    { &ids::drive, "Drive", "DRIVE", "", 1.0, 40.0, 2.0, 0.1, 1 },
-    { &ids::outputGain, "Output", "OUT", "", 0.0, 4.0, 1.0, 0.01, 2 },
+    { &ids::drive, "", 1.0, 40.0, 2.0, 0.1, 1 },
+    { &ids::outputGain, "", 0.0, 4.0, 1.0, 0.01, 2 },
 };
 
 /** Distortion's shapers. `drive` and `outputGain` are reused from Drive at
@@ -71,69 +71,67 @@ const ParamSpec driveParams[] {
     type's parameters and a reused identifier that disagreed about its default
     would silently take whichever type the schema saw first. */
 constexpr ParamChoice distortionModes[] {
-    { "softClip", "Soft clip" },
-    { "hardClip", "Hard clip" },
-    { "fold", "Wavefolder" },
-    { "crush", "Bitcrush" },
+    { "softClip", StringId::choice_distortionMode_softClip },
+    { "hardClip", StringId::choice_distortionMode_hardClip },
+    { "fold", StringId::choice_distortionMode_fold },
+    { "crush", StringId::choice_distortionMode_crush },
 };
 
 constexpr double lastDistortionMode = (double) (std::size (distortionModes) - 1);
 
 const ParamSpec distortionParams[] {
-    { &ids::distortionMode, "Mode", "MODE", "", 0.0, lastDistortionMode, 0.0, 1.0, 0,
-      ParamCurve::linear, ParamControl::choice, false, /*automatable*/ true, /*integral*/ true,
-      distortionModes, (int) std::size (distortionModes), "softClip" },
-    { &ids::drive, "Drive", "DRIVE", "", 1.0, 40.0, 2.0, 0.1, 1 },
-    { &ids::tone, "Tone", "TONE", "", 0.0, 1.0, 0.5, 0.01, 2 },
-    { &ids::outputGain, "Output", "OUT", "", 0.0, 4.0, 1.0, 0.01, 2 },
+    { &ids::distortionMode, "", 0.0, lastDistortionMode, 0.0, 1.0, 0, ParamCurve::linear,
+      ParamControl::choice, false, /*automatable*/ true, /*integral*/ true, distortionModes,
+      (int) std::size (distortionModes), "softClip" },
+    { &ids::drive, "", 1.0, 40.0, 2.0, 0.1, 1 },
+    { &ids::tone, "", 0.0, 1.0, 0.5, 0.01, 2 },
+    { &ids::outputGain, "", 0.0, 4.0, 1.0, 0.01, 2 },
 };
 
 const ParamSpec chorusParams[] {
-    { &ids::rate, "Rate", "RATE", " Hz", 0.01, 20.0, 1.2, 0.01, 2, ParamCurve::logarithmic,
-      ParamControl::field },
-    { &ids::depth, "Depth", "DEPTH", "", 0.0, 1.0, 0.3, 0.01, 2 },
+    { &ids::rate, " Hz", 0.01, 20.0, 1.2, 0.01, 2, ParamCurve::logarithmic, ParamControl::field },
+    { &ids::depth, "", 0.0, 1.0, 0.3, 0.01, 2 },
 };
 
 /** The phaser reuses the chorus's `rate` and `depth` and the delay's
     `feedback`, all three at their existing ranges - which is also what makes the
     three modulation effects read as one family rather than three dialects. */
 const ParamSpec phaserParams[] {
-    { &ids::rate, "Rate", "RATE", " Hz", 0.01, 20.0, 1.2, 0.01, 2, ParamCurve::logarithmic,
+    { &ids::rate, " Hz", 0.01, 20.0, 1.2, 0.01, 2, ParamCurve::logarithmic, ParamControl::field },
+    { &ids::depth, "", 0.0, 1.0, 0.3, 0.01, 2 },
+    { &ids::centreFreq, " Hz", 20.0, 12000.0, 600.0, 1.0, 0, ParamCurve::logarithmic,
       ParamControl::field },
-    { &ids::depth, "Depth", "DEPTH", "", 0.0, 1.0, 0.3, 0.01, 2 },
-    { &ids::centreFreq, "Centre", "CENTRE", " Hz", 20.0, 12000.0, 600.0, 1.0, 0,
-      ParamCurve::logarithmic, ParamControl::field },
-    { &ids::feedback, "Feedback", "FBK", "", 0.0, 0.95, 0.35, 0.01, 2 },
+    { &ids::feedback, "", 0.0, 0.95, 0.35, 0.01, 2 },
 };
 
 /** The dynamics pair. `releaseMs` is declared once here and reused by the
     limiter at the same range: they are the same quantity doing the same job, so
     sharing it costs nothing and automating one reads the same as the other. */
 const ParamSpec compressorParams[] {
-    { &ids::threshold, "Threshold", "THRESH", " dB", -60.0, 0.0, -18.0, 0.1, 1 },
-    { &ids::ratio, "Ratio", "RATIO", ":1", 1.0, 20.0, 4.0, 0.1, 1 },
-    { &ids::attackMs, "Attack", "ATT", " ms", 0.1, 200.0, 10.0, 0.1, 1, ParamCurve::logarithmic,
+    { &ids::threshold, " dB", -60.0, 0.0, -18.0, 0.1, 1 },
+    { &ids::ratio, ":1", 1.0, 20.0, 4.0, 0.1, 1 },
+    { &ids::attackMs, " ms", 0.1, 200.0, 10.0, 0.1, 1, ParamCurve::logarithmic,
       ParamControl::field },
-    { &ids::releaseMs, "Release", "REL", " ms", 5.0, 1000.0, 100.0, 1.0, 0, ParamCurve::logarithmic,
+    { &ids::releaseMs, " ms", 5.0, 1000.0, 100.0, 1.0, 0, ParamCurve::logarithmic,
       ParamControl::field },
-    { &ids::makeup, "Makeup", "MAKEUP", " dB", 0.0, 24.0, 0.0, 0.1, 1 },
+    { &ids::makeup, " dB", 0.0, 24.0, 0.0, 0.1, 1 },
 };
 
 const ParamSpec limiterParams[] {
-    { &ids::ceiling, "Ceiling", "CEIL", " dB", -24.0, 0.0, -0.3, 0.1, 1 },
-    { &ids::releaseMs, "Release", "REL", " ms", 5.0, 1000.0, 100.0, 1.0, 0, ParamCurve::logarithmic,
+    { &ids::ceiling, " dB", -24.0, 0.0, -0.3, 0.1, 1 },
+    { &ids::releaseMs, " ms", 5.0, 1000.0, 100.0, 1.0, 0, ParamCurve::logarithmic,
       ParamControl::field },
 };
 
 const ParamSpec eqParams[] {
-    { &ids::lowGainDb, "Low", "LOW", " dB", -24.0, 24.0, 0.0, 0.1, 1, ParamCurve::linear,
-      ParamControl::knob, /*bipolar*/ true },
-    { &ids::midGainDb, "Mid", "MID", " dB", -24.0, 24.0, 0.0, 0.1, 1, ParamCurve::linear,
-      ParamControl::knob, true },
-    { &ids::midFreq, "Freq", "FREQ", " Hz", 100.0, 8000.0, 900.0, 1.0, 0, ParamCurve::logarithmic,
+    { &ids::lowGainDb, " dB", -24.0, 24.0, 0.0, 0.1, 1, ParamCurve::linear, ParamControl::knob,
+      /*bipolar*/ true },
+    { &ids::midGainDb, " dB", -24.0, 24.0, 0.0, 0.1, 1, ParamCurve::linear, ParamControl::knob,
+      true },
+    { &ids::midFreq, " Hz", 100.0, 8000.0, 900.0, 1.0, 0, ParamCurve::logarithmic,
       ParamControl::field },
-    { &ids::highGainDb, "High", "HIGH", " dB", -24.0, 24.0, 0.0, 0.1, 1, ParamCurve::linear,
-      ParamControl::knob, true },
+    { &ids::highGainDb, " dB", -24.0, 24.0, 0.0, 0.1, 1, ParamCurve::linear, ParamControl::knob,
+      true },
 };
 
 } // namespace
@@ -141,18 +139,24 @@ const ParamSpec eqParams[] {
 const std::vector<EffectDescriptor>& effectDescriptors()
 {
     static const std::vector<EffectDescriptor> all {
-        { EffectType::filter, "filter", "Filter", filterParams, (int) std::size (filterParams) },
-        { EffectType::reverb, "reverb", "Reverb", reverbParams, (int) std::size (reverbParams) },
-        { EffectType::delay, "delay", "Delay", delayParams, (int) std::size (delayParams) },
-        { EffectType::drive, "drive", "Drive", driveParams, (int) std::size (driveParams) },
-        { EffectType::distortion, "distortion", "Distortion", distortionParams,
+        { EffectType::filter, "filter", StringId::effect_filter_name, filterParams,
+          (int) std::size (filterParams) },
+        { EffectType::reverb, "reverb", StringId::effect_reverb_name, reverbParams,
+          (int) std::size (reverbParams) },
+        { EffectType::delay, "delay", StringId::effect_delay_name, delayParams,
+          (int) std::size (delayParams) },
+        { EffectType::drive, "drive", StringId::effect_drive_name, driveParams,
+          (int) std::size (driveParams) },
+        { EffectType::distortion, "distortion", StringId::effect_distortion_name, distortionParams,
           (int) std::size (distortionParams) },
-        { EffectType::chorus, "chorus", "Chorus", chorusParams, (int) std::size (chorusParams) },
-        { EffectType::phaser, "phaser", "Phaser", phaserParams, (int) std::size (phaserParams) },
-        { EffectType::eq, "eq", "EQ", eqParams, (int) std::size (eqParams) },
-        { EffectType::compressor, "compressor", "Compressor", compressorParams,
+        { EffectType::chorus, "chorus", StringId::effect_chorus_name, chorusParams,
+          (int) std::size (chorusParams) },
+        { EffectType::phaser, "phaser", StringId::effect_phaser_name, phaserParams,
+          (int) std::size (phaserParams) },
+        { EffectType::eq, "eq", StringId::effect_eq_name, eqParams, (int) std::size (eqParams) },
+        { EffectType::compressor, "compressor", StringId::effect_compressor_name, compressorParams,
           (int) std::size (compressorParams) },
-        { EffectType::limiter, "limiter", "Limiter", limiterParams,
+        { EffectType::limiter, "limiter", StringId::effect_limiter_name, limiterParams,
           (int) std::size (limiterParams) },
     };
 
@@ -188,7 +192,7 @@ juce::String effectTypeToString (EffectType type)
 
 juce::String effectTypeDisplayName (EffectType type)
 {
-    return effectDescriptor (type).displayName;
+    return tr (effectDescriptor (type).displayName);
 }
 
 const std::vector<ParamSpec>& commonEffectParams()

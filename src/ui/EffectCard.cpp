@@ -3,6 +3,7 @@
 #include <utility>
 
 #include "i18n/Strings.h"
+#include "model/ParamNames.h"
 #include "model/Ids.h"
 #include "model/ModuleCatalog.h"
 #include "model/PresetLibrary.h"
@@ -446,10 +447,10 @@ void EffectCard::buildChoice (const ParamSpec& spec)
     // editor was the one place that restated them, which is why a second type
     // with a mode had a parameter in the file and no control on the card.
     modeBox = std::make_unique<DewDropdown>();
-    modeCaption = spec.caption;
+    modeCaption = tr (paramCaptionOf (*spec.property));
 
     for (int i = 0; i < spec.numChoices; ++i)
-        modeBox->addItem (spec.choices[i].displayName, i + 1);
+        modeBox->addItem (tr (spec.choices[i].displayName), i + 1);
 
     modeBox->setSelectedId (selectedChoiceId(), juce::dontSendNotification);
 
@@ -545,7 +546,7 @@ void EffectCard::buildParameters()
             control->field = std::make_unique<DewNumberField>();
             control->field->setRange (spec.minimum, spec.maximum, spec.interval);
             control->field->setNumDecimalPlaces (spec.decimals);
-            control->field->setCaption (spec.caption);
+            control->field->setCaption (tr (paramCaptionOf (*spec.property)));
             control->field->setSuffix (spec.suffix);
             control->field->setLogarithmic (spec.curve == ParamCurve::logarithmic);
             control->field->setFunctionColour (palette::forRole (roleOf (*spec.property)));

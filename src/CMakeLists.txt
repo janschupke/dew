@@ -258,6 +258,7 @@ add_library(dew_model STATIC
   model/AutomationTargets.cpp
   model/ParamSpec.cpp
   model/ParamRole.cpp
+  model/ParamNames.cpp
   model/EffectType.cpp
   model/InstrumentType.cpp
   model/EffectCatalog.cpp

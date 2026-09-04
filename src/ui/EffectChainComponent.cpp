@@ -168,7 +168,7 @@ void EffectChainComponent::showAddMenu (juce::Component& target)
     const auto& all = effectDescriptors();
 
     for (int i = 0; i < (int) all.size(); ++i)
-        menu.addItem (i + 1, all[(size_t) i].displayName);
+        menu.addItem (i + 1, tr (all[(size_t) i].displayName));
 
     menu.setLookAndFeel (&getLookAndFeel());
     menu.showMenuAsync (juce::PopupMenu::Options().withTargetComponent (target),

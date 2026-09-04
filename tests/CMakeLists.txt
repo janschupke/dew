@@ -129,6 +129,7 @@ add_executable(dew_tests
   ScoreDeterminismTests.cpp
 
   I18nTests.cpp
+  ParamNameTests.cpp
 )
 
 target_link_libraries(dew_tests

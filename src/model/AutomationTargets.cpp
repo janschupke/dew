@@ -1,3 +1,4 @@
+#include "model/ParamNames.h"
 #include "model/AutomationTargets.h"
 
 #include <cmath>
@@ -353,7 +354,8 @@ std::optional<AutomationTarget> automationTargetFor (const juce::ValueTree& proj
     if (target.spec == nullptr)
         return {};
 
-    target.displayName += " > " + juce::String (target.spec->displayName);
+    target.displayName += tr (StringId::automation_separator)
+                          + tr (paramNameOf (*target.spec->property));
     return target;
 }
 
