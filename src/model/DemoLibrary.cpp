@@ -2,6 +2,7 @@
 
 #include <DemoData.h>
 
+#include "i18n/Strings.h"
 #include "model/ProjectSerializer.h"
 
 namespace dew
@@ -37,8 +38,8 @@ juce::ValueTree DemoLibrary::load (int index, juce::StringArray& warnings)
 
     if (json.isEmpty())
     {
-        warnings.add (juce::String ("The demo \"") + all[(size_t) index].menuName
-                      + "\" is missing from this build.");
+        warnings.add (
+            tr (StringId::demo_missing, Args {}.with ("name", all[(size_t) index].menuName)));
         return {};
     }
 

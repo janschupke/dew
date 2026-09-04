@@ -6,6 +6,8 @@
 
 #include <juce_core/juce_core.h>
 
+#include "i18n/Strings.h"
+
 namespace dew::sf2
 {
 
@@ -341,7 +343,7 @@ struct SoundFontReader
         if (warnings.size() < 32)
             warnings.add (message);
         else if (warnings.size() == 32)
-            warnings.add ("... and more");
+            warnings.add (tr (StringId::warning_andMore));
     }
 
     // --- structure ------------------------------------------------------------

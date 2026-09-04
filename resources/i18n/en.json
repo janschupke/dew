@@ -74,7 +74,17 @@
   },
   "colour": {
     "default": "Default",
-    "menu": "Colour"
+    "menu": "Colour",
+    "ramp": {
+      "red": "Red",
+      "teal": "Teal",
+      "blue": "Blue",
+      "amber": "Amber",
+      "violet": "Violet",
+      "green": "Green",
+      "pink": "Pink",
+      "aqua": "Aqua"
+    }
   },
   "command": {
     "addChannel": {
@@ -822,7 +832,8 @@
     "compiled": "Score compiled: {patterns, plural, one {# pattern} other {# patterns}}, {clips, plural, one {# clip} other {# clips}}, {notes, plural, one {# note} other {# notes}}",
     "errors": "Score has {count, plural, one {# error} other {# errors}} - nothing was written",
     "keptByHand": " - {count, plural, one {# pattern was} other {# patterns were}} edited by hand and left alone",
-    "position": "{line}:{column}"
+    "position": "{line}:{column}",
+    "heading": "Score   \u2303Space completes"
   },
   "soundFont": {
     "load": {
@@ -874,6 +885,21 @@
     "samplesValue": "{value} samples",
     "seconds": " s",
     "steps": " steps"
+  },
+  "demo": {
+    "missing": "The demo \"{name}\" is missing from this build."
+  },
+  "warning": {
+    "andMore": "... and more",
+    "midiDuplicateNotes": "Overlapping clips played some notes twice; the duplicates were merged, so this file is slightly thinner than the audio.",
+    "midiHeldOverNotes": "Notes that began before the range are retriggered at its start. An audio render of the same range reproduces them mid-note instead.",
+    "midiChannelsShared": "This project has more than fifteen channels, so some share a MIDI channel.",
+    "couldNotRead": "Could not read {name}.",
+    "stemsDoNotSum": "The master chain processes each stem, so the stems will not sum exactly back to the mix.",
+    "stateNotAnObject": "state: expected an object - using defaults",
+    "notAProject": "not a project",
+    "scoreGridMismatch": "the score needs a grid of {score, plural, one {# step} other {# steps}} per beat and the project has {project}; changing it would alter playback speed, so nothing was written",
+    "scoreMeterMismatch": "the score is in {score} and the project is in {project}; changing the meter would move every existing clip, so nothing was written"
   },
   "lang": {
     "generator": {

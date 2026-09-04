@@ -27,11 +27,13 @@ ScoreEditorComponent::ScoreEditorComponent (ProjectDocument& projectDocument)
 
     // The hint is the discoverability: nothing else on screen says the popup
     // exists, and a completion nobody knows how to ask for is one nobody uses.
-    // CharPointer_UTF8, not a bare literal: juce::String's const char*
-    // constructor decodes ASCII, so the control glyph came out as two mojibake
-    // characters on screen.
-    heading.setText (juce::String (juce::CharPointer_UTF8 ("Score   \xe2\x8c\x83Space completes")),
-                     juce::dontSendNotification);
+    //
+    // This was the last English sentence written into a source file, and it
+    // survived the first extraction pass by wearing a juce::String around it:
+    // the gate asked what setText's argument STARTED with, and the answer was
+    // "juce::String (", not a quote. The gate now looks through that wrapper,
+    // which is what found this.
+    heading.setText (tr (StringId::score_heading), juce::dontSendNotification);
     heading.setFont (tokens::type::font (tokens::type::title, true));
     addAndMakeVisible (heading);
 

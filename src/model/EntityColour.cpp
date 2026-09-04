@@ -1,5 +1,6 @@
 #include "model/EntityColour.h"
 
+#include "i18n/Strings.h"
 #include "model/Ids.h"
 
 namespace dew::entityColour
@@ -19,9 +20,16 @@ constexpr int rampCount = (int) (sizeof (ramp) / sizeof (ramp[0]));
 
 /** What each is called, in the same order. Plain colour words: a menu item is
     read at a glance, and nobody has to agree about what "Sage" is.
+
+    The INDEX is the identity - it is what `defaultHex` cycles and what a
+    channel's position resolves to - and the hex is what a project file stores.
+    Neither is a word, so the words are free to be translated with nothing to
+    keep in step.
 */
-const char* const rampNames[] = {
-    "Red", "Teal", "Blue", "Amber", "Violet", "Green", "Pink", "Aqua",
+const StringId rampNames[] = {
+    StringId::colour_ramp_red,   StringId::colour_ramp_teal,   StringId::colour_ramp_blue,
+    StringId::colour_ramp_amber, StringId::colour_ramp_violet, StringId::colour_ramp_green,
+    StringId::colour_ramp_pink,  StringId::colour_ramp_aqua,
 };
 
 static_assert ((int) (sizeof (rampNames) / sizeof (rampNames[0])) == rampCount,
@@ -61,7 +69,7 @@ juce::String defaultHex (int index)
 
 juce::String rampName (int index)
 {
-    return rampNames[((index % rampCount) + rampCount) % rampCount];
+    return tr (rampNames[((index % rampCount) + rampCount) % rampCount]);
 }
 
 juce::Colour of (const juce::ValueTree& node)

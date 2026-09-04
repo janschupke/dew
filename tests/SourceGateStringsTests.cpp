@@ -122,7 +122,7 @@ bool showsALiteral (const juce::String& raw)
     // translator for a key the orphan gate would then have to allow.
     for (const auto* sink :
          { "setTooltip (", "setButtonText (", "setText (", "setTitle (", "setSuffix (",
-           "showMessage (", "notes.push_back (", "helps.push_back (" })
+           "showMessage (", "notes.push_back (", "helps.push_back (", "warnings.add (" })
     {
         if (! line.contains (sink))
             continue;

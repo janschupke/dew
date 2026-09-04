@@ -1,5 +1,6 @@
 #include "io/MidiExporter.h"
 
+#include "i18n/Strings.h"
 #include "model/Ids.h"
 
 namespace dew
@@ -117,8 +118,7 @@ std::vector<PlacedNote> collectNotes (const EngineSnapshot& snapshot,
 
     if (duplicate != notes.end())
     {
-        warnings.add ("Overlapping clips played some notes twice; the duplicates were merged, "
-                      "so this file is slightly thinner than the audio.");
+        warnings.add (tr (StringId::warning_midiDuplicateNotes));
         notes.erase (duplicate, notes.end());
     }
 
@@ -190,8 +190,7 @@ juce::MidiFile MidiExporter::build (const juce::ValueTree& project,
                           || (note.step < firstStep && note.step + note.lengthSteps > firstStep);
 
         if (anyHeldOver)
-            warnings.add ("Notes that began before the range are retriggered at its start. "
-                          "An audio render of the same range reproduces them mid-note instead.");
+            warnings.add (tr (StringId::warning_midiHeldOverNotes));
     }
 
     juce::MidiFile file;
@@ -308,7 +307,7 @@ juce::MidiFile MidiExporter::build (const juce::ValueTree& project,
         juce::MidiMessage::timeSignatureMetaEvent (snapshot.beatsPerBar, snapshot.beatUnit), 0.0);
 
     if (sequences.size() > 15)
-        warnings.add ("This project has more than fifteen channels, so some share a MIDI channel.");
+        warnings.add (tr (StringId::warning_midiChannelsShared));
 
     if (options.oneTrackPerChannel)
     {

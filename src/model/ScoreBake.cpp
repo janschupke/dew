@@ -5,6 +5,7 @@
 #include <cmath>
 #include <vector>
 
+#include "i18n/Strings.h"
 #include "lang/Rng.h"
 #include "model/Ids.h"
 #include "model/Meter.h"
@@ -197,7 +198,7 @@ BakeReport ScoreBake::into (juce::ValueTree project, const lang::Score& score,
 
     if (! project.hasType (ids::PROJECT))
     {
-        report.warnings.add ("not a project");
+        report.warnings.add (tr (StringId::warning_notAProject));
         return report;
     }
 
@@ -222,10 +223,9 @@ BakeReport ScoreBake::into (juce::ValueTree project, const lang::Score& score,
     // plays. Nothing is touched, and the caller is told why.
     if (! empty && meter.stepsPerBeat != score.stepsPerBeat)
     {
-        report.warnings.add ("the score needs a grid of " + juce::String (score.stepsPerBeat)
-                             + " steps per beat and the project has "
-                             + juce::String (meter.stepsPerBeat)
-                             + "; changing it would alter playback speed, so nothing was written");
+        report.warnings.add (
+            tr (StringId::warning_scoreGridMismatch,
+                Args {}.with ("score", score.stepsPerBeat).with ("project", meter.stepsPerBeat)));
         return report;
     }
 
@@ -234,11 +234,11 @@ BakeReport ScoreBake::into (juce::ValueTree project, const lang::Score& score,
     // arrangement it did not write.
     if (! empty && (meter.beatsPerBar != score.beatsPerBar || meter.beatUnit != score.beatUnit))
     {
-        report.warnings.add ("the score is in " + juce::String (score.beatsPerBar) + "/"
-                             + juce::String (score.beatUnit) + " and the project is in "
-                             + meter.toString()
-                             + "; changing the meter would move every existing clip, "
-                               "so nothing was written");
+        report.warnings.add (tr (StringId::warning_scoreMeterMismatch,
+                                 Args {}
+                                     .with ("score", juce::String (score.beatsPerBar) + "/"
+                                                         + juce::String (score.beatUnit))
+                                     .with ("project", meter.toString())));
         return report;
     }
 

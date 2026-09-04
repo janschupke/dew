@@ -1,6 +1,7 @@
 #include "io/SoundFontFile.h"
 
 #include "io/SoundFontFormat.h"
+#include "i18n/Strings.h"
 
 #include <algorithm>
 #include <cmath>
@@ -386,7 +387,8 @@ SoundFontFile::Result SoundFontFile::read (const juce::File& file)
 
     if (! file.existsAsFile() || ! file.loadFileAsData (bytes))
     {
-        result.warnings.add ("Could not read " + file.getFileName() + ".");
+        result.warnings.add (
+            tr (StringId::warning_couldNotRead, Args {}.with ("name", file.getFileName())));
         return result;
     }
 

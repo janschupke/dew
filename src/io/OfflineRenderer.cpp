@@ -7,6 +7,7 @@
 #include "io/SamplePool.h"
 
 #include "io/MidiExporter.h"
+#include "i18n/Strings.h"
 #include "model/Ids.h"
 #include "engine/RenderPost.h"
 
@@ -316,8 +317,7 @@ RenderReport OfflineRenderer::renderStems (const juce::ValueTree& project, const
     // else. That is what makes each one sound the way it does in the mix - and it
     // is also why a non-linear master effect stops the stems summing back to it.
     if (base.masterEffects.anyEnabled())
-        report.warnings.add ("The master chain processes each stem, so the stems will not sum "
-                             "exactly back to the mix.");
+        report.warnings.add (tr (StringId::warning_stemsDoNotSum));
 
     // One engine for every pass. A fresh AudioEngine preallocates thirty-two
     // effect units at their maximum size; prepare() resets voices, effect units

@@ -1,5 +1,6 @@
 #include "model/ModuleState.h"
 
+#include "i18n/Strings.h"
 #include "model/Ids.h"
 #include "model/ProjectSchema.h"
 
@@ -194,7 +195,7 @@ juce::var validateState (const InstrumentDescriptor& descriptor, const juce::var
     auto* source = state.getDynamicObject();
 
     if (source == nullptr && ! state.isVoid())
-        warnings.add ("state: expected an object - using defaults");
+        warnings.add (tr (StringId::warning_stateNotAnObject));
 
     auto* object = new juce::DynamicObject();
 
