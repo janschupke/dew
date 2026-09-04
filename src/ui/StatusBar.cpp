@@ -1,5 +1,6 @@
 #include "ui/StatusBar.h"
 
+#include "i18n/Strings.h"
 #include "model/Ids.h"
 #include "model/ProjectEdits.h"
 #include "ui/design/Tokens.h"
@@ -109,7 +110,7 @@ void StatusBar::updateContext()
                 && (int) note[ids::ch] == (int) channel[ids::id])
                 ++notes;
 
-        parts.add (juce::String (notes) + (notes == 1 ? " note" : " notes"));
+        parts.add (tr (StringId::status_notes, Args {}.count (notes)));
     }
 
     const auto wanted = parts.joinIntoString ("  -  ");
@@ -248,7 +249,7 @@ void StatusBar::paint (juce::Graphics& g)
     right << "DSP " << percent << "%";
 
     if (dropouts >= 0)
-        right << "  -  " << dropouts << (dropouts == 1 ? " drop" : " drops");
+        right << "  -  " << tr (StringId::status_dropouts, Args {}.count (dropouts));
 
     g.setColour (dropoutFlashMs > 0 ? colour::danger
                  : percent > 80     ? colour::warning

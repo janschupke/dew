@@ -163,35 +163,91 @@ TEST_CASE ("every message is answerable with the arguments it names", "[i18n][ga
         formatMessage ("Reset {param}", Args {}.with ("param", "Cutoff"), "en").containsChar ('{'));
 }
 
-TEST_CASE ("the catalogue holds no non-ASCII decoded as ASCII", "[i18n][gate]")
+TEST_CASE ("the catalogue is decoded as UTF-8, not as ASCII", "[i18n][gate]")
 {
     // juce::String's const char* constructor decodes ASCII and mangles every
     // multi-byte character; operator+= decodes UTF-8. Strings.cpp goes through
-    // CharPointer_UTF8 for exactly this reason, and a regression there shows up
-    // as 0xc2 in front of every punctuation mark the catalogue holds.
+    // CharPointer_UTF8 for exactly that reason, and getting it wrong shows up
+    // as 0xc2 in front of every punctuation mark a locale holds.
     REQUIRE (numStrings > 10);
 
     juce::StringArray mangled;
 
     for (auto i = 0; i < numStrings; ++i)
-    {
-        const auto id = (StringId) i;
-
-        if (tr (id).containsChar ((juce::juce_wchar) 0xc2))
-            mangled.add (keyOf (id));
-    }
+        if (tr ((StringId) i).containsChar ((juce::juce_wchar) 0xc2))
+            mangled.add (keyOf ((StringId) i));
 
     INFO ("UTF-8 decoded as ASCII:\n" << mangled.joinIntoString ("\n"));
     CHECK (mangled.isEmpty());
 
-    // Control case: the catalogue must actually HOLD a non-ASCII character, or
-    // this gate is a walk over nothing but plain words.
-    auto nonAscii = false;
+    // Control case, and it deliberately does NOT ask the catalogue for a
+    // non-ASCII string. en.json is pure ASCII today - a catalogue in English
+    // reasonably might be - so a walk over it proves the decoder works only for
+    // as long as somebody happens to have written a dash in it. These are the
+    // two spellings the gate at SourceGateTests exists for, on bytes of our
+    // own: a middle dot decoded correctly, and the same bytes through the
+    // constructor that gets it wrong.
+    //
+    // A middle dot rather than the em dash that gate's comment quotes, because
+    // 0xc2 is the lead byte only for U+0080 to U+00BF. An em dash begins 0xe2
+    // and mangles just as thoroughly while showing none of the character this
+    // test looks for - worth knowing before reading the check above as broader
+    // than it is.
+    const char* const middleDot = "\xc2\xb7";
 
-    for (auto i = 0; i < numStrings; ++i)
-        for (auto c : tr ((StringId) i))
-            if (c > 127)
-                nonAscii = true;
+    const juce::String correct { juce::CharPointer_UTF8 (middleDot) };
+    const juce::String wrong { middleDot };
 
-    CHECK (nonAscii);
+    CHECK (correct.length() == 1);
+    CHECK_FALSE (correct.containsChar ((juce::juce_wchar) 0xc2));
+
+    CHECK (wrong.length() == 2);
+    CHECK (wrong.containsChar ((juce::juce_wchar) 0xc2));
+
+    // And a message formatted from a non-ASCII argument keeps it intact, which
+    // is the path every dialog body takes.
+    CHECK (
+        formatMessage ("Delete {name}", Args {}.with ("name", correct), "en").contains (correct));
+}
+
+TEST_CASE ("the extracted plurals still read as they did", "[i18n]")
+{
+    // Ten sites in the tree spelled a plural as n == 1 ? "note" : "notes". The
+    // catalogue answers them now, and this pass ships English only - so every
+    // one of them has to produce the string it replaced, in both branches.
+    //
+    // Written out rather than looped, because the point is the SPELLING and a
+    // loop over the catalogue would only prove the formatter agrees with
+    // itself.
+    setLocale ("en");
+
+    CHECK (tr (StringId::status_notes, Args {}.count (1)) == "1 note");
+    CHECK (tr (StringId::status_notes, Args {}.count (4)) == "4 notes");
+
+    CHECK (tr (StringId::status_dropouts, Args {}.count (1)) == "1 drop");
+    CHECK (tr (StringId::status_dropouts, Args {}.count (2)) == "2 drops");
+
+    CHECK (tr (StringId::edit_moveNote, Args {}.count (1)) == "Move note");
+    CHECK (tr (StringId::edit_moveNote, Args {}.count (7)) == "Move notes");
+
+    CHECK (tr (StringId::edit_sliceNote, Args {}.count (1)) == "Slice note");
+    CHECK (tr (StringId::edit_sliceNote, Args {}.count (3)) == "Slice notes");
+}
+
+TEST_CASE ("a confirmation names what it is about to destroy", "[i18n]")
+{
+    // The four destructive dialogs interpolate a name that a person typed, and
+    // they used to build the sentence around it with +. The quoting is part of
+    // the sentence and therefore part of the translation, which is the whole
+    // reason it is a placeholder rather than three fragments.
+    setLocale ("en");
+
+    CHECK (tr (StringId::dialog_deletePattern_body, Args {}.with ("name", "Groove"))
+           == "Delete \"Groove\"? Every clip that plays it goes with it.");
+
+    CHECK (tr (StringId::dialog_removeChannel_body, Args {}.with ("name", "Kick"))
+           == "Remove \"Kick\"? Its notes in every pattern go with it.");
+
+    CHECK (tr (StringId::dialog_removeTrack_body, Args {}.with ("name", "Drums"))
+           == "Remove \"Drums\"? Every clip on it goes with it.");
 }

@@ -255,10 +255,27 @@
   },
   "dialog": {
     "deletePattern": {
-      "body": "Delete \u201c{name}\u201d? Every clip that plays it goes with it.",
+      "body": "Delete \"{name}\"? Every clip that plays it goes with it.",
       "confirm": "Delete",
       "title": "Delete pattern"
+    },
+    "removeChannel": {
+      "body": "Remove \"{name}\"? Its notes in every pattern go with it.",
+      "title": "Remove channel"
+    },
+    "removeInsert": {
+      "body": "Remove \"{name}\"? Its effects go with it, and anything routed into it moves to the first insert.",
+      "confirm": "Remove",
+      "title": "Remove insert"
+    },
+    "removeTrack": {
+      "body": "Remove \"{name}\"? Every clip on it goes with it.",
+      "title": "Remove track"
     }
+  },
+  "edit": {
+    "moveNote": "{count, plural, one {Move note} other {Move notes}}",
+    "sliceNote": "{count, plural, one {Slice note} other {Slice notes}}"
   },
   "effect": {
     "bypassed": "BYPASSED",

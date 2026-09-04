@@ -186,9 +186,9 @@ void ChannelRackComponent::removeChannel (int channelId)
         return;
 
     ConfirmPanel::Request request;
-    request.title = "Remove channel";
-    request.message = "Remove \"" + channel[ids::name].toString()
-                      + "\"? Its notes in every pattern go with it.";
+    request.title = tr (StringId::dialog_removeChannel_title);
+    request.message = tr (StringId::dialog_removeChannel_body,
+                          Args {}.with ("name", channel[ids::name].toString()));
 
     // By id, resolved again on the way back: the dialog is async and the
     // document may have moved on by the time the answer arrives.

@@ -15,6 +15,7 @@
 // gesture is turned into a call on it and wrapped in one undo transaction.
 // =============================================================================
 
+#include "i18n/Strings.h"
 #include "ui/PianoRollComponent.h"
 
 #include "model/Ids.h"
@@ -194,7 +195,8 @@ void PianoRollComponent::sliceAlong (juce::Point<int> from, juce::Point<int> to)
         return;
 
     auto& undo = document.getUndoManager();
-    undo.beginNewTransaction (victims.size() == 1 ? "Slice note" : "Slice notes");
+    undo.beginNewTransaction (
+        tr (StringId::edit_sliceNote, Args {}.count ((juce::int64) victims.size())));
 
     // The fragments become the selection: after cutting a run, the next thing
     // you do is almost always to move or delete one side of it.

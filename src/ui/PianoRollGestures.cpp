@@ -20,6 +20,7 @@
 // set is how one gets left latched.
 // =============================================================================
 
+#include "i18n/Strings.h"
 #include "ui/PianoRollComponent.h"
 
 #include "ui/PianoRollNotes.h"
@@ -260,7 +261,8 @@ void PianoRollComponent::mouseDown (const juce::MouseEvent& event)
             for (const auto& selected : selection)
                 selectionOrigins.add ({ (int) selected[ids::step], (int) selected[ids::pitch] });
 
-            undo.beginNewTransaction (selection.size() == 1 ? "Move note" : "Move notes");
+            undo.beginNewTransaction (
+                tr (StringId::edit_moveNote, Args {}.count ((juce::int64) selection.size())));
         }
 
         return;

@@ -237,9 +237,9 @@ void PlaylistComponent::removeTrack (juce::ValueTree track)
         return;
 
     ConfirmPanel::Request request;
-    request.title = "Remove track";
-    request.message = "Remove \"" + track[ids::name].toString()
-                      + "\"? Every clip on it goes with it.";
+    request.title = tr (StringId::dialog_removeTrack_title);
+    request.message = tr (StringId::dialog_removeTrack_body,
+                          Args {}.with ("name", track[ids::name].toString()));
 
     // A playlist track carries no id - they are positional, unlike channels and
     // patterns - so the INDEX is what survives the dialog, and it is resolved

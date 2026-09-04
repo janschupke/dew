@@ -271,11 +271,10 @@ void MixerComponent::removeMixerTrack (int mixerTrackId)
         return;
 
     ConfirmPanel::Request request;
-    request.title = "Remove insert";
-    request.message = "Remove \"" + track[ids::name].toString()
-                      + "\"? Its effects go with it, and anything routed into it moves to the "
-                        "first insert.";
-    request.confirmText = "Remove";
+    request.title = tr (StringId::dialog_removeInsert_title);
+    request.message = tr (StringId::dialog_removeInsert_body,
+                          Args {}.with ("name", track[ids::name].toString()));
+    request.confirmText = tr (StringId::dialog_removeInsert_confirm);
 
     confirmDestructive (
         request,

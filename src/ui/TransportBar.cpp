@@ -253,9 +253,9 @@ void TransportBar::requestDeletePattern()
         return;
 
     ConfirmPanel::Request request;
-    request.title = "Delete pattern";
-    request.message = "Delete \"" + pattern[ids::name].toString()
-                      + "\"? Every clip that plays it goes with it.";
+    request.title = tr (StringId::dialog_deletePattern_title);
+    request.message = tr (StringId::dialog_deletePattern_body,
+                          Args {}.with ("name", pattern[ids::name].toString()));
 
     // By ID, resolved again when the answer comes back: a dialog is async and
     // the document is free to change while it is open, so a captured ValueTree
