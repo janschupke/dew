@@ -1,40 +1,157 @@
 {
+  "audio": {
+    "test": {
+      "help": "Play a short note through the current device"
+    }
+  },
+  "automation": {
+    "master": "Master",
+    "oscillator": "{channel} > Osc {slot}",
+    "parameter": "{owner} > {param}",
+    "song": "Song"
+  },
+  "channelRack": {
+    "addAudio": {
+      "help": "Add a channel that plays a recording"
+    },
+    "addSoundFont": {
+      "help": "Add a channel that plays a soundfont file"
+    },
+    "addSynth": {
+      "help": "Add a synth channel"
+    },
+    "arm": {
+      "help": "Arm this channel for recording"
+    }
+  },
+  "dialog": {
+    "deletePattern": {
+      "body": "Delete \u201c{name}\u201d? Every clip that plays it goes with it.",
+      "confirm": "Delete",
+      "title": "Delete pattern"
+    }
+  },
+  "effect": {
+    "expand": {
+      "help": "Show or hide this effect's controls"
+    }
+  },
+  "instrument": {
+    "mixer": {
+      "help": "Which mixer track this channel plays through"
+    },
+    "preset": {
+      "help": "Load a factory sound onto this channel"
+    }
+  },
+  "mixer": {
+    "addInsert": {
+      "help": "Add a mixer insert"
+    },
+    "pan": {
+      "name": "Pan"
+    }
+  },
+  "oscillator": {
+    "mod": {
+      "help": "How far the source moves the position, and which way"
+    },
+    "mode": {
+      "help": "Which generator this oscillator runs"
+    },
+    "position": {
+      "help": "Where in the table this oscillator sits"
+    },
+    "rate": {
+      "help": "Speed of the position LFO, in Hz"
+    },
+    "slot": {
+      "help": "Edit oscillator {index}"
+    },
+    "source": {
+      "help": "What moves the position over the length of a note"
+    },
+    "spread": {
+      "help": "How far apart the unison copies are detuned, in cents"
+    },
+    "table": {
+      "help": "Which wavetable this oscillator reads"
+    },
+    "unison": {
+      "help": "How many detuned copies of this oscillator to stack"
+    },
+    "wave": {
+      "help": "The waveform this oscillator plays"
+    }
+  },
+  "pianoRoll": {
+    "channel": {
+      "help": "Channel being edited"
+    },
+    "octaveDown": {
+      "help": "Down an octave (Shift+Down)"
+    },
+    "octaveUp": {
+      "help": "Up an octave (Shift+Up)"
+    },
+    "snap": {
+      "help": "Grid the editing gestures snap to"
+    }
+  },
+  "playlist": {
+    "addAutomation": {
+      "help": "Add an automation lane for a parameter"
+    },
+    "addTrack": {
+      "help": "Add a track to the arrangement"
+    }
+  },
+  "randomize": {
+    "step": {
+      "help": "How far a note can move in time, either way. Zero leaves timing alone"
+    }
+  },
+  "render": {
+    "peak": {
+      "help": "Where normalizing puts the loudest sample"
+    },
+    "tail": {
+      "help": "Time rendered after the music ends, so release tails are not cut off"
+    }
+  },
+  "score": {
+    "compile": {
+      "help": "Turn this score into patterns, notes and clips (cmd-R)"
+    }
+  },
+  "soundFont": {
+    "load": {
+      "help": "Choose a SoundFont file for this channel to play"
+    },
+    "preset": {
+      "help": "Which sound inside the soundfont this channel plays"
+    }
+  },
+  "status": {
+    "dropouts": "{count, plural, one {# drop} other {# drops}}",
+    "notes": "{count, plural, one {# note} other {# notes}}"
+  },
   "transport": {
-    "pattern": {
-      "help": "Which pattern the rack and the piano roll are editing"
-    },
-    "tempo": {
-      "help": "Tempo - drag up and down, or double-click to type"
-    },
     "meter": {
       "help": "Time signature - beats to the bar, and what a beat is"
     },
     "mode": {
       "help": "Play the whole arrangement, or the pattern on its own (cmd-L)"
     },
+    "pattern": {
+      "help": "Which pattern the rack and the piano roll are editing"
+    },
     "patternLength": {
       "help": "Pattern length - drag up and down, or double-click to type",
       "suffix": " steps"
+    },
+    "tempo": {
+      "help": "Tempo - drag up and down, or double-click to type"
     }
-  },
-
-  "status": {
-    "notes": "{count, plural, one {# note} other {# notes}}",
-    "dropouts": "{count, plural, one {# drop} other {# drops}}"
-  },
-
-  "dialog": {
-    "deletePattern": {
-      "title": "Delete pattern",
-      "body": "Delete \u201c{name}\u201d? Every clip that plays it goes with it.",
-      "confirm": "Delete"
-    }
-  },
-
-  "automation": {
-    "song": "Song",
-    "master": "Master",
-    "oscillator": "{channel} > Osc {slot}",
-    "parameter": "{owner} > {param}"
   }
 }

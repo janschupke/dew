@@ -4,6 +4,7 @@
 
 #include <juce_gui_basics/juce_gui_basics.h>
 
+#include "i18n/Strings.h"
 #include "ui/design/Tokens.h"
 
 #include "ui/OscillatorSection.h"
@@ -90,7 +91,7 @@ public:
         : juce::Button ("OSC " + juce::String (i + 1))
         , index (i)
     {
-        setTooltip ("Edit oscillator " + juce::String (i + 1));
+        setTooltip (tr (StringId::oscillator_slot_help, Args {}.with ("index", i + 1)));
     }
 
     /** The same rule the dew primitives follow: juce::Button completes a click

@@ -1,5 +1,6 @@
 #include "ui/InstrumentPanel.h"
 
+#include "i18n/Strings.h"
 #include "model/PresetLibrary.h"
 
 #include <cmath>
@@ -46,7 +47,7 @@ InstrumentPanel::InstrumentPanel (ProjectDocument& d, EditorState& s, SamplePool
     titleLabel.setFont (tokens::type::font (tokens::type::title, true));
     addAndMakeVisible (titleLabel);
 
-    presetButton.setTooltip ("Load a factory sound onto this channel");
+    presetButton.setTooltip (tr (StringId::instrument_preset_help));
     presetButton.onClick = [this] { showPresetMenu(); };
     addAndMakeVisible (presetButton);
 
@@ -70,7 +71,7 @@ InstrumentPanel::InstrumentPanel (ProjectDocument& d, EditorState& s, SamplePool
         ProjectEdits::setProperty (channel, ids::mixerTrackId, mixerBox.getSelectedId(),
                                    &document.getUndoManager(), "Route channel");
     };
-    mixerBox.setTooltip ("Which mixer track this channel plays through");
+    mixerBox.setTooltip (tr (StringId::instrument_mixer_help));
     addAndMakeVisible (mixerBox);
     styleCaption (mixerLabel, "MIXER");
     addAndMakeVisible (mixerLabel);

@@ -1,4 +1,5 @@
 #include "ui/AudioSettingsPanel.h"
+#include "i18n/Strings.h"
 #include "ui/DewDialog.h"
 
 #include "ui/primitives/DewMeter.h"
@@ -132,7 +133,7 @@ AudioSettingsPanel::AudioSettingsPanel (LiveAudioHost& host, AudioEngine& e)
         applySetup (setup);
     };
 
-    testButton.setTooltip ("Play a short note through the current device");
+    testButton.setTooltip (tr (StringId::audio_test_help));
     testButton.onClick = [this]
     {
         // Through the same preview path the piano roll's keys use, so this

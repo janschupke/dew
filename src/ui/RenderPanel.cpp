@@ -1,5 +1,6 @@
 #include "ui/RenderPanel.h"
 
+#include "i18n/Strings.h"
 #include "engine/Sequencer.h"
 #include "model/Ids.h"
 #include "ui/design/Tokens.h"
@@ -54,13 +55,13 @@ RenderPanel::RenderPanel (ProjectDocument& d, EditorState& state, Settings* sett
     tailField.setNumDecimalPlaces (1);
     tailField.setSuffix (" s");
     tailField.setValue (1.0, juce::dontSendNotification);
-    tailField.setTooltip ("Time rendered after the music ends, so release tails are not cut off");
+    tailField.setTooltip (tr (StringId::render_tail_help));
 
     peakField.setRange (-24.0, 0.0, 0.1);
     peakField.setNumDecimalPlaces (1);
     peakField.setSuffix (" dB");
     peakField.setValue (-1.0, juce::dontSendNotification);
-    peakField.setTooltip ("Where normalizing puts the loudest sample");
+    peakField.setTooltip (tr (StringId::render_peak_help));
 
     depthBox.addItem ("16-bit", 16);
     depthBox.addItem ("24-bit", 24);

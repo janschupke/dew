@@ -1,5 +1,6 @@
 #include "ui/SoundFontSection.h"
 
+#include "i18n/Strings.h"
 #include "model/AssetPaths.h"
 #include "model/ProjectEdits.h"
 #include "ui/design/Tokens.h"
@@ -18,7 +19,7 @@ SoundFontSection::SoundFontSection (ProjectDocument& d, SoundFontPool* p)
     addAndMakeVisible (fileLabel);
 
     loadButton.setComponentID ("soundFontLoad");
-    loadButton.setTooltip ("Choose a SoundFont file for this channel to play");
+    loadButton.setTooltip (tr (StringId::soundFont_load_help));
     loadButton.onClick = [this] { chooseFile(); };
     addAndMakeVisible (loadButton);
 
@@ -26,7 +27,7 @@ SoundFontSection::SoundFontSection (ProjectDocument& d, SoundFontPool* p)
     addAndMakeVisible (presetLabel);
 
     presetBox.setComponentID ("soundFontPreset");
-    presetBox.setTooltip ("Which sound inside the soundfont this channel plays");
+    presetBox.setTooltip (tr (StringId::soundFont_preset_help));
     presetBox.onChange = [this]
     {
         if (! updating)

@@ -104,6 +104,7 @@ add_executable(dew_tests
   SourceGateTests.cpp
   SourceGateDesignTests.cpp
   SourceGateOwnershipTests.cpp
+  SourceGateStringsTests.cpp
   RealtimeTests.cpp
   AllocationGateTests.cpp
   CatalogTests.cpp

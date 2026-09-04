@@ -1,5 +1,6 @@
 #include "ui/PianoRollToolbar.h"
 
+#include "i18n/Strings.h"
 #include "ui/StripLayout.h"
 #include "ui/design/Tokens.h"
 
@@ -30,7 +31,7 @@ PianoRollToolbar::PianoRollToolbar()
     addTool (sliceButton, RollTool::slice);
 
     rebuildSnapBox();
-    snapBox.setTooltip ("Grid the editing gestures snap to");
+    snapBox.setTooltip (tr (StringId::pianoRoll_snap_help));
     snapBox.setMouseClickGrabsKeyboardFocus (false);
     snapBox.onChange = [this]
     {
@@ -44,7 +45,7 @@ PianoRollToolbar::PianoRollToolbar()
     styleCaption (snapCaption, "SNAP");
     addAndMakeVisible (snapCaption);
 
-    channelBox.setTooltip ("Channel being edited");
+    channelBox.setTooltip (tr (StringId::pianoRoll_channel_help));
     channelBox.setMouseClickGrabsKeyboardFocus (false);
     channelBox.onChange = [this]
     {
@@ -106,8 +107,8 @@ PianoRollToolbar::PianoRollToolbar()
     addTranspose (octaveUpButton, 12);
     addTranspose (octaveDownButton, -12);
 
-    octaveUpButton.setTooltip ("Up an octave (Shift+Up)");
-    octaveDownButton.setTooltip ("Down an octave (Shift+Down)");
+    octaveUpButton.setTooltip (tr (StringId::pianoRoll_octaveUp_help));
+    octaveDownButton.setTooltip (tr (StringId::pianoRoll_octaveDown_help));
 
     updateToolButtons();
 }

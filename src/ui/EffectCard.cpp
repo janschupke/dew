@@ -2,6 +2,7 @@
 
 #include <utility>
 
+#include "i18n/Strings.h"
 #include "model/Ids.h"
 #include "model/ModuleCatalog.h"
 #include "model/PresetLibrary.h"
@@ -70,7 +71,7 @@ EffectCard::EffectCard (EffectChainComponent& o, ProjectDocument& d, EditorState
     };
     addAndMakeVisible (bypassButton);
 
-    expandButton.setTooltip ("Show or hide this effect's controls");
+    expandButton.setTooltip (tr (StringId::effect_expand_help));
     expandButton.onClick = [this] { owner.setSlotExpanded (index, ! isExpanded()); };
     addAndMakeVisible (expandButton);
 

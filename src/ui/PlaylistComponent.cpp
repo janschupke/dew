@@ -3,6 +3,7 @@
 #include <cmath>
 #include <utility>
 
+#include "i18n/Strings.h"
 #include "ui/AutomationLane.h"
 
 #include "io/SamplePool.h"
@@ -52,11 +53,11 @@ PlaylistComponent::PlaylistComponent (ProjectDocument& d, AudioEngine& e, Editor
     headerHolder.setInterceptsMouseClicks (false, true);
     addAndMakeVisible (headerHolder);
 
-    addAutomationButton.setTooltip ("Add an automation lane for a parameter");
+    addAutomationButton.setTooltip (tr (StringId::playlist_addAutomation_help));
     addAutomationButton.onClick = [this] { showAutomationMenu(); };
     addAndMakeVisible (addAutomationButton);
 
-    addTrackButton.setTooltip ("Add a track to the arrangement");
+    addTrackButton.setTooltip (tr (StringId::playlist_addTrack_help));
     addTrackButton.onClick = [this] { addTrack(); };
     addTrackButton.setComponentID ("addTrackButton");
     headerHolder.addAndMakeVisible (addTrackButton);

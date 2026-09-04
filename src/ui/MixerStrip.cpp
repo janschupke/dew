@@ -3,6 +3,7 @@
 #include <optional>
 #include <utility>
 
+#include "i18n/Strings.h"
 #include "model/ProjectSchema.h"
 #include "model/EntityColour.h"
 #include "model/ProjectEdits.h"
@@ -81,7 +82,7 @@ MixerStrip::MixerStrip (ProjectDocument& d, juce::ValueTree t, bool isMasterStri
         // caption lives in its tooltip. The two views name the same
         // parameter and now draw it the same size, in the same painter.
         panKnob.setCompact (true);
-        panKnob.setTooltip ("Pan");
+        panKnob.setTooltip (tr (StringId::mixer_pan_name));
         panKnob.setValue ((double) track[ids::pan], juce::dontSendNotification);
         panKnob.onEditStart = [this]
         {

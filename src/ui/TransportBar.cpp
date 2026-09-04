@@ -2,6 +2,7 @@
 
 #include <memory>
 
+#include "i18n/Strings.h"
 #include "model/ModuleCatalog.h"
 
 #include "model/Ids.h"
@@ -35,7 +36,7 @@ TransportBar::TransportBar (ProjectDocument& d, AudioEngine& e, EditorState& s)
     confirmDestructive = confirmWithPanel (this);
 
     patternBox.setComponentID ("patternSelector");
-    patternBox.setTooltip ("Which pattern the rack and the piano roll are editing");
+    patternBox.setTooltip (tr (StringId::transport_pattern_help));
 
     // A pattern name says nothing about being a pattern - "Groove" beside a
     // tempo and a time signature reads as one more setting.
@@ -81,7 +82,7 @@ TransportBar::TransportBar (ProjectDocument& d, AudioEngine& e, EditorState& s)
     tempoField.setNumDecimalPlaces (tempoSpec.decimals);
     tempoField.setSuffix (tempoSpec.suffix);
     tempoField.setLogarithmic (tempoSpec.curve == ParamCurve::logarithmic);
-    tempoField.setTooltip ("Tempo - drag up and down, or double-click to type");
+    tempoField.setTooltip (tr (StringId::transport_tempo_help));
     tempoField.onEditStart = [this] { tempoGestureActive = false; };
     tempoField.onValueChange = [this]
     {
@@ -95,7 +96,7 @@ TransportBar::TransportBar (ProjectDocument& d, AudioEngine& e, EditorState& s)
 
     rebuildMeterList();
     meterBox.setComponentID ("timeSignature");
-    meterBox.setTooltip ("Time signature - beats to the bar, and what a beat is");
+    meterBox.setTooltip (tr (StringId::transport_meter_help));
     meterBox.onChange = [this]
     {
         if (updatingMeterBox)
@@ -105,7 +106,7 @@ TransportBar::TransportBar (ProjectDocument& d, AudioEngine& e, EditorState& s)
     };
     addAndMakeVisible (meterBox);
 
-    modeButton.setTooltip ("Play the whole arrangement, or the pattern on its own (cmd-L)");
+    modeButton.setTooltip (tr (StringId::transport_mode_help));
     modeButton.setClickingTogglesState (true);
     modeButton.onClick = [this]
     {
@@ -168,7 +169,7 @@ TransportBar::TransportBar (ProjectDocument& d, AudioEngine& e, EditorState& s)
     // caption reserves 12px above the value, which made this the only control
     // in the bar that could not share the common height.
     patternLengthField.setSuffix (" steps");
-    patternLengthField.setTooltip ("Pattern length - drag up and down, or double-click to type");
+    patternLengthField.setTooltip (tr (StringId::transport_patternLength_help));
     patternLengthField.onEditStart = [this] { lengthGestureActive = false; };
     patternLengthField.onValueChange = [this]
     {

@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <cmath>
 
+#include "i18n/Strings.h"
 #include "lang/Completion.h"
 #include "lang/SourceRange.h"
 #include "model/Ids.h"
@@ -34,7 +35,7 @@ ScoreEditorComponent::ScoreEditorComponent (ProjectDocument& projectDocument)
     addAndMakeVisible (heading);
 
     compileButton.setComponentID ("scoreCompile");
-    compileButton.setTooltip ("Turn this score into patterns, notes and clips (cmd-R)");
+    compileButton.setTooltip (tr (StringId::score_compile_help));
     compileButton.onClick = [this] { compileIntoProject(); };
     addAndMakeVisible (compileButton);
 

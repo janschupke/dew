@@ -1,5 +1,6 @@
 #include "ui/OscillatorSection.h"
 
+#include "i18n/Strings.h"
 #include "ui/OscillatorSlot.h"
 
 #include "engine/Wavetable.h"
@@ -48,7 +49,7 @@ OscillatorSection::OscillatorSection (ProjectDocument& d, EditorState& s)
     addAndMakeVisible (enableButton);
 
     fill (modeBox, modeChoices);
-    modeBox.setTooltip ("Which generator this oscillator runs");
+    modeBox.setTooltip (tr (StringId::oscillator_mode_help));
     modeBox.onChange = [this]
     {
         write (ids::mode, valueOf (modeChoices, modeBox.getSelectedId()), "Change oscillator mode");
@@ -58,7 +59,7 @@ OscillatorSection::OscillatorSection (ProjectDocument& d, EditorState& s)
     fill (waveBox, waveChoices);
     waveBox.onChange = [this]
     { write (ids::wave, valueOf (waveChoices, waveBox.getSelectedId()), "Change waveform"); };
-    waveBox.setTooltip ("The waveform this oscillator plays");
+    waveBox.setTooltip (tr (StringId::oscillator_wave_help));
     addAndMakeVisible (waveBox);
 
     // The table list comes from the engine's bank rather than a second list
@@ -66,7 +67,7 @@ OscillatorSection::OscillatorSection (ProjectDocument& d, EditorState& s)
     for (int i = 0; i < wavetableCount(); ++i)
         tableBox.addItem (wavetableAt (i).getDisplayName(), i + 1);
 
-    tableBox.setTooltip ("Which wavetable this oscillator reads");
+    tableBox.setTooltip (tr (StringId::oscillator_table_help));
     tableBox.onChange = [this]
     {
         const auto index = juce::jlimit (0, wavetableCount() - 1, tableBox.getSelectedId() - 1);
@@ -75,7 +76,7 @@ OscillatorSection::OscillatorSection (ProjectDocument& d, EditorState& s)
     addAndMakeVisible (tableBox);
 
     fill (sourceBox, sourceChoices);
-    sourceBox.setTooltip ("What moves the position over the length of a note");
+    sourceBox.setTooltip (tr (StringId::oscillator_source_help));
     sourceBox.onChange = [this]
     {
         write (ids::wavePositionSource, valueOf (sourceChoices, sourceBox.getSelectedId()),
@@ -123,26 +124,26 @@ OscillatorSection::OscillatorSection (ProjectDocument& d, EditorState& s)
     attachKnob (gainKnob, ids::gain, "Change oscillator gain");
 
     positionKnob.setNumDecimalPlaces (2);
-    positionKnob.setTooltip ("Where in the table this oscillator sits");
+    positionKnob.setTooltip (tr (StringId::oscillator_position_help));
     attachKnob (positionKnob, ids::wavePosition, "Change wavetable position");
 
     modKnob.setBipolar (true);
     modKnob.setNumDecimalPlaces (2);
-    modKnob.setTooltip ("How far the source moves the position, and which way");
+    modKnob.setTooltip (tr (StringId::oscillator_mod_help));
     attachKnob (modKnob, ids::wavePositionMod, "Change position modulation");
 
     rateKnob.setNumDecimalPlaces (2);
-    rateKnob.setTooltip ("Speed of the position LFO, in Hz");
+    rateKnob.setTooltip (tr (StringId::oscillator_rate_help));
     attachKnob (rateKnob, ids::wavePositionRate, "Change modulation rate");
 
     // Integral, so the file keeps an int: the same rule the octave stepper
     // follows, for the same reason.
     unisonKnob.setNumDecimalPlaces (0);
-    unisonKnob.setTooltip ("How many detuned copies of this oscillator to stack");
+    unisonKnob.setTooltip (tr (StringId::oscillator_unison_help));
     attachKnob (unisonKnob, ids::unisonVoices, "Change unison voices", true);
 
     spreadKnob.setNumDecimalPlaces (1);
-    spreadKnob.setTooltip ("How far apart the unison copies are detuned, in cents");
+    spreadKnob.setTooltip (tr (StringId::oscillator_spread_help));
     attachKnob (spreadKnob, ids::unisonDetune, "Change unison spread");
 
     selectedSlot = juce::jlimit (0, kMaxOscillators - 1, editorState.getSelectedOscillator());

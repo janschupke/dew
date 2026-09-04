@@ -1,5 +1,6 @@
 #include "ui/ChannelRackHeader.h"
 
+#include "i18n/Strings.h"
 #include "model/EntityColour.h"
 #include "model/Ids.h"
 #include "model/ModuleCatalog.h"
@@ -73,7 +74,7 @@ ChannelRackHeader::ChannelRackHeader (ProjectDocument& d, EditorState& s, juce::
 
     // Only audio channels can be armed, and only one channel at a time -
     // clicking an armed row's R disarms it rather than arming a second.
-    armButton.setTooltip ("Arm this channel for recording");
+    armButton.setTooltip (tr (StringId::channelRack_arm_help));
     armButton.onClick = [this]
     {
         select();

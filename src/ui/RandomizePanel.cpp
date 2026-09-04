@@ -1,4 +1,5 @@
 #include "ui/RandomizePanel.h"
+#include "i18n/Strings.h"
 #include "ui/DewDialog.h"
 
 #include "ui/design/Tokens.h"
@@ -22,7 +23,7 @@ RandomizePanel::RandomizePanel (NoteTools::RandomizeOptions initial, juce::Strin
     stepField.setNumDecimalPlaces (0);
     stepField.setCaption ("TIMING");
     stepField.setSuffix (" steps");
-    stepField.setTooltip ("How far a note can move in time, either way. Zero leaves timing alone");
+    stepField.setTooltip (tr (StringId::randomize_step_help));
     addAndMakeVisible (stepField);
 
     setOptions (initial);

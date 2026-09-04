@@ -1,5 +1,6 @@
 #include "ui/MixerComponent.h"
 
+#include "i18n/Strings.h"
 #include "model/ProjectEdits.h"
 #include "ui/MenuSeam.h"
 #include "ui/design/Tokens.h"
@@ -50,7 +51,7 @@ MixerComponent::MixerComponent (ProjectDocument& d, EditorState& s, AudioEngine*
     addAndMakeVisible (stripViewport);
 
     addStripButton.setComponentID ("addMixerTrack");
-    addStripButton.setTooltip ("Add a mixer insert");
+    addStripButton.setTooltip (tr (StringId::mixer_addInsert_help));
     addStripButton.onClick = [this] { addMixerTrack(); };
     stripHolder.addAndMakeVisible (addStripButton);
 

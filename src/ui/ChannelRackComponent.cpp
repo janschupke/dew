@@ -1,5 +1,6 @@
 #include "ui/ChannelRackComponent.h"
 
+#include "i18n/Strings.h"
 #include "model/Ids.h"
 #include "model/Meter.h"
 #include "model/ProjectEdits.h"
@@ -105,15 +106,15 @@ ChannelRackComponent::ChannelRackComponent (ProjectDocument& d, AudioEngine& e, 
     // Into the scrolling holder, not onto the panel: it is the next row of the
     // list, so it belongs to the list and scrolls with it.
     addChannelButton.setComponentID ("addChannelButton");
-    addChannelButton.setTooltip ("Add a synth channel");
+    addChannelButton.setTooltip (tr (StringId::channelRack_addSynth_help));
     contentHolder.addAndMakeVisible (addChannelButton);
 
     addAudioButton.setComponentID ("addAudioButton");
-    addAudioButton.setTooltip ("Add a channel that plays a recording");
+    addAudioButton.setTooltip (tr (StringId::channelRack_addAudio_help));
     contentHolder.addAndMakeVisible (addAudioButton);
 
     addSoundFontButton.setComponentID ("addSoundFontButton");
-    addSoundFontButton.setTooltip ("Add a channel that plays a soundfont file");
+    addSoundFontButton.setTooltip (tr (StringId::channelRack_addSoundFont_help));
     contentHolder.addAndMakeVisible (addSoundFontButton);
 
     document.getState().addListener (this);
