@@ -42,6 +42,11 @@ Two files own this, and a gate holds each: `src/ui/Hotkeys.h` for the keyboard,
   `setMouseDragSensitivity` rather than combining the two by hand: the gate allows a call
   that NAMES `gesture::` and refuses one that picks its own number, so this is the form
   that needs no exemption.
+- **A rotary answers VERTICAL travel and nothing else** — `juce::Slider::RotaryVerticalDrag`,
+  not JUCE's default `RotaryHorizontalVerticalDrag`, which adds the two axes together and so
+  lets a hand's sideways drift cancel its own pull. "A knob answers vertical travel, and only
+  vertical travel" in `tests/DesignSystemTests.cpp` is the guard, and it is the only test that
+  drags a knob and reads the value back.
 - `getDistanceFromDragStart()` is always zero in a headless harness, so a component that
   wants its drag tested keeps its own origin and calls `gesture::passedThreshold`.
 

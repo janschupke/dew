@@ -473,7 +473,18 @@ private:
     /** Accent until a ParamSpec says otherwise, so a knob built without one
         looks exactly as every knob used to. */
     juce::Colour functionColour { tokens::colour::accent };
-    juce::Slider slider { juce::Slider::RotaryHorizontalVerticalDrag, juce::Slider::NoTextBox };
+
+    /** RotaryVerticalDrag: the value is what the pointer travelled UP, and
+        nothing else.
+
+        RotaryHorizontalVerticalDrag - JUCE's default for a rotary and what this
+        was - adds the two axes together: `(x - startX) + (startY - y)`. So a
+        hand pulling down and drifting right subtracts its own drift from its
+        own travel, and the knob answers a diagonal drag with less than the
+        distance it made. That reads as a knob that is not listening, and it is
+        the one thing a value control cannot be.
+    */
+    juce::Slider slider { juce::Slider::RotaryVerticalDrag, juce::Slider::NoTextBox };
     ComponentMotion needle { *this };
     bool needleSeeded = false;
     bool dragging = false;

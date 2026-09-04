@@ -4,6 +4,7 @@
 // no shared fixture to divide - its anonymous namespace was empty.
 
 #include <catch2/catch_test_macros.hpp>
+#include <catch2/matchers/catch_matchers_floating_point.hpp>
 
 #include <juce_gui_basics/juce_gui_basics.h>
 
@@ -11,6 +12,7 @@
 #include "model/Ids.h"
 #include "ui/design/DewGallery.h"
 #include "ui/design/DewLookAndFeel.h"
+#include "ui/design/Gestures.h"
 #include "ui/design/Icons.h"
 #include "ui/design/SignalScope.h"
 #include "ui/design/Tokens.h"
@@ -311,6 +313,65 @@ TEST_CASE ("the number field changes by dragging, and up means more", "[design][
 
     drag (100000);
     REQUIRE (field.getValue() >= 20.0);
+}
+
+TEST_CASE ("a knob answers vertical travel, and only vertical travel", "[design][primitives]")
+{
+    const juce::ScopedJuceInitialiser_GUI juceInit;
+
+    // The knob used to be RotaryHorizontalVerticalDrag, which is JUCE's default
+    // for a rotary and adds the two axes together: `(x - startX) + (startY -
+    // y)`. So a hand pulling down while drifting right subtracted its own drift
+    // from its own travel, and the same 60px pull landed anywhere between
+    // nothing and twice what was asked for depending on which way the hand
+    // wandered. Nothing tested it, because nothing dragged a knob at all: the
+    // scale was held only by the gate that the call names `gesture::`.
+    //
+    // This is the guard. The three drags below make the SAME vertical travel.
+    DewKnob knob { "Level", 0.0, 1.0, 0.0001 };
+    knob.setSize (tokens::size::knob, tokens::size::knobRow);
+    knob.resized();
+
+    auto& slider = knob.getSlider();
+
+    // Driven on the slider rather than on the knob, because the slider is what
+    // the pointer is actually over and what owns the drag. The knob's own
+    // mouseDown only latches shift, and JUCE delivers that through a peer the
+    // harness does not have.
+    const auto dragBy = [&knob, &slider] (int dx, int dy)
+    {
+        knob.setValue (0.5, juce::dontSendNotification);
+
+        const juce::Point<float> start (22.0f, 18.0f);
+        const juce::Point<float> moved (start.x + (float) dx, start.y + (float) dy);
+        const auto source = juce::Desktop::getInstance().getMainMouseSource();
+        const auto now = juce::Time::getCurrentTime();
+
+        const auto at = [&] (juce::Point<float> where, bool dragged) {
+            return juce::MouseEvent { source, where, {},   1.0f, 0.0f,  0.0f, 0.0f,    0.0f,
+                                      &slider, &slider,    now,  start, now,  1,       dragged };
+        };
+
+        slider.mouseDown (at (start, false));
+        slider.mouseDrag (at (moved, true));
+        slider.mouseUp (at (moved, true));
+
+        return knob.getValue();
+    };
+
+    // Up is more, and the distance is the travel over the one shared scale.
+    const auto expected = 0.5 + 60.0 / (double) gesture::dragPixelsForFullRange;
+
+    CHECK_THAT (dragBy (0, -60), Catch::Matchers::WithinAbs (expected, 0.002));
+
+    // Drifting either way changes nothing. Under the old style the first of
+    // these landed on 0.5 exactly - the drift cancelled the pull - and the
+    // second moved twice as far as the hand had travelled.
+    CHECK_THAT (dragBy (60, -60), Catch::Matchers::WithinAbs (expected, 0.002));
+    CHECK_THAT (dragBy (-60, -60), Catch::Matchers::WithinAbs (expected, 0.002));
+
+    // And down is less, which is the half a value control cannot get wrong.
+    CHECK (dragBy (0, 60) < 0.5);
 }
 
 TEST_CASE ("hover is tracked once, and the right way round", "[ui][design]")

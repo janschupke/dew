@@ -213,8 +213,7 @@ TEST_CASE ("the instrument panel's knobs are one undo step too", "[ui][channelra
     // The panel's VOLUME knob: 0..1 with a fine interval. Pan starts below zero,
     // sustain lives on the AMP node, and base pitch is an inc/dec stepper.
     for (auto* slider : sliders)
-        if (slider->getSliderStyle() == juce::Slider::RotaryHorizontalVerticalDrag
-            && slider->getRange() == juce::Range<double> (0.0, 1.0)
+        if (slider->isRotary() && slider->getRange() == juce::Range<double> (0.0, 1.0)
             && juce::exactlyEqual (slider->getInterval(), 0.001))
             volume = slider;
 
