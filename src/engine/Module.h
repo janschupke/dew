@@ -48,7 +48,12 @@ private:
     int count;
 };
 
-/** A stereo pair to work on, in place.
+/** A stereo pair, either to work on in place or to add into.
+
+    An effect reads and writes it; an instrument only accumulates into it. One
+    type for both, because the two module ABIs are deliberately shaped alike -
+    see EffectModule below - and a second struct with the same three members
+    under a different name would be a distinction the compiler cannot use.
 
     Two bare pointers rather than a juce::AudioBuffer because the engine's
     scratch IS two pointers into a bigger buffer, and wrapping them every block

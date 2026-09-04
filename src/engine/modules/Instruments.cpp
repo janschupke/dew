@@ -3,7 +3,7 @@
 namespace dew
 {
 
-void SynthInstrument::prepare (double sampleRate, int)
+void SynthInstrument::prepareMono (double sampleRate, int)
 {
     channel.prepare (sampleRate);
 }
@@ -13,7 +13,8 @@ void SynthInstrument::reset() noexcept
     channel.reset();
 }
 
-void SynthInstrument::processAdd (const InstrumentContext& ctx, float* out, int numSamples) noexcept
+void SynthInstrument::processAddMono (const InstrumentContext& ctx, float* out,
+                                      int numSamples) noexcept
 {
     if (ctx.osc == nullptr || ctx.amp == nullptr)
         return;
@@ -38,8 +39,8 @@ void SynthInstrument::processAdd (const InstrumentContext& ctx, float* out, int 
     channel.renderAdd (out, numSamples, ctx.bendSemitones, ctx.modulation, ctx.osc);
 }
 
-void SampleInstrument::processAdd (const InstrumentContext& ctx, float* out,
-                                   int numSamples) noexcept
+void SampleInstrument::processAddMono (const InstrumentContext& ctx, float* out,
+                                       int numSamples) noexcept
 {
     // Audio clips live in the arrangement, so they sound in song mode only -
     // the same rule automation follows, and for the same reason: pattern mode

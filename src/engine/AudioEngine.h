@@ -330,8 +330,8 @@ private:
     InstrumentModule* instrumentFor (int channelIndex, InstrumentType) noexcept;
     void resetAllInstruments() noexcept;
 
-    // Preallocated scratch: one mono buffer per channel, one stereo pair per
-    // mixer track, all sized in prepare() so processBlock never allocates.
+    // Preallocated scratch: one stereo pair per channel, one per mixer track,
+    // all sized in prepare() so processBlock never allocates.
     juce::AudioBuffer<float> channelBuffers;
     juce::AudioBuffer<float> mixerBuffers;
 

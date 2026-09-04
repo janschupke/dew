@@ -27,9 +27,20 @@ struct MixerBus
     */
     static void panGains (float pan, float& leftGain, float& rightGain) noexcept;
 
-    /** Adds `mono` into a stereo pair, applying gain and pan. */
-    static void addPanned (const float* mono, int numSamples, float gain, float pan, float* left,
-                           float* right) noexcept;
+    /** Adds a stereo source into a stereo pair, applying gain and pan.
+
+        A BALANCE law, not a rotation: at pan -1 the source's right side is
+        attenuated away rather than folded into the left. That is the same rule a
+        mono source has always followed - it is only visible now that an
+        instrument can hand over two genuinely different sides.
+
+        The source was mono until instruments became stereo. Passing the same
+        pointer twice is exactly what the mono form did, bit for bit: with
+        `sourceLeft == sourceRight` these are the identical two expressions on
+        identical values.
+    */
+    static void addPanned (const float* sourceLeft, const float* sourceRight, int numSamples,
+                           float gain, float pan, float* left, float* right) noexcept;
 
     /** What a mixer track contributes to the master, and what its meter shows.
 

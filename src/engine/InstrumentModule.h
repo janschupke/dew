@@ -98,12 +98,87 @@ public:
     virtual void reset() noexcept = 0;
     virtual void releaseResources() {}
 
-    /** ADDS mono output.
+    /** ADDS into a stereo pair.
 
         Adds rather than replaces, so two sources on one channel sum instead of
         one silently winning. That was SamplePlayer's rule; it is the ABI's now.
+        A module that renders into `out.left` and copies it to `out.right` is
+        breaking this contract even though the host happens to hand it a cleared
+        pair today.
+
+        Stereo rather than mono because a SoundFont carries linked stereo sample
+        pairs and a per-region pan, and a fifth of a real library is stereo. The
+        two mono instruments widen through MonoInstrumentModule below rather than
+        each growing a second channel they have nothing to say about.
     */
-    virtual void processAdd (const InstrumentContext&, float* out, int numSamples) noexcept = 0;
+    virtual void processAdd (const InstrumentContext&, StereoView out) noexcept = 0;
+};
+
+/** An instrument whose DSP is mono, widened to the ABI in one place.
+
+    Both of the original instruments are mono all the way down: SynthVoice sums
+    its oscillators to one value, and SamplePlayer folds a multi-channel source
+    to mono on purpose. Neither has a second side to say anything about, and both
+    are called DIRECTLY by the tests that pin the engine sample for sample - so
+    the widening happens here, above them, and those tests keep proving what they
+    proved.
+
+    The obvious shortcuts are both wrong, and both fail quietly:
+
+    - Calling the mono render twice, once per side, advances SynthVoice's phase
+      and envelope twice a block, so the right channel would hold the NEXT n
+      samples. Every existing test still passes, because they all drive
+      SynthChannel below this layer.
+    - Rendering into out.left and copying to out.right breaks the ADD contract
+      above. It is harmless only while one module writes a freshly cleared pair,
+      which is exactly why it would survive review.
+
+    So: a private mono scratch, then two adds. Rendering into a cleared scratch
+    produces the same bits as rendering into the cleared channel buffer, and
+    0.0f + x == x for every finite x - there is no ScopedNoDenormals anywhere in
+    src/, so denormals are not flushed either.
+*/
+class MonoInstrumentModule : public InstrumentModule
+{
+public:
+    /** Final: SynthInstrument already overrode prepare(), and an override that
+        skipped sizing the scratch would leave the audio thread writing into a
+        zero-length buffer. Subclasses take prepareMono instead.
+    */
+    void prepare (double sampleRate, int maximumBlockSize) final
+    {
+        scratch.setSize (1, juce::jmax (1, maximumBlockSize));
+        scratch.clear();
+        prepareMono (sampleRate, maximumBlockSize);
+    }
+
+    void processAdd (const InstrumentContext& context, StereoView out) noexcept final
+    {
+        auto* mono = scratch.getWritePointer (0);
+        const auto numSamples = juce::jmin (out.numSamples, scratch.getNumSamples());
+
+        // Only numSamples, not the whole buffer: a render's last block is short,
+        // and clearing less than it renders would sum the previous block's tail.
+        juce::FloatVectorOperations::clear (mono, numSamples);
+
+        processAddMono (context, mono, numSamples);
+
+        juce::FloatVectorOperations::add (out.left, mono, numSamples);
+        juce::FloatVectorOperations::add (out.right, mono, numSamples);
+    }
+
+protected:
+    virtual void prepareMono (double sampleRate, int maximumBlockSize)
+    {
+        juce::ignoreUnused (sampleRate, maximumBlockSize);
+    }
+
+    /** ADDS mono output, exactly as the ABI read before it was widened. */
+    virtual void processAddMono (const InstrumentContext&, float* out, int numSamples) noexcept = 0;
+
+private:
+    /** Message thread only - sized in prepare(), never on the audio thread. */
+    juce::AudioBuffer<float> scratch;
 };
 
 } // namespace dew

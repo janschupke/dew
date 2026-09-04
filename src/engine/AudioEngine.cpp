@@ -62,7 +62,9 @@ void AudioEngine::prepare (double sampleRate, int maximumBlockSize)
     }
 
     // Everything the audio thread might need, allocated once.
-    channelBuffers.setSize (kMaxChannels, currentBlockSize);
+    // Two per channel: an instrument writes a stereo pair, and the pair is what
+    // the mixer pans. Interleaved by channel, the way mixerBuffers already is.
+    channelBuffers.setSize (kMaxChannels * 2, currentBlockSize);
     mixerBuffers.setSize (kMaxMixerTracks * 2, currentBlockSize);
     channelStereo.setSize (2, currentBlockSize);
     channelBuffers.clear();
@@ -877,7 +879,11 @@ void AudioEngine::renderChannels (const EngineSnapshot& snapshot, int numChannel
 
     for (int i = 0; i < numChannels; ++i)
     {
-        auto* mono = channelBuffers.getWritePointer (i);
+        // Two pointers, and deliberately not named for one channel:
+        // getWritePointer (i) still compiles after the resize and would
+        // quietly hand back another channel's left side.
+        auto* sourceLeft = channelBuffers.getWritePointer (i * 2);
+        auto* sourceRight = channelBuffers.getWritePointer (i * 2 + 1);
 
         const auto& channel = snapshot.channels[(size_t) i];
 
@@ -919,7 +925,7 @@ void AudioEngine::renderChannels (const EngineSnapshot& snapshot, int numChannel
             blockContext.audio = channel.audio.get();
             blockContext.channelIndex = i;
 
-            instrument->processAdd (blockContext, mono, numSamples);
+            instrument->processAdd (blockContext, { sourceLeft, sourceRight, numSamples });
         }
 
         // The override, not the snapshot: a curve over mute has to silence the
@@ -943,7 +949,8 @@ void AudioEngine::renderChannels (const EngineSnapshot& snapshot, int numChannel
         // the track is the same arithmetic as adding into the track.
         if (! chain.anyEnabled())
         {
-            MixerBus::addPanned (mono, numSamples, volume, pan, trackLeft, trackRight);
+            MixerBus::addPanned (sourceLeft, sourceRight, numSamples, volume, pan, trackLeft,
+                                 trackRight);
             continue;
         }
 
@@ -955,7 +962,8 @@ void AudioEngine::renderChannels (const EngineSnapshot& snapshot, int numChannel
         juce::FloatVectorOperations::clear (scratchLeft, numSamples);
         juce::FloatVectorOperations::clear (scratchRight, numSamples);
 
-        MixerBus::addPanned (mono, numSamples, volume, pan, scratchLeft, scratchRight);
+        MixerBus::addPanned (sourceLeft, sourceRight, numSamples, volume, pan, scratchLeft,
+                             scratchRight);
 
         runChain (chain, scratchLeft, scratchRight, numSamples);
 

@@ -45,17 +45,20 @@ MixerBus::TrackGains MixerBus::trackGains (float pan, float gain) noexcept
              gain * juce::jmax (leftGain, rightGain) * juce::MathConstants<float>::sqrt2 };
 }
 
-void MixerBus::addPanned (const float* mono, int numSamples, float gain, float pan, float* left,
-                          float* right) noexcept
+void MixerBus::addPanned (const float* sourceLeft, const float* sourceRight, int numSamples,
+                          float gain, float pan, float* left, float* right) noexcept
 {
     float leftGain = 0.0f, rightGain = 0.0f;
     panGains (pan, leftGain, rightGain);
 
+    // Folded into the gains and then applied once, exactly as the mono form did.
+    // Float multiplication is not associative, so folding `gain` into the
+    // addWithMultiply instead would move the last bits of every render.
     leftGain *= gain;
     rightGain *= gain;
 
-    juce::FloatVectorOperations::addWithMultiply (left, mono, leftGain, numSamples);
-    juce::FloatVectorOperations::addWithMultiply (right, mono, rightGain, numSamples);
+    juce::FloatVectorOperations::addWithMultiply (left, sourceLeft, leftGain, numSamples);
+    juce::FloatVectorOperations::addWithMultiply (right, sourceRight, rightGain, numSamples);
 }
 
 } // namespace dew
