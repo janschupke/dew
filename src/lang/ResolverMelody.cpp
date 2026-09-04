@@ -79,7 +79,7 @@ void Resolver::readCadence (MelodySpec& melody, const Statement& statement, cons
         // rounding it to one.
         if (! degree.has_value() || (*degree != 1 && *degree != 3 && *degree != 5 && *degree != 7))
         {
-            auto& d = diagnostics.error ("E241", "a cadence ends on a chord tone", value.range);
+            auto& d = diagnostics.error ("E252", "a cadence ends on a chord tone", value.range);
             d.helps.push_back ("1 is the root, 3 the third, 5 the fifth, 7 the seventh");
             (void) statement;
             return std::nullopt;
@@ -120,7 +120,7 @@ void Resolver::readCadence (MelodySpec& melody, const Statement& statement, cons
 
     if (i >= values.size() || values[i].kind != TokenKind::bracketClose)
     {
-        diagnostics.error ("E242", "this list is never closed", statement.range,
+        diagnostics.error ("E253", "this list is never closed", statement.range,
                            "a `[` needs a `]`");
         return;
     }

@@ -101,7 +101,7 @@ bool Resolver::readScope (const Statement& statement, std::size_t at, Scope& out
         }
 
     auto& d = diagnostics.error (
-        "E240", std::string ("`") + std::string (statement.values[at].text) + "` is not a scope",
+        "E251", std::string ("`") + std::string (statement.values[at].text) + "` is not a scope",
         statement.values[at].range);
 
     std::string list;
