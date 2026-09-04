@@ -288,9 +288,9 @@
     }
   },
   "dialog": {
+    "confirmDelete": "Delete",
     "deletePattern": {
       "body": "Delete \"{name}\"? Every clip that plays it goes with it.",
-      "confirm": "Delete",
       "title": "Delete pattern"
     },
     "removeChannel": {

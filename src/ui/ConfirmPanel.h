@@ -4,6 +4,8 @@
 
 #include <juce_gui_basics/juce_gui_basics.h>
 
+#include "i18n/Strings.h"
+
 #include "ui/primitives/DewControls.h"
 
 namespace dew
@@ -36,9 +38,10 @@ public:
     */
     struct Request
     {
-        juce::String title;                    ///< the window's title bar
-        juce::String message;                  ///< one sentence, in the panel
-        juce::String confirmText { "Delete" }; ///< what the acting button says
+        juce::String title;   ///< the window's title bar
+        juce::String message; ///< one sentence, in the panel
+        juce::String confirmText { tr (StringId::dialog_confirmDelete) };
+        ///< what the acting button says
     };
 
     explicit ConfirmPanel (Request);

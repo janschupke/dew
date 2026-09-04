@@ -1,5 +1,9 @@
 #include <catch2/catch_test_macros.hpp>
 
+#include <set>
+
+#include <juce_core/juce_core.h>
+
 #include "SourceScan.h"
 
 using namespace dew::testing;
@@ -140,4 +144,109 @@ TEST_CASE ("no source shows a person a string literal", "[build][gate][i18n]")
     CHECK (showsALiteral ("    menu.addItem ((int) MenuItem::rename, \"Rename\");"));
     CHECK_FALSE (
         showsALiteral ("    menu.addItem ((int) MenuItem::rename, tr (StringId::mixerRename));"));
+}
+
+namespace
+{
+
+/** Every dotted key the catalogue declares, depth-first. */
+void collectKeys (const juce::var& node, const juce::String& prefix, juce::StringArray& keys)
+{
+    auto* object = node.getDynamicObject();
+
+    if (object == nullptr)
+        return;
+
+    for (const auto& property : object->getProperties())
+    {
+        const auto key = prefix.isEmpty() ? property.name.toString() : prefix + "." + property.name;
+
+        if (property.value.getDynamicObject() != nullptr)
+            collectKeys (property.value, key, keys);
+        else
+            keys.add (key);
+    }
+}
+
+/** Every StringId the code names, collected once.
+
+    Once, rather than a search of the whole tree per key: four hundred keys
+    against a megabyte of concatenated source is four hundred passes over it,
+    and the gate took eleven seconds doing that.
+
+    Collecting the identifier WHOLE is also what makes the comparison safe.
+    param.attack mangles to a PREFIX of param.attackScale, so a substring search
+    would report the shorter key as used by every mention of the longer one -
+    and would look exactly like a gate that covered everything while covering
+    almost nothing.
+*/
+std::set<juce::String> namedStringIds()
+{
+    std::set<juce::String> named;
+    const juce::String marker { "StringId::" };
+
+    for (const auto* directory : { DEW_SOURCE_DIR, DEW_TESTS_DIR })
+        for (const auto& entry :
+             juce::RangedDirectoryIterator (juce::File { directory }, true, "*.cpp;*.h"))
+            for (const auto& line : codeLinesOf (entry.getFile()))
+                for (auto i = line.indexOf (marker); i >= 0; i = line.indexOf (i + 1, marker))
+                {
+                    auto end = i + marker.length();
+
+                    while (end < line.length()
+                           && (juce::CharacterFunctions::isLetterOrDigit (line[end])
+                               || line[end] == '_'))
+                        ++end;
+
+                    named.insert (line.substring (i + marker.length(), end));
+                }
+
+    return named;
+}
+
+} // namespace
+
+TEST_CASE ("every string the catalogue declares is one the app asks for", "[build][gate][i18n]")
+{
+    // The orphan-token gate's twin, and the same failure it was written for: a
+    // key nobody references is a sentence a translator will be paid for and
+    // nobody will ever read, and nothing reports it - the generator emits it,
+    // the enum grows an enumerator, and the build is green.
+    //
+    // Only this direction needs a test. A StringId the app names and the
+    // catalogue does not hold is already a compile error, because the enum IS
+    // the catalogue.
+    const juce::File catalogue { juce::String (DEW_I18N_DIR) + "/en.json" };
+    REQUIRE (catalogue.existsAsFile());
+
+    juce::StringArray keys;
+    collectKeys (juce::JSON::parse (catalogue), {}, keys);
+
+    // Control case: a gate over an empty list is not a gate.
+    INFO ("keys declared: " << keys.size());
+    REQUIRE (keys.size() > 300);
+    REQUIRE (keys.contains ("param.cutoff.caption"));
+
+    // Comments stripped by codeLinesOf, so a key mentioned in prose does not
+    // count as used - ceum learned that one the expensive way, with a key
+    // prefix named in a comment hiding a hundred and forty-one dead entries
+    // from its own scanner.
+    const auto named = namedStringIds();
+
+    // Control case: a set that collected nothing would report every key unused,
+    // which fails loudly - but one that collected the wrong thing would report
+    // every key USED and pass in silence.
+    INFO ("StringIds named in the source: " << named.size());
+    REQUIRE (named.size() > 300);
+    REQUIRE (named.count ("param_cutoff_caption") == 1);
+    REQUIRE (named.count ("param_attackScale_name") == 1);
+
+    juce::StringArray unused;
+
+    for (const auto& key : keys)
+        if (named.count (key.replaceCharacter ('.', '_')) == 0)
+            unused.add (key);
+
+    INFO ("declared in en.json and asked for nowhere:\n" << unused.joinIntoString ("\n"));
+    CHECK (unused.isEmpty());
 }

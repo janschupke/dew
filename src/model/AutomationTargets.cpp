@@ -274,7 +274,7 @@ std::optional<AutomationTarget> automationTargetFor (const juce::ValueTree& proj
     {
         target.scope = AutomationScope::project;
         target.targetId = 0;
-        target.displayName = "Song";
+        target.displayName = tr (StringId::automation_song);
     }
     else if (node.hasType (ids::CHANNEL))
     {
@@ -293,7 +293,7 @@ std::optional<AutomationTarget> automationTargetFor (const juce::ValueTree& proj
     {
         target.scope = AutomationScope::master;
         target.targetId = 0;
-        target.displayName = "Master";
+        target.displayName = tr (StringId::automation_master);
     }
     else if (node.hasType (ids::OSC))
     {
@@ -311,8 +311,9 @@ std::optional<AutomationTarget> automationTargetFor (const juce::ValueTree& proj
         target.scope = AutomationScope::channelOsc;
         target.targetId = (int) channel[ids::id];
         target.slot = slotOf (parent, node, ids::OSC);
-        target.displayName = channel[ids::name].toString() + " > Osc "
-                             + juce::String (target.slot + 1);
+        target.displayName = tr (
+            StringId::automation_oscillator,
+            Args {}.with ("channel", channel[ids::name].toString()).with ("slot", target.slot + 1));
     }
     else if (node.hasType (ids::EFFECT))
     {
@@ -323,13 +324,19 @@ std::optional<AutomationTarget> automationTargetFor (const juce::ValueTree& proj
         {
             target.scope = AutomationScope::channelEffect;
             target.targetId = (int) parent[ids::id];
-            target.displayName = parent[ids::name].toString() + " > " + effectLabel (node);
+            target.displayName = tr (StringId::automation_parameter,
+                                     Args {}
+                                         .with ("owner", parent[ids::name].toString())
+                                         .with ("param", effectLabel (node)));
         }
         else if (parent.hasType (ids::MIXER_TRACK))
         {
             target.scope = AutomationScope::mixerEffect;
             target.targetId = (int) parent[ids::id];
-            target.displayName = parent[ids::name].toString() + " > " + effectLabel (node);
+            target.displayName = tr (StringId::automation_parameter,
+                                     Args {}
+                                         .with ("owner", parent[ids::name].toString())
+                                         .with ("param", effectLabel (node)));
         }
         else
         {
