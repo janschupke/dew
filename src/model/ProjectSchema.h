@@ -126,6 +126,19 @@ inline constexpr int kFormatVersion = 12;
 */
 inline constexpr int kMaxEffectsPerChain = 4;
 
+/** How many inserts the mixer may hold, master excluded.
+
+    A document limit for the same reason the chain length is one - now that
+    inserts can be added, a project holding more of them than the engine renders
+    would be a project with faders that move nothing. It lived in
+    engine/EngineSnapshot.h while the count was fixed at four and nothing could
+    change it; the engine still sizes its buffers from it and still clamps, and
+    EngineSnapshot.h includes this header, so it reads the same number it always
+    did. Putting the rule where the edit is means a hand-written .dew file
+    cannot walk past it either.
+*/
+inline constexpr int kMaxMixerTracks = 32;
+
 /** How many oscillators one channel carries.
 
     Fixed, not a maximum: every channel has exactly this many slots at all

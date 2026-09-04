@@ -4,6 +4,7 @@
 
 #include "engine/AudioEngine.h"
 #include "app/ProjectDocument.h"
+#include "ui/ConfirmPanel.h"
 #include "ui/EditorState.h"
 #include "ui/ParamContextMenu.h"
 #include "ui/EffectChainHost.h"
@@ -56,6 +57,31 @@ public:
     */
     std::function<void()> onShowChannelRack;
 
+    /** What removing an insert asks first. See ConfirmHook. */
+    ConfirmHook confirmDestructive;
+
+    /** Appends an insert and selects it, so the shared chain editor follows the
+        thing that was just made - the courtesy TransportBar::addPattern does. */
+    void addMixerTrack();
+
+    /** Asks, then removes. Also puts the selection somewhere real: that is
+        session state, so it is fixed up here rather than inside the edit. */
+    void removeMixerTrack (int mixerTrackId);
+
+    /** Drives a strip's menu item without opening a menu, which cannot be done
+        headlessly. False when no strip answers to that id; masterTrackId
+        reaches the master, which carries no id of its own and so reads as 0. */
+    bool applyMixerTrackMenuChoice (int mixerTrackId, int choice);
+
+    /** What a strip's menu offers, for a test to read. */
+    juce::StringArray mixerTrackMenuItems (int mixerTrackId) const;
+
+    /** How many strips are showing, master included. */
+    int getNumStrips() const noexcept
+    {
+        return strips.size();
+    }
+
 private:
     class Strip;
 
@@ -68,7 +94,9 @@ private:
     void pointChainAtSelectedTrack();
     void updateRouting();
 
-    static constexpr int stripWidth = 96;
+    /** The strip answering to an id, or null. masterTrackId finds the master,
+        which carries no id property and so reads as 0. */
+    Strip* stripFor (int mixerTrackId) const;
 
     const paramMenu::Host* paramMenuHost = nullptr;
 
@@ -78,6 +106,11 @@ private:
     juce::OwnedArray<Strip> strips;
     juce::Viewport stripViewport;
     juce::Component stripHolder;
+
+    /** In the scrolling holder after the last strip, not in a footer: the same
+        place the channel rack puts its add button, for the same reason. */
+    DewButton addStripButton { "+", DewButton::Role::ghost };
+
     EffectChainHost chainHost;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (MixerComponent)

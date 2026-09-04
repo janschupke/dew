@@ -853,6 +853,7 @@ TEST_CASE ("no component redeclares a size the ladder already names", "[build][g
         { tokens::size::gutterLabel, "gutterLabel" },
         { tokens::size::scrollThickness, "scrollThickness or meterHeight" },
         { tokens::size::knobRow, "knobRow" },
+        { tokens::size::mixerStripWidth, "mixerStripWidth" },
     };
 
     const auto found = offenders (

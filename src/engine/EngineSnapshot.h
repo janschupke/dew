@@ -26,8 +26,11 @@ namespace dew
     reports what it dropped rather than silently truncating.
 */
 inline constexpr int kMaxChannels = 64;
-inline constexpr int kMaxMixerTracks = 32;
 inline constexpr int kMaxVoicesPerChannel = 16;
+
+// kMaxMixerTracks is in model/ProjectSchema.h, included above: once inserts
+// could be added and removed it became a rule about what a DOCUMENT may hold,
+// and the engine is one of its readers rather than its owner.
 
 /** How many effect slots in the whole project can hold live DSP state.
 

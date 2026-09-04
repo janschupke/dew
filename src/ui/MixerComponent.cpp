@@ -5,6 +5,8 @@
 #include <memory>
 
 #include "model/ProjectEdits.h"
+#include "model/ProjectSchema.h"
+#include "ui/MenuSeam.h"
 #include "ui/primitives/DewMeter.h"
 #include "ui/design/Cursors.h"
 #include "ui/design/Tokens.h"
@@ -184,6 +186,12 @@ public:
 
     std::function<void()> onSelected;
 
+    /** Adding and removing are the MIXER's edits, not a strip's: the strip is
+        the surface the menu opened on and is deleted by the rebuild either one
+        causes, so it reports the gesture and touches nothing afterwards. */
+    std::function<void()> onAddInsert;
+    std::function<void (int trackId)> onRemoveInsert;
+
     void select()
     {
         if (onSelected != nullptr)
@@ -222,7 +230,7 @@ public:
         if (routingBounds.contains (event.getPosition()) && onChannelClicked != nullptr)
         {
             const auto row = (event.getPosition().y - routingBounds.getY() - tokens::space::xs)
-                             / 12;
+                             / routingRowHeight;
 
             if (juce::isPositiveAndBelow (row, routedIds.size()))
                 onChannelClicked (routedIds[row]);
@@ -237,22 +245,40 @@ public:
     // states the three lines rather than inheriting them.
     enum class MenuItem
     {
-        rename = 1
+        rename = 1,
+        addInsert,
+        removeInsert
     };
 
-    static constexpr int colourBaseId = (int) MenuItem::rename + 1;
+    static constexpr int colourBaseId = (int) MenuItem::removeInsert + 1;
 
     juce::PopupMenu buildMenu() const
     {
         juce::PopupMenu menu;
 
         // Master has no name to change and no colour to be: it is the one strip
-        // there is only ever one of, and nothing identifies it by colour.
-        if (isMaster)
-            return menu;
+        // there is only ever one of, and nothing identifies it by colour. It
+        // still offers "Add insert", because the mixer is what the menu is
+        // about and the master is part of it.
+        if (! isMaster)
+        {
+            menu.addItem ((int) MenuItem::rename, "Rename");
+            colourMenu::addTo (menu, track, colourBaseId);
+        }
 
-        menu.addItem ((int) MenuItem::rename, "Rename");
-        colourMenu::addTo (menu, track, colourBaseId);
+        const auto inserts = ProjectEdits::countMixerTracks (document.getState());
+
+        menu.addItem ((int) MenuItem::addInsert, "Add insert", inserts < kMaxMixerTracks);
+
+        // Rename / Add / - / Remove, which is the shape the rack's and the
+        // playlist's menus already have: the separator sits immediately above
+        // the destructive item and nothing else does.
+        if (! isMaster)
+        {
+            menu.addSeparator();
+            menu.addItem ((int) MenuItem::removeInsert, "Remove insert", inserts > 1);
+        }
+
         return menu;
     }
 
@@ -261,8 +287,31 @@ public:
         if (colourMenu::apply (choice, track, colourBaseId, document))
             return;
 
-        if ((MenuItem) choice == MenuItem::rename)
-            nameLabel.showEditor();
+        switch ((MenuItem) choice)
+        {
+            case MenuItem::rename: nameLabel.showEditor(); return;
+
+            case MenuItem::addInsert:
+                if (onAddInsert)
+                    onAddInsert();
+
+                return;
+
+            case MenuItem::removeInsert:
+            {
+                // The id is read into a local FIRST, and no member is touched
+                // afterwards. Removing an insert makes the document fire
+                // valueTreeChildRemoved, which rebuilds the strips synchronously
+                // and deletes `this` while this call is still on the stack.
+                const auto id = getTrackId();
+                const auto remove = onRemoveInsert;
+
+                if (remove)
+                    remove (id);
+
+                return;
+            }
+        }
     }
 
 private:
@@ -485,9 +534,9 @@ private:
 
         g.setFont (type::font (type::caption));
 
-        for (int i = 0; i < routedNames.size() && area.getHeight() >= 12; ++i)
+        for (int i = 0; i < routedNames.size() && area.getHeight() >= routingRowHeight; ++i)
         {
-            auto row = area.removeFromTop (12);
+            auto row = area.removeFromTop (routingRowHeight);
 
             const auto dot = row.removeFromLeft (8).withSizeKeepingCentre (5, 5).toFloat();
             g.setColour (i < routedColours.size() ? routedColours[i] : colour::textDisabled);
@@ -500,6 +549,11 @@ private:
 
     static constexpr int meterWidth = 8;
     static constexpr int routingHeight = 58;
+
+    /** One row of the routing list. The painter and the hit test both need it
+        and both had it written out, which is a click that selects the wrong
+        channel the moment one of them changes. */
+    static constexpr int routingRowHeight = 12;
     static constexpr int tickIntervalMs = 1000 / tokens::motion::uiRefreshHz;
 
     bool isMaster;
@@ -560,13 +614,21 @@ MixerComponent::MixerComponent (ProjectDocument& d, EditorState& s, AudioEngine*
     , chainHost (d, s, EffectChainHost::Orientation::horizontal)
 {
     setComponentID ("mixer");
+    confirmDestructive = confirmWithPanel (this);
 
     // Strips scroll. removeFromLeft on a fixed rectangle clamps at the right
-    // edge, so past about twelve inserts every further strip - including the
-    // master, which is added last - was silently given no width at all.
+    // edge, so once the strips outran the window every further one - including
+    // the master, which is added last - was silently given no width at all.
+    // That mattered at four inserts and matters more now that there can be
+    // thirty-two of them.
     stripViewport.setViewedComponent (&stripHolder, false);
     stripViewport.setScrollBarsShown (false, true);
     addAndMakeVisible (stripViewport);
+
+    addStripButton.setComponentID ("addMixerTrack");
+    addStripButton.setTooltip ("Add a mixer insert");
+    addStripButton.onClick = [this] { addMixerTrack(); };
+    stripHolder.addAndMakeVisible (addStripButton);
 
     if (engine != nullptr)
         startTimerHz (tokens::motion::uiRefreshHz);
@@ -613,6 +675,14 @@ void MixerComponent::rebuildStrips()
         auto* strip = strips.add (new Strip (document, master, true));
         strip->attachParamMenus (paramMenuHost);
         strip->onSelected = [this] { editorState.setSelectedMixerTrackId (masterTrackId); };
+    }
+
+    // Both edits belong to the mixer, not to the strip the menu opened on: that
+    // strip is deleted by the rebuild either one causes.
+    for (auto* strip : strips)
+    {
+        strip->onAddInsert = [this] { addMixerTrack(); };
+        strip->onRemoveInsert = [this] (int id) { removeMixerTrack (id); };
     }
 
     for (auto* strip : strips)
@@ -736,14 +806,106 @@ void MixerComponent::resized()
 
     stripViewport.setBounds (area);
 
+    // One column past the last strip, for the add button. The rack puts its add
+    // button in the next empty ROW of the list rather than in a footer strip;
+    // the mixer is read across, so its analogue is the next empty column.
+    const auto columns = strips.size() + 1;
     const auto contentWidth = juce::jmax (stripViewport.getMaximumVisibleWidth(),
-                                          strips.size() * stripWidth);
+                                          columns * size::mixerStripWidth);
     stripHolder.setSize (contentWidth, stripViewport.getMaximumVisibleHeight());
 
     auto holder = stripHolder.getLocalBounds();
 
     for (auto* strip : strips)
-        strip->setBounds (holder.removeFromLeft (stripWidth));
+        strip->setBounds (holder.removeFromLeft (size::mixerStripWidth));
+
+    // Top of the column, level with the strip names rather than centred down a
+    // 500px lane, where it read as something dropped rather than offered.
+    addStripButton.setBounds (holder.removeFromLeft (size::mixerStripWidth)
+                                  .withHeight (size::iconButton)
+                                  .translated (0, space::md)
+                                  .withSizeKeepingCentre (size::iconButton, size::iconButton));
+}
+
+void MixerComponent::addMixerTrack()
+{
+    auto& undo = document.getUndoManager();
+    undo.beginNewTransaction ("Add insert");
+
+    const auto added = ProjectEdits::addMixerTrack (document.getState(), {}, &undo);
+
+    if (added.isValid())
+        editorState.setSelectedMixerTrackId ((int) added[ids::id]);
+}
+
+void MixerComponent::removeMixerTrack (int mixerTrackId)
+{
+    const auto track = ProjectEdits::findMixerTrack (document.getState(), mixerTrackId);
+
+    if (! track.isValid())
+        return;
+
+    ConfirmPanel::Request request;
+    request.title = "Remove insert";
+    request.message = "Remove \"" + track[ids::name].toString()
+                      + "\"? Its effects go with it, and anything routed into it moves to the "
+                        "first insert.";
+    request.confirmText = "Remove";
+
+    confirmDestructive (
+        request,
+        [this, mixerTrackId]
+        {
+            auto found = ProjectEdits::findMixerTrack (document.getState(), mixerTrackId);
+
+            if (! found.isValid())
+                return;
+
+            auto& undo = document.getUndoManager();
+            undo.beginNewTransaction ("Remove insert");
+
+            if (! ProjectEdits::removeMixerTrack (document.getState(), found, &undo))
+                return;
+
+            // Session state, so it is set HERE and not inside the edit - it must
+            // not go on the undo stack. After the edit, because the rebuild has
+            // already run by then and pointed the chain host at nothing.
+            if (editorState.getSelectedMixerTrackId() == mixerTrackId)
+                editorState.setSelectedMixerTrackId (masterTrackId);
+        });
+}
+
+MixerComponent::Strip* MixerComponent::stripFor (int mixerTrackId) const
+{
+    for (auto* strip : strips)
+        if (strip->getTrackId() == mixerTrackId)
+            return strip;
+
+    return nullptr;
+}
+
+bool MixerComponent::applyMixerTrackMenuChoice (int mixerTrackId, int choice)
+{
+    auto* strip = stripFor (mixerTrackId);
+
+    if (strip == nullptr)
+        return false;
+
+    strip->applyMenuChoice (choice);
+    return true;
+}
+
+juce::StringArray MixerComponent::mixerTrackMenuItems (int mixerTrackId) const
+{
+    auto* strip = stripFor (mixerTrackId);
+
+    if (strip == nullptr)
+        return {};
+
+    // Bound to a named local: PopupMenu::MenuItemIterator keeps a REFERENCE, so
+    // iterating one returned by value walks a destroyed object.
+    const auto menu = strip->buildMenu();
+    return menuItems (menu);
 }
 
 } // namespace dew

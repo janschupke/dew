@@ -2,7 +2,10 @@
 #include <catch2/catch_test_macros.hpp>
 
 #include "engine/MixerBus.h"
+#include "ConfirmSupport.h"
 #include "FixtureProject.h"
+#include "model/ProjectFactory.h"
+#include "ui/design/Tokens.h"
 
 using namespace dew;
 using Catch::Approx;
@@ -446,4 +449,182 @@ TEST_CASE ("dragging a mixer fader is one undo step", "[ui][mixer]")
     document.getUndoManager().undo();
 
     REQUIRE ((double) track[ids::pan] == Approx (panBefore));
+}
+
+namespace
+{
+
+/** Everything a mixer needs, laid out, with the confirmation answered at once -
+    what these tests are about is the edit, not the asking. */
+struct MixerHarness
+{
+    MixerHarness()
+    {
+        document.setState (ProjectFactory::createDefault(), true);
+        mixer.confirmDestructive = dew::testing::alwaysConfirm();
+        mixer.setSize (1000, 700);
+        mixer.setVisible (true);
+        mixer.refresh();
+        mixer.resized();
+    }
+
+    ProjectDocument document;
+    EditorState editorState;
+    MixerComponent mixer { document, editorState };
+};
+
+/** Component::findChildWithID is NOT recursive, and the strips and the add
+    button live inside the viewport's holder. */
+juce::Component* findDescendantWithID (juce::Component& root, const juce::String& id)
+{
+    for (auto* child : root.getChildren())
+    {
+        if (child->getComponentID() == id)
+            return child;
+
+        if (auto* found = findDescendantWithID (*child, id))
+            return found;
+    }
+
+    return nullptr;
+}
+
+constexpr int addInsertChoice = 2;
+constexpr int removeInsertChoice = 3;
+
+} // namespace
+
+TEST_CASE ("a strip's menu offers rename, add and remove", "[mixer][ui]")
+{
+    const juce::ScopedJuceInitialiser_GUI juceInit;
+    MixerHarness h;
+
+    const auto items = h.mixer.mixerTrackMenuItems (1);
+
+    CHECK (items.contains ("Rename"));
+    CHECK (items.contains ("Add insert"));
+    CHECK (items.contains ("Remove insert"));
+
+    // The separator sits immediately above the destructive item, the way the
+    // rack's and the playlist's menus do.
+    CHECK (items.indexOf ("-") == items.indexOf ("Remove insert") - 1);
+
+    CHECK (h.mixer.mixerTrackMenuItems (999).isEmpty());
+    CHECK_FALSE (h.mixer.applyMixerTrackMenuChoice (999, addInsertChoice));
+}
+
+TEST_CASE ("the master strip's menu builds but does not destroy", "[mixer][ui]")
+{
+    const juce::ScopedJuceInitialiser_GUI juceInit;
+    MixerHarness h;
+
+    // The master carries no id property, so it reads as 0 - which is exactly
+    // MixerComponent::masterTrackId, and is why the id-keyed seam reaches it.
+    const auto items = h.mixer.mixerTrackMenuItems (MixerComponent::masterTrackId);
+
+    CHECK (items.contains ("Add insert"));
+    CHECK_FALSE (items.contains ("Rename"));
+    CHECK_FALSE (items.contains ("Remove insert"));
+}
+
+TEST_CASE ("an insert can be added and removed from its own strip", "[mixer][ui]")
+{
+    const juce::ScopedJuceInitialiser_GUI juceInit;
+    MixerHarness h;
+
+    const auto before = ProjectEdits::countMixerTracks (h.document.getState());
+    const auto stripsBefore = h.mixer.getNumStrips();
+    REQUIRE (before == 4);
+
+    REQUIRE (h.mixer.applyMixerTrackMenuChoice (1, addInsertChoice));
+    CHECK (ProjectEdits::countMixerTracks (h.document.getState()) == before + 1);
+    CHECK (h.mixer.getNumStrips() == stripsBefore + 1);
+
+    // Removing rebuilds the strips synchronously, which deletes the Strip whose
+    // applyMenuChoice is still on the stack. If the id were read off a member
+    // after the callback this would be a use-after-free, so the test drives it
+    // and then asks the mixer to paint.
+    REQUIRE (h.mixer.applyMixerTrackMenuChoice (3, removeInsertChoice));
+    CHECK (ProjectEdits::countMixerTracks (h.document.getState()) == before);
+    CHECK_FALSE (ProjectEdits::findMixerTrack (h.document.getState(), 3).isValid());
+
+    juce::Image image (juce::Image::ARGB, h.mixer.getWidth(), h.mixer.getHeight(), true);
+    juce::Graphics g (image);
+    h.mixer.paintEntireComponent (g, true);
+}
+
+TEST_CASE ("removing the selected insert leaves the chain pointed somewhere", "[mixer][ui]")
+{
+    const juce::ScopedJuceInitialiser_GUI juceInit;
+    MixerHarness h;
+
+    h.editorState.setSelectedMixerTrackId (3);
+    h.editorState.dispatchPendingMessages();
+    REQUIRE (h.editorState.getSelectedMixerTrackId() == 3);
+
+    REQUIRE (h.mixer.applyMixerTrackMenuChoice (3, removeInsertChoice));
+    h.editorState.dispatchPendingMessages();
+
+    // Session state, fixed up by the mixer rather than by the edit - it must not
+    // be on the undo stack.
+    CHECK (h.editorState.getSelectedMixerTrackId() == MixerComponent::masterTrackId);
+}
+
+TEST_CASE ("the strip row ends in a way to add one", "[mixer][ui]")
+{
+    const juce::ScopedJuceInitialiser_GUI juceInit;
+    MixerHarness h;
+
+    auto* add = findDescendantWithID (h.mixer, "addMixerTrack");
+    REQUIRE (add != nullptr);
+
+    auto* button = dynamic_cast<juce::Button*> (add);
+    REQUIRE (button != nullptr);
+
+    // It sits past the last strip rather than over it, or it would be an add
+    // button you cannot reach without covering an insert.
+    auto lastStripRight = 0;
+
+    for (auto* child : add->getParentComponent()->getChildren())
+        if (child != add)
+            lastStripRight = juce::jmax (lastStripRight, child->getRight());
+
+    CHECK (add->getX() >= lastStripRight);
+
+    const auto before = ProjectEdits::countMixerTracks (h.document.getState());
+    button->onClick();
+    CHECK (ProjectEdits::countMixerTracks (h.document.getState()) == before + 1);
+}
+
+TEST_CASE ("a strip is one column wide and still holds its controls", "[mixer][ui]")
+{
+    const juce::ScopedJuceInitialiser_GUI juceInit;
+    MixerHarness h;
+
+    auto* add = findDescendantWithID (h.mixer, "addMixerTrack");
+    REQUIRE (add != nullptr);
+
+    auto* holder = add->getParentComponent();
+    auto strips = 0;
+
+    for (auto* strip : holder->getChildren())
+    {
+        if (strip == add)
+            continue;
+
+        ++strips;
+        CHECK (strip->getWidth() == tokens::size::mixerStripWidth);
+
+        // Narrowing a strip until a control collapses is the failure this
+        // catches: every child has to have real bounds inside its strip.
+        for (auto* control : strip->getChildren())
+        {
+            INFO ("control " << control->getComponentID() << " in a strip");
+            CHECK (control->getWidth() > 0);
+            CHECK (control->getHeight() > 0);
+            CHECK (strip->getLocalBounds().contains (control->getBounds()));
+        }
+    }
+
+    CHECK (strips == h.mixer.getNumStrips());
 }

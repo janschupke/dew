@@ -348,6 +348,21 @@ static_assert (trackHeightMin < trackHeightRoomy && trackHeightRoomy < trackHeig
 static_assert (trackHeightMin <= trackHeightDefault && trackHeightDefault <= trackHeightMax,
                "the default has to be reachable");
 inline constexpr int waveformInset = 2; ///< was -2, -2 and -3 in three painters
+
+/** One mixer insert's column.
+
+    The only VERTICAL strip in an application whose other strips are horizontal,
+    which is why it is a width and sits apart from the ladder above rather than
+    inside it. 96 was chosen when the mixer held four inserts and nothing could
+    change that; a mixer is read across, so the number that matters is how many
+    fit at once, and it now has to hold as many as somebody adds.
+*/
+inline constexpr int mixerStripWidth = 72;
+
+static_assert (mixerStripWidth >= knobSm + 2 * space::md + 2 * space::sm,
+               "a strip must hold its pan knob and the insets around it");
+static_assert (mixerStripWidth >= 2 * letterToggle + 2 * space::sm,
+               "a strip must hold M and S side by side");
 } // namespace size
 
 // --- motion ------------------------------------------------------------------

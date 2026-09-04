@@ -85,7 +85,7 @@ it exists to catch.
 dew_shot editor out.png --project examples/melody.dew --tab piano-roll
 dew_shot tabs out                    # one PNG per tab
 dew_shot gallery out.png             # the design system
-dew_shot --help                      # and the four dialogs
+dew_shot --help                      # and the five dialogs
 ```
 
 Screen-recording permission is not always available, and a layout defect is obvious in a
@@ -168,7 +168,11 @@ licence question. Without it the format reports itself unavailable and the rest 
   to add, alt-click to remove.
 - **Mixer** — a fader, pan, mute, solo and a peak meter per insert, plus master; below
   them, the effect chain of the selected strip. Each strip lists the channels routed into
-  it, and clicking one goes there. Solo is resolved across the whole mixer.
+  it, and clicking one goes there. Solo is resolved across the whole mixer. Add an insert
+  from the column past the last strip or from any strip's menu, and remove one from its
+  own; the channels feeding a removed insert move to the first remaining one, in the same
+  undo step. The master is neither renamed nor removed — it is a different node type, so
+  that is structural rather than a check.
 - **Effects** — reverb, filter, delay, drive, chorus and a 3-band EQ, chained up to four
   deep on any channel, mixer track or the master. One editor pointed either way round: an
   accordion down the instrument panel, a row of open cards across the mixer. Drag a card
@@ -260,6 +264,25 @@ keys were live in the tests and nowhere else.
 | `esc` clear selection | — | ✓ | ✓ | — |
 | `del` delete selection | — | ✓ | — | — |
 | ⌘A select all | — | ✓ | — | — |
+
+**The pointer says what is under it.** `ui/design/Cursors.h` names six cursors for the
+gesture rather than for the arrow — `idle`, `clickable`, `value`, `move`, `resizeX`,
+`nib` — the way the colours are named for their role, and a source gate refuses a
+`juce::MouseCursor::` spelled anywhere else. A clip's or a note's body says it can be
+dragged; its right edge says it can be resized; a fader, a knob and a number field say a
+vertical drag changes them; a tool outranks all of it, so with paint or slice selected
+both canvases show a nib. Clips and notes are not components — each editor paints all of
+them into one canvas — so their cursor comes from the same hit test that decides what a
+press does, which is what stops it promising something the press will not do.
+
+**A right-click never presses a button.** `juce::Button` completes a click for whichever
+mouse button pressed it, so a right-click ran every dew button that had no context menu
+of its own. Every button consumes a popup press now, menu or no menu.
+
+**Deleting something that takes others with it asks first** — a pattern and its clips, a
+channel and its notes, a playlist track and its clips, a mixer insert and its effects.
+Removing an effect does not: it destroys only itself. It is all undoable either way; the
+question is about blast radius.
 
 Scrolling and zooming: wheel to scroll, ⌘-wheel or a trackpad pinch to zoom around the
 pointer, shift-wheel to scroll in time, ⌘⇧-wheel to zoom the OTHER axis — lane height in

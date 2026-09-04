@@ -857,6 +857,80 @@ const NodeSpec& clipSpecFor()
 
 } // namespace
 
+// --- the mixer ---------------------------------------------------------------
+
+int ProjectEdits::countMixerTracks (const juce::ValueTree& project)
+{
+    int n = 0;
+
+    for (const auto& child : project.getChildWithName (ids::MIXER))
+        if (child.hasType (ids::MIXER_TRACK))
+            ++n;
+
+    return n;
+}
+
+juce::ValueTree ProjectEdits::addMixerTrack (juce::ValueTree project, const juce::String& name,
+                                             juce::UndoManager* undo)
+{
+    auto mixer = project.getChildWithName (ids::MIXER);
+
+    if (! mixer.isValid() || countMixerTracks (project) >= kMaxMixerTracks)
+        return {};
+
+    // From the spec rather than by hand, for the reason addPlaylistTrack gives.
+    auto track = defaultTreeFor (childSpecFor (childSpecFor (projectSpec(), "mixer"), "tracks"));
+
+    const auto id = nextFreeId (project, ids::MIXER_TRACK);
+    track.setProperty (ids::id, id, nullptr);
+    track.setProperty (ids::name, name.isNotEmpty() ? name : "Insert " + juce::String (id),
+                       nullptr);
+
+    // Appended, with no insert position to work out: the mixer's schema order is
+    // master then tracks*, so the end is already the canonical place.
+    mixer.appendChild (track, undo);
+    return track;
+}
+
+bool ProjectEdits::removeMixerTrack (juce::ValueTree project, juce::ValueTree track,
+                                     juce::UndoManager* undo)
+{
+    // A type check, not a name check, which is what makes the master structurally
+    // unremovable rather than conditionally so.
+    if (! track.isValid() || ! track.hasType (ids::MIXER_TRACK))
+        return false;
+
+    auto mixer = project.getChildWithName (ids::MIXER);
+    const auto index = mixer.indexOf (track);
+
+    if (index < 0 || countMixerTracks (project) <= 1)
+        return false;
+
+    const auto removedId = (int) track[ids::id];
+
+    // The insert every orphaned channel lands on: the first one that is not this.
+    auto survivorId = 0;
+
+    for (const auto& child : mixer)
+        if (child.hasType (ids::MIXER_TRACK) && (int) child[ids::id] != removedId)
+        {
+            survivorId = (int) child[ids::id];
+            break;
+        }
+
+    if (survivorId == 0)
+        return false;
+
+    // In the same transaction as the removal, so a channel is never routed at an
+    // insert that is not there - not even for one undo step.
+    for (auto channel : project)
+        if (channel.hasType (ids::CHANNEL) && (int) channel[ids::mixerTrackId] == removedId)
+            channel.setProperty (ids::mixerTrackId, survivorId, undo);
+
+    mixer.removeChild (index, undo);
+    return true;
+}
+
 juce::ValueTree ProjectEdits::addPlaylistTrack (juce::ValueTree project, const juce::String& name,
                                                 juce::UndoManager* undo)
 {

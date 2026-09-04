@@ -323,6 +323,49 @@ struct ProjectEdits
     */
     static double automationValueAt (const juce::ValueTree& automation, double step);
 
+    // --- the mixer -----------------------------------------------------------
+    /** Appends an insert to the mixer, or an invalid tree if there is no room.
+
+        Refuses past kMaxMixerTracks rather than truncating later: a document
+        holding more inserts than the engine renders is a document with faders
+        that move nothing, which is the same silent wrongness addEffect's cap
+        exists to prevent.
+
+        Ids are allocated the way channels' and patterns' are, so an insert's id
+        is stable for the session and a channel's mixerTrackId keeps meaning
+        what it meant. nextFreeId never returns 0, so a new insert can never
+        collide with the master, which answers to 0 and carries no id at all.
+    */
+    static juce::ValueTree addMixerTrack (juce::ValueTree project, const juce::String& name,
+                                          juce::UndoManager*);
+
+    /** Removes an insert, its effect chain, and the dangling routing it leaves.
+
+        The effects are its children, so they go with it. Channels routed INTO
+        it are re-pointed at the first remaining insert in the same undo step -
+        the alternative is a document buildSnapshot warns about on every rebuild
+        and a channel whose fader is not the one it appears to be under.
+        Re-pointed rather than removed, because a channel is not a clip:
+        removePattern can delete a clip that has lost its pattern, but a channel
+        that has lost its insert is still a channel with notes in it.
+
+        Refuses the master, which is a MASTER node and not a MIXER_TRACK, so
+        that is structural rather than a check. Refuses the last insert, for the
+        reason removePattern refuses the last pattern: addChannel falls back to
+        insert 1 and buildSnapshot leaves a channel unrouted when there are none.
+
+        Deliberately does NOT touch the editor's selected insert. That is
+        session state, it lives in EditorState, and it must not go on the undo
+        stack; the mixer fixes it up itself.
+
+        @returns true if the insert was removed.
+    */
+    static bool removeMixerTrack (juce::ValueTree project, juce::ValueTree track,
+                                  juce::UndoManager*);
+
+    /** How many inserts the mixer holds, master excluded. */
+    static int countMixerTracks (const juce::ValueTree& project);
+
     // --- playlist ------------------------------------------------------------
     /** Appends a track to the arrangement.
 
