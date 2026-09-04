@@ -131,26 +131,26 @@
   "site": {
     "name": "dew",
     "tagline": "A desktop synth DAW where the song can be written as text.",
-    "status": "Working prototype, on macOS, Windows and Linux. Every layer is built and wired to the next.",
+    "status": "Working prototype, on macOS, Windows and Linux.",
     "skipToContent": "Skip to content"
   },
   "download": {
     "title": "Download",
-    "lead": "Builds of dew for macOS, Windows and Linux, from the latest release. It is a working prototype: everything works end to end, and it is not a product.",
+    "lead": "Builds of dew for macOS, Windows and Linux, from the latest release. It is a working prototype.",
     "getTitle": "Get it",
-    "getBody": "Every link points at the latest release, so a bookmark keeps working. Older versions stay on the releases page for as long as GitHub keeps them, which is indefinitely.",
+    "getBody": "Every link points at the latest release, so a bookmark keeps working. Older versions stay on the releases page.",
     "platformHeading": "Platform",
     "fileHeading": "File",
     "whatHeading": "What it is",
     "firstRunTitle": "The first time you run it",
-    "firstRunBody": "None of these builds is signed, because a certificate costs money every year and this is a prototype a handful of people run. Both desktop systems will say so, in language designed to frighten. Here is exactly what each one does, so nothing about it is a surprise.",
+    "firstRunBody": "None of these builds is signed, because a certificate costs money every year and this is a prototype. macOS and Windows each block an unsigned application the first time it runs.",
     "verifyTitle": "Checking what you downloaded",
-    "verifyBody": "Every release carries SHA256SUMS.txt, and every asset is covered by a build attestation signed through Sigstore — which records the repository, the workflow and the commit that produced it, not merely that somebody signed something.",
+    "verifyBody": "Every release carries SHA256SUMS.txt, and every asset is covered by a Sigstore build attestation. The attestation records the repository, the workflow and the commit the file was built from.",
     "checksumsLabel": "SHA256SUMS.txt",
     "allReleases": "All releases",
     "buildTitle": "Or build it yourself",
-    "buildBody": "Three commands on macOS, and the same CMake presets on the other two platforms. Building from source is also the answer to every warning above.",
+    "buildBody": "Three commands on macOS, and the same CMake presets on Windows and Linux. A binary you build yourself is subject to none of the warnings above.",
     "buildCta": "How to build it",
-    "mp3Note": "One thing a build of your own has that these do not: MP3 export. dew drives an installed lame binary as a child process rather than shipping an encoder, so the option is greyed out until lame is on your PATH."
+    "mp3Note": "MP3 export needs lame installed separately. dew runs it as a child process rather than shipping an encoder, so the option stays greyed out until lame is on your PATH. WAV and FLAC need nothing."
   }
 }

@@ -9,8 +9,8 @@
  *  holding an asset of that name, so this page needs no API call - which it
  *  could not make anyway, since the site fetches nothing at runtime and
  *  api.github.com rate-limits by IP - and no generated file. It also cannot
- *  advertise a version whose build has not finished: a version bump deploys
- *  here in a minute and the three builds take twenty.
+ *  advertise a version whose build has not finished: the site deploys on a
+ *  push and the three builds land after it.
  *
  *  The asset names are asserted against .github/workflows/release.yml by
  *  tests/download.test.ts, so a renamed artefact fails a test naming the file
@@ -22,9 +22,9 @@ export interface Download {
   readonly platform: string;
   readonly asset: string;
   readonly what: string;
-  /** What the operating system says the first time, said plainly. None of these
-   *  builds is signed, and a download page that let somebody discover that from
-   *  a scary dialog would have chosen to surprise them. */
+  /** What the operating system says the first time. None of these builds is
+   *  signed, so every entry has something to say here; tests/download.test.ts
+   *  refuses one that does not. */
   readonly firstLaunch: string;
 }
 
@@ -34,7 +34,7 @@ export const downloads: readonly Download[] = [
     asset: 'dew-macos-universal.dmg',
     what: 'Apple Silicon and Intel in one binary. Open it and drag dew to Applications.',
     firstLaunch:
-      'macOS will refuse it: “Apple could not verify dew is free of malware.” Open System Settings → Privacy & Security, scroll to Security, and press Open Anyway — the button only appears for about an hour after the refusal. This is what an unsigned application looks like on macOS 15 and later; the Control-click shortcut that used to work was removed.',
+      'macOS will refuse it: “Apple could not verify dew is free of malware.” Open System Settings → Privacy & Security, scroll to Security, and press Open Anyway. On macOS 15 and later that is the only route: the Control-click shortcut that used to work was removed.',
   },
   {
     platform: 'Windows 10 or 11, x64',
@@ -46,7 +46,7 @@ export const downloads: readonly Download[] = [
   {
     platform: 'Windows, portable',
     asset: 'dew-windows-x64.zip',
-    what: 'The same program in a folder. No uninstall entry, no Start menu, no .dew file association.',
+    what: 'The same program in a folder. No uninstall entry and no Start menu shortcut.',
     firstLaunch: 'The same SmartScreen prompt as the installer.',
   },
   {
@@ -65,13 +65,12 @@ export const downloads: readonly Download[] = [
   },
 ] as const;
 
-/** The one file that is not a program: what every asset above hashes to. */
+/** The checksums file every release carries. */
 export const checksumsAsset = 'SHA256SUMS.txt';
 
 export const downloadUrl = (asset: string) => `${repositoryUrl}/releases/latest/download/${asset}`;
 
-/** Every release ever cut, which is the archive of old versions: GitHub keeps
- *  each tag's assets indefinitely, so there is nothing else to build. */
+/** Every release, which is the archive of old versions. */
 export const releasesUrl = `${repositoryUrl}/releases`;
 
 /** Verifying a download, as a command rather than a paragraph. */

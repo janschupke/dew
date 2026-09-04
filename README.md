@@ -23,7 +23,7 @@ the whole application and run the whole suite in CI, on every push.
 | Windows 10/11 x64 | [`dew-windows-x64-setup.exe`](https://github.com/janschupke/dew/releases/latest/download/dew-windows-x64-setup.exe) · [`dew-windows-x64.zip`](https://github.com/janschupke/dew/releases/latest/download/dew-windows-x64.zip) |
 | Linux x86_64, glibc 2.35+ | [`dew-linux-x86_64.AppImage`](https://github.com/janschupke/dew/releases/latest/download/dew-linux-x86_64.AppImage) · [`dew-linux-x86_64.tar.gz`](https://github.com/janschupke/dew/releases/latest/download/dew-linux-x86_64.tar.gz) |
 
-Those links carry no version and never break: GitHub resolves
+Those links carry no version: GitHub resolves
 `releases/latest/download/<asset>` to the newest release holding that name. Every release
 also carries `SHA256SUMS.txt` and a Sigstore build attestation —
 `gh attestation verify <file> --repo janschupke/dew` says which workflow and which commit
@@ -32,15 +32,14 @@ produced it.
 **None of these builds is signed.** macOS will refuse the first launch and send you to
 System Settings → Privacy & Security → Open Anyway; Windows will show SmartScreen's
 "Windows protected your PC" and hide the button behind More info. A certificate costs
-money every year and this is a prototype. The site's `/download/` page says exactly what
-each system does, in the words it uses.
+money every year and this is a prototype. The site's `/download/` page says what each
+system does, in the words it uses.
 
-**MP3 export is unavailable in a downloaded build.** dew drives an installed `lame` as a
-child process rather than shipping an encoder, so the option greys itself out until one is
-on `PATH`. See [Dependencies](#dependencies).
+**MP3 export needs `lame` installed separately**, in any build. dew runs it as a child
+process rather than shipping an encoder, so the option greys itself out until one is on
+`PATH`. See [Dependencies](#dependencies).
 
-Old versions stay on [the releases page](https://github.com/janschupke/dew/releases) for
-as long as GitHub keeps them, which is indefinitely.
+Old versions stay on [the releases page](https://github.com/janschupke/dew/releases).
 
 ## Build
 

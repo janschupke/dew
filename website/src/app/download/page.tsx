@@ -21,16 +21,14 @@ export const metadata: Metadata = { title: `${t('download.title')} — ${t('site
     fetch here and there is no generated file: the site fetches nothing at
     runtime by design (next.config.ts says why), api.github.com allows sixty
     requests an hour per IP so one office behind one address would exhaust it
-    for everybody in it, and a version baked in at build time would be wrong for
-    the twenty minutes between a version bump deploying and its builds landing.
+    for everybody in it, and a version baked in at build time would be wrong
+    between a version bump deploying and its builds landing.
 
     The page therefore names no version at all. The releases page has them, the
     DMG's volume has one, and so does the running program.
 
-    The first-launch copy is the part worth defending. None of these builds is
-    signed, and both desktop systems say so in language designed to alarm. A
-    download page that let somebody meet that dialog cold would have chosen to
-    frighten them; saying it first costs a paragraph.
+    The first-launch section is here because none of these builds is signed and
+    both desktop systems block one on first run.
 */
 function Commands({ lines }: { lines: readonly string[] }) {
   return (
