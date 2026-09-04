@@ -386,6 +386,28 @@ private:
     */
     void collectAutomation (const EngineSnapshot&, double positionSteps) noexcept;
 
+    // --- the stages of one block ---------------------------------------------
+    //
+    // processBlock was 313 lines doing nine things in a row. These are those
+    // things, named. Each is private, noexcept and takes the snapshot by
+    // reference: nothing on this path may copy a snapshot entry, and
+    // RealtimeTests guards that.
+
+    /** Applies this block's wrap window; returns whether the user's loop moved. */
+    bool applyLoopWindow (Transport::Mode mode, int materialSteps) noexcept;
+
+    void applyTransportRequests (bool loopChanged) noexcept;
+
+    void collectBlockEvents (const EngineSnapshot&, Transport::Mode mode, int patternIndex,
+                             int materialSteps, bool isPlayingNow, int numSamples,
+                             int numChannels) noexcept;
+
+    void renderChannels (const EngineSnapshot&, int numChannels, int numMixerTracks, int numSamples,
+                         bool isPlayingNow, Transport::Mode mode) noexcept;
+
+    void sumMixerTracks (const EngineSnapshot&, int numMixerTracks, int numSamples, float* outLeft,
+                         float* outRight) noexcept;
+
     /** The only things automation may move on a channel, and nothing else.
 
         A distinct type rather than a copy of ChannelSnapshot, and that is the

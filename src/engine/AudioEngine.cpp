@@ -704,31 +704,13 @@ void AudioEngine::resolveModules (EngineSnapshot& snapshot)
     resolve (snapshot.masterEffects);
 }
 
-void AudioEngine::processBlock (juce::AudioBuffer<float>& buffer) noexcept
+/** The window this block wraps in, applied to the transport.
+
+    Returns whether the user's loop changed since the last block, which
+    applyTransportRequests needs and nothing else does.
+*/
+bool AudioEngine::applyLoopWindow (Transport::Mode mode, int materialSteps) noexcept
 {
-    buffer.clear();
-
-    const auto numSamples = buffer.getNumSamples();
-
-    if (numSamples <= 0 || buffer.getNumChannels() < 2)
-        return;
-
-    // One latch per block; the reference is stable until the next acquire().
-    const auto& snapshot = bridge.acquire();
-    applySnapshotIfChanged (snapshot);
-
-    // Every block, not only when the generation changes: the bridge can hand
-    // back a different slot holding the same generation, and a raw pointer into
-    // the previous one would outlive it.
-    transport.setTempoMap (snapshot.tempoMap.get());
-
-    const auto mode = requestedMode.load();
-    transport.setMode (mode);
-
-    const auto patternIndex = snapshot.patternIndexForId (requestedPatternId.load());
-
-    const auto materialSteps = Sequencer::materialLengthSteps (snapshot, mode, patternIndex);
-
     // The material's own extent is the default window, exactly as before. A
     // user's loop replaces it, clamped to the material - a loop past the end of
     // a pattern is not a shorter pattern, it is nothing to play.
@@ -761,6 +743,15 @@ void AudioEngine::processBlock (juce::AudioBuffer<float>& buffer) noexcept
     // this block will and cannot work the window out for itself.
     appliedWrap.store ({ (float) wrapStart, (float) wrapEnd }, std::memory_order_relaxed);
 
+    return loopChanged;
+}
+
+/** Seeks, rewinds and the one case where a loop should snap rather than fold.
+
+    Order is load-bearing and the comments below say why.
+*/
+void AudioEngine::applyTransportRequests (bool loopChanged) noexcept
+{
     if (seekRequested.exchange (false))
     {
         const auto sps = Transport::samplesPerStepFor (
@@ -809,9 +800,15 @@ void AudioEngine::processBlock (juce::AudioBuffer<float>& buffer) noexcept
         // ahead of it any more.
         resetAllInstruments();
     }
+}
 
-    const auto isPlayingNow = playing.load();
-
+/** Everything the instruments will read: notes starting in this block, the
+    automation covering it, and the scratch buffers cleared to take them.
+*/
+void AudioEngine::collectBlockEvents (const EngineSnapshot& snapshot, Transport::Mode mode,
+                                      int patternIndex, int materialSteps, bool isPlayingNow,
+                                      int numSamples, int numChannels) noexcept
+{
     // Even when stopped, voices keep rendering so a note released at the moment
     // of stopping finishes its tail instead of clicking off.
     if (isPlayingNow && materialSteps > 0)
@@ -831,9 +828,6 @@ void AudioEngine::processBlock (juce::AudioBuffer<float>& buffer) noexcept
                                          / juce::jmax (1.0, transport.samplesPerStep()));
     else
         activeAutomation.clear();
-
-    const auto numChannels = juce::jmin ((int) snapshot.channels.size(), kMaxChannels);
-    const auto numMixerTracks = juce::jmin ((int) snapshot.mixerTracks.size(), kMaxMixerTracks);
 
     channelBuffers.clear (0, numSamples);
     mixerBuffers.clear (0, numSamples);
@@ -863,7 +857,13 @@ void AudioEngine::processBlock (juce::AudioBuffer<float>& buffer) noexcept
                        { NoteEvent::Kind::on, trigger.sampleOffset, trigger.pitch, trigger.velocity,
                          trigger.durationSamples });
     }
+}
 
+/** Each channel's instrument into its mixer track, through its effect chain. */
+void AudioEngine::renderChannels (const EngineSnapshot& snapshot, int numChannels,
+                                  int numMixerTracks, int numSamples, bool isPlayingNow,
+                                  Transport::Mode mode) noexcept
+{
     // --- render channels into their mixer tracks -----------------------------
     // Everything an instrument needs that does not vary by channel.
     InstrumentContext blockContext;
@@ -962,11 +962,12 @@ void AudioEngine::processBlock (juce::AudioBuffer<float>& buffer) noexcept
         juce::FloatVectorOperations::add (trackLeft, scratchLeft, numSamples);
         juce::FloatVectorOperations::add (trackRight, scratchRight, numSamples);
     }
+}
 
-    // --- mixer tracks into the master ----------------------------------------
-    auto* outLeft = buffer.getWritePointer (0);
-    auto* outRight = buffer.getWritePointer (1);
-
+/** The mixer tracks summed into the master pair, metered as they go. */
+void AudioEngine::sumMixerTracks (const EngineSnapshot& snapshot, int numMixerTracks,
+                                  int numSamples, float* outLeft, float* outRight) noexcept
+{
     for (int i = 0; i < numMixerTracks; ++i)
     {
         const auto& track = snapshot.mixerTracks[(size_t) i];
@@ -999,6 +1000,51 @@ void AudioEngine::processBlock (juce::AudioBuffer<float>& buffer) noexcept
         recordPeak (trackPeaks[(size_t) i], mixerBuffers.getReadPointer (i * 2),
                     mixerBuffers.getReadPointer (i * 2 + 1), numSamples, gains.meter);
     }
+}
+
+void AudioEngine::processBlock (juce::AudioBuffer<float>& buffer) noexcept
+{
+    buffer.clear();
+
+    const auto numSamples = buffer.getNumSamples();
+
+    if (numSamples <= 0 || buffer.getNumChannels() < 2)
+        return;
+
+    // One latch per block; the reference is stable until the next acquire().
+    const auto& snapshot = bridge.acquire();
+    applySnapshotIfChanged (snapshot);
+
+    // Every block, not only when the generation changes: the bridge can hand
+    // back a different slot holding the same generation, and a raw pointer into
+    // the previous one would outlive it.
+    transport.setTempoMap (snapshot.tempoMap.get());
+
+    const auto mode = requestedMode.load();
+    transport.setMode (mode);
+
+    const auto patternIndex = snapshot.patternIndexForId (requestedPatternId.load());
+
+    const auto materialSteps = Sequencer::materialLengthSteps (snapshot, mode, patternIndex);
+
+    const auto numChannels = juce::jmin ((int) snapshot.channels.size(), kMaxChannels);
+    const auto numMixerTracks = juce::jmin ((int) snapshot.mixerTracks.size(), kMaxMixerTracks);
+
+    const auto loopChanged = applyLoopWindow (mode, materialSteps);
+
+    applyTransportRequests (loopChanged);
+
+    const auto isPlayingNow = playing.load();
+
+    collectBlockEvents (snapshot, mode, patternIndex, materialSteps, isPlayingNow, numSamples,
+                        numChannels);
+
+    renderChannels (snapshot, numChannels, numMixerTracks, numSamples, isPlayingNow, mode);
+
+    auto* outLeft = buffer.getWritePointer (0);
+    auto* outRight = buffer.getWritePointer (1);
+
+    sumMixerTracks (snapshot, numMixerTracks, numSamples, outLeft, outRight);
 
     // On the summed mix, before the master fader - so the fader rides the
     // processed signal rather than the effects riding the fader.
