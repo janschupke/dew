@@ -1,4 +1,5 @@
-import type { ComponentPropsWithoutRef, ReactNode } from 'react';
+import Link from 'next/link';
+import type { ReactNode } from 'react';
 
 /** A button in one of the design system's four roles.
  *
@@ -15,6 +16,12 @@ import type { ComponentPropsWithoutRef, ReactNode } from 'react';
  *  `surface-hover` (#343941), which is a darker colour doing a different job.
  *  Reaching for the token whose name says "hover" is the obvious mistake here,
  *  and it renders visibly wrong.
+ *
+ *  An INTERNAL href goes through next/link. This rendered a bare anchor, so the
+ *  two calls to action on the home page - the two links most likely to be the
+ *  first thing anybody clicks - threw the loaded application away and fetched
+ *  the next page from scratch. An external one stays an anchor: next/link has
+ *  nothing to prefetch off-origin.
  */
 export type ButtonVariant = 'normal' | 'primary' | 'ghost' | 'danger';
 
@@ -35,16 +42,38 @@ const variants: Record<ButtonVariant, string> = {
 
 const base =
   'inline-flex items-center justify-center rounded-sm border-hairline ' +
-  'px-lg py-sm text-body font-sans transition-colors duration-[--motion-quick-ms]';
+  'px-stack py-md text-prose font-sans transition-colors duration-[--motion-quick-ms]';
 
-type Props = ComponentPropsWithoutRef<'a'> & {
+/** Deliberately not `ComponentPropsWithoutRef<'a'>`.
+ *
+ *  next/link's props are stricter than an anchor's under
+ *  `exactOptionalPropertyTypes`, so spreading three hundred optional anchor
+ *  attributes into it does not type - and every call site passes four things.
+ *  A button on this site is a link with a role; it is not an escape hatch to
+ *  the whole anchor surface.
+ */
+interface Props {
   variant?: ButtonVariant;
+  href: string;
+  className?: string;
   children: ReactNode;
-};
+}
 
-export function Button({ variant = 'normal', className = '', children, ...rest }: Props) {
+const isInternal = (href: string) => href.startsWith('/');
+
+export function Button({ variant = 'normal', href, className = '', children }: Props) {
+  const classes = `${base} ${variants[variant]} ${className}`;
+
+  if (isInternal(href)) {
+    return (
+      <Link href={href} className={classes}>
+        {children}
+      </Link>
+    );
+  }
+
   return (
-    <a {...rest} className={`${base} ${variants[variant]} ${className}`}>
+    <a href={href} className={classes}>
       {children}
     </a>
   );

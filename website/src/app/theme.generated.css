@@ -129,14 +129,86 @@
 @utility border-whisper {
   border-width: var(--stroke-whisper);
 }
+@utility border-t-whisper {
+  border-top-width: var(--stroke-whisper);
+}
+@utility border-r-whisper {
+  border-right-width: var(--stroke-whisper);
+}
+@utility border-b-whisper {
+  border-bottom-width: var(--stroke-whisper);
+}
+@utility border-l-whisper {
+  border-left-width: var(--stroke-whisper);
+}
+@utility border-x-whisper {
+  border-inline-width: var(--stroke-whisper);
+}
+@utility border-y-whisper {
+  border-block-width: var(--stroke-whisper);
+}
 @utility border-hairline {
   border-width: var(--stroke-hairline);
+}
+@utility border-t-hairline {
+  border-top-width: var(--stroke-hairline);
+}
+@utility border-r-hairline {
+  border-right-width: var(--stroke-hairline);
+}
+@utility border-b-hairline {
+  border-bottom-width: var(--stroke-hairline);
+}
+@utility border-l-hairline {
+  border-left-width: var(--stroke-hairline);
+}
+@utility border-x-hairline {
+  border-inline-width: var(--stroke-hairline);
+}
+@utility border-y-hairline {
+  border-block-width: var(--stroke-hairline);
 }
 @utility border-regular {
   border-width: var(--stroke-regular);
 }
+@utility border-t-regular {
+  border-top-width: var(--stroke-regular);
+}
+@utility border-r-regular {
+  border-right-width: var(--stroke-regular);
+}
+@utility border-b-regular {
+  border-bottom-width: var(--stroke-regular);
+}
+@utility border-l-regular {
+  border-left-width: var(--stroke-regular);
+}
+@utility border-x-regular {
+  border-inline-width: var(--stroke-regular);
+}
+@utility border-y-regular {
+  border-block-width: var(--stroke-regular);
+}
 @utility border-bold {
   border-width: var(--stroke-bold);
+}
+@utility border-t-bold {
+  border-top-width: var(--stroke-bold);
+}
+@utility border-r-bold {
+  border-right-width: var(--stroke-bold);
+}
+@utility border-b-bold {
+  border-bottom-width: var(--stroke-bold);
+}
+@utility border-l-bold {
+  border-left-width: var(--stroke-bold);
+}
+@utility border-x-bold {
+  border-inline-width: var(--stroke-bold);
+}
+@utility border-y-bold {
+  border-block-width: var(--stroke-bold);
 }
 @utility text-primary {
   color: var(--color-text-primary);

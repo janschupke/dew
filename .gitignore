@@ -19,3 +19,7 @@ CMakeUserPresets.json
 /website/.next/
 /website/out/
 /website/tsconfig.tsbuildinfo
+
+# Vercel's local state. vercel.json at the root is committed and is the whole
+# of the configuration; this is what `vercel` writes beside it.
+/.vercel/

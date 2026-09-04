@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 
-import { Lead, Section } from '@/ui/Prose';
+import { Container } from '@/ui/Surface';
+import { P, PageHeader, Section } from '@/ui/Prose';
 import { Shot } from '@/ui/Shot';
 import { tokens } from '@/lib/tokens';
 import { t } from '@/lib/strings';
@@ -50,59 +51,64 @@ function Scale({ name, entries }: { name: string; entries: Readonly<Record<strin
 
 export default function Design() {
   return (
-    <div className="py-xxl">
-      <h1 className="text-h1 text-primary font-semibold">{t('design.title')}</h1>
-      <Lead>{t('design.lead')}</Lead>
+    <>
+      <PageHeader title={t('design.title')} lead={t('design.lead')} />
 
-      <Section title={t('design.coloursTitle')}>
-        <p className="text-prose text-secondary max-w-[68ch]">{t('design.coloursBody')}</p>
+      <Container className="pb-section">
+        <Section title={t('design.coloursTitle')}>
+          <P>{t('design.coloursBody')}</P>
 
-        <ul className="mt-xl gap-lg grid sm:grid-cols-2 lg:grid-cols-3">
-          {Object.entries(tokens.colour).map(([name, value]) => (
-            <Swatch key={name} name={name} value={value} />
-          ))}
-        </ul>
-      </Section>
+          <ul className="mt-stack gap-lg grid sm:grid-cols-2 lg:grid-cols-3">
+            {Object.entries(tokens.colour).map(([name, value]) => (
+              <Swatch key={name} name={name} value={value} />
+            ))}
+          </ul>
+        </Section>
 
-      <Section title={t('design.liftTitle')}>
-        <p className="text-prose text-secondary max-w-[68ch]">{t('design.liftBody')}</p>
+        <Section title={t('design.liftTitle')}>
+          <P>{t('design.liftBody')}</P>
 
-        <ul className="mt-xl gap-lg grid sm:grid-cols-2 lg:grid-cols-3">
-          {Object.entries(tokens.lift).map(([name, value]) => (
-            <Swatch key={name} name={name} value={value} />
-          ))}
-        </ul>
-      </Section>
+          <ul className="mt-stack gap-lg grid sm:grid-cols-2 lg:grid-cols-3">
+            {Object.entries(tokens.lift).map(([name, value]) => (
+              <Swatch key={name} name={name} value={value} />
+            ))}
+          </ul>
+        </Section>
 
-      <Section title={t('design.rampTitle')}>
-        <p className="text-prose text-secondary max-w-[68ch]">{t('design.rampBody')}</p>
+        <Section title={t('design.rampTitle')}>
+          <P>{t('design.rampBody')}</P>
 
-        <ul className="mt-xl gap-md flex flex-wrap">
-          {tokens.channelRamp.map((value, i) => (
-            <li key={value} className="text-center">
-              <span
-                aria-hidden
-                className="size-xxl block rounded-sm"
-                style={{ backgroundColor: `var(--color-channel-${String(i)})` }}
-              />
-              <span className="mt-xs text-caption text-disabled block font-mono">{value}</span>
-            </li>
-          ))}
-        </ul>
-      </Section>
+          <ul className="mt-stack gap-md flex flex-wrap">
+            {tokens.channelRamp.map((value, i) => (
+              <li key={value} className="text-center">
+                <span
+                  aria-hidden
+                  className="size-xxl block rounded-sm"
+                  style={{ backgroundColor: `var(--color-channel-${String(i)})` }}
+                />
+                <span className="mt-xs text-caption text-disabled block font-mono">{value}</span>
+              </li>
+            ))}
+          </ul>
+        </Section>
 
-      <Section title={t('design.scalesTitle')}>
-        <div className="gap-xxl grid sm:grid-cols-2 lg:grid-cols-3">
-          <Scale name="space" entries={tokens.space} />
-          <Scale name="radius" entries={tokens.radius} />
-          <Scale name="stroke" entries={tokens.stroke} />
-          <Scale name="type" entries={tokens.type} />
-          <Scale name="motion" entries={tokens.motion} />
-          <Scale name="emphasis" entries={tokens.emphasis} />
-        </div>
-      </Section>
+        <Section title={t('design.scalesTitle')}>
+          <div className="gap-section grid sm:grid-cols-2 lg:grid-cols-3">
+            <Scale name="space" entries={tokens.space} />
+            <Scale name="radius" entries={tokens.radius} />
+            <Scale name="stroke" entries={tokens.stroke} />
+            <Scale name="type" entries={tokens.type} />
+            <Scale name="motion" entries={tokens.motion} />
+            <Scale name="emphasis" entries={tokens.emphasis} />
+          </div>
+        </Section>
 
-      <Shot name="gallery" alt={t('design.galleryCaption')} caption={t('design.galleryCaption')} />
-    </div>
+        <Shot
+          name="gallery"
+          alt={t('design.galleryCaption')}
+          caption={t('design.galleryCaption')}
+        />
+      </Container>
+    </>
   );
 }

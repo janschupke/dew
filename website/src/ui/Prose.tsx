@@ -1,5 +1,7 @@
 import type { ReactNode } from 'react';
 
+import { Container } from '@/ui/Surface';
+
 /** A schema doc string, rendered.
  *
  *  The `doc` strings in src/lang/Schema.cpp carry markdown code spans -
@@ -26,8 +28,29 @@ export function Doc({ children }: { children: string }) {
   );
 }
 
+/** Body copy, at the measure. Every paragraph on the site that is meant to be
+ *  READ goes through this or carries the same three classes: `text-prose`,
+ *  `leading-prose` and a 68ch column. */
+export function P({ className = '', children }: { className?: string; children: ReactNode }) {
+  return (
+    <p className={`text-prose leading-prose text-secondary max-w-[68ch] ${className}`}>
+      {children}
+    </p>
+  );
+}
+
 export function Lead({ children }: { children: ReactNode }) {
-  return <p className="text-lead text-secondary max-w-[68ch]">{children}</p>;
+  return <p className="text-lead text-secondary mt-stack max-w-[68ch] leading-snug">{children}</p>;
+}
+
+/** A page's opening: the h1 and its lead, on the page's own column. */
+export function PageHeader({ title, lead }: { title: string; lead: string }) {
+  return (
+    <Container className="pt-section pb-stack">
+      <h1 className="text-h1 text-primary leading-tight font-semibold tracking-tight">{title}</h1>
+      <Lead>{lead}</Lead>
+    </Container>
+  );
 }
 
 export function Section({
@@ -40,8 +63,10 @@ export function Section({
   children: ReactNode;
 }) {
   return (
-    <section {...(id ? { id } : {})} className="scroll-mt-xxl py-xxl">
-      <h2 className="mb-lg text-h2 text-primary font-semibold">{title}</h2>
+    <section {...(id ? { id } : {})} className="scroll-mt-band py-section">
+      <h2 className="mb-stack text-h2 text-primary leading-snug font-semibold tracking-tight">
+        {title}
+      </h2>
       {children}
     </section>
   );

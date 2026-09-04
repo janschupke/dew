@@ -10,14 +10,16 @@
     "design": "Design system",
     "score": "Score language",
     "reference": "Reference",
-    "source": "Source"
+    "source": "Source",
+    "setup": "Setup"
   },
   "home": {
     "intro": "A channel rack with a step grid, a piano roll, a playlist of clips and a mixer, driven by a three-oscillator synth per channel — or by a recording, or by a song written as text and compiled to notes.",
     "readFeatures": "What it does",
     "readScore": "The score language",
     "tabsTitle": "Five tabs",
-    "tabsBody": "The same notes, seen four ways, and a fifth tab that writes them for you."
+    "tabsBody": "The same notes, seen four ways, and a fifth tab that writes them for you.",
+    "readSetup": "Build it"
   },
   "features": {
     "title": "What it does",
@@ -65,6 +67,36 @@
   },
   "footer": {
     "licence": "JUCE 9 is dual-licensed; dew is a personal prototype used under the AGPLv3 terms.",
-    "generated": "The reference and every colour on this site are generated from the source."
+    "generated": "The reference and every colour on this site are generated from the source.",
+    "docsTitle": "Documentation",
+    "projectTitle": "Project",
+    "sourceLabel": "Source on GitHub",
+    "readmeLabel": "README",
+    "rulesLabel": "Rules and reasoning"
+  },
+  "setup": {
+    "title": "Setup",
+    "lead": "dew builds from source on macOS in three commands. There is no release to download: it is a working prototype, and the thing you would be downloading is a build of this repository.",
+    "requirementsTitle": "What you need",
+    "requirementsBody": "macOS, and nothing that is not already on a machine somebody writes software on. brew bundle installs the rest from the Brewfile in the repository root.",
+    "buildTitle": "Build it",
+    "buildBody": "The first configure fetches JUCE and Catch2 from source — a few seconds, shallow, cached per machine under ~/.cache/CPM — so one build is slow and the rest are not.",
+    "presetsTitle": "The presets",
+    "presetsBody": "Presets rather than raw flags, so the flags a build was made with are in the repository rather than in somebody's shell history.",
+    "runTitle": "Run it",
+    "runBody": "Then Demos → Getting Started in the menu bar. There are eight, and each one is the demo for a different part of the app rather than eight versions of the same song.",
+    "checkTitle": "The gate",
+    "checkBody": "One command, running everything CI runs, in the order that fails cheapest first: the dependency pins and the formatting need no build, so a bad pin or an unformatted file is reported in seconds rather than after a compile.",
+    "platformNote": "macOS only. Nothing here has been built or run on another platform, and the parts that could be — the score language compiles under gcc and libstdc++ in CI — are the parts that link nothing.",
+    "sourceCta": "The repository",
+    "nameHeading": "Preset",
+    "whatHeading": "What it is",
+    "toolHeading": "Tool",
+    "needHeading": "What it is for"
+  },
+  "notFound": {
+    "title": "Not here",
+    "body": "That page does not exist. The site is six pages, and they are all in the header.",
+    "home": "Back to the start"
   }
 }

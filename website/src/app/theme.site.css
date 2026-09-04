@@ -1,19 +1,71 @@
 /*  NOT from src/ui/design/Tokens.h.
 
-    dew's type ladder tops out at type::display = 20px, because the largest text
-    in a DAW is a panel heading. A landing page needs a hero, and inventing one
-    inside theme.generated.css would be claiming the application declares a rung
-    it does not. These four are the website's, and this file is where that is
-    visible.
+    Everything the site paints that the APPLICATION also has an opinion about -
+    every colour, radius, stroke, motion duration and code rung - comes from
+    theme.generated.css and is the application's. What is here is what a page
+    needs and a DAW has no answer for, and each rung says which of the two it
+    is.
 
-    Everything else the site paints - every colour, radius, stroke, gap, motion
-    duration and code rung - comes from the generated file and is the
-    application's.
+    ── Type ─────────────────────────────────────────────────────────────────
+
+    dew's type ladder is 11, 12, 13, 15 and 20px, and it is right: those are
+    panel-chrome sizes, measured against the boxes a caption has to fit inside
+    at arm's length on a 1440px window. They are not reading sizes. This site
+    was built out of them - `text-body` was 13px and was the most-used class on
+    it, so the nav, the card copy, the reference tables and the buttons were all
+    set two rungs below what a page is read at - and the result was a DAW's
+    chrome stretched over a website.
+
+    So the site has a reading ladder of its own. `prose` is the body rung and
+    `fine` is the one below it, for a table cell or a caption; the four above
+    are the headings, and `hero` exists because a landing page needs one and
+    `type::display` at 20px is a panel heading.
+
+    ── Line height ──────────────────────────────────────────────────────────
+
+    The application declares none: JUCE draws a caption inside a box whose
+    height the size ladder already fixed, so there is nothing to state. A page
+    has nothing fixing it, and the browser default is too tight for a 68ch
+    measure - so these three are stated here, and prose gets the loose one.
+
+    ── Rhythm ───────────────────────────────────────────────────────────────
+
+    `space::xxl` is 24px and is the top of the application's scale, because 24px
+    is a generous gutter between two panels. It was also the largest gap this
+    site could put between two page sections, which is why everything on it
+    sat in one undifferentiated column. These four are page rhythm - a gutter, a
+    gap between stacked blocks, the air around a section, and the padding of a
+    full-bleed band - and they start above where the application's scale stops
+    rather than restating any part of it.
+
+    ── A rung's NAME is not free ────────────────────────────────────────────
+
+    `--spacing-stack` was `--spacing-block` for about an hour, and that one word
+    silently broke the site. Every `--spacing-*` key feeds every sizing family
+    Tailwind has, `inline-size` among them - so declaring `block` generated an
+    `inline-block` utility meaning `inline-size: 2.5rem`, which beat the
+    built-in `display: inline-block` and set five nav links to 40px wide
+    regardless of their text. The markup was right, the tokens were right, the
+    gates passed, and only the computed style knew.
+
+    So a rung may not be named after a CSS keyword a Tailwind utility already
+    ends in. `tests/utilities.test.ts` holds the list.
 */
 @theme {
-  --text-prose: 1rem;
-  --text-lead: 1.1875rem;
-  --text-h2: 1.75rem;
-  --text-h1: 2.5rem;
-  --text-hero: 3.25rem;
+  --text-fine: 0.875rem;
+  --text-prose: 1.0625rem;
+  --text-lead: 1.3125rem;
+  --text-h3: 1.375rem;
+  --text-h2: 1.875rem;
+  --text-h1: 2.75rem;
+  --text-hero: 3.5rem;
+
+  --leading-tight: 1.1;
+  --leading-snug: 1.35;
+  --leading-prose: 1.65;
+
+  --spacing-gutter: 2rem;
+  --spacing-stack: 2.5rem;
+  --spacing-section: 4.5rem;
+  --spacing-band: 7rem;
 }

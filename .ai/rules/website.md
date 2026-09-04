@@ -17,6 +17,7 @@ they are the only thing standing between it and a second design system.
 | `website/src/generated/design-tokens.json` | `dew_shot tokens` | the same pair |
 | `website/src/generated/score-samples.json` | `dew_shot samples` | the same pair |
 | `website/src/app/theme.generated.css` | `website/scripts/gen-theme.mjs` | `npm run theme:check` |
+| `website/src/app/icon.svg` | `website/scripts/gen-theme.mjs` | the same check |
 | `website/public/shots/*.png` | `./scripts/gen-shots.sh`, from the **release** build | **nothing byte-wise** — see below |
 
 Regenerate a JSON file in the commit that changes what it comes from, or the suite fails
@@ -52,11 +53,31 @@ each decodes, is the size it was asked for, and is not one flat colour.
 
 ## Two things that are the site's own, and say so
 
-- **The display type rungs**, in `theme.site.css`. `type::display` is 20px because the
-  largest text in a DAW is a panel heading; a landing page needs a hero. They are in a
-  second file with a header comment rather than smuggled into the generated one.
+- **The reading type ladder and the leading**, in `theme.site.css`. `Tokens.h` is 11, 12,
+  13, 15 and 20px — panel-chrome sizes measured against the boxes a caption sits in — and
+  the site was built out of them, so `text-body` at 13px was its most-used class and its
+  body copy was two rungs under what a page is read at. The site's own rungs are `fine`,
+  `prose`, `lead` and the four headings, in a second file with a header comment rather
+  than smuggled into the generated one. **Reading text takes a site rung**; the app's are
+  for `/design/`, which is showing them.
+- **The page rhythm**, same file. `space::xxl` is 24px and is the top of the application's
+  scale, which is right for a panel gutter and was also the largest gap the site could put
+  between two sections. `gutter`, `stack`, `section` and `band` start above where the
+  application's scale stops.
+- **A rung may not be named after a CSS keyword.** Every `--spacing-*` key feeds every
+  Tailwind sizing family, `inline-size` among them, so `--spacing-block` generated an
+  `inline-block` utility that beat `display: inline-block` and sized five nav links to
+  40px. `tests/utilities.test.ts` holds the reserved list.
+- **A custom `@utility` has no directional family.** `@utility border-hairline` defines
+  that one class and nothing else: Tailwind derives `border-b-2` from `border-2` and
+  derives nothing from a custom utility, so `border-b-hairline` emitted no CSS at all and
+  the nav's rule, the footer's rule and every table row separator were absent rather than
+  faint. `gen-theme.mjs` emits all seven sides of each stroke now, and the gate that holds
+  it reads the **compiled stylesheet**, because at the level of source there was nothing
+  wrong.
 - **`Button`'s prop is `variant`, not `role`.** The vocabulary is `DewButton`'s, but `role`
-  is a real ARIA attribute on an anchor.
+  is a real ARIA attribute on an anchor. It renders `next/link` for an internal href and
+  an anchor for an external one.
 
 ## The highlighting is not a grammar
 
@@ -67,6 +88,16 @@ text. A test asserts the rendered text is byte-identical to the source, which is
 catches a run with a wrong offset. **Do not add a TypeScript tokenizer** — a live
 playground would want an Emscripten build of `dew_lang`, which links nothing and would
 therefore be cheap.
+
+## Setup, and the one duplicated fact
+
+`/setup/` carries the build commands, which `README.md` also carries. That is the same
+fact in two homes, and the exception is argued rather than assumed: a reader who has not
+cloned anything cannot be sent to a file inside the clone. What holds it is
+`tests/setup.test.ts`, which reads `../README.md` and fails if a command in
+`src/content/setup.ts` is not in it character for character — and reads `CMakePresets.json`
+and the `Brewfile` for the same reason. Change a command in one place and the suite names
+the other.
 
 ## The gate skips without node
 

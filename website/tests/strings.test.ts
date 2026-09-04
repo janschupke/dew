@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
+import { readFileSync } from 'node:fs';
 
 import en from '@/messages/en.json';
 import { t } from '@/lib/strings';
+import { sourceFiles, withoutComments } from './scan';
 
 /** Every dotted path to a string leaf, walked at runtime.
  *
@@ -55,6 +57,31 @@ describe('strings', () => {
   it('a plural picks its branch and substitutes the count', () => {
     expect(t('reference.kindsCount', { count: 1 })).toBe('1 value kind');
     expect(t('reference.kindsCount', { count: 31 })).toBe('31 value kinds');
+  });
+
+  it('every key the catalogue declares is one the site asks for', () => {
+    // The mirror of the type. `t('nav.referrence')` is a compile error, so a
+    // key that is NAMED is certainly a key that EXISTS - and nothing at all
+    // held the other direction. `nav.source` sat in this file unused for as
+    // long as it had been there, which is how a catalogue starts carrying
+    // sentences nobody has read.
+    //
+    // This is tests/SourceGateStringsTests.cpp's "every string the catalogue
+    // declares is one the app asks for", on this side of the tree.
+    const asked = new Set<string>();
+
+    for (const file of sourceFiles()) {
+      const code = withoutComments(readFileSync(file, 'utf8'));
+
+      for (const match of code.matchAll(/\bt\(\s*'([^']+)'/g)) asked.add(match[1] ?? '');
+    }
+
+    // It cannot pass by finding nothing.
+    expect(asked.size).toBeGreaterThan(20);
+
+    const unused = ids.filter((id) => !asked.has(id));
+
+    expect(unused.join('\n')).toBe('');
   });
 
   it('an unknown key returns its own path, never empty', () => {

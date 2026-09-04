@@ -1,61 +1,77 @@
 import Link from 'next/link';
 
 import { Button } from '@/ui/Button';
-import { Card } from '@/ui/Surface';
-import { Lead } from '@/ui/Prose';
+import { Band, Card, Container } from '@/ui/Surface';
+import { Lead, P } from '@/ui/Prose';
 import { Shot } from '@/ui/Shot';
 import { features } from '@/content/features';
 import { t } from '@/lib/strings';
 
+/*  The hero is `text-h1` and steps up to `text-hero` at the small breakpoint.
+    56px is right for the width the tagline was measured at and wrong on a
+    390px phone, where it takes four lines before anything else is on screen.
+    Both are rungs on the site's ladder rather than a value written here.
+*/
 export default function Home() {
   return (
     <>
-      <section className="py-xxl">
-        <h1 className="text-hero text-primary font-semibold tracking-tight">{t('site.name')}</h1>
+      <Container className="pt-band pb-section">
+        <h1 className="text-h1 sm:text-hero text-primary leading-tight font-semibold tracking-tight">
+          {t('site.name')}
+        </h1>
 
-        <p className="mt-lg text-h2 text-primary max-w-[68ch]">{t('site.tagline')}</p>
+        <p className="mt-stack text-h2 text-primary max-w-[68ch] leading-snug tracking-tight">
+          {t('site.tagline')}
+        </p>
 
         <Lead>{t('home.intro')}</Lead>
 
         {/* Said plainly and early. README.md leads with it too, and a product
             page that buried it would be the one place in the tree that did. */}
-        <p className="mt-lg text-body text-secondary">{t('site.status')}</p>
+        <P className="mt-stack">{t('site.status')}</P>
 
-        <div className="mt-xl gap-md flex flex-wrap">
-          <Button variant="primary" href="/features/">
-            {t('home.readFeatures')}
+        <div className="mt-section gap-md flex flex-wrap">
+          <Button variant="primary" href="/setup/">
+            {t('home.readSetup')}
           </Button>
-          <Button href="/score/">{t('home.readScore')}</Button>
+          <Button href="/features/">{t('home.readFeatures')}</Button>
+          <Button variant="ghost" href="/score/">
+            {t('home.readScore')}
+          </Button>
         </div>
-      </section>
+      </Container>
 
-      <Shot
-        name="channel-rack"
-        alt="dew's channel rack, a step grid with one row per channel"
-        priority
-      />
+      <Container className="pb-section">
+        <Shot
+          name="channel-rack"
+          alt="dew's channel rack, a step grid with one row per channel"
+          priority
+        />
+      </Container>
 
-      <section className="py-xxl">
-        <h2 className="text-h2 text-primary font-semibold">{t('home.tabsTitle')}</h2>
-        <p className="mt-md text-prose text-secondary max-w-[68ch]">{t('home.tabsBody')}</p>
+      <Band>
+        <h2 className="text-h2 text-primary leading-snug font-semibold tracking-tight">
+          {t('home.tabsTitle')}
+        </h2>
+        <P className="mt-stack">{t('home.tabsBody')}</P>
 
-        <ul className="mt-xl gap-lg grid sm:grid-cols-2">
-          {features.slice(0, 5).map((feature) => (
+        <ul className="mt-section gap-stack grid sm:grid-cols-2 lg:grid-cols-3">
+          {features.slice(0, 6).map((feature) => (
             <li key={feature.name}>
-              <Card>
-                <h3 className="text-title text-primary font-semibold">{feature.name}</h3>
-                <p className="mt-sm text-body text-secondary">{feature.body}</p>
+              <Card className="h-full">
+                <h3 className="text-h3 text-primary leading-snug font-semibold">{feature.name}</h3>
+                <p className="mt-md text-prose leading-prose text-secondary">{feature.body}</p>
               </Card>
             </li>
           ))}
         </ul>
 
-        <p className="mt-xl text-body">
+        <p className="mt-section text-prose">
           <Link href="/features/" className="text-accent hover:underline">
             {t('features.title')}
           </Link>
         </p>
-      </section>
+      </Band>
     </>
   );
 }

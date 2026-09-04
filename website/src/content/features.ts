@@ -8,10 +8,16 @@
  *  the contributor's tour; what is here is the claim, for somebody who has not
  *  cloned anything. Neither should restate the other's job.
  */
+import type { ShotName } from '@/ui/Shot';
+
 export interface Feature {
   readonly name: string;
   readonly body: string;
-  readonly shot?: string;
+
+  /** A name from `shotSizes`, not any string: a shot the site names and
+   *  `public/shots/` does not hold is a broken image, and this is the type that
+   *  says so before a build. */
+  readonly shot?: ShotName;
 }
 
 export const features: readonly Feature[] = [

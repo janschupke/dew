@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 
 import { Cell, Row, Table, Tag } from '@/ui/Table';
+import { Container } from '@/ui/Surface';
 import { Doc, Lead } from '@/ui/Prose';
 import {
   anchorForBlock,
@@ -23,13 +24,17 @@ export const metadata: Metadata = { title: `${t('reference.title')} — ${t('sit
 */
 export default function Reference() {
   return (
-    <div className="py-xxl">
-      <h1 className="text-h1 text-primary font-semibold">{t('reference.title')}</h1>
+    <Container className="py-section">
+      <h1 className="text-h1 text-primary leading-tight font-semibold tracking-tight">
+        {t('reference.title')}
+      </h1>
       <Lead>{t('reference.lead')}</Lead>
 
-      <nav className="mt-xl" aria-label={t('reference.onThisPage')}>
-        <h2 className="text-small text-secondary">{t('reference.onThisPage')}</h2>
-        <ul className="mt-sm gap-md text-body flex flex-wrap">
+      <nav className="mt-stack" aria-label={t('reference.onThisPage')}>
+        <h2 className="text-fine text-secondary font-semibold tracking-wide uppercase">
+          {t('reference.onThisPage')}
+        </h2>
+        <ul className="mt-sm gap-md text-prose flex flex-wrap">
           {schema.blocks.map((block) => (
             <li key={block.kind}>
               <a href={`#${anchorForBlock(block.kind)}`} className="text-accent hover:underline">
@@ -40,7 +45,7 @@ export default function Reference() {
         </ul>
       </nav>
 
-      <section className="py-xxl">
+      <section className="py-section">
         <h2 className="text-h2 text-primary font-semibold">{t('reference.blocksTitle')}</h2>
 
         {schema.blocks.map((block) => (
@@ -48,17 +53,17 @@ export default function Reference() {
             key={block.kind}
             id={anchorForBlock(block.kind)}
             data-schema-anchor={anchorForBlock(block.kind)}
-            className="mt-xxl scroll-mt-xxl"
+            className="mt-section scroll-mt-section"
           >
-            <h3 className="text-title text-primary font-mono">{block.kind}</h3>
+            <h3 className="text-h3 text-primary font-mono">{block.kind}</h3>
 
-            <p className="mt-xs gap-sm text-body text-secondary flex flex-wrap items-center">
+            <p className="mt-xs gap-sm text-prose text-secondary flex flex-wrap items-center">
               <Doc>{block.doc}</Doc>
               <Tag>{block.topLevel ? t('reference.topLevel') : t('reference.nested')}</Tag>
             </p>
 
             {block.children.length > 0 ? (
-              <p className="mt-sm text-small text-secondary">
+              <p className="mt-sm text-fine text-secondary">
                 {t('reference.contains')}:{' '}
                 {block.children.map((child, i) => (
                   <span key={child}>
@@ -72,7 +77,7 @@ export default function Reference() {
             ) : null}
 
             {block.keys.length === 0 ? (
-              <p className="mt-lg text-body text-secondary">{t('reference.noKeys')}</p>
+              <p className="mt-lg text-prose text-secondary">{t('reference.noKeys')}</p>
             ) : (
               <div className="mt-lg">
                 <Table
@@ -109,9 +114,9 @@ export default function Reference() {
         ))}
       </section>
 
-      <section className="py-xxl">
+      <section className="py-section">
         <h2 className="text-h2 text-primary font-semibold">{t('reference.valuesTitle')}</h2>
-        <p className="mt-sm text-body text-secondary">
+        <p className="mt-sm text-prose text-secondary">
           {t('reference.kindsCount', { count: schema.valueKinds.length })}
         </p>
 
@@ -140,12 +145,12 @@ export default function Reference() {
           </Table>
         </div>
 
-        <p className="mt-lg text-small text-secondary">
+        <p className="mt-lg text-fine text-secondary">
           {closedKinds.length} of them accept a closed list of members.
         </p>
       </section>
 
-      <section className="py-xxl">
+      <section className="py-section">
         <h2 className="text-h2 text-primary font-semibold">{t('reference.modesTitle')}</h2>
 
         <div className="mt-lg">
@@ -160,13 +165,13 @@ export default function Reference() {
           </Table>
         </div>
 
-        <p className="mt-lg text-small text-secondary max-w-[68ch]">
+        <p className="mt-lg text-fine text-secondary max-w-[68ch]">
           A roman numeral names a scale degree, so a pentatonic or a blues scale cannot carry one —
           and saying so is better than silently indexing past the end of a five-note table.
         </p>
       </section>
 
-      <p className="text-small text-disabled">{t('reference.generatedFrom')}</p>
-    </div>
+      <p className="text-fine text-disabled">{t('reference.generatedFrom')}</p>
+    </Container>
   );
 }

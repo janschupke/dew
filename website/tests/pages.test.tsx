@@ -6,6 +6,8 @@ import { describe, expect, it } from 'vitest';
 
 import Features from '@/app/features/page';
 import Home from '@/app/page';
+import Setup from '@/app/setup/page';
+import { buildCommands, presets, runCommands } from '@/content/setup';
 import { features } from '@/content/features';
 
 /*  Every page here is a plain synchronous component and stays one.
@@ -33,6 +35,22 @@ describe('pages', () => {
 
   it('no feature is left without a sentence', () => {
     for (const feature of features) expect(feature.body.length).toBeGreaterThan(40);
+  });
+
+  it('the setup page shows the commands and every preset', () => {
+    // The page a reader is sent to from the home page's first button, and the
+    // only place on the site that says how to get dew at all.
+    const { container } = render(<Setup />);
+
+    // textContent rather than getByText: the brew line carries the column of
+    // spaces that lines its comment up in the README, and getByText collapses
+    // runs of whitespace - so it would pass against a command that had been
+    // reformatted, which is one of the two things this is guarding.
+    for (const command of [...buildCommands, ...runCommands])
+      expect(container.textContent, command).toContain(command);
+
+    for (const preset of presets)
+      expect(screen.getByText(preset.name), preset.name).toBeInTheDocument();
   });
 });
 

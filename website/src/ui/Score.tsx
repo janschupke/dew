@@ -72,8 +72,8 @@ export function Score({
     .map((r) => ({ ...r, offset: r.offset - start }));
 
   return (
-    <figure className="my-xl">
-      <pre className="bg-well-deep p-xl text-code-body overflow-x-auto rounded-md font-mono leading-relaxed">
+    <figure className="my-stack">
+      <pre className="bg-well-deep p-stack text-code-body overflow-x-auto rounded-md font-mono leading-relaxed">
         <code>
           {pieces(source, runs).map((piece, i) => (
             <span key={i} className={piece.role ? roles[piece.role] : undefined}>
@@ -84,7 +84,7 @@ export function Score({
       </pre>
 
       {caption ? (
-        <figcaption className="mt-sm text-small text-secondary">{caption}</figcaption>
+        <figcaption className="mt-sm text-fine text-secondary">{caption}</figcaption>
       ) : null}
     </figure>
   );

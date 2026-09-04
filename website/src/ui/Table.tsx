@@ -10,11 +10,14 @@ import type { ReactNode } from 'react';
 export function Table({ head, children }: { head: readonly string[]; children: ReactNode }) {
   return (
     <div className="overflow-x-auto">
-      <table className="text-body w-full border-collapse text-left">
+      <table className="text-prose w-full border-collapse text-left leading-snug">
         <thead>
           <tr className="border-b-hairline border-divider-strong">
             {head.map((cell) => (
-              <th key={cell} className="py-sm pr-lg text-secondary font-normal">
+              <th
+                key={cell}
+                className="py-md pr-stack text-fine text-secondary font-semibold tracking-wide uppercase"
+              >
                 {cell}
               </th>
             ))}
@@ -31,7 +34,7 @@ export function Row({ id, children }: { id?: string; children: ReactNode }) {
     <tr
       {...(id ? { id } : {})}
       data-schema-anchor={id ?? undefined}
-      className="border-b-hairline border-divider scroll-mt-xxl last:border-0"
+      className="border-b-hairline border-divider scroll-mt-band last:border-0"
     >
       {children}
     </tr>
@@ -39,7 +42,7 @@ export function Row({ id, children }: { id?: string; children: ReactNode }) {
 }
 
 export function Cell({ className = '', children }: { className?: string; children: ReactNode }) {
-  return <td className={`py-sm pr-lg align-top ${className}`}>{children}</td>;
+  return <td className={`py-md pr-stack align-top ${className}`}>{children}</td>;
 }
 
 /** A short flag beside a key: required, overridable, top level. Reads as a
@@ -47,7 +50,7 @@ export function Cell({ className = '', children }: { className?: string; childre
  */
 export function Tag({ children }: { children: ReactNode }) {
   return (
-    <span className="bg-surface-raised px-xs py-xxs text-caption text-secondary rounded-xs">
+    <span className="bg-surface-raised px-sm py-xxs text-fine text-secondary rounded-xs">
       {children}
     </span>
   );
