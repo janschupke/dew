@@ -14,12 +14,10 @@ name: release
 on:
   push:
     tags: ['v*']
+  # A dispatch builds and packages all three platforms and publishes nothing -
+  # not as an option but as the only thing it can do, since a release has to be
+  # published under a tag and a dispatch has none. It is the rehearsal.
   workflow_dispatch:
-    inputs:
-      dry_run:
-        description: Build and package all three platforms, publish nothing
-        type: boolean
-        default: true
 
 # Deliberately NOT cancel-in-progress. A half-cancelled release leaves a draft
 # holding some of its assets, which is a worse state than two runs racing.
@@ -81,7 +79,6 @@ jobs:
     runs-on: macos-15
 
     env:
-      CPM_SOURCE_CACHE: ${{ github.workspace }}/.cache/CPM
       # Empty until a certificate is bought, and every signing step is guarded
       # on it being empty - so this workflow produces an unsigned .dmg today and
       # a notarized one the day the secrets exist, with no edit here.
@@ -97,7 +94,10 @@ jobs:
 
       - uses: actions/cache@v4
         with:
-          path: ${{ env.CPM_SOURCE_CACHE }}
+          # The path CMakePresets.json's `base` puts in the CMake cache. A
+          # cacheVariable wins over the environment, so caching a workspace
+          # directory here would cache an empty one.
+          path: ~/.cache/CPM
           key: cpm-${{ runner.os }}-${{ hashFiles('cpm-package-lock.cmake', 'cmake/DependencyPins.cmake') }}
 
       # Not `brew bundle`: a release build needs the generator and nothing else.
@@ -154,15 +154,15 @@ jobs:
     needs: verify
     runs-on: windows-latest
 
-    env:
-      CPM_SOURCE_CACHE: ${{ github.workspace }}/.cache/CPM
-
     steps:
       - uses: actions/checkout@v4
 
       - uses: actions/cache@v4
         with:
-          path: ${{ env.CPM_SOURCE_CACHE }}
+          # The path CMakePresets.json's `base` puts in the CMake cache. A
+          # cacheVariable wins over the environment, so caching a workspace
+          # directory here would cache an empty one.
+          path: ~/.cache/CPM
           key: cpm-${{ runner.os }}-${{ hashFiles('cpm-package-lock.cmake', 'cmake/DependencyPins.cmake') }}
 
       # The dist-windows preset differs from dist in one thing: the Visual
@@ -205,9 +205,6 @@ jobs:
     container:
       image: ubuntu:22.04
 
-    env:
-      CPM_SOURCE_CACHE: ${{ github.workspace }}/.cache/CPM
-
     steps:
       # Before checkout, which needs git, and before anything else, which needs
       # a compiler. webkit2gtk and libcurl are deliberately absent: JUCE_WEB_
@@ -237,7 +234,10 @@ jobs:
 
       - uses: actions/cache@v4
         with:
-          path: ${{ env.CPM_SOURCE_CACHE }}
+          # The path CMakePresets.json's `base` puts in the CMake cache. A
+          # cacheVariable wins over the environment, so caching a workspace
+          # directory here would cache an empty one.
+          path: ~/.cache/CPM
           key: cpm-linux-jammy-${{ hashFiles('cpm-package-lock.cmake', 'cmake/DependencyPins.cmake') }}
 
       - name: Configure
@@ -261,7 +261,7 @@ jobs:
   publish:
     name: publish
     needs: [verify, macos, windows, linux]
-    if: github.event_name == 'push'
+    if: github.ref_type == 'tag'
     runs-on: ubuntu-latest
 
     permissions:
