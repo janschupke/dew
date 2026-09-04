@@ -48,6 +48,9 @@ add_executable(dew_tests
   PianoRollToolsTests.cpp
   ParamMenuTests.cpp
   PlaylistTests.cpp
+  PlaylistAutomationTests.cpp
+  PlaylistHeightTests.cpp
+  PlaylistSelectionTests.cpp
   MeterTests.cpp
   MidiExportTests.cpp
   RenderFormatTests.cpp
