@@ -34,6 +34,9 @@ add_executable(dew_tests
   AutomationLaneTests.cpp
   AutomationTests.cpp
   EffectTests.cpp
+  EffectDragTests.cpp
+  EffectEngineTests.cpp
+  EffectUiTests.cpp
   EngineTests.cpp
   MixerTests.cpp
   OscillatorTests.cpp
