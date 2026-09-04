@@ -149,6 +149,7 @@ add_library(dew_lang STATIC
   lang/Score.cpp
   lang/Resolver.cpp
   lang/ResolverParts.cpp
+  lang/ResolverMelody.cpp
   lang/ResolverVoices.cpp
   lang/Harmony.cpp
   lang/Voicing.cpp
@@ -373,10 +374,12 @@ add_library(dew_ui STATIC
   ui/PianoRollGestures.cpp
   ui/PianoRollPaint.cpp
   ui/PianoRollTools.cpp
+  ui/PianoRollView.cpp
   ui/PlaylistComponent.cpp
   ui/PlaylistGestures.cpp
   ui/PlaylistMenus.cpp
   ui/PlaylistPaint.cpp
+  ui/PlaylistView.cpp
   ui/PlaylistToolbar.cpp
   ui/PlaylistTrackHeader.cpp
   ui/MixerComponent.cpp
