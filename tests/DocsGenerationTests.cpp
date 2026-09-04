@@ -4,6 +4,7 @@
 #include <juce_core/juce_core.h>
 
 #include "ui/design/Theme.h"
+#include "DocsSamples.h"
 #include "DocsSchema.h"
 #include "DocsTokens.h"
 
@@ -160,4 +161,63 @@ TEST_CASE ("a lift is the colour the app actually paints", "[docs][website][gate
 
     const auto json = juce::String (docs::tokensJson());
     CHECK (json.contains ("\"surfaceRaisedHover\": \"#3e4148\""));
+}
+
+TEST_CASE ("the website's score samples are what the emitter writes", "[docs][website][gate]")
+{
+    // The site renders these instead of highlighting anything, so a stale copy
+    // is a page whose colours disagree with the editor's - which is the exact
+    // thing .ai/rules/score-language.md refuses.
+    const auto file = generatedFile ("score-samples.json");
+
+    INFO ("file: " << file.getFullPathName());
+    INFO ("regenerate: ./build/ci/tools/dew_shot_artefacts/RelWithDebInfo/dew_shot samples "
+          "website/src/generated/score-samples.json examples/amber.score examples/drift.score "
+          "examples/neon.score");
+
+    REQUIRE (file.existsAsFile());
+
+    juce::Array<juce::File> scores;
+
+    for (const auto* name : { "amber.score", "drift.score", "neon.score" })
+        scores.add (juce::File { juce::String (DEW_EXAMPLES_DIR) }.getChildFile (name));
+
+    CHECK (file.loadFileAsString().toStdString() == docs::samplesJson (scores));
+}
+
+TEST_CASE ("a sample's runs reconstruct its source exactly", "[docs][website][gate]")
+{
+    // The claim the website rests on. It renders the runs and the gaps between
+    // them, so if the two do not add up to the source the page shows something
+    // the file does not say - and this is the only place that can tell.
+    const auto json = juce::JSON::parse (generatedFile ("score-samples.json").loadFileAsString());
+
+    const auto* samples = json.getArray();
+    REQUIRE (samples != nullptr);
+    REQUIRE (samples->size() == 3);
+
+    for (const auto& entry : *samples)
+    {
+        const auto source = entry.getProperty ("source", {}).toString();
+        const auto* runs = entry.getProperty ("runs", {}).getArray();
+
+        INFO ("sample: " << entry.getProperty ("name", {}).toString());
+        REQUIRE (runs != nullptr);
+        REQUIRE (runs->size() > 100);
+
+        // In order, non-overlapping, and inside the file.
+        auto at = 0;
+
+        for (const auto& run : *runs)
+        {
+            const auto offset = (int) run.getProperty ("offset", {});
+            const auto length = (int) run.getProperty ("length", {});
+
+            CHECK (offset >= at);
+            CHECK (length > 0);
+            at = offset + length;
+        }
+
+        CHECK (at <= source.length());
+    }
 }

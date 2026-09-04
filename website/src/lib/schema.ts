@@ -45,10 +45,12 @@ export const schema: Schema = raw;
 
 /** The anchor a block and a key are permanently addressable by.
  *
- *  `${block}-${key}` is injective for the same reason GenStrings.cmake's
- *  mangling is: no block kind and no key name contains a hyphen, so two
- *  different pairs cannot collide. A test asserts that over the whole schema
- *  rather than trusting the sentence.
+ *  `${block}-${key}` is injective because no BLOCK KIND contains a hyphen: the
+ *  first hyphen therefore always separates the two halves, so two different
+ *  pairs cannot mangle to one anchor. The same argument GenStrings.cmake makes
+ *  for '.' -> '_', and it rests on the block half only - key names DO contain
+ *  hyphens (parallel-fifths, voice-crossing, dissonance-on-strong). A test
+ *  asserts it over the whole schema rather than trusting the sentence.
  *
  *  Permanent because the README, a diagnostic's help text and the app's Score
  *  tab can all link one, and a reference whose anchors move is a reference full

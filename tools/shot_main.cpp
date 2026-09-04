@@ -14,6 +14,7 @@
 #include "ui/design/Theme.h"
 #include "ui/design/DewGallery.h"
 #include "CliArgs.h"
+#include "DocsSamples.h"
 #include "DocsTokens.h"
 
 namespace
@@ -30,6 +31,7 @@ Usage:
   dew_shot tabs <out-prefix> [options]      one PNG per tab
   dew_shot gallery <out.png> [options]      the design system
   dew_shot tokens <out.json>                the design system, as data
+  dew_shot samples <out.json> <a.score...>  scores, with their token runs
   dew_shot audio <out.png>                  the audio settings panel
   dew_shot midi <out.png>                   the MIDI settings panel
   dew_shot render <out.png> [--project f] [--format wav|flac|mp3|midi]
@@ -147,6 +149,26 @@ int main (int argc, char* argv[])
         // which the in-process gate would compare happily against itself while
         // cmp in CI compared it against an LF copy and failed.
         if (! destination.replaceWithText (dew::docs::tokensJson(), false, false, "\n"))
+            return fail ("could not write " + destination.getFullPathName());
+
+        std::cout << "wrote " << destination.getFullPathName() << std::endl;
+        return 0;
+    }
+
+    if (mode == "samples")
+    {
+        juce::Array<juce::File> scores;
+
+        for (auto i = 2; i < args.positional.size(); ++i)
+            scores.add (juce::File::getCurrentWorkingDirectory().getChildFile (args.positional[i]));
+
+        if (scores.isEmpty())
+            return fail ("samples needs at least one .score file");
+
+        const auto destination = juce::File::getCurrentWorkingDirectory().getChildFile (
+            args.positional[1]);
+
+        if (! destination.replaceWithText (dew::docs::samplesJson (scores), false, false, "\n"))
             return fail ("could not write " + destination.getFullPathName());
 
         std::cout << "wrote " << destination.getFullPathName() << std::endl;

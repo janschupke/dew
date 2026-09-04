@@ -1,0 +1,5625 @@
+[
+  {
+    "name": "amber",
+    "source": "// amber.score - the example the tests and CI compile.\n//\n// Deliberately audible: pads holding the harmony, a bass on the roots, a lead\n// line over the top and a second voice answering it. A compile that produces\n// silence is obviously wrong.\n\nsong {\n  title \"Amber\"\n  tempo 96 bpm\n  meter 4/4\n  grid  auto\n  key   F minor\n  seed  0x5EEDC0FFEE\n}\n\nchannel pad {\n  mixer    1\n  range    C3..C5\n  velocity 52 +- 6\n}\n\nchannel bass {\n  mixer    2\n  range    E1..E3\n  velocity 76 +- 4\n}\n\nchannel lead {\n  mixer    3\n  range    F4..A5\n  velocity 66 +- 8\n}\n\nchannel answer {\n  mixer    4\n  range    F3..F5\n  velocity 54 +- 6 per bar\n}\n\nvoicing warm {\n  size     4 voices\n  spread   drop2\n  register C3..C5\n  motion   smooth\n  maxLeap  7\n  bass     from-inversion\n}\n\nrhythm held    { 1/1 }\nrhythm pulse   { 1/4 1/4 1/2 }\nrhythm running { 1/8 x6 - 1/8 1/8 }\n\nharmony lament {\n  i x2 | bVI | bVII | i^1 x2 | iv | V7/iv\n}\n\nharmony lift {\n  bVI | bVII | i x2 | bVI | bVII | V7 | i\n}\n\nsection intro {\n  length 4 bars\n  harmony {\n    i 2 bars | bVI 1 bar | V7 1 bar\n  }\n  part pad {\n    chords with warm\n    rhythm held\n  }\n}\n\nsection verse {\n  length 8 bars\n  harmony lament\n  part pad {\n    chords with warm\n    rhythm held\n  }\n  part bass {\n    line root-fifth\n    rhythm pulse\n  }\n  part lead {\n    melody {\n      rhythm       pulse\n      articulation legato\n      contour      arch\n      strong       chord-tones\n      variance     0.25\n      mute         1 of 4\n      cadence      choose [1 3 5] per instance\n    }\n  }\n  part answer {\n    counterpoint against lead {\n      rhythm               pulse\n      parallel-fifths      forbid\n      parallel-octaves     forbid\n      voice-crossing       forbid\n      dissonance-on-strong soft 3\n      leaps                soft 1.5\n      repeats              soft 1\n    }\n  }\n}\n\nsection chorus {\n  length 8 bars\n  harmony lift\n  part pad {\n    chords with warm\n    rhythm pulse\n  }\n  part bass {\n    line root\n    rhythm running\n  }\n  part lead {\n    melody {\n      rhythm   running\n      contour  rise\n      strong   chord-tones\n      variance 0.4\n    }\n  }\n}\n\narrangement {\n  intro\n  verse\n  verse as verse_b\n  chorus\n  verse\n  chorus x2 identical\n}\n",
+    "runs": [
+      {
+        "offset": 0,
+        "length": 54,
+        "role": "comment"
+      },
+      {
+        "offset": 55,
+        "length": 2,
+        "role": "comment"
+      },
+      {
+        "offset": 58,
+        "length": 78,
+        "role": "comment"
+      },
+      {
+        "offset": 137,
+        "length": 77,
+        "role": "comment"
+      },
+      {
+        "offset": 215,
+        "length": 30,
+        "role": "comment"
+      },
+      {
+        "offset": 247,
+        "length": 4,
+        "role": "keyword"
+      },
+      {
+        "offset": 252,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 256,
+        "length": 5,
+        "role": "keyword"
+      },
+      {
+        "offset": 262,
+        "length": 7,
+        "role": "string"
+      },
+      {
+        "offset": 272,
+        "length": 5,
+        "role": "keyword"
+      },
+      {
+        "offset": 278,
+        "length": 2,
+        "role": "literal"
+      },
+      {
+        "offset": 281,
+        "length": 3,
+        "role": "plain"
+      },
+      {
+        "offset": 287,
+        "length": 5,
+        "role": "keyword"
+      },
+      {
+        "offset": 293,
+        "length": 3,
+        "role": "literal"
+      },
+      {
+        "offset": 299,
+        "length": 4,
+        "role": "keyword"
+      },
+      {
+        "offset": 305,
+        "length": 4,
+        "role": "plain"
+      },
+      {
+        "offset": 312,
+        "length": 3,
+        "role": "keyword"
+      },
+      {
+        "offset": 318,
+        "length": 1,
+        "role": "plain"
+      },
+      {
+        "offset": 320,
+        "length": 5,
+        "role": "plain"
+      },
+      {
+        "offset": 328,
+        "length": 4,
+        "role": "keyword"
+      },
+      {
+        "offset": 334,
+        "length": 12,
+        "role": "literal"
+      },
+      {
+        "offset": 347,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 350,
+        "length": 7,
+        "role": "keyword"
+      },
+      {
+        "offset": 358,
+        "length": 3,
+        "role": "plain"
+      },
+      {
+        "offset": 362,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 366,
+        "length": 5,
+        "role": "keyword"
+      },
+      {
+        "offset": 375,
+        "length": 1,
+        "role": "literal"
+      },
+      {
+        "offset": 379,
+        "length": 5,
+        "role": "keyword"
+      },
+      {
+        "offset": 388,
+        "length": 2,
+        "role": "plain"
+      },
+      {
+        "offset": 390,
+        "length": 2,
+        "role": "punctuation"
+      },
+      {
+        "offset": 392,
+        "length": 2,
+        "role": "plain"
+      },
+      {
+        "offset": 397,
+        "length": 8,
+        "role": "keyword"
+      },
+      {
+        "offset": 406,
+        "length": 2,
+        "role": "literal"
+      },
+      {
+        "offset": 409,
+        "length": 2,
+        "role": "punctuation"
+      },
+      {
+        "offset": 412,
+        "length": 1,
+        "role": "literal"
+      },
+      {
+        "offset": 414,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 417,
+        "length": 7,
+        "role": "keyword"
+      },
+      {
+        "offset": 425,
+        "length": 4,
+        "role": "keyword"
+      },
+      {
+        "offset": 430,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 434,
+        "length": 5,
+        "role": "keyword"
+      },
+      {
+        "offset": 443,
+        "length": 1,
+        "role": "literal"
+      },
+      {
+        "offset": 447,
+        "length": 5,
+        "role": "keyword"
+      },
+      {
+        "offset": 456,
+        "length": 2,
+        "role": "plain"
+      },
+      {
+        "offset": 458,
+        "length": 2,
+        "role": "punctuation"
+      },
+      {
+        "offset": 460,
+        "length": 2,
+        "role": "plain"
+      },
+      {
+        "offset": 465,
+        "length": 8,
+        "role": "keyword"
+      },
+      {
+        "offset": 474,
+        "length": 2,
+        "role": "literal"
+      },
+      {
+        "offset": 477,
+        "length": 2,
+        "role": "punctuation"
+      },
+      {
+        "offset": 480,
+        "length": 1,
+        "role": "literal"
+      },
+      {
+        "offset": 482,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 485,
+        "length": 7,
+        "role": "keyword"
+      },
+      {
+        "offset": 493,
+        "length": 4,
+        "role": "plain"
+      },
+      {
+        "offset": 498,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 502,
+        "length": 5,
+        "role": "keyword"
+      },
+      {
+        "offset": 511,
+        "length": 1,
+        "role": "literal"
+      },
+      {
+        "offset": 515,
+        "length": 5,
+        "role": "keyword"
+      },
+      {
+        "offset": 524,
+        "length": 2,
+        "role": "plain"
+      },
+      {
+        "offset": 526,
+        "length": 2,
+        "role": "punctuation"
+      },
+      {
+        "offset": 528,
+        "length": 2,
+        "role": "plain"
+      },
+      {
+        "offset": 533,
+        "length": 8,
+        "role": "keyword"
+      },
+      {
+        "offset": 542,
+        "length": 2,
+        "role": "literal"
+      },
+      {
+        "offset": 545,
+        "length": 2,
+        "role": "punctuation"
+      },
+      {
+        "offset": 548,
+        "length": 1,
+        "role": "literal"
+      },
+      {
+        "offset": 550,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 553,
+        "length": 7,
+        "role": "keyword"
+      },
+      {
+        "offset": 561,
+        "length": 6,
+        "role": "plain"
+      },
+      {
+        "offset": 568,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 572,
+        "length": 5,
+        "role": "keyword"
+      },
+      {
+        "offset": 581,
+        "length": 1,
+        "role": "literal"
+      },
+      {
+        "offset": 585,
+        "length": 5,
+        "role": "keyword"
+      },
+      {
+        "offset": 594,
+        "length": 2,
+        "role": "plain"
+      },
+      {
+        "offset": 596,
+        "length": 2,
+        "role": "punctuation"
+      },
+      {
+        "offset": 598,
+        "length": 2,
+        "role": "plain"
+      },
+      {
+        "offset": 603,
+        "length": 8,
+        "role": "keyword"
+      },
+      {
+        "offset": 612,
+        "length": 2,
+        "role": "literal"
+      },
+      {
+        "offset": 615,
+        "length": 2,
+        "role": "punctuation"
+      },
+      {
+        "offset": 618,
+        "length": 1,
+        "role": "literal"
+      },
+      {
+        "offset": 620,
+        "length": 3,
+        "role": "plain"
+      },
+      {
+        "offset": 624,
+        "length": 3,
+        "role": "plain"
+      },
+      {
+        "offset": 628,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 631,
+        "length": 7,
+        "role": "keyword"
+      },
+      {
+        "offset": 639,
+        "length": 4,
+        "role": "plain"
+      },
+      {
+        "offset": 644,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 648,
+        "length": 4,
+        "role": "keyword"
+      },
+      {
+        "offset": 657,
+        "length": 1,
+        "role": "literal"
+      },
+      {
+        "offset": 659,
+        "length": 6,
+        "role": "plain"
+      },
+      {
+        "offset": 668,
+        "length": 6,
+        "role": "keyword"
+      },
+      {
+        "offset": 677,
+        "length": 5,
+        "role": "plain"
+      },
+      {
+        "offset": 685,
+        "length": 8,
+        "role": "keyword"
+      },
+      {
+        "offset": 694,
+        "length": 2,
+        "role": "plain"
+      },
+      {
+        "offset": 696,
+        "length": 2,
+        "role": "punctuation"
+      },
+      {
+        "offset": 698,
+        "length": 2,
+        "role": "plain"
+      },
+      {
+        "offset": 703,
+        "length": 6,
+        "role": "keyword"
+      },
+      {
+        "offset": 712,
+        "length": 6,
+        "role": "plain"
+      },
+      {
+        "offset": 721,
+        "length": 7,
+        "role": "keyword"
+      },
+      {
+        "offset": 730,
+        "length": 1,
+        "role": "literal"
+      },
+      {
+        "offset": 734,
+        "length": 4,
+        "role": "keyword"
+      },
+      {
+        "offset": 743,
+        "length": 14,
+        "role": "plain"
+      },
+      {
+        "offset": 758,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 761,
+        "length": 6,
+        "role": "keyword"
+      },
+      {
+        "offset": 768,
+        "length": 4,
+        "role": "plain"
+      },
+      {
+        "offset": 776,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 778,
+        "length": 3,
+        "role": "literal"
+      },
+      {
+        "offset": 782,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 784,
+        "length": 6,
+        "role": "keyword"
+      },
+      {
+        "offset": 791,
+        "length": 5,
+        "role": "plain"
+      },
+      {
+        "offset": 799,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 801,
+        "length": 3,
+        "role": "literal"
+      },
+      {
+        "offset": 805,
+        "length": 3,
+        "role": "literal"
+      },
+      {
+        "offset": 809,
+        "length": 3,
+        "role": "literal"
+      },
+      {
+        "offset": 813,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 815,
+        "length": 6,
+        "role": "keyword"
+      },
+      {
+        "offset": 822,
+        "length": 7,
+        "role": "plain"
+      },
+      {
+        "offset": 830,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 832,
+        "length": 3,
+        "role": "literal"
+      },
+      {
+        "offset": 836,
+        "length": 2,
+        "role": "literal"
+      },
+      {
+        "offset": 839,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 841,
+        "length": 3,
+        "role": "literal"
+      },
+      {
+        "offset": 845,
+        "length": 3,
+        "role": "literal"
+      },
+      {
+        "offset": 849,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 852,
+        "length": 7,
+        "role": "keyword"
+      },
+      {
+        "offset": 860,
+        "length": 6,
+        "role": "plain"
+      },
+      {
+        "offset": 867,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 871,
+        "length": 1,
+        "role": "plain"
+      },
+      {
+        "offset": 873,
+        "length": 2,
+        "role": "literal"
+      },
+      {
+        "offset": 876,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 878,
+        "length": 3,
+        "role": "plain"
+      },
+      {
+        "offset": 882,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 884,
+        "length": 4,
+        "role": "plain"
+      },
+      {
+        "offset": 889,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 891,
+        "length": 1,
+        "role": "plain"
+      },
+      {
+        "offset": 892,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 893,
+        "length": 1,
+        "role": "literal"
+      },
+      {
+        "offset": 895,
+        "length": 2,
+        "role": "literal"
+      },
+      {
+        "offset": 898,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 900,
+        "length": 2,
+        "role": "plain"
+      },
+      {
+        "offset": 903,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 905,
+        "length": 2,
+        "role": "plain"
+      },
+      {
+        "offset": 907,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 908,
+        "length": 2,
+        "role": "plain"
+      },
+      {
+        "offset": 911,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 914,
+        "length": 7,
+        "role": "keyword"
+      },
+      {
+        "offset": 922,
+        "length": 4,
+        "role": "plain"
+      },
+      {
+        "offset": 927,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 931,
+        "length": 3,
+        "role": "plain"
+      },
+      {
+        "offset": 935,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 937,
+        "length": 4,
+        "role": "plain"
+      },
+      {
+        "offset": 942,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 944,
+        "length": 1,
+        "role": "plain"
+      },
+      {
+        "offset": 946,
+        "length": 2,
+        "role": "literal"
+      },
+      {
+        "offset": 949,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 951,
+        "length": 3,
+        "role": "plain"
+      },
+      {
+        "offset": 955,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 957,
+        "length": 4,
+        "role": "plain"
+      },
+      {
+        "offset": 962,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 964,
+        "length": 2,
+        "role": "plain"
+      },
+      {
+        "offset": 967,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 969,
+        "length": 1,
+        "role": "plain"
+      },
+      {
+        "offset": 971,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 974,
+        "length": 7,
+        "role": "keyword"
+      },
+      {
+        "offset": 982,
+        "length": 5,
+        "role": "plain"
+      },
+      {
+        "offset": 988,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 992,
+        "length": 6,
+        "role": "keyword"
+      },
+      {
+        "offset": 999,
+        "length": 1,
+        "role": "literal"
+      },
+      {
+        "offset": 1001,
+        "length": 4,
+        "role": "plain"
+      },
+      {
+        "offset": 1008,
+        "length": 7,
+        "role": "keyword"
+      },
+      {
+        "offset": 1016,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 1022,
+        "length": 1,
+        "role": "plain"
+      },
+      {
+        "offset": 1024,
+        "length": 1,
+        "role": "literal"
+      },
+      {
+        "offset": 1026,
+        "length": 4,
+        "role": "plain"
+      },
+      {
+        "offset": 1031,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 1033,
+        "length": 3,
+        "role": "plain"
+      },
+      {
+        "offset": 1037,
+        "length": 1,
+        "role": "literal"
+      },
+      {
+        "offset": 1039,
+        "length": 3,
+        "role": "plain"
+      },
+      {
+        "offset": 1043,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 1045,
+        "length": 2,
+        "role": "plain"
+      },
+      {
+        "offset": 1048,
+        "length": 1,
+        "role": "literal"
+      },
+      {
+        "offset": 1050,
+        "length": 3,
+        "role": "plain"
+      },
+      {
+        "offset": 1056,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 1060,
+        "length": 4,
+        "role": "keyword"
+      },
+      {
+        "offset": 1065,
+        "length": 3,
+        "role": "plain"
+      },
+      {
+        "offset": 1069,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 1075,
+        "length": 6,
+        "role": "keyword"
+      },
+      {
+        "offset": 1082,
+        "length": 4,
+        "role": "plain"
+      },
+      {
+        "offset": 1087,
+        "length": 4,
+        "role": "plain"
+      },
+      {
+        "offset": 1096,
+        "length": 6,
+        "role": "keyword"
+      },
+      {
+        "offset": 1103,
+        "length": 4,
+        "role": "plain"
+      },
+      {
+        "offset": 1110,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 1112,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 1115,
+        "length": 7,
+        "role": "keyword"
+      },
+      {
+        "offset": 1123,
+        "length": 5,
+        "role": "plain"
+      },
+      {
+        "offset": 1129,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 1133,
+        "length": 6,
+        "role": "keyword"
+      },
+      {
+        "offset": 1140,
+        "length": 1,
+        "role": "literal"
+      },
+      {
+        "offset": 1142,
+        "length": 4,
+        "role": "plain"
+      },
+      {
+        "offset": 1149,
+        "length": 7,
+        "role": "keyword"
+      },
+      {
+        "offset": 1157,
+        "length": 6,
+        "role": "plain"
+      },
+      {
+        "offset": 1166,
+        "length": 4,
+        "role": "keyword"
+      },
+      {
+        "offset": 1171,
+        "length": 3,
+        "role": "plain"
+      },
+      {
+        "offset": 1175,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 1181,
+        "length": 6,
+        "role": "keyword"
+      },
+      {
+        "offset": 1188,
+        "length": 4,
+        "role": "plain"
+      },
+      {
+        "offset": 1193,
+        "length": 4,
+        "role": "plain"
+      },
+      {
+        "offset": 1202,
+        "length": 6,
+        "role": "keyword"
+      },
+      {
+        "offset": 1209,
+        "length": 4,
+        "role": "plain"
+      },
+      {
+        "offset": 1216,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 1220,
+        "length": 4,
+        "role": "keyword"
+      },
+      {
+        "offset": 1225,
+        "length": 4,
+        "role": "keyword"
+      },
+      {
+        "offset": 1230,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 1236,
+        "length": 4,
+        "role": "keyword"
+      },
+      {
+        "offset": 1241,
+        "length": 10,
+        "role": "plain"
+      },
+      {
+        "offset": 1256,
+        "length": 6,
+        "role": "keyword"
+      },
+      {
+        "offset": 1263,
+        "length": 5,
+        "role": "plain"
+      },
+      {
+        "offset": 1271,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 1275,
+        "length": 4,
+        "role": "keyword"
+      },
+      {
+        "offset": 1280,
+        "length": 4,
+        "role": "plain"
+      },
+      {
+        "offset": 1285,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 1291,
+        "length": 6,
+        "role": "keyword"
+      },
+      {
+        "offset": 1298,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 1306,
+        "length": 6,
+        "role": "keyword"
+      },
+      {
+        "offset": 1319,
+        "length": 5,
+        "role": "plain"
+      },
+      {
+        "offset": 1331,
+        "length": 12,
+        "role": "keyword"
+      },
+      {
+        "offset": 1344,
+        "length": 6,
+        "role": "plain"
+      },
+      {
+        "offset": 1357,
+        "length": 7,
+        "role": "keyword"
+      },
+      {
+        "offset": 1370,
+        "length": 4,
+        "role": "plain"
+      },
+      {
+        "offset": 1381,
+        "length": 6,
+        "role": "keyword"
+      },
+      {
+        "offset": 1394,
+        "length": 11,
+        "role": "plain"
+      },
+      {
+        "offset": 1412,
+        "length": 8,
+        "role": "keyword"
+      },
+      {
+        "offset": 1425,
+        "length": 4,
+        "role": "literal"
+      },
+      {
+        "offset": 1436,
+        "length": 4,
+        "role": "keyword"
+      },
+      {
+        "offset": 1449,
+        "length": 1,
+        "role": "literal"
+      },
+      {
+        "offset": 1451,
+        "length": 2,
+        "role": "plain"
+      },
+      {
+        "offset": 1454,
+        "length": 1,
+        "role": "literal"
+      },
+      {
+        "offset": 1462,
+        "length": 7,
+        "role": "keyword"
+      },
+      {
+        "offset": 1475,
+        "length": 6,
+        "role": "plain"
+      },
+      {
+        "offset": 1482,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 1483,
+        "length": 1,
+        "role": "literal"
+      },
+      {
+        "offset": 1485,
+        "length": 1,
+        "role": "literal"
+      },
+      {
+        "offset": 1487,
+        "length": 1,
+        "role": "literal"
+      },
+      {
+        "offset": 1488,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 1490,
+        "length": 3,
+        "role": "plain"
+      },
+      {
+        "offset": 1494,
+        "length": 8,
+        "role": "plain"
+      },
+      {
+        "offset": 1507,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 1511,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 1515,
+        "length": 4,
+        "role": "keyword"
+      },
+      {
+        "offset": 1520,
+        "length": 6,
+        "role": "plain"
+      },
+      {
+        "offset": 1527,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 1533,
+        "length": 12,
+        "role": "keyword"
+      },
+      {
+        "offset": 1546,
+        "length": 7,
+        "role": "plain"
+      },
+      {
+        "offset": 1554,
+        "length": 4,
+        "role": "plain"
+      },
+      {
+        "offset": 1559,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 1567,
+        "length": 6,
+        "role": "keyword"
+      },
+      {
+        "offset": 1588,
+        "length": 5,
+        "role": "plain"
+      },
+      {
+        "offset": 1600,
+        "length": 15,
+        "role": "keyword"
+      },
+      {
+        "offset": 1621,
+        "length": 6,
+        "role": "plain"
+      },
+      {
+        "offset": 1634,
+        "length": 16,
+        "role": "keyword"
+      },
+      {
+        "offset": 1655,
+        "length": 6,
+        "role": "plain"
+      },
+      {
+        "offset": 1668,
+        "length": 14,
+        "role": "keyword"
+      },
+      {
+        "offset": 1689,
+        "length": 6,
+        "role": "plain"
+      },
+      {
+        "offset": 1702,
+        "length": 20,
+        "role": "keyword"
+      },
+      {
+        "offset": 1723,
+        "length": 4,
+        "role": "plain"
+      },
+      {
+        "offset": 1728,
+        "length": 1,
+        "role": "literal"
+      },
+      {
+        "offset": 1736,
+        "length": 5,
+        "role": "keyword"
+      },
+      {
+        "offset": 1757,
+        "length": 4,
+        "role": "plain"
+      },
+      {
+        "offset": 1762,
+        "length": 3,
+        "role": "literal"
+      },
+      {
+        "offset": 1772,
+        "length": 7,
+        "role": "keyword"
+      },
+      {
+        "offset": 1793,
+        "length": 4,
+        "role": "plain"
+      },
+      {
+        "offset": 1798,
+        "length": 1,
+        "role": "literal"
+      },
+      {
+        "offset": 1804,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 1808,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 1810,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 1813,
+        "length": 7,
+        "role": "keyword"
+      },
+      {
+        "offset": 1821,
+        "length": 6,
+        "role": "plain"
+      },
+      {
+        "offset": 1828,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 1832,
+        "length": 6,
+        "role": "keyword"
+      },
+      {
+        "offset": 1839,
+        "length": 1,
+        "role": "literal"
+      },
+      {
+        "offset": 1841,
+        "length": 4,
+        "role": "plain"
+      },
+      {
+        "offset": 1848,
+        "length": 7,
+        "role": "keyword"
+      },
+      {
+        "offset": 1856,
+        "length": 4,
+        "role": "plain"
+      },
+      {
+        "offset": 1863,
+        "length": 4,
+        "role": "keyword"
+      },
+      {
+        "offset": 1868,
+        "length": 3,
+        "role": "plain"
+      },
+      {
+        "offset": 1872,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 1878,
+        "length": 6,
+        "role": "keyword"
+      },
+      {
+        "offset": 1885,
+        "length": 4,
+        "role": "plain"
+      },
+      {
+        "offset": 1890,
+        "length": 4,
+        "role": "plain"
+      },
+      {
+        "offset": 1899,
+        "length": 6,
+        "role": "keyword"
+      },
+      {
+        "offset": 1906,
+        "length": 5,
+        "role": "plain"
+      },
+      {
+        "offset": 1914,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 1918,
+        "length": 4,
+        "role": "keyword"
+      },
+      {
+        "offset": 1923,
+        "length": 4,
+        "role": "keyword"
+      },
+      {
+        "offset": 1928,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 1934,
+        "length": 4,
+        "role": "keyword"
+      },
+      {
+        "offset": 1939,
+        "length": 4,
+        "role": "plain"
+      },
+      {
+        "offset": 1948,
+        "length": 6,
+        "role": "keyword"
+      },
+      {
+        "offset": 1955,
+        "length": 7,
+        "role": "plain"
+      },
+      {
+        "offset": 1965,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 1969,
+        "length": 4,
+        "role": "keyword"
+      },
+      {
+        "offset": 1974,
+        "length": 4,
+        "role": "plain"
+      },
+      {
+        "offset": 1979,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 1985,
+        "length": 6,
+        "role": "keyword"
+      },
+      {
+        "offset": 1992,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 2000,
+        "length": 6,
+        "role": "keyword"
+      },
+      {
+        "offset": 2009,
+        "length": 7,
+        "role": "plain"
+      },
+      {
+        "offset": 2023,
+        "length": 7,
+        "role": "keyword"
+      },
+      {
+        "offset": 2032,
+        "length": 4,
+        "role": "plain"
+      },
+      {
+        "offset": 2043,
+        "length": 6,
+        "role": "keyword"
+      },
+      {
+        "offset": 2052,
+        "length": 11,
+        "role": "plain"
+      },
+      {
+        "offset": 2070,
+        "length": 8,
+        "role": "keyword"
+      },
+      {
+        "offset": 2079,
+        "length": 3,
+        "role": "literal"
+      },
+      {
+        "offset": 2087,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 2091,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 2093,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 2096,
+        "length": 11,
+        "role": "keyword"
+      },
+      {
+        "offset": 2108,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 2112,
+        "length": 5,
+        "role": "plain"
+      },
+      {
+        "offset": 2120,
+        "length": 5,
+        "role": "plain"
+      },
+      {
+        "offset": 2128,
+        "length": 5,
+        "role": "plain"
+      },
+      {
+        "offset": 2134,
+        "length": 2,
+        "role": "plain"
+      },
+      {
+        "offset": 2137,
+        "length": 7,
+        "role": "plain"
+      },
+      {
+        "offset": 2147,
+        "length": 6,
+        "role": "plain"
+      },
+      {
+        "offset": 2156,
+        "length": 5,
+        "role": "plain"
+      },
+      {
+        "offset": 2164,
+        "length": 6,
+        "role": "plain"
+      },
+      {
+        "offset": 2171,
+        "length": 2,
+        "role": "literal"
+      },
+      {
+        "offset": 2174,
+        "length": 9,
+        "role": "plain"
+      },
+      {
+        "offset": 2184,
+        "length": 1,
+        "role": "punctuation"
+      }
+    ]
+  },
+  {
+    "name": "drift",
+    "source": "// drift.score - the music behind the Wavetable demo.\n//\n// The notes are here; the SOUND is not. Every channel below is adopted by name\n// in Demos.cpp and dressed there: five different wavetables, unison stacks, and\n// a morph position that moves under an LFO on the held voices and under the\n// envelope on the struck ones. That split is the language's own - it owns\n// notes, patterns and clips, and the user owns the instrument and the mixer.\n//\n// Slow on purpose. A wavetable morph is a thing you hear over bars, not beats,\n// so the parts hold and the harmony turns underneath them.\n\nsong {\n  title \"Drift\"\n  tempo 84 bpm\n  meter 4/4\n  grid  auto\n  key   D minor\n  seed  0x0DEFACEDBEEF\n}\n\nchannel pad {\n  mixer    1\n  range    C3..C5\n  velocity 48 +- 5\n}\n\nchannel swell {\n  mixer    2\n  range    G3..G5\n  velocity 40 +- 6\n}\n\nchannel sub {\n  mixer    3\n  range    D1..D3\n  velocity 78 +- 3\n}\n\nchannel bell {\n  mixer    4\n  range    D4..D6\n  velocity 58 +- 9\n}\n\nchannel answer {\n  mixer    5\n  range    A3..A5\n  velocity 44 +- 6 per bar\n}\n\nvoicing wide {\n  size     4 voices\n  spread   open\n  register C3..C5\n  motion   smooth\n  maxLeap  5\n  bass     from-inversion\n}\n\nvoicing upper {\n  size     3 voices\n  spread   shell\n  register G3..G5\n  motion   smooth\n}\n\nrhythm hold    { 1/1 }\nrhythm breathe { 1/2 1/2 }\nrhythm drift   { 1/4 1/4 1/2 }\nrhythm shimmer { 1/8 x6 - 1/8 1/8 }\n\nharmony still {\n  i x2 | bVI x2 | iv x2 | bVII x2\n}\n\nharmony opening {\n  bVI | bVII | i x2 | iv | V7 | i x2\n}\n\nsection haze {\n  length 4 bars\n  harmony {\n    i 2 bars | bVI 1 bar | bVII 1 bar\n  }\n  part pad {\n    chords with wide\n    rhythm hold\n  }\n}\n\nsection gather {\n  length 8 bars\n  harmony still\n  part pad {\n    chords with wide\n    rhythm hold\n  }\n  part swell {\n    chords with upper\n    rhythm breathe\n  }\n  part sub {\n    line root\n    rhythm breathe\n  }\n}\n\nsection bloom {\n  length 8 bars\n  harmony opening\n  part pad {\n    chords with wide\n    rhythm breathe\n  }\n  part swell {\n    chords with upper\n    rhythm drift\n  }\n  part sub {\n    line root-fifth\n    rhythm drift\n  }\n  part bell {\n    melody {\n      rhythm       shimmer\n      articulation legato\n      contour      arch\n      strong       chord-tones\n      variance     0.35\n      mute         1 of 4\n      cadence      choose [1 3 5] per instance\n    }\n  }\n  part answer {\n    counterpoint against bell {\n      rhythm               drift\n      parallel-fifths      forbid\n      parallel-octaves     forbid\n      voice-crossing       forbid\n      dissonance-on-strong soft 3\n      leaps                soft 1.5\n      repeats              soft 1\n    }\n  }\n}\n\nsection ebb {\n  length 8 bars\n  harmony still\n  part pad {\n    chords with wide\n    rhythm hold\n  }\n  part sub {\n    line root\n    rhythm breathe\n  }\n  part bell {\n    melody {\n      rhythm   drift\n      contour  fall\n      strong   chord-tones\n      variance 0.2\n      mute     1 of 3\n    }\n  }\n}\n\nsection fade {\n  length 4 bars\n  harmony {\n    iv 1 bar | bVII 1 bar | i 2 bars\n  }\n  part pad {\n    chords with wide\n    rhythm hold\n  }\n}\n\narrangement {\n  haze\n  gather\n  bloom\n  ebb\n  fade\n}\n",
+    "runs": [
+      {
+        "offset": 0,
+        "length": 53,
+        "role": "comment"
+      },
+      {
+        "offset": 54,
+        "length": 2,
+        "role": "comment"
+      },
+      {
+        "offset": 57,
+        "length": 79,
+        "role": "comment"
+      },
+      {
+        "offset": 137,
+        "length": 80,
+        "role": "comment"
+      },
+      {
+        "offset": 218,
+        "length": 76,
+        "role": "comment"
+      },
+      {
+        "offset": 295,
+        "length": 74,
+        "role": "comment"
+      },
+      {
+        "offset": 370,
+        "length": 77,
+        "role": "comment"
+      },
+      {
+        "offset": 448,
+        "length": 2,
+        "role": "comment"
+      },
+      {
+        "offset": 451,
+        "length": 79,
+        "role": "comment"
+      },
+      {
+        "offset": 531,
+        "length": 59,
+        "role": "comment"
+      },
+      {
+        "offset": 592,
+        "length": 4,
+        "role": "keyword"
+      },
+      {
+        "offset": 597,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 601,
+        "length": 5,
+        "role": "keyword"
+      },
+      {
+        "offset": 607,
+        "length": 7,
+        "role": "string"
+      },
+      {
+        "offset": 617,
+        "length": 5,
+        "role": "keyword"
+      },
+      {
+        "offset": 623,
+        "length": 2,
+        "role": "literal"
+      },
+      {
+        "offset": 626,
+        "length": 3,
+        "role": "plain"
+      },
+      {
+        "offset": 632,
+        "length": 5,
+        "role": "keyword"
+      },
+      {
+        "offset": 638,
+        "length": 3,
+        "role": "literal"
+      },
+      {
+        "offset": 644,
+        "length": 4,
+        "role": "keyword"
+      },
+      {
+        "offset": 650,
+        "length": 4,
+        "role": "plain"
+      },
+      {
+        "offset": 657,
+        "length": 3,
+        "role": "keyword"
+      },
+      {
+        "offset": 663,
+        "length": 1,
+        "role": "plain"
+      },
+      {
+        "offset": 665,
+        "length": 5,
+        "role": "plain"
+      },
+      {
+        "offset": 673,
+        "length": 4,
+        "role": "keyword"
+      },
+      {
+        "offset": 679,
+        "length": 14,
+        "role": "literal"
+      },
+      {
+        "offset": 694,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 697,
+        "length": 7,
+        "role": "keyword"
+      },
+      {
+        "offset": 705,
+        "length": 3,
+        "role": "plain"
+      },
+      {
+        "offset": 709,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 713,
+        "length": 5,
+        "role": "keyword"
+      },
+      {
+        "offset": 722,
+        "length": 1,
+        "role": "literal"
+      },
+      {
+        "offset": 726,
+        "length": 5,
+        "role": "keyword"
+      },
+      {
+        "offset": 735,
+        "length": 2,
+        "role": "plain"
+      },
+      {
+        "offset": 737,
+        "length": 2,
+        "role": "punctuation"
+      },
+      {
+        "offset": 739,
+        "length": 2,
+        "role": "plain"
+      },
+      {
+        "offset": 744,
+        "length": 8,
+        "role": "keyword"
+      },
+      {
+        "offset": 753,
+        "length": 2,
+        "role": "literal"
+      },
+      {
+        "offset": 756,
+        "length": 2,
+        "role": "punctuation"
+      },
+      {
+        "offset": 759,
+        "length": 1,
+        "role": "literal"
+      },
+      {
+        "offset": 761,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 764,
+        "length": 7,
+        "role": "keyword"
+      },
+      {
+        "offset": 772,
+        "length": 5,
+        "role": "plain"
+      },
+      {
+        "offset": 778,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 782,
+        "length": 5,
+        "role": "keyword"
+      },
+      {
+        "offset": 791,
+        "length": 1,
+        "role": "literal"
+      },
+      {
+        "offset": 795,
+        "length": 5,
+        "role": "keyword"
+      },
+      {
+        "offset": 804,
+        "length": 2,
+        "role": "plain"
+      },
+      {
+        "offset": 806,
+        "length": 2,
+        "role": "punctuation"
+      },
+      {
+        "offset": 808,
+        "length": 2,
+        "role": "plain"
+      },
+      {
+        "offset": 813,
+        "length": 8,
+        "role": "keyword"
+      },
+      {
+        "offset": 822,
+        "length": 2,
+        "role": "literal"
+      },
+      {
+        "offset": 825,
+        "length": 2,
+        "role": "punctuation"
+      },
+      {
+        "offset": 828,
+        "length": 1,
+        "role": "literal"
+      },
+      {
+        "offset": 830,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 833,
+        "length": 7,
+        "role": "keyword"
+      },
+      {
+        "offset": 841,
+        "length": 3,
+        "role": "plain"
+      },
+      {
+        "offset": 845,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 849,
+        "length": 5,
+        "role": "keyword"
+      },
+      {
+        "offset": 858,
+        "length": 1,
+        "role": "literal"
+      },
+      {
+        "offset": 862,
+        "length": 5,
+        "role": "keyword"
+      },
+      {
+        "offset": 871,
+        "length": 2,
+        "role": "plain"
+      },
+      {
+        "offset": 873,
+        "length": 2,
+        "role": "punctuation"
+      },
+      {
+        "offset": 875,
+        "length": 2,
+        "role": "plain"
+      },
+      {
+        "offset": 880,
+        "length": 8,
+        "role": "keyword"
+      },
+      {
+        "offset": 889,
+        "length": 2,
+        "role": "literal"
+      },
+      {
+        "offset": 892,
+        "length": 2,
+        "role": "punctuation"
+      },
+      {
+        "offset": 895,
+        "length": 1,
+        "role": "literal"
+      },
+      {
+        "offset": 897,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 900,
+        "length": 7,
+        "role": "keyword"
+      },
+      {
+        "offset": 908,
+        "length": 4,
+        "role": "plain"
+      },
+      {
+        "offset": 913,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 917,
+        "length": 5,
+        "role": "keyword"
+      },
+      {
+        "offset": 926,
+        "length": 1,
+        "role": "literal"
+      },
+      {
+        "offset": 930,
+        "length": 5,
+        "role": "keyword"
+      },
+      {
+        "offset": 939,
+        "length": 2,
+        "role": "plain"
+      },
+      {
+        "offset": 941,
+        "length": 2,
+        "role": "punctuation"
+      },
+      {
+        "offset": 943,
+        "length": 2,
+        "role": "plain"
+      },
+      {
+        "offset": 948,
+        "length": 8,
+        "role": "keyword"
+      },
+      {
+        "offset": 957,
+        "length": 2,
+        "role": "literal"
+      },
+      {
+        "offset": 960,
+        "length": 2,
+        "role": "punctuation"
+      },
+      {
+        "offset": 963,
+        "length": 1,
+        "role": "literal"
+      },
+      {
+        "offset": 965,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 968,
+        "length": 7,
+        "role": "keyword"
+      },
+      {
+        "offset": 976,
+        "length": 6,
+        "role": "plain"
+      },
+      {
+        "offset": 983,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 987,
+        "length": 5,
+        "role": "keyword"
+      },
+      {
+        "offset": 996,
+        "length": 1,
+        "role": "literal"
+      },
+      {
+        "offset": 1000,
+        "length": 5,
+        "role": "keyword"
+      },
+      {
+        "offset": 1009,
+        "length": 2,
+        "role": "plain"
+      },
+      {
+        "offset": 1011,
+        "length": 2,
+        "role": "punctuation"
+      },
+      {
+        "offset": 1013,
+        "length": 2,
+        "role": "plain"
+      },
+      {
+        "offset": 1018,
+        "length": 8,
+        "role": "keyword"
+      },
+      {
+        "offset": 1027,
+        "length": 2,
+        "role": "literal"
+      },
+      {
+        "offset": 1030,
+        "length": 2,
+        "role": "punctuation"
+      },
+      {
+        "offset": 1033,
+        "length": 1,
+        "role": "literal"
+      },
+      {
+        "offset": 1035,
+        "length": 3,
+        "role": "plain"
+      },
+      {
+        "offset": 1039,
+        "length": 3,
+        "role": "plain"
+      },
+      {
+        "offset": 1043,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 1046,
+        "length": 7,
+        "role": "keyword"
+      },
+      {
+        "offset": 1054,
+        "length": 4,
+        "role": "plain"
+      },
+      {
+        "offset": 1059,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 1063,
+        "length": 4,
+        "role": "keyword"
+      },
+      {
+        "offset": 1072,
+        "length": 1,
+        "role": "literal"
+      },
+      {
+        "offset": 1074,
+        "length": 6,
+        "role": "plain"
+      },
+      {
+        "offset": 1083,
+        "length": 6,
+        "role": "keyword"
+      },
+      {
+        "offset": 1092,
+        "length": 4,
+        "role": "plain"
+      },
+      {
+        "offset": 1099,
+        "length": 8,
+        "role": "keyword"
+      },
+      {
+        "offset": 1108,
+        "length": 2,
+        "role": "plain"
+      },
+      {
+        "offset": 1110,
+        "length": 2,
+        "role": "punctuation"
+      },
+      {
+        "offset": 1112,
+        "length": 2,
+        "role": "plain"
+      },
+      {
+        "offset": 1117,
+        "length": 6,
+        "role": "keyword"
+      },
+      {
+        "offset": 1126,
+        "length": 6,
+        "role": "plain"
+      },
+      {
+        "offset": 1135,
+        "length": 7,
+        "role": "keyword"
+      },
+      {
+        "offset": 1144,
+        "length": 1,
+        "role": "literal"
+      },
+      {
+        "offset": 1148,
+        "length": 4,
+        "role": "keyword"
+      },
+      {
+        "offset": 1157,
+        "length": 14,
+        "role": "plain"
+      },
+      {
+        "offset": 1172,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 1175,
+        "length": 7,
+        "role": "keyword"
+      },
+      {
+        "offset": 1183,
+        "length": 5,
+        "role": "plain"
+      },
+      {
+        "offset": 1189,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 1193,
+        "length": 4,
+        "role": "keyword"
+      },
+      {
+        "offset": 1202,
+        "length": 1,
+        "role": "literal"
+      },
+      {
+        "offset": 1204,
+        "length": 6,
+        "role": "plain"
+      },
+      {
+        "offset": 1213,
+        "length": 6,
+        "role": "keyword"
+      },
+      {
+        "offset": 1222,
+        "length": 5,
+        "role": "plain"
+      },
+      {
+        "offset": 1230,
+        "length": 8,
+        "role": "keyword"
+      },
+      {
+        "offset": 1239,
+        "length": 2,
+        "role": "plain"
+      },
+      {
+        "offset": 1241,
+        "length": 2,
+        "role": "punctuation"
+      },
+      {
+        "offset": 1243,
+        "length": 2,
+        "role": "plain"
+      },
+      {
+        "offset": 1248,
+        "length": 6,
+        "role": "keyword"
+      },
+      {
+        "offset": 1257,
+        "length": 6,
+        "role": "plain"
+      },
+      {
+        "offset": 1264,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 1267,
+        "length": 6,
+        "role": "keyword"
+      },
+      {
+        "offset": 1274,
+        "length": 4,
+        "role": "plain"
+      },
+      {
+        "offset": 1282,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 1284,
+        "length": 3,
+        "role": "literal"
+      },
+      {
+        "offset": 1288,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 1290,
+        "length": 6,
+        "role": "keyword"
+      },
+      {
+        "offset": 1297,
+        "length": 7,
+        "role": "plain"
+      },
+      {
+        "offset": 1305,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 1307,
+        "length": 3,
+        "role": "literal"
+      },
+      {
+        "offset": 1311,
+        "length": 3,
+        "role": "literal"
+      },
+      {
+        "offset": 1315,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 1317,
+        "length": 6,
+        "role": "keyword"
+      },
+      {
+        "offset": 1324,
+        "length": 5,
+        "role": "plain"
+      },
+      {
+        "offset": 1332,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 1334,
+        "length": 3,
+        "role": "literal"
+      },
+      {
+        "offset": 1338,
+        "length": 3,
+        "role": "literal"
+      },
+      {
+        "offset": 1342,
+        "length": 3,
+        "role": "literal"
+      },
+      {
+        "offset": 1346,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 1348,
+        "length": 6,
+        "role": "keyword"
+      },
+      {
+        "offset": 1355,
+        "length": 7,
+        "role": "plain"
+      },
+      {
+        "offset": 1363,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 1365,
+        "length": 3,
+        "role": "literal"
+      },
+      {
+        "offset": 1369,
+        "length": 2,
+        "role": "literal"
+      },
+      {
+        "offset": 1372,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 1374,
+        "length": 3,
+        "role": "literal"
+      },
+      {
+        "offset": 1378,
+        "length": 3,
+        "role": "literal"
+      },
+      {
+        "offset": 1382,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 1385,
+        "length": 7,
+        "role": "keyword"
+      },
+      {
+        "offset": 1393,
+        "length": 5,
+        "role": "plain"
+      },
+      {
+        "offset": 1399,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 1403,
+        "length": 1,
+        "role": "plain"
+      },
+      {
+        "offset": 1405,
+        "length": 2,
+        "role": "literal"
+      },
+      {
+        "offset": 1408,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 1410,
+        "length": 3,
+        "role": "plain"
+      },
+      {
+        "offset": 1414,
+        "length": 2,
+        "role": "literal"
+      },
+      {
+        "offset": 1417,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 1419,
+        "length": 2,
+        "role": "plain"
+      },
+      {
+        "offset": 1422,
+        "length": 2,
+        "role": "literal"
+      },
+      {
+        "offset": 1425,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 1427,
+        "length": 4,
+        "role": "plain"
+      },
+      {
+        "offset": 1432,
+        "length": 2,
+        "role": "literal"
+      },
+      {
+        "offset": 1435,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 1438,
+        "length": 7,
+        "role": "keyword"
+      },
+      {
+        "offset": 1446,
+        "length": 7,
+        "role": "plain"
+      },
+      {
+        "offset": 1454,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 1458,
+        "length": 3,
+        "role": "plain"
+      },
+      {
+        "offset": 1462,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 1464,
+        "length": 4,
+        "role": "plain"
+      },
+      {
+        "offset": 1469,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 1471,
+        "length": 1,
+        "role": "plain"
+      },
+      {
+        "offset": 1473,
+        "length": 2,
+        "role": "literal"
+      },
+      {
+        "offset": 1476,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 1478,
+        "length": 2,
+        "role": "plain"
+      },
+      {
+        "offset": 1481,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 1483,
+        "length": 2,
+        "role": "plain"
+      },
+      {
+        "offset": 1486,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 1488,
+        "length": 1,
+        "role": "plain"
+      },
+      {
+        "offset": 1490,
+        "length": 2,
+        "role": "literal"
+      },
+      {
+        "offset": 1493,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 1496,
+        "length": 7,
+        "role": "keyword"
+      },
+      {
+        "offset": 1504,
+        "length": 4,
+        "role": "plain"
+      },
+      {
+        "offset": 1509,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 1513,
+        "length": 6,
+        "role": "keyword"
+      },
+      {
+        "offset": 1520,
+        "length": 1,
+        "role": "literal"
+      },
+      {
+        "offset": 1522,
+        "length": 4,
+        "role": "plain"
+      },
+      {
+        "offset": 1529,
+        "length": 7,
+        "role": "keyword"
+      },
+      {
+        "offset": 1537,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 1543,
+        "length": 1,
+        "role": "plain"
+      },
+      {
+        "offset": 1545,
+        "length": 1,
+        "role": "literal"
+      },
+      {
+        "offset": 1547,
+        "length": 4,
+        "role": "plain"
+      },
+      {
+        "offset": 1552,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 1554,
+        "length": 3,
+        "role": "plain"
+      },
+      {
+        "offset": 1558,
+        "length": 1,
+        "role": "literal"
+      },
+      {
+        "offset": 1560,
+        "length": 3,
+        "role": "plain"
+      },
+      {
+        "offset": 1564,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 1566,
+        "length": 4,
+        "role": "plain"
+      },
+      {
+        "offset": 1571,
+        "length": 1,
+        "role": "literal"
+      },
+      {
+        "offset": 1573,
+        "length": 3,
+        "role": "plain"
+      },
+      {
+        "offset": 1579,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 1583,
+        "length": 4,
+        "role": "keyword"
+      },
+      {
+        "offset": 1588,
+        "length": 3,
+        "role": "plain"
+      },
+      {
+        "offset": 1592,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 1598,
+        "length": 6,
+        "role": "keyword"
+      },
+      {
+        "offset": 1605,
+        "length": 4,
+        "role": "plain"
+      },
+      {
+        "offset": 1610,
+        "length": 4,
+        "role": "plain"
+      },
+      {
+        "offset": 1619,
+        "length": 6,
+        "role": "keyword"
+      },
+      {
+        "offset": 1626,
+        "length": 4,
+        "role": "plain"
+      },
+      {
+        "offset": 1633,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 1635,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 1638,
+        "length": 7,
+        "role": "keyword"
+      },
+      {
+        "offset": 1646,
+        "length": 6,
+        "role": "plain"
+      },
+      {
+        "offset": 1653,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 1657,
+        "length": 6,
+        "role": "keyword"
+      },
+      {
+        "offset": 1664,
+        "length": 1,
+        "role": "literal"
+      },
+      {
+        "offset": 1666,
+        "length": 4,
+        "role": "plain"
+      },
+      {
+        "offset": 1673,
+        "length": 7,
+        "role": "keyword"
+      },
+      {
+        "offset": 1681,
+        "length": 5,
+        "role": "plain"
+      },
+      {
+        "offset": 1689,
+        "length": 4,
+        "role": "keyword"
+      },
+      {
+        "offset": 1694,
+        "length": 3,
+        "role": "plain"
+      },
+      {
+        "offset": 1698,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 1704,
+        "length": 6,
+        "role": "keyword"
+      },
+      {
+        "offset": 1711,
+        "length": 4,
+        "role": "plain"
+      },
+      {
+        "offset": 1716,
+        "length": 4,
+        "role": "plain"
+      },
+      {
+        "offset": 1725,
+        "length": 6,
+        "role": "keyword"
+      },
+      {
+        "offset": 1732,
+        "length": 4,
+        "role": "plain"
+      },
+      {
+        "offset": 1739,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 1743,
+        "length": 4,
+        "role": "keyword"
+      },
+      {
+        "offset": 1748,
+        "length": 5,
+        "role": "plain"
+      },
+      {
+        "offset": 1754,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 1760,
+        "length": 6,
+        "role": "keyword"
+      },
+      {
+        "offset": 1767,
+        "length": 4,
+        "role": "plain"
+      },
+      {
+        "offset": 1772,
+        "length": 5,
+        "role": "plain"
+      },
+      {
+        "offset": 1782,
+        "length": 6,
+        "role": "keyword"
+      },
+      {
+        "offset": 1789,
+        "length": 7,
+        "role": "plain"
+      },
+      {
+        "offset": 1799,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 1803,
+        "length": 4,
+        "role": "keyword"
+      },
+      {
+        "offset": 1808,
+        "length": 3,
+        "role": "plain"
+      },
+      {
+        "offset": 1812,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 1818,
+        "length": 4,
+        "role": "keyword"
+      },
+      {
+        "offset": 1823,
+        "length": 4,
+        "role": "plain"
+      },
+      {
+        "offset": 1832,
+        "length": 6,
+        "role": "keyword"
+      },
+      {
+        "offset": 1839,
+        "length": 7,
+        "role": "plain"
+      },
+      {
+        "offset": 1849,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 1851,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 1854,
+        "length": 7,
+        "role": "keyword"
+      },
+      {
+        "offset": 1862,
+        "length": 5,
+        "role": "plain"
+      },
+      {
+        "offset": 1868,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 1872,
+        "length": 6,
+        "role": "keyword"
+      },
+      {
+        "offset": 1879,
+        "length": 1,
+        "role": "literal"
+      },
+      {
+        "offset": 1881,
+        "length": 4,
+        "role": "plain"
+      },
+      {
+        "offset": 1888,
+        "length": 7,
+        "role": "keyword"
+      },
+      {
+        "offset": 1896,
+        "length": 7,
+        "role": "plain"
+      },
+      {
+        "offset": 1906,
+        "length": 4,
+        "role": "keyword"
+      },
+      {
+        "offset": 1911,
+        "length": 3,
+        "role": "plain"
+      },
+      {
+        "offset": 1915,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 1921,
+        "length": 6,
+        "role": "keyword"
+      },
+      {
+        "offset": 1928,
+        "length": 4,
+        "role": "plain"
+      },
+      {
+        "offset": 1933,
+        "length": 4,
+        "role": "plain"
+      },
+      {
+        "offset": 1942,
+        "length": 6,
+        "role": "keyword"
+      },
+      {
+        "offset": 1949,
+        "length": 7,
+        "role": "plain"
+      },
+      {
+        "offset": 1959,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 1963,
+        "length": 4,
+        "role": "keyword"
+      },
+      {
+        "offset": 1968,
+        "length": 5,
+        "role": "plain"
+      },
+      {
+        "offset": 1974,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 1980,
+        "length": 6,
+        "role": "keyword"
+      },
+      {
+        "offset": 1987,
+        "length": 4,
+        "role": "plain"
+      },
+      {
+        "offset": 1992,
+        "length": 5,
+        "role": "plain"
+      },
+      {
+        "offset": 2002,
+        "length": 6,
+        "role": "keyword"
+      },
+      {
+        "offset": 2009,
+        "length": 5,
+        "role": "plain"
+      },
+      {
+        "offset": 2017,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 2021,
+        "length": 4,
+        "role": "keyword"
+      },
+      {
+        "offset": 2026,
+        "length": 3,
+        "role": "plain"
+      },
+      {
+        "offset": 2030,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 2036,
+        "length": 4,
+        "role": "keyword"
+      },
+      {
+        "offset": 2041,
+        "length": 10,
+        "role": "plain"
+      },
+      {
+        "offset": 2056,
+        "length": 6,
+        "role": "keyword"
+      },
+      {
+        "offset": 2063,
+        "length": 5,
+        "role": "plain"
+      },
+      {
+        "offset": 2071,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 2075,
+        "length": 4,
+        "role": "keyword"
+      },
+      {
+        "offset": 2080,
+        "length": 4,
+        "role": "plain"
+      },
+      {
+        "offset": 2085,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 2091,
+        "length": 6,
+        "role": "keyword"
+      },
+      {
+        "offset": 2098,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 2106,
+        "length": 6,
+        "role": "keyword"
+      },
+      {
+        "offset": 2119,
+        "length": 7,
+        "role": "plain"
+      },
+      {
+        "offset": 2133,
+        "length": 12,
+        "role": "keyword"
+      },
+      {
+        "offset": 2146,
+        "length": 6,
+        "role": "plain"
+      },
+      {
+        "offset": 2159,
+        "length": 7,
+        "role": "keyword"
+      },
+      {
+        "offset": 2172,
+        "length": 4,
+        "role": "plain"
+      },
+      {
+        "offset": 2183,
+        "length": 6,
+        "role": "keyword"
+      },
+      {
+        "offset": 2196,
+        "length": 11,
+        "role": "plain"
+      },
+      {
+        "offset": 2214,
+        "length": 8,
+        "role": "keyword"
+      },
+      {
+        "offset": 2227,
+        "length": 4,
+        "role": "literal"
+      },
+      {
+        "offset": 2238,
+        "length": 4,
+        "role": "keyword"
+      },
+      {
+        "offset": 2251,
+        "length": 1,
+        "role": "literal"
+      },
+      {
+        "offset": 2253,
+        "length": 2,
+        "role": "plain"
+      },
+      {
+        "offset": 2256,
+        "length": 1,
+        "role": "literal"
+      },
+      {
+        "offset": 2264,
+        "length": 7,
+        "role": "keyword"
+      },
+      {
+        "offset": 2277,
+        "length": 6,
+        "role": "plain"
+      },
+      {
+        "offset": 2284,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 2285,
+        "length": 1,
+        "role": "literal"
+      },
+      {
+        "offset": 2287,
+        "length": 1,
+        "role": "literal"
+      },
+      {
+        "offset": 2289,
+        "length": 1,
+        "role": "literal"
+      },
+      {
+        "offset": 2290,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 2292,
+        "length": 3,
+        "role": "plain"
+      },
+      {
+        "offset": 2296,
+        "length": 8,
+        "role": "plain"
+      },
+      {
+        "offset": 2309,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 2313,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 2317,
+        "length": 4,
+        "role": "keyword"
+      },
+      {
+        "offset": 2322,
+        "length": 6,
+        "role": "plain"
+      },
+      {
+        "offset": 2329,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 2335,
+        "length": 12,
+        "role": "keyword"
+      },
+      {
+        "offset": 2348,
+        "length": 7,
+        "role": "plain"
+      },
+      {
+        "offset": 2356,
+        "length": 4,
+        "role": "plain"
+      },
+      {
+        "offset": 2361,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 2369,
+        "length": 6,
+        "role": "keyword"
+      },
+      {
+        "offset": 2390,
+        "length": 5,
+        "role": "plain"
+      },
+      {
+        "offset": 2402,
+        "length": 15,
+        "role": "keyword"
+      },
+      {
+        "offset": 2423,
+        "length": 6,
+        "role": "plain"
+      },
+      {
+        "offset": 2436,
+        "length": 16,
+        "role": "keyword"
+      },
+      {
+        "offset": 2457,
+        "length": 6,
+        "role": "plain"
+      },
+      {
+        "offset": 2470,
+        "length": 14,
+        "role": "keyword"
+      },
+      {
+        "offset": 2491,
+        "length": 6,
+        "role": "plain"
+      },
+      {
+        "offset": 2504,
+        "length": 20,
+        "role": "keyword"
+      },
+      {
+        "offset": 2525,
+        "length": 4,
+        "role": "plain"
+      },
+      {
+        "offset": 2530,
+        "length": 1,
+        "role": "literal"
+      },
+      {
+        "offset": 2538,
+        "length": 5,
+        "role": "keyword"
+      },
+      {
+        "offset": 2559,
+        "length": 4,
+        "role": "plain"
+      },
+      {
+        "offset": 2564,
+        "length": 3,
+        "role": "literal"
+      },
+      {
+        "offset": 2574,
+        "length": 7,
+        "role": "keyword"
+      },
+      {
+        "offset": 2595,
+        "length": 4,
+        "role": "plain"
+      },
+      {
+        "offset": 2600,
+        "length": 1,
+        "role": "literal"
+      },
+      {
+        "offset": 2606,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 2610,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 2612,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 2615,
+        "length": 7,
+        "role": "keyword"
+      },
+      {
+        "offset": 2623,
+        "length": 3,
+        "role": "plain"
+      },
+      {
+        "offset": 2627,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 2631,
+        "length": 6,
+        "role": "keyword"
+      },
+      {
+        "offset": 2638,
+        "length": 1,
+        "role": "literal"
+      },
+      {
+        "offset": 2640,
+        "length": 4,
+        "role": "plain"
+      },
+      {
+        "offset": 2647,
+        "length": 7,
+        "role": "keyword"
+      },
+      {
+        "offset": 2655,
+        "length": 5,
+        "role": "plain"
+      },
+      {
+        "offset": 2663,
+        "length": 4,
+        "role": "keyword"
+      },
+      {
+        "offset": 2668,
+        "length": 3,
+        "role": "plain"
+      },
+      {
+        "offset": 2672,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 2678,
+        "length": 6,
+        "role": "keyword"
+      },
+      {
+        "offset": 2685,
+        "length": 4,
+        "role": "plain"
+      },
+      {
+        "offset": 2690,
+        "length": 4,
+        "role": "plain"
+      },
+      {
+        "offset": 2699,
+        "length": 6,
+        "role": "keyword"
+      },
+      {
+        "offset": 2706,
+        "length": 4,
+        "role": "plain"
+      },
+      {
+        "offset": 2713,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 2717,
+        "length": 4,
+        "role": "keyword"
+      },
+      {
+        "offset": 2722,
+        "length": 3,
+        "role": "plain"
+      },
+      {
+        "offset": 2726,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 2732,
+        "length": 4,
+        "role": "keyword"
+      },
+      {
+        "offset": 2737,
+        "length": 4,
+        "role": "plain"
+      },
+      {
+        "offset": 2746,
+        "length": 6,
+        "role": "keyword"
+      },
+      {
+        "offset": 2753,
+        "length": 7,
+        "role": "plain"
+      },
+      {
+        "offset": 2763,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 2767,
+        "length": 4,
+        "role": "keyword"
+      },
+      {
+        "offset": 2772,
+        "length": 4,
+        "role": "plain"
+      },
+      {
+        "offset": 2777,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 2783,
+        "length": 6,
+        "role": "keyword"
+      },
+      {
+        "offset": 2790,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 2798,
+        "length": 6,
+        "role": "keyword"
+      },
+      {
+        "offset": 2807,
+        "length": 5,
+        "role": "plain"
+      },
+      {
+        "offset": 2819,
+        "length": 7,
+        "role": "keyword"
+      },
+      {
+        "offset": 2828,
+        "length": 4,
+        "role": "plain"
+      },
+      {
+        "offset": 2839,
+        "length": 6,
+        "role": "keyword"
+      },
+      {
+        "offset": 2848,
+        "length": 11,
+        "role": "plain"
+      },
+      {
+        "offset": 2866,
+        "length": 8,
+        "role": "keyword"
+      },
+      {
+        "offset": 2875,
+        "length": 3,
+        "role": "literal"
+      },
+      {
+        "offset": 2885,
+        "length": 4,
+        "role": "keyword"
+      },
+      {
+        "offset": 2894,
+        "length": 1,
+        "role": "literal"
+      },
+      {
+        "offset": 2896,
+        "length": 2,
+        "role": "plain"
+      },
+      {
+        "offset": 2899,
+        "length": 1,
+        "role": "literal"
+      },
+      {
+        "offset": 2905,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 2909,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 2911,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 2914,
+        "length": 7,
+        "role": "keyword"
+      },
+      {
+        "offset": 2922,
+        "length": 4,
+        "role": "plain"
+      },
+      {
+        "offset": 2927,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 2931,
+        "length": 6,
+        "role": "keyword"
+      },
+      {
+        "offset": 2938,
+        "length": 1,
+        "role": "literal"
+      },
+      {
+        "offset": 2940,
+        "length": 4,
+        "role": "plain"
+      },
+      {
+        "offset": 2947,
+        "length": 7,
+        "role": "keyword"
+      },
+      {
+        "offset": 2955,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 2961,
+        "length": 2,
+        "role": "plain"
+      },
+      {
+        "offset": 2964,
+        "length": 1,
+        "role": "literal"
+      },
+      {
+        "offset": 2966,
+        "length": 3,
+        "role": "plain"
+      },
+      {
+        "offset": 2970,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 2972,
+        "length": 4,
+        "role": "plain"
+      },
+      {
+        "offset": 2977,
+        "length": 1,
+        "role": "literal"
+      },
+      {
+        "offset": 2979,
+        "length": 3,
+        "role": "plain"
+      },
+      {
+        "offset": 2983,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 2985,
+        "length": 1,
+        "role": "plain"
+      },
+      {
+        "offset": 2987,
+        "length": 1,
+        "role": "literal"
+      },
+      {
+        "offset": 2989,
+        "length": 4,
+        "role": "plain"
+      },
+      {
+        "offset": 2996,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 3000,
+        "length": 4,
+        "role": "keyword"
+      },
+      {
+        "offset": 3005,
+        "length": 3,
+        "role": "plain"
+      },
+      {
+        "offset": 3009,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 3015,
+        "length": 6,
+        "role": "keyword"
+      },
+      {
+        "offset": 3022,
+        "length": 4,
+        "role": "plain"
+      },
+      {
+        "offset": 3027,
+        "length": 4,
+        "role": "plain"
+      },
+      {
+        "offset": 3036,
+        "length": 6,
+        "role": "keyword"
+      },
+      {
+        "offset": 3043,
+        "length": 4,
+        "role": "plain"
+      },
+      {
+        "offset": 3050,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 3052,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 3055,
+        "length": 11,
+        "role": "keyword"
+      },
+      {
+        "offset": 3067,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 3071,
+        "length": 4,
+        "role": "plain"
+      },
+      {
+        "offset": 3078,
+        "length": 6,
+        "role": "plain"
+      },
+      {
+        "offset": 3087,
+        "length": 5,
+        "role": "plain"
+      },
+      {
+        "offset": 3095,
+        "length": 3,
+        "role": "plain"
+      },
+      {
+        "offset": 3101,
+        "length": 4,
+        "role": "plain"
+      },
+      {
+        "offset": 3106,
+        "length": 1,
+        "role": "punctuation"
+      }
+    ]
+  },
+  {
+    "name": "neon",
+    "source": "// neon.score - the music behind the Oscillator Stack demo.\n//\n// Four parts and nothing exotic in the writing, on purpose: this demo is about\n// what ONE channel is made of, and a busy arrangement would talk over it. Each\n// channel below is adopted by name in Demos.cpp and given three oscillators -\n// an octave apart, a few cents off each other, at different gains - which is\n// the whole of the sound and none of the notes.\n\nsong {\n  title \"Neon\"\n  tempo 108 bpm\n  meter 4/4\n  grid  auto\n  key   C minor\n  seed  0x00FF1CE5EED\n}\n\nchannel lead {\n  mixer    1\n  range    C4..C6\n  velocity 70 +- 7\n}\n\nchannel pad {\n  mixer    2\n  range    C3..C5\n  velocity 46 +- 5\n}\n\nchannel bass {\n  mixer    3\n  range    C1..C3\n  velocity 82 +- 4\n}\n\nchannel arp {\n  mixer    4\n  range    G3..G5\n  velocity 58 +- 8 per bar\n}\n\nvoicing bed {\n  size     4 voices\n  spread   open\n  register C3..C5\n  motion   smooth\n  maxLeap  7\n  bass     from-inversion\n}\n\nrhythm held    { 1/1 }\nrhythm halves  { 1/2 1/2 }\nrhythm pulse   { 1/4 1/4 1/2 }\nrhythm running { 1/8 x6 - 1/8 1/8 }\n\nharmony engine {\n  i x2 | bVI x2 | bIII x2 | bVII x2\n}\n\nharmony lift {\n  bVI | bVII | i x2 | bIII | bVII | i x2\n}\n\nsection neon_intro {\n  length 4 bars\n  harmony {\n    i 2 bars | bVI 1 bar | bVII 1 bar\n  }\n  part pad {\n    chords with bed\n    rhythm held\n  }\n  part bass {\n    line root\n    rhythm halves\n  }\n}\n\nsection verse {\n  length 8 bars\n  harmony engine\n  part pad {\n    chords with bed\n    rhythm held\n  }\n  part bass {\n    line root-fifth\n    rhythm pulse\n  }\n  part arp {\n    melody {\n      rhythm       running\n      articulation detached\n      contour      wave\n      strong       chord-tones\n      variance     0.3\n      align        continuous\n    }\n  }\n}\n\nsection chorus {\n  length 8 bars\n  harmony lift\n  part pad {\n    chords with bed\n    rhythm halves\n  }\n  part bass {\n    line root\n    rhythm running\n  }\n  part arp {\n    melody {\n      rhythm   running\n      contour  rise\n      strong   chord-tones\n      variance 0.4\n      align    continuous\n    }\n  }\n  part lead {\n    melody {\n      rhythm       pulse\n      articulation legato\n      contour      arch\n      strong       chord-tones\n      variance     0.25\n      leap         max 7 resolve step\n      cadence      choose [1 3 5] per instance\n    }\n  }\n}\n\nsection outro {\n  length 4 bars\n  harmony {\n    bVI 1 bar | bVII 1 bar | i 2 bars\n  }\n  part pad {\n    chords with bed\n    rhythm held\n  }\n  part bass {\n    line root\n    rhythm halves\n  }\n}\n\narrangement {\n  neon_intro\n  verse\n  chorus\n  verse as verse_b\n  outro\n}\n",
+    "runs": [
+      {
+        "offset": 0,
+        "length": 59,
+        "role": "comment"
+      },
+      {
+        "offset": 60,
+        "length": 2,
+        "role": "comment"
+      },
+      {
+        "offset": 63,
+        "length": 79,
+        "role": "comment"
+      },
+      {
+        "offset": 143,
+        "length": 79,
+        "role": "comment"
+      },
+      {
+        "offset": 223,
+        "length": 78,
+        "role": "comment"
+      },
+      {
+        "offset": 302,
+        "length": 77,
+        "role": "comment"
+      },
+      {
+        "offset": 380,
+        "length": 48,
+        "role": "comment"
+      },
+      {
+        "offset": 430,
+        "length": 4,
+        "role": "keyword"
+      },
+      {
+        "offset": 435,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 439,
+        "length": 5,
+        "role": "keyword"
+      },
+      {
+        "offset": 445,
+        "length": 6,
+        "role": "string"
+      },
+      {
+        "offset": 454,
+        "length": 5,
+        "role": "keyword"
+      },
+      {
+        "offset": 460,
+        "length": 3,
+        "role": "literal"
+      },
+      {
+        "offset": 464,
+        "length": 3,
+        "role": "plain"
+      },
+      {
+        "offset": 470,
+        "length": 5,
+        "role": "keyword"
+      },
+      {
+        "offset": 476,
+        "length": 3,
+        "role": "literal"
+      },
+      {
+        "offset": 482,
+        "length": 4,
+        "role": "keyword"
+      },
+      {
+        "offset": 488,
+        "length": 4,
+        "role": "plain"
+      },
+      {
+        "offset": 495,
+        "length": 3,
+        "role": "keyword"
+      },
+      {
+        "offset": 501,
+        "length": 1,
+        "role": "plain"
+      },
+      {
+        "offset": 503,
+        "length": 5,
+        "role": "plain"
+      },
+      {
+        "offset": 511,
+        "length": 4,
+        "role": "keyword"
+      },
+      {
+        "offset": 517,
+        "length": 13,
+        "role": "literal"
+      },
+      {
+        "offset": 531,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 534,
+        "length": 7,
+        "role": "keyword"
+      },
+      {
+        "offset": 542,
+        "length": 4,
+        "role": "plain"
+      },
+      {
+        "offset": 547,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 551,
+        "length": 5,
+        "role": "keyword"
+      },
+      {
+        "offset": 560,
+        "length": 1,
+        "role": "literal"
+      },
+      {
+        "offset": 564,
+        "length": 5,
+        "role": "keyword"
+      },
+      {
+        "offset": 573,
+        "length": 2,
+        "role": "plain"
+      },
+      {
+        "offset": 575,
+        "length": 2,
+        "role": "punctuation"
+      },
+      {
+        "offset": 577,
+        "length": 2,
+        "role": "plain"
+      },
+      {
+        "offset": 582,
+        "length": 8,
+        "role": "keyword"
+      },
+      {
+        "offset": 591,
+        "length": 2,
+        "role": "literal"
+      },
+      {
+        "offset": 594,
+        "length": 2,
+        "role": "punctuation"
+      },
+      {
+        "offset": 597,
+        "length": 1,
+        "role": "literal"
+      },
+      {
+        "offset": 599,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 602,
+        "length": 7,
+        "role": "keyword"
+      },
+      {
+        "offset": 610,
+        "length": 3,
+        "role": "plain"
+      },
+      {
+        "offset": 614,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 618,
+        "length": 5,
+        "role": "keyword"
+      },
+      {
+        "offset": 627,
+        "length": 1,
+        "role": "literal"
+      },
+      {
+        "offset": 631,
+        "length": 5,
+        "role": "keyword"
+      },
+      {
+        "offset": 640,
+        "length": 2,
+        "role": "plain"
+      },
+      {
+        "offset": 642,
+        "length": 2,
+        "role": "punctuation"
+      },
+      {
+        "offset": 644,
+        "length": 2,
+        "role": "plain"
+      },
+      {
+        "offset": 649,
+        "length": 8,
+        "role": "keyword"
+      },
+      {
+        "offset": 658,
+        "length": 2,
+        "role": "literal"
+      },
+      {
+        "offset": 661,
+        "length": 2,
+        "role": "punctuation"
+      },
+      {
+        "offset": 664,
+        "length": 1,
+        "role": "literal"
+      },
+      {
+        "offset": 666,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 669,
+        "length": 7,
+        "role": "keyword"
+      },
+      {
+        "offset": 677,
+        "length": 4,
+        "role": "keyword"
+      },
+      {
+        "offset": 682,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 686,
+        "length": 5,
+        "role": "keyword"
+      },
+      {
+        "offset": 695,
+        "length": 1,
+        "role": "literal"
+      },
+      {
+        "offset": 699,
+        "length": 5,
+        "role": "keyword"
+      },
+      {
+        "offset": 708,
+        "length": 2,
+        "role": "plain"
+      },
+      {
+        "offset": 710,
+        "length": 2,
+        "role": "punctuation"
+      },
+      {
+        "offset": 712,
+        "length": 2,
+        "role": "plain"
+      },
+      {
+        "offset": 717,
+        "length": 8,
+        "role": "keyword"
+      },
+      {
+        "offset": 726,
+        "length": 2,
+        "role": "literal"
+      },
+      {
+        "offset": 729,
+        "length": 2,
+        "role": "punctuation"
+      },
+      {
+        "offset": 732,
+        "length": 1,
+        "role": "literal"
+      },
+      {
+        "offset": 734,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 737,
+        "length": 7,
+        "role": "keyword"
+      },
+      {
+        "offset": 745,
+        "length": 3,
+        "role": "plain"
+      },
+      {
+        "offset": 749,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 753,
+        "length": 5,
+        "role": "keyword"
+      },
+      {
+        "offset": 762,
+        "length": 1,
+        "role": "literal"
+      },
+      {
+        "offset": 766,
+        "length": 5,
+        "role": "keyword"
+      },
+      {
+        "offset": 775,
+        "length": 2,
+        "role": "plain"
+      },
+      {
+        "offset": 777,
+        "length": 2,
+        "role": "punctuation"
+      },
+      {
+        "offset": 779,
+        "length": 2,
+        "role": "plain"
+      },
+      {
+        "offset": 784,
+        "length": 8,
+        "role": "keyword"
+      },
+      {
+        "offset": 793,
+        "length": 2,
+        "role": "literal"
+      },
+      {
+        "offset": 796,
+        "length": 2,
+        "role": "punctuation"
+      },
+      {
+        "offset": 799,
+        "length": 1,
+        "role": "literal"
+      },
+      {
+        "offset": 801,
+        "length": 3,
+        "role": "plain"
+      },
+      {
+        "offset": 805,
+        "length": 3,
+        "role": "plain"
+      },
+      {
+        "offset": 809,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 812,
+        "length": 7,
+        "role": "keyword"
+      },
+      {
+        "offset": 820,
+        "length": 3,
+        "role": "plain"
+      },
+      {
+        "offset": 824,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 828,
+        "length": 4,
+        "role": "keyword"
+      },
+      {
+        "offset": 837,
+        "length": 1,
+        "role": "literal"
+      },
+      {
+        "offset": 839,
+        "length": 6,
+        "role": "plain"
+      },
+      {
+        "offset": 848,
+        "length": 6,
+        "role": "keyword"
+      },
+      {
+        "offset": 857,
+        "length": 4,
+        "role": "plain"
+      },
+      {
+        "offset": 864,
+        "length": 8,
+        "role": "keyword"
+      },
+      {
+        "offset": 873,
+        "length": 2,
+        "role": "plain"
+      },
+      {
+        "offset": 875,
+        "length": 2,
+        "role": "punctuation"
+      },
+      {
+        "offset": 877,
+        "length": 2,
+        "role": "plain"
+      },
+      {
+        "offset": 882,
+        "length": 6,
+        "role": "keyword"
+      },
+      {
+        "offset": 891,
+        "length": 6,
+        "role": "plain"
+      },
+      {
+        "offset": 900,
+        "length": 7,
+        "role": "keyword"
+      },
+      {
+        "offset": 909,
+        "length": 1,
+        "role": "literal"
+      },
+      {
+        "offset": 913,
+        "length": 4,
+        "role": "keyword"
+      },
+      {
+        "offset": 922,
+        "length": 14,
+        "role": "plain"
+      },
+      {
+        "offset": 937,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 940,
+        "length": 6,
+        "role": "keyword"
+      },
+      {
+        "offset": 947,
+        "length": 4,
+        "role": "plain"
+      },
+      {
+        "offset": 955,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 957,
+        "length": 3,
+        "role": "literal"
+      },
+      {
+        "offset": 961,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 963,
+        "length": 6,
+        "role": "keyword"
+      },
+      {
+        "offset": 970,
+        "length": 6,
+        "role": "plain"
+      },
+      {
+        "offset": 978,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 980,
+        "length": 3,
+        "role": "literal"
+      },
+      {
+        "offset": 984,
+        "length": 3,
+        "role": "literal"
+      },
+      {
+        "offset": 988,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 990,
+        "length": 6,
+        "role": "keyword"
+      },
+      {
+        "offset": 997,
+        "length": 5,
+        "role": "plain"
+      },
+      {
+        "offset": 1005,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 1007,
+        "length": 3,
+        "role": "literal"
+      },
+      {
+        "offset": 1011,
+        "length": 3,
+        "role": "literal"
+      },
+      {
+        "offset": 1015,
+        "length": 3,
+        "role": "literal"
+      },
+      {
+        "offset": 1019,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 1021,
+        "length": 6,
+        "role": "keyword"
+      },
+      {
+        "offset": 1028,
+        "length": 7,
+        "role": "plain"
+      },
+      {
+        "offset": 1036,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 1038,
+        "length": 3,
+        "role": "literal"
+      },
+      {
+        "offset": 1042,
+        "length": 2,
+        "role": "literal"
+      },
+      {
+        "offset": 1045,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 1047,
+        "length": 3,
+        "role": "literal"
+      },
+      {
+        "offset": 1051,
+        "length": 3,
+        "role": "literal"
+      },
+      {
+        "offset": 1055,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 1058,
+        "length": 7,
+        "role": "keyword"
+      },
+      {
+        "offset": 1066,
+        "length": 6,
+        "role": "plain"
+      },
+      {
+        "offset": 1073,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 1077,
+        "length": 1,
+        "role": "plain"
+      },
+      {
+        "offset": 1079,
+        "length": 2,
+        "role": "literal"
+      },
+      {
+        "offset": 1082,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 1084,
+        "length": 3,
+        "role": "plain"
+      },
+      {
+        "offset": 1088,
+        "length": 2,
+        "role": "literal"
+      },
+      {
+        "offset": 1091,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 1093,
+        "length": 4,
+        "role": "plain"
+      },
+      {
+        "offset": 1098,
+        "length": 2,
+        "role": "literal"
+      },
+      {
+        "offset": 1101,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 1103,
+        "length": 4,
+        "role": "plain"
+      },
+      {
+        "offset": 1108,
+        "length": 2,
+        "role": "literal"
+      },
+      {
+        "offset": 1111,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 1114,
+        "length": 7,
+        "role": "keyword"
+      },
+      {
+        "offset": 1122,
+        "length": 4,
+        "role": "plain"
+      },
+      {
+        "offset": 1127,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 1131,
+        "length": 3,
+        "role": "plain"
+      },
+      {
+        "offset": 1135,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 1137,
+        "length": 4,
+        "role": "plain"
+      },
+      {
+        "offset": 1142,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 1144,
+        "length": 1,
+        "role": "plain"
+      },
+      {
+        "offset": 1146,
+        "length": 2,
+        "role": "literal"
+      },
+      {
+        "offset": 1149,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 1151,
+        "length": 4,
+        "role": "plain"
+      },
+      {
+        "offset": 1156,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 1158,
+        "length": 4,
+        "role": "plain"
+      },
+      {
+        "offset": 1163,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 1165,
+        "length": 1,
+        "role": "plain"
+      },
+      {
+        "offset": 1167,
+        "length": 2,
+        "role": "literal"
+      },
+      {
+        "offset": 1170,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 1173,
+        "length": 7,
+        "role": "keyword"
+      },
+      {
+        "offset": 1181,
+        "length": 10,
+        "role": "plain"
+      },
+      {
+        "offset": 1192,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 1196,
+        "length": 6,
+        "role": "keyword"
+      },
+      {
+        "offset": 1203,
+        "length": 1,
+        "role": "literal"
+      },
+      {
+        "offset": 1205,
+        "length": 4,
+        "role": "plain"
+      },
+      {
+        "offset": 1212,
+        "length": 7,
+        "role": "keyword"
+      },
+      {
+        "offset": 1220,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 1226,
+        "length": 1,
+        "role": "plain"
+      },
+      {
+        "offset": 1228,
+        "length": 1,
+        "role": "literal"
+      },
+      {
+        "offset": 1230,
+        "length": 4,
+        "role": "plain"
+      },
+      {
+        "offset": 1235,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 1237,
+        "length": 3,
+        "role": "plain"
+      },
+      {
+        "offset": 1241,
+        "length": 1,
+        "role": "literal"
+      },
+      {
+        "offset": 1243,
+        "length": 3,
+        "role": "plain"
+      },
+      {
+        "offset": 1247,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 1249,
+        "length": 4,
+        "role": "plain"
+      },
+      {
+        "offset": 1254,
+        "length": 1,
+        "role": "literal"
+      },
+      {
+        "offset": 1256,
+        "length": 3,
+        "role": "plain"
+      },
+      {
+        "offset": 1262,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 1266,
+        "length": 4,
+        "role": "keyword"
+      },
+      {
+        "offset": 1271,
+        "length": 3,
+        "role": "plain"
+      },
+      {
+        "offset": 1275,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 1281,
+        "length": 6,
+        "role": "keyword"
+      },
+      {
+        "offset": 1288,
+        "length": 4,
+        "role": "plain"
+      },
+      {
+        "offset": 1293,
+        "length": 3,
+        "role": "plain"
+      },
+      {
+        "offset": 1301,
+        "length": 6,
+        "role": "keyword"
+      },
+      {
+        "offset": 1308,
+        "length": 4,
+        "role": "plain"
+      },
+      {
+        "offset": 1315,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 1319,
+        "length": 4,
+        "role": "keyword"
+      },
+      {
+        "offset": 1324,
+        "length": 4,
+        "role": "keyword"
+      },
+      {
+        "offset": 1329,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 1335,
+        "length": 4,
+        "role": "keyword"
+      },
+      {
+        "offset": 1340,
+        "length": 4,
+        "role": "plain"
+      },
+      {
+        "offset": 1349,
+        "length": 6,
+        "role": "keyword"
+      },
+      {
+        "offset": 1356,
+        "length": 6,
+        "role": "plain"
+      },
+      {
+        "offset": 1365,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 1367,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 1370,
+        "length": 7,
+        "role": "keyword"
+      },
+      {
+        "offset": 1378,
+        "length": 5,
+        "role": "plain"
+      },
+      {
+        "offset": 1384,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 1388,
+        "length": 6,
+        "role": "keyword"
+      },
+      {
+        "offset": 1395,
+        "length": 1,
+        "role": "literal"
+      },
+      {
+        "offset": 1397,
+        "length": 4,
+        "role": "plain"
+      },
+      {
+        "offset": 1404,
+        "length": 7,
+        "role": "keyword"
+      },
+      {
+        "offset": 1412,
+        "length": 6,
+        "role": "plain"
+      },
+      {
+        "offset": 1421,
+        "length": 4,
+        "role": "keyword"
+      },
+      {
+        "offset": 1426,
+        "length": 3,
+        "role": "plain"
+      },
+      {
+        "offset": 1430,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 1436,
+        "length": 6,
+        "role": "keyword"
+      },
+      {
+        "offset": 1443,
+        "length": 4,
+        "role": "plain"
+      },
+      {
+        "offset": 1448,
+        "length": 3,
+        "role": "plain"
+      },
+      {
+        "offset": 1456,
+        "length": 6,
+        "role": "keyword"
+      },
+      {
+        "offset": 1463,
+        "length": 4,
+        "role": "plain"
+      },
+      {
+        "offset": 1470,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 1474,
+        "length": 4,
+        "role": "keyword"
+      },
+      {
+        "offset": 1479,
+        "length": 4,
+        "role": "keyword"
+      },
+      {
+        "offset": 1484,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 1490,
+        "length": 4,
+        "role": "keyword"
+      },
+      {
+        "offset": 1495,
+        "length": 10,
+        "role": "plain"
+      },
+      {
+        "offset": 1510,
+        "length": 6,
+        "role": "keyword"
+      },
+      {
+        "offset": 1517,
+        "length": 5,
+        "role": "plain"
+      },
+      {
+        "offset": 1525,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 1529,
+        "length": 4,
+        "role": "keyword"
+      },
+      {
+        "offset": 1534,
+        "length": 3,
+        "role": "plain"
+      },
+      {
+        "offset": 1538,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 1544,
+        "length": 6,
+        "role": "keyword"
+      },
+      {
+        "offset": 1551,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 1559,
+        "length": 6,
+        "role": "keyword"
+      },
+      {
+        "offset": 1572,
+        "length": 7,
+        "role": "plain"
+      },
+      {
+        "offset": 1586,
+        "length": 12,
+        "role": "keyword"
+      },
+      {
+        "offset": 1599,
+        "length": 8,
+        "role": "plain"
+      },
+      {
+        "offset": 1614,
+        "length": 7,
+        "role": "keyword"
+      },
+      {
+        "offset": 1627,
+        "length": 4,
+        "role": "plain"
+      },
+      {
+        "offset": 1638,
+        "length": 6,
+        "role": "keyword"
+      },
+      {
+        "offset": 1651,
+        "length": 11,
+        "role": "plain"
+      },
+      {
+        "offset": 1669,
+        "length": 8,
+        "role": "keyword"
+      },
+      {
+        "offset": 1682,
+        "length": 3,
+        "role": "literal"
+      },
+      {
+        "offset": 1692,
+        "length": 5,
+        "role": "keyword"
+      },
+      {
+        "offset": 1705,
+        "length": 10,
+        "role": "plain"
+      },
+      {
+        "offset": 1720,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 1724,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 1726,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 1729,
+        "length": 7,
+        "role": "keyword"
+      },
+      {
+        "offset": 1737,
+        "length": 6,
+        "role": "plain"
+      },
+      {
+        "offset": 1744,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 1748,
+        "length": 6,
+        "role": "keyword"
+      },
+      {
+        "offset": 1755,
+        "length": 1,
+        "role": "literal"
+      },
+      {
+        "offset": 1757,
+        "length": 4,
+        "role": "plain"
+      },
+      {
+        "offset": 1764,
+        "length": 7,
+        "role": "keyword"
+      },
+      {
+        "offset": 1772,
+        "length": 4,
+        "role": "plain"
+      },
+      {
+        "offset": 1779,
+        "length": 4,
+        "role": "keyword"
+      },
+      {
+        "offset": 1784,
+        "length": 3,
+        "role": "plain"
+      },
+      {
+        "offset": 1788,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 1794,
+        "length": 6,
+        "role": "keyword"
+      },
+      {
+        "offset": 1801,
+        "length": 4,
+        "role": "plain"
+      },
+      {
+        "offset": 1806,
+        "length": 3,
+        "role": "plain"
+      },
+      {
+        "offset": 1814,
+        "length": 6,
+        "role": "keyword"
+      },
+      {
+        "offset": 1821,
+        "length": 6,
+        "role": "plain"
+      },
+      {
+        "offset": 1830,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 1834,
+        "length": 4,
+        "role": "keyword"
+      },
+      {
+        "offset": 1839,
+        "length": 4,
+        "role": "keyword"
+      },
+      {
+        "offset": 1844,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 1850,
+        "length": 4,
+        "role": "keyword"
+      },
+      {
+        "offset": 1855,
+        "length": 4,
+        "role": "plain"
+      },
+      {
+        "offset": 1864,
+        "length": 6,
+        "role": "keyword"
+      },
+      {
+        "offset": 1871,
+        "length": 7,
+        "role": "plain"
+      },
+      {
+        "offset": 1881,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 1885,
+        "length": 4,
+        "role": "keyword"
+      },
+      {
+        "offset": 1890,
+        "length": 3,
+        "role": "plain"
+      },
+      {
+        "offset": 1894,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 1900,
+        "length": 6,
+        "role": "keyword"
+      },
+      {
+        "offset": 1907,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 1915,
+        "length": 6,
+        "role": "keyword"
+      },
+      {
+        "offset": 1924,
+        "length": 7,
+        "role": "plain"
+      },
+      {
+        "offset": 1938,
+        "length": 7,
+        "role": "keyword"
+      },
+      {
+        "offset": 1947,
+        "length": 4,
+        "role": "plain"
+      },
+      {
+        "offset": 1958,
+        "length": 6,
+        "role": "keyword"
+      },
+      {
+        "offset": 1967,
+        "length": 11,
+        "role": "plain"
+      },
+      {
+        "offset": 1985,
+        "length": 8,
+        "role": "keyword"
+      },
+      {
+        "offset": 1994,
+        "length": 3,
+        "role": "literal"
+      },
+      {
+        "offset": 2004,
+        "length": 5,
+        "role": "keyword"
+      },
+      {
+        "offset": 2013,
+        "length": 10,
+        "role": "plain"
+      },
+      {
+        "offset": 2028,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 2032,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 2036,
+        "length": 4,
+        "role": "keyword"
+      },
+      {
+        "offset": 2041,
+        "length": 4,
+        "role": "plain"
+      },
+      {
+        "offset": 2046,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 2052,
+        "length": 6,
+        "role": "keyword"
+      },
+      {
+        "offset": 2059,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 2067,
+        "length": 6,
+        "role": "keyword"
+      },
+      {
+        "offset": 2080,
+        "length": 5,
+        "role": "plain"
+      },
+      {
+        "offset": 2092,
+        "length": 12,
+        "role": "keyword"
+      },
+      {
+        "offset": 2105,
+        "length": 6,
+        "role": "plain"
+      },
+      {
+        "offset": 2118,
+        "length": 7,
+        "role": "keyword"
+      },
+      {
+        "offset": 2131,
+        "length": 4,
+        "role": "plain"
+      },
+      {
+        "offset": 2142,
+        "length": 6,
+        "role": "keyword"
+      },
+      {
+        "offset": 2155,
+        "length": 11,
+        "role": "plain"
+      },
+      {
+        "offset": 2173,
+        "length": 8,
+        "role": "keyword"
+      },
+      {
+        "offset": 2186,
+        "length": 4,
+        "role": "literal"
+      },
+      {
+        "offset": 2197,
+        "length": 4,
+        "role": "keyword"
+      },
+      {
+        "offset": 2210,
+        "length": 3,
+        "role": "plain"
+      },
+      {
+        "offset": 2214,
+        "length": 1,
+        "role": "literal"
+      },
+      {
+        "offset": 2216,
+        "length": 7,
+        "role": "plain"
+      },
+      {
+        "offset": 2224,
+        "length": 4,
+        "role": "plain"
+      },
+      {
+        "offset": 2235,
+        "length": 7,
+        "role": "keyword"
+      },
+      {
+        "offset": 2248,
+        "length": 6,
+        "role": "plain"
+      },
+      {
+        "offset": 2255,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 2256,
+        "length": 1,
+        "role": "literal"
+      },
+      {
+        "offset": 2258,
+        "length": 1,
+        "role": "literal"
+      },
+      {
+        "offset": 2260,
+        "length": 1,
+        "role": "literal"
+      },
+      {
+        "offset": 2261,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 2263,
+        "length": 3,
+        "role": "plain"
+      },
+      {
+        "offset": 2267,
+        "length": 8,
+        "role": "plain"
+      },
+      {
+        "offset": 2280,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 2284,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 2286,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 2289,
+        "length": 7,
+        "role": "keyword"
+      },
+      {
+        "offset": 2297,
+        "length": 5,
+        "role": "plain"
+      },
+      {
+        "offset": 2303,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 2307,
+        "length": 6,
+        "role": "keyword"
+      },
+      {
+        "offset": 2314,
+        "length": 1,
+        "role": "literal"
+      },
+      {
+        "offset": 2316,
+        "length": 4,
+        "role": "plain"
+      },
+      {
+        "offset": 2323,
+        "length": 7,
+        "role": "keyword"
+      },
+      {
+        "offset": 2331,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 2337,
+        "length": 3,
+        "role": "plain"
+      },
+      {
+        "offset": 2341,
+        "length": 1,
+        "role": "literal"
+      },
+      {
+        "offset": 2343,
+        "length": 3,
+        "role": "plain"
+      },
+      {
+        "offset": 2347,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 2349,
+        "length": 4,
+        "role": "plain"
+      },
+      {
+        "offset": 2354,
+        "length": 1,
+        "role": "literal"
+      },
+      {
+        "offset": 2356,
+        "length": 3,
+        "role": "plain"
+      },
+      {
+        "offset": 2360,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 2362,
+        "length": 1,
+        "role": "plain"
+      },
+      {
+        "offset": 2364,
+        "length": 1,
+        "role": "literal"
+      },
+      {
+        "offset": 2366,
+        "length": 4,
+        "role": "plain"
+      },
+      {
+        "offset": 2373,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 2377,
+        "length": 4,
+        "role": "keyword"
+      },
+      {
+        "offset": 2382,
+        "length": 3,
+        "role": "plain"
+      },
+      {
+        "offset": 2386,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 2392,
+        "length": 6,
+        "role": "keyword"
+      },
+      {
+        "offset": 2399,
+        "length": 4,
+        "role": "plain"
+      },
+      {
+        "offset": 2404,
+        "length": 3,
+        "role": "plain"
+      },
+      {
+        "offset": 2412,
+        "length": 6,
+        "role": "keyword"
+      },
+      {
+        "offset": 2419,
+        "length": 4,
+        "role": "plain"
+      },
+      {
+        "offset": 2426,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 2430,
+        "length": 4,
+        "role": "keyword"
+      },
+      {
+        "offset": 2435,
+        "length": 4,
+        "role": "keyword"
+      },
+      {
+        "offset": 2440,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 2446,
+        "length": 4,
+        "role": "keyword"
+      },
+      {
+        "offset": 2451,
+        "length": 4,
+        "role": "plain"
+      },
+      {
+        "offset": 2460,
+        "length": 6,
+        "role": "keyword"
+      },
+      {
+        "offset": 2467,
+        "length": 6,
+        "role": "plain"
+      },
+      {
+        "offset": 2476,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 2478,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 2481,
+        "length": 11,
+        "role": "keyword"
+      },
+      {
+        "offset": 2493,
+        "length": 1,
+        "role": "punctuation"
+      },
+      {
+        "offset": 2497,
+        "length": 10,
+        "role": "plain"
+      },
+      {
+        "offset": 2510,
+        "length": 5,
+        "role": "plain"
+      },
+      {
+        "offset": 2518,
+        "length": 6,
+        "role": "plain"
+      },
+      {
+        "offset": 2527,
+        "length": 5,
+        "role": "plain"
+      },
+      {
+        "offset": 2533,
+        "length": 2,
+        "role": "plain"
+      },
+      {
+        "offset": 2536,
+        "length": 7,
+        "role": "plain"
+      },
+      {
+        "offset": 2546,
+        "length": 5,
+        "role": "plain"
+      },
+      {
+        "offset": 2552,
+        "length": 1,
+        "role": "punctuation"
+      }
+    ]
+  }
+]

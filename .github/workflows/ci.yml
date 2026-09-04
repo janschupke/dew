@@ -109,9 +109,9 @@ jobs:
             editor "${RUNNER_TEMP}/roll.png" --project examples/melody.dew --tab piano-roll
           test -s "${RUNNER_TEMP}/roll.png"
 
-      # The website's copy of the score language and the design tokens,
-      # regenerated in a SECOND
-      # PROCESS and compared byte for byte.
+      # Everything the website reads - the score language, the design tokens
+      # and the highlighted samples - regenerated in a SECOND PROCESS and
+      # compared byte for byte.
       #
       # dew_tests already holds the committed file against what the emitter
       # writes, in process. This is the other half, and it is the half that
@@ -125,6 +125,10 @@ jobs:
           ./build/ci/tools/dew_shot_artefacts/RelWithDebInfo/dew_shot \
             tokens "${RUNNER_TEMP}/design-tokens.json"
           cmp "${RUNNER_TEMP}/design-tokens.json" website/src/generated/design-tokens.json
+          ./build/ci/tools/dew_shot_artefacts/RelWithDebInfo/dew_shot \
+            samples "${RUNNER_TEMP}/score-samples.json" \
+            examples/amber.score examples/drift.score examples/neon.score
+          cmp "${RUNNER_TEMP}/score-samples.json" website/src/generated/score-samples.json
 
       # The manifest is generated at configure time; if it differs from what is
       # committed, the two have drifted.
