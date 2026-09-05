@@ -28,7 +28,7 @@ export const shotSizes = {
   playlist: { width: 2880, height: 1800 },
   mixer: { width: 2880, height: 1800 },
   score: { width: 2880, height: 1800 },
-  gallery: { width: 2880, height: 3080 },
+  gallery: { width: 2880, height: 3340 },
 } as const;
 
 export type ShotName = keyof typeof shotSizes;
