@@ -290,11 +290,18 @@ struct OfflineRenderer
 
     /** Where lame is, or a file that does not exist.
 
-        Looks along PATH and then in the two places Homebrew puts it. Cached: the
-        answer cannot change without the app being restarted, and a UI that greys
-        the MP3 option asks this every time it repaints.
+        Looks along PATH and then in the places Homebrew and a distribution put
+        it. Cached: the answer cannot change without the app being restarted, and
+        a UI that greys the MP3 option asks this every time it repaints.
     */
     static juce::File findLame();
+
+    /** findLame's search, over a PATH handed in rather than the process's own.
+
+        Split out to be testable: findLame caches in a static and reads the real
+        environment, so nothing could reach the part that was wrong.
+    */
+    static juce::File findLameIn (const juce::String& pathVariable);
 
     /** The quality settings mp3 offers, in the order mp3QualityIndex means. */
     static juce::StringArray mp3QualityOptions();

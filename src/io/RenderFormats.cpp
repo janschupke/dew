@@ -229,24 +229,45 @@ juce::StringArray OfflineRenderer::mp3QualityOptions()
     return {};
 }
 
+juce::File OfflineRenderer::findLameIn (const juce::String& pathVariable)
+{
+    // Neither the separator nor the name is the same everywhere: PATH is
+    // ':'-delimited on Unix and ';'-delimited on Windows, where the file is
+    // lame.exe. Splitting on the wrong character does not find fewer
+    // directories, it finds none - the whole variable becomes a single token.
+#if JUCE_WINDOWS
+    const auto* separator = ";";
+    const auto* executable = "lame.exe";
+#else
+    const auto* separator = ":";
+    const auto* executable = "lame";
+#endif
+
+    for (const auto& directory : juce::StringArray::fromTokens (pathVariable, separator, {}))
+    {
+        // A relative entry is legal in PATH and is not something juce::File
+        // accepts: its constructor asserts on one. "." in a PATH is common
+        // enough that stepping over it is cheaper than the assertion.
+        if (directory.isEmpty() || ! juce::File::isAbsolutePath (directory))
+            continue;
+
+        if (const auto candidate = juce::File (directory).getChildFile (executable);
+            candidate.existsAsFile())
+            return candidate;
+    }
+
+    return {};
+}
+
 juce::File OfflineRenderer::findLame()
 {
     // Cached: the answer cannot change while the app runs, and the UI asks
     // whenever it repaints a greyed-out menu entry.
     static const juce::File found = []
     {
-        const auto path = juce::SystemStats::getEnvironmentVariable ("PATH", {});
-
-        for (const auto& directory : juce::StringArray::fromTokens (path, ":", {}))
-        {
-            if (directory.isEmpty())
-                continue;
-
-            const auto candidate = juce::File (directory).getChildFile ("lame");
-
-            if (candidate.existsAsFile())
-                return candidate;
-        }
+        if (const auto onPath = findLameIn (juce::SystemStats::getEnvironmentVariable ("PATH", {}));
+            onPath.existsAsFile())
+            return onPath;
 
         // A GUI app launched from Finder does not inherit a shell's PATH, so the
         // usual Homebrew locations have to be named.

@@ -163,6 +163,44 @@ TEST_CASE ("everything but mp3 is always available", "[render][format]")
     REQUIRE (OfflineRenderer::isAvailable (RenderFormat::midi));
 }
 
+TEST_CASE ("lame is looked for along PATH with this platform's separator",
+           "[engine][render][format][mp3]")
+{
+    // The separator and the executable's name are the platform's, and getting
+    // them wrong does not narrow the search - it makes the whole variable one
+    // token that matches nothing. Windows had exactly that for as long as the
+    // PATH search existed, and no test could see it: findLame caches in a
+    // static and reads the real environment.
+#if JUCE_WINDOWS
+    const juce::String separator { ";" };
+    const juce::String executable { "lame.exe" };
+#else
+    const juce::String separator { ":" };
+    const juce::String executable { "lame" };
+#endif
+
+    const auto directory = juce::File::getSpecialLocation (juce::File::tempDirectory)
+                               .getChildFile ("dew-lame-" + juce::Uuid().toDashedString());
+    directory.createDirectory();
+
+    const auto planted = directory.getChildFile (executable);
+    planted.replaceWithText ("not really an encoder");
+
+    // A decoy first, so finding it proves the split rather than a lucky single
+    // entry, and "." because a relative entry is legal in PATH and juce::File
+    // asserts on one.
+    const auto path = juce::String (".") + separator
+                      + directory.getParentDirectory().getFullPathName() + separator
+                      + directory.getFullPathName();
+
+    REQUIRE (OfflineRenderer::findLameIn (path) == planted);
+    REQUIRE_FALSE (OfflineRenderer::findLameIn ({}).existsAsFile());
+    REQUIRE_FALSE (OfflineRenderer::findLameIn (directory.getParentDirectory().getFullPathName())
+                       .existsAsFile());
+
+    directory.deleteRecursively();
+}
+
 TEST_CASE ("MP3 is refused clearly when lame is missing", "[engine][render][format][mp3]")
 {
     if (OfflineRenderer::isAvailable (RenderFormat::mp3))
