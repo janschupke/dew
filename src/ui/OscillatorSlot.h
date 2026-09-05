@@ -98,25 +98,14 @@ template <size_t N> const char* valueOf (const NamedChoice (&choices)[N], int se
     for free and so it turns up in the findAll<juce::Button> sweeps the
     selection tests use.
 */
-class OscillatorSection::SlotButton : public juce::Button
+class OscillatorSection::SlotButton : public PopupSafeButton<juce::Button>
 {
 public:
     explicit SlotButton (int i)
-        : juce::Button ("OSC " + juce::String (i + 1))
+        : PopupSafeButton<juce::Button> ("OSC " + juce::String (i + 1))
         , index (i)
     {
         setTooltip (tr (StringId::oscillator_slot_help, Args {}.with ("index", i + 1)));
-    }
-
-    /** The same rule the dew primitives follow: juce::Button completes a click
-        for whichever mouse button pressed it, and a right-click on a slot tab
-        asked for nothing. */
-    void mouseDown (const juce::MouseEvent& event) override
-    {
-        if (event.mods.isPopupMenu())
-            return;
-
-        juce::Button::mouseDown (event);
     }
 
     void setSelected (bool s)

@@ -12,6 +12,7 @@
 #include "ui/ParamContextMenu.h"
 #include "ui/PlaylistComponent.h"
 #include "ui/ScoreEditorComponent.h"
+#include "ui/primitives/DewControls.h"
 
 namespace dew
 {
@@ -76,6 +77,17 @@ public:
     void setScoreFontStep (int step);
 
 private:
+    /** Every tab button this bar makes, refusing the right button.
+
+        A stock juce::TabbedComponent hands out stock TabBarButtons, and
+        TabBarButton::clicked re-reads the modifiers at RELEASE time: it opens a
+        tab menu when they say popup and SWITCHES TAB when they do not. That is
+        exactly how macOS spells a ctrl-click whose ctrl came up first, so a
+        right-click on the tab bar changed editor. The rule the rest of the
+        application follows is a latch made at the press - see PopupSafeButton.
+    */
+    juce::TabBarButton* createTabButton (const juce::String& tabName, int tabIndex) override;
+
     /** The incoming editor's alpha, 0 to 1 over panelMs.
 
         Deliberately NOT a crossfade. Keeping the outgoing editor visible means

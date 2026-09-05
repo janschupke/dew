@@ -168,42 +168,11 @@ namespace
 
 /** The + or the - on an IncDecButtons slider, refusing the right button.
 
-    Its own type rather than a lambda on the stock one, because the refusal has
-    to happen in all three phases - Button::mouseDrag re-arms a press whichever
-    mouse button made it - and PopupPress is what states that once.
+    A slider creates these for itself, so a DewSlider subclass cannot reach
+    them - this is the only place they can be given the rule every other button
+    in dew follows.
 */
-class SliderStepButton : public juce::TextButton
-{
-public:
-    using juce::TextButton::TextButton;
-
-    void mouseDown (const juce::MouseEvent& event) override
-    {
-        if (popupPress.down (event, nullptr))
-            return;
-
-        juce::TextButton::mouseDown (event);
-    }
-
-    void mouseDrag (const juce::MouseEvent& event) override
-    {
-        if (popupPress.dragging())
-            return;
-
-        juce::TextButton::mouseDrag (event);
-    }
-
-    void mouseUp (const juce::MouseEvent& event) override
-    {
-        if (popupPress.releasing())
-            return;
-
-        juce::TextButton::mouseUp (event);
-    }
-
-private:
-    PopupPress popupPress;
-};
+using SliderStepButton = PopupSafeButton<juce::TextButton>;
 
 } // namespace
 

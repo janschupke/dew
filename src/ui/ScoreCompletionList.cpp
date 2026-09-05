@@ -130,8 +130,14 @@ void ScoreCompletionList::paintListBoxItem (int row, juce::Graphics& g, int widt
     g.drawText (item.detail, area, juce::Justification::centredLeft, true);
 }
 
-void ScoreCompletionList::listBoxItemClicked (int row, const juce::MouseEvent&)
+void ScoreCompletionList::listBoxItemClicked (int row, const juce::MouseEvent& event)
 {
+    // juce::ListBox routes a press of ANY button here, so a right-click moved
+    // the completion the return key would take. The rule the buttons follow,
+    // applied to the one control that is a list.
+    if (event.mods.isPopupMenu())
+        return;
+
     list.selectRow (row);
 }
 

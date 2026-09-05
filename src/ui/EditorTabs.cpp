@@ -50,6 +50,11 @@ EditorTabs::EditorTabs (ProjectDocument& document, AudioEngine& engine, EditorSt
     addTab ("Score", tokens::colour::background, &scoreEditor, false);
 }
 
+juce::TabBarButton* EditorTabs::createTabButton (const juce::String& tabName, int)
+{
+    return new PopupSafeButton<juce::TabBarButton> (tabName, getTabbedButtonBar());
+}
+
 void EditorTabs::compileScore()
 {
     setCurrentTabIndex (getNumTabs() - 1);

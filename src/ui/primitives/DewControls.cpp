@@ -54,7 +54,7 @@ juce::Colour ButtonLift::cross (juce::Colour off, juce::Colour on) const
 // --- DewButton ---------------------------------------------------------------
 
 DewButton::DewButton (const juce::String& text, Role r)
-    : juce::Button (text)
+    : PopupSafeButton<juce::Button> (text)
     , role (r)
 {
     setButtonText (text);
@@ -163,7 +163,7 @@ void DewButton::paintButton (juce::Graphics& g, bool highlighted, bool down)
 // --- DewIconButton -----------------------------------------------------------
 
 DewIconButton::DewIconButton (juce::Path i, const juce::String& tooltipText, Role r)
-    : juce::Button (tooltipText)
+    : PopupSafeButton<juce::Button> (tooltipText)
     , icon (std::move (i))
     , role (r)
 {
@@ -245,7 +245,7 @@ void DewIconButton::paintButton (juce::Graphics& g, bool highlighted, bool down)
 
 DewLetterToggle::DewLetterToggle (const juce::String& l, juce::Colour c,
                                   const juce::String& tooltipText)
-    : juce::Button (tooltipText)
+    : PopupSafeButton<juce::Button> (tooltipText)
     , letter (l)
     , onColour (c)
 {
@@ -287,91 +287,8 @@ void DewLetterToggle::paintButton (juce::Graphics& g, bool, bool)
     paint::focusRing (g, *this, focus::ringVisibleFor (hasKeyboardFocus (true)));
 }
 
-/** One rule for every control: a right-click opens the menu if there is one,
-    and is swallowed for the WHOLE press either way.
-
-    Above each class's own handling rather than inside it, so a right-click never
-    arms a drag or a toggle that then never completes.
-
-    The latch, and why all three phases are here rather than only the press,
-    are PopupPress's - and the half that was missing is the reason the piano
-    roll's octave buttons still transposed on a right-click months after every
-    control in dew was supposed to refuse one.
-*/
-void DewButton::mouseDown (const juce::MouseEvent& event)
-{
-    if (popupPress.down (event, onContextMenu))
-        return;
-
-    juce::Button::mouseDown (event);
-}
-
-void DewButton::mouseDrag (const juce::MouseEvent& event)
-{
-    if (popupPress.dragging())
-        return;
-
-    juce::Button::mouseDrag (event);
-}
-
-void DewButton::mouseUp (const juce::MouseEvent& event)
-{
-    if (popupPress.releasing())
-        return;
-
-    juce::Button::mouseUp (event);
-}
-
-void DewIconButton::mouseDown (const juce::MouseEvent& event)
-{
-    if (popupPress.down (event, onContextMenu))
-        return;
-
-    juce::Button::mouseDown (event);
-}
-
-void DewIconButton::mouseDrag (const juce::MouseEvent& event)
-{
-    if (popupPress.dragging())
-        return;
-
-    juce::Button::mouseDrag (event);
-}
-
-void DewIconButton::mouseUp (const juce::MouseEvent& event)
-{
-    if (popupPress.releasing())
-        return;
-
-    juce::Button::mouseUp (event);
-}
-
-void DewLetterToggle::mouseDown (const juce::MouseEvent& event)
-{
-    if (popupPress.down (event, onContextMenu))
-        return;
-
-    juce::Button::mouseDown (event);
-}
-
-void DewLetterToggle::mouseDrag (const juce::MouseEvent& event)
-{
-    if (popupPress.dragging())
-        return;
-
-    juce::Button::mouseDrag (event);
-}
-
-void DewLetterToggle::mouseUp (const juce::MouseEvent& event)
-{
-    if (popupPress.releasing())
-        return;
-
-    juce::Button::mouseUp (event);
-}
-
 DewCheckbox::DewCheckbox (const juce::String& text)
-    : juce::ToggleButton (text)
+    : PopupSafeButton<juce::ToggleButton> (text)
 {
     setMouseCursor (cursor::clickable);
 }
@@ -380,32 +297,6 @@ DewDropdown::DewDropdown (const juce::String& name)
     : juce::ComboBox (name)
 {
     setMouseCursor (cursor::clickable);
-}
-
-void DewCheckbox::mouseDown (const juce::MouseEvent& event)
-{
-    // No hook: a checkbox names no parameter, so there is nothing to offer. The
-    // press is still consumed, because the alternative is toggling it.
-    if (popupPress.down (event, nullptr))
-        return;
-
-    juce::ToggleButton::mouseDown (event);
-}
-
-void DewCheckbox::mouseDrag (const juce::MouseEvent& event)
-{
-    if (popupPress.dragging())
-        return;
-
-    juce::ToggleButton::mouseDrag (event);
-}
-
-void DewCheckbox::mouseUp (const juce::MouseEvent& event)
-{
-    if (popupPress.releasing())
-        return;
-
-    juce::ToggleButton::mouseUp (event);
 }
 
 void DewKnob::mouseDown (const juce::MouseEvent& event)

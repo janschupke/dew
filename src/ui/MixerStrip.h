@@ -179,6 +179,12 @@ private:
 
         void mouseDown (const juce::MouseEvent& event) override
         {
+            // A right press is not a drag, and must not decide how far one
+            // travels: the fader refuses it outright, so the sensitivity this
+            // would leave behind is the sensitivity the NEXT drag inherits.
+            if (event.mods.isPopupMenu())
+                return;
+
             slider.setMouseDragSensitivity (gesture::dragPixelsFor (event.mods));
         }
 

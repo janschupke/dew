@@ -139,6 +139,79 @@ private:
     bool held = false;
 };
 
+/** Any juce::Button, with the right button refused for the whole press.
+
+    Five controls carried the same three overrides word for word, and the two
+    that did NOT are exactly the two a person found: the oscillator slot tabs
+    guarded only the press, and the editor tab bar was a stock
+    juce::TabbedComponent whose buttons guarded nothing at all. A rule kept by
+    copying is a rule that is kept until somebody writes a sixth control.
+
+    internalClickCallback as well as the three phases, because it is the single
+    point every completed click passes through - a release, a
+    triggerOnMouseDown press, triggerClick, and the space bar. The three phases
+    are what stops the gesture; this is what stops anything that gets past them.
+
+    Base is the juce::Button descendant being guarded, so one template serves a
+    hand-painted primitive, a stock juce::ToggleButton, a juce::TextButton the
+    look and feel hands to a slider, and a juce::TabBarButton the tab bar makes
+    for itself.
+*/
+template <typename Base> class PopupSafeButton : public Base
+{
+public:
+    using Base::Base;
+
+    /** What to offer when this control is right-clicked, or null for nothing.
+
+        A CALLBACK rather than a target or a node, because dew_design "knows
+        nothing about a project" - its own CMakeLists says so - and a control
+        that held an AutomationTarget would know about one. The editor that
+        BUILT this control from a ParamSpec is the one that knows which node it
+        was built for, so it is the one that closes over it.
+    */
+    std::function<void()> onContextMenu;
+
+    void mouseDown (const juce::MouseEvent& event) override
+    {
+        if (popupPress.down (event, onContextMenu))
+            return;
+
+        Base::mouseDown (event);
+    }
+
+    void mouseDrag (const juce::MouseEvent& event) override
+    {
+        if (popupPress.dragging())
+            return;
+
+        Base::mouseDrag (event);
+    }
+
+    void mouseUp (const juce::MouseEvent& event) override
+    {
+        if (popupPress.releasing())
+            return;
+
+        Base::mouseUp (event);
+    }
+
+protected:
+    /** The latch, not the modifiers. A click completed from the keyboard while
+        ctrl happens to be held is still a click, so asking the event again here
+        would refuse a gesture nobody made with the mouse. */
+    void internalClickCallback (const juce::ModifierKeys& mods) override
+    {
+        if (popupPress.dragging())
+            return;
+
+        Base::internalClickCallback (mods);
+    }
+
+private:
+    PopupPress popupPress;
+};
+
 /** juce::Slider, minus the defect that a right-drag moves the value.
 
     The same rule the buttons follow, applied to the one JUCE control dew builds
@@ -197,7 +270,7 @@ private:
     system decides how that looks, so a later theme change does not have to find
     every call site.
 */
-class DewButton : public juce::Button
+class DewButton : public PopupSafeButton<juce::Button>
 {
 public:
     enum class Role
@@ -236,25 +309,7 @@ public:
     */
     void setGlyph (juce::Path);
 
-    /** What to offer when this control is right-clicked, or null for nothing.
-
-        A CALLBACK rather than a target or a node, because dew_design "knows
-        nothing about a project" - its own CMakeLists says so - and a control
-        that held an AutomationTarget would know about one. The editor that
-        BUILT this control from a ParamSpec is the one that knows which node it
-        was built for, so it is the one that closes over it.
-    */
-    std::function<void()> onContextMenu;
-
     void paintButton (juce::Graphics&, bool shouldDrawHighlighted, bool shouldDrawDown) override;
-
-    /** Above Button's own handling, so a right-click opens the menu rather than
-        arming a press that then never completes. */
-    void mouseDown (const juce::MouseEvent&) override;
-
-    /** Above Button's own handling in all three phases - see PopupPress. */
-    void mouseDrag (const juce::MouseEvent&) override;
-    void mouseUp (const juce::MouseEvent&) override;
 
     /** Tells the design system what moved the keyboard here, so a ring is
         drawn for a tab and not for a click - see focus::ringVisible.
@@ -276,7 +331,6 @@ protected:
 
 private:
     ButtonLift lift { *this };
-    PopupPress popupPress;
 
     Role role = Role::normal;
     juce::Justification justification { juce::Justification::centred };
@@ -290,7 +344,7 @@ private:
 /** A square button showing one icon. Toggles when setClickingTogglesState is on,
     which is how mute, solo and effect bypass are drawn.
 */
-class DewIconButton : public juce::Button
+class DewIconButton : public PopupSafeButton<juce::Button>
 {
 public:
     /** What the glyph MEANS, which is what decides its colour.
@@ -318,16 +372,6 @@ public:
     void setRole (Role);
 
     void setIcon (juce::Path);
-
-    /** What to offer when this control is right-clicked, or null for nothing.
-
-        A CALLBACK rather than a target or a node, because dew_design "knows
-        nothing about a project" - its own CMakeLists says so - and a control
-        that held an AutomationTarget would know about one. The editor that
-        BUILT this control from a ParamSpec is the one that knows which node it
-        was built for, so it is the one that closes over it.
-    */
-    std::function<void()> onContextMenu;
 
     /** Sets the tooltip AND the accessible name, which are the same sentence.
 
@@ -357,11 +401,6 @@ public:
     std::function<void (const juce::ModifierKeys&)> onModifiedClick;
 
     void paintButton (juce::Graphics&, bool shouldDrawHighlighted, bool shouldDrawDown) override;
-    void mouseDown (const juce::MouseEvent&) override;
-
-    /** See PopupPress. */
-    void mouseDrag (const juce::MouseEvent&) override;
-    void mouseUp (const juce::MouseEvent&) override;
 
     /** See DewButton::focusGained.
 
@@ -397,7 +436,6 @@ private:
     juce::Colour restingTint() const;
 
     ButtonLift lift { *this };
-    PopupPress popupPress;
 
     juce::Path icon;
     juce::Colour onColour = tokens::colour::accent;
@@ -415,7 +453,7 @@ private:
     control. What is left is the channel rack's R, which is the case a letter
     still suits: arming is a mode with a name, not a state with a picture.
 */
-class DewLetterToggle : public juce::Button
+class DewLetterToggle : public PopupSafeButton<juce::Button>
 {
 public:
     DewLetterToggle (const juce::String& letter, juce::Colour onColour,
@@ -427,22 +465,7 @@ public:
     */
     void setTooltip (const juce::String&) override;
 
-    /** What to offer when this control is right-clicked, or null for nothing.
-
-        A CALLBACK rather than a target or a node, because dew_design "knows
-        nothing about a project" - its own CMakeLists says so - and a control
-        that held an AutomationTarget would know about one. The editor that
-        BUILT this control from a ParamSpec is the one that knows which node it
-        was built for, so it is the one that closes over it.
-    */
-    std::function<void()> onContextMenu;
-
     void paintButton (juce::Graphics&, bool shouldDrawHighlighted, bool shouldDrawDown) override;
-    void mouseDown (const juce::MouseEvent&) override;
-
-    /** See PopupPress. */
-    void mouseDrag (const juce::MouseEvent&) override;
-    void mouseUp (const juce::MouseEvent&) override;
 
     /** See DewButton::focusGained.
 
@@ -463,7 +486,6 @@ protected:
 
 private:
     ButtonLift lift { *this };
-    PopupPress popupPress;
 
     juce::String letter;
     juce::Colour onColour;
@@ -482,20 +504,12 @@ private:
     hand-painted primitives above follow, applied to the one JUCE control dew
     still uses directly.
 */
-class DewCheckbox : public juce::ToggleButton
+class DewCheckbox : public PopupSafeButton<juce::ToggleButton>
 {
 public:
     explicit DewCheckbox (const juce::String& text = {});
 
-    void mouseDown (const juce::MouseEvent&) override;
-
-    /** See PopupPress. */
-    void mouseDrag (const juce::MouseEvent&) override;
-    void mouseUp (const juce::MouseEvent&) override;
-
 private:
-    PopupPress popupPress;
-
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (DewCheckbox)
 };
 

@@ -133,12 +133,17 @@ TEST_CASE ("no source declares a bare juce::ToggleButton", "[build][gate]")
     // theming the stock control is the reason DewCheckbox does not repaint it.
     //
     // No exemption, for the same reason as the combo box above: "class
-    // DewCheckbox : public juce::ToggleButton" does not start with the type, so
-    // the definition site never needed one.
+    // DewCheckbox : public PopupSafeButton<juce::ToggleButton>" does not start
+    // with the type, so the definition site never needed one. It DOES name the
+    // type inside angle brackets, which is the one shape this predicate has to
+    // let through - a guarded toggle is the sanctioned control, not a stock one.
     const auto found = offenders (
         [] (const juce::String& line)
         {
             const auto trimmed = line.trim();
+
+            if (trimmed.contains ("PopupSafeButton<"))
+                return false;
 
             return trimmed.startsWith ("juce::ToggleButton ")
                    || trimmed.contains ("juce::ToggleButton>");
@@ -408,23 +413,70 @@ TEST_CASE ("no menu-bar menu carries a popup's second line", "[build][gate][menu
     CHECK (found.isEmpty());
 }
 
+TEST_CASE ("every button dew declares refuses the right button", "[build][gate][gesture]")
+{
+    // This gate used to ask a different question: given a file that names
+    // popupPress, does it name all three phases? Which meant it began with a
+    // `continue` for every file that names it NOWHERE - so the two controls
+    // that got this wrong were both invisible to it. The oscillator slot tabs
+    // guarded the press by hand and not the drag or the release; the editor tab
+    // bar was a stock juce::TabbedComponent whose buttons guarded nothing at
+    // all, and TabBarButton::clicked re-reads the modifiers at RELEASE time, so
+    // a ctrl-click whose ctrl came up first switched editor.
+    //
+    // A conditional gate cannot see the case it exists for. So this one asks a
+    // SHAPE: deriving from a juce::Button type directly is opting out of the
+    // rule, whatever the class then does. The one way in is PopupSafeButton,
+    // which states the three phases and the click callback once.
+    const juce::StringArray buttonTypes { "juce::Button",         "juce::TextButton",
+                                          "juce::ToggleButton",   "juce::TabBarButton",
+                                          "juce::DrawableButton", "juce::ShapeButton",
+                                          "juce::ImageButton",    "juce::ArrowButton",
+                                          "juce::HyperlinkButton" };
+
+    juce::StringArray found;
+    auto guarded = 0;
+
+    for (const auto& file : sourceFiles())
+    {
+        for (const auto& line : codeLinesWithNumbersOf (file))
+        {
+            if (line.text.contains ("PopupSafeButton<"))
+                ++guarded;
+
+            if (! line.text.contains (": public juce::") && ! line.text.contains (":public juce::"))
+                continue;
+
+            for (const auto& type : buttonTypes)
+                if (line.text.contains ("public " + type)
+                    && ! line.text.contains ("PopupSafeButton"))
+                    found.add (relativePathOf (file) + ":" + juce::String (line.number) + "  "
+                               + type.trim() + " without the popup guard");
+        }
+    }
+
+    // Control case: a scan that recognised no guarded button would pass in
+    // silence, which is the failure mode the old gate actually had.
+    INFO ("guarded button declarations seen: " << guarded);
+    REQUIRE (guarded > 5);
+
+    INFO ("buttons deriving from a raw juce type:\n" << found.joinIntoString ("\n"));
+    CHECK (found.isEmpty());
+}
+
 TEST_CASE ("a control that arms a popup press also disarms it", "[build][gate][gesture]")
 {
-    // The half of the rule that a walk of the window cannot check, and that
-    // being unable to check it is exactly how it went missing for months.
+    // Still worth stating for the controls that are NOT buttons and so cannot
+    // take PopupSafeButton: a juce::Slider, and an effect card, both of which
+    // hold the latch themselves. juce::Slider has the same hole with no guard
+    // at all - it treats a right press as a menu only when setPopupMenuEnabled
+    // is on, and nothing in dew turns it on, so the press fell into the drag
+    // branch and moved the value.
     //
-    // Every control refused a right press in mouseDown and stopped there.
-    // juce::Button re-arms itself in mouseDrag - updateState (over, true), for
-    // whichever mouse button is held - and completes the click in mouseUp, so a
-    // right-press that moved one pixel fired the button anyway. The piano
-    // roll's octave pair is where it was noticed; it was true of every button
-    // in the application.
-    //
-    // Not testable through the window: Button::isMouseSourceOver asks
-    // Component::isMouseOver, which reads the real pointer, and a headless
-    // harness has none - so a synthetic right-drag never reaches the state the
-    // defect needs. What IS checkable is that the three phases were written
-    // together, which is what PopupPress exists to make one decision.
+    // Not testable through the window for a button: Button::isMouseSourceOver
+    // asks Component::isMouseOver, which reads the real pointer, and a headless
+    // harness has none. What IS checkable is that the three phases were written
+    // together.
     juce::StringArray found;
     auto arming = 0;
 
@@ -450,7 +502,7 @@ TEST_CASE ("a control that arms a popup press also disarms it", "[build][gate][g
 
     // Control case: a gate that found nothing arming one would pass in silence.
     INFO ("translation units arming a popup press: " << arming);
-    REQUIRE (arming > 3);
+    REQUIRE (arming >= 2);
 
     INFO ("controls that refuse only the press:\n" << found.joinIntoString ("\n"));
     CHECK (found.isEmpty());

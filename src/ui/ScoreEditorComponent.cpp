@@ -463,8 +463,13 @@ void ScoreEditorComponent::paintListBoxItem (int row, juce::Graphics& g, int wid
                 juce::Justification::centredLeft, true);
 }
 
-void ScoreEditorComponent::listBoxItemClicked (int row, const juce::MouseEvent&)
+void ScoreEditorComponent::listBoxItemClicked (int row, const juce::MouseEvent& event)
 {
+    // See ScoreCompletionList: a right-click on a diagnostic row was jumping
+    // the caret to it.
+    if (event.mods.isPopupMenu())
+        return;
+
     showDiagnostic (row);
 }
 

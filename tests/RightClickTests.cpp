@@ -52,6 +52,31 @@ void rightClick (juce::Component& target)
     target.mouseUp (event (moved, true));
 }
 
+/** A press and a release on the right button, with NO drag between them.
+
+    The drag is what the other helper adds and what makes this one necessary.
+    Button::mouseDown calls updateState (true, true) unconditionally, so a
+    synthetic press DOES reach buttonDown; it is mouseDrag that calls
+    updateState (isMouseSourceOver (e), ...) and asks Component::isMouseOver -
+    the real pointer, which a headless harness has not got - and drops the
+    button back to normal. So a walk that drags proves nothing about any button,
+    and a walk that does not drag proves the thing a person actually complained
+    about: press the right button on a tab and let go, and the editor changed.
+*/
+void rightClickWithoutDragging (juce::Component& target)
+{
+    const auto mods = juce::ModifierKeys (juce::ModifierKeys::rightButtonModifier);
+    const auto centre = target.getLocalBounds().getCentre().toFloat();
+
+    const auto event = juce::MouseEvent (juce::Desktop::getInstance().getMainMouseSource(), centre,
+                                         mods, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, &target, &target,
+                                         juce::Time::getCurrentTime(), centre,
+                                         juce::Time::getCurrentTime(), 1, false);
+
+    target.mouseDown (event);
+    target.mouseUp (event);
+}
+
 } // namespace
 
 TEST_CASE ("a popup press is refused for the whole press, not just the press",
@@ -211,4 +236,126 @@ TEST_CASE ("a press forwarded from a child is not a press on its parent",
     // carries the CHILD's position, so measuring it against the parent's own
     // regions answers about a point that was never pressed.
     CHECK (pressOn (child).getPosition() == juce::Point<int> (5, 5));
+}
+
+TEST_CASE ("no button in the window acts on a right-click", "[ui][gesture][rightclick]")
+{
+    // The half of the rule the right-DRAG walk below cannot state. It sends a
+    // press, a small move and a release, and the move is what puts a headless
+    // button back into buttonNormal - so that walk reports every button well
+    // behaved whether or not it is, which is why buttons were left out of it.
+    //
+    // Without the move, updateState (true, true) from mouseDown survives to
+    // mouseUp, wasDown && wasOver both hold, and internalClickCallback fires.
+    // That is a real gesture - a right-click that does not wobble - and it is
+    // observable here.
+    const juce::ScopedJuceInitialiser_GUI juceInit;
+
+    MainComponent component (false);
+    component.setSize (1400, 900);
+    component.resized();
+
+    auto* tabs = dynamic_cast<juce::TabbedComponent*> (component.findChildWithID ("editorTabs"));
+    REQUIRE (tabs != nullptr);
+
+    juce::StringArray acted;
+    auto buttons = 0;
+
+    for (int tab = 0; tab < Settings::numTabs; ++tab)
+    {
+        component.showTab (tab);
+        component.resized();
+
+        const auto tabBefore = tabs->getCurrentTabIndex();
+
+        walk (component,
+              [&] (juce::Component& c)
+              {
+                  auto* button = dynamic_cast<juce::Button*> (&c);
+
+                  if (button == nullptr || ! button->isEnabled() || ! button->isVisible())
+                      return;
+
+                  ++buttons;
+
+                  auto clicks = 0;
+                  const auto wasOn = button->getToggleState();
+                  auto previous = std::move (button->onClick);
+                  button->onClick = [&clicks] { ++clicks; };
+
+                  rightClickWithoutDragging (*button);
+
+                  const auto moved = clicks > 0 || button->getToggleState() != wasOn
+                                     || tabs->getCurrentTabIndex() != tabBefore;
+
+                  button->onClick = std::move (previous);
+
+                  if (moved)
+                      acted.add (describe (c));
+
+                  // A tab that did change has to be put back, or every button
+                  // after it is walked on the wrong editor.
+                  if (tabs->getCurrentTabIndex() != tabBefore)
+                      tabs->setCurrentTabIndex (tabBefore);
+              });
+    }
+
+    // Control case: a walk that found no buttons would report every one of them
+    // well behaved. The tab bar alone is five.
+    INFO ("buttons walked: " << buttons);
+    REQUIRE (buttons > 20);
+
+    INFO ("controls a right-click acted on:\n" << acted.joinIntoString ("\n"));
+    CHECK (acted.isEmpty());
+}
+
+TEST_CASE ("the guard refuses the click, not only the gesture", "[ui][gesture][rightclick]")
+{
+    // What the window walk above cannot reach: the DRAG phase, where
+    // Button::isMouseSourceOver asks the real pointer. Stated on the guard
+    // itself, over a probe that counts the one call every completed click
+    // passes through - a release, a triggerOnMouseDown press, triggerClick and
+    // the space bar all arrive at internalClickCallback.
+    const juce::ScopedJuceInitialiser_GUI juceInit;
+
+    struct Probe : PopupSafeButton<juce::TextButton>
+    {
+        using PopupSafeButton<juce::TextButton>::PopupSafeButton;
+
+        void internalClickCallback (const juce::ModifierKeys& mods) override
+        {
+            PopupSafeButton<juce::TextButton>::internalClickCallback (mods);
+            ++clicks;
+        }
+
+        int clicks = 0;
+    };
+
+    Probe probe { "probe" };
+    probe.setSize (40, 24);
+
+    // Button::updateState refuses to reach buttonDown for a component that is
+    // not visible, and a juce::Component is born invisible. Without this the
+    // control case below reads zero and the whole test passes for the wrong
+    // reason - which is what it is here to stop.
+    probe.setVisible (true);
+
+    rightClick (probe);
+    CHECK (probe.clicks == 0);
+
+    rightClickWithoutDragging (probe);
+    CHECK (probe.clicks == 0);
+
+    // Control case: the same probe DOES count a left click, so a zero above is
+    // the guard and not a probe that never fires.
+    const auto left = juce::ModifierKeys (juce::ModifierKeys::leftButtonModifier);
+    const auto centre = probe.getLocalBounds().getCentre().toFloat();
+    const auto press = juce::MouseEvent (juce::Desktop::getInstance().getMainMouseSource(), centre,
+                                         left, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, &probe, &probe,
+                                         juce::Time::getCurrentTime(), centre,
+                                         juce::Time::getCurrentTime(), 1, false);
+
+    probe.mouseDown (press);
+    probe.mouseUp (press);
+    CHECK (probe.clicks == 1);
 }
