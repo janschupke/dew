@@ -185,6 +185,7 @@ std::vector<NamedIcon> all()
         { "chevronLeft", chevronLeft },
         { "chevronRight", chevronRight },
         { "grip", grip },
+        { "more", more },
 
         { "waveSine", waveSine },
         { "waveSaw", waveSaw },

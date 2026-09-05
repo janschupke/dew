@@ -300,6 +300,19 @@ juce::Path chevronRight()
     return strokeOf (line, tokens::icon::bold);
 }
 
+juce::Path more()
+{
+    // The grip's middle row, on its own: three dots in a line is what "there is
+    // more of this than fits" looks like everywhere, and it is the same three
+    // dots at the same radius so the two read as one family.
+    juce::Path p;
+
+    for (int i = 0; i < 3; ++i)
+        p.addEllipse (0.19f + (float) i * 0.26f, 0.45f, 0.1f, 0.1f);
+
+    return p;
+}
+
 juce::Path grip()
 {
     juce::Path p;

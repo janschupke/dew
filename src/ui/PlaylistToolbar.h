@@ -3,6 +3,7 @@
 #include <juce_gui_basics/juce_gui_basics.h>
 
 #include "ui/VerticalZoomButtons.h"
+#include "ui/ToolbarOverflow.h"
 #include "ui/ZoomButtons.h"
 #include "ui/primitives/DewControls.h"
 
@@ -59,10 +60,28 @@ public:
     */
     std::function<void (double)> onTrackHeight;
 
+    /** What the strip needs to show everything - see PianoRollToolbar's. */
+    int preferredWidth() const;
+
+    /** The menu the >> button opens, and what a choice from it does. A seam:
+        showMenuAsync cannot run headlessly - see MenuSeam.h. */
+    juce::PopupMenu getOverflowMenu() const
+    {
+        return overflow.buildMenu();
+    }
+    void applyOverflowChoice (int choice)
+    {
+        overflow.applyMenuChoice (choice);
+    }
+
 private:
     void updateToolButtons();
 
     PlaylistTool tool = PlaylistTool::select;
+
+    /** Shown only when the strip has run out of room - see ToolbarOverflow. */
+    DewIconButton overflowButton { icons::more(), "More toolbar controls" };
+    ToolbarOverflow overflow;
 
     DewIconButton selectButton { icons::pointer(), "Select tool (1)" };
     DewIconButton paintButton { icons::pencil(), "Paint tool - drag to lay a run of clips (2)" };

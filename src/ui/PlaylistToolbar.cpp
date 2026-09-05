@@ -39,6 +39,19 @@ PlaylistToolbar::PlaylistToolbar()
     };
     addAndMakeVisible (heightButtons);
 
+    overflowButton.setComponentID ("toolbarOverflow");
+    overflowButton.setMouseClickGrabsKeyboardFocus (false);
+    overflowButton.setVisible (false);
+    overflowButton.onClick = [this]
+    {
+        auto menu = getOverflowMenu();
+        menu.setLookAndFeel (&getLookAndFeel());
+
+        menu.showMenuAsync (juce::PopupMenu::Options().withTargetComponent (&overflowButton),
+                            [this] (int choice) { applyOverflowChoice (choice); });
+    };
+    addChildComponent (overflowButton);
+
     updateToolButtons();
 }
 
@@ -82,16 +95,48 @@ void PlaylistToolbar::paint (juce::Graphics& g)
     }
 }
 
+int PlaylistToolbar::preferredWidth() const
+{
+    using namespace tokens;
+
+    constexpr auto controls = size::iconButton * 2 + ZoomButtons::preferredWidth
+                              + VerticalZoomButtons::preferredWidth;
+
+    constexpr auto steps = space::xxs * 4;
+    constexpr auto dividers = (space::sm * 2 + space::xs) * 2;
+
+    return controls + steps + dividers + space::md * 2;
+}
+
 void PlaylistToolbar::resized()
 {
     using namespace tokens;
 
     groupDividers.clear();
+    overflow.clear();
 
     StripLayout strip { getLocalBounds(), space::md, space::xs };
 
-    const auto place = [&strip] (juce::Component& c, int width) { strip.place (c, width); };
-    const auto divider = [this, &strip] { groupDividers.add (strip.divider()); };
+    // Reserved before anything is placed: a strip that discovers it needs the
+    // button after it has run out has nowhere left to put it.
+    const auto overflowing = getWidth() < preferredWidth();
+
+    overflowButton.setVisible (overflowing);
+
+    if (overflowing)
+        strip.placeAtEnd (overflowButton, size::iconButton);
+
+    const auto place = [this, &strip] (juce::Component& c, int width)
+    {
+        if (! strip.place (c, width))
+            overflow.add (c);
+    };
+
+    const auto divider = [this, &strip]
+    {
+        if (strip.getRemainingWidth() > 0)
+            groupDividers.add (strip.divider());
+    };
 
     place (selectButton, size::iconButton);
     place (paintButton, size::iconButton);

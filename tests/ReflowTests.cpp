@@ -7,6 +7,8 @@
 #include "ui/EffectChainHost.h"
 #include "ui/InstrumentPanel.h"
 #include "ui/MainComponent.h"
+#include "ui/MenuSeam.h"
+#include "ui/PianoRollComponent.h"
 #include "model/Ids.h"
 #include "model/ProjectEdits.h"
 
@@ -311,4 +313,82 @@ TEST_CASE ("every control is the height it says it needs", "[ui][reflow][design]
 
     INFO ("controls not at the height they asked for:\n" << wrong.joinIntoString ("\n"));
     CHECK (wrong.isEmpty());
+}
+
+TEST_CASE ("a toolbar too narrow for its controls offers them instead of hiding them",
+           "[ui][reflow][design]")
+{
+    // StripLayout hid a control there was no room for and said nothing, and its
+    // own comment conceded that only setResizeLimits kept the transport bar out
+    // of that case. The editor toolbars were not so lucky: UI scale multiplies
+    // the PEER, so at 1.75x on a laptop the LOGICAL window is what the display
+    // leaves rather than what anybody chose - and the piano roll's toolbar,
+    // which wants about 870px, was silently dropping four groups.
+    const juce::ScopedJuceInitialiser_GUI juceInit;
+
+    ProjectDocument document;
+    AudioEngine engine;
+    EditorState editorState;
+
+    document.setState (ProjectFactory::createDefault(), true);
+
+    PianoRollComponent roll { document, engine, editorState };
+    auto& toolbar = roll.getToolbar();
+
+    const auto controlsIn = [&toolbar]
+    {
+        juce::StringArray names;
+
+        for (auto* child : toolbar.getChildren())
+            if (child->isVisible() && child->getComponentID() != "toolbarOverflow")
+                names.add (dew::testing::describe (*child));
+
+        return names;
+    };
+
+    roll.setSize (1400, 700);
+    roll.resized();
+
+    const auto wide = controlsIn();
+    auto* overflowButton = toolbar.findChildWithID ("toolbarOverflow");
+
+    REQUIRE (overflowButton != nullptr);
+    CHECK_FALSE (overflowButton->isVisible());
+
+    // Narrow enough that the strip cannot hold everything, which is what a
+    // 900px window at 1.75x scale actually gives it.
+    roll.setSize (620, 700);
+    roll.resized();
+
+    const auto narrow = controlsIn();
+
+    INFO ("wide: " << wide.size() << " controls, narrow: " << narrow.size());
+    REQUIRE (narrow.size() < wide.size());
+
+    // The button is there, and its menu holds what the strip could not.
+    CHECK (overflowButton->isVisible());
+
+    const auto menu = toolbar.getOverflowMenu();
+    const auto rows = menuItems (menu);
+
+    // Every control that left the strip is represented. A GROUP counts for more
+    // than one row - the zoom trio is one thing to a strip and three rows to a
+    // person - which is why this is >= and not ==, and why the two widest
+    // things on this toolbar used to vanish with nothing to show for them.
+    INFO ("overflow menu:\n" << rows.joinIntoString ("\n"));
+    CHECK (rows.size() >= wide.size() - narrow.size());
+
+    // Nothing is a blank row: every label comes from the control's own tooltip,
+    // so a control that says nothing about itself would show as an empty line
+    // rather than be quietly unusable.
+    for (const auto& row : rows)
+        CHECK (row.trim().isNotEmpty());
+
+    // And back: widening puts every control back on the strip and takes the
+    // button away, so the menu is not a place things go and stay.
+    roll.setSize (1400, 700);
+    roll.resized();
+
+    CHECK (controlsIn().size() == wide.size());
+    CHECK_FALSE (overflowButton->isVisible());
 }

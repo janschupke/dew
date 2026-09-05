@@ -55,6 +55,7 @@ juce::Path chevronDown();
 juce::Path chevronLeft();
 juce::Path chevronRight();
 juce::Path grip(); ///< drag handle
+juce::Path more(); ///< three dots: a strip has more controls than it can show
 
 // --- waveforms ---------------------------------------------------------------
 juce::Path waveSine();

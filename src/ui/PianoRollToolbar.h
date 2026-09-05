@@ -4,6 +4,7 @@
 
 #include "model/NoteTools.h"
 #include "ui/VerticalZoomButtons.h"
+#include "ui/ToolbarOverflow.h"
 #include "ui/ZoomButtons.h"
 #include "ui/primitives/DewControls.h"
 
@@ -83,6 +84,34 @@ public:
     std::function<void()> onQuantize;
     std::function<void()> onRandomize;
 
+    /** What the strip needs to show everything, in pixels.
+
+        Declared so the strip can tell whether it has to reserve room for the
+        overflow button BEFORE it starts placing, which it cannot work out on
+        the way through. Also the honest answer to "how narrow can this window
+        get" - about 870, which the 900px resize floor only just clears, and
+        which UI scale takes it below: the scale multiplies the PEER, so at
+        1.75x the logical window is what the display leaves.
+    */
+    int preferredWidth() const;
+
+    /** The menu the >> button opens, and what a choice from it does. A seam,
+        because showMenuAsync cannot run headlessly - see MenuSeam.h. */
+    juce::PopupMenu buildOverflowMenu() const
+    {
+        return overflow.buildMenu();
+    }
+
+    /** The same menu, named the way the other test seams are. */
+    juce::PopupMenu getOverflowMenu() const
+    {
+        return buildOverflowMenu();
+    }
+    void applyOverflowChoice (int choice)
+    {
+        overflow.applyMenuChoice (choice);
+    }
+
 private:
     void updateToolButtons();
 
@@ -118,6 +147,12 @@ private:
 
     DewIconButton quantizeButton { icons::quantize(), "Quantize to the snap grid (Q)" };
     DewIconButton randomizeButton { icons::dice(), "Randomize velocity and timing (R)" };
+
+    /** Opened when the strip could not fit everything, and hidden otherwise.
+        Its rows are the controls that were dropped, labelled with their own
+        tooltips - see ToolbarOverflow. */
+    DewIconButton overflowButton { icons::more(), "More toolbar controls" };
+    ToolbarOverflow overflow;
 
     DewIconButton upButton { icons::chevronUp(), "Up a semitone (Up)" };
     DewIconButton downButton { icons::chevronDown(), "Down a semitone (Down)" };

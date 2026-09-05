@@ -35,28 +35,47 @@ public:
     {
     }
 
-    /** Places a control and steps past it.
+    /** Places a control and steps past it, shrinking it toward `minimum` first.
 
-        A control there is no room for is HIDDEN rather than given what is left.
+        Returns false when it did not fit at all, in which case the control is
+        HIDDEN and the caller is expected to offer it somewhere else - see
+        ToolbarOverflow. Hiding it and saying nothing is what this used to do,
+        and at 1.75x UI scale on a laptop it was silently dropping four groups
+        off the piano roll's toolbar: the scale multiplies the PEER, so the
+        LOGICAL window is what the display leaves rather than what was asked
+        for, and the toolbar wants about 870 of it.
+
         removeFromLeft on an exhausted rectangle returns an empty one and then
-        keeps returning empty ones, so a strip narrower than its contents used
-        to paint the overflow as a column of zero-width slivers at its right
-        edge and say nothing. The transport bar cannot reach that today - the
-        window's own floor is wider than the bar needs - but "cannot reach it
-        today" is a property of setResizeLimits, not of this class.
+        keeps returning empty ones, so without the check a narrow strip paints
+        its overflow as a column of zero-width slivers at the right edge.
+
+        `minimum` defaults to `width`, which is right for anything whose size is
+        its shape - an icon button, a group of three.
     */
-    void place (juce::Component& c, int width)
+    bool place (juce::Component& c, int width, int minimum = -1)
     {
-        if (area.getWidth() < width)
+        const auto floor = minimum >= 0 ? juce::jmin (minimum, width) : width;
+
+        if (area.getWidth() < floor)
         {
             c.setVisible (false);
             area.removeFromLeft (area.getWidth());
-            return;
+            return false;
         }
 
         c.setVisible (true);
-        c.setBounds (centred (area.removeFromLeft (width)));
+        c.setBounds (centred (area.removeFromLeft (juce::jmin (width, area.getWidth()))));
         area.removeFromLeft (tokens::space::xxs);
+        return true;
+    }
+
+    /** Takes a slot off the RIGHT end and gives it to a control. For the one
+        button a strip needs only when it has run out of room. */
+    void placeAtEnd (juce::Component& c, int width)
+    {
+        c.setVisible (true);
+        c.setBounds (centred (area.removeFromRight (width)));
+        area.removeFromRight (tokens::space::xxs);
     }
 
     /** A wider break, for controls that belong together but are not a group. */

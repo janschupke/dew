@@ -110,6 +110,19 @@ PianoRollToolbar::PianoRollToolbar()
     octaveUpButton.setTooltip (tr (StringId::pianoRoll_octaveUp_help));
     octaveDownButton.setTooltip (tr (StringId::pianoRoll_octaveDown_help));
 
+    overflowButton.setComponentID ("toolbarOverflow");
+    overflowButton.setMouseClickGrabsKeyboardFocus (false);
+    overflowButton.setVisible (false);
+    overflowButton.onClick = [this]
+    {
+        auto menu = buildOverflowMenu();
+        menu.setLookAndFeel (&getLookAndFeel());
+
+        menu.showMenuAsync (juce::PopupMenu::Options().withTargetComponent (&overflowButton),
+                            [this] (int choice) { applyOverflowChoice (choice); });
+    };
+    addChildComponent (overflowButton);
+
     updateToolButtons();
 }
 
@@ -224,20 +237,97 @@ void PianoRollToolbar::paint (juce::Graphics& g)
     }
 }
 
+namespace
+{
+
+// How wide the two dropdowns like to be, and how narrow they will go. A channel
+// name and a fraction both stay readable well below their comfortable width,
+// which is what makes them the right things to squeeze before anything is
+// dropped: a button has no narrower version of itself.
+constexpr int channelBoxWidth = 132;
+constexpr int snapBoxWidth = 78;
+
+// The floors are multiples of the ladder's own rungs rather than numbers
+// chosen by eye, so a change to the rung carries them: enough for a couple of
+// characters and the chevron, which is what a squeezed dropdown has to keep.
+constexpr int channelBoxMinWidth = tokens::size::iconButton * 3;
+constexpr int snapBoxMinWidth = tokens::size::iconButton * 2 + tokens::space::sm;
+
+// Wide enough for the longest of them - one width, so the two dropdowns start
+// at the same offset from their divider rather than at two.
+constexpr int captionWidth = tokens::size::gutterLabel - tokens::space::lg;
+
+} // namespace
+
+int PianoRollToolbar::preferredWidth() const
+{
+    using namespace tokens;
+
+    // Everything, at the width it likes, plus the step after each control and
+    // the six group rules. Written as a sum rather than measured after the fact
+    // because resized() has to know BEFORE it starts whether to reserve the
+    // overflow button's slot.
+    constexpr auto controls = size::iconButton * 7 + captionWidth * 2 + channelBoxWidth
+                              + snapBoxWidth + 34 * 2 + ZoomButtons::preferredWidth
+                              + VerticalZoomButtons::preferredWidth;
+
+    constexpr auto steps = space::xxs * 15;
+    constexpr auto dividers = (space::sm * 2 + space::xs) * 6;
+
+    return controls + steps + dividers + space::md * 2;
+}
+
 void PianoRollToolbar::resized()
 {
     using namespace tokens;
 
     groupDividers.clear();
-
-    // Wide enough for the longest of them - one width, so the two dropdowns
-    // start at the same offset from their divider rather than at two.
-    const auto captionWidth = size::gutterLabel - space::lg;
+    overflow.clear();
 
     StripLayout strip { getLocalBounds(), space::md, space::xs };
 
-    const auto place = [&strip] (juce::Component& c, int width) { strip.place (c, width); };
-    const auto divider = [this, &strip] { groupDividers.add (strip.divider()); };
+    // Reserved BEFORE anything is placed, because a strip that discovers it
+    // needs the button after it has run out has nowhere left to put it.
+    const auto overflowing = getWidth() < preferredWidth();
+
+    overflowButton.setVisible (overflowing);
+
+    if (overflowing)
+        strip.placeAtEnd (overflowButton, size::iconButton);
+
+    // Placed in the order they are read, and DROPPED in the reverse of the
+    // order they matter - which is why the least important groups are last.
+    // The tools and the two dropdowns are the strip; the rest is reachable from
+    // the keyboard as well, and from the >> menu when it is not here.
+    const auto place = [this, &strip] (juce::Component& c, int width, int minimum = -1)
+    {
+        if (! strip.place (c, width, minimum))
+            overflow.add (c);
+    };
+
+    // A caption and its dropdown go together or not at all: a word with nothing
+    // beside it says less than no word, and the caption is not offered in the
+    // menu because the dropdown's own label already says what it is.
+    const auto placeLabelled =
+        [this, &strip] (juce::Component& caption, juce::Component& box, int width, int minimum)
+    {
+        const auto both = strip.getRemainingWidth() >= captionWidth + minimum;
+
+        if (both && strip.place (caption, captionWidth, 0) && strip.place (box, width, minimum))
+            return;
+
+        caption.setVisible (false);
+        box.setVisible (false);
+        overflow.add (box);
+    };
+
+    // A rule with nothing after it is a rule at the end of the strip. Only
+    // recorded while there is still something to separate.
+    const auto divider = [this, &strip]
+    {
+        if (strip.getRemainingWidth() > 0)
+            groupDividers.add (strip.divider());
+    };
 
     place (selectButton, size::iconButton);
     place (paintButton, size::iconButton);
@@ -245,13 +335,11 @@ void PianoRollToolbar::resized()
 
     divider();
 
-    place (channelCaption, captionWidth);
-    place (channelBox, 132);
+    placeLabelled (channelCaption, channelBox, channelBoxWidth, channelBoxMinWidth);
 
     divider();
 
-    place (snapCaption, captionWidth);
-    place (snapBox, 78);
+    placeLabelled (snapCaption, snapBox, snapBoxWidth, snapBoxMinWidth);
 
     divider();
 
