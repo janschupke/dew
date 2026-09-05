@@ -170,8 +170,17 @@ const std::vector<ParamSpec>& channelParamSpecs();
 /** The amplitude envelope. */
 const std::vector<ParamSpec>& ampParamSpecs();
 
-/** One oscillator slot's continuous parameters. */
+/** One oscillator slot's parameters: the slot's own AND every generator's.
+
+    The whole node, which is what the schema generates from and what a preset
+    walks. To ask what a slot running one generator actually reads, use
+    generatorParamSpecs - see GeneratorCatalog.h.
+*/
 const std::vector<ParamSpec>& oscParamSpecs();
+
+/** The parameters that belong to the SLOT rather than to a generator: whether
+    it is on, its octave, its detune, its gain and which generator it runs. */
+const std::vector<ParamSpec>& oscSlotParamSpecs();
 
 /** The arrangement's own: the tempo, and nothing else. */
 const std::vector<ParamSpec>& projectParamSpecs();

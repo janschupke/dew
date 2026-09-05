@@ -300,6 +300,7 @@ add_library(dew_model STATIC
   model/EffectType.cpp
   model/InstrumentType.cpp
   model/EffectCatalog.cpp
+  model/GeneratorCatalog.cpp
   model/ModuleCatalog.cpp
   model/ProjectSchema.cpp
   model/ProjectSchemaTrees.cpp

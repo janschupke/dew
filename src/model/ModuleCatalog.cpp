@@ -1,5 +1,7 @@
 #include "model/ModuleCatalog.h"
 
+#include "model/GeneratorCatalog.h"
+
 #include "model/Ids.h"
 #include "model/ProjectSchema.h"
 
@@ -163,8 +165,6 @@ const ParamSpec oscSpecs[] {
     // effect's is a bypass somebody flicks while mixing.
     toggleSpec (&ids::enabled, /*automatable*/ false, /*defaultOn*/ true),
 
-    choiceSpec (&ids::wave, waveforms, (int) std::size (waveforms), "saw", 1.0),
-
     // Four octaves either way, which is what the engine renders; the stepper
     // offered three.
     { &ids::octave, "", -4.0, 4.0, 0.0, 1.0, 0, ParamCurve::linear, ParamControl::stepper, true,
@@ -187,6 +187,11 @@ const ParamSpec oscSpecs[] {
     { &ids::gain, "", 0.0, 1.0, 0.8, 0.01, 2 },
 
     choiceSpec (&ids::mode, oscModes, (int) std::size (oscModes), "classic", 0.0),
+
+    // --- the CLASSIC generator's own, from here -----------------------------
+    choiceSpec (&ids::wave, waveforms, (int) std::size (waveforms), "saw", 1.0),
+
+    // --- the WAVETABLE generator's own, from here ---------------------------
     choiceSpec (&ids::wavetable, wavetables, (int) std::size (wavetables), "basic", 0.0),
 
     { &ids::wavePosition, "", 0.0, 1.0, 0.0, 0.01, 2 },
@@ -203,6 +208,36 @@ const ParamSpec oscSpecs[] {
       /*integral*/ true },
     { &ids::unisonDetune, " c", 0.0, 50.0, 0.0, 0.5, 1 },
 };
+
+/** How the table above divides: the SLOT's own parameters first, then one run
+    per generator, in the order the `mode` choice names them.
+
+    Spans of one array rather than three arrays, so the schema still generates
+    the node from a single declared table in a single order - which is the thing
+    ProjectSchema's own comment asks for - while the registry can still say
+    which parameters are whose. A generator that had its own array would be a
+    second place the order lives.
+*/
+constexpr int kNumSlotParams = 5;      ///< enabled, octave, detuneCents, gain, mode
+constexpr int kNumClassicParams = 1;   ///< wave
+constexpr int kNumWavetableParams = 7; ///< the table, its position and the unison stack
+
+static_assert (kNumSlotParams + kNumClassicParams + kNumWavetableParams
+                   == (int) std::size (oscSpecs),
+               "every oscillator parameter belongs to the slot or to one generator");
+
+/** Every generator, and the run of oscSpecs each one alone reads.
+
+    See GeneratorCatalog.h for why this is a table rather than a bool.
+*/
+const GeneratorDescriptor generators[] {
+    { "classic", StringId::choice_oscMode_classic, oscSpecs + kNumSlotParams, kNumClassicParams },
+    { "wavetable", StringId::choice_oscMode_wavetable,
+      oscSpecs + kNumSlotParams + kNumClassicParams, kNumWavetableParams },
+};
+
+static_assert (std::size (generators) == std::size (oscModes),
+               "every generator the mode choice names has to have a table");
 
 const ParamSpec mixerTrackSpecs[] {
     // The three-way disagreement the plan named: the fader offered 0..1.5, the
@@ -403,6 +438,19 @@ DEW_PARAM_TABLE (soundFontParamSpecs, soundFontSpecs)
 DEW_PARAM_TABLE (projectParamSpecs, projectSpecs)
 
 #undef DEW_PARAM_TABLE
+
+const std::vector<ParamSpec>& oscSlotParamSpecs()
+{
+    static const std::vector<ParamSpec> table { oscSpecs, oscSpecs + kNumSlotParams };
+    return table;
+}
+
+const std::vector<GeneratorDescriptor>& generatorDescriptors()
+{
+    static const std::vector<GeneratorDescriptor> all { std::begin (generators),
+                                                        std::end (generators) };
+    return all;
+}
 
 const std::vector<InstrumentDescriptor>& instrumentDescriptors()
 {
