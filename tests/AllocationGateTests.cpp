@@ -61,11 +61,16 @@ namespace
 std::atomic<bool> counting { false };
 std::atomic<int> allocations { 0 };
 
+// Only the replaced operator new calls this, and that is only replaced when a
+// sanitizer has not already taken the allocator - so under asan and tsan it is
+// a function nobody calls, which -Wunused-function makes an error.
+#if ! defined(DEW_SANITIZER_OWNS_THE_ALLOCATOR)
 inline void noteAllocation() noexcept
 {
     if (counting.load (std::memory_order_relaxed))
         allocations.fetch_add (1, std::memory_order_relaxed);
 }
+#endif
 
 /** Arms the counter for a scope, and always disarms - a REQUIRE that throws
     inside the window must not leave every later test counting.
@@ -188,6 +193,11 @@ void operator delete[] (void* p, std::size_t, std::align_val_t) noexcept
 
 #endif // ! DEW_SANITIZER_OWNS_THE_ALLOCATOR
 
+// Built only for the bodies that count allocations, which is the same condition
+// again: every test below that uses this fixture SKIPs when a sanitizer owns the
+// allocator, so building it there is a function nobody calls.
+#if ! defined(DEW_SANITIZER_OWNS_THE_ALLOCATOR)
+
 namespace
 {
 
@@ -252,6 +262,8 @@ juce::ValueTree maximalProject()
 }
 
 } // namespace
+
+#endif // ! DEW_SANITIZER_OWNS_THE_ALLOCATOR
 
 TEST_CASE ("the allocation counter actually counts", "[realtime][gate][allocation]")
 {
