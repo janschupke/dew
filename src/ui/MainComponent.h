@@ -92,6 +92,11 @@ public:
     /** The next editor along, wrapping. Negative goes back. */
     void showAdjacentTab (int delta);
 
+    /** Moves the keyboard a whole group on - an effect, a strip, a panel -
+        rather than a control. The decision is focusGroups::nextFocusFor, which
+        is where the testable half of this lives. */
+    void focusAdjacentGroup (int delta);
+
     int getActiveTab() const;
     int getNumEditorTabs() const;
 

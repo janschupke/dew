@@ -2,6 +2,7 @@
 
 #include "ui/design/Cursors.h"
 #include "ui/design/Gestures.h"
+#include "ui/design/Keys.h"
 
 #include <cmath>
 
@@ -297,6 +298,41 @@ DewDropdown::DewDropdown (const juce::String& name)
     : juce::ComboBox (name)
 {
     setMouseCursor (cursor::clickable);
+}
+
+// --- DewSlider ---------------------------------------------------------------
+
+bool DewSlider::keyPressed (const juce::KeyPress& key)
+{
+    const auto command = keys::valueKeys::commandFor (key);
+    const auto direction = keys::valueKeys::directionOf (command);
+
+    if (direction == 0)
+        return false;
+
+    const auto interval = getInterval();
+    const auto fraction = keys::valueKeys::fractionFor (command, key.getModifiers(), interval);
+
+    // proportionOfLengthToValue and its inverse ARE the skewed range's own
+    // conversions, so a step is one per cent of the travel rather than of the
+    // span: on a cutoff that is one per cent in pitch, not a flat 180Hz that is
+    // inaudible at the top and a leap at the bottom.
+    //
+    // Read off the SLIDER rather than off the ParamSpec on purpose. DewKnob
+    // fits a power skew whose geometric mean lands at 0.5; ParamSpec::
+    // fromNormalised is a true exponential. They agree at nought, a half and
+    // one and differ in between, so taking the range makes the keyboard agree
+    // with the DRAG on the same control - which is the pair a hand notices.
+    const auto moved = keys::valueKeys::steppedValue (
+        getValue(), fraction, direction, interval,
+        [this] (double v) { return valueToProportionOfLength (v); },
+        [this] (double p) { return proportionOfLengthToValue (p); });
+
+    // setValue clamps and snaps through constrainedValue, so a step that
+    // overshoots an end lands on it.
+    setValue (moved, juce::sendNotificationSync);
+
+    return true;
 }
 
 void DewKnob::mouseDown (const juce::MouseEvent& event)

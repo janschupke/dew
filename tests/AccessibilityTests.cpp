@@ -5,6 +5,7 @@
 #include "model/ModuleCatalog.h"
 #include "ui/MainComponent.h"
 #include "ui/design/Focus.h"
+#include "ui/design/FocusGroups.h"
 #include "ui/primitives/DewControls.h"
 #include "ui/primitives/DewNumberField.h"
 #include "ControlWalkHarness.h"
@@ -304,4 +305,121 @@ TEST_CASE ("a primitive tells the design system what moved the keyboard onto it"
     focus::noteFocusChange (juce::Component::focusChangedByMouseClick);
     knob.focusOfChildComponentChanged (juce::Component::focusChangedByTabKey);
     CHECK (focus::ringVisible());
+}
+
+TEST_CASE ("every control in the window belongs to a group", "[ui][a11y][focus]")
+{
+    // Ctrl-tab steps over GROUPS, so a control in none of them is a control the
+    // key can never reach - and a screen reader meets it as a loose fragment
+    // with no region around it. Two whole clusters were in that state: the
+    // transport bar's twelve controls, and the instrument-panel fold chevron,
+    // which MainComponent hands to the tab strip and which is therefore
+    // parented to a juce::TabbedComponent rather than to any panel.
+    //
+    // This gate can only fail because MainComponent is deliberately NOT a focus
+    // container: Component::findFocusContainer walks up and hands back the
+    // top-level component whether or not it is one, so making the window a
+    // container would make every control belong to a group by construction.
+    const juce::ScopedJuceInitialiser_GUI juceInit;
+
+    MainComponent component (false);
+    component.setSize (1400, 900);
+
+    REQUIRE_FALSE (component.isFocusContainer());
+
+    juce::StringArray orphans;
+
+    const auto controls = forEachControl (component,
+                                          [&] (juce::Component& c)
+                                          {
+                                              if (! c.isEnabled())
+                                                  return;
+
+                                              if (focusGroups::ownerOfFocus (component, &c)
+                                                  == nullptr)
+                                                  orphans.addIfNotAlreadyThere (describe (c));
+                                          });
+
+    INFO (controls << " controls, " << (controls - orphans.size()) << " in a group");
+    REQUIRE (controls > 100);
+
+    INFO ("controls belonging to no group:\n" << orphans.joinIntoString ("\n"));
+    CHECK (orphans.isEmpty());
+}
+
+TEST_CASE ("every group has a name a screen reader can read", "[ui][a11y][focus]")
+{
+    // A group is an accessibility region as much as it is a tab stop, so an
+    // unnamed one is a region VoiceOver enters and cannot announce. Four of the
+    // new ones take their name from the thing they hold - the effect's type,
+    // the strip's, the channel's, the track's - and this is what catches the
+    // next panel added without one.
+    const juce::ScopedJuceInitialiser_GUI juceInit;
+
+    MainComponent component (false);
+    component.setSize (1400, 900);
+
+    juce::StringArray unnamed;
+    auto groups = 0;
+
+    for (auto tab = 0; tab < Settings::numTabs; ++tab)
+    {
+        component.showTab (tab);
+        component.resized();
+
+        for (auto* group : focusGroups::groupsIn (component))
+        {
+            ++groups;
+
+            if (group->getTitle().isEmpty())
+                unnamed.addIfNotAlreadyThere (describe (*group));
+        }
+    }
+
+    // A control case: a ring that collected nothing would report every group
+    // named and pass in silence.
+    INFO (groups << " groups across " << Settings::numTabs << " tabs");
+    REQUIRE (groups > 20);
+
+    INFO ("groups a screen reader would enter unnamed:\n" << unnamed.joinIntoString ("\n"));
+    CHECK (unnamed.isEmpty());
+}
+
+TEST_CASE ("the group ring covers the tab in front and nothing behind it", "[ui][a11y][focus]")
+{
+    // A juce::TabbedComponent parents only the CURRENT tab's content, which is
+    // the trap every walk in this suite has to answer for. Here it is the
+    // feature: ctrl-tab reaches what is on screen and cannot land the keyboard
+    // on a mixer strip that is not being shown.
+    const juce::ScopedJuceInitialiser_GUI juceInit;
+
+    MainComponent component (false);
+    component.setSize (1400, 900);
+
+    const auto titlesOnTab = [&component] (int tab)
+    {
+        component.showTab (tab);
+        component.resized();
+
+        juce::StringArray titles;
+
+        for (auto* group : focusGroups::groupsIn (component))
+            titles.addIfNotAlreadyThere (group->getTitle());
+
+        return titles;
+    };
+
+    const auto onMixer = titlesOnTab (3);
+    const auto onRoll = titlesOnTab (1);
+
+    CHECK (onMixer.contains (tr (StringId::mixer_title)));
+    CHECK_FALSE (onMixer.contains (tr (StringId::pianoRoll_title)));
+
+    CHECK (onRoll.contains (tr (StringId::pianoRoll_title)));
+    CHECK_FALSE (onRoll.contains (tr (StringId::mixer_title)));
+
+    // The regions outside the tabs are on both, which is the other half of the
+    // claim: the transport does not come and go with the editor.
+    CHECK (onMixer.contains (tr (StringId::transport_title)));
+    CHECK (onRoll.contains (tr (StringId::transport_title)));
 }

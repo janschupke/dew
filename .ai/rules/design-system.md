@@ -118,6 +118,19 @@ pointer.
 - **A wrapper around the real control returns an IGNORED handler**, as `DewKnob` does.
   Never `setAccessible (false)`: `Component::isAccessible` walks up to its parent, so
   switching a wrapper off takes its children off with it.
+- **A component a person would name as one thing is a group**: it declares
+  `setFocusContainerType (FocusContainerType::focusContainer)` and it calls `setTitle`. An
+  effect card, a mixer strip, a rack row, a track header, each panel. Two gates hold it —
+  "every control in the window belongs to a group" and "every group has a name a screen
+  reader can read" — and ⌃⇥ steps over the same list, so the keyboard and the screen
+  reader read one structure rather than two. Never the *keyboard* focus container: it
+  confines ⇥ with no key to leave, which is a trap, and dew reads that distinction to tell
+  its own groups from the ones `juce::Label` and `juce::ScrollBar` declare for themselves.
+- **A value control answers arrows itself.** `juce::Slider::keyPressed` steps by
+  `getInterval()` and refuses every modifier, so on a `0.001` interval it was a thousand
+  presses end to end and shift blocked the edit rather than refining it. `DewSlider` and
+  `DewNumberField` override it — see
+  [gestures-and-hotkeys](gestures-and-hotkeys.md#changing-a-value-from-the-keyboard).
 - Everything here is portable. JUCE implements accessibility natively on macOS and Windows
   and compiles the same calls to nothing elsewhere, so none of it needs an `#ifdef`. The
   one exception in the tree is `systemPrefersReducedMotion`, because JUCE has no API for

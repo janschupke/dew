@@ -486,6 +486,9 @@ bool DewApplication::perform (const InvocationInfo& info)
         case CommandIDs::viewNextTab: main->showAdjacentTab (1); return true;
         case CommandIDs::viewPreviousTab: main->showAdjacentTab (-1); return true;
 
+        case CommandIDs::viewNextGroup: main->focusAdjacentGroup (1); return true;
+        case CommandIDs::viewPreviousGroup: main->focusAdjacentGroup (-1); return true;
+
         case CommandIDs::viewToggleInstrumentPanel: main->toggleInstrumentPanel(); return true;
 
         case CommandIDs::viewUiScaleFirst:

@@ -24,6 +24,10 @@ PlaylistTrackHeader::PlaylistTrackHeader (ProjectDocument& d, juce::ValueTree t)
     nameLabel.setText (track[ids::name].toString(), juce::dontSendNotification);
     nameLabel.setEditable (false, true, false);
 
+    // One track is one group; refresh() repeats it for a rename.
+    setTitle (nameLabel.getText());
+    setFocusContainerType (FocusContainerType::focusContainer);
+
     // setEditable does not stop a Label eating clicks - it only touches
     // keyboard focus - so without this the label swallows every press across
     // the header's whole left side and the row's own mouseDown never runs.
@@ -154,6 +158,7 @@ void PlaylistTrackHeader::refresh()
     enabledButton.setComponentID ("trackEnabled");
 
     nameLabel.setText (track[ids::name].toString(), juce::dontSendNotification);
+    setTitle (nameLabel.getText());
     enabledButton.setToggleState ((bool) track[ids::mute], juce::dontSendNotification);
     repaint();
 }

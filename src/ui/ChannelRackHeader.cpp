@@ -28,6 +28,11 @@ ChannelRackHeader::ChannelRackHeader (ProjectDocument& d, EditorState& s, juce::
     nameLabel.setText (channel[ids::name].toString(), juce::dontSendNotification);
     nameLabel.setEditable (false, true, false);
 
+    // One channel is one group. refresh() says the same thing again, because a
+    // rename reaches this label both ways.
+    setTitle (nameLabel.getText());
+    setFocusContainerType (FocusContainerType::focusContainer);
+
     // The label covered the row's whole left half and consumed every press,
     // so clicking a channel by its name selected nothing. Renaming moves to
     // a double-click on the row, which is where it already was.
@@ -110,6 +115,7 @@ void ChannelRackHeader::refresh()
     const juce::ScopedValueSetter<bool> quiet (updating, true);
 
     nameLabel.setText (channel[ids::name].toString(), juce::dontSendNotification);
+    setTitle (nameLabel.getText());
     enabledButton.setToggleState ((bool) channel[ids::muted], juce::dontSendNotification);
     volumeKnob.setValue ((double) channel[ids::volume], juce::dontSendNotification);
     panKnob.setValue ((double) channel[ids::pan], juce::dontSendNotification);

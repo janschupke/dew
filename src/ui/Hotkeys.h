@@ -3,6 +3,7 @@
 #include <juce_gui_basics/juce_gui_basics.h>
 
 #include "i18n/Strings.h"
+#include "ui/design/Keys.h"
 
 #include <vector>
 
@@ -44,6 +45,15 @@ enum
     viewScore,
     viewNextTab,
     viewPreviousTab,
+
+    /** Moving the keyboard over a whole component - an effect, a strip, a
+        panel - rather than one control at a time. Placed here, in the middle of
+        the View run, because `about` has to stay LAST: HotkeyTests pins
+        lastCommand to it and walks the table from fileNew to there. The
+        contiguous scale, motion and theme blocks are all below this and read
+        their ids as First + step, so inserting above them moves nothing. */
+    viewNextGroup,
+    viewPreviousGroup,
     viewToggleInstrumentPanel,
 
     /** One per Settings::uiScaleSteps, contiguous and in the same order, so the
@@ -105,35 +115,25 @@ enum
 
     It lives in dew_ui rather than beside the application for exactly the third
     reason above: dew_tests links dew_ui.
+
+    What a stroke IS moved one layer further down, to ui/design/Keys.h, when the
+    primitives had to answer keys of their own - a knob cannot see dew_ui. Only
+    the mechanism went: this table names CommandIDs::compileScore, addChannel and
+    fileRender, and dew_design's own CMakeLists says it "knows nothing about a
+    project". So Keys.h says what a stroke is, this file declares the
+    application's rows, and Keys.h declares the design system's own.
 */
 namespace hotkeys
 {
 
-/** One key, spelled once. `keyCode` is a juce::KeyPress code or a character;
-    `modifiers` is a juce::ModifierKeys flag set.
+/** The mechanism, one layer down. Aliased rather than re-declared so that
+    nothing which already spells hotkeys::Stroke had to change. */
+using Stroke = keys::Stroke;
 
-    An action reachable two ways - select-all answers to command AND to control
-    - gets two rows rather than a second field. Two rows say which two keys
-    they are; a field would have to say how the two relate.
-*/
-struct Stroke
-{
-    int keyCode = 0;
-    int modifiers = 0;
-};
+template <typename Action> using Binding = keys::Binding<Action>;
 
-template <typename Action> struct Binding
-{
-    Action action;
-    Stroke stroke;
-
-    /** What this command is CALLED, what it does, and which menu it belongs
-        to - as catalogue keys rather than sentences, so the menu bar and the
-        command manager read the same row in whatever language is running. */
-    StringId name;
-    StringId description;
-    StringId category;
-};
+using keys::keyPressFor;
+using keys::matches;
 
 /** What a key means in a timeline view.
 
@@ -209,6 +209,12 @@ const std::vector<Binding<juce::CommandID>>& application();
 /** The bindings the step grid, the piano roll and the playlist share. */
 const std::vector<Binding<ViewCommand>>& timeline();
 
+/** The strokes a VALUE control answers - a knob, a fader, a stepper, a number
+    field - declared one layer down in ui/design/Keys.h because that is where
+    the controls are, and re-exported here so the collision test and the docs
+    walk ONE registry rather than two. That was the whole point of this file. */
+const std::vector<Binding<keys::valueKeys::Command>>& value();
+
 /** The row for one command id, or null. */
 const Binding<juce::CommandID>* find (juce::CommandID);
 
@@ -222,22 +228,6 @@ const Binding<juce::CommandID>* find (juce::CommandID);
     then say.
 */
 bool describe (juce::CommandID, juce::ApplicationCommandInfo&);
-
-/** The stroke as a KeyPress - the ONE place a KeyPress is constructed. */
-juce::KeyPress keyPressFor (const Stroke&);
-
-/** Whether a key press is this stroke.
-
-    Command, control and alt are compared EXACTLY. That is the whole fix for
-    cmd-1: the map this replaced compared a character and nothing else, so
-    every modified digit resolved to a tool.
-
-    Shift is deliberately NOT compared. `+` and `_` are how a keyboard spells
-    shift-`=` and shift-`-`, and no binding here is distinguished by shift, so
-    a map that compared it would refuse the one key it most has to accept. A
-    binding that ever needs shift changes this rule and says so in its row.
-*/
-bool matches (const Stroke&, const juce::KeyPress&) noexcept;
 
 /** What a key means in a timeline view, or ViewCommand::none. */
 ViewCommand viewCommandFor (const juce::KeyPress&) noexcept;

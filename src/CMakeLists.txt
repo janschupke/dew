@@ -473,6 +473,7 @@ add_library(dew_design STATIC
   ui/design/Animator.cpp
   ui/design/SystemMotionPreference.cpp
   ui/design/Theme.cpp
+  ui/design/FocusGroups.cpp
   ui/design/icons/Icons.cpp
   ui/design/icons/IconsActions.cpp
   ui/design/icons/IconsSound.cpp
@@ -552,6 +553,7 @@ add_library(dew_ui STATIC
   ui/HoverHelp.cpp
   ui/StatusBar.cpp
   ui/TransportBar.cpp
+  ui/TransportBarMeter.cpp
   ui/Hotkeys.cpp
   ui/AutomationLane.cpp
   ui/ParamContextMenu.cpp

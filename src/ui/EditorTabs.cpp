@@ -17,6 +17,16 @@ EditorTabs::EditorTabs (ProjectDocument& document, AudioEngine& engine, EditorSt
     , scoreEditor (document)
 {
     setComponentID ("editorTabs");
+
+    // A group for one control: the panel fold chevron, which MainComponent
+    // hands to setTabStripTrailing and which is therefore parented HERE. A
+    // juce::TabbedComponent is not a container and each tab's content is one of
+    // its own, so without this the chevron was the one control in the window
+    // that belonged to no group at all. The tab buttons take no focus -
+    // TabBarButton's constructor refuses it - so this group is the chevron and
+    // nothing else.
+    setTitle (tr (StringId::shell_editors));
+    setFocusContainerType (FocusContainerType::focusContainer);
     setTabBarDepth (tokens::size::stripTabs);
 
     // The alpha belongs to the editor, not to the whole tabbed component: the

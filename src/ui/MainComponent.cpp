@@ -12,6 +12,7 @@
 
 #include "model/ProjectEdits.h"
 #include "ui/design/Cursors.h"
+#include "ui/design/FocusGroups.h"
 #include "ui/design/Tokens.h"
 
 #include "model/Ids.h"
@@ -373,6 +374,11 @@ void MainComponent::showTab (int index)
     // look like a tab reached from the bar, and sendChangeMessage is what
     // drives EditorTabs::currentTabChanged.
     tabs.setCurrentTabIndex (juce::jlimit (0, juce::jmax (0, tabs.getNumTabs() - 1), index), true);
+}
+
+void MainComponent::focusAdjacentGroup (int delta)
+{
+    focusGroups::moveFocus (*this, delta);
 }
 
 void MainComponent::showAdjacentTab (int delta)

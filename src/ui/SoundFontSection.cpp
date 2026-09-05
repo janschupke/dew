@@ -14,6 +14,12 @@ SoundFontSection::SoundFontSection (ProjectDocument& d, SoundFontPool* p)
 {
     setComponentID ("soundFontSection");
 
+    // The third instrument face. The oscillator and sample sections have been
+    // groups since the accessibility work and this one was missed, so its load
+    // button and preset box belonged to the panel around it.
+    setTitle (tr (StringId::soundFont_title));
+    setFocusContainerType (FocusContainerType::focusContainer);
+
     fileLabel.setJustificationType (juce::Justification::centredLeft);
     fileLabel.setInterceptsMouseClicks (false, false);
     addAndMakeVisible (fileLabel);

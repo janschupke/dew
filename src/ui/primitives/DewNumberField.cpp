@@ -2,6 +2,7 @@
 
 #include "ui/design/Gestures.h"
 #include "ui/design/Cursors.h"
+#include "ui/design/Keys.h"
 #include "ui/design/Tokens.h"
 #include "ui/primitives/DewControls.h"
 
@@ -15,7 +16,43 @@ namespace
 /** Pixels of vertical travel to cross the whole range. Chosen so a full sweep
     is a comfortable forearm movement rather than a mouse-lift.
 */
+
+/** Whether this range can be travelled by ratio at all. A range that touches or
+    crosses zero has no ratio to move by, which is why every branch below tests
+    all three conditions rather than the flag alone. */
+bool travelsByRatio (bool logarithmic, double minimum, double maximum) noexcept
+{
+    return logarithmic && minimum > 0.0 && maximum > minimum;
 }
+
+/** The field's own 0..1, and its inverse.
+
+    The drag and the wheel state the same curve in their own terms - the drag as
+    a ratio applied to the value it started from, the wheel as a ratio per notch
+    - because each is a DELTA and this pair is a POSITION. They agree; the
+    keyboard is simply the one gesture that has an absolute position to work
+    from, so it is the one that can use these.
+
+    Deliberately the same functions as ParamSpec::toNormalised and
+    fromNormalised. A field is handed min, max, interval and a bool rather than
+    the spec, so it restates the curve, and the two must not drift.
+*/
+double normalisedOf (double v, bool logarithmic, double minimum, double maximum) noexcept
+{
+    if (travelsByRatio (logarithmic, minimum, maximum))
+        return std::log (v / minimum) / std::log (maximum / minimum);
+
+    return maximum > minimum ? (v - minimum) / (maximum - minimum) : 0.0;
+}
+
+double valueOf (double p, bool logarithmic, double minimum, double maximum) noexcept
+{
+    if (travelsByRatio (logarithmic, minimum, maximum))
+        return minimum * std::exp (p * std::log (maximum / minimum));
+
+    return minimum + p * (maximum - minimum);
+}
+} // namespace
 
 DewNumberField::DewNumberField()
 {
@@ -171,6 +208,38 @@ void DewNumberField::mouseWheelMove (const juce::MouseEvent& event,
 
     const auto step = interval > 0.0 ? interval : (maximum - minimum) / 100.0;
     commit (value + (up ? step : -step) * juce::jmax (1.0, scale * 4.0));
+}
+
+bool DewNumberField::keyPressed (const juce::KeyPress& key)
+{
+    // While a value is being typed the arrows belong to the caret. The editor
+    // is a child and holds the focus, so it sees them first anyway - this is
+    // the belt to that pair of braces, and it is what makes the rule readable.
+    if (editor != nullptr)
+        return false;
+
+    const auto command = keys::valueKeys::commandFor (key);
+    const auto direction = keys::valueKeys::directionOf (command);
+
+    if (direction == 0)
+        return false;
+
+    // Per step, exactly as mouseWheelMove does, and for a reason that is not
+    // cosmetic: EffectCard arms `inDrag` from this callback and a field has no
+    // onEditEnd, so EffectCard::write leaves gestureActive set. Re-arming on
+    // every press is what makes each press its own undo step; without it every
+    // later edit on that card coalesces into one transaction for ever.
+    if (onEditStart != nullptr)
+        onEditStart();
+
+    const auto fraction = keys::valueKeys::fractionFor (command, key.getModifiers(), interval);
+
+    commit (keys::valueKeys::steppedValue (
+        value, fraction, direction, interval,
+        [this] (double v) { return normalisedOf (v, logarithmic, minimum, maximum); },
+        [this] (double p) { return valueOf (p, logarithmic, minimum, maximum); }));
+
+    return true;
 }
 
 void DewNumberField::mouseDoubleClick (const juce::MouseEvent&)

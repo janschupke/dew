@@ -104,6 +104,16 @@ public:
     void mouseEnter (const juce::MouseEvent&) override;
     void mouseExit (const juce::MouseEvent&) override;
 
+    /** Arrows, shift-arrows and page up/down.
+
+        A field wanted keyboard focus and drew a ring from the day it was
+        written, and then answered no key at all: the tempo, the pattern length,
+        every effect number field and the render tail and peak could be reached
+        by tab and not edited from there. The comment on focusGained below has
+        said "itself while it is being dragged or NUDGED" the whole time.
+    */
+    bool keyPressed (const juce::KeyPress&) override;
+
     /** Both hooks, because a number field holds the keyboard two ways: itself
         while it is being dragged or nudged, and the juce::TextEditor it opens
         while a value is being typed. See DewButton::focusGained. */

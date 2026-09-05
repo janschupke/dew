@@ -28,6 +28,13 @@ StepGridComponent::StepGridComponent (ProjectDocument& d, AudioEngine& e, Editor
 {
     setComponentID ("stepGrid");
 
+    // A name and a place in the screen reader's tree, and a stop for ctrl-tab.
+    // It was the one canvas that announced a cursor move from a region with no
+    // name at all - the roll and the playlist have had both since they were
+    // written, and this had neither.
+    setTitle (tr (StringId::channelRack_stepGrid));
+    setFocusContainerType (FocusContainerType::focusContainer);
+
     // The grid has overridden keyPressed since it was written, and nothing ever
     // asked for focus - so its zoom keys were live in the tests and nowhere
     // else, and the channel rack was the one tab with no key handling at all.

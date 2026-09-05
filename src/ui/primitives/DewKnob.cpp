@@ -67,9 +67,13 @@ DewKnob::DewKnob (const juce::String& c, double minimum, double maximum, double 
     slider.setMouseCursor (cursor::value);
 
     // juce::Slider's constructor turns keyboard focus OFF, so every knob in dew
-    // was unreachable by tab and Slider::keyPressed - the arrows, page up and
-    // down, home and end - was dead code in every one of them. The rotary is
-    // the control, so the rotary is what takes the focus.
+    // was unreachable by tab and its key handler was dead code in every one of
+    // them. The rotary is the control, so the rotary is what takes the focus.
+    //
+    // That handler is DewSlider's now, not juce::Slider's, and this comment
+    // used to say the base one covered "the arrows, page up and down, home and
+    // end". It never did: in JUCE 9.0.1 it answers the four arrows and nothing
+    // else, and it refuses every one of them the moment a modifier is down.
     slider.setWantsKeyboardFocus (true);
 
     // Never called anywhere before this, so every knob in dew sat on JUCE's

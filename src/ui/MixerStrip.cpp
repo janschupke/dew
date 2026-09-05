@@ -26,6 +26,13 @@ MixerStrip::MixerStrip (ProjectDocument& d, juce::ValueTree t, bool isMasterStri
 {
     nameLabel.setText (isMaster ? tr (StringId::automation_master) : track[ids::name].toString(),
                        juce::dontSendNotification);
+
+    // One strip is one group. Beside the label rather than anywhere else so a
+    // rename keeps the two in step - see the ids::name branch of valueTree-
+    // PropertyChanged, which is the other place this has to be said.
+    setComponentID ("mixerStrip");
+    setTitle (nameLabel.getText());
+    setFocusContainerType (FocusContainerType::focusContainer);
     nameLabel.setJustificationType (juce::Justification::centred);
     nameLabel.setFont (tokens::type::font (tokens::type::small, true));
     nameLabel.setEditable (false, ! isMaster, false);
@@ -465,7 +472,10 @@ void MixerStrip::valueTreePropertyChanged (juce::ValueTree&, const juce::Identif
     else if (property == ids::mute)
         enabledButton.setToggleState ((bool) track[ids::mute], juce::dontSendNotification);
     else if (property == ids::name)
+    {
         nameLabel.setText (track[ids::name].toString(), juce::dontSendNotification);
+        setTitle (nameLabel.getText());
+    }
 }
 
 void MixerStrip::paintMeter (juce::Graphics& g)

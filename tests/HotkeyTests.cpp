@@ -253,3 +253,86 @@ TEST_CASE ("the instrument panel folds from the keyboard", "[ui][hotkeys]")
     component.toggleInstrumentPanel();
     CHECK (component.getInstrumentPanelWidthForTesting() == open);
 }
+
+TEST_CASE ("ctrl-tab moves the keyboard, and the tab commands keep their menu",
+           "[ui][hotkeys][focus]")
+{
+    // Ctrl-tab used to cycle the editor tabs, which cmd-1 to cmd-5 already do by
+    // name. It was worth more as the group ring's key, because it is the ONLY
+    // mod-tab free on all three platforms dew ships: cmd-tab is the macOS
+    // application switcher, alt-tab is the window switcher on Windows and on
+    // every mainstream Linux desktop, and ctrl-alt-tab is Windows' persistent
+    // one.
+    const auto* next = hotkeys::find (CommandIDs::viewNextGroup);
+    const auto* previous = hotkeys::find (CommandIDs::viewPreviousGroup);
+
+    REQUIRE (next != nullptr);
+    REQUIRE (previous != nullptr);
+
+    CHECK (next->stroke.keyCode == juce::KeyPress::tabKey);
+    CHECK (next->stroke.modifiers == juce::ModifierKeys::ctrlModifier);
+
+    CHECK (previous->stroke.keyCode == juce::KeyPress::tabKey);
+    CHECK (previous->stroke.modifiers
+           == (juce::ModifierKeys::ctrlModifier | juce::ModifierKeys::shiftModifier));
+
+    // The tab commands are keyless now, not gone: both still have a row, a name
+    // and a menu item, which is what a keyless row is for.
+    for (const auto id : { CommandIDs::viewNextTab, CommandIDs::viewPreviousTab })
+    {
+        const auto* row = hotkeys::find (id);
+
+        REQUIRE (row != nullptr);
+        CHECK (row->stroke.keyCode == 0);
+        CHECK (tr (row->name).isNotEmpty());
+    }
+}
+
+TEST_CASE ("the value keys are one registry with the rest", "[ui][hotkeys][keys]")
+{
+    // They are declared a layer down, in ui/design/Keys.h, because a knob cannot
+    // see dew_ui - and re-exported here so this walk covers them. A second key
+    // table that nothing compared against the first is the exact defect the
+    // registry was built to end.
+    const auto& values = hotkeys::value();
+
+    REQUIRE (values.size() > 4);
+
+    for (const auto& value : values)
+        for (const auto& command : hotkeys::application())
+        {
+            INFO (tr (value.name) << " and " << tr (command.name) << " share a key");
+            CHECK_FALSE (sameStroke (value.stroke, command.stroke));
+        }
+
+    // Home stays Rewind, from wherever you happen to be looking. A value control
+    // that claimed it would shadow the transport for as long as it held the
+    // keyboard, which is why the arrows got page up and down for a bigger step
+    // rather than home and end for the ends.
+    CHECK (hotkeys::find (CommandIDs::transportRewind)->stroke.keyCode == juce::KeyPress::homeKey);
+    CHECK (keys::valueKeys::commandFor (keys::keyPressFor ({ juce::KeyPress::homeKey, 0 }))
+           == keys::valueKeys::Command::none);
+}
+
+TEST_CASE ("a bare arrow means two things, and never in the same place", "[ui][hotkeys][keys]")
+{
+    // The one stroke deliberately shared between two tables: an arrow is
+    // ViewCommand::cursorUp on a painted canvas and valueKeys::increase on a
+    // knob. That is not a collision because a canvas is never an ANCESTOR of a
+    // slider - a key press is delivered to the focused component and walks up
+    // from there, so exactly one of the two handlers ever sees it.
+    //
+    // Pinned rather than left to be rediscovered: the next person to run the
+    // collision walk over both tables at once will find it, and this says why
+    // it is allowed.
+    const auto up = keys::keyPressFor ({ juce::KeyPress::upKey, 0 });
+
+    CHECK (hotkeys::viewCommandFor (up) == ViewCommand::cursorUp);
+    CHECK (keys::valueKeys::commandFor (up) == keys::valueKeys::Command::increase);
+
+    // Page up and down are the value keys' own, and mean nothing to a timeline.
+    const auto pageUp = keys::keyPressFor ({ juce::KeyPress::pageUpKey, 0 });
+
+    CHECK (hotkeys::viewCommandFor (pageUp) == ViewCommand::none);
+    CHECK (keys::valueKeys::commandFor (pageUp) == keys::valueKeys::Command::coarseIncrease);
+}

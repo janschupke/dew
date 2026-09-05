@@ -257,6 +257,20 @@ class DewSlider : public juce::Slider
 public:
     using juce::Slider::Slider;
 
+    /** Arrows, shift-arrows and page up/down, and NEVER juce::Slider's.
+
+        The base handler steps by getInterval(), which the catalog sets to 0.001
+        on volume, pan, sustain, release and gain - a thousand presses to cross
+        a fader. And it returns false the moment any modifier is down
+        (juce_Slider.cpp:1031), so shift did not refine the step, it blocked the
+        edit: the opposite of the one rule Gestures.h states about shift and a
+        value. Both halves are wrong, so there is nothing left to delegate to.
+
+        Anything else returns false, so space still plays, home still rewinds
+        and ctrl-tab still leaves the control.
+    */
+    bool keyPressed (const juce::KeyPress& key) override;
+
     void mouseDown (const juce::MouseEvent& event) override
     {
         if (popupPress.down (event, nullptr))

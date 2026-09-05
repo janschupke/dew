@@ -53,6 +53,7 @@
       "removeChannel": "Remove channel",
       "rename": "Rename"
     },
+    "stepGrid": "Step grid",
     "title": "Channel rack",
     "addChannel": {
       "label": "+ Channel"
@@ -249,6 +250,22 @@
       "description": "Switch between pattern and song playback",
       "name": "Toggle Pattern / Song"
     },
+    "valueCoarseDecrease": {
+      "description": "Lower the focused control by ten steps",
+      "name": "Decrease Value Faster"
+    },
+    "valueCoarseIncrease": {
+      "description": "Raise the focused control by ten steps",
+      "name": "Increase Value Faster"
+    },
+    "valueDecrease": {
+      "description": "Lower the focused control by one step",
+      "name": "Decrease Value"
+    },
+    "valueIncrease": {
+      "description": "Raise the focused control by one step",
+      "name": "Increase Value"
+    },
     "viewChannelRack": {
       "description": "Show the channel rack",
       "name": "Channel Rack"
@@ -269,6 +286,10 @@
       "description": "Make every transition instant",
       "name": "Reduce motion"
     },
+    "viewNextGroup": {
+      "description": "Move the keyboard to the next panel or item",
+      "name": "Next Group"
+    },
     "viewNextTab": {
       "description": "Move to the next editor",
       "name": "Next Editor"
@@ -280,6 +301,10 @@
     "viewPlaylist": {
       "description": "Show the playlist",
       "name": "Playlist"
+    },
+    "viewPreviousGroup": {
+      "description": "Move the keyboard to the previous panel or item",
+      "name": "Previous Group"
     },
     "viewPreviousTab": {
       "description": "Move to the previous editor",
@@ -1033,7 +1058,8 @@
     "errors": "Score has {count, plural, one {# error} other {# errors}} - nothing was written",
     "keptByHand": " - {count, plural, one {# pattern was} other {# patterns were}} edited by hand and left alone",
     "position": "{line}:{column}",
-    "heading": "Score   ⌃Space completes"
+    "heading": "Score   ⌃Space completes",
+    "title": "Score"
   },
   "soundFont": {
     "load": {
@@ -1042,7 +1068,8 @@
     "preset": {
       "caption": "Sound",
       "help": "Which sound inside the soundfont this channel plays"
-    }
+    },
+    "title": "SoundFont"
   },
   "status": {
     "audioNotOpened": "Audio device not opened",
@@ -1100,7 +1127,8 @@
     },
     "modeSong": {
       "label": "Song"
-    }
+    },
+    "title": "Transport"
   },
   "unit": {
     "bpm": " bpm",
@@ -2093,6 +2121,7 @@
     }
   },
   "shell": {
+    "editors": "Editors",
     "hidePanel": {
       "help": "Hide the instrument panel"
     },

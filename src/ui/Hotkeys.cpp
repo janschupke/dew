@@ -3,27 +3,6 @@
 namespace dew::hotkeys
 {
 
-namespace
-{
-
-/** The modifiers a binding is allowed to be picky about.
-
-// clang-format off
-    Shift is absent, and that is the rule rather than an omission - see
-    matches() in the header.
-*/
-constexpr int comparedModifiers = juce::ModifierKeys::commandModifier
-                                  | juce::ModifierKeys::ctrlModifier
-                                  | juce::ModifierKeys::altModifier;
-
-// clang-format on
-int lowerCase (int character) noexcept
-{
-    return (int) juce::CharacterFunctions::toLowerCase ((juce::juce_wchar) character);
-}
-
-} // namespace
-
 // clang-format off
 const std::vector<Binding<juce::CommandID>>& application()
 {
@@ -78,13 +57,31 @@ const std::vector<Binding<juce::CommandID>>& application()
         { CommandIDs::viewScore, { '5', juce::ModifierKeys::commandModifier },
           StringId::command_viewScore_name, StringId::command_viewScore_description,
           StringId::command_category_view },
-        { CommandIDs::viewNextTab, { juce::KeyPress::tabKey, juce::ModifierKeys::ctrlModifier },
+        // Keyless since ctrl-tab went to the group ring, and the loss is
+        // small: cmd-1 to cmd-5 reach every tab by name and these two rows
+        // still carry their menu items. That was the trade - ctrl-tab is the
+        // ONLY mod-tab free on all three platforms dew ships, because cmd-tab
+        // is the macOS app switcher and alt-tab is the window switcher on
+        // Windows and on every mainstream Linux desktop.
+        { CommandIDs::viewNextTab, {},
           StringId::command_viewNextTab_name, StringId::command_viewNextTab_description,
           StringId::command_category_view },
-        { CommandIDs::viewPreviousTab, { juce::KeyPress::tabKey,
-                                         juce::ModifierKeys::ctrlModifier
-                                         | juce::ModifierKeys::shiftModifier },
+        { CommandIDs::viewPreviousTab, {},
           StringId::command_viewPreviousTab_name, StringId::command_viewPreviousTab_description,
+          StringId::command_category_view },
+
+        // The only two rows in this table told apart by SHIFT, and they can be:
+        // the application table resolves through KeyPressMappingSet, which
+        // compares it, rather than through matches(), which does not. Save /
+        // Save As and Undo / Redo have always leaned on the same thing.
+        { CommandIDs::viewNextGroup, { juce::KeyPress::tabKey, juce::ModifierKeys::ctrlModifier },
+          StringId::command_viewNextGroup_name, StringId::command_viewNextGroup_description,
+          StringId::command_category_view },
+        { CommandIDs::viewPreviousGroup, { juce::KeyPress::tabKey,
+                                           juce::ModifierKeys::ctrlModifier
+                                           | juce::ModifierKeys::shiftModifier },
+          StringId::command_viewPreviousGroup_name,
+          StringId::command_viewPreviousGroup_description,
           StringId::command_category_view },
         { CommandIDs::viewToggleInstrumentPanel, { '\\', juce::ModifierKeys::commandModifier },
           StringId::command_viewToggleInstrumentPanel_name, StringId::command_viewToggleInstrumentPanel_description,
@@ -304,28 +301,9 @@ bool describe (juce::CommandID id, juce::ApplicationCommandInfo& info)
     return true;
 }
 
-juce::KeyPress keyPressFor (const Stroke& stroke)
+const std::vector<Binding<keys::valueKeys::Command>>& value()
 {
-    return juce::KeyPress (stroke.keyCode, juce::ModifierKeys (stroke.modifiers), 0);
-}
-
-bool matches (const Stroke& stroke, const juce::KeyPress& key) noexcept
-{
-    if ((key.getModifiers().getRawFlags() & comparedModifiers)
-        != (stroke.modifiers & comparedModifiers))
-        return false;
-
-    // The code first, because a KeyPress built from a code alone carries no
-    // text character - which is every KeyPress a test makes, and which is why
-    // the map this replaced had to be reachable both ways to be testable at
-    // all. Case-insensitively, because a letter pressed with a modifier
-    // reports upper case on some layouts and lower on others.
-    if (lowerCase (key.getKeyCode()) == lowerCase (stroke.keyCode))
-        return true;
-
-    const auto typed = (int) key.getTextCharacter();
-
-    return typed != 0 && lowerCase (typed) == lowerCase (stroke.keyCode);
+    return keys::valueKeys::table();
 }
 
 ViewCommand viewCommandFor (const juce::KeyPress& key) noexcept

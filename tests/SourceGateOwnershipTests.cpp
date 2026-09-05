@@ -354,13 +354,20 @@ TEST_CASE ("no source binds a key outside the hotkey registry", "[build][gate][h
     // Hotkeys.h was a third and never spelled a key at all; it declares the
     // vocabulary the .cpp binds. The day a table in the header names one, the
     // commit that puts it there puts the exemption back.
+    //
+    // ui/design/Keys.h is the fourth, and is the day that happened - though not
+    // to this file. What a stroke IS moved down into dew_design when the
+    // primitives had to answer keys of their own, taking keyPressFor with it, so
+    // the one juce::KeyPress construction in the tree is now there. Only the
+    // mechanism moved: Hotkeys.cpp still calls addDefaultKeypress, so both
+    // exemptions still suppress a line and neither goes idle.
     const auto found = offenders (
         [] (const juce::String& line)
         {
             return line.contains ("addDefaultKeypress (") || line.contains ("juce::KeyPress (")
                    || line.contains ("KeyPress::createFromDescription");
         },
-        { "ui/Hotkeys.cpp", "ui/ScoreEditorComponent.cpp" });
+        { "ui/Hotkeys.cpp", "ui/design/Keys.h", "ui/ScoreEditorComponent.cpp" });
 
     INFO ("keys bound outside the registry:\n" << found.joinIntoString ("\n"));
     CHECK (found.isEmpty());

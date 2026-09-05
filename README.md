@@ -291,12 +291,18 @@ licence question. Without it the format reports itself unavailable and the rest 
 ## Keyboard and mouse
 
 ⌘N ⌘O ⌘S ⇧⌘S · ⌘E render · ⌘R compile score · ⌘Z ⇧⌘Z · Space play · R record · ⌘L
-pattern/song · ⌘K add channel · ⌘, preferences. ⌘1 – ⌘5 go to the five tabs, ⌃⇥ cycles
-them, ⌘\ folds the instrument panel away.
+pattern/song · ⌘K add channel · ⌘, preferences. ⌘1 – ⌘5 go to the five tabs, ⌘\ folds the
+instrument panel away.
 
-Every key dew binds is a row in `src/ui/Hotkeys.h` and a gate refuses one spelled anywhere
-else. The full table — what each editor's keys mean, the tools, the canvas cursor, what a
-wheel notch is worth and where shift means *finer* — is in
+⇥ moves to the next control; **⌃⇥ moves to the next whole component** — an effect, a mixer
+strip, a channel row, a panel — and ⌃⇧⇥ back. On a control that holds a value, ← ↓ → ↑ move
+it by one per cent of its range, ⇧ with an arrow by its finest step, and page up / page
+down by ten per cent.
+
+Every key dew binds is a row in the registry — `src/ui/design/Keys.h` for what a stroke is
+and the value keys, `src/ui/Hotkeys.h` for the application's — and a gate refuses one
+spelled anywhere else. The full table — what each editor's keys mean, the tools, the canvas
+cursor, what a wheel notch is worth and where shift means *finer* — is in
 [`.ai/rules/gestures-and-hotkeys.md`](.ai/rules/gestures-and-hotkeys.md).
 
 ## Architecture

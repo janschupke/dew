@@ -25,6 +25,12 @@ ScoreEditorComponent::ScoreEditorComponent (ProjectDocument& projectDocument)
 {
     setComponentID ("scoreEditor");
 
+    // Without this the score tab contributes nothing to the group ring: its
+    // compile button, its heading and its diagnostics list would belong to no
+    // group, and ctrl-tab in front of it would skip straight past the editor.
+    setTitle (tr (StringId::score_title));
+    setFocusContainerType (FocusContainerType::focusContainer);
+
     // The hint is the discoverability: nothing else on screen says the popup
     // exists, and a completion nobody knows how to ask for is one nobody uses.
     //

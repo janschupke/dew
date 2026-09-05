@@ -153,6 +153,8 @@ juce::PopupMenu DewApplication::getMenuForIndex (int topLevelMenuIndex, const ju
         menu.addSeparator();
         menu.addCommandItem (&commandManager, CommandIDs::viewNextTab);
         menu.addCommandItem (&commandManager, CommandIDs::viewPreviousTab);
+        menu.addCommandItem (&commandManager, CommandIDs::viewNextGroup);
+        menu.addCommandItem (&commandManager, CommandIDs::viewPreviousGroup);
         menu.addSeparator();
         menu.addCommandItem (&commandManager, CommandIDs::viewToggleInstrumentPanel);
         menu.addSeparator();

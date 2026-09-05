@@ -6,14 +6,23 @@ Two files own this, and a gate holds each: `src/ui/Hotkeys.h` for the keyboard,
 
 ## Keys
 
-- **Every key dew binds is a row in `src/ui/Hotkeys.h`.** The gate "no source binds a key
-  outside the hotkey registry" refuses `addDefaultKeypress`, `juce::KeyPress (` or
-  `createFromDescription` anywhere but `Hotkeys.h`/`Hotkeys.cpp`. There is exactly one
-  exemption, `ScoreEditorComponent.cpp`: while its completion popup is open it owns Up,
-  Down, Return, Tab and Escape, and nothing outside that popup can reach them, so that is
-  a modal handler rather than a binding.
+- **Every key dew binds is a row in the registry**, which is two files and one idea.
+  `src/ui/design/Keys.h` (dew_design) says what a stroke IS — `keys::Stroke`,
+  `keys::Binding`, `matches`, `keyPressFor` — and declares the one table whose controls
+  live in that layer, `keys::valueKeys`. `src/ui/Hotkeys.h` (dew_ui) declares the
+  application's rows and re-exports the value table as `hotkeys::value()`, so the
+  collision walk still covers one registry.
+- **The mechanism is down there because a knob cannot see dew_ui.** Only the mechanism
+  moved: `hotkeys::application()` names `CommandIDs::compileScore`, `addChannel` and
+  `fileRender`, and dew_design's own CMakeLists says it "knows nothing about a project".
+- The gate "no source binds a key outside the hotkey registry" refuses
+  `addDefaultKeypress`, `juce::KeyPress (` or `createFromDescription` anywhere but
+  `Hotkeys.cpp`, `design/Keys.h` and `ScoreEditorComponent.cpp` — the last because while
+  its completion popup is open it owns Up, Down, Return, Tab and Escape, and nothing
+  outside that popup can reach them, so that is a modal handler rather than a binding.
 - `hotkeys::application()` drives `getCommandInfo` and the menu bar;
-  `hotkeys::viewCommandFor` answers what a key means in a timeline view.
+  `hotkeys::viewCommandFor` answers what a key means in a timeline view;
+  `keys::valueKeys::commandFor` what it means to a knob, fader or number field.
 - **`matches()` compares command/ctrl/alt EXACTLY and ignores shift**, because `+` and `_`
   are how a keyboard spells shift-`=` and shift-`-`. So the "other size" trio is ⌥`=` ⌥`-`
   ⌥`0`, not shift-anything, and a ⌘-digit binding in `timeline()` would break the
@@ -21,7 +30,64 @@ Two files own this, and a gate holds each: `src/ui/Hotkeys.h` for the keyboard,
 - **Adding a `ViewCommand` is a compile error** in the step grid, the piano roll and the
   playlist until each answers it. That is the mechanism; use it rather than a default case.
 - A row may carry `Stroke{}` and no key: `describe` skips `addDefaultKeypress` for keyCode
-  0, and `HotkeyTests`' `sameStroke` treats two keyless rows as non-colliding.
+  0, and `HotkeyTests`' `sameStroke` treats two keyless rows as non-colliding. `viewNextTab`
+  and `viewPreviousTab` are two of them since ⌃⇥ became the group ring's key.
+
+### Changing a value from the keyboard
+
+`DewSlider` and `DewNumberField` answer these, and `juce::Slider`'s own handler is never
+called — it stepped by `getInterval()`, which the catalog sets to `0.001` on volume, pan,
+sustain, release and gain, and it refused every key with a modifier down, so shift did not
+refine the step but blocked the edit.
+
+| | moves |
+|---|---|
+| ← ↓ / → ↑ | 1% of the range, **in normalised space** — a hundred presses end to end |
+| ⇧ + an arrow | one `interval`: the finest legal value the control has |
+| `page up` / `page down` | 10% — ten presses end to end |
+| `home` / `end` | nothing, deliberately. `home` is Rewind and must stay reachable |
+
+Two things follow from "normalised space". A logarithmic control steps by ratio rather than
+by span, so a press means the same musical distance wherever the knob is standing; and the
+step is read off the SLIDER's own `NormalisableRange`, not off the `ParamSpec`, because a
+range skew is a power curve while `ParamSpec::fromNormalised` is a true exponential. Each
+control is then wrong in the same direction as its own drag, which is the pair a hand can
+feel.
+
+A discrete or integral parameter still moves a whole unit: 1% of a 0–7 stepper is 0.07 and
+the snap would put it straight back, which is an arrow key that silently does nothing.
+
+**Shift is a variant, not a second binding** — read off the `KeyPress` at the call site, the
+way the piano roll's ⌥⇧ transpose already is. That is what lets `matches()` go on ignoring
+shift.
+
+### Reaching a group
+
+**⌃⇥ and ⌃⇧⇥ step over a whole component** — an effect card, a mixer strip, a rack row, a
+panel — where ⇥ steps one control. There are 264 controls across the five tabs, so ⇥ alone
+put the third effect card's cutoff dozens of presses from the transport bar.
+
+That key was the only mod-⇥ free on all three platforms dew ships: ⌘⇥ is the macOS
+application switcher, ⌥⇥ is the window switcher on Windows and on every mainstream Linux
+desktop, and ⌃⌥⇥ is Windows' persistent one. It cost the editor-tab cycling that used to
+hold it — ⌘1–⌘5 and the View menu still switch tabs.
+
+- **A group is a component that declares `FocusContainerType::focusContainer` and has a
+  `setTitle`.** The flag was already there on twelve panels and shaped only the screen
+  reader's tree; `focusGroups` is what makes the keyboard read the same list.
+- **`isFocusContainer()` alone is NOT the test.** `juce::Label::setEditable` makes an
+  editable label a `keyboardFocusContainer`, and so are `ScrollBar`, `TabbedButtonBar` and
+  `PropertyPanel`'s viewport — and `keyboardFocusContainer` implies `focusContainer`. dew
+  declares the plain one and never the keyboard one (a keyboard container confines ⇥ with
+  no key to leave it, which is a trap), so that choice is also what tells dew's groups from
+  JUCE's.
+- **`MainComponent` must never become a focus container.** `findFocusContainer()` walks up
+  and returns the top-level component whether or not it is one, so making the window a
+  container would make the gate "every control in the window belongs to a group"
+  unfailable.
+- The decision is `focusGroups::nextFocusFor`, which takes the focused component as a
+  PARAMETER. `grabKeyboardFocus` is inert without a peer, so everything testable has to sit
+  above the one call that is not.
 
 ## The mouse
 
@@ -223,7 +289,7 @@ playhead, shift-click or double-click to drop it. **The span is what plays.**
 Right-click a rack row or a track header to rename, add or remove it. **+ Channel** and
 **+ Track** sit under the last one, where the next will appear.
 
-In the piano roll: ↑ ↓ transpose a semitone and ⇧↑ ⇧↓ an octave; Q quantizes, ⇧R opens
+In the piano roll: ⌥↑ ⌥↓ transpose a semitone and ⌥⇧↑ ⌥⇧↓ an octave — bare arrows are the cursor; Q quantizes, ⇧R opens
 randomize — bare `R` is Record, which has to work from wherever you happen to be looking. Holding shift suspends the snap grid for a drag, which is the only way to
 reach an off-grid position without changing the dropdown.
 

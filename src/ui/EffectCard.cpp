@@ -33,6 +33,13 @@ EffectCard::EffectCard (EffectChainComponent& o, ProjectDocument& d, EditorState
     // here; falling back keeps the editor usable rather than empty.
     type = effectTypeFor (effect[ids::type].toString()).value_or (EffectType::filter);
 
+    // One effect is one group: what a person means by "skip this effect" and
+    // what a screen reader should call the thing it is reading out. The name is
+    // the one paint() draws, so the two cannot drift.
+    setComponentID ("effectCard");
+    setTitle (effectTypeDisplayName (type));
+    setFocusContainerType (FocusContainerType::focusContainer);
+
     bypassButton.setTooltip (tr (StringId::effect_enabled_help));
     bypassButton.setClickingTogglesState (true);
     bypassButton.setToggleState (! (bool) effect[ids::enabled], juce::dontSendNotification);
