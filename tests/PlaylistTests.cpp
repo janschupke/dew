@@ -173,12 +173,15 @@ TEST_CASE ("a muted playlist track silences its clips in the engine", "[ui][play
     h.track (0).setProperty (ids::mute, true, &undo);
     REQUIRE (audibleClips() == 1);
 
-    // Solo on a different track silences the rest, and mute still beats solo.
+    // A lane answers for itself. This used to set solo on the OTHER lane and
+    // assert that the first went quiet, which is the composed rule that made a
+    // lane's audibility a fact about its neighbours; silencing the other lane
+    // is how the same thing is asked for now.
     h.track (0).setProperty (ids::mute, false, &undo);
-    h.track (1).setProperty (ids::solo, true, &undo);
+    h.track (1).setProperty (ids::mute, true, &undo);
     REQUIRE (audibleClips() == 1);
 
-    h.track (1).setProperty (ids::mute, true, &undo);
+    h.track (0).setProperty (ids::mute, true, &undo);
     REQUIRE (audibleClips() == 0);
 }
 

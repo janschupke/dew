@@ -45,7 +45,6 @@ const RoleRow roleRows[] {
     { &ids::enabled, ParamRole::generic },
     { &ids::muted, ParamRole::generic },
     { &ids::mute, ParamRole::generic },
-    { &ids::solo, ParamRole::generic },
     { &ids::reverse, ParamRole::generic },
     { &ids::loop, ParamRole::generic },
 

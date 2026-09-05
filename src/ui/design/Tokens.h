@@ -442,11 +442,11 @@ static_assert (pianoRowMin < pianoRowRoomy && pianoRowRoomy < pianoRowMax,
 static_assert (pianoRowMin <= pianoRowDefault && pianoRowDefault <= pianoRowMax,
                "the default has to be reachable");
 
-inline constexpr int letterToggle = 24; ///< the M and S on a row
+inline constexpr int letterToggle = 24; ///< a toggle on a row: R, and the on/off indicator
 inline constexpr int meterHeight = 10;
 
 static_assert (trackHeightMin >= letterToggle + 2 * space::xs,
-               "a lane must hold its M and S with room around them");
+               "a lane must hold its on/off indicator with room around it");
 static_assert (trackHeightMin < trackHeightRoomy && trackHeightRoomy < trackHeightMax,
                "the roomy threshold has to sit inside the range");
 static_assert (trackHeightMin <= trackHeightDefault && trackHeightDefault <= trackHeightMax,
@@ -465,8 +465,10 @@ inline constexpr int mixerStripWidth = 72;
 
 static_assert (mixerStripWidth >= knobSm + 2 * space::md + 2 * space::sm,
                "a strip must hold its pan knob and the insets around it");
-static_assert (mixerStripWidth >= 2 * letterToggle + 2 * space::sm,
-               "a strip must hold M and S side by side");
+// There was a second assert here - "a strip must hold M and S side by side" -
+// and its claim went with the pair. One indicator needs 24 plus its insets,
+// which the pan knob above already demands more than, so restating it would be
+// an assert that can never fail: noise where a claim used to be.
 } // namespace size
 
 // --- motion ------------------------------------------------------------------

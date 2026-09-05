@@ -117,23 +117,32 @@ MixerStrip::MixerStrip (ProjectDocument& d, juce::ValueTree t, bool isMasterStri
         };
         addAndMakeVisible (panKnob);
 
-        muteButton.setToggleState ((bool) track[ids::mute], juce::dontSendNotification);
-        muteButton.onClick = [this]
+        enabledButton.setComponentID ("stripEnabled");
+        enabledButton.setClickingTogglesState (true);
+        enabledButton.setOnColour (tokens::colour::warning);
+        enabledButton.setTooltip (tr (StringId::mixer_enabled_help));
+        enabledButton.setToggleState ((bool) track[ids::mute], juce::dontSendNotification);
+        enabledButton.onModifiedClick = [this] (const juce::ModifierKeys& mods)
         {
             select();
-            ProjectEdits::setProperty (track, ids::mute, muteButton.getToggleState(),
-                                       &document.getUndoManager(), "Mute");
-        };
-        addAndMakeVisible (muteButton);
 
-        soloButton.setToggleState ((bool) track[ids::solo], juce::dontSendNotification);
-        soloButton.onClick = [this]
-        {
-            select();
-            ProjectEdits::setProperty (track, ids::solo, soloButton.getToggleState(),
-                                       &document.getUndoManager(), "Solo");
+            const auto muted = enabledButton.getToggleState();
+
+            // Every INSERT. Master is a different node type and so is left
+            // alone by construction rather than by a special case.
+            if (mods.isShiftDown())
+            {
+                ProjectEdits::setPropertyOnEvery (track.getParent(), ids::MIXER_TRACK, ids::mute,
+                                                  muted, &document.getUndoManager(),
+                                                  muted ? "Silence every insert"
+                                                        : "Play every insert");
+                return;
+            }
+
+            ProjectEdits::setProperty (track, ids::mute, muted, &document.getUndoManager(),
+                                       muted ? "Silence insert" : "Play insert");
         };
-        addAndMakeVisible (soloButton);
+        addAndMakeVisible (enabledButton);
     }
 
     forwardChildMouseEventsTo (*this);
@@ -388,13 +397,15 @@ void MixerStrip::resized()
             area.removeFromTop (size::knobSm).withSizeKeepingCentre (size::knobSm, size::knobSm));
         area.removeFromTop (space::xs);
 
-        // letterToggle rather than minTouchTarget, and inset sideways only: the
-        // row was the floor itself and then gave two pixels back at the top and
-        // bottom, which put the strip's M and S four pixels UNDER the floor.
-        auto buttons = area.removeFromTop (size::letterToggle);
-        muteButton.setBounds (
-            buttons.removeFromLeft (buttons.getWidth() / 2).reduced (space::xxs, 0));
-        soloButton.setBounds (buttons.reduced (space::xxs, 0));
+        // One indicator where the M and the S were, centred in the column the
+        // name is centred in - which is what "aligned with the name" means on a
+        // strip, the axis here being vertical. letterToggle rather than
+        // minTouchTarget, and no vertical inset: the row IS the floor, and
+        // giving two pixels back at the top and bottom put the pair four pixels
+        // under it.
+        enabledButton.setBounds (
+            area.removeFromTop (size::letterToggle)
+                .withSizeKeepingCentre (size::letterToggle, size::letterToggle));
         area.removeFromTop (space::xs);
     }
 
@@ -434,12 +445,12 @@ void MixerStrip::attachParamMenus (const paramMenu::Host* host)
     if (isMaster)
         return;
 
-    // These three carry their own hook now that they are Dew controls, and
-    // it has to be the hook rather than a Trigger: the coverage gate asks
-    // every knob in the window whether it has one.
+    // These two carry their own hook now that they are Dew controls, and it
+    // has to be the hook rather than a Trigger: the coverage gate asks every
+    // knob in the window whether it has one. There were three, and the third
+    // named a solo that no longer exists.
     paramMenu::attachTo (host, panKnob, self, requireMixerTrackParamSpec (ids::pan));
-    paramMenu::attachTo (host, muteButton, self, requireMixerTrackParamSpec (ids::mute));
-    paramMenu::attachTo (host, soloButton, self, requireMixerTrackParamSpec (ids::solo));
+    paramMenu::attachTo (host, enabledButton, self, requireMixerTrackParamSpec (ids::mute));
 }
 
 void MixerStrip::valueTreePropertyChanged (juce::ValueTree&, const juce::Identifier& property)
@@ -449,9 +460,7 @@ void MixerStrip::valueTreePropertyChanged (juce::ValueTree&, const juce::Identif
     else if (property == ids::pan)
         panKnob.setValue ((double) track[ids::pan], juce::dontSendNotification);
     else if (property == ids::mute)
-        muteButton.setToggleState ((bool) track[ids::mute], juce::dontSendNotification);
-    else if (property == ids::solo)
-        soloButton.setToggleState ((bool) track[ids::solo], juce::dontSendNotification);
+        enabledButton.setToggleState ((bool) track[ids::mute], juce::dontSendNotification);
     else if (property == ids::name)
         nameLabel.setText (track[ids::name].toString(), juce::dontSendNotification);
 }

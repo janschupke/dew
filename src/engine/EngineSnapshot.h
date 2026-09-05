@@ -197,7 +197,6 @@ struct ChannelSnapshot
     float volume = 0.8f;
     float pan = 0.0f;
     bool muted = false;
-    bool solo = false;
     OscBankSnapshot osc;
     AmpSettings amp;
     EffectChainSnapshot effects;
@@ -359,7 +358,6 @@ struct MixerTrackSnapshot
     float gain = 0.8f;
     float pan = 0.0f;
     bool mute = false;
-    bool solo = false;
     EffectChainSnapshot effects;
 };
 
@@ -412,12 +410,13 @@ struct EngineSnapshot
     float masterGain = 0.9f;
     EffectChainSnapshot masterEffects;
 
-    // Solo is a property of the whole mixer, not of one track: one track soloed
-    // silences every track that is not. Precomputed per scope so neither the
-    // sequencer nor the mixer has to scan.
-    bool anySolo = false;        ///< any mixer track soloed
-    bool anyChannelSolo = false; ///< any channel soloed
-    bool anyPlaylistTrackSolo = false;
+    // There were three flags here - anySolo, anyChannelSolo,
+    // anyPlaylistTrackSolo - because solo was a property of a whole SCOPE
+    // rather than of one track: one track soloed silenced every track that was
+    // not, so audibility could not be read off a track without first scanning
+    // its neighbours. One state per track ends that, and with it the pre-scan,
+    // the precomputation and the reason mute could carry a curve while solo
+    // could not.
 
     /** Incremented on every build. The stress test uses it to tell snapshots
         apart; the engine uses it to notice that the document changed.
@@ -440,7 +439,13 @@ struct EngineSnapshot
     /** True when the snapshot has nothing that could make a sound. */
     bool isSilent() const;
 
-    /** Whether a channel should sound, given mute and the mixer-wide solo state. */
+    /** Whether a channel should sound.
+
+        A method rather than a field read, because the mute it answers from can
+        come from an automation curve as well as from the document - see the
+        overload below. It used to compose mute with the mixer-wide solo state,
+        which is why it took the snapshot as well as the channel.
+    */
     bool isChannelAudible (const ChannelSnapshot&) const noexcept;
 
     /** The same, with mute taken from an automation override rather than from

@@ -464,7 +464,7 @@ TEST_CASE ("a v7 project loads as classic oscillators", "[schema][compat][waveta
       "barsInSong": 8,
       "channels": [
         { "id": 1, "name": "Bass", "colour": "ff4fa3ff", "mixerTrackId": 1,
-          "basePitch": 40, "volume": 0.7, "pan": 0.0, "muted": false, "solo": false,
+          "basePitch": 40, "volume": 0.7, "pan": 0.0, "muted": false,
           "source": "synth",
           "instrument": { "oscillators": [
                             { "enabled": true, "wave": "square", "octave": -1,
@@ -478,7 +478,7 @@ TEST_CASE ("a v7 project loads as classic oscillators", "[schema][compat][waveta
       "playlist": { "tracks": [] },
       "mixer": { "master": { "gain": 0.9, "effects": [] },
                  "tracks": [ { "id": 1, "name": "Insert 1", "gain": 0.8, "pan": 0.0,
-                               "mute": false, "solo": false, "effects": [] } ] }
+                               "mute": false, "effects": [] } ] }
     })";
 
     const auto loaded = ProjectSerializer::fromJsonString (v7);

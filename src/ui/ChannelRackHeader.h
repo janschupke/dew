@@ -9,6 +9,7 @@
 #include "ui/EditorState.h"
 #include "ui/HeaderRow.h"
 #include "ui/ParamContextMenu.h"
+#include "ui/design/Icons.h"
 #include "ui/primitives/DewControls.h"
 #include "ui/design/Tokens.h"
 
@@ -101,8 +102,11 @@ private:
     bool updating = false;
     bool inDrag = false;
     bool gestureActive = false;
-    DewLetterToggle muteButton { "M", tokens::colour::warning, "Mute this channel" };
-    DewLetterToggle soloButton { "S", tokens::colour::success, "Solo this channel" };
+    /** Whether the channel plays. One state, the same control the playlist and
+        the mixer now carry, and the same shift-click. See
+        PlaylistTrackHeader::enabledButton for why there is one and not two. */
+    DewIconButton enabledButton { icons::mute(), {} };
+
     DewKnob volumeKnob { requireInstrumentParamSpec (ids::volume) };
     DewKnob panKnob { requireInstrumentParamSpec (ids::pan) };
     DewLetterToggle armButton { "R", tokens::colour::recording, "Arm this channel for recording" };

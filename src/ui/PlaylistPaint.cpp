@@ -173,7 +173,7 @@ void PlaylistComponent::paintAutomationClip (juce::Graphics& g, const juce::Valu
     drawn straight over the ruler. Returns how many tracks it walked, which is
     what tells paint() whether to draw the empty state.
 */
-int PlaylistComponent::paintLanes (juce::Graphics& g, int bottom, bool anySolo)
+int PlaylistComponent::paintLanes (juce::Graphics& g, int bottom)
 {
     int trackIndex = 0;
 
@@ -195,7 +195,10 @@ int PlaylistComponent::paintLanes (juce::Graphics& g, int bottom, bool anySolo)
             continue;
         }
 
-        const auto audible = ! (bool) track[ids::mute] && (! anySolo || (bool) track[ids::solo]);
+        // One state per lane. This composed mute with a scan of every OTHER
+        // lane's solo, which is what made a lane's appearance a fact about its
+        // neighbours - and why the painter needed the scan passed in.
+        const auto audible = ! (bool) track[ids::mute];
 
         if (trackIndex % 2 == 1)
         {
@@ -253,8 +256,8 @@ int PlaylistComponent::paintLanes (juce::Graphics& g, int bottom, bool anySolo)
 
             auto clipColour = isCurrent ? base : emphasis::secondary (base);
 
-            // A clip on a silenced track is drawn as silenced, so mute and solo
-            // are visible in the arrangement and not only in the headers.
+            // A clip on a silenced track is drawn as silenced, so a lane that is
+            // off is visible in the arrangement and not only in its header.
             if (! audible)
                 clipColour = emphasis::silenced (clipColour);
 
@@ -291,15 +294,6 @@ void PlaylistComponent::paint (juce::Graphics& g)
     // same change the two pattern editors got - three views that all stopped
     // mid-panel would have become one that still did.
     const auto painted = timeline.visibleStepRange (contentWidth());
-    const auto anySolo = [this]
-    {
-        for (const auto& track : playlist())
-            if (track.hasType (ids::PLAYLIST_TRACK) && (bool) track[ids::solo])
-                return true;
-
-        return false;
-    }();
-
     g.fillAll (colour::well);
 
     // Below the last track is not a lane that stopped working.
@@ -393,7 +387,7 @@ void PlaylistComponent::paint (juce::Graphics& g)
     }
 
     // --- tracks --------------------------------------------------------------
-    const auto trackIndex = paintLanes (g, bottom, anySolo);
+    const auto trackIndex = paintLanes (g, bottom);
 
     // Past the end of the song.
     const auto endX = (float) size::gutterTrack + timeline.xForStep ((double) bars);

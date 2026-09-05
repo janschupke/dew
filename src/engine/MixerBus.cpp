@@ -13,14 +13,12 @@ bool MixerBus::isAudible (const EngineSnapshot& snapshot, const MixerTrackSnapsh
 bool MixerBus::isAudible (const EngineSnapshot& snapshot, const MixerTrackSnapshot& track,
                           bool muteOverride) noexcept
 {
-    if (muteOverride)
-        return false;
+    // One state per track. There was a mixer-wide solo composed in here, and
+    // with it the rule that a track's audibility was a fact about every other
+    // track in the mixer.
+    juce::ignoreUnused (snapshot, track);
 
-    // Solo anywhere in the mixer means only soloed tracks are heard.
-    if (snapshot.anySolo)
-        return track.solo;
-
-    return true;
+    return ! muteOverride;
 }
 
 void MixerBus::panGains (float pan, float& leftGain, float& rightGain) noexcept

@@ -16,7 +16,6 @@
         "volume": 0.75,
         "pan": 0.0,
         "muted": false,
-        "solo": false,
         "source": "synth",
         "genId": "channel:bass",
         "instrument": {
@@ -109,7 +108,6 @@
         "volume": 0.6,
         "pan": 0.0,
         "muted": false,
-        "solo": false,
         "source": "synth",
         "genId": "channel:lead",
         "instrument": {
@@ -202,7 +200,6 @@
         "volume": 0.8,
         "pan": 0.0,
         "muted": false,
-        "solo": false,
         "source": "synth",
         "genId": "channel:pad",
         "instrument": {
@@ -295,7 +292,6 @@
         "volume": 0.8,
         "pan": 0.0,
         "muted": false,
-        "solo": false,
         "source": "synth",
         "genId": "channel:answer",
         "instrument": {
@@ -5524,7 +5520,6 @@
         {
           "name": "Track 1",
           "mute": false,
-          "solo": false,
           "colour": "",
           "genId": "",
           "clips": []
@@ -5532,7 +5527,6 @@
         {
           "name": "Track 2",
           "mute": false,
-          "solo": false,
           "colour": "",
           "genId": "",
           "clips": []
@@ -5540,7 +5534,6 @@
         {
           "name": "Track 3",
           "mute": false,
-          "solo": false,
           "colour": "",
           "genId": "",
           "clips": []
@@ -5548,7 +5541,6 @@
         {
           "name": "Track 4",
           "mute": false,
-          "solo": false,
           "colour": "",
           "genId": "",
           "clips": []
@@ -5556,7 +5548,6 @@
         {
           "name": "Score",
           "mute": false,
-          "solo": false,
           "colour": "",
           "genId": "lane:score",
           "clips": [
@@ -5639,7 +5630,6 @@
           "gain": 0.8,
           "pan": 0.0,
           "mute": false,
-          "solo": false,
           "colour": "",
           "effects": []
         },
@@ -5649,7 +5639,6 @@
           "gain": 0.8,
           "pan": 0.0,
           "mute": false,
-          "solo": false,
           "colour": "",
           "effects": []
         },
@@ -5659,7 +5648,6 @@
           "gain": 0.8,
           "pan": 0.0,
           "mute": false,
-          "solo": false,
           "colour": "",
           "effects": []
         },
@@ -5669,7 +5657,6 @@
           "gain": 0.8,
           "pan": 0.0,
           "mute": false,
-          "solo": false,
           "colour": "",
           "effects": []
         }

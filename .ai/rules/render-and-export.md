@@ -12,9 +12,10 @@ that look wrong until you know why.
   empty. No pre-roll fixes it in general — a long delay at high feedback rings for minutes.
   The guard asserts a range is **sample-identical** to that window of a full render, which
   a locate cannot produce.
-- **Stems MUTE the other tracks; they do not solo the wanted one.** `MixerBus::isAudible`
-  checks mute first, so this needs no engine change, and clearing `anySolo` means a project
-  with something already soloed still yields every stem. One `AudioEngine` is reused across
+- **Stems MUTE the other tracks**, which is now the only way there is: a track has one
+  state. It was already the right answer while there was a solo beside it - stems exist to
+  hand back every track, so honouring a solo would have given one file and silence - and
+  clearing the mixer-wide flag was part of building a stem. One `AudioEngine` is reused across
   passes with `prepare()` between them — a fresh one churns the whole preallocated effect
   pool per stem. Stems do **not** sum back to the mix when the master chain holds a
   non-linear effect; that is warned about, not fixed.

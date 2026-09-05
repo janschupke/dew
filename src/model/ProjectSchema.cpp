@@ -254,7 +254,7 @@ const NodeSpec& channelSpec()
             { ids::mixerTrackId, 1 },
         };
 
-        // The channel's own parameters - base pitch, level, pan, mute, solo.
+        // The channel's own parameters - base pitch, level, pan, mute.
         // Declared by the instrument descriptor, which marks them as NOT a
         // preset's: they are the instrument's parameters but they are not its
         // sound.
@@ -384,7 +384,6 @@ const NodeSpec& playlistTrackSpec()
         ids::PLAYLIST_TRACK,
         { { ids::name, "Track" },
           { ids::mute, false },
-          { ids::solo, false },
           // Empty means inherit: the lane takes the colour of its POSITION,
           // which is what it did before it could carry one of its own.
           { ids::colour, "" },
@@ -420,7 +419,6 @@ const NodeSpec& mixerTrackSpec()
                                    { ids::gain, 0.8 },
                                    { ids::pan, 0.0 },
                                    { ids::mute, false },
-                                   { ids::solo, false },
                                    // Empty means inherit: the strip takes the colours of the
                                    // channels routed into it, which is what it did before.
                                    { ids::colour, "" } },

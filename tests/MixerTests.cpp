@@ -1,4 +1,4 @@
-// Mute, solo, pan, and the master's own effect chain.
+// Whether a track plays, pan, and the master's own effect chain.
 //
 // Split out of MixerTests.cpp along its tags; the UI group kept the fixture
 // that sat inside it.
@@ -21,17 +21,15 @@ using Catch::Approx;
 namespace
 {
 
-EngineSnapshot withTracks (std::initializer_list<std::pair<bool, bool>> muteSolo)
+EngineSnapshot withTracks (std::initializer_list<bool> mutes)
 {
     EngineSnapshot s;
 
-    for (auto [mute, solo] : muteSolo)
+    for (auto mute : mutes)
     {
         MixerTrackSnapshot t;
         t.id = (int) s.mixerTracks.size() + 1;
         t.mute = mute;
-        t.solo = solo;
-        s.anySolo = s.anySolo || solo;
         s.mixerTracks.push_back (t);
     }
 
@@ -40,30 +38,22 @@ EngineSnapshot withTracks (std::initializer_list<std::pair<bool, bool>> muteSolo
 
 } // namespace
 
-TEST_CASE ("mute silences a track", "[mixer]")
+TEST_CASE ("mute silences a track, and only that track", "[mixer]")
 {
-    const auto snapshot = withTracks ({ { false, false }, { true, false } });
+    // There were three cases here: mute, "solo anywhere silences every track
+    // that is not soloed", and "mute beats solo on the same track". The second
+    // and third existed because a track had two flags and they had to be
+    // composed - and composing them made one track's audibility a fact about
+    // every other track in the mixer, which is what the snapshot's anySolo was
+    // precomputed for.
+    //
+    // One state per track leaves one claim: a track is audible when it is not
+    // muted, whatever its neighbours are doing.
+    const auto snapshot = withTracks ({ false, true, false });
 
     REQUIRE (MixerBus::isAudible (snapshot, snapshot.mixerTracks[0]));
     REQUIRE (! MixerBus::isAudible (snapshot, snapshot.mixerTracks[1]));
-}
-
-TEST_CASE ("solo anywhere silences every track that is not soloed", "[mixer]")
-{
-    const auto snapshot = withTracks ({ { false, false }, { false, true }, { false, false } });
-
-    REQUIRE (! MixerBus::isAudible (snapshot, snapshot.mixerTracks[0]));
-    REQUIRE (MixerBus::isAudible (snapshot, snapshot.mixerTracks[1]));
-    REQUIRE (! MixerBus::isAudible (snapshot, snapshot.mixerTracks[2]));
-}
-
-TEST_CASE ("mute beats solo on the same track", "[mixer]")
-{
-    // A track both muted and soloed stays silent: mute is the explicit "off".
-    const auto snapshot = withTracks ({ { true, true }, { false, true } });
-
-    REQUIRE (! MixerBus::isAudible (snapshot, snapshot.mixerTracks[0]));
-    REQUIRE (MixerBus::isAudible (snapshot, snapshot.mixerTracks[1]));
+    REQUIRE (MixerBus::isAudible (snapshot, snapshot.mixerTracks[2]));
 }
 
 TEST_CASE ("panning is constant power", "[mixer]")

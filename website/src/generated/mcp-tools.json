@@ -1062,14 +1062,6 @@
               "fields": []
             },
             {
-              "name": "solo",
-              "kind": "flag",
-              "required": false,
-              "doc": "Silence every OTHER lane.",
-              "holdsBareElements": false,
-              "fields": []
-            },
-            {
               "name": "colour",
               "kind": "text",
               "required": false,

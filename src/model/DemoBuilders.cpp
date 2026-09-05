@@ -89,7 +89,6 @@ juce::ValueTree makeMixerTrack (int id, const juce::String& name)
     track.setProperty (ids::gain, 0.8, nullptr);
     track.setProperty (ids::pan, 0.0, nullptr);
     track.setProperty (ids::mute, false, nullptr);
-    track.setProperty (ids::solo, false, nullptr);
     return track;
 }
 

@@ -359,11 +359,14 @@ TEST_CASE ("each parameter table is its own, whatever its length", "[catalog][pa
         CHECK (has);
     }
 
-    // And the two pairs that collide are actually different lists, rather than
-    // two names for whichever one was built first.
-    CHECK (channelParamSpecs().size() == sampleParamSpecs().size());
-    CHECK (ampParamSpecs().size() == mixerTrackParamSpecs().size());
-
+    // And the two pairs that used to collide are actually different lists,
+    // rather than two names for whichever one was built first.
+    //
+    // The size checks went with the solo that left both channel and mixer
+    // track: they said "these two happen to be the same length, so a mix-up
+    // would not show in a count" and were a NOTE on the address check below,
+    // not a claim of their own. Restating them against the new lengths would be
+    // pinning an accident.
     CHECK (&channelParamSpecs() != &sampleParamSpecs());
     CHECK (&ampParamSpecs() != &mixerTrackParamSpecs());
 }

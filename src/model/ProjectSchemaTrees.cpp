@@ -23,6 +23,44 @@ namespace dew
 
 namespace
 {
+/** Properties the schema USED to hold, and no longer does.
+
+    A key the schema does not know is normally a typo, a hand-edit or a file
+    from a version that is not this one, and saying so is what the warning is
+    for. A key the schema DELIBERATELY dropped is none of those: every project
+    ever saved carries it, so warning about it would greet the whole existing
+    library with a complaint about a change it had no part in.
+
+    `solo` is the first. A track had a mute and a solo, and the two composed -
+    which made one track's audibility a fact about every other track in its
+    scope, cost three snapshot-wide precomputations, and is why mute could carry
+    an automation curve while solo could not. One state per track, and
+    shift-clicking its indicator is how "and silence the others" is said.
+
+    A LIST rather than a version check, because the reader has no version to
+    check against by the time it is walking properties - and because what this
+    encodes is not "old" but "gone", which stays true however many versions pass.
+*/
+struct RetiredProperty
+{
+    const juce::Identifier& type;
+    const juce::Identifier& property;
+};
+
+bool wasRetired (const NodeSpec& spec, const juce::Identifier& key)
+{
+    static const RetiredProperty retired[] {
+        { ids::CHANNEL, ids::solo },
+        { ids::PLAYLIST_TRACK, ids::solo },
+        { ids::MIXER_TRACK, ids::solo },
+    };
+
+    for (const auto& entry : retired)
+        if (spec.type == entry.type && key == entry.property)
+            return true;
+
+    return false;
+}
 
 /** Slot `index` of a fixed-length array child. One helper rather than three
     copies, so the three walkers cannot drift over what an unused slot is.
@@ -287,7 +325,9 @@ juce::ValueTree treeFromVar (const juce::var& value, const NodeSpec& spec,
                                                [&] (const auto& c) { return c.jsonKey == key; });
 
         // "format" is written by the serializer, not the schema, and is checked there.
-        if (! isKnownProp && ! isKnownChild && ! (spec.type == ids::PROJECT && key == "format"))
+        // A retired property is dropped in SILENCE - see wasRetired.
+        if (! isKnownProp && ! isKnownChild && ! (spec.type == ids::PROJECT && key == "format")
+            && ! wasRetired (spec, property.name))
             warnings.add (path + "." + key + ": not part of the schema - dropped");
     }
 

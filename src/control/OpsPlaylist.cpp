@@ -8,16 +8,21 @@ namespace
 
 /** One entry of playlist_tracks_write.
 
-    Built rather than written as a brace list, because `mute` and `solo` are
-    named by the identifiers they write - see channelFields in OpsChannels.cpp
-    for the argument.
+    Built rather than written as a brace list, because `mute` is named by the
+    identifier it writes - see channelFields in OpsChannels.cpp for the
+    argument.
+
+    There was a `solo` beside it, and its description said what solo is: silence
+    every OTHER lane. That is a write to every lane in the project dressed as a
+    write to one, and it is why a lane's audibility could not be read off the
+    lane. A lane now has one state, and an agent silences the others by saying
+    so.
 */
 std::vector<ArgSpec> laneFields()
 {
     return { { "index", ValueKind::integer, false, "An existing lane. Omit to append a new one." },
              { "name", ValueKind::text, false, "What the lane is called." },
              { ids::mute.toString(), ValueKind::flag, false, "Silence everything on the lane." },
-             { ids::solo.toString(), ValueKind::flag, false, "Silence every OTHER lane." },
              { "colour", ValueKind::text, false, "A hex colour, or empty to inherit." } };
 }
 
@@ -65,10 +70,6 @@ ControlResult writeTracks (ControlHost& host, const juce::var& args)
         if (hasArg (entry, ids::mute))
             ProjectEdits::setProperty (track, ids::mute, flagArg (entry, ids::mute), undo,
                                        "Mute track", true);
-
-        if (hasArg (entry, ids::solo))
-            ProjectEdits::setProperty (track, ids::solo, flagArg (entry, ids::solo), undo,
-                                       "Solo track", true);
 
         if (hasArg (entry, "colour"))
             ProjectEdits::setColour (track, textArg (entry, "colour"), undo, true);

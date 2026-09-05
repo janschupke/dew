@@ -185,8 +185,9 @@ licence question. Without it the format reports itself unavailable and the rest 
 ## What it does
 
 - **Channel rack** — a step grid, one row per channel; click or drag to write steps.
-  Volume, pan, mute and solo on the row itself, so a pattern is balanced where it is
-  written. A pattern wider than the panel scrolls, and zooms.
+  Volume, pan and an on/off indicator on the row itself, so a pattern is balanced where
+  it is written. Shift-clicking the indicator says the same of every channel, in one undo
+  step - which is how "silence everything but that" is asked for. A pattern wider than the panel scrolls, and zooms.
 - **Piano roll** — the *same notes* as the step grid, in a second view: a lit step is a
   note at the channel's base pitch. Rubber-band select, move a chord without losing its
   shape, drag velocity bars in the lane below, click the keys to hear them. A new note
@@ -197,8 +198,8 @@ licence question. Without it the format reports itself unavailable and the rest 
   rather than only the Cs — which is the difference between writing a melody and reading
   a voicing across four octaves.
 - **Playlist** — pattern clips on tracks along a bar timeline; a clip longer than its
-  pattern repeats it. Drag clips between tracks, double-click to open a pattern, mute or
-  solo a lane. Lanes stretch — by the toolbar, by ⌥`=`, or by dragging a header's bottom
+  pattern repeats it. Drag clips between tracks, double-click to open a pattern, switch a
+  lane off. Lanes stretch — by the toolbar, by ⌥`=`, or by dragging a header's bottom
   edge — because an automation curve drawn into a 34px lane has a 28px value axis and a
   7px grab radius.
 - **Colour** — a channel, a playlist track and a mixer strip each carry one, from an
@@ -208,9 +209,9 @@ licence question. Without it the format reports itself unavailable and the rest 
 - **Automation** — clips on the playlist driving a declared set of targets: channel and
   track volume and pan, master gain, and any effect parameter. Drag points, double-click
   to add, alt-click to remove.
-- **Mixer** — a fader, pan, mute, solo and a peak meter per insert, plus master; below
-  them, the effect chain of the selected strip. Each strip lists the channels routed into
-  it, and clicking one goes there. Solo is resolved across the whole mixer. Add an insert
+- **Mixer** — a fader, pan, an on/off indicator and a peak meter per insert, plus master;
+  below them, the effect chain of the selected strip. Each strip lists the channels routed
+  into it, and clicking one goes there. Add an insert
   from the column past the last strip or from any strip's menu, and remove one from its
   own; the channels feeding a removed insert move to the first remaining one, in the same
   undo step. The master is neither renamed nor removed — it is a different node type, so

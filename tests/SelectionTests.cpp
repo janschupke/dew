@@ -240,7 +240,7 @@ TEST_CASE ("a mixer strip has no click-swallowing dead zones", "[ui][selection]"
     }
 }
 
-TEST_CASE ("hovering a channel's M or S does not select it", "[ui][selection]")
+TEST_CASE ("hovering a channel's indicator does not select it", "[ui][selection]")
 {
     // These selected their row from onStateChange, which fires for every
     // internal transition - buttonNormal -> buttonOver among them. The row also
@@ -264,20 +264,33 @@ TEST_CASE ("hovering a channel's M or S does not select it", "[ui][selection]")
     rack.setVisible (true);
     rack.resized();
 
-    const auto toggles = findAll<DewLetterToggle> (rack);
-    REQUIRE (toggles.size() >= 8); // M and S on every channel
+    // One indicator per channel now, where there were an M and an S - and it
+    // is a DewIconButton, so the sweep looks for the arm button's type rather
+    // than the letter toggle's. Filtered by component ID, because an arm button
+    // is the same type and is deliberately wired the other way.
+    juce::Array<DewIconButton*> toggles;
+
+    for (auto* button : findAll<DewIconButton> (rack))
+        if (button->getComponentID() == "channelEnabled")
+            toggles.add (button);
+
+    REQUIRE (toggles.size() >= 4); // one on every channel
 
     for (auto* toggle : toggles)
     {
         INFO ("toggle: " << toggle->getName());
         CHECK (toggle->onStateChange == nullptr);
-        CHECK (toggle->onClick != nullptr);
+
+        // onModifiedClick rather than onClick: shift is part of the gesture -
+        // it says the same thing of every channel - and juce::Button::onClick
+        // does not carry the modifiers.
+        CHECK (toggle->onModifiedClick != nullptr);
     }
 
     // The control case: a real click still selects, so this has not passed by
-    // taking the selection away from M and S altogether.
+    // taking the selection away from the indicator altogether.
     editorState.setSelectedChannelId (-1);
-    toggles.getFirst()->onClick();
+    toggles.getFirst()->onModifiedClick ({});
 
     CHECK (editorState.getSelectedChannelId() != -1);
 }

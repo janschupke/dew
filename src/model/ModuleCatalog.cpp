@@ -119,15 +119,16 @@ const ParamSpec channelSpecs[] {
     { &ids::pan, "", -1.0, 1.0, 0.0, 0.001, 3, ParamCurve::linear, ParamControl::knob,
       /*bipolar*/ true },
 
-    // Mute is automatable and solo is NOT, and that asymmetry is the point.
+    // Whether the channel plays, and the only such flag there is.
     //
-    // Mute is a value on one channel: the engine reads it per channel and a
-    // curve over it means "silence this, here". Solo is a RELATION between
-    // channels - anyChannelSolo is a snapshot-wide precomputation, and honouring
-    // a curve over it would mean re-deciding every channel's audibility every
-    // block. Mute already expresses everything a curve wants from either.
+    // There was a solo beside it, deliberately NOT automatable: mute is a value
+    // on one channel and solo is a RELATION between channels, so a curve over
+    // solo would mean re-deciding every channel's audibility every block. What
+    // ended that argument was the control rather than the curve - one state per
+    // track, on for plays and off for does not, with shift-click to say it of
+    // every track at once. Two indicators for one question is what made the
+    // relation necessary; without it, mute says everything either said.
     toggleSpec (&ids::muted, /*automatable*/ true),
-    toggleSpec (&ids::solo, /*automatable*/ false),
 };
 
 const ParamSpec ampSpecs[] {
@@ -210,7 +211,6 @@ const ParamSpec mixerTrackSpecs[] {
     // A track says `mute` where a channel says `muted`. Two spellings of one
     // idea, kept because both are already in every saved file.
     toggleSpec (&ids::mute, /*automatable*/ true),
-    toggleSpec (&ids::solo, /*automatable*/ false),
 };
 
 /** A sample's own settings.

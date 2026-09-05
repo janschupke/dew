@@ -180,15 +180,18 @@ TEST_CASE ("the header lays out at every height", "[ui][playlist][height]")
         REQUIRE (header != nullptr);
         REQUIRE (header->getHeight() == height);
 
-        // The toggles keep their own size rather than stretching to the lane.
-        for (const auto* id : { "trackMute", "trackSolo" })
-        {
-            auto* toggle = findDescendantWithID (*header, id);
-            INFO ("at height " << height << ", looking for " << id);
-            REQUIRE (toggle != nullptr);
-            REQUIRE (toggle->getHeight() <= tokens::size::letterToggle);
-            REQUIRE (header->getLocalBounds().contains (toggle->getBounds()));
-        }
+        // The indicator keeps its own size rather than stretching to the lane.
+        auto* toggle = findDescendantWithID (*header, "trackEnabled");
+        INFO ("at height " << height);
+        REQUIRE (toggle != nullptr);
+        REQUIRE (toggle->getHeight() <= tokens::size::letterToggle);
+        REQUIRE (header->getLocalBounds().contains (toggle->getBounds()));
+
+        // And it stays on the TOP rung, beside the name, at every height. It
+        // used to drop to a second row past trackHeightRoomy, so the one thing
+        // a header says about a lane was in a different place depending on how
+        // tall the lane was.
+        REQUIRE (toggle->getY() < tokens::size::rowHeight);
     }
 }
 

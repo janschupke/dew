@@ -16,7 +16,6 @@
         "volume": 0.95,
         "pan": 0.0,
         "muted": false,
-        "solo": false,
         "source": "synth",
         "genId": "",
         "instrument": {
@@ -109,7 +108,6 @@
         "volume": 0.55,
         "pan": 0.0,
         "muted": false,
-        "solo": false,
         "source": "synth",
         "genId": "",
         "instrument": {
@@ -202,7 +200,6 @@
         "volume": 0.75,
         "pan": 0.0,
         "muted": false,
-        "solo": false,
         "source": "synth",
         "genId": "",
         "instrument": {
@@ -295,7 +292,6 @@
         "volume": 0.4,
         "pan": 0.0,
         "muted": false,
-        "solo": false,
         "source": "synth",
         "genId": "",
         "instrument": {
@@ -1164,7 +1160,6 @@
         {
           "name": "Arrangement",
           "mute": false,
-          "solo": false,
           "colour": "",
           "genId": "",
           "clips": [
@@ -1245,7 +1240,6 @@
         {
           "name": "Track 2",
           "mute": false,
-          "solo": false,
           "colour": "",
           "genId": "",
           "clips": []
@@ -1253,7 +1247,6 @@
         {
           "name": "Track 3",
           "mute": false,
-          "solo": false,
           "colour": "",
           "genId": "",
           "clips": []
@@ -1261,7 +1254,6 @@
         {
           "name": "Track 4",
           "mute": false,
-          "solo": false,
           "colour": "",
           "genId": "",
           "clips": []
@@ -1280,7 +1272,6 @@
           "gain": 0.8,
           "pan": 0.0,
           "mute": false,
-          "solo": false,
           "colour": "",
           "effects": []
         },
@@ -1290,7 +1281,6 @@
           "gain": 0.8,
           "pan": 0.0,
           "mute": false,
-          "solo": false,
           "colour": "",
           "effects": []
         },
@@ -1300,7 +1290,6 @@
           "gain": 0.8,
           "pan": 0.0,
           "mute": false,
-          "solo": false,
           "colour": "",
           "effects": []
         },
@@ -1310,7 +1299,6 @@
           "gain": 0.8,
           "pan": 0.0,
           "mute": false,
-          "solo": false,
           "colour": "",
           "effects": []
         }

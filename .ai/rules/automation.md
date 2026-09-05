@@ -40,7 +40,6 @@ Format version 11. `src/model/AutomationCurve.*`, `src/model/AutomationTargets.*
 
 | Not automatable | Why |
 | --- | --- |
-| `solo` | A relation between tracks; `anySolo` is a snapshot-wide precomputation |
 | playlist-track mute | A track carries no id, and it is circular — `collectAutomation` skips clips on inaudible tracks, so a curve muting its own track could never un-mute |
 | `sample.reverse`, `sample.loop` | A read-pointer discontinuity |
 | pattern length | Nothing for a curve to mean |

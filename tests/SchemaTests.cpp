@@ -175,8 +175,29 @@ TEST_CASE ("a file written by an older version still loads", "[schema][compat]")
     // Properties added after v1 take their defaults.
     const auto channel = loaded.tree.getChildWithName (ids::CHANNEL);
     REQUIRE (channel.isValid());
-    REQUIRE (channel.hasProperty (ids::solo));
-    REQUIRE ((bool) channel[ids::solo] == false);
+    REQUIRE (channel.hasProperty (ids::muted));
+    REQUIRE ((bool) channel[ids::muted] == false);
+
+    // And a property the schema has since DROPPED does not survive the load,
+    // and does not warn on the way out. The v1 text above still carries a solo
+    // on the channel and on the mixer track, because every file written before
+    // that change does - so warning would greet the whole existing library with
+    // a complaint about a change it had no part in. See wasRetired.
+    REQUIRE_FALSE (channel.hasProperty (ids::solo));
+
+    const auto insert = loaded.tree.getChildWithName (ids::MIXER).getChild (0);
+    REQUIRE (insert.isValid());
+    REQUIRE_FALSE (insert.hasProperty (ids::solo));
+
+    // The control case, and the reason retirement is a LIST rather than a
+    // blanket silence: a key the schema never had is still a typo, a hand-edit
+    // or a file from a version that is not this one, and still says so.
+    const auto typo = ProjectSerializer::fromJsonString (
+        juce::String (v1).replace ("\"solo\": false", "\"slo\": false"));
+
+    REQUIRE (typo.ok());
+    INFO ("warnings: " << typo.warnings.joinIntoString ("; "));
+    CHECK_FALSE (typo.warnings.isEmpty());
 
     const auto track = loaded.tree.getChildWithName (ids::PLAYLIST).getChild (0);
     REQUIRE (track.hasProperty (ids::mute));

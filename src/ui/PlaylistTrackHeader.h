@@ -4,6 +4,7 @@
 
 #include "app/ProjectDocument.h"
 #include "ui/HeaderRow.h"
+#include "ui/design/Icons.h"
 #include "ui/primitives/DewControls.h"
 #include "ui/design/Tokens.h"
 
@@ -111,8 +112,21 @@ private:
     int index = 0;
 
     juce::Label nameLabel;
-    DewLetterToggle muteButton { "M", tokens::colour::warning, "Mute this track" };
-    DewLetterToggle soloButton { "S", tokens::colour::accent, "Solo this track" };
+
+    /** Whether the lane plays, and the only such state it has.
+
+        It was an M and an S. Two indicators for one question is what made solo
+        necessary in the first place - a mute that could not say "and silence
+        the others" needed a second flag that could - and the cost was a lane
+        whose audibility could not be read off the lane. One control, one state,
+        and shift-click says it of every lane at once.
+
+        A glyph rather than a letter: "M" names the CONTROL and this one names
+        the state, and the crossed speaker is what dew already draws for
+        silence. It lights when the lane is off, the way every toggle in dew
+        lights for the state worth noticing.
+    */
+    DewIconButton enabledButton { icons::mute(), {} };
 
     bool resizing = false;
     int resizeOriginY = 0;

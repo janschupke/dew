@@ -38,30 +38,35 @@ ChannelRackHeader::ChannelRackHeader (ProjectDocument& d, EditorState& s, juce::
     };
     addAndMakeVisible (nameLabel);
 
-    muteButton.setToggleState ((bool) channel[ids::muted], juce::dontSendNotification);
-    muteButton.onClick = [this]
-    {
-        // Selects on the CLICK. This was on onStateChange, which fires for
-        // every internal transition - buttonNormal -> buttonOver among
-        // them - and the row forwards its children's mouse events so it can
-        // light up on hover. Between the two, merely moving the pointer
-        // across M selected that channel with no click at all.
-        select();
+    enabledButton.setComponentID ("channelEnabled");
+    enabledButton.setClickingTogglesState (true);
+    enabledButton.setOnColour (tokens::colour::warning);
+    enabledButton.setTooltip (tr (StringId::channelRack_enabled_help));
+    enabledButton.setToggleState ((bool) channel[ids::muted], juce::dontSendNotification);
 
-        ProjectEdits::setProperty (channel, ids::muted, muteButton.getToggleState(),
-                                   &document.getUndoManager(), "Mute channel");
-    };
-    addAndMakeVisible (muteButton);
-
-    soloButton.setToggleState ((bool) channel[ids::solo], juce::dontSendNotification);
-    soloButton.onClick = [this]
+    // Selects on the CLICK. This was on onStateChange, which fires for every
+    // internal transition - buttonNormal -> buttonOver among them - and the row
+    // forwards its children's mouse events so it can light up on hover. Between
+    // the two, merely moving the pointer across the indicator selected that
+    // channel with no click at all.
+    enabledButton.onModifiedClick = [this] (const juce::ModifierKeys& mods)
     {
         select();
 
-        ProjectEdits::setProperty (channel, ids::solo, soloButton.getToggleState(),
-                                   &document.getUndoManager(), "Solo channel");
+        const auto muted = enabledButton.getToggleState();
+
+        if (mods.isShiftDown())
+        {
+            ProjectEdits::setPropertyOnEvery (
+                channel.getParent(), ids::CHANNEL, ids::muted, muted, &document.getUndoManager(),
+                muted ? "Silence every channel" : "Play every channel");
+            return;
+        }
+
+        ProjectEdits::setProperty (channel, ids::muted, muted, &document.getUndoManager(),
+                                   muted ? "Silence channel" : "Play channel");
     };
-    addAndMakeVisible (soloButton);
+    addAndMakeVisible (enabledButton);
 
     // Volume and pan on the row itself, so a pattern can be balanced without
     // selecting each channel in turn and reaching for the instrument panel.
@@ -103,8 +108,7 @@ void ChannelRackHeader::refresh()
     const juce::ScopedValueSetter<bool> quiet (updating, true);
 
     nameLabel.setText (channel[ids::name].toString(), juce::dontSendNotification);
-    muteButton.setToggleState ((bool) channel[ids::muted], juce::dontSendNotification);
-    soloButton.setToggleState ((bool) channel[ids::solo], juce::dontSendNotification);
+    enabledButton.setToggleState ((bool) channel[ids::muted], juce::dontSendNotification);
     volumeKnob.setValue ((double) channel[ids::volume], juce::dontSendNotification);
     panKnob.setValue ((double) channel[ids::pan], juce::dontSendNotification);
 
@@ -196,8 +200,7 @@ void ChannelRackHeader::attachParamMenus (const paramMenu::Host* host)
 
     paramMenu::attachTo (host, volumeKnob, self, requireInstrumentParamSpec (ids::volume));
     paramMenu::attachTo (host, panKnob, self, requireInstrumentParamSpec (ids::pan));
-    paramMenu::attachTo (host, muteButton, self, requireInstrumentParamSpec (ids::muted));
-    paramMenu::attachTo (host, soloButton, self, requireInstrumentParamSpec (ids::solo));
+    paramMenu::attachTo (host, enabledButton, self, requireInstrumentParamSpec (ids::muted));
 }
 
 // --- painting and layout -----------------------------------------------------
@@ -255,9 +258,7 @@ void ChannelRackHeader::resized()
     const auto letter = [] (juce::Rectangle<int> slot)
     { return slot.withSizeKeepingCentre (size::letterToggle, size::letterToggle); };
 
-    soloButton.setBounds (letter (area.removeFromRight (size::letterToggle)));
-    area.removeFromRight (space::xxs);
-    muteButton.setBounds (letter (area.removeFromRight (size::letterToggle)));
+    enabledButton.setBounds (letter (area.removeFromRight (size::letterToggle)));
 
     area.removeFromRight (space::sm);
     pitchBounds = area.removeFromRight (26);

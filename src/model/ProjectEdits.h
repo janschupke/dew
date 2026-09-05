@@ -98,6 +98,27 @@ struct ProjectEdits
                              const juce::String& transactionName,
                              bool continuingTransaction = false);
 
+    /** Writes one property onto every child of `parent` that has `type`, as ONE
+        undo step.
+
+        Shift-clicking a track's on/off indicator says the same thing of every
+        track at once - which is how silencing all but one is asked for now that
+        a track has one state rather than a mute and a solo. Solo used to be
+        that gesture, and it was a write to every OTHER track dressed as a write
+        to one: it lived in the document as a flag, in the engine as three
+        scope-wide precomputations, and in the audibility rule as a term that
+        made one track's behaviour a fact about its neighbours.
+
+        Here instead, because a loop of setProperty from a component is a loop
+        of undo steps unless every call after the first passes
+        continuingTransaction - which is the rule this exists to state once, and
+        exactly the one twenty-seven call sites got wrong before setProperty
+        existed.
+    */
+    static void setPropertyOnEvery (juce::ValueTree parent, const juce::Identifier& type,
+                                    const juce::Identifier& property, const juce::var& value,
+                                    juce::UndoManager*, const juce::String& transactionName);
+
     /** Grows a pattern so every note fits, and returns true if it had to.
 
         Never shrinks: a pattern deliberately left longer than its notes is a

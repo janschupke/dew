@@ -327,6 +327,20 @@ public:
     /** Colour used when the button is toggled on. Defaults to the accent. */
     void setOnColour (juce::Colour);
 
+    /** onClick, plus what was held down while it was clicked.
+
+        juce::Button::onClick takes nothing, and the modifiers ARE the gesture
+        for the one control that needs this: a track's on/off indicator, where
+        shift means "say that of every track". Reading
+        ModifierKeys::getCurrentModifiers instead would be a global read of the
+        real keyboard, which is not a thing a headless harness has - and this
+        codebase has been caught by that class of API twice already.
+
+        Called before onClick, and both fire: a control that wants only the
+        plain click carries on using onClick and never sees this.
+    */
+    std::function<void (const juce::ModifierKeys&)> onModifiedClick;
+
     void paintButton (juce::Graphics&, bool shouldDrawHighlighted, bool shouldDrawDown) override;
     void mouseDown (const juce::MouseEvent&) override;
 
@@ -351,6 +365,16 @@ protected:
         lift.update();
     }
 
+    /** Where the modifiers are on the way to onClick. juce::Button routes every
+        completed click - a press, the space bar, triggerClick - through here. */
+    void clicked (const juce::ModifierKeys& mods) override
+    {
+        if (onModifiedClick != nullptr)
+            onModifiedClick (mods);
+
+        juce::Button::clicked (mods);
+    }
+
 private:
     /** The glyph's colour at rest. Only at rest: a toggled button still crosses
         to onColour and a disabled one is still drained, because those say
@@ -369,7 +393,13 @@ private:
 
 // -----------------------------------------------------------------------------
 
-/** A compact letter toggle - the M and S on a mixer strip or channel row. */
+/** A compact letter toggle - a single character in a 24px square.
+
+    It was the M and the S on a mixer strip and a channel row; both are gone,
+    collapsed into one on/off indicator that says a state rather than naming a
+    control. What is left is the channel rack's R, which is the case a letter
+    still suits: arming is a mode with a name, not a state with a picture.
+*/
 class DewLetterToggle : public juce::Button
 {
 public:

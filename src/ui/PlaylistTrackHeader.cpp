@@ -17,8 +17,7 @@ PlaylistTrackHeader::PlaylistTrackHeader (ProjectDocument& d, juce::ValueTree t)
     , track (std::move (t))
 {
     setComponentID ("playlistTrackHeader");
-    muteButton.setComponentID ("trackMute");
-    soloButton.setComponentID ("trackSolo");
+    enabledButton.setComponentID ("trackEnabled");
 
     nameLabel.setText (track[ids::name].toString(), juce::dontSendNotification);
     nameLabel.setEditable (false, true, false);
@@ -36,21 +35,31 @@ PlaylistTrackHeader::PlaylistTrackHeader (ProjectDocument& d, juce::ValueTree t)
     };
     addAndMakeVisible (nameLabel);
 
-    muteButton.setToggleState ((bool) track[ids::mute], juce::dontSendNotification);
-    muteButton.onClick = [this]
-    {
-        ProjectEdits::setProperty (track, ids::mute, muteButton.getToggleState(),
-                                   &document.getUndoManager(), "Mute track");
-    };
-    addAndMakeVisible (muteButton);
+    enabledButton.setClickingTogglesState (true);
+    enabledButton.setOnColour (colour::warning);
+    enabledButton.setTooltip (tr (StringId::playlist_enabled_help));
+    enabledButton.setToggleState ((bool) track[ids::mute], juce::dontSendNotification);
 
-    soloButton.setToggleState ((bool) track[ids::solo], juce::dontSendNotification);
-    soloButton.onClick = [this]
+    // onModifiedClick rather than onClick, because shift IS the gesture here.
+    // Every lane takes the state this one just took, as ONE undo step - which
+    // is how "silence everything but that" is asked for now that a lane has no
+    // solo to say it with.
+    enabledButton.onModifiedClick = [this] (const juce::ModifierKeys& mods)
     {
-        ProjectEdits::setProperty (track, ids::solo, soloButton.getToggleState(),
-                                   &document.getUndoManager(), "Solo track");
+        const auto muted = enabledButton.getToggleState();
+
+        if (mods.isShiftDown())
+        {
+            ProjectEdits::setPropertyOnEvery (track.getParent(), ids::PLAYLIST_TRACK, ids::mute,
+                                              muted, &document.getUndoManager(),
+                                              muted ? "Silence every track" : "Play every track");
+            return;
+        }
+
+        ProjectEdits::setProperty (track, ids::mute, muted, &document.getUndoManager(),
+                                   muted ? "Silence track" : "Play track");
     };
-    addAndMakeVisible (soloButton);
+    addAndMakeVisible (enabledButton);
 }
 
 juce::PopupMenu PlaylistTrackHeader::buildMenu() const
@@ -136,12 +145,10 @@ bool PlaylistTrackHeader::consumePress (const juce::MouseEvent& event)
 void PlaylistTrackHeader::refresh()
 {
     setComponentID ("playlistTrackHeader");
-    muteButton.setComponentID ("trackMute");
-    soloButton.setComponentID ("trackSolo");
+    enabledButton.setComponentID ("trackEnabled");
 
     nameLabel.setText (track[ids::name].toString(), juce::dontSendNotification);
-    muteButton.setToggleState ((bool) track[ids::mute], juce::dontSendNotification);
-    soloButton.setToggleState ((bool) track[ids::solo], juce::dontSendNotification);
+    enabledButton.setToggleState ((bool) track[ids::mute], juce::dontSendNotification);
     repaint();
 }
 
@@ -191,27 +198,20 @@ void PlaylistTrackHeader::resized()
     // The row keeps its OWN height, at the top. It does not stretch and it
     // does not centre: a track's name labels the lane's first pixel, which
     // is where its clips begin, and a name that drifts to the middle of a
-    // 200px header stops pointing at anything. Toggles stretched to 200px
-    // are also not toggles.
+    // 200px header stops pointing at anything. A toggle stretched to 200px
+    // is also not a toggle.
     auto row = area.removeFromTop (juce::jmin (area.getHeight(), size::rowHeight))
                    .reduced (space::sm, space::xs);
 
-    // Past the roomy threshold the name gets a line of its own and the
-    // toggles drop below it. One row of controls with a void under it is
-    // what a tall header looks like otherwise, and the name is the thing
-    // there is finally room to read.
-    const auto roomy = getHeight() >= size::trackHeightRoomy;
+    // The indicator leads the row and the name follows it, on ONE rung at every
+    // lane height. There used to be a second rung past the roomy threshold,
+    // holding the two toggles under the name; with one indicator there is
+    // nothing to put on it, and a state that moved to a different row as the
+    // lane grew was a state you had to look for twice.
+    enabledButton.setBounds (row.removeFromLeft (size::letterToggle).reduced (0, space::xxs));
+    row.removeFromLeft (space::sm);
 
-    auto toggles = roomy ? area.removeFromTop (juce::jmin (area.getHeight(), size::rowHeight))
-                               .reduced (space::sm, space::xs)
-                         : row;
-
-    soloButton.setBounds (toggles.removeFromRight (size::letterToggle).reduced (0, space::xxs));
-    toggles.removeFromRight (space::xxs);
-    muteButton.setBounds (toggles.removeFromRight (size::letterToggle).reduced (0, space::xxs));
-    toggles.removeFromRight (space::sm);
-
-    nameLabel.setBounds (roomy ? row : toggles);
+    nameLabel.setBounds (row);
 }
 
 } // namespace dew

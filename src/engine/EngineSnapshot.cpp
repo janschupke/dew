@@ -62,11 +62,12 @@ bool EngineSnapshot::isChannelAudible (const ChannelSnapshot& channel) const noe
 bool EngineSnapshot::isChannelAudible (const ChannelSnapshot& channel,
                                        bool mutedOverride) const noexcept
 {
-    // Mute wins over solo on the same channel: mute is the explicit "off".
-    if (mutedOverride)
-        return false;
+    // One state per channel: muted or audible. There used to be a solo beside
+    // it and a snapshot-wide anyChannelSolo composing the two, which is what
+    // made a channel's audibility a fact about every OTHER channel as well.
+    juce::ignoreUnused (channel);
 
-    return anyChannelSolo ? channel.solo : true;
+    return ! mutedOverride;
 }
 
 bool EngineSnapshot::isSilent() const
@@ -174,12 +175,10 @@ EngineSnapshot buildSnapshot (const juce::ValueTree& project, juce::StringArray*
         m.gain = requireMixerTrackParamSpec (ids::gain).clamp ((float) (double) track[ids::gain]);
         m.pan = requireMixerTrackParamSpec (ids::pan).clamp ((float) (double) track[ids::pan]);
         m.mute = (bool) track[ids::mute];
-        m.solo = (bool) track[ids::solo];
 
         m.effects = snapshotRead::readEffectChain (
             track, "Mixer track " + track[ids::name].toString(), unitOwners, warn);
 
-        snapshot.anySolo = snapshot.anySolo || m.solo;
         snapshot.mixerTracks.push_back (m);
     }
 
@@ -201,9 +200,6 @@ EngineSnapshot buildSnapshot (const juce::ValueTree& project, juce::StringArray*
         c.volume = juce::jlimit (0.0f, 1.0f, (float) (double) channel[ids::volume]);
         c.pan = juce::jlimit (-1.0f, 1.0f, (float) (double) channel[ids::pan]);
         c.muted = (bool) channel[ids::muted];
-        c.solo = (bool) channel[ids::solo];
-
-        snapshot.anyChannelSolo = snapshot.anyChannelSolo || c.solo;
 
         const auto instrument = channel.getChildWithName (ids::INSTRUMENT);
         c.osc = snapshotRead::readOscBank (
@@ -447,18 +443,15 @@ EngineSnapshot buildSnapshot (const juce::ValueTree& project, juce::StringArray*
     }
 
     // --- playlist ------------------------------------------------------------
-    // Solo has to be known before any clip is resolved, so scan for it first.
-    for (const auto& track : project.getChildWithName (ids::PLAYLIST))
-        if (track.hasType (ids::PLAYLIST_TRACK) && (bool) track[ids::solo])
-            snapshot.anyPlaylistTrackSolo = true;
-
+    // There was a pre-scan here, because solo had to be known before any clip
+    // was resolved: whether a lane was audible depended on every other lane.
+    // One state per track means a lane answers for itself.
     for (const auto& track : project.getChildWithName (ids::PLAYLIST))
     {
         if (! track.hasType (ids::PLAYLIST_TRACK))
             continue;
 
-        const auto trackAudible = ! (bool) track[ids::mute]
-                                  && (! snapshot.anyPlaylistTrackSolo || (bool) track[ids::solo]);
+        const auto trackAudible = ! (bool) track[ids::mute];
 
         for (const auto& clip : track)
         {

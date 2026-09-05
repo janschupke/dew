@@ -109,7 +109,7 @@ TEST_CASE ("a v5 project's one oscillator becomes the first slot", "[schema][com
       "barsInSong": 8,
       "channels": [
         { "id": 1, "name": "Bass", "colour": "ff4fa3ff", "mixerTrackId": 1,
-          "basePitch": 40, "volume": 0.7, "pan": 0.0, "muted": false, "solo": false,
+          "basePitch": 40, "volume": 0.7, "pan": 0.0, "muted": false,
           "instrument": { "osc": { "wave": "square", "octave": -1,
                                    "detuneCents": 7.0, "gain": 0.55 },
                           "amp": { "attack": 0.005, "decay": 0.12,
@@ -121,7 +121,7 @@ TEST_CASE ("a v5 project's one oscillator becomes the first slot", "[schema][com
       "playlist": { "tracks": [] },
       "mixer": { "master": { "gain": 0.9, "effects": [] },
                  "tracks": [ { "id": 1, "name": "Insert 1", "gain": 0.8, "pan": 0.0,
-                               "mute": false, "solo": false, "effects": [] } ] }
+                               "mute": false, "effects": [] } ] }
     })";
 
     const auto loaded = ProjectSerializer::fromJsonString (v5);

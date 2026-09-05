@@ -46,7 +46,7 @@ TEST_CASE ("a module's state is its declared parameters and nothing else", "[pre
     // The channel's own parameters are the instrument's, but they are not its
     // sound - a preset that set the volume would be a level jump mid-mix.
     for (const auto& key : { ids::volume, ids::pan, ids::basePitch, ids::name, ids::colour,
-                             ids::mixerTrackId, ids::muted, ids::solo })
+                             ids::mixerTrackId, ids::muted })
     {
         INFO ("key " << key.toString());
         CHECK_FALSE (object->hasProperty (key));

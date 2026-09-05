@@ -33,7 +33,7 @@ export const anchorForFeature = (name: string): string => name.toLowerCase().rep
 export const features: readonly Feature[] = [
   {
     name: 'Channel rack',
-    body: 'A step grid, one row per channel. Volume, pan, mute and solo sit on the row itself, so a pattern is balanced where it is written.',
+    body: 'A step grid, one row per channel. Volume, pan and an on/off indicator sit on the row itself, so a pattern is balanced where it is written.',
     shot: 'channel-rack',
   },
   {
@@ -48,7 +48,7 @@ export const features: readonly Feature[] = [
   },
   {
     name: 'Mixer',
-    body: 'A fader, pan, mute, solo and a peak meter per insert, plus master. Each strip lists the channels routed into it, and clicking one goes there.',
+    body: 'A fader, pan, an on/off indicator and a peak meter per insert, plus master. Each strip lists the channels routed into it, and clicking one goes there.',
     shot: 'mixer',
   },
   {

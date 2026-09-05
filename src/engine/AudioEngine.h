@@ -456,10 +456,10 @@ private:
         float volume = 0.0f;
         float pan = 0.0f;
 
-        /** Mute, because a curve over it is a curve over a VALUE on this
-            channel. Solo is deliberately not here: it is a relation between
-            channels, and anyChannelSolo is a snapshot-wide precomputation the
-            audio thread cannot redo every block. */
+        /** Whether the channel plays, which is the one such state a channel
+            has. A curve over it is a curve over a VALUE on this channel, which
+            is what made it automatable while the solo beside it was not - solo
+            being a relation between channels rather than a value on one. */
         bool muted = false;
 
         OscBankSnapshot osc;

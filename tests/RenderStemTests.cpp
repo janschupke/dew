@@ -152,39 +152,13 @@ TEST_CASE ("a track nothing is routed to is skipped rather than written empty",
     REQUIRE (audible.files.size() <= all.files.size());
 }
 
-TEST_CASE ("soloing one track still yields a stem for every track", "[engine][render][stems]")
-{
-    auto project = dew::testing::fixtureProject();
-
-    auto mixer = project.getChildWithName (ids::MIXER);
-    REQUIRE (mixer.isValid());
-
-    juce::ValueTree first;
-
-    for (auto track : mixer)
-        if (track.hasType (ids::MIXER_TRACK) && ! first.isValid())
-            first = track;
-
-    REQUIRE (first.isValid());
-
-    ScratchFolder before, after;
-
-    const auto plain = OfflineRenderer::renderStems (project, before.folder, shortRender());
-
-    first.setProperty (ids::solo, true, nullptr);
-
-    const auto soloed = OfflineRenderer::renderStems (project, after.folder, shortRender());
-
-    REQUIRE (plain.ok());
-    REQUIRE (soloed.ok());
-
-    // Stems exist to give you every track. Honouring a solo here would hand back
-    // one file and silence.
-    REQUIRE (soloed.files.size() == plain.files.size());
-}
-
 TEST_CASE ("a muted track is still exported as its own stem", "[engine][render][stems]")
 {
+    // There was a second case beside this one asserting the same thing of a
+    // SOLOED track: stems isolate by muting the others, so a project that
+    // already had a track soloed had to yield a stem for every track anyway.
+    // With one state per track the two cases are one claim.
+
     auto project = dew::testing::fixtureProject();
 
     auto mixer = project.getChildWithName (ids::MIXER);

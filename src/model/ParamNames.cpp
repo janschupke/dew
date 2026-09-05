@@ -77,7 +77,6 @@ const NameRow nameRows[] {
     { &ids::resonance, StringId::param_resonance_name, StringId::param_resonance_caption },
     { &ids::reverse, StringId::param_reverse_name, StringId::param_reverse_caption },
     { &ids::roomSize, StringId::param_roomSize_name, StringId::param_roomSize_caption },
-    { &ids::solo, StringId::param_solo_name, StringId::param_solo_caption },
     { &ids::sustain, StringId::param_sustain_name, StringId::param_sustain_caption },
     { &ids::tempoBpm, StringId::param_tempoBpm_name, StringId::param_tempoBpm_caption },
     { &ids::threshold, StringId::param_threshold_name, StringId::param_threshold_caption },

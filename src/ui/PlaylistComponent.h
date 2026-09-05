@@ -406,7 +406,7 @@ private:
         over the ruler. Returns how many tracks it walked, which is what tells
         paint() whether to draw the empty state.
     */
-    int paintLanes (juce::Graphics&, int bottom, bool anySolo);
+    int paintLanes (juce::Graphics&, int bottom);
 
     ProjectDocument& document;
     AudioEngine& engine;

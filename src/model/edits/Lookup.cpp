@@ -164,6 +164,28 @@ void ProjectEdits::setProperty (juce::ValueTree node, const juce::Identifier& pr
     node.setProperty (property, value, undo);
 }
 
+void ProjectEdits::setPropertyOnEvery (juce::ValueTree parent, const juce::Identifier& type,
+                                       const juce::Identifier& property, const juce::var& value,
+                                       juce::UndoManager* undo, const juce::String& transactionName)
+{
+    if (! parent.isValid())
+        return;
+
+    // The transaction is opened HERE rather than left to the first write, and
+    // that is the whole reason this is a function. setProperty skips a write of
+    // the value already there - which is right, and means the first child that
+    // needs changing is not always the first child. Opening on the first WRITE
+    // would leave the step named after whichever track happened to differ, and
+    // opening one per write would make "silence every track" eight undo steps.
+    if (undo != nullptr)
+        undo->beginNewTransaction (transactionName);
+
+    for (auto child : parent)
+        if (child.hasType (type))
+            setProperty (child, property, value, undo, transactionName,
+                         /*continuingTransaction*/ true);
+}
+
 void ProjectEdits::setNoteVelocity (juce::ValueTree note, double velocity, juce::UndoManager* undo)
 {
     // Zero velocity is a note that exists but cannot be heard, which reads as a

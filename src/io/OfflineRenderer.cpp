@@ -342,14 +342,13 @@ RenderReport OfflineRenderer::renderStems (const juce::ValueTree& project, const
 
         auto stem = base;
 
-        // Isolate by MUTING the others rather than soloing this one: isAudible
-        // checks mute first, and clearing anySolo means a project that already
-        // has a track soloed still yields a stem for every track, which is what
-        // stems are for.
+        // Isolate by MUTING the others, which is the only way there is now:
+        // mute is the one state a track has. It was already the right answer
+        // while solo existed - a project with a track soloed still has to yield
+        // a stem for every track - and it is why clearing the mixer-wide solo
+        // flag had to be part of building a stem.
         for (int i = 0; i < numTracks; ++i)
             stem.mixerTracks[(size_t) i].mute = (i != track);
-
-        stem.anySolo = false;
 
         juce::AudioBuffer<float> rendered;
 

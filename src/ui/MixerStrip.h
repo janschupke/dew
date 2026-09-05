@@ -10,6 +10,7 @@
 
 #include "app/ProjectDocument.h"
 #include "ui/ParamContextMenu.h"
+#include "ui/design/Icons.h"
 #include "ui/primitives/DewControls.h"
 #include "ui/primitives/HoverTracker.h"
 #include "ui/design/Gestures.h"
@@ -197,8 +198,11 @@ private:
         paying; carrying it is what pays it back.
     */
     DewKnob panKnob { requireMixerTrackParamSpec (ids::pan) };
-    DewLetterToggle muteButton { "M", tokens::colour::warning, "Mute this track" };
-    DewLetterToggle soloButton { "S", tokens::colour::accent, "Solo this track" };
+
+    /** Whether the insert plays. One state, the same control the playlist and
+        the channel rack now carry, and the same shift-click. See
+        PlaylistTrackHeader::enabledButton for why there is one and not two. */
+    DewIconButton enabledButton { icons::mute(), {} };
 
     /** Owned here, and destroyed before the controls they watch. */
     std::vector<std::unique_ptr<paramMenu::Trigger>> paramMenuTriggers;

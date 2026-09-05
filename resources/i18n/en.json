@@ -40,6 +40,9 @@
     "arm": {
       "help": "Arm this channel for recording"
     },
+    "enabled": {
+      "help": "Turn this channel on or off. Shift-click to say it of every channel"
+    },
     "menu": {
       "addChannel": "Add channel",
       "removeChannel": "Remove channel",
@@ -481,6 +484,9 @@
     "addInsert": {
       "help": "Add a mixer insert"
     },
+    "enabled": {
+      "help": "Turn this insert on or off. Shift-click to say it of every insert"
+    },
     "empty": "no channels",
     "menu": {
       "addInsert": "Add insert",
@@ -702,10 +708,6 @@
       "caption": "SIZE",
       "name": "Size"
     },
-    "solo": {
-      "caption": "SOLO",
-      "name": "Solo"
-    },
     "sustain": {
       "caption": "SUSTAIN",
       "name": "Sustain"
@@ -800,6 +802,9 @@
     },
     "addTrack": {
       "help": "Add a track to the arrangement"
+    },
+    "enabled": {
+      "help": "Turn this track on or off. Shift-click to say it of every track"
     },
     "clip": {
       "addClip": "Add clip here",

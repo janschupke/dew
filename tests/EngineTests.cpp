@@ -147,16 +147,18 @@ TEST_CASE ("muting a channel removes it from the mix", "[engine][render]")
     REQUIRE (juce::exactlyEqual (peakOf (muted), 0.0f));
 }
 
-TEST_CASE ("soloing one mixer track silences the others", "[engine][render]")
+TEST_CASE ("silencing every other mixer track leaves one audible", "[engine][render]")
 {
     auto project = dew::testing::fixtureProject();
 
     auto mixer = project.getChildWithName (ids::MIXER);
 
-    // Solo insert 1, which only the kick is routed to.
+    // What solo used to be, said the way it is said now: every insert but 1 -
+    // the one the kick is routed to - is switched off. Shift-clicking a track's
+    // indicator writes exactly this, as one undo step.
     for (auto track : mixer)
         if (track.hasType (ids::MIXER_TRACK))
-            track.setProperty (ids::solo, (int) track[ids::id] == 1, nullptr);
+            track.setProperty (ids::mute, (int) track[ids::id] != 1, nullptr);
 
     juce::AudioBuffer<float> soloed;
     const auto report = OfflineRenderer::renderToBuffer (project, soloed);
