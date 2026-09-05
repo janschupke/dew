@@ -20,7 +20,26 @@ enum class ParamCurve
         makes the middle of a drawn curve, and the middle of a knob's travel,
         the middle of what you hear.
     */
-    logarithmic
+    logarithmic,
+
+    /** min + (max - min) * t^3: a time that starts at ZERO.
+
+        Logarithmic is right for a quantity with no meaningful zero - a
+        frequency, a rate - and wrong for one that has. An envelope time does:
+        an attack of nothing is an attack that has already happened, and it is a
+        setting people want. Reaching it needs a minimum of 0, which a
+        logarithm cannot have, so the range had a floor of half a millisecond
+        instead - and then four and a half decades to cover, which put the
+        geometric middle of the knob at seventy milliseconds. Half the travel
+        was spent below a twentieth of a second, and the other half crossed ten
+        seconds; the hand felt that as a knob that did nothing and then bolted.
+
+        A cube puts the middle at an eighth of the range - 1.25s of 10 - and
+        still gives the short end most of the travel, which is where the detail
+        that matters is. It is what an envelope knob does in every instrument
+        that has one.
+    */
+    cubic
 };
 
 /** What a parameter looks like when a person edits it. */

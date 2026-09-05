@@ -45,6 +45,9 @@ double ParamSpec::fromNormalised (double normalised) const noexcept
     if (curve == ParamCurve::logarithmic && minimum > 0.0 && maximum > minimum)
         return minimum * std::pow (maximum / minimum, t);
 
+    if (curve == ParamCurve::cubic)
+        return minimum + t * t * t * (maximum - minimum);
+
     return minimum + t * (maximum - minimum);
 }
 
@@ -58,7 +61,12 @@ double ParamSpec::toNormalised (double value) const noexcept
     if (maximum <= minimum)
         return 0.0;
 
-    return (clamped - minimum) / (maximum - minimum);
+    const auto linear = (clamped - minimum) / (maximum - minimum);
+
+    if (curve == ParamCurve::cubic)
+        return std::cbrt (linear);
+
+    return linear;
 }
 
 int ParamSpec::numDiscreteValues() const noexcept

@@ -118,6 +118,7 @@ DewKnob::DewKnob (const ParamSpec& spec)
 
     setNumDecimalPlaces (spec.decimals);
     setBipolar (spec.bipolar);
+    suffix = juce::String (spec.suffix);
 
     // What this parameter DOES, taken from the catalog rather than chosen at
     // the call site. Here rather than in each panel because this constructor is
@@ -126,17 +127,29 @@ DewKnob::DewKnob (const ParamSpec& spec)
     // so all of them are right without any of them saying anything.
     setFunctionColour (palette::forRole (roleOf (*spec.property)));
 
-    // A logarithmic parameter gets a NormalisableRange, not a plain one: half a
-    // millisecond to ten seconds is four and a half decades, and linearly every
-    // usable value lives in the first one per cent of the travel.
-    if (spec.curve == ParamCurve::logarithmic && spec.minimum > 0.0)
-    {
-        const auto skew = std::log (0.5)
-                          / std::log ((std::sqrt (spec.minimum * spec.maximum) - spec.minimum)
-                                      / (spec.maximum - spec.minimum));
+    // The SPEC's own mapping, rather than a skew computed from its endpoints.
+    //
+    // This used to hand JUCE a power law whose midpoint was the geometric mean
+    // of the range, which agrees with ParamSpec::fromNormalised at exactly
+    // three points - 0, a half, and 1 - and nowhere else. At a quarter of the
+    // travel an attack knob read one millisecond where a curve drawn to the
+    // same height played six. The header of ParamSpec::fromNormalised has said
+    // "this is what a KNOB reads" since it was written, and no knob read it.
+    //
+    // By value: a NormalisableRange outlives this call, and a ParamSpec is a
+    // handful of numbers and a pointer to an ids:: entry.
+    juce::NormalisableRange<double> range { spec.minimum, spec.maximum,
+                                            [spec] (double, double, double t)
+                                            { return spec.fromNormalised (t); },
+                                            [spec] (double, double, double v)
+                                            { return spec.toNormalised (v); } };
 
-        slider.setNormalisableRange ({ spec.minimum, spec.maximum, spec.interval, skew });
-    }
+    // Set after construction: the conversion-function constructor takes no
+    // interval, and a knob that lost its declared step would grow digits the
+    // parameter has not got.
+    range.interval = spec.interval;
+
+    slider.setNormalisableRange (range);
 }
 
 void DewKnob::setValue (double v, juce::NotificationType notification)
@@ -212,10 +225,17 @@ void DewKnob::resized()
 
 float DewKnob::proportionOfValue() const
 {
-    const auto range = slider.getRange();
-    const auto span = range.getLength();
-
-    return span > 0.0 ? (float) ((slider.getValue() - range.getStart()) / span) : 0.0f;
+    // Through the slider's own range, which is what the DRAG moves along. It
+    // used to divide by the raw span, discarding the curve - so on an envelope
+    // knob the needle sat pinned at the bottom for nine tenths of the sweep and
+    // then raced, while the value underneath it moved smoothly. Every rotary in
+    // dew but this one already painted from a skew-aware position, because
+    // juce::Slider computes it that way before handing it to a LookAndFeel.
+    //
+    // Through getNormalisableRange rather than valueToProportionOfLength, which
+    // is virtual and not const - it is a hook for a subclass, and this is a
+    // question about the range.
+    return (float) slider.getNormalisableRange().convertTo0to1 (slider.getValue());
 }
 
 void DewKnob::updateNeedle()
@@ -265,9 +285,13 @@ void DewKnob::paint (juce::Graphics& g)
 
     paint::rotary (g, area.toFloat(), proportion, isEnabled(), bipolar, functionColour);
 
+    // With the unit. The catalog has declared a suffix for every knob that has
+    // one since it was written, and only DewNumberField ever drew it - so an
+    // envelope knob showed a bare number and left "seconds or milliseconds?" to
+    // whoever was reading it.
     g.setColour (isEnabled() ? colour::textPrimary : colour::textDisabled);
     g.setFont (type::font (type::caption));
-    g.drawText (juce::String (slider.getValue(), decimalPlaces), valueArea,
+    g.drawText (juce::String (slider.getValue(), decimalPlaces) + suffix, valueArea,
                 juce::Justification::centred, false);
 
     // Around the whole knob, caption and readout included, rather than around

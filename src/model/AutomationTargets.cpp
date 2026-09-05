@@ -70,10 +70,11 @@ double automationValueFor (const ParamSpec& spec, double normalised)
         return spec.minimum + (spec.maximum - spec.minimum) * (double) index / (double) (steps - 1);
     }
 
-    if (spec.curve == ParamCurve::logarithmic && spec.minimum > 0.0 && spec.maximum > spec.minimum)
-        return spec.minimum * std::pow (spec.maximum / spec.minimum, t);
-
-    return spec.minimum + (spec.maximum - spec.minimum) * t;
+    // The spec's own mapping, not a second copy of it. This function restated
+    // the logarithm, so adding a third curve would have meant remembering to
+    // teach it here as well - and a knob and a drawn curve that disagree about
+    // where half travel is are two different parameters wearing one name.
+    return spec.fromNormalised (t);
 }
 
 namespace

@@ -135,14 +135,20 @@ const ParamSpec ampSpecs[] {
     // Ten seconds, which is what the engine renders. The knobs stopped at two
     // and four, so the top of the envelope was simply unreachable.
     //
-    // Logarithmic, because linear puts every usable attack in the first one per
-    // cent of the travel: half a millisecond to ten seconds is four and a half
-    // decades, and a knob that spends nine tenths of its sweep between five and
-    // ten seconds is a knob with one useful position.
-    { &ids::attack, " s", 0.0005, 10.0, 0.005, 0.0005, 4, ParamCurve::logarithmic },
-    { &ids::decay, " s", 0.0005, 10.0, 0.120, 0.0005, 4, ParamCurve::logarithmic },
+    // Cubic and starting at ZERO - see ParamCurve::cubic. These were
+    // logarithmic, which is right for a frequency and wrong for a time: a
+    // logarithm cannot reach zero, so the range began at half a millisecond and
+    // then had four and a half decades to cross, and half the knob's travel was
+    // spent below seventy milliseconds. An attack of nothing is a setting
+    // people want, and it was not reachable at all.
+    //
+    // Release keeps a floor. Zero attack and zero decay are instants; zero
+    // release is a click on every note-off, which is not a sound anybody is
+    // asking for by dragging a knob to the bottom.
+    { &ids::attack, " s", 0.0, 10.0, 0.005, 0.001, 3, ParamCurve::cubic },
+    { &ids::decay, " s", 0.0, 10.0, 0.120, 0.001, 3, ParamCurve::cubic },
     { &ids::sustain, "", 0.0, 1.0, 0.700, 0.001, 3 },
-    { &ids::release, " s", 0.002, 10.0, 0.150, 0.001, 3, ParamCurve::logarithmic },
+    { &ids::release, " s", 0.002, 10.0, 0.150, 0.001, 3, ParamCurve::cubic },
 };
 
 const ParamSpec oscSpecs[] {

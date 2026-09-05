@@ -678,6 +678,14 @@ public:
     */
     std::unique_ptr<juce::AccessibilityHandler> createAccessibilityHandler() override;
 
+    /** Where along its travel the value sits, 0..1 - which is where the needle
+        is drawn and where the drag put it. A test seam: the two were computed
+        by two different functions and disagreed on every curved parameter. */
+    float getValueProportion() const
+    {
+        return proportionOfValue();
+    }
+
     juce::Slider& getSlider() noexcept
     {
         return slider;
@@ -743,6 +751,10 @@ private:
     float proportionOfValue() const;
 
     juce::String caption;
+
+    /** The unit, from the ParamSpec. Empty for a knob built without one, which
+        is every knob whose value is a bare 0..1 proportion. */
+    juce::String suffix;
 
     /** Accent until a ParamSpec says otherwise, so a knob built without one
         looks exactly as every knob used to. */

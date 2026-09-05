@@ -19,6 +19,7 @@ add_executable(dew_tests
   DesignSystemTests.cpp
   GlyphTests.cpp
   MenuGlyphTests.cpp
+  KnobMappingTests.cpp
   ParamRoleTests.cpp
   DesignDropdownTests.cpp
   DesignGalleryTests.cpp
