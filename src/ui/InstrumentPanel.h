@@ -138,13 +138,7 @@ private:
     /** Owned here, and destroyed before the sliders they watch. */
     std::vector<std::unique_ptr<paramMenu::Trigger>> paramMenuTriggers;
 
-    /** The base pitch stepper, which is an IncDecButtons slider and not a knob:
-        a semitone is a number you nudge, not a sweep. */
-    void attachStepper (juce::Slider&, DewLabel&, const juce::String& text,
-                        std::function<juce::ValueTree()> owner, const juce::Identifier& property,
-                        const juce::String& transactionName);
-
-    /** The same binding for a DewKnob, which carries its own caption and its own
+    /** The binding for a DewKnob, which carries its own caption and its own
         readout, so there is no label to pass and no text box to configure. */
     void attachKnob (DewKnob&, std::function<juce::ValueTree()> owner,
                      const juce::Identifier& property, const juce::String& transactionName);
@@ -236,9 +230,6 @@ private:
         refresh() is the single place that decides. */
     SoundFontSection soundFontSection;
 
-    DewSlider basePitchSlider { juce::Slider::IncDecButtons, juce::Slider::TextBoxLeft };
-    DewLabel basePitchLabel;
-
     /** The envelope and the levels, as the same control the oscillator section
         and every effect card already use.
 
@@ -255,9 +246,6 @@ private:
 
     DewKnob volumeKnob { requireInstrumentParamSpec (ids::volume) };
     DewKnob panKnob { requireInstrumentParamSpec (ids::pan) };
-
-    DewDropdown mixerBox;
-    DewLabel mixerLabel;
 
     /** The selected channel's effect chain, edited by the same component the
         mixer uses - a channel and a mixer track carry the same EFFECT children.

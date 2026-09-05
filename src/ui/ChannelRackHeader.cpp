@@ -84,6 +84,23 @@ ChannelRackHeader::ChannelRackHeader (ProjectDocument& d, EditorState& s, juce::
     attachKnob (panKnob, ids::pan, "Change pan", "Pan");
     panKnob.setBipolar (true);
 
+    // Base pitch and the mixer track, as numbers on the row. Both were in the
+    // instrument panel and nowhere else, which meant routing a channel - or
+    // reading what it was routed to - cost a selection each time.
+    //
+    // The range is the only thing they do not share. Base pitch has a ParamSpec
+    // and takes the whole of MIDI from it; the mixer field's top is however
+    // many tracks the mixer has, so refresh() sets it rather than the wiring.
+    const auto& pitchSpec = requireInstrumentParamSpec (ids::basePitch);
+    pitchField.setRange (pitchSpec.minimum, pitchSpec.maximum, pitchSpec.interval);
+    pitchField.setNumDecimalPlaces (pitchSpec.decimals);
+    attachField (pitchField, ids::basePitch, "Change base pitch",
+                 tr (StringId::channelRack_pitch_help));
+
+    mixerField.setNumDecimalPlaces (0);
+    attachField (mixerField, ids::mixerTrackId, "Route channel",
+                 tr (StringId::channelRack_mixer_help));
+
     // Only audio channels can be armed, and only one channel at a time -
     // clicking an armed row's R disarms it rather than arming a second.
     armButton.setTooltip (tr (StringId::channelRack_arm_help));
@@ -119,6 +136,17 @@ void ChannelRackHeader::refresh()
     enabledButton.setToggleState ((bool) channel[ids::muted], juce::dontSendNotification);
     volumeKnob.setValue ((double) channel[ids::volume], juce::dontSendNotification);
     panKnob.setValue ((double) channel[ids::pan], juce::dontSendNotification);
+
+    // Taken again every refresh: a mixer track added or removed moves the top
+    // of this range, and a field whose maximum is stale would clamp a perfectly
+    // legal routing back down the next time it was dragged.
+    mixerField.setRange (1.0, (double) mixerTrackCount(), 1.0);
+    mixerField.setValue ((double) channel[ids::mixerTrackId], juce::dontSendNotification);
+
+    // A recording has no base pitch, so the field is not shown for one. The arm
+    // toggle takes the same slot - see pitchSlot.
+    pitchField.setVisible (ProjectEdits::playsNotes (channel));
+    pitchField.setValue ((double) channel[ids::basePitch], juce::dontSendNotification);
 
     const auto audio = ProjectEdits::playsClips (channel);
     armButton.setVisible (audio);
@@ -248,6 +276,48 @@ void ChannelRackHeader::attachKnob (DewKnob& knob, const juce::Identifier& prope
     addAndMakeVisible (knob);
 }
 
+void ChannelRackHeader::attachField (DewNumberField& field, const juce::Identifier& property,
+                                     const juce::String& transactionName,
+                                     const juce::String& tooltip)
+{
+    field.setTooltip (tooltip);
+
+    field.onEditStart = [this]
+    {
+        select();
+        gestureActive = false;
+    };
+
+    field.onValueChange = [this, &field, property, transactionName]
+    {
+        if (updating)
+            return;
+
+        // Integers, because both of these are: a MIDI note number and a track
+        // id. Writing the double a field carries would put 60.0 in the file
+        // where every other writer of these two puts 60.
+        ProjectEdits::setProperty (channel, property, juce::roundToInt (field.getValue()),
+                                   &document.getUndoManager(), transactionName, gestureActive);
+
+        gestureActive = true;
+    };
+
+    addAndMakeVisible (field);
+}
+
+int ChannelRackHeader::mixerTrackCount() const
+{
+    auto count = 0;
+
+    for (const auto& track : document.getState().getChildWithName (ids::MIXER))
+        if (track.hasType (ids::MIXER_TRACK))
+            ++count;
+
+    // Never zero: a range whose top is below its bottom is not a range, and a
+    // project is never without a master track anyway.
+    return juce::jmax (1, count);
+}
+
 void ChannelRackHeader::attachParamMenus (const paramMenu::Host* host)
 {
     const auto self = [this] { return channel; };
@@ -255,6 +325,12 @@ void ChannelRackHeader::attachParamMenus (const paramMenu::Host* host)
     paramMenu::attachTo (host, volumeKnob, self, requireInstrumentParamSpec (ids::volume));
     paramMenu::attachTo (host, panKnob, self, requireInstrumentParamSpec (ids::pan));
     paramMenu::attachTo (host, enabledButton, self, requireInstrumentParamSpec (ids::muted));
+    paramMenu::attachTo (host, pitchField, self, requireInstrumentParamSpec (ids::basePitch));
+
+    // mixerField deliberately gets none. Which track a channel plays through is
+    // a RELATION between two objects rather than a quantity - there is nothing
+    // for a curve over it to mean, and it has no ParamSpec to reset it to. It
+    // is the second of the two controls ParamMenuTests names as exceptions.
 }
 
 // --- painting and layout -----------------------------------------------------
@@ -286,19 +362,6 @@ void ChannelRackHeader::paint (juce::Graphics& g)
         g.fillRect (0, 0, 4, getHeight());
         g.drawRect (getLocalBounds(), stroke::hairlinePx);
     }
-
-    // The base pitch, so a melodic channel says what it is playing. Its
-    // bounds come from resized() rather than being recomputed here, so it
-    // cannot drift into the mute and solo buttons. An audio channel has the
-    // arm toggle in this slot instead: a recording has no base pitch, and a
-    // number that means nothing is worse than no number.
-    if (ProjectEdits::playsNotes (channel))
-    {
-        g.setColour (colour::textDisabled);
-        g.setFont (type::font (type::caption));
-        g.drawText (juce::String ((int) channel[ids::basePitch]), pitchBounds,
-                    juce::Justification::centredRight, false);
-    }
 }
 
 void ChannelRackHeader::resized()
@@ -315,13 +378,17 @@ void ChannelRackHeader::resized()
     enabledButton.setBounds (letter (area.removeFromRight (size::letterToggle)));
 
     area.removeFromRight (space::sm);
-    pitchBounds = area.removeFromRight (26);
+    mixerField.setBounds (area.removeFromRight (size::rowField));
+    area.removeFromRight (space::xs);
+
+    pitchSlot = area.removeFromRight (size::rowField);
+    pitchField.setBounds (pitchSlot);
     area.removeFromRight (space::xs);
 
     // The same slot the base pitch occupies, so the row's shape is the same
     // whichever kind of channel it is and the knobs never shift under the
     // cursor when a channel changes kind.
-    armButton.setBounds (letter (pitchBounds.withWidth (size::letterToggle)));
+    armButton.setBounds (letter (pitchSlot.withWidth (size::letterToggle)));
 
     panKnob.setBounds (area.removeFromRight (size::knobSm));
     area.removeFromRight (space::xs);

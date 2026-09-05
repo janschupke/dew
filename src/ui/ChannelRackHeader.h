@@ -13,13 +13,14 @@
 #include "ui/ParamContextMenu.h"
 #include "ui/design/Icons.h"
 #include "ui/primitives/DewControls.h"
+#include "ui/primitives/DewNumberField.h"
 #include "ui/design/Tokens.h"
 
 namespace dew
 {
 
-/** One channel's header in the rack: colour tab, name, volume, pan, mute, solo,
-    and - on an audio channel - the record arm.
+/** One channel's header in the rack: colour tab, name, volume, pan, base pitch,
+    mixer track, mute - and, on an audio channel, the record arm.
 
     A nested class of ChannelRackComponent until it was nearly half of that
     file. Promoted for the reason PlaylistTrackHeader was: it reads none of the
@@ -28,7 +29,9 @@ namespace dew
     through two callbacks.
 
     Volume and pan are on the row itself so a pattern can be balanced without
-    selecting each channel in turn and reaching for the instrument panel.
+    selecting each channel in turn and reaching for the instrument panel. Base
+    pitch and the mixer track are here for the same reason, and they are here
+    ONLY: routing eight channels used to mean selecting eight channels.
 */
 class ChannelRackHeader : public HeaderRow
 {
@@ -108,12 +111,30 @@ private:
     void attachKnob (DewKnob& knob, const juce::Identifier& property,
                      const juce::String& transactionName, const juce::String& tooltip);
 
+    /** Wires one number field to one of the channel's integer properties.
+
+        The same shape as attachKnob - select the row on the way in, one undo
+        transaction per gesture rather than per pixel - because a field and a
+        knob are the same gesture with a different face. The RANGE is not set
+        here: base pitch takes it from its ParamSpec once, and the mixer field's
+        upper bound is however many tracks the mixer has right now.
+    */
+    void attachField (DewNumberField& field, const juce::Identifier& property,
+                      const juce::String& transactionName, const juce::String& tooltip);
+
+    /** How many tracks the mixer has, which is the top of mixerField's range. */
+    int mixerTrackCount() const;
+
     ProjectDocument& document;
     EditorState& editorState;
     juce::ValueTree channel;
 
     juce::Label nameLabel;
-    juce::Rectangle<int> pitchBounds;
+
+    /** The slot base pitch and the record arm share. An audio channel has no
+        base pitch, and the arm takes the same place rather than a place of its
+        own, so the row's shape does not change with the kind of channel. */
+    juce::Rectangle<int> pitchSlot;
     bool updating = false;
     bool inDrag = false;
     bool gestureActive = false;
@@ -124,6 +145,12 @@ private:
 
     DewKnob volumeKnob { requireInstrumentParamSpec (ids::volume) };
     DewKnob panKnob { requireInstrumentParamSpec (ids::pan) };
+
+    /** What a step written on the grid is pitched at, and which mixer track the
+        channel plays through. Both used to be in the instrument panel, one
+        channel at a time. */
+    DewNumberField pitchField;
+    DewNumberField mixerField;
     DewLetterToggle armButton { "R", tokens::colour::recording,
                                 tr (StringId::channelRack_arm_help) };
 

@@ -13,6 +13,7 @@
 #include "ui/EffectChainComponent.h"
 #include "ui/MixerComponent.h"
 #include "ui/primitives/DewControls.h"
+#include "ui/primitives/DewNumberField.h"
 #include "ConfirmSupport.h"
 #include "FixtureProject.h"
 
@@ -134,8 +135,11 @@ TEST_CASE ("a channel header has no click-swallowing dead zones", "[ui][selectio
 
     for (auto* header : headers)
     {
-        // M/S and the volume and pan knobs are meant to take their own clicks;
-        // they select the row explicitly instead.
+        // M/S, the volume and pan knobs and the two number fields are meant to
+        // take their own clicks; they select the row explicitly instead. A
+        // field has to keep its press because the press is the start of a drag
+        // - the same argument the knobs have - and it answers it by calling
+        // onEditStart, which the case below drives.
         juce::Array<juce::Component*> allowed;
 
         for (auto* button : findAll<juce::Button> (*header))
@@ -143,6 +147,9 @@ TEST_CASE ("a channel header has no click-swallowing dead zones", "[ui][selectio
 
         for (auto* slider : findAll<juce::Slider> (*header))
             allowed.add (slider);
+
+        for (auto* field : findAll<DewNumberField> (*header))
+            allowed.add (field);
 
         const auto dead = deadSpots (*header, allowed);
         INFO ("dead spots on a channel header: "
@@ -183,6 +190,43 @@ TEST_CASE ("a channel row's knobs select their channel", "[ui][selection]")
 
         editorState.setSelectedChannelId (-1);
         knob->onDragStart();
+
+        REQUIRE (editorState.getSelectedChannelId() != -1);
+    }
+}
+
+TEST_CASE ("a channel row's number fields select their channel", "[ui][selection]")
+{
+    // The other half of the exemption above. Base pitch and the mixer track are
+    // DewNumberFields, so they are neither Buttons nor Sliders and the two
+    // walks that cover the rest of the row miss them entirely: without this,
+    // moving them here from the instrument panel would have added two controls
+    // that swallow a press and select nothing.
+    const juce::ScopedJuceInitialiser_GUI juceInit;
+
+    ProjectDocument document;
+    AudioEngine engine;
+    EditorState editorState;
+
+    document.setState (dew::testing::fixtureProject(), true);
+
+    ChannelRackComponent rack { document, engine, editorState };
+    rack.setSize (1000, 600);
+    rack.setVisible (true);
+    rack.refresh();
+    rack.resized();
+
+    const auto fields = findAll<DewNumberField> (rack);
+
+    // Two per channel, and the demo has at least four.
+    REQUIRE (fields.size() >= 8);
+
+    for (auto* field : fields)
+    {
+        REQUIRE (field->onEditStart != nullptr);
+
+        editorState.setSelectedChannelId (-1);
+        field->onEditStart();
 
         REQUIRE (editorState.getSelectedChannelId() != -1);
     }

@@ -389,6 +389,15 @@ static_assert (glyphMark <= glyphColumn, "a glyph has to fit the column it is gi
 inline constexpr int knob = 44;
 inline constexpr int knobSm = 26;    ///< a knob on a row, drawn without its caption
 inline constexpr int rowHeight = 34; ///< channel rack and playlist rows
+
+/** A number field ON a row, drawn without its caption.
+
+    Wider than knobSm because a knob is a circle and this holds digits: the
+    widest thing either of the rack's two fields shows is a MIDI note number,
+    and a field the width of a knob would clip "127" while still being too
+    narrow to grab.
+*/
+inline constexpr int rowField = 36;
 inline constexpr int rulerHeight = 22;
 inline constexpr int minTouchTarget = 24; ///< nothing clickable smaller than this
 

@@ -224,7 +224,7 @@ TEST_CASE ("every spec-built control in the window has a right-click", "[ui][par
     INFO ("without one:\n" << missing.joinIntoString ("\n"));
     REQUIRE (knobs > 0);
 
-    // One exception, and a NAMED one so it cannot quietly grow back.
+    // Two exceptions, and NAMED ones so they cannot quietly grow back.
     //
     // The transport bar's pattern-length field is not a parameter of anything:
     // it is how long the pattern in front of you is, which is a property of the
@@ -234,13 +234,27 @@ TEST_CASE ("every spec-built control in the window has a right-click", "[ui][par
     // The tempo field beside it WAS the other exception, until tempo became a
     // target; this count is exact so that migrating it had to come back here,
     // which is exactly what happened.
+    //
+    // A channel row's mixer field is the second, for the reason mute has no
+    // solo beside it: which track a channel plays through is a RELATION between
+    // two objects rather than a value on one, so there is nothing for a curve
+    // over it to interpolate. It is the one number field in the window with no
+    // ParamSpec at all, which is also why it has nothing to be reset to.
+    // describe() reports the whole chain of named ancestors, so the panel a
+    // control sits in is the LAST segment rather than the first - which is why
+    // the rack's row is matched by "> channelHeader @" and not by a prefix.
+    const auto expected = [] (const juce::String& path)
+    { return path.startsWith ("transportBar") || path.contains ("> channelHeader @"); };
+
     for (const auto& one : missing)
     {
         INFO ("unexpected control with no menu: " << one);
-        REQUIRE (one.startsWith ("transportBar"));
+        REQUIRE (expected (one));
     }
 
-    REQUIRE (missing.size() == 1);
+    // One per channel row plus the transport bar's, and the demo project the
+    // window opens with has four channels.
+    REQUIRE (missing.size() == 5);
     REQUIRE (withMenu == knobs - missing.size());
 }
 

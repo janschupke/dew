@@ -72,34 +72,9 @@ InstrumentPanel::InstrumentPanel (ProjectDocument& d, EditorState& s, SamplePool
     oscSection.onHeightChanged = [this] { resized(); };
     addAndMakeVisible (oscSection);
 
-    mixerBox.onChange = [this]
-    {
-        if (updating)
-            return;
-
-        auto channel = selectedChannel();
-
-        if (! channel.isValid() || mixerBox.getSelectedId() <= 0)
-            return;
-
-        ProjectEdits::setProperty (channel, ids::mixerTrackId, mixerBox.getSelectedId(),
-                                   &document.getUndoManager(), "Route channel");
-    };
-    mixerBox.setTooltip (tr (StringId::instrument_mixer_help));
-    addAndMakeVisible (mixerBox);
-    styleCaption (mixerLabel, "MIXER");
-    addAndMakeVisible (mixerLabel);
-
     const auto ampOf = [this]
     { return selectedChannel().getChildWithName (ids::INSTRUMENT).getChildWithName (ids::AMP); };
     const auto channelOf = [this] { return selectedChannel(); };
-
-    // Clickable rather than value: a stepper's visible parts are two little
-    // buttons, and it is pressed rather than dragged.
-    basePitchSlider.setMouseCursor (cursor::clickable);
-    basePitchSlider.setSliderStyle (juce::Slider::IncDecButtons);
-    attachStepper (basePitchSlider, basePitchLabel, "PITCH", channelOf, ids::basePitch,
-                   "Change base pitch");
 
     attachKnob (attackKnob, ampOf, ids::attack, "Change attack");
     attachKnob (decayKnob, ampOf, ids::decay, "Change decay");
@@ -212,24 +187,6 @@ void InstrumentPanel::bindRotary (juce::Slider& slider, DewKnob* knob,
     boundRotaries.push_back ({ &slider, knob, owner, property });
 }
 
-void InstrumentPanel::attachStepper (juce::Slider& slider, DewLabel& label,
-                                     const juce::String& text,
-                                     std::function<juce::ValueTree()> owner,
-                                     const juce::Identifier& property,
-                                     const juce::String& transactionName)
-{
-    const auto& spec = requireInstrumentParamSpec (property);
-
-    slider.setTextBoxStyle (juce::Slider::TextBoxLeft, false, 44, tokens::size::controlHeightSm);
-    slider.setRange (spec.minimum, spec.maximum, spec.interval);
-
-    bindRotary (slider, nullptr, std::move (owner), property, transactionName);
-
-    styleCaption (label, text);
-    addAndMakeVisible (slider);
-    addAndMakeVisible (label);
-}
-
 void InstrumentPanel::attachKnob (DewKnob& knob, std::function<juce::ValueTree()> owner,
                                   const juce::Identifier& property,
                                   const juce::String& transactionName)
@@ -301,9 +258,6 @@ void InstrumentPanel::refresh()
     for (auto* c : { &attackKnob, &decayKnob, &sustainKnob, &releaseKnob })
         c->setVisible (showing == InstrumentType::synth);
 
-    for (auto* c : { (juce::Component*) &basePitchSlider, (juce::Component*) &basePitchLabel })
-        c->setVisible (ProjectEdits::playsNotes (channel));
-
     resized();
 
     chainHost.setOwner (channel,
@@ -318,16 +272,6 @@ void InstrumentPanel::refresh()
     titleLabel.setText (channel[ids::name].toString(), juce::dontSendNotification);
 
     const auto amp = channel.getChildWithName (ids::INSTRUMENT).getChildWithName (ids::AMP);
-
-    mixerBox.clear (juce::dontSendNotification);
-
-    for (const auto& track : document.getState().getChildWithName (ids::MIXER))
-        if (track.hasType (ids::MIXER_TRACK))
-            mixerBox.addItem (track[ids::name].toString(), (int) track[ids::id]);
-
-    mixerBox.setSelectedId ((int) channel[ids::mixerTrackId], juce::dontSendNotification);
-
-    basePitchSlider.setValue ((double) channel[ids::basePitch], juce::dontSendNotification);
 
     attackKnob.setValue ((double) amp[ids::attack], juce::dontSendNotification);
     decayKnob.setValue ((double) amp[ids::decay], juce::dontSendNotification);
@@ -554,28 +498,6 @@ void InstrumentPanel::resized()
             soundFontSection.setBounds (row (SoundFontSection::requiredHeight));
             break;
     }
-
-    // Routing and base pitch share a row. The oscillator section costs the panel
-    // about 120px more than the single wave combo it replaces, and at the
-    // smallest window the app opens at that was the whole effect chain.
-    auto routingRow = row (size::knob);
-
-    if (showing != InstrumentType::audio)
-    {
-        // The pitch stepper is measured from the right and the combo takes what
-        // is left: an inc/dec pair given "half of whatever remains" is the one
-        // control here that clips rather than shrinking.
-        basePitchSlider.setBounds (routingRow.removeFromRight (96).reduced (0, space::md));
-        basePitchLabel.setBounds (routingRow.removeFromRight (38));
-        routingRow.removeFromRight (space::md);
-    }
-
-    mixerLabel.setBounds (routingRow.removeFromLeft (46));
-
-    // The BOX's height, centred in the row - not the row inset by a gap, which
-    // is how it ended up 28 tall in a panel where every other control is 26.
-    mixerBox.setBounds (
-        routingRow.withSizeKeepingCentre (routingRow.getWidth(), mixerBox.preferredHeight()));
 
     // The envelope and the levels, as one grid rather than as two rows that
     // divided the same width by four and by two and so drew the same control at

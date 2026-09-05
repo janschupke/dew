@@ -57,6 +57,12 @@
     "title": "Channel rack",
     "addChannel": {
       "label": "+ Channel"
+    },
+    "mixer": {
+      "help": "Which mixer track this channel plays through"
+    },
+    "pitch": {
+      "help": "What a step written on the grid is pitched at"
     }
   },
   "choice": {
@@ -473,9 +479,6 @@
       "name": "Audio"
     },
     "empty": "No channel selected",
-    "mixer": {
-      "help": "Which mixer track this channel plays through"
-    },
     "preset": {
       "help": "Load a factory sound onto this channel",
       "label": "Preset"
