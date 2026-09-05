@@ -39,8 +39,6 @@ class EffectCard : public juce::Component
 {
 public:
     static constexpr int columns = 3; ///< down a column
-    static constexpr int numberFieldHeight = 40;
-    static constexpr int captionHeight = 12;
 
     // A column is sized rather than stretched: a number field wider than a hand
     // is not easier to drag, only emptier. 88 is what the gallery gives a knob

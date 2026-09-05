@@ -261,7 +261,9 @@ void MixerComponent::resized()
     // rather than an offer at the head of a column.
     auto column = holder.removeFromLeft (size::mixerStripWidth).reduced (space::sm, space::md);
 
-    addStripButton.setBounds (column.removeFromTop (size::controlHeightSm));
+    // The button's own height. It was controlHeightSm - a 20px button, the only
+    // one in the application, in a column of controls that are all 26.
+    addStripButton.setBounds (column.removeFromTop (addStripButton.preferredHeight()));
 }
 
 void MixerComponent::addMixerTrack()

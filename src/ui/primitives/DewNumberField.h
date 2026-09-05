@@ -40,6 +40,19 @@ public:
     /** Small caption drawn above the value. */
     void setCaption (juce::String);
 
+    /** How tall this wants to be, which depends on whether it has a caption.
+
+        The whole reason DewControls asks controls their height rather than
+        letting call sites decide: this answer is not a constant, and nothing
+        outside the field could work it out. Three call sites guessed - 40, 41
+        and a bare 40 in the design gallery - and all three sat beside dropdowns
+        at 26.
+    */
+    int preferredHeight() const
+    {
+        return tokens::size::controlHeight + (caption.isNotEmpty() ? tokens::size::captionBand : 0);
+    }
+
     /** What this control DOES, as the colour of its active edge.
 
         A field is the twin of a knob - cutoff, delay time and tempo are fields

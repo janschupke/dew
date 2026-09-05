@@ -106,7 +106,10 @@ void RandomizePanel::resized()
     area.removeFromTop (size::controlHeight); // the scope sentence, painted
     area.removeFromTop (space::md);
 
-    auto fields = area.removeFromTop (size::controlHeight + (int) type::caption + space::xs);
+    // Asked, not derived. This was controlHeight + (int) type::caption +
+    // space::xs, which casts a font size to a pixel count and lands on 41 -
+    // beside an effect card's 40 and a settings row's 26, for the same control.
+    auto fields = area.removeFromTop (velocityField.preferredHeight());
     const auto fieldWidth = (fields.getWidth() - space::md) / 2;
 
     velocityField.setBounds (fields.removeFromLeft (fieldWidth));

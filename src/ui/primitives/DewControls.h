@@ -139,6 +139,23 @@ private:
     bool held = false;
 };
 
+/** Every control in dew answers `preferredHeight()`.
+
+    Not a JUCE idea - a juce::Component has no intrinsic size and every height
+    in this application was decided at the CALL SITE. Which is why a number
+    field is 40 inside an effect card, 41 in the randomize dialog and 26 in a
+    settings row, sitting beside dropdowns that are always 26; and why the size
+    ladder's gate never saw any of it, because it only fires on a `constexpr int
+    …Height` whose literal happens to equal a rung.
+
+    A captioned number field is the case that makes this necessary rather than
+    tidy: it needs a strip above the value for its caption and an uncaptioned
+    one does not, and that is a fact only the field knows. Its callers were
+    guessing.
+
+    Free functions would not do: the answer differs per INSTANCE, not per type.
+*/
+
 /** Any juce::Button, with the right button refused for the whole press.
 
     Five controls carried the same three overrides word for word, and the two
@@ -171,6 +188,12 @@ public:
         was built for, so it is the one that closes over it.
     */
     std::function<void()> onContextMenu;
+
+    /** How tall this wants to be. See DewControls' note on intrinsic size. */
+    int preferredHeight() const
+    {
+        return tokens::size::controlHeight;
+    }
 
     void mouseDown (const juce::MouseEvent& event) override
     {
@@ -386,6 +409,12 @@ public:
     /** Colour used when the button is toggled on. Defaults to the accent. */
     void setOnColour (juce::Colour);
 
+    /** A glyph in a square, not a word in a box - see tokens::size::iconButton. */
+    int preferredHeight() const
+    {
+        return tokens::size::iconButton;
+    }
+
     /** onClick, plus what was held down while it was clicked.
 
         juce::Button::onClick takes nothing, and the modifiers ARE the gesture
@@ -466,6 +495,12 @@ public:
     void setTooltip (const juce::String&) override;
 
     void paintButton (juce::Graphics&, bool shouldDrawHighlighted, bool shouldDrawDown) override;
+
+    /** A single character in its own square. */
+    int preferredHeight() const
+    {
+        return tokens::size::letterToggle;
+    }
 
     /** See DewButton::focusGained.
 
@@ -571,6 +606,12 @@ class DewDropdown : public juce::ComboBox
 {
 public:
     explicit DewDropdown (const juce::String& name = {});
+
+    /** How tall this wants to be. See DewControls' note on intrinsic size. */
+    int preferredHeight() const
+    {
+        return tokens::size::controlHeight;
+    }
 
     /** A ComboBox puts its text colour on the juce::Label inside it, and does
         so from positionComboBoxText - on layout, not on paint. A box whose

@@ -302,6 +302,18 @@ int DewGallery::layOut (juce::Rectangle<int> area, bool apply)
             c->setBounds (bounds);
     };
 
+    /** The control's own answer, so the reference page shows what the rest of
+        the application does. It wrote a bare 40 for a captioned number field
+        beside dropdowns at 26 - encoding the very mismatch this page exists to
+        make visible. */
+    const auto sized = [] (juce::Component* c, juce::Rectangle<int> bounds)
+    {
+        if (auto* field = dynamic_cast<DewNumberField*> (c))
+            return bounds.withHeight (field->preferredHeight());
+
+        return bounds.withHeight (size::controlHeight);
+    };
+
     const auto sectionHeading = [&] (const juce::String& title, int height)
     {
         area.removeFromTop (space::xl);
@@ -363,13 +375,15 @@ int DewGallery::layOut (juce::Rectangle<int> area, bool apply)
 
     // Number fields.
     {
-        auto row = sectionHeading ("Number fields - drag up and down to change", 40);
+        auto row = sectionHeading ("Number fields - drag up and down to change",
+                                   size::controlHeight + size::captionBand);
 
-        place (controls[index++], row.removeFromLeft (120).withHeight (size::controlHeight));
-        row.removeFromLeft (space::md);
-        place (controls[index++], row.removeFromLeft (86).withHeight (40));
-        row.removeFromLeft (space::md);
-        place (controls[index++], row.removeFromLeft (86).withHeight (40));
+        for (const auto width : { 120, 86, 86 })
+        {
+            place (controls[index], sized (controls[index], row.removeFromLeft (width)));
+            ++index;
+            row.removeFromLeft (space::md);
+        }
     }
 
     // Dropdowns.

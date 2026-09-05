@@ -467,7 +467,9 @@ void InstrumentPanel::resized()
     // The button on the right of the title, at the width the design system
     // gives a labelled control - the title takes whatever is left, which is
     // what it did before there was anything beside it.
-    presetButton.setBounds (titleRow.removeFromRight (size::gutterLabel));
+    presetButton.setBounds (
+        titleRow.removeFromRight (size::gutterLabel)
+            .withSizeKeepingCentre (size::gutterLabel, presetButton.preferredHeight()));
     titleRow.removeFromRight (space::sm);
 
     // The glyph column is taken only when there is a channel to describe, so an
@@ -525,7 +527,11 @@ void InstrumentPanel::resized()
     }
 
     mixerLabel.setBounds (routingRow.removeFromLeft (46));
-    mixerBox.setBounds (routingRow.reduced (0, space::md));
+
+    // The BOX's height, centred in the row - not the row inset by a gap, which
+    // is how it ended up 28 tall in a panel where every other control is 26.
+    mixerBox.setBounds (
+        routingRow.withSizeKeepingCentre (routingRow.getWidth(), mixerBox.preferredHeight()));
 
     // knobRow, like every other row of knobs in the application. It was 86,
     // which is the height the JUCE text box under each one needed - a fifth

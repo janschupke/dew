@@ -325,7 +325,7 @@ void EffectCard::resized()
                                 .removeFromTop (tokens::size::knobRow)
                                 .reduced (space::xxs, 0);
 
-                modeCaptionBounds = cell.removeFromTop (captionHeight);
+                modeCaptionBounds = cell.removeFromTop (size::captionBand);
                 modeBox->setBounds (
                     cell.withSizeKeepingCentre (cell.getWidth(), size::controlHeight));
             }
@@ -408,10 +408,15 @@ void EffectCard::layOutParams (juce::Rectangle<int> area, bool visible)
 
             auto cell = row.removeFromLeft (width).reduced (space::xxs);
 
-            // A knob fills its cell; a number field is a fixed-height
-            // control and stretching it just makes a tall empty box.
+            // A knob fills its cell; a number field is a fixed-height control
+            // and stretching it just makes a tall empty box. ASKED rather than
+            // declared: this card said 40, the randomize dialog derived 41 and
+            // the gallery wrote 40 again, and all three sat beside dropdowns at
+            // 26 - three numbers for the one control whose height genuinely
+            // varies, and only the control knows how.
             if (control->field != nullptr)
-                cell = cell.withSizeKeepingCentre (cell.getWidth(), numberFieldHeight);
+                cell = cell.withSizeKeepingCentre (cell.getWidth(),
+                                                   control->field->preferredHeight());
 
             component->setBounds (cell);
         }

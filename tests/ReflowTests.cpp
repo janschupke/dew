@@ -7,8 +7,17 @@
 #include "ui/EffectChainHost.h"
 #include "ui/InstrumentPanel.h"
 #include "ui/MainComponent.h"
+#include "model/Ids.h"
+#include "model/ProjectEdits.h"
+
+#include <map>
+#include <utility>
+#include <vector>
+
+#include "ControlWalkHarness.h"
 
 using namespace dew;
+using namespace dew::testing;
 
 /*  What happens when the window is too small for what is in it.
 
@@ -208,4 +217,98 @@ TEST_CASE ("a dialog is never taller than the screen it opens on", "[ui][reflow]
 
     if (display != nullptr)
         CHECK (tallest <= juce::roundToInt (display->userBounds.getHeight()));
+}
+
+TEST_CASE ("every control is the height it says it needs", "[ui][reflow][design]")
+{
+    // What a person actually sees: a number field 40 tall inside an effect
+    // card, 41 in the randomize dialog and 26 in a settings row, beside
+    // dropdowns that are always 26. Every height in the application was decided
+    // at the CALL SITE, so nothing anywhere related them.
+    //
+    // The size ladder's own gate could not see it: it fires on a `constexpr int
+    // ...Height = <literal>` whose literal equals a rung, so 40, 41 and a bare
+    // 12 all passed through it. This asks the question the ladder is FOR - and
+    // it asks the CONTROL, because a captioned field and a bare one need
+    // different answers and only the field knows which it is.
+    const juce::ScopedJuceInitialiser_GUI juceInit;
+
+    MainComponent component (false);
+    component.setSize (1400, 900);
+
+    // With an effect on the first channel: the default project has none, so a
+    // walk of it never reaches an effect card - which is where the fourteen
+    // pixel gap was. A walk that cannot reach the defect it was written for is
+    // not a walk.
+    {
+        auto project = component.getDocument().getState();
+        auto channel = ProjectEdits::findChannel (project, 1);
+        REQUIRE (channel.isValid());
+
+        ProjectEdits::addEffect (project, channel, "filter",
+                                 &component.getDocument().getUndoManager());
+        component.documentWasReplaced();
+    }
+
+    component.setSize (1400, 900);
+    component.resized();
+
+    juce::StringArray wrong;
+    auto checked = 0;
+    auto fields = 0;
+
+    for (int tab = 0; tab < Settings::numTabs; ++tab)
+    {
+        component.showTab (tab);
+        component.resized();
+
+        walk (component,
+              [&] (juce::Component& c)
+              {
+                  if (! c.isVisible() || c.getHeight() <= 0)
+                      return;
+
+                  auto wanted = 0;
+
+                  if (auto* field = dynamic_cast<DewNumberField*> (&c))
+                  {
+                      wanted = field->preferredHeight();
+                      ++fields;
+                  }
+                  else if (auto* box = dynamic_cast<DewDropdown*> (&c))
+                      wanted = box->preferredHeight();
+                  else if (auto* button = dynamic_cast<DewButton*> (&c))
+                      wanted = button->preferredHeight();
+                  else
+                      return;
+
+                  ++checked;
+
+                  // A strip shorter than a control squeezes it rather than
+                  // clipping it: the playlist's "+ Automation" sits in the
+                  // ruler's corner, and the ruler is 22 by the ladder. So a
+                  // control SHORTER than controlHeight is taken as squeezed.
+                  //
+                  // What this cannot see is the rectangle a control was handed,
+                  // only its parent - so a squeezed control in a strip that had
+                  // room would pass. What it does catch is every control TALLER
+                  // than it asked for, which is the whole reported defect: a
+                  // number field at 40 and 41 beside dropdowns at 26.
+                  if (c.getHeight() == wanted || c.getHeight() < tokens::size::controlHeight)
+                      return;
+
+                  wrong.add (describe (c) + "  is " + juce::String (c.getHeight()) + ", asked for "
+                             + juce::String (wanted));
+              });
+    }
+
+    // Control case: a walk that found no controls would report every one of
+    // them well sized, and the ones that matter are the number FIELDS - the
+    // only control here whose answer is not a constant.
+    INFO ("controls checked: " << checked << ", of them number fields: " << fields);
+    REQUIRE (checked > 20);
+    REQUIRE (fields > 0);
+
+    INFO ("controls not at the height they asked for:\n" << wrong.joinIntoString ("\n"));
+    CHECK (wrong.isEmpty());
 }

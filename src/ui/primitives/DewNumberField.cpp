@@ -253,7 +253,7 @@ void DewNumberField::paint (juce::Graphics& g)
 
     if (caption.isNotEmpty())
     {
-        auto captionArea = text.removeFromTop (12);
+        auto captionArea = text.removeFromTop (size::captionBand);
         g.setColour (colour::textSecondary);
         g.setFont (type::font (type::caption));
         g.drawText (caption, captionArea, juce::Justification::centred);

@@ -358,6 +358,23 @@ inline constexpr int controlHeight = 26; ///< buttons, combo boxes, number field
 inline constexpr int controlHeightSm = 20;
 inline constexpr int iconButton = 24;
 
+/** The strip a captioned control spends on its caption.
+
+    A number field with a caption needs this ON TOP of controlHeight, and one
+    without needs nothing - which is a fact only the field knows and had no way
+    to say. So its callers guessed: an effect card declared 40, a randomize
+    dialog derived 41 by casting a font size to a pixel count, and the design
+    gallery wrote a bare 40 twice. Three numbers for one control, sitting beside
+    dropdowns at 26.
+
+    Ask the control instead - DewNumberField::preferredHeight - and this is the
+    one number the answer is built from.
+*/
+inline constexpr int captionBand = 12;
+
+static_assert ((float) captionBand >= type::caption,
+               "a caption band has to hold the caption it is named for");
+
 /** The column a ROW spends on a leading glyph, and the mark inside it.
 
     A menu item, a dropdown option and a button with a picture beside its word
