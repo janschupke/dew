@@ -5,6 +5,8 @@
 namespace dew
 {
 
+using namespace tokens;
+
 EditorTabs::EditorTabs (ProjectDocument& document, AudioEngine& engine, EditorState& editorState,
                         SamplePool* pool)
     : juce::TabbedComponent (juce::TabbedButtonBar::TabsAtTop)
@@ -53,6 +55,33 @@ EditorTabs::EditorTabs (ProjectDocument& document, AudioEngine& engine, EditorSt
 juce::TabBarButton* EditorTabs::createTabButton (const juce::String& tabName, int)
 {
     return new PopupSafeButton<juce::TabBarButton> (tabName, getTabbedButtonBar());
+}
+
+void EditorTabs::setTabStripTrailing (juce::Component* c)
+{
+    tabStripTrailing = c;
+
+    if (c != nullptr)
+        addAndMakeVisible (*c);
+
+    resized();
+}
+
+void EditorTabs::resized()
+{
+    juce::TabbedComponent::resized();
+
+    if (tabStripTrailing == nullptr)
+        return;
+
+    // Taken OUT of the tab bar rather than laid on top of it: the bar is what
+    // decides how much room the five tabs have, so a slot it does not know
+    // about is a slot the last tab can grow into.
+    auto bar = getTabbedButtonBar().getBounds();
+    const auto slot = bar.removeFromRight (size::iconButton + space::sm);
+    getTabbedButtonBar().setBounds (bar);
+
+    tabStripTrailing->setBounds (slot.withSizeKeepingCentre (size::iconButton, size::iconButton));
 }
 
 void EditorTabs::compileScore()

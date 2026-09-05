@@ -103,6 +103,14 @@ MainComponent::MainComponent (bool openAudioDevice)
     addAndMakeVisible (statusBar);
     addAndMakeVisible (divider);
 
+    // Parked in the tab strip, which reserves width for it. It was on the
+    // divider, which straddles the seam and is raised above both sides - so it
+    // sat half over the last tab and half over the panel's title band.
+    panelToggle.setComponentID ("panelToggle");
+    panelToggle.setMouseClickGrabsKeyboardFocus (false);
+    panelToggle.onClick = [this] { setPanelCollapsed (! panelCollapsed); };
+    tabs.setTabStripTrailing (&panelToggle);
+
     // The score editor says what a compile did, and does not otherwise reach
     // out of its tab. Errors surface in three places doing three jobs: the
     // squiggle says where, the list under the editor says what, and this says
@@ -249,12 +257,6 @@ MainComponent::PanelDivider::PanelDivider (MainComponent& o)
     setMouseCursor (cursor::resizeX);
 
     setComponentID ("panelDivider");
-
-    toggleButton.setComponentID ("panelToggle");
-    toggleButton.setMouseClickGrabsKeyboardFocus (false);
-    toggleButton.setMouseCursor (cursor::clickable);
-    toggleButton.onClick = [this] { owner.setPanelCollapsed (! owner.panelCollapsed); };
-    addAndMakeVisible (toggleButton);
 }
 
 void MainComponent::PanelDivider::mouseDown (const juce::MouseEvent& event)
@@ -280,28 +282,19 @@ void MainComponent::PanelDivider::mouseDrag (const juce::MouseEvent& event)
     owner.setPanelWidth (widthAtDragStart - event.getDistanceFromDragStartX());
 }
 
-void MainComponent::PanelDivider::updateToggle()
+void MainComponent::updatePanelToggle()
 {
-    toggleButton.setIcon (owner.panelCollapsed ? icons::chevronLeft() : icons::chevronRight());
-    toggleButton.setTooltip (owner.panelCollapsed ? "Show the instrument panel"
-                                                  : "Hide the instrument panel");
+    panelToggle.setIcon (panelCollapsed ? icons::chevronLeft() : icons::chevronRight());
+    panelToggle.setTooltip (panelCollapsed ? "Show the instrument panel"
+                                           : "Hide the instrument panel");
 }
 
-void MainComponent::PanelDivider::resized()
+bool MainComponent::PanelDivider::hitTest (int x, int)
 {
-    toggleButton.setBounds (
-        getLocalBounds().removeFromTop (tokens::size::iconButton).reduced (0, tokens::space::xxs));
-}
-
-bool MainComponent::PanelDivider::hitTest (int x, int y)
-{
-    // The chevron, wherever it is, and a band either side of the rule. The rest
-    // of this component is over the editor and over the panel, and belongs to
-    // them: without this it would take every click along the panel's left edge
-    // and there would be nothing on screen to say why.
-    if (toggleButton.getBounds().contains (x, y))
-        return true;
-
+    // A band either side of the rule, and nothing else. The rest of this
+    // component is over the editor and over the panel, and belongs to them:
+    // without this it would take every click along the panel's left edge and
+    // there would be nothing on screen to say why.
     const auto rule = getWidth() / 2;
 
     return x >= rule - tokens::space::xs && x <= rule + tokens::space::xs;
@@ -344,7 +337,7 @@ void MainComponent::setPanelCollapsed (bool collapsed)
         return;
 
     panelCollapsed = collapsed;
-    divider.updateToggle();
+    updatePanelToggle();
     collapse.animateTo (collapsed ? 1.0f : 0.0f, tokens::motion::panelMs);
     resized();
 }
@@ -389,7 +382,7 @@ void MainComponent::applySettings (const Settings& settings)
 {
     panelWidth = settings.getPanelWidth();
     panelCollapsed = settings.getPanelCollapsed();
-    divider.updateToggle();
+    updatePanelToggle();
 
     Animator::shared().setReduceMotion (settings.getReduceMotion (systemPrefersReducedMotion()));
 
@@ -557,6 +550,10 @@ void MainComponent::resized()
 
     divider.setBounds (seamX, area.getY(), seamWidth, area.getHeight());
     divider.toFront (false);
+
+    // Behind the divider, so the rule reads as continuous: the chevron is the
+    // tab strip's child and the seam is drawn on top of everything.
+    panelToggle.toBack();
 }
 
 } // namespace dew

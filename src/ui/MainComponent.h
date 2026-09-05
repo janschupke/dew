@@ -330,19 +330,19 @@ private:
         void mouseDrag (const juce::MouseEvent&) override;
 
         void paint (juce::Graphics&) override;
-        void resized() override;
 
         /** The seam is a rule the panel abuts, and this component STRADDLES it:
-            it overlaps both the editor and the panel so the chevron can float
-            over the boundary with no column of background reserved for it. That
-            makes most of its width somebody else's, so only the band around the
-            rule and the chevron's own rectangle take the mouse - otherwise it
-            would quietly swallow every click along the panel's left edge.
+            it overlaps both the editor and the panel so the rule can sit on the
+            boundary with no column of background reserved for it. That makes
+            most of its width somebody else's, so only the band around the rule
+            takes the mouse - otherwise it would quietly swallow every click
+            along the panel's left edge.
+
+            It used to carve the fold chevron's rectangle back out as well. The
+            chevron has gone to the tab strip, which reserves width for it - see
+            EditorTabs::setTabStripTrailing.
         */
         bool hitTest (int x, int y) override;
-
-        /** Points the chevron the way the panel will go when it is pressed. */
-        void updateToggle();
 
     private:
         MainComponent& owner;
@@ -351,11 +351,6 @@ private:
         /** True while a right press is still down, so the drag it arms moves
             nothing. See PopupPress. */
         bool popupPressed = false;
-
-        /** At the top of the divider rather than inside the panel: it has to
-            stay reachable once the panel it hides is gone.
-        */
-        DewIconButton toggleButton { icons::chevronRight(), "Hide the instrument panel" };
     };
 
     /** MainComponent as dew_control sees it.
@@ -427,6 +422,15 @@ private:
     void setPanelCollapsed (bool);
 
     PanelDivider divider { *this };
+
+    /** Folds the instrument panel away, parked at the right-hand end of the tab
+        strip - which is beside the panel, and stays reachable once the panel it
+        hides is gone. On the SHELL rather than on the divider: the shell is
+        what it acts on, and the strip only says where it goes. */
+    DewIconButton panelToggle { icons::chevronRight(), "Hide the instrument panel" };
+
+    /** Points the chevron the way the panel will go when it is pressed. */
+    void updatePanelToggle();
     int panelWidth = Settings::defaultPanelWidth;
 
     /** How far the instrument panel has folded away, 0 open and 1 collapsed.

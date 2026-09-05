@@ -80,7 +80,23 @@ public:
     int getScoreFontStep() const;
     void setScoreFontStep (int step);
 
+    /** A control parked at the right-hand end of the tab strip.
+
+        The instrument panel's fold chevron is what this exists for. It used to
+        live on the panel divider, which STRADDLES the seam and is raised above
+        both sides - so its top 24px sat half over the last tab and half over
+        the panel's title band, and the divider's hit test had to carve the
+        button's own rectangle back out of a component that was otherwise
+        somebody else's. A strip that RESERVES the width has nothing to carve.
+
+        Not owned: the shell owns the button, because the shell is what the
+        button does something to. This only says where it goes.
+    */
+    void setTabStripTrailing (juce::Component*);
+
 private:
+    void resized() override;
+
     /** Every tab button this bar makes, refusing the right button.
 
         A stock juce::TabbedComponent hands out stock TabBarButtons, and
@@ -102,6 +118,8 @@ private:
     void currentTabChanged (int newIndex, const juce::String& newName) override;
 
     ComponentMotion arrival { *this, 1.0f };
+
+    juce::Component* tabStripTrailing = nullptr;
 
     ChannelRackComponent channelRack;
     PianoRollComponent pianoRoll;

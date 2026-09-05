@@ -9,6 +9,7 @@
 #include "app/Settings.h"
 #include "ui/MainComponent.h"
 #include "PaintProbe.h"
+#include "PlaylistHarness.h"
 #include "FixtureProject.h"
 
 using namespace dew::testing;
@@ -76,7 +77,11 @@ TEST_CASE ("the instrument panel folds away, and comes back", "[ui][smoke]")
     const auto openWidth = panel->getWidth();
     REQUIRE (openWidth > 0);
 
-    auto* toggle = dynamic_cast<juce::Button*> (divider->findChildWithID ("panelToggle"));
+    // In the TAB STRIP, which reserves width for it, rather than on the divider,
+    // which straddles the seam and floated it over the last tab and over the
+    // panel's title band. findChildWithID is not recursive and the strip is two
+    // levels down, so this walks.
+    auto* toggle = dynamic_cast<juce::Button*> (findDescendantWithID (component, "panelToggle"));
     REQUIRE (toggle != nullptr);
 
     toggle->onClick();
@@ -87,10 +92,24 @@ TEST_CASE ("the instrument panel folds away, and comes back", "[ui][smoke]")
     CHECK (panel->getWidth() == 0);
     CHECK_FALSE (panel->isVisible());
 
-    // The toggle lives on the DIVIDER, not in the panel, so it is still there
+    // The toggle lives in the tab strip, not in the panel, so it is still there
     // to press once the panel it hides is gone.
+    CHECK (toggle->isVisible());
+    CHECK (toggle->getWidth() > 0);
     CHECK (divider->getWidth() > 0);
     CHECK (divider->isVisible());
+
+    // And it is INSIDE the strip rather than over it, which is the whole
+    // change: the tab bar gave up the width instead of being painted on.
+    auto* tabs = dynamic_cast<juce::TabbedComponent*> (component.findChildWithID ("editorTabs"));
+    REQUIRE (tabs != nullptr);
+
+    const auto strip = tabs->getLocalArea (nullptr, tabs->getTabbedButtonBar().getScreenBounds());
+    const auto chevron = tabs->getLocalArea (nullptr, toggle->getScreenBounds());
+
+    CHECK (chevron.getY() >= strip.getY());
+    CHECK (chevron.getBottom() <= strip.getBottom());
+    CHECK (chevron.getX() >= strip.getRight());
 
     toggle->onClick();
 
