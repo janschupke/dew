@@ -59,6 +59,3 @@ export const schema: Schema = raw;
 export const anchorForBlock = (kind: string): string => kind;
 export const anchorForKey = (block: string, key: string): string => `${block}-${key}`;
 export const anchorForValueKind = (name: string): string => `value-${name}`;
-
-/** The kinds with a closed member list, which are the ones worth a table. */
-export const closedKinds = schema.valueKinds.filter((kind) => kind.members.length > 0);

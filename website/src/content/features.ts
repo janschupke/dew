@@ -33,7 +33,7 @@ export const anchorForFeature = (name: string): string => name.toLowerCase().rep
 export const features: readonly Feature[] = [
   {
     name: 'Channel rack',
-    body: 'A step grid, one row per channel. Volume, pan and an on/off indicator sit on the row itself, so a pattern is balanced where it is written.',
+    body: 'A step grid, one row per channel. Volume, pan and an on/off indicator sit on the row itself.',
     shot: 'channel-rack',
   },
   {
@@ -43,7 +43,7 @@ export const features: readonly Feature[] = [
   },
   {
     name: 'Playlist',
-    body: 'Pattern clips on tracks along a bar timeline; a clip longer than its pattern repeats it. Lanes stretch, because an automation curve drawn into a 34px lane has a 7px grab radius.',
+    body: 'Pattern clips on tracks along a bar timeline; a clip longer than its pattern repeats it. Lanes stretch, for an automation curve that needs the height.',
     shot: 'playlist',
   },
   {
@@ -62,7 +62,7 @@ export const features: readonly Feature[] = [
   },
   {
     name: 'Effects',
-    body: 'Reverb, filter, delay, drive, distortion, chorus, phaser, a 3-band EQ, a compressor and a limiter, chained up to four deep on any channel, track or the master. Drag a card by its grip to reorder; the whole drag is one undo step, however far it travelled.',
+    body: 'Reverb, filter, delay, drive, distortion, chorus, phaser, a 3-band EQ, a compressor and a limiter, chained up to four deep on any channel, track or the master. Drag a card by its grip to reorder.',
   },
   {
     name: 'Automation',
@@ -78,10 +78,10 @@ export const features: readonly Feature[] = [
   },
   {
     name: 'Time signature',
-    body: '3/4, 5/4, 6/8, 7/8 and the rest, driving bar lines, beat shading, the readout, what "Bar" snaps to, and exported MIDI. A metre is not a tempo: a step is the same length in 3/4 as in 4/4.',
+    body: '3/4, 5/4, 6/8, 7/8 and the rest, driving bar lines, beat shading, the readout, what "Bar" snaps to, and exported MIDI.',
   },
   {
-    name: 'It remembers',
-    body: 'Window geometry, interface scale, active tab, selections, zoom, scroll, row height and snap. The piano roll’s tool does not: restoring into slice would mean the first click of a session cuts something nobody asked for.',
+    name: 'Session state',
+    body: 'Window geometry, interface scale, active tab, selections, zoom, scroll, row height and snap are restored between sessions. The piano roll’s tool is not.',
   },
 ];

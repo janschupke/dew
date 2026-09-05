@@ -142,6 +142,31 @@ describe('the theme defines what the source writes', () => {
     expect(rungs.filter((name) => reserved.includes(name))).toEqual([]);
   });
 
+  it('uses every utility the site theme declares', () => {
+    // theme.site.css is the site's OWN half of the vocabulary, and `declared`
+    // above cannot see it - it reads the generated theme, which is where the
+    // application's rungs land. So the two utilities that are the page's rather
+    // than the app's - `pinned` for the header, `docked` for a reference
+    // sidebar - had no gate of any kind over them.
+    //
+    // This is the direction that rots: a utility written for a layout that has
+    // since changed stays in the stylesheet, and nothing says so. The other
+    // direction is covered by the compiled-stylesheet check above, which is
+    // where a class that emits NOTHING gets caught.
+    const site = readFileSync('src/app/theme.site.css', 'utf8');
+
+    const siteUtilities = [...site.matchAll(/@utility\s+([A-Za-z0-9_-]+)\s*\{/g)].map(
+      (match) => match[1] ?? '',
+    );
+
+    // It cannot pass by finding none.
+    expect(siteUtilities.length).toBeGreaterThan(1);
+
+    const used = new Set(classesUsed().map((entry) => entry.name));
+
+    expect(siteUtilities.filter((name) => !used.has(name)).join('\n')).toBe('');
+  });
+
   it('scanned something', () => {
     expect(sourceFiles().length).toBeGreaterThan(10);
     expect(declared.size).toBeGreaterThan(10);

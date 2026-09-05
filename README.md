@@ -6,8 +6,7 @@ channel — or, on an audio channel, by a recording.
 
 Status: **working prototype**. New, open, edit, save and playback work end to end, with
 effects and automation on top. It is not a product, but every layer is real and wired to
-the next. macOS is where it is developed and where the gate runs; Windows and Linux build
-the whole application and run the whole suite in CI, on every push.
+the next. It is developed on macOS; CI builds and tests all three systems on every push.
 
 - **Source** — <https://github.com/janschupke/dew>
 - **Download** — <https://github.com/janschupke/dew/releases/latest>
@@ -31,13 +30,11 @@ produced it.
 
 **None of these builds is signed.** macOS will refuse the first launch and send you to
 System Settings → Privacy & Security → Open Anyway; Windows will show SmartScreen's
-"Windows protected your PC" and hide the button behind More info. A certificate costs
-money every year and this is a prototype. The site's `/download/` page says what each
-system does, in the words it uses.
+"Windows protected your PC" and hide the button behind More info. The site's
+`/download/` page says what each system does, in the words it uses.
 
-**MP3 export needs `lame` installed separately**, in any build. dew runs it as a child
-process rather than shipping an encoder, so the option greys itself out until one is on
-`PATH`. See [Dependencies](#dependencies).
+**MP3 export needs `lame` installed separately**, in any build. The option greys itself
+out until one is on `PATH`. See [Dependencies](#dependencies).
 
 Old versions stay on [the releases page](https://github.com/janschupke/dew/releases).
 

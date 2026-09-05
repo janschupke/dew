@@ -33,6 +33,27 @@ describe('pages', () => {
     expect(features.length).toBeGreaterThan(8);
   });
 
+  it('a feature with a shot puts the sentence beside the picture', () => {
+    // The page used to stack them: one sentence, then a 16:10 render tall
+    // enough that the next feature started below the fold. The two are columns
+    // now, which is a structure rather than a class - the section holds the
+    // prose block and the figure as its only two children, in that order.
+    const { container } = render(<Features />);
+
+    const withShot = features.filter((feature) => feature.shot !== undefined);
+
+    expect(withShot.length).toBeGreaterThan(3);
+
+    for (const feature of withShot) {
+      const section = container.querySelector(`#${CSS.escape(anchorForFeature(feature.name))}`);
+      const children = [...(section?.children ?? [])];
+
+      expect(children, feature.name).toHaveLength(2);
+      expect(children[0]?.querySelector('h2')?.textContent).toBe(feature.name);
+      expect(children[1]?.tagName).toBe('FIGURE');
+    }
+  });
+
   it('no feature is left without a sentence', () => {
     for (const feature of features) expect(feature.body.length).toBeGreaterThan(40);
   });

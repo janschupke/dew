@@ -2,10 +2,19 @@ import { render } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 
 import McpReference from '@/app/mcp/reference/page';
+import McpResources from '@/app/mcp/resources/page';
 import Mcp from '@/app/mcp/page';
 import { anchorForGuide, anchorForTool, mcp, readTools, writeTools } from '@/lib/mcp';
 
 const argumentCount = mcp.tools.reduce((n, tool) => n + tool.args.length, 0);
+
+/** Every fragment one sidebar group links to. */
+const anchorsIn = (container: HTMLElement, group: string): Set<string> =>
+  new Set(
+    [...container.querySelectorAll(`[data-toc-group="${group}"] a`)].map(
+      (a) => a.getAttribute('href') ?? '',
+    ),
+  );
 
 describe('the generated MCP reference', () => {
   // Control case. Every assertion below walks the table, and a walk over an
@@ -51,29 +60,66 @@ describe('the generated MCP reference', () => {
     expect(section?.textContent).toContain('entries[].value');
   });
 
-  it('every tool has a link in the page nav', () => {
+  it('every tool has a link in the sidebar, in the group its scope puts it in', () => {
     // The lesson the score reference already learned: a gate over the sections
     // is not a gate over the list of them, and the first attempt at one shipped
     // an index that silently omitted a block.
+    //
+    // Asked per GROUP, not over the whole nav. The sidebar's whole claim is
+    // that a reader can see which tools change their project before reading a
+    // word, and a count over both groups together would pass with every tool
+    // filed under the wrong one.
     const { container } = render(<McpReference />);
-    const nav = container.querySelector('nav');
 
-    expect(nav).not.toBeNull();
+    expect(container.querySelector('nav')).not.toBeNull();
 
-    const targets = new Set(
-      [...(nav?.querySelectorAll('a') ?? [])].map((a) => a.getAttribute('href')),
-    );
+    for (const [group, tools] of [
+      ['read', readTools],
+      ['write', writeTools],
+    ] as const) {
+      const targets = anchorsIn(container, group);
 
-    expect(targets.size).toBe(mcp.tools.length);
+      expect(targets.size, group).toBe(tools.length);
 
-    for (const tool of mcp.tools) expect(targets).toContain(`#${anchorForTool(tool.name)}`);
+      for (const tool of tools)
+        expect(targets, `${tool.name} has no sidebar link`).toContain(
+          `#${anchorForTool(tool.name)}`,
+        );
+    }
+  });
+
+  it('the sidebar names nothing the page does not carry', () => {
+    // The other direction, which is the half a link check cannot do: an entry
+    // pointing at an id nothing renders is a dead anchor, and the browser
+    // reports one only to whoever clicked it.
+    for (const page of [<McpReference key="reference" />, <McpResources key="resources" />]) {
+      const { container } = render(page);
+
+      const links = [...(container.querySelector('nav')?.querySelectorAll('a') ?? [])];
+
+      expect(links.length).toBeGreaterThan(4);
+
+      for (const link of links) {
+        const href = link.getAttribute('href') ?? '';
+
+        expect(href, 'a sidebar entry that is not a fragment').toMatch(/^#/);
+        expect(
+          container.querySelector(`#${CSS.escape(href.slice(1))}`),
+          `${href} is in the sidebar and not on the page`,
+        ).not.toBeNull();
+      }
+    }
   });
 
   it('renders every guide page, whole', () => {
     // These ship as MCP resources, so the page and the resource are the same
     // words. A paragraph that reached one and not the other would be advice a
     // client acts on and a reader cannot check.
-    const { container } = render(<McpReference />);
+    //
+    // They are a page of their own now. They used to sit between the tool index
+    // and the tools, which put five documents nobody had come for in front of
+    // the table everybody had.
+    const { container } = render(<McpResources />);
 
     for (const section of mcp.guide) {
       const element = container.querySelector(`#${CSS.escape(anchorForGuide(section.id))}`);
@@ -111,6 +157,6 @@ describe('the MCP page', () => {
     expect(hrefs.some((href) => href.startsWith('/mcp/reference'))).toBe(true);
 
     for (const section of mcp.guide)
-      expect(hrefs).toContain(`/mcp/reference#${anchorForGuide(section.id)}`);
+      expect(hrefs).toContain(`/mcp/resources#${anchorForGuide(section.id)}`);
   });
 });

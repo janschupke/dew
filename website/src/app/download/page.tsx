@@ -4,13 +4,16 @@ import { Band, Container } from '@/ui/Surface';
 import { Button } from '@/ui/Button';
 import { P, PageHeader, Section } from '@/ui/Prose';
 import { Cell, Row, Table } from '@/ui/Table';
+import { PlatformMark } from '@/ui/Icon';
 import {
   checksumsAsset,
   downloadUrl,
   downloads,
+  primaryDownloads,
   releasesUrl,
   verifyCommands,
 } from '@/content/download';
+import { systemName } from '@/content/systems';
 import { t } from '@/lib/strings';
 
 export const metadata: Metadata = { title: `${t('download.title')} — ${t('site.name')}` };
@@ -29,6 +32,11 @@ export const metadata: Metadata = { title: `${t('download.title')} — ${t('site
 
     The first-launch section is here because none of these builds is signed and
     both desktop systems block one on first run.
+
+    The platform mark is on the row, on the first-launch heading and on the
+    button, all keyed off `Download.system`. It is aria-hidden everywhere: the
+    words are beside it in all three places, and a reader who cannot see it has
+    lost nothing.
 */
 function Commands({ lines }: { lines: readonly string[] }) {
   return (
@@ -54,7 +62,26 @@ export default function Download() {
         <Section title={t('download.getTitle')}>
           <P>{t('download.getBody')}</P>
 
-          <div className="mt-stack">
+          {/* The buttons come before the table. Most readers want the file for
+              the system they are on and nothing else; the table is for the one
+              deciding between an installer and a zip. */}
+          <div className="mt-stack gap-md flex flex-wrap">
+            {primaryDownloads.map((download) => (
+              <Button
+                key={download.system}
+                variant="primary"
+                href={downloadUrl(download.asset)}
+                className="gap-sm"
+              >
+                <PlatformMark system={download.system} />
+                {systemName(download.system)}
+              </Button>
+            ))}
+
+            <Button href={releasesUrl}>{t('download.allReleases')}</Button>
+          </div>
+
+          <div className="mt-section">
             <Table
               head={[
                 t('download.platformHeading'),
@@ -64,7 +91,12 @@ export default function Download() {
             >
               {downloads.map((download) => (
                 <Row key={download.asset}>
-                  <Cell className="text-primary whitespace-nowrap">{download.platform}</Cell>
+                  <Cell className="text-primary whitespace-nowrap">
+                    <span className="gap-sm inline-flex items-center">
+                      <PlatformMark system={download.system} />
+                      {download.platform}
+                    </span>
+                  </Cell>
                   <Cell className="whitespace-nowrap">
                     <a
                       href={downloadUrl(download.asset)}
@@ -78,13 +110,6 @@ export default function Download() {
               ))}
             </Table>
           </div>
-
-          <div className="mt-section gap-md flex flex-wrap">
-            <Button variant="primary" href={downloadUrl(downloads[0]?.asset ?? checksumsAsset)}>
-              {downloads[0]?.platform ?? t('download.title')}
-            </Button>
-            <Button href={releasesUrl}>{t('download.allReleases')}</Button>
-          </div>
         </Section>
 
         <Section title={t('download.firstRunTitle')}>
@@ -93,7 +118,10 @@ export default function Download() {
           <dl className="mt-stack gap-stack grid">
             {downloads.map((download) => (
               <div key={download.asset}>
-                <dt className="text-prose text-primary font-semibold">{download.platform}</dt>
+                <dt className="text-prose text-primary gap-sm flex items-center font-semibold">
+                  <PlatformMark system={download.system} />
+                  {download.platform}
+                </dt>
                 <dd className="mt-xs text-prose leading-prose text-secondary max-w-[68ch]">
                   {download.firstLaunch}
                 </dd>

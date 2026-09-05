@@ -21,16 +21,16 @@ export interface Requirement {
 export const requirements: readonly Requirement[] = [
   {
     name: 'macOS 11 or newer',
-    need: 'The deployment target for these commands. Windows and Linux build from the same presets.',
+    need: 'The deployment target for these commands. Windows and Linux use the same presets.',
   },
   {
     name: 'Xcode command line tools',
-    need: 'The compiler, and the clang-format the gate checks with. Nothing else to install.',
+    need: 'The compiler, and the clang-format ./scripts/check.sh runs.',
   },
   { name: 'Homebrew', need: 'How the four below arrive, from the Brewfile.' },
   { name: 'cmake ≥ 3.25', need: 'JUCE 9 needs 3.22; CMakePresets v6 needs 3.25.' },
   { name: 'ninja', need: 'The generator every preset uses.' },
-  { name: 'ccache', need: 'Optional. A cold JUCE rebuild takes minutes without it.' },
+  { name: 'ccache', need: 'Optional. Caches compiled objects between builds.' },
   { name: 'lame', need: 'MP3 export only, driven as a child process. Optional.' },
 ];
 
@@ -42,10 +42,10 @@ export interface Preset {
 export const presets: readonly Preset[] = [
   { name: 'dev', what: 'Debug, with tests' },
   { name: 'release', what: 'RelWithDebInfo. Build this for normal use' },
-  { name: 'ci', what: 'release plus warnings-as-errors; the gate' },
+  { name: 'ci', what: 'release plus warnings-as-errors' },
   { name: 'asan', what: 'ci plus AddressSanitizer and UndefinedBehaviorSanitizer' },
   { name: 'tsan', what: 'ci plus ThreadSanitizer' },
-  { name: 'dist', what: 'What a release is built from — no tests, universal on Apple' },
+  { name: 'dist', what: 'What a release is built from: no tests, universal on Apple' },
   { name: 'dist-windows', what: 'dist, built by the Visual Studio generator' },
   { name: 'offline', what: 'release from a warm dependency cache, no network' },
 ];

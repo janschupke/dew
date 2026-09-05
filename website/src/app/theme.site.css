@@ -91,3 +91,24 @@
   position: sticky;
   top: 0;
 }
+
+/*  A reference page's sidebar, standing still while the page scrolls past it.
+
+    `top` is `--spacing-section` and not zero, for the reason every anchor on
+    this site carries `scroll-mt-section`: the header is pinned, so anything
+    that wants to sit under it has to clear it, and one rung doing that job
+    everywhere is one chance to get it wrong instead of three.
+
+    It cannot be `sticky top-<n>` for the reason `pinned` cannot: the numeric
+    offset reads the scale `--spacing: initial` deletes and emits nothing.
+
+    The height and the scroll are what make it a sidebar rather than a block
+    that pins and then runs off the bottom of the window - thirty-nine tools are
+    taller than a screen.
+*/
+@utility docked {
+  position: sticky;
+  top: var(--spacing-section);
+  max-height: calc(100dvh - var(--spacing-section));
+  overflow-y: auto;
+}

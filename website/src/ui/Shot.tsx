@@ -1,4 +1,4 @@
-import Image from 'next/image';
+import { ShotViewer } from '@/ui/ShotViewer';
 
 /** A dew_shot render, in a frame.
  *
@@ -33,29 +33,32 @@ export const shotSizes = {
 
 export type ShotName = keyof typeof shotSizes;
 
+/** The frame and the caption stay here, on the server. Only the button and the
+ *  dialog are the client's - see ShotViewer for why there is a client at all. */
 export function Shot({
   name,
   alt,
   caption,
   priority = false,
+  className = 'my-stack',
 }: {
   name: ShotName;
   alt: string;
   caption?: string;
   priority?: boolean;
+  className?: string;
 }) {
   const { width, height } = shotSizes[name];
 
   return (
-    <figure className="my-stack">
+    <figure className={className}>
       <div className="border-hairline border-divider bg-well-deep overflow-hidden rounded-md">
-        <Image
+        <ShotViewer
           src={`/shots/${name}.png`}
           alt={alt}
           width={width}
           height={height}
           priority={priority}
-          className="h-auto w-full"
         />
       </div>
 

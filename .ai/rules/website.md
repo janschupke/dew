@@ -101,6 +101,35 @@ each decodes, is the size it was asked for, and is not one flat colour.
 - **`Button`'s prop is `variant`, not `role`.** The vocabulary is `DewButton`'s, but `role`
   is a real ARIA attribute on an anchor. It renders `next/link` for an internal href and
   an anchor for an external one.
+- **A shot opens full-screen, in a native `<dialog>`.** `ShotViewer` is the site's second
+  and last `'use client'` component, after the nav. `showModal()` buys the top layer — so
+  it cannot lose to the pinned header's `z-10` — plus Escape, a focus trap and an inert
+  background, all of which hand-rolled would be a second implementation of something the
+  platform has. Its box and its `::backdrop` are plain rules in `globals.css`, because
+  `fixed inset-0` is a numeric offset and the gate refuses one. **jsdom implements neither
+  `showModal` nor `close`**, so `tests/setup.ts` supplies both and `tests/shot.test.tsx`
+  asserts that shim is in place before asserting anything else — the wiring is covered on
+  this side and the top-layer behaviour is not.
+- **A reference page's sidebar is generated from the same table its sections are.** `Toc`
+  is the shell both wear, and both used to carry their own flat wrapping list of every
+  anchor — a pile you read rather than a place you navigate from, which scrolled away the
+  moment you used it. Each group carries a `data-toc-group`, and the tests assert **both
+  directions per group**: every section has an entry, and every entry names a section that
+  exists. A count over the whole nav would go green the day a block was dropped and a
+  table added.
+- **`docked` is the sidebar's sticky, and `pinned` the header's.** Same reason for both:
+  the numeric offset a `sticky top-<n>` needs reads the scale `--spacing: initial`
+  deletes, and emits nothing. `docked` sits at `--spacing-section`, which is the rung
+  `scroll-mt-section` already uses to clear the pinned header.
+- **The MCP resources are a page, not a section.** `/mcp/resources/` carries the five
+  documents `dew_mcp` emits from `control::guide()`; `/mcp/reference/` carries the tools.
+  They were one page, with five essays between the tool index and the tools. The anchors
+  did not move — only the path in front of them.
+- **The download page keys its platform marks off `Download.system`.** A closed
+  `'macos' | 'windows' | 'linux'`, not a search of the platform sentence: "Windows,
+  portable" is a sentence a reader reads and an edit away from breaking a match. `Icon.tsx`
+  holds all four marks; every one is `currentColor` and `aria-hidden`, because the hex
+  gate refuses a literal fill and the words are already beside it.
 
 ## The highlighting is not a grammar
 

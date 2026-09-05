@@ -33,3 +33,38 @@ body {
   outline: var(--stroke-regular) solid var(--color-accent);
   outline-offset: 2px;
 }
+
+/*  The full-screen shot viewer.
+
+    A native <dialog> opened with showModal(), so the top layer, Escape, the
+    focus trap and the inert background all come from the platform. What is
+    left for CSS is the box and the backdrop - and neither can be a Tailwind
+    class, because `fixed inset-0` reads the spacing scale that
+    theme.generated.css deletes and would compile to nothing. That is the same
+    deletion the `pinned` utility exists for; see theme.site.css.
+
+    The dialog paints nothing itself. Its own box IS the click-outside target,
+    so the picture inside it sits on the backdrop rather than on a panel.
+*/
+dialog.shot-viewer {
+  width: 100vw;
+  max-width: 100vw;
+  height: 100dvh;
+  max-height: 100dvh;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--color-text-primary);
+}
+
+dialog.shot-viewer::backdrop {
+  background-color: var(--color-background);
+  opacity: 0.94;
+}
+
+/*  showModal makes the page inert; it does not stop it scrolling behind the
+    dialog, which on a long reference page means the reader loses their place
+    to a stray wheel event. */
+html:has(dialog.shot-viewer[open]) {
+  overflow: hidden;
+}

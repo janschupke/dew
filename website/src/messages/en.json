@@ -1,23 +1,22 @@
 {
   "design": {
     "title": "Design system",
-    "lead": "Every value on this page is read out of the application’s own tokens. Nothing here is a second copy.",
+    "lead": "Every value on this page is read out of the application’s own tokens.",
     "coloursTitle": "Colour roles",
-    "coloursBody": "Each name says what a colour is for, not what it looks like. A theme is one assignment, because every name is a reference into the palette in force.",
+    "coloursBody": "Each name says what a colour is for, not what it looks like.",
     "rampTitle": "Channel ramp",
-    "rampBody": "Not themeable. These eight are document data, written into every project file, so repainting them would make a saved project disagree with the swatch it was chosen from.",
+    "rampBody": "Not themeable. These eight are document data, written into every project file.",
     "scalesTitle": "Scales",
     "liftTitle": "Lifts",
-    "liftBody": "How much lighter a surface gets when touched. A large surface needs a subtler lift than a small one, so there are two rungs and no more.",
-    "galleryCaption": "The whole design system on one page, rendered by dew_shot gallery."
+    "liftBody": "How much lighter a surface gets when touched. There are two rungs.",
+    "galleryCaption": "The whole design system on one page."
   },
   "features": {
     "title": "What it does",
-    "lead": "Each of these is built and wired to the next."
+    "lead": "The tabs, the instrument, the effects and the export — what each one does."
   },
   "footer": {
     "licence": "JUCE 9 is dual-licensed; dew is a personal prototype used under the AGPLv3 terms.",
-    "generated": "The reference and every colour on this site are generated from the source.",
     "docsTitle": "Documentation",
     "projectTitle": "Project",
     "sourceLabel": "Source on GitHub",
@@ -37,23 +36,25 @@
     "title": "Control dew from an agent",
     "lead": "dew runs a Model Context Protocol server inside the application, so a coding agent can read and change the project you have open: instruments, effects, the mixer, the notes and the arrangement.",
     "howTitle": "How it works",
-    "howBody": "Turn it on under Audio → MCP. dew listens on the loopback interface only, so nothing off your machine can reach it. The first time a client connects, dew names it and asks whether to allow it, and whether it may only read or change things too. Every change it makes is one step of your undo history.",
+    "howBody": "Turn it on under Audio → MCP. dew listens on the loopback interface only. The first time a client connects, dew asks whether to allow it, and whether it may only read or change things too. Every change it makes is one step of your undo history.",
     "connectTitle": "Connecting a client",
-    "connectBody": "The MCP settings panel shows the address and the exact command. The port is not fixed — dew takes the next free one when its own is busy — so copy the command instead of typing it.",
+    "connectBody": "The MCP settings panel shows the address and the exact command. The port is not fixed, so copy the command rather than typing it.",
     "surfaceTitle": "What it can reach",
     "surfaceBody": "One address space covers every value in the document. A target, an id, a group and a slot name any parameter of any oscillator, envelope, sample, soundfont, effect, mixer insert or the master. The same four fields say what a curve can be pointed at.",
-    "scoreTitle": "Writing music, not notes",
+    "scoreTitle": "Writing a score",
     "scoreBody": "For anything longer than a few bars, an agent writes dew’s arrangement language and compiles it. The language says what the music is — a key, a progression, rhythms, voicings, a counterpoint — and the compiler works out the notes.",
     "referenceLink": "Every tool, in the reference"
   },
+  "mcpResources": {
+    "title": "Resources",
+    "lead": "dew serves these as MCP resources. A client should read the first before its first call.",
+    "onThisPage": "On this page"
+  },
   "mcpReference": {
     "title": "MCP reference",
-    "lead": "Generated from the same table the server dispatches on and the permission check reads. A tool cannot exist without being documented, or be documented differently from how it behaves.",
+    "lead": "Generated from the same table the server dispatches on and the permission check reads.",
     "onThisPage": "On this page",
     "protocol": "Protocol",
-    "guideTitle": "Resources",
-    "guideLead": "dew serves these as MCP resources. A client should read the first before its first call.",
-    "toolsTitle": "Tools",
     "readTitle": "Reading",
     "writeTitle": "Changing",
     "argumentsHeading": "Argument",
@@ -63,7 +64,7 @@
     "noArguments": "Takes no arguments.",
     "readScope": "read",
     "writeScope": "changes the project",
-    "undoNote": "Every call that changes the project is exactly one undo step, however many entries its batch carried."
+    "undoNote": "Every call that changes the project is exactly one undo step."
   },
   "nav": {
     "features": "Features",
@@ -82,10 +83,11 @@
   },
   "reference": {
     "title": "Score language reference",
-    "lead": "Generated from the same table the compiler validates against and the editor completes from. A key cannot be documented differently from how it is checked.",
+    "lead": "Generated from the same table the compiler validates against and the editor completes from.",
     "blocksTitle": "Blocks",
     "valuesTitle": "Values",
     "modesTitle": "Modes",
+    "tablesTitle": "Tables",
     "onThisPage": "On this page",
     "keyHeading": "Key",
     "valueHeading": "Value",
@@ -98,35 +100,38 @@
     "noKeys": "A list body rather than a set of keys.",
     "degrees": "Degrees",
     "romanNumerals": "Takes roman numerals",
-    "generatedFrom": "Generated from src/lang/Schema.h by dew_docs. Do not edit by hand.",
+    "romanNumeralNote": "A roman numeral names a scale degree, so a pentatonic or a blues scale cannot carry one.",
+    "generatedFrom": "Generated from src/lang/Schema.h by dew_docs.",
     "kindsCount": "{count, plural, one {# value kind} other {# value kinds}}"
   },
   "score": {
     "title": "The score language",
-    "lead": "A song written as text and compiled to patterns, notes and clips. Twelve blocks, seven of them at the top level, and the set is closed.",
-    "exampleCaption": "examples/amber.score — the one CI compiles and renders.",
+    "lead": "A song written as text and compiled to patterns, notes and clips. Twelve blocks, seven of them at the top level.",
+    "exampleCaption": "examples/amber.score",
     "referenceLink": "Every block and key",
-    "noExpressions": "There is no expression language: no arithmetic, no variables, no conditionals. That restriction is what makes completion a table lookup, and what lets the grid be computed before anything is generated."
+    "noExpressions": "There is no expression language: no arithmetic, no variables, no conditionals."
   },
   "setup": {
     "title": "Setup",
-    "lead": "dew builds from source in three commands. There are binaries too, if you would rather not.",
+    "lead": "dew builds from source in three commands.",
     "requirementsTitle": "What you need",
-    "requirementsBody": "Nothing beyond what a machine used for writing software already has. brew bundle installs the rest from the Brewfile in the repository root.",
+    "requirementsBody": "brew bundle installs these from the Brewfile in the repository root.",
     "buildTitle": "Build it",
-    "buildBody": "The first configure fetches JUCE and Catch2 from source — a few seconds, shallow, cached per machine under ~/.cache/CPM. One build is slow and the rest are not.",
+    "buildBody": "The first configure fetches JUCE and Catch2 from source, cached per machine under ~/.cache/CPM.",
     "presetsTitle": "The presets",
-    "presetsBody": "Presets instead of raw flags, so the flags a build was made with live in the repository and not in somebody’s shell history.",
     "runTitle": "Run it",
-    "runBody": "Then Demos → Getting Started in the menu bar. There are eight, and each one demonstrates a different part of the app.",
+    "runBody": "Then Demos → Getting Started in the menu bar.",
     "checkTitle": "The gate",
-    "checkBody": "One command, running everything CI runs, in the order that fails cheapest first. The dependency pins and the formatting need no build, so a bad pin or an unformatted file is reported in seconds.",
-    "platformNote": "macOS is where dew is developed and where its gate runs. Windows and Linux build the whole application and run the whole suite in CI, on every push.",
+    "checkBody": "One command, running everything CI runs.",
     "sourceCta": "The repository",
     "nameHeading": "Preset",
     "whatHeading": "What it is",
     "toolHeading": "Tool",
     "needHeading": "What it is for"
+  },
+  "shot": {
+    "expand": "Show full size",
+    "close": "Close"
   },
   "site": {
     "name": "dew",
@@ -138,12 +143,15 @@
     "title": "Download",
     "lead": "Builds of dew for macOS, Windows and Linux, from the latest release. It is a working prototype.",
     "getTitle": "Get it",
-    "getBody": "Every link points at the latest release, so a bookmark keeps working. Older versions stay on the releases page.",
+    "getBody": "Every link points at the latest release. Older versions stay on the releases page.",
+    "macos": "macOS",
+    "windows": "Windows",
+    "linux": "Linux",
     "platformHeading": "Platform",
     "fileHeading": "File",
     "whatHeading": "What it is",
     "firstRunTitle": "The first time you run it",
-    "firstRunBody": "None of these builds is signed, because a certificate costs money every year and this is a prototype. macOS and Windows each block an unsigned application the first time it runs.",
+    "firstRunBody": "None of these builds is signed. macOS and Windows each block an unsigned application the first time it runs.",
     "verifyTitle": "Checking what you downloaded",
     "verifyBody": "Every release carries SHA256SUMS.txt, and every asset is covered by a Sigstore build attestation. The attestation records the repository, the workflow and the commit the file was built from.",
     "checksumsLabel": "SHA256SUMS.txt",
@@ -151,6 +159,6 @@
     "buildTitle": "Or build it yourself",
     "buildBody": "Three commands on macOS, and the same CMake presets on Windows and Linux. A binary you build yourself is subject to none of the warnings above.",
     "buildCta": "How to build it",
-    "mp3Note": "MP3 export needs lame installed separately. dew runs it as a child process rather than shipping an encoder, so the option stays greyed out until lame is on your PATH. WAV and FLAC need nothing."
+    "mp3Note": "MP3 export needs lame installed separately: the option stays greyed out until lame is on your PATH. WAV and FLAC need nothing."
   }
 }

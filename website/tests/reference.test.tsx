@@ -33,26 +33,52 @@ describe('the generated reference', () => {
     }
   });
 
-  it('every block has a link in the page nav', () => {
+  it('every block has a link in the sidebar', () => {
     // Found by trying to break the section gate above and watching it pass: the
     // first attempt dropped a block from the NAV, every assertion stayed green,
     // and the page shipped an index that silently omitted one. A gate over the
     // sections is not a gate over the list of them.
+    //
+    // Asked of the BLOCKS group rather than of the whole sidebar, which also
+    // carries the value and mode tables now. A count over everything in the nav
+    // would go green the day a block was dropped and a table added.
     const { container } = render(<Reference />);
-    const nav = container.querySelector('nav');
 
-    expect(nav).not.toBeNull();
+    expect(container.querySelector('nav')).not.toBeNull();
 
     const targets = new Set(
-      [...(nav?.querySelectorAll('a') ?? [])].map((a) => a.getAttribute('href')),
+      [...container.querySelectorAll('[data-toc-group="blocks"] a')].map((a) =>
+        a.getAttribute('href'),
+      ),
     );
 
     expect(targets.size).toBe(schema.blocks.length);
 
     for (const block of schema.blocks)
-      expect(targets, `block ${block.kind} has no nav link`).toContain(
+      expect(targets, `block ${block.kind} has no sidebar link`).toContain(
         `#${anchorForBlock(block.kind)}`,
       );
+  });
+
+  it('the sidebar names nothing the page does not carry', () => {
+    // The other direction. The value and mode tables are reachable from the
+    // sidebar and from nowhere else, so a renamed section id would be a dead
+    // entry the browser mentions only to whoever clicked it.
+    const { container } = render(<Reference />);
+
+    const links = [...(container.querySelector('nav')?.querySelectorAll('a') ?? [])];
+
+    expect(links.length).toBeGreaterThan(schema.blocks.length);
+
+    for (const link of links) {
+      const href = link.getAttribute('href') ?? '';
+
+      expect(href, 'a sidebar entry that is not a fragment').toMatch(/^#/);
+      expect(
+        container.querySelector(`#${CSS.escape(href.slice(1))}`),
+        `${href} is in the sidebar and not on the page`,
+      ).not.toBeNull();
+    }
   });
 
   it('renders every key, with its value kind and its flags', () => {

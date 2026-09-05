@@ -6,9 +6,11 @@ import { repositoryUrl } from '@/content/setup';
 import { t } from '@/lib/strings';
 
 const docs = [
+  { href: '/download/', label: t('nav.download') },
   { href: '/features/', label: t('nav.features') },
   { href: '/score/', label: t('nav.score') },
   { href: '/score/reference/', label: t('nav.reference') },
+  { href: '/mcp/', label: t('nav.mcp') },
   { href: '/design/', label: t('nav.design') },
   { href: '/setup/', label: t('nav.setup') },
 ] as const;
@@ -73,8 +75,7 @@ export function Footer() {
         </div>
 
         <div className="border-t-hairline border-divider mt-stack pt-stack text-fine text-secondary">
-          <p>{t('footer.generated')}</p>
-          <p className="mt-sm">{t('footer.licence')}</p>
+          <p>{t('footer.licence')}</p>
         </div>
       </Container>
     </footer>

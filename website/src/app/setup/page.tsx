@@ -76,7 +76,6 @@ export default function Setup() {
         <h3 className="mt-section text-h3 text-primary leading-snug font-semibold">
           {t('setup.presetsTitle')}
         </h3>
-        <P className="mt-md">{t('setup.presetsBody')}</P>
 
         <div className="mt-stack">
           <Table head={[t('setup.nameHeading'), t('setup.whatHeading')]}>
@@ -111,9 +110,7 @@ export default function Setup() {
           </Section>
 
           <Section title={t('setup.sourceCta')}>
-            <P>{t('setup.platformNote')}</P>
-
-            <div className="mt-stack">
+            <div>
               <a
                 href={repositoryUrl}
                 className="text-accent text-prose gap-sm inline-flex items-center hover:underline"

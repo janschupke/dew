@@ -3,7 +3,7 @@ import Link from 'next/link';
 
 import { Band, Card, Container } from '@/ui/Surface';
 import { P, PageHeader, Section } from '@/ui/Prose';
-import { mcp } from '@/lib/mcp';
+import { anchorForGuide, mcp } from '@/lib/mcp';
 import { t } from '@/lib/strings';
 
 export const metadata: Metadata = { title: `${t('mcp.title')} — ${t('site.name')}` };
@@ -37,14 +37,18 @@ export default function Mcp() {
       </Band>
 
       <Container className="pb-section">
-        <Section title={t('mcpReference.guideTitle')}>
-          <P>{t('mcpReference.guideLead')}</P>
+        {/* The anchor comes from anchorForGuide rather than from `guide-` typed
+            out here. It was typed out here, and the resources have since moved
+            to a page of their own - which is the edit that turns a hand-written
+            fragment into five dead links. */}
+        <Section title={t('mcpResources.title')}>
+          <P>{t('mcpResources.lead')}</P>
 
           <ul className="mt-stack gap-sm flex flex-col">
             {mcp.guide.map((section) => (
               <li key={section.id} className="text-prose">
                 <Link
-                  href={`/mcp/reference/#guide-${section.id}`}
+                  href={`/mcp/resources/#${anchorForGuide(section.id)}`}
                   className="text-accent hover:underline"
                 >
                   {section.title}
