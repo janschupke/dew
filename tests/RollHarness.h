@@ -10,6 +10,8 @@
 #include "model/ProjectEdits.h"
 #include "model/ProjectFactory.h"
 #include "ui/EditorState.h"
+
+#include "TestSupport.h"
 #include "ui/PianoRollComponent.h"
 
 /** Shared by every piano roll test file, so the two cannot drift into aiming at
@@ -67,23 +69,7 @@ inline juce::MouseEvent eventAt (juce::Component& target, juce::Point<int> local
                                  juce::ModifierKeys mods = juce::ModifierKeys(), int clickCount = 1,
                                  bool wasDragged = false)
 {
-    const auto position = local.toFloat();
-
-    return { juce::Desktop::getInstance().getMainMouseSource(),
-             position,
-             mods,
-             1.0f,
-             0.0f,
-             0.0f,
-             0.0f,
-             0.0f,
-             &target,
-             &target,
-             juce::Time::getCurrentTime(),
-             position,
-             juce::Time::getCurrentTime(),
-             clickCount,
-             wasDragged };
+    return mouseEventAt (target, local, mods, clickCount, wasDragged);
 }
 
 inline void clickAndRelease (juce::Component& c, juce::Point<int> at,

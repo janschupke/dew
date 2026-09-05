@@ -431,6 +431,41 @@ inline constexpr int knobRow = 68;
 static_assert (knobRow >= knobCaption + knobSm + knobValue,
                "a knob row must hold a compact knob and both its labels");
 
+/** How wide ONE knob's column is: a range, not a rung.
+
+    88 was EffectCard::paramColumnWidth, private to one card - "what the
+    gallery gives a knob (72) and a number field (86) with room for the cell
+    inset" - while the five other panels that lay knobs out in rows divided
+    their own width by a compile-time count and got whatever came out. That is
+    how the instrument panel came to draw four envelope knobs at a quarter of
+    its width and the two level knobs directly below them at a half.
+
+    The floor is the point at which a caption stops reading beside its
+    neighbour, and so the point at which KnobGrid takes another row instead of
+    squeezing. It is not a second default: nothing lays out AT the floor, it is
+    where the reflow happens.
+*/
+inline constexpr int knobColumn = 88;
+inline constexpr int knobColumnMin = 64;
+
+static_assert (knobColumnMin >= knob, "a column has to hold the knob itself");
+static_assert (knobColumnMin < knobColumn, "the floor has to sit below the column");
+
+/** How many rows of knobs the mixer's effect band may be dragged to.
+
+    In ROWS rather than in pixels, because that is the only unit the band's
+    height means anything in: a card's parameters reflow a whole row at a time,
+    and a height between two of these is a strip of ground no knob can use.
+    A count, not a dimension - the pixel height is knobRow's to say.
+*/
+inline constexpr int effectBandRowsMin = 1;
+inline constexpr int effectBandRowsDefault = 1; ///< so nothing re-flows on upgrade
+inline constexpr int effectBandRowsMax = 4;
+
+static_assert (effectBandRowsMin <= effectBandRowsDefault
+                   && effectBandRowsDefault <= effectBandRowsMax,
+               "the default has to be reachable");
+
 /** How tall ONE playlist lane is: a range, not a rung.
 
     Header and lane are the same height by construction, which is the only

@@ -2,6 +2,7 @@
 
 #include <utility>
 
+#include "ui/design/Cursors.h"
 #include "ui/design/Icons.h"
 #include "ui/design/Tokens.h"
 
@@ -87,12 +88,109 @@ void EffectChainHost::setOwner (juce::ValueTree owner, juce::String name)
     addButton.setEnabled (chain.canAddEffect());
 }
 
+int EffectChainHost::bandHeightForRows (int rows) const
+{
+    return tokens::size::stripHeading + EffectChainComponent::requiredHeightForRows (rows)
+           + space::xs + viewport.getScrollBarThickness();
+}
+
 int EffectChainHost::getPreferredHeight() const
 {
     // The card's bottom inset is part of the height it asks for: leaving it out
     // is what clips the last few pixels of every card in the row.
-    return tokens::size::stripHeading + chain.getRequiredHeight() + space::xs
-           + (chain.isHorizontal() ? viewport.getScrollBarThickness() : 0);
+    if (chain.isHorizontal())
+        return bandHeightForRows (chain.getKnobRowBudget());
+
+    return tokens::size::stripHeading + chain.getRequiredHeight() + space::xs;
+}
+
+void EffectChainHost::setKnobRows (int rows)
+{
+    if (! isResizable())
+        return;
+
+    chain.setKnobRowBudget (rows);
+}
+
+int EffectChainHost::knobRowsFitting (int height) const
+{
+    // Walked down from the top rather than solved for, because bandHeightForRows
+    // is the only thing that knows what a band costs besides its knobs - the
+    // heading, the scrollbar reserved whether or not it is showing, and the
+    // insets - and a closed form here would be a second copy of it. Four rungs
+    // is not a search worth being clever about.
+    auto answer = tokens::size::effectBandRowsMin;
+
+    for (auto rows = tokens::size::effectBandRowsMax; rows > answer; --rows)
+    {
+        if (bandHeightForRows (rows) <= height)
+        {
+            answer = rows;
+            break;
+        }
+    }
+
+    return answer;
+}
+
+bool EffectChainHost::isResizable() const noexcept
+{
+    return chain.isHorizontal();
+}
+
+bool EffectChainHost::isOnResizeEdge (juce::Point<int> position) const
+{
+    return isResizable() && position.y < resizeBandHeight;
+}
+
+void EffectChainHost::mouseMove (const juce::MouseEvent& event)
+{
+    const auto onEdge = isOnResizeEdge (event.getPosition());
+
+    setMouseCursor (onEdge ? cursor::value : cursor::idle);
+
+    if (std::exchange (hoveringEdge, onEdge) != onEdge)
+        repaint();
+}
+
+void EffectChainHost::mouseDown (const juce::MouseEvent& event)
+{
+    // The right button moves nothing. A latch rather than a second read of the
+    // modifiers on the drag, which is the rule every other gesture in dew that
+    // is not a Dew primitive keeps.
+    if (event.mods.isPopupMenu() || ! isOnResizeEdge (event.getPosition()))
+        return;
+
+    resizing = true;
+    resizeOriginY = event.getScreenPosition().y;
+
+    if (onResizeBegin != nullptr)
+        onResizeBegin();
+
+    repaint();
+}
+
+void EffectChainHost::mouseDrag (const juce::MouseEvent& event)
+{
+    // SCREEN coordinates, and a delta from the PRESS rather than accumulated
+    // between samples. This band's own top edge is what the drag is moving, so
+    // its local frame travels under the pointer while the pointer is being read
+    // in it - and a delta summed sample by sample is path-dependent, which is
+    // the defect the effect chain's own reorder is frozen against.
+    if (resizing && onResizeDrag != nullptr)
+        onResizeDrag (event.getScreenPosition().y - resizeOriginY);
+}
+
+void EffectChainHost::mouseUp (const juce::MouseEvent&)
+{
+    if (std::exchange (resizing, false))
+        repaint();
+}
+
+void EffectChainHost::mouseExit (const juce::MouseEvent&)
+{
+    if (std::exchange (hoveringEdge, false))
+        repaint();
 }
 
 void EffectChainHost::paint (juce::Graphics& g)
@@ -105,7 +203,10 @@ void EffectChainHost::paint (juce::Graphics& g)
     // thing once, and says it as a region rather than as an object.
     g.fillAll (colour::surface);
 
-    g.setColour (colour::dividerStrong);
+    // The band's top rule is also its grab band, so it answers the pointer the
+    // way the panel divider does - a rule you can drag has to say so before you
+    // press it, and this one had looked exactly like the rule below the strips.
+    g.setColour (resizing || hoveringEdge ? colour::accent : colour::dividerStrong);
     g.drawHorizontalLine (0, 0.0f, (float) getWidth());
 
     paint::sectionHeading (
@@ -161,6 +262,13 @@ void EffectChainHost::layOutChain()
     // for getPreferredHeight() and is scrolling us; giving the chain "whatever
     // is left" here is what used to clip it instead.
     chain.setBounds (content.withHeight (chain.getRequiredHeight()));
+
+    // And a card down a column reflows on the width it is given, so the height
+    // asked for BEFORE that width was set can be the answer for the panel's
+    // last one. Telling whoever stacks us settles it in one more pass and no
+    // more: notifyPreferredHeightChanged records the height before it calls
+    // out, so the layout it provokes finds nothing left to report.
+    notifyPreferredHeightChanged();
 }
 
 void EffectChainHost::notifyPreferredHeightChanged()

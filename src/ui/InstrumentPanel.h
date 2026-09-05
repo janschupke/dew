@@ -9,6 +9,7 @@
 #include <memory>
 #include <vector>
 #include "ui/EffectChainHost.h"
+#include "ui/KnobGrid.h"
 #include "ui/ParamContextMenu.h"
 #include "ui/PresetMenu.h"
 #include "ui/OscillatorSection.h"
@@ -180,6 +181,36 @@ private:
     /** Where that band ended up, so paint() can draw its rule and its heading
         without repeating the arithmetic. */
     juce::Rectangle<int> instrumentBand;
+
+    /** The knobs this panel is showing, GROUPED: the envelope, then how loud
+        and where in the field.
+
+        Built by refresh(), which is already the one place that decides which
+        face is on show, so the list resized() lays out and the list
+        getRequiredHeight() budgets for cannot be two different lists. They were
+        two different `initializer_list`s before, one of them written twice.
+    */
+    std::vector<std::vector<DewKnob*>> knobGroups;
+
+    /** How those groups fall out at the width this panel is budgeted for. */
+    KnobGrid::Plan knobPlan() const;
+
+    /** The width the knobs are planned at: the panel's own, less a scrollbar.
+
+        MainComponent asks getRequiredHeight() BEFORE it decides whether to
+        scroll this panel, and a scrollbar is ten pixels - enough to move a row
+        count, and so enough for the answer to depend on the question. Budgeting
+        at the narrower of the two candidate widths cannot oscillate:
+        over-budgeting only ever means the knobs fit, and the panel is given the
+        viewport's height anyway when it is not scrolling.
+    */
+    int knobBudgetWidth() const;
+
+    /** Where a rule goes between two groups sharing a knob row. Decided in
+        resized() and drawn in paint(), the split instrumentBand already keeps.
+        Empty when the groups landed on rows of their own - the row break is the
+        separation, and a rule as well would be saying it twice. */
+    std::vector<juce::Rectangle<int>> knobRules;
 
     /** Loads a factory preset onto the selected channel.
 

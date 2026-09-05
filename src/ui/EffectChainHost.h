@@ -59,6 +59,49 @@ public:
     */
     int getPreferredHeight() const;
 
+    /** How many rows of knobs the cards in this band lay out on.
+
+        A ROW only. A column folds a card away instead, and is scrolled by
+        whoever holds it, so there is no band height there to spend.
+    */
+    void setKnobRows (int rows);
+    int getKnobRows() const noexcept
+    {
+        return chain.getKnobRowBudget();
+    }
+
+    /** The most rows whose band would still fit in `height`, never fewer than
+        one. Whoever owns the height asks this rather than inverting
+        getPreferredHeight by hand - the band is a whole number of knob rows and
+        a height between two of them is ground no knob can use.
+    */
+    int knobRowsFitting (int height) const;
+
+    /** The band's top edge, which is also the rule it paints there.
+
+        Latched and dragged, and a report rather than an edit at both: the
+        height belongs to whoever stacks this band, the same division
+        PlaylistTrackHeader keeps with the playlist that owns its lane height.
+        The delta is in SCREEN pixels and measured from the press, because this
+        band's own frame moves under the pointer while the drag reads it.
+
+        There is no release hook, unlike the playlist's. Its lane height is a
+        pixel and its scrollbar has to be told; a band is a whole number of knob
+        rows, so letting go changes nothing that was not already true.
+    */
+    std::function<void()> onResizeBegin;
+    std::function<void (int deltaY)> onResizeDrag;
+
+    /** Whether a point is on the grab band. Public because a test aims at it
+        rather than guessing four pixels. */
+    bool isOnResizeEdge (juce::Point<int> position) const;
+
+    void mouseMove (const juce::MouseEvent&) override;
+    void mouseDown (const juce::MouseEvent&) override;
+    void mouseDrag (const juce::MouseEvent&) override;
+    void mouseUp (const juce::MouseEvent&) override;
+    void mouseExit (const juce::MouseEvent&) override;
+
     /** Fired when getPreferredHeight() moves - a card opened or closed, or a
         chain rebuilt.
 
@@ -74,6 +117,26 @@ private:
         and how fast it then moves. */
     static constexpr int autoScrollMargin = tokens::space::xxl;
     static constexpr int autoScrollSpeed = tokens::space::lg;
+
+    /** How deep the grab band along the top edge is.
+
+        A row of its own would be a control; this is an edge, and an edge has to
+        be thin enough that the heading behind it is still a heading. The same
+        four pixels a playlist header gives its own, and the pointer shape is
+        what makes it findable.
+    */
+    static constexpr int resizeBandHeight = tokens::space::xs;
+
+    bool isResizable() const noexcept;
+
+    /** What a band this many knob rows deep costs, heading and scrollbar
+        included. getPreferredHeight is this at the budget in force, and
+        knobRowsFitting walks it - one formula rather than one and its inverse. */
+    int bandHeightForRows (int rows) const;
+
+    bool resizing = false;
+    bool hoveringEdge = false;
+    int resizeOriginY = 0;
 
     void layOutChain();
     void notifyPreferredHeightChanged();

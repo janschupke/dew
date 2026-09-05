@@ -5,6 +5,7 @@
 #include "app/ProjectDocument.h"
 #include "ui/ParamContextMenu.h"
 #include "ui/design/Animator.h"
+#include "ui/design/Tokens.h"
 #include "ui/EditorState.h"
 #include "ui/PresetMenu.h"
 #include "ui/primitives/DewControls.h"
@@ -95,6 +96,31 @@ public:
         return orientation == Orientation::horizontal;
     }
 
+    /** How many rows of knobs a card in a ROW may lay its parameters out on.
+
+        The mixer's band is draggable, and this is what the extra height is
+        FOR: two rows halve a card's width, so the same chain fits twice as far
+        across before it has to be scrolled to. Set by whoever owns the band's
+        height; meaningless down a column, where a card folds instead.
+    */
+    void setKnobRowBudget (int rows);
+    int getKnobRowBudget() const noexcept
+    {
+        return knobRowBudget;
+    }
+
+    /** How wide a card down a COLUMN is given: the chain's own width.
+
+        Asked of the chain rather than read off the card, because a card's
+        height is wanted before it has been given a width - this chain sums
+        those heights to answer for its own, and a card that measured itself
+        would answer for the width it had last time.
+    */
+    int getCardWidth() const noexcept
+    {
+        return getWidth();
+    }
+
     /** Points the editor at a channel or mixer track. An invalid tree shows the
         empty state rather than the previous owner's chain.
     */
@@ -128,6 +154,17 @@ public:
     */
     int getRequiredHeight() const;
     int getRequiredWidth() const;
+
+    /** How tall a ROW of cards is for a given knob-row budget, without changing
+        the budget this chain is using.
+
+        Static because it depends on nothing else: every card in a row is the
+        same height whatever it holds. Whoever owns the band's height inverts
+        this to ask what fits, rather than asking the chain to try each answer
+        on - a const question that changed the thing it asked about would be a
+        const question with a layout in it.
+    */
+    static int requiredHeightForRows (int rows);
 
     /** The slot a point in the chain's own coordinates falls in, clamped to the
         chain. Used to reorder by dragging a grip, which is why it is a hit test
@@ -280,6 +317,12 @@ private:
     juce::ValueTree chainOwner;
 
     Orientation orientation = Orientation::vertical;
+
+    /** How many knob rows a card in a row may use. The default is what the
+        band was fixed at before it could be dragged, so an upgrade re-flows
+        nothing. */
+    int knobRowBudget = tokens::size::effectBandRowsDefault;
+
     juce::OwnedArray<EffectCard> cards;
 
     int selectedSlot = 0;

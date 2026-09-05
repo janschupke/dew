@@ -24,6 +24,7 @@
 #include "model/Ids.h"
 #include "model/ModuleCatalog.h"
 #include "model/ProjectEdits.h"
+#include "ui/KnobGrid.h"
 #include "ui/design/Tokens.h"
 #include "ui/primitives/DewControls.h"
 
@@ -259,20 +260,25 @@ void OscillatorSection::resized()
 
     area.removeFromTop (space::sm);
 
-    const auto knobRow = [&area] (int count, std::initializer_list<DewKnob*> knobs)
+    // One row of knobs, at the cell width every other knob in the panel gets
+    // and centred in what is left. The count argument this lost was how two
+    // knobs were made to occupy three columns so the rows below would line up;
+    // a cell width shared across the whole panel does that by construction, and
+    // does it between panels as well as within one.
+    const auto knobRow = [&area] (std::initializer_list<DewKnob*> knobs)
     {
-        auto row = area.removeFromTop (knobRowHeight);
-        const auto width = juce::jmax (1, row.getWidth() / juce::jmax (1, count));
-        int placed = 0;
+        const std::vector<int> group { (int) knobs.size() };
+        const auto plan = KnobGrid::planForRows (1, group, area.getWidth());
+        const auto placed = KnobGrid::place (area.removeFromTop (knobRowHeight), plan);
+
+        auto cell = placed.cells.begin();
 
         for (auto* knob : knobs)
-        {
-            auto cell = ++placed == count ? row : row.removeFromLeft (width);
-            knob->setBounds (cell.reduced (space::xxs, 0));
-        }
+            if (cell != placed.cells.end())
+                knob->setBounds (*cell++);
     };
 
-    knobRow (2, { &detuneKnob, &gainKnob });
+    knobRow ({ &detuneKnob, &gainKnob });
 
     if (! showingWavetable)
     {
@@ -281,10 +287,10 @@ void OscillatorSection::resized()
     }
 
     area.removeFromTop (space::sm);
-    knobRow (3, { &positionKnob, &modKnob, &rateKnob });
+    knobRow ({ &positionKnob, &modKnob, &rateKnob });
 
     area.removeFromTop (space::sm);
-    knobRow (2, { &unisonKnob, &spreadKnob });
+    knobRow ({ &unisonKnob, &spreadKnob });
 
     area.removeFromTop (space::sm);
     shapeBounds = area.removeFromTop (shapeHeight);

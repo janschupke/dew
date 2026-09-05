@@ -10,6 +10,8 @@
 #include "model/ProjectEdits.h"
 #include "model/ProjectFactory.h"
 #include "ui/EditorState.h"
+
+#include "TestSupport.h"
 #include "ui/PlaylistComponent.h"
 
 /** Shared by every playlist test file, so four of them cannot drift into aiming
@@ -66,23 +68,7 @@ inline juce::MouseEvent eventAt (juce::Component& target, juce::Point<int> local
                                  int clickCount = 1, juce::ModifierKeys mods = juce::ModifierKeys(),
                                  bool wasDragged = false)
 {
-    const auto position = local.toFloat();
-
-    return { juce::Desktop::getInstance().getMainMouseSource(),
-             position,
-             mods,
-             1.0f,
-             0.0f,
-             0.0f,
-             0.0f,
-             0.0f,
-             &target,
-             &target,
-             juce::Time::getCurrentTime(),
-             position,
-             juce::Time::getCurrentTime(),
-             clickCount,
-             wasDragged };
+    return mouseEventAt (target, local, mods, clickCount, wasDragged);
 }
 
 /** The centre of a bar on a track, asked of the component rather than

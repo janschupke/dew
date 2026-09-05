@@ -93,16 +93,51 @@ void EffectCard::setSelected (bool shouldBeSelected)
 
 // --- sizing ------------------------------------------------------------------
 
+int EffectCard::heightForRows (int knobRows) noexcept
+{
+    const auto rows = juce::jmax (1, knobRows);
+
+    return size::rowHeight + rows * size::knobRow + (rows - 1) * space::sm + space::sm;
+}
+
+std::vector<int> EffectCard::groupSizes() const
+{
+    const auto own = juce::jlimit (0, params.size(), typeParamCount);
+    const auto common = params.size() - own;
+
+    std::vector<int> groups;
+
+    if (own > 0)
+        groups.push_back (own);
+
+    if (common > 0)
+        groups.push_back (common);
+
+    return groups;
+}
+
+KnobGrid::Plan EffectCard::gridPlan() const
+{
+    const auto groups = groupSizes();
+
+    if (owner.isHorizontal())
+        return KnobGrid::planForRows (owner.getKnobRowBudget(), groups);
+
+    // The width the chain WILL give this card, asked of the chain rather than
+    // read off ourselves: a card's height is wanted before it has been given a
+    // width, because the chain sums those heights to answer for its own.
+    return KnobGrid::planForWidth (juce::jmax (1, owner.getCardWidth() - 2 * space::sm), groups);
+}
+
 int EffectCard::getRequiredHeight() const
 {
     if (owner.isHorizontal())
-        return cardHeight;
+        return heightForRows (owner.getKnobRowBudget());
 
     if (! isExpanded())
         return size::rowHeight;
 
-    const auto rows = (params.size() + columnCount() - 1) / columnCount();
-    return size::rowHeight + rows * tokens::size::knobRow + space::sm
+    return size::rowHeight + KnobGrid::heightFor (gridPlan()) + space::sm
            + (modeBox != nullptr ? size::controlHeight + space::sm : 0);
 }
 
@@ -110,7 +145,7 @@ int EffectCard::getRequiredWidth() const
 {
     const auto mode = modeBox != nullptr ? modeColumnWidth : 0;
 
-    return juce::jmax (cardMinWidth, columnCount() * paramColumnWidth + mode + 2 * space::sm);
+    return juce::jmax (cardMinWidth, KnobGrid::widthFor (gridPlan()) + mode + 2 * space::sm);
 }
 
 void EffectCard::refreshValues()
@@ -307,6 +342,16 @@ void EffectCard::paint (juce::Graphics& g)
     // itself, so beside captioned knobs it would be the odd one out.
     if (! modeCaptionBounds.isEmpty())
         paint::caption (g, modeCaptionBounds, modeCaption, juce::Justification::centred);
+
+    // What the effect DOES, against the dry/wet that every effect has. Only
+    // where the two share a knob row: groups that landed on rows of their own
+    // are already separated by the row break, and a rule as well would be
+    // saying it twice. Down the row the knobs occupy, which is what the
+    // transport bar's group rules do.
+    g.setColour (colour::divider);
+
+    for (const auto& rule : paramRules)
+        g.drawVerticalLine (rule.getCentreX(), (float) rule.getY(), (float) rule.getBottom());
 }
 
 void EffectCard::resized()
@@ -352,11 +397,6 @@ bool EffectCard::showsParameters() const
     return owner.isHorizontal() || isExpanded();
 }
 
-int EffectCard::columnCount() const
-{
-    return owner.isHorizontal() ? juce::jmax (1, params.size()) : columns;
-}
-
 void EffectCard::layOutHeader (juce::Rectangle<int> bounds)
 {
     auto header = bounds.reduced (space::xs, space::xxs);
@@ -396,38 +436,49 @@ void EffectCard::layOutHeader (juce::Rectangle<int> bounds)
 
 void EffectCard::layOutParams (juce::Rectangle<int> area, bool visible)
 {
-    const auto columnsHere = columnCount();
-
-    for (int i = 0; i < params.size(); i += columnsHere)
+    const auto componentFor = [] (ParamWidget& control) -> juce::Component*
     {
-        auto row = visible ? area.removeFromTop (tokens::size::knobRow) : juce::Rectangle<int>();
-        const auto width = juce::jmax (1, row.getWidth() / columnsHere);
+        return control.knob != nullptr ? (juce::Component*) control.knob.get()
+                                       : (juce::Component*) control.field.get();
+    };
 
-        for (int c = 0; c < columnsHere && i + c < params.size(); ++c)
-        {
-            auto* control = params[i + c];
-            auto* component = control->knob != nullptr ? (juce::Component*) control->knob.get()
-                                                       : (juce::Component*) control->field.get();
-            component->setVisible (visible);
+    paramRules.clear();
 
-            if (! visible)
-                continue;
+    if (! visible)
+    {
+        for (auto* control : params)
+            componentFor (*control)->setVisible (false);
 
-            auto cell = row.removeFromLeft (width).reduced (space::xxs);
-
-            // A knob fills its cell; a number field is a fixed-height control
-            // and stretching it just makes a tall empty box. ASKED rather than
-            // declared: this card said 40, the randomize dialog derived 41 and
-            // the gallery wrote 40 again, and all three sat beside dropdowns at
-            // 26 - three numbers for the one control whose height genuinely
-            // varies, and only the control knows how.
-            if (control->field != nullptr)
-                cell = cell.withSizeKeepingCentre (cell.getWidth(),
-                                                   control->field->preferredHeight());
-
-            component->setBounds (cell);
-        }
+        return;
     }
+
+    // One cell width across every row of the card, and the groups spread
+    // across what is left - the grid's business, not this card's. What is
+    // still this card's is what a cell HOLDS.
+    const auto placed = KnobGrid::place (area, gridPlan());
+
+    for (int i = 0; i < params.size() && i < (int) placed.cells.size(); ++i)
+    {
+        auto* control = params[i];
+        auto* component = componentFor (*control);
+
+        component->setVisible (true);
+
+        auto cell = placed.cells[(size_t) i];
+
+        // A knob fills its cell; a number field is a fixed-height control
+        // and stretching it just makes a tall empty box. ASKED rather than
+        // declared: this card said 40, the randomize dialog derived 41 and
+        // the gallery wrote 40 again, and all three sat beside dropdowns at
+        // 26 - three numbers for the one control whose height genuinely
+        // varies, and only the control knows how.
+        if (control->field != nullptr)
+            cell = cell.withSizeKeepingCentre (cell.getWidth(), control->field->preferredHeight());
+
+        component->setBounds (cell);
+    }
+
+    paramRules = placed.rules;
 }
 
 // --- the controls ------------------------------------------------------------
@@ -506,6 +557,14 @@ void EffectCard::buildParameters()
         if (modeBox == nullptr)
             buildChoice (descriptor.params[i]);
     }
+
+    // Where the type's own parameters end and the common ones begin, which is
+    // the group boundary the grid draws a rule at. Counted from the descriptor
+    // rather than from the loop below, because the choice is taken out into
+    // modeBox on the way past and the two lists stop lining up.
+    for (int i = 0; i < descriptor.numParams; ++i)
+        if (descriptor.params[i].control != ParamControl::choice)
+            ++typeParamCount;
 
     for (const auto& spec : effectParamsFor (type))
     {

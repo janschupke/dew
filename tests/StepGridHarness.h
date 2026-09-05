@@ -10,6 +10,8 @@
 #include "model/ProjectEdits.h"
 #include "model/ProjectFactory.h"
 #include "ui/EditorState.h"
+
+#include "TestSupport.h"
 #include "ui/StepGridComponent.h"
 
 /** A step grid laid out and visible, so a cell can be clicked at directly.
@@ -87,23 +89,7 @@ inline juce::Point<int> pointFor (GridHarness& h, int step, int row)
 inline juce::MouseEvent eventAt (juce::Component& target, juce::Point<int> local,
                                  juce::ModifierKeys mods = juce::ModifierKeys())
 {
-    const auto position = local.toFloat();
-
-    return { juce::Desktop::getInstance().getMainMouseSource(),
-             position,
-             mods,
-             1.0f,
-             0.0f,
-             0.0f,
-             0.0f,
-             0.0f,
-             &target,
-             &target,
-             juce::Time::getCurrentTime(),
-             position,
-             juce::Time::getCurrentTime(),
-             1,
-             false };
+    return mouseEventAt (target, local, mods, 1, false);
 }
 
 } // namespace dew::testing

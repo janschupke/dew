@@ -52,9 +52,13 @@ public:
     */
     static constexpr int waveformHeight = 60;
 
+    // knobRow, spelled out. It was 68 twice, which is the rung - and the one
+    // place in the instrument panel that did not quote it. The ladder gate
+    // cannot see a number inside an expression, so nothing was going to say so.
     static constexpr int requiredHeight = waveformHeight + tokens::space::sm
-                                          + 68                      // fade in + fade out
-                                          + tokens::space::sm + 68; // transpose + toggles
+                                          + tokens::size::knobRow // fade in + fade out
+                                          + tokens::space::sm
+                                          + tokens::size::knobRow; // transpose + toggles
 
     void paint (juce::Graphics&) override;
     void resized() override;

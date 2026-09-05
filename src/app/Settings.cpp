@@ -247,6 +247,19 @@ void Settings::setPlaylistTrackHeight (int height)
     file().setValue ("playlistTrackHeight", height);
 }
 
+int Settings::getMixerEffectBandRows() const
+{
+    // 0 means "never set", the same as a lane's height above, and clamped in
+    // the same place - the mixer, which can see the row range the design system
+    // declares where this cannot.
+    return juce::jmax (0, file().getIntValue ("mixerEffectBandRows", 0));
+}
+
+void Settings::setMixerEffectBandRows (int rows)
+{
+    file().setValue ("mixerEffectBandRows", rows);
+}
+
 int Settings::getPianoRollSnap() const
 {
     // A division that does not exist falls back to the finest one, which is the

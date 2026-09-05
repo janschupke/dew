@@ -93,6 +93,24 @@ public:
         return strips.size();
     }
 
+    /** How many rows of knobs the effect band shows, and the one place that is
+        clamped.
+
+        View geometry lives on the view: not the document, because a band height
+        is not music and must neither dirty a project nor land on the undo
+        stack, and not EditorState, whose other listeners have no interest in it.
+        The precedent is PlaylistComponent's lane height.
+
+        In ROWS rather than pixels because that is the only unit the band means
+        anything in - a card's parameters reflow a whole row at a time, so a
+        height between two of them is a strip of ground no knob can use.
+    */
+    void setEffectBandRows (int rows);
+    int getEffectBandRows() const noexcept
+    {
+        return effectBandRows;
+    }
+
 private:
     void valueTreeChildAdded (juce::ValueTree&, juce::ValueTree&) override;
     void valueTreeChildRemoved (juce::ValueTree&, juce::ValueTree&, int) override;
@@ -121,6 +139,13 @@ private:
     DewButton addStripButton { tr (StringId::mixer_addInsert_label), DewButton::Role::ghost };
 
     EffectChainHost chainHost;
+
+    int effectBandRows = tokens::size::effectBandRowsDefault;
+
+    /** What the band was when the grip was pressed, so the drag is computed
+        from where it started rather than summed sample by sample: two routes to
+        the same pointer position have to give the same band. */
+    int rowsAtDragStart = tokens::size::effectBandRowsDefault;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (MixerComponent)
 };

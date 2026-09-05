@@ -291,10 +291,14 @@ void InstrumentPanel::refresh()
     // channel that takes notes has one. The amplitude envelope belongs to the
     // oscillators alone: a soundfont region carries its own, and a second one
     // stacked on top would be two places holding the same fact.
-    const std::initializer_list<juce::Component*> envelopeOnly { &attackKnob, &decayKnob,
-                                                                 &sustainKnob, &releaseKnob };
+    knobGroups.clear();
 
-    for (auto* c : envelopeOnly)
+    if (showing == InstrumentType::synth)
+        knobGroups.push_back ({ &attackKnob, &decayKnob, &sustainKnob, &releaseKnob });
+
+    knobGroups.push_back ({ &volumeKnob, &panKnob });
+
+    for (auto* c : { &attackKnob, &decayKnob, &sustainKnob, &releaseKnob })
         c->setVisible (showing == InstrumentType::synth);
 
     for (auto* c : { (juce::Component*) &basePitchSlider, (juce::Component*) &basePitchLabel })
@@ -353,6 +357,15 @@ void InstrumentPanel::paint (juce::Graphics& g)
     paint::sectionHeading (
         g, instrumentBand.withHeight (tokens::size::stripHeading).withTrimmedLeft (space::md),
         "INSTRUMENT");
+
+    // The envelope against the levels, where the two share a knob row. Groups
+    // that landed on rows of their own are already separated by the row break -
+    // a rule as well would be saying it twice - which is why this list is
+    // empty at every width the panel cannot fit both on one line.
+    g.setColour (tokens::colour::divider);
+
+    for (const auto& rule : knobRules)
+        g.drawVerticalLine (rule.getCentreX(), (float) rule.getY(), (float) rule.getBottom());
 
     // The kind of instrument, beside its name. The panel already shows it in
     // which controls are on show, but only to someone who knows what a
@@ -454,16 +467,31 @@ int InstrumentPanel::instrumentBandHeight() const
         return 0;
     }();
 
-    // The heading, then the face, the routing row and the level knobs - and the
-    // envelope knobs when there is an envelope. Each row is followed by the gap
-    // `row` leaves behind, and the last of those gaps is the band's own bottom
-    // padding, which is why nothing is added for it.
-    auto rows = faceHeight + size::knob + size::knobRow + 3 * space::sm;
-
-    if (showing == InstrumentType::synth)
-        rows += size::knobRow + space::sm;
+    // The heading, then the face, the routing row and the knob grid. Each row
+    // is followed by the gap `row` leaves behind, and the last of those gaps is
+    // the band's own bottom padding, which is why nothing is added for it.
+    //
+    // The grid answers for its own depth rather than this counting knob rows:
+    // six knobs are one row in a wide panel and two in a narrow one, and a
+    // budget that assumed either would be wrong at the other.
+    const auto rows = faceHeight + size::knob + KnobGrid::heightFor (knobPlan()) + 3 * space::sm;
 
     return size::stripHeading + rows;
+}
+
+int InstrumentPanel::knobBudgetWidth() const
+{
+    return juce::jmax (1, getWidth() - 2 * space::md - size::scrollThickness);
+}
+
+KnobGrid::Plan InstrumentPanel::knobPlan() const
+{
+    std::vector<int> sizes;
+
+    for (const auto& group : knobGroups)
+        sizes.push_back ((int) group.size());
+
+    return KnobGrid::planForWidth (knobBudgetWidth(), sizes);
 }
 
 int InstrumentPanel::getRequiredHeight() const
@@ -549,21 +577,21 @@ void InstrumentPanel::resized()
     mixerBox.setBounds (
         routingRow.withSizeKeepingCentre (routingRow.getWidth(), mixerBox.preferredHeight()));
 
-    // knobRow, like every other row of knobs in the application. It was 86,
-    // which is the height the JUCE text box under each one needed - a fifth
-    // dimension, in the panel that sits beside the four that use the rung.
-    const auto placeKnobs = [] (juce::Rectangle<int> bounds, std::initializer_list<DewKnob*> knobs)
-    {
-        const auto cell = bounds.getWidth() / (int) knobs.size();
+    // The envelope and the levels, as one grid rather than as two rows that
+    // divided the same width by four and by two and so drew the same control at
+    // two sizes. One cell width across both, the groups spread across the band,
+    // and a rule between them only where they share a row.
+    const auto plan = knobPlan();
+    const auto placed = KnobGrid::place (row (KnobGrid::heightFor (plan)), plan);
 
-        for (auto* knob : knobs)
-            knob->setBounds (bounds.removeFromLeft (cell).reduced (space::xxs, 0));
-    };
+    auto cell = placed.cells.begin();
 
-    if (showing == InstrumentType::synth)
-        placeKnobs (row (size::knobRow), { &attackKnob, &decayKnob, &sustainKnob, &releaseKnob });
+    for (const auto& group : knobGroups)
+        for (auto* knob : group)
+            if (cell != placed.cells.end())
+                knob->setBounds (*cell++);
 
-    placeKnobs (row (size::knobRow), { &volumeKnob, &panKnob });
+    knobRules = placed.rules;
 
     // Exactly what it asked for, not "whatever is left". The band ends where
     // its cards end, and when they need more than the window has,

@@ -37,6 +37,14 @@ struct ChainHarness
 
     /** What EffectChainHost does after a rebuild: give the chain the size it
         asked for along the axis it runs. A bare chain has no host to do it.
+
+        And then lay out WHATEVER the size came to. juce::Component::setSize is
+        a no-op when the size has not changed, so a chain that already happened
+        to be 300x400 kept the bounds its last real layout gave it - which for
+        a card whose expanded flag was set after that layout meant a collapsed
+        card the harness believed was open. The host does not have this problem:
+        EffectChainHost::layOutChain is called from its own resized() and from
+        the chain's size-changed callback, so it runs either way.
     */
     void layOutLikeAHost()
     {
@@ -44,6 +52,8 @@ struct ChainHarness
             chain.setSize (juce::jmax (300, chain.getRequiredWidth()), 140);
         else
             chain.setSize (300, juce::jmax (400, chain.getRequiredHeight()));
+
+        chain.resized();
     }
 
     /** The cards, by SLOT. Not by child order: a card being dragged is brought

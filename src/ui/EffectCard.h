@@ -11,6 +11,7 @@
 
 #include "app/ProjectDocument.h"
 #include "ui/EditorState.h"
+#include "ui/KnobGrid.h"
 #include "ui/primitives/DewControls.h"
 #include "ui/primitives/DewNumberField.h"
 #include "ui/primitives/HoverTracker.h"
@@ -40,21 +41,24 @@ class EffectChainComponent;
 class EffectCard : public juce::Component
 {
 public:
-    static constexpr int columns = 3; ///< down a column
-
-    // A column is sized rather than stretched: a number field wider than a hand
-    // is not easier to drag, only emptier. 88 is what the gallery gives a knob
-    // (72 wide) and a number field (86) with room for the cell inset.
-    static constexpr int paramColumnWidth = 88;
     static constexpr int modeColumnWidth = 120; ///< fits "Low pass" and the chevron
 
     /** What the header packs: grip, bypass, icon, name, preset, reorder,
         remove and - vertically - the expand chevron. */
     static constexpr int cardMinWidth = 276 + tokens::size::minTouchTarget;
 
-    /** Every card in a row is this tall. The chain quotes it to size the band. */
-    static constexpr int cardHeight = tokens::size::rowHeight + tokens::size::knobRow
-                                      + tokens::space::sm;
+    /** How tall a card in a ROW is, for a band this many knob rows deep.
+
+        Every card in a row is the same height whatever it holds - cards of
+        different heights side by side do not read as a row - so the chain
+        quotes this to size its band rather than asking any one card, and a
+        card with two parameters is as tall as the one with six beside it.
+
+        It replaced a constant. The band is draggable now, and a card that
+        could not answer for a two-row band was the reason dragging it did
+        nothing: there was nowhere for the extra height to go.
+    */
+    static int heightForRows (int knobRows) noexcept;
 
     EffectCard (EffectChainComponent& owner, ProjectDocument&, EditorState&, juce::ValueTree effect,
                 int index);
@@ -103,13 +107,29 @@ private:
     */
     bool showsParameters() const;
 
-    /** Three to a row down a column, everything on one row across a band.
+    /** How the parameters fall out, in the space this card is given.
 
-        jmax because parametersFor() has a fallback that returns nothing, and a
-        column count of zero is both an infinite loop and a divide by zero in
-        layOutParams.
+        Down a COLUMN the width is the constraint and the rows fall out of it,
+        so a narrow sidebar drops a column rather than squeezing three into it.
+        Across a ROW it is the other way round: the band's depth is fixed and
+        the card is as wide as that leaves it, which is what makes dragging the
+        band taller fit more effects across.
+
+        Asked by getRequiredHeight, getRequiredWidth and resized alike, so the
+        three cannot disagree the way three hand-mirrored copies of the same
+        arithmetic did.
     */
-    int columnCount() const;
+    KnobGrid::Plan gridPlan() const;
+
+    /** What belongs with what: the type's own parameters, then the `mix` every
+        effect has.
+
+        Two groups rather than one flat list, because `mix` is the one control
+        on every card that is not part of the effect's character - the host
+        applies dry/wet identically for every type, which is why the catalog
+        keeps it out of the per-type tables. A rule before it says so.
+    */
+    std::vector<int> groupSizes() const;
 
     /** The header is identical whichever way the chain runs - only the reorder
         arrows change, because they point the way the chain goes.
@@ -158,6 +178,19 @@ private:
     bool gestureActive = false;
 
     juce::Rectangle<int> gripBounds, iconBounds, nameBounds, modeCaptionBounds;
+
+    /** Where a rule goes between two groups sharing a knob row. Decided in
+        resized() and drawn in paint(), the split the card's other painted
+        regions above already keep. Empty whenever the groups landed on rows of
+        their own: the row break is the separation, and a rule as well would be
+        saying it twice. */
+    std::vector<juce::Rectangle<int>> paramRules;
+
+    /** How many of `params` are the type's own, the rest being the common ones
+        the catalog appends. Recorded as they are built rather than counted
+        afterwards, because the choice parameter is taken out into modeBox on
+        the way past and the two lists no longer line up. */
+    int typeParamCount = 0;
 
     DewIconButton bypassButton { icons::power(), {} };
     DewIconButton expandButton { icons::chevronDown(), tr (StringId::effect_expand_help) };

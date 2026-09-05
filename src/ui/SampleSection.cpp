@@ -2,6 +2,7 @@
 
 #include "i18n/Strings.h"
 #include "model/ProjectEdits.h"
+#include "ui/KnobGrid.h"
 #include "ui/design/Cursors.h"
 #include "ui/design/Tokens.h"
 
@@ -187,17 +188,28 @@ void SampleSection::resized()
     area.removeFromTop (waveformHeight);
     area.removeFromTop (space::sm);
 
-    const auto placeKnob = [] (juce::Rectangle<int> bounds, DewKnob& knob)
-    { knob.setBounds (bounds); };
+    // The fades are a pair and the transpose knob stands alone beside the
+    // toggles, so they are two rows rather than a grid - but at the cell width
+    // every other knob in the panel gets, instead of half the section each.
+    const auto placeKnobs = [] (juce::Rectangle<int> bounds, std::initializer_list<DewKnob*> knobs)
+    {
+        const std::vector<int> group { (int) knobs.size() };
+        const auto placed = KnobGrid::place (bounds,
+                                             KnobGrid::planForRows (1, group, bounds.getWidth()));
 
-    auto fades = area.removeFromTop (68);
-    placeKnob (fades.removeFromLeft (fades.getWidth() / 2), fadeInKnob);
-    placeKnob (fades, fadeOutKnob);
+        auto cell = placed.cells.begin();
+
+        for (auto* knob : knobs)
+            if (cell != placed.cells.end())
+                knob->setBounds (*cell++);
+    };
+
+    placeKnobs (area.removeFromTop (size::knobRow), { &fadeInKnob, &fadeOutKnob });
 
     area.removeFromTop (space::sm);
 
-    auto bottom = area.removeFromTop (68);
-    placeKnob (bottom.removeFromLeft (bottom.getWidth() / 2), transposeKnob);
+    auto bottom = area.removeFromTop (size::knobRow);
+    placeKnobs (bottom.removeFromLeft (bottom.getWidth() / 2), { &transposeKnob });
 
     // The two toggles stack in the space one knob would take, centred against
     // the knob beside them rather than filling the row - a full-width button

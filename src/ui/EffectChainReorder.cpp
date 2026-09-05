@@ -98,7 +98,8 @@ void EffectChainComponent::layOutCards()
         const auto extent = horizontal ? card->getRequiredWidth() : card->getRequiredHeight();
 
         if (i == reorder.source && reorder.active)
-            dropArea = horizontal ? juce::Rectangle<int> (along, 0, extent, EffectCard::cardHeight)
+            dropArea = horizontal ? juce::Rectangle<int> (along, 0, extent,
+                                                          EffectCard::heightForRows (knobRowBudget))
                                   : juce::Rectangle<int> (0, along, getWidth(), extent);
         else if (snapNextLayout)
             slide[i]->snapTo ((float) along);
@@ -130,7 +131,8 @@ void EffectChainComponent::applyCardPositions()
         const auto along = juce::roundToInt (slide[i]->get());
 
         if (horizontal)
-            card->setBounds (along, 0, card->getRequiredWidth(), EffectCard::cardHeight);
+            card->setBounds (along, 0, card->getRequiredWidth(),
+                             EffectCard::heightForRows (knobRowBudget));
         else
             card->setBounds (0, along, getWidth(), card->getRequiredHeight());
     }
@@ -148,7 +150,7 @@ void EffectChainComponent::applyCardPositions()
     const auto placed = juce::jlimit (0, limit, wanted);
 
     if (horizontal)
-        dragged->setBounds (placed, 0, extent, EffectCard::cardHeight);
+        dragged->setBounds (placed, 0, extent, EffectCard::heightForRows (knobRowBudget));
     else
         dragged->setBounds (0, placed, getWidth(), extent);
 }

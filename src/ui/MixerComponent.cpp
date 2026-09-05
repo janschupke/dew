@@ -1,5 +1,7 @@
 #include "ui/MixerComponent.h"
 
+#include <utility>
+
 #include "i18n/Strings.h"
 #include "model/ProjectEdits.h"
 #include "ui/MenuSeam.h"
@@ -62,6 +64,25 @@ MixerComponent::MixerComponent (ProjectDocument& d, EditorState& s, AudioEngine*
 
     if (engine != nullptr)
         startTimerHz (tokens::motion::uiRefreshHz);
+
+    // The band's own top rule is a grip. The host reports the gesture and this
+    // owns the height, the division PlaylistTrackHeader keeps with the playlist.
+    chainHost.onResizeBegin = [this] { rowsAtDragStart = effectBandRows; };
+
+    // Dragging UP makes the band taller, because that is the direction the band
+    // grows in. Computed from where the press was rather than accumulated, so
+    // two routes to the same pointer position give the same band.
+    chainHost.onResizeDrag = [this] (int deltaY)
+    {
+        const auto travelled = juce::roundToInt ((double) deltaY / (double) tokens::size::knobRow);
+
+        setEffectBandRows (rowsAtDragStart - travelled);
+    };
+
+    // The one host that never wired this. A chain that changed size just waited
+    // for the next resized() to notice, which is fine until the band's height is
+    // something the user chose and the cards reflow inside it.
+    chainHost.onPreferredHeightChanged = [this] { resized(); };
 
     addAndMakeVisible (chainHost);
 
@@ -220,21 +241,40 @@ void MixerComponent::updateRouting()
     }
 }
 
+void MixerComponent::setEffectBandRows (int rows)
+{
+    const auto clamped = juce::jlimit (size::effectBandRowsMin, size::effectBandRowsMax, rows);
+
+    if (std::exchange (effectBandRows, clamped) == clamped)
+        return;
+
+    resized();
+}
+
 void MixerComponent::resized()
 {
     auto area = getLocalBounds();
 
-    // The chain row gets the bottom of the panel, at exactly the height one row
-    // of cards needs: strips need the rest and a fader is useless once it is
-    // shorter than a thumb. Still halved as a floor, for a very short window.
+    // The chain row gets the bottom of the panel, at exactly the height the
+    // rows it is showing need: strips need the rest and a fader is useless once
+    // it is shorter than a thumb, so the band never takes more than half.
+    //
+    // A whole number of knob rows, never a height between two of them - that
+    // would be a strip of ground no card could put a knob on. The band's depth
+    // is therefore always exactly what its cards asked for, which is also what
+    // stops the drag and the layout disagreeing about where the grip is.
     //
     // Edge to edge, and flush against the strips. It used to be inset on all
     // four sides and then trimmed again at the top, so the row was a rounded
     // card floating on the window background with nothing joining it to the
     // strip it belongs to. It is a BAND now - its own ground, with a rule along
     // its top, which is what the host paints.
-    const auto wanted = chainHost.getPreferredHeight() + tokens::space::md;
-    chainHost.setBounds (area.removeFromBottom (juce::jmin (wanted, area.getHeight() / 2)));
+    chainHost.setKnobRows (
+        juce::jlimit (size::effectBandRowsMin, effectBandRows,
+                      chainHost.knobRowsFitting (area.getHeight() / 2 - tokens::space::md)));
+
+    chainHost.setBounds (
+        area.removeFromBottom (chainHost.getPreferredHeight() + tokens::space::md));
 
     // The strips keep the inset. They are objects on the window's ground; the
     // band below them is a region OF it.

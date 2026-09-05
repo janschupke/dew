@@ -88,6 +88,11 @@ public:
     int getPlaylistTrackHeight() const;
     void setPlaylistTrackHeight (int);
 
+    /** How many rows of knobs the mixer's effect band shows, or 0 for "never
+        set". Stored raw and clamped by the mixer, for the reason above. */
+    int getMixerEffectBandRows() const;
+    void setMixerEffectBandRows (int);
+
     int getPanelWidth() const;
     void setPanelWidth (int);
 

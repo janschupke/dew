@@ -2,6 +2,7 @@
 
 #include <juce_gui_basics/juce_gui_basics.h>
 
+#include "app/Settings.h"
 #include "model/ProjectFactory.h"
 #include "ui/DewDialog.h"
 #include "ui/EffectChainHost.h"
@@ -198,6 +199,138 @@ TEST_CASE ("opening every card scrolls the sidebar rather than clipping it", "[u
 
     CHECK (panel->getHeight() == viewport->getMaximumVisibleHeight());
     CHECK_FALSE (viewport->getVerticalScrollBar().isVisible());
+}
+
+namespace
+{
+
+/** The panel's own knobs - the envelope and the levels. Its direct children,
+    which is what tells them apart from the ones inside a face's section. */
+std::vector<DewKnob*> panelKnobs (InstrumentPanel& panel)
+{
+    std::vector<DewKnob*> knobs;
+
+    for (auto* child : panel.getChildren())
+        if (auto* knob = dynamic_cast<DewKnob*> (child))
+            if (knob->isVisible())
+                knobs.push_back (knob);
+
+    return knobs;
+}
+
+/** How many distinct rows those knobs are laid out on. */
+int rowsUsedBy (const std::vector<DewKnob*>& knobs)
+{
+    std::vector<int> tops;
+
+    for (auto* knob : knobs)
+        if (std::find (tops.begin(), tops.end(), knob->getY()) == tops.end())
+            tops.push_back (knob->getY());
+
+    return (int) tops.size();
+}
+
+} // namespace
+
+TEST_CASE ("the panel's knobs are one size, on however many rows they need", "[ui][reflow]")
+{
+    // The defect this ends: four envelope knobs divided the panel's width by
+    // four and the two level knobs directly below them divided the same width
+    // by two, so the same control was drawn at two sizes, one above the other,
+    // at every panel width and in the panel that sits beside four others using
+    // the same rung.
+    const juce::ScopedJuceInitialiser_GUI juceInit;
+
+    ProjectDocument document;
+    EditorState editorState;
+    document.setState (ProjectFactory::createDefault(), true);
+
+    InstrumentPanel panel { document, editorState };
+
+    // Driven at the panel's own width rather than the window's, because the
+    // sidebar is dragged independently: Settings::minPanelWidth to
+    // maxPanelWidth is the range a person can actually put it through, and both
+    // ends of it have to work.
+    for (const auto width :
+         { Settings::maxPanelWidth, Settings::defaultPanelWidth, Settings::minPanelWidth })
+    {
+        panel.setSize (width, panel.getRequiredHeight());
+
+        const auto knobs = panelKnobs (panel);
+
+        INFO ("a " << width << "px panel put " << knobs.size() << " knobs on " << rowsUsedBy (knobs)
+                   << " rows");
+
+        // A synth channel: four envelope stages and two levels.
+        REQUIRE (knobs.size() == 6);
+
+        for (auto* knob : knobs)
+        {
+            CHECK (knob->getWidth() == knobs.front()->getWidth());
+
+            // And nothing hangs off the edge, at any of them.
+            CHECK (knob->getRight() <= panel.getWidth());
+            CHECK (knob->getX() >= 0);
+        }
+    }
+
+    // The two cases the grouping exists for, as a PAIR - one of them alone
+    // would pass for a panel that never re-flowed at all. Wide: both groups on
+    // one row, told apart by the rule the grid puts between them. Narrow: a row
+    // each, told apart by the break itself.
+    panel.setSize (Settings::maxPanelWidth, panel.getRequiredHeight());
+    CHECK (rowsUsedBy (panelKnobs (panel)) == 1);
+
+    panel.setSize (Settings::defaultPanelWidth, panel.getRequiredHeight());
+    CHECK (rowsUsedBy (panelKnobs (panel)) == 2);
+}
+
+TEST_CASE ("nothing in the instrument panel is laid out past its own edge", "[ui][reflow]")
+{
+    // Every knob in the panel, the sections' included, at the smallest window
+    // the app can open. A knob whose cell ran off the right edge would be a
+    // control that could not be reached at all, and the panel scrolls
+    // vertically only - there is nothing to scroll sideways into.
+    const juce::ScopedJuceInitialiser_GUI juceInit;
+
+    MainComponent component (false);
+    component.setSize (900, 560);
+
+    auto* panel = dynamic_cast<InstrumentPanel*> (
+        dynamic_cast<juce::Viewport*> (component.findChildWithID ("instrumentPanelViewport"))
+            ->getViewedComponent());
+    REQUIRE (panel != nullptr);
+
+    auto seen = 0;
+
+    const std::function<void (juce::Component&)> walk = [&] (juce::Component& root)
+    {
+        for (auto* child : root.getChildren())
+        {
+            if (child->isVisible())
+            {
+                if (dynamic_cast<DewKnob*> (child) != nullptr)
+                {
+                    ++seen;
+
+                    const auto inPanel = panel->getLocalArea (child, child->getLocalBounds());
+
+                    INFO ("knob at " << inPanel.toString() << " in a panel " << panel->getWidth()
+                                     << "px wide");
+                    CHECK (inPanel.getRight() <= panel->getWidth());
+                    CHECK (inPanel.getX() >= 0);
+                }
+
+                walk (*child);
+            }
+        }
+    };
+
+    walk (*panel);
+
+    // The control case: a walk that found nothing would pass in silence.
+    INFO ("knobs walked: " << seen);
+    CHECK (seen >= 6);
 }
 
 TEST_CASE ("a dialog is never taller than the screen it opens on", "[ui][reflow]")

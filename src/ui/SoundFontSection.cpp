@@ -3,6 +3,7 @@
 #include "i18n/Strings.h"
 #include "model/AssetPaths.h"
 #include "model/ProjectEdits.h"
+#include "ui/KnobGrid.h"
 #include "ui/design/Tokens.h"
 
 namespace dew
@@ -327,17 +328,30 @@ void SoundFontSection::resized()
 
     area.removeFromTop (space::sm);
 
-    const auto placeRow = [] (juce::Rectangle<int> bounds, std::initializer_list<DewKnob*> knobs)
-    {
-        const auto width = bounds.getWidth() / (int) knobs.size();
-
-        for (auto* knob : knobs)
-            knob->setBounds (bounds.removeFromLeft (width));
+    // Two groups: how the font is tuned, and how it responds to being played.
+    // A row each, which is what they have always been - but at the cell width
+    // every other knob in the panel gets rather than a third of whatever this
+    // section happens to be, so a soundfont's knobs and a synth's are the same
+    // size in the same panel.
+    const std::vector<std::vector<DewKnob*>> groups {
+        { &transposeKnob, &tuneKnob, &filterKnob },
+        { &attackKnob, &releaseKnob, &velocityKnob },
     };
 
-    placeRow (area.removeFromTop (size::knobRow), { &transposeKnob, &tuneKnob, &filterKnob });
-    area.removeFromTop (space::sm);
-    placeRow (area.removeFromTop (size::knobRow), { &attackKnob, &releaseKnob, &velocityKnob });
+    std::vector<int> sizes;
+
+    for (const auto& group : groups)
+        sizes.push_back ((int) group.size());
+
+    const auto plan = KnobGrid::planForRows ((int) groups.size(), sizes, area.getWidth());
+    const auto placed = KnobGrid::place (area, plan);
+
+    auto cell = placed.cells.begin();
+
+    for (const auto& group : groups)
+        for (auto* knob : group)
+            if (cell != placed.cells.end())
+                knob->setBounds (*cell++);
 }
 
 } // namespace dew

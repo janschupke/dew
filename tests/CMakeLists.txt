@@ -59,6 +59,7 @@ add_executable(dew_tests
   EngineTests.cpp
   MixerTests.cpp
   MixerUiTests.cpp
+  MixerResizeTests.cpp
   OscillatorTests.cpp
   OscillatorEngineTests.cpp
   OscillatorUiTests.cpp
@@ -73,6 +74,7 @@ add_executable(dew_tests
   AccessibilityTests.cpp
   RightClickTests.cpp
   ContrastTests.cpp
+  KnobGridTests.cpp
   ReflowTests.cpp
   ShellLayoutTests.cpp
   ThemeTests.cpp

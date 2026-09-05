@@ -28,6 +28,29 @@ built on it. [Why it is this way](#why-it-is-this-way), below, argues why.
   says nothing about whether the pair is legible; five of them were not. Changing a
   `colour::` value, or adding a theme, means answering that table.
 
+## Rows of knobs
+
+**Knobs are laid out by `src/ui/KnobGrid.h`, and by nothing else.** Five panels each had
+a lambda that divided a rectangle by a compile-time count, which is how the instrument
+panel came to draw four envelope knobs at a quarter of its width and the two level knobs
+directly below them at a half. Two rules come out of it:
+
+- **One cell width across a whole grid**, capped at `size::knobColumn` and reflowed onto
+  another row below `size::knobColumnMin`. Spare width goes into the gaps *around* the
+  groups, never into the cells: six knobs in a wide panel are six knobs and some air.
+- **A group is never split while it fits a row.** Two groups sharing a row are separated
+  by a rule, drawn by the caller at the rectangles `place()` returns — the split
+  `StripLayout::divider` already keeps. Two groups on different rows are separated by the
+  **row break** and get no rule, because a rule as well would say it twice.
+
+The argument for each is under `KnobGrid.h`'s own comment. What a cell *holds* stays the
+caller's: a knob fills it, a number field is a fixed-height control centred in it.
+
+The mixer's effect band is a whole number of knob rows (`size::effectBandRows{Min,Default,
+Max}`), draggable by the rule along its top. Its height lives on `MixerComponent` and is
+stored raw in `Settings` — **view geometry lives on the view**, and `dew_app` cannot see
+the ladder to clamp against. See [gestures-and-hotkeys.md](gestures-and-hotkeys.md).
+
 ## Icons and the gallery
 
 Icons are `juce::Path` in `src/ui/design/icons/*.cpp`, never shipped assets. Adding one

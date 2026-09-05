@@ -291,12 +291,34 @@ void EffectChainComponent::rebuild()
     notifyRequiredSizeChanged();
 }
 
+void EffectChainComponent::setKnobRowBudget (int rows)
+{
+    const auto wanted = juce::jlimit (tokens::size::effectBandRowsMin,
+                                      tokens::size::effectBandRowsMax, rows);
+
+    if (std::exchange (knobRowBudget, wanted) == wanted)
+        return;
+
+    for (auto* card : cards)
+        card->resized();
+
+    resized();
+    repaint();
+    notifyRequiredSizeChanged();
+}
+
+int EffectChainComponent::requiredHeightForRows (int rows)
+{
+    return EffectCard::heightForRows (rows) + space::xs + space::sm;
+}
+
 int EffectChainComponent::getRequiredHeight() const
 {
-    // A row is one card tall whether it holds four effects or none, so the
-    // mixer's effect band does not change height as you fill it.
+    // A row is as tall as the budget it was given, whether it holds four
+    // effects or none, so the mixer's effect band does not change height as you
+    // fill it - only when you drag it.
     if (isHorizontal())
-        return EffectCard::cardHeight + space::xs + space::sm;
+        return requiredHeightForRows (knobRowBudget);
 
     auto height = 0;
 

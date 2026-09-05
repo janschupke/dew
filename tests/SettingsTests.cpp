@@ -102,6 +102,7 @@ TEST_CASE ("a fresh install gets sensible defaults", "[settings]")
     // 0 means "never set", which the playlist reads as "keep your default" -
     // so an install that predates the control opens at the height it always had.
     REQUIRE (settings->getPlaylistTrackHeight() == 0);
+    REQUIRE (settings->getMixerEffectBandRows() == 0);
     REQUIRE (settings->getWindowState().isEmpty());
     REQUIRE (settings->getAudioState() == nullptr);
 }
@@ -216,6 +217,7 @@ TEST_CASE ("a session is restored into the editor and captured back out", "[sett
         settings->setPianoRollPitchScroll (420.0);
         settings->setPanelWidth (380);
         settings->setPlaylistTrackHeight (96);
+        settings->setMixerEffectBandRows (tokens::size::effectBandRowsMax);
 
         dew::MainComponent component (false);
         component.setSize (1400, 800);
@@ -248,6 +250,27 @@ TEST_CASE ("a session is restored into the editor and captured back out", "[sett
         // PropertiesFile write is what covers the CLAMP as well, which lives in
         // the playlist because dew_app cannot see the size ladder.
         REQUIRE (roundTripped->getPlaylistTrackHeight() == 96);
+
+        // The effect band makes the same trip, through the mixer, and is
+        // clamped in the same place and for the same reason.
+        REQUIRE (roundTripped->getMixerEffectBandRows() == tokens::size::effectBandRowsMax);
+    }
+
+    // And an absurd band comes back inside the range, which is the other half
+    // of "stored raw, clamped by the view".
+    {
+        auto settings = temp.open();
+        settings->setMixerEffectBandRows (1000);
+
+        dew::MainComponent component (false);
+        component.setSize (1400, 800);
+        component.applySettings (*settings);
+
+        auto roundTripped = temp.open();
+        component.captureSettings (*roundTripped);
+
+        REQUIRE (roundTripped->getMixerEffectBandRows() <= tokens::size::effectBandRowsMax);
+        REQUIRE (roundTripped->getMixerEffectBandRows() >= tokens::size::effectBandRowsMin);
     }
 
     // Out of range on the way in comes back inside it, because the playlist
