@@ -415,3 +415,60 @@ TEST_CASE ("a span selected in the editor loops the editor's own engine", "[ui][
 
     REQUIRE (escaped);
 }
+
+TEST_CASE ("a channel is selected whatever the project's first one is called", "[ui][smoke]")
+{
+    // The pattern id has been answered against the document since it was
+    // written - TransportBar::setCurrentPattern falls back to the first PATTERN
+    // there is - and the channel id was not, so a remembered id was a claim
+    // about a project the settings file has never seen and nothing checked it.
+    //
+    // It looked right only because ProjectFactory::createDefault always makes a
+    // channel with id 1. Open a project whose channel 1 was deleted and nothing
+    // is selected at all: no rack row highlighted, the roll showing its empty
+    // state, the instrument panel disabled, and live MIDI playing nothing.
+    const juce::ScopedJuceInitialiser_GUI juceInit;
+
+    dew::MainComponent component (false);
+    component.setSize (1400, 900);
+
+    auto project = dew::ProjectFactory::createDefault();
+    juce::UndoManager setup;
+
+    auto first = dew::ProjectEdits::findChannel (project, 1);
+    REQUIRE (first.isValid());
+    dew::ProjectEdits::removeChannel (project, first, &setup);
+
+    REQUIRE_FALSE (dew::ProjectEdits::findChannel (project, 1).isValid());
+
+    // setState then documentWasReplaced, which is what New and Open do (see
+    // DewApplication) and what dew_shot --project does. setState alone reaches
+    // the shell through AsyncUpdater, which a headless test never delivers.
+    component.getDocument().setState (project, true);
+    component.documentWasReplaced();
+    component.setSize (1400, 900);
+
+    const auto selected = component.getEditorState().getSelectedChannelId();
+
+    INFO ("selected channel " << selected);
+    CHECK (selected != 1);
+    CHECK (dew::ProjectEdits::findChannel (component.getDocument().getState(), selected).isValid());
+
+    // And it is resolved BEFORE the panels are refreshed, not after. Every one
+    // of them reads the selection: a panel refreshed against a channel that is
+    // not there disables itself, and the later resolve in projectChanged moves
+    // the id without refreshing it again. EditorState is a ChangeBroadcaster,
+    // so in the running application the listener eventually catches up - which
+    // is exactly the kind of "works if the loop turns" this ordering removes.
+    auto* panel = findDescendantWithID (component, "instrumentPanel");
+    REQUIRE (panel != nullptr);
+    CHECK (panel->isEnabled());
+
+    // Deleting the SELECTED channel runs the same resolver, from
+    // projectChanged. Not asserted here: that path arrives through
+    // AsyncUpdater, which posts on the platform event loop and is never
+    // delivered in a headless test - a juce::Timer fires anyway, so the loop
+    // looks alive while every posted callback sits there. A test that called
+    // the resolver directly would prove the resolver, which the case above
+    // already does.
+}

@@ -219,6 +219,19 @@ private:
     */
     void updateMidiTargetChannel();
 
+    /** Keeps the selected channel if the document has one by that id, and takes
+        the first channel there is otherwise.
+
+        The pattern id has had this since it was written - see
+        TransportBar::setCurrentPattern - and the channel id did not, so a
+        remembered id was a claim about a project the settings file has never
+        seen and nothing checked it. It only looked right because
+        ProjectFactory::createDefault always makes a channel with id 1; open a
+        project whose first channel was deleted and nothing is selected at all -
+        no rack row highlighted, the roll showing its empty state, the
+        instrument panel disabled, and live MIDI playing nothing. */
+    void resolveSelectedChannel();
+
     /** Hands the editor's time selections to the engine as loop windows.
 
         Both are pushed on every change, one per transport mode, so neither

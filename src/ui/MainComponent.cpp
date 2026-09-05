@@ -200,7 +200,10 @@ void MainComponent::projectChanged()
     engine.setProject (document.getState(), &warnings);
 
     // Channels may have been added or removed, which moves every index after
-    // them - including the one MIDI is pointed at.
+    // them - including the one MIDI is pointed at. Removing the SELECTED one
+    // leaves a dangling id: EditorState is deliberately not in the ValueTree,
+    // so nothing listens for the channel it names going away.
+    resolveSelectedChannel();
     updateMidiTargetChannel();
     updateLoopRange();
 
@@ -211,9 +214,31 @@ void MainComponent::projectChanged()
         statusBar.showMessage (warnings[0], StatusBar::Severity::warning);
 }
 
+void MainComponent::resolveSelectedChannel()
+{
+    const auto project = document.getState();
+
+    if (ProjectEdits::findChannel (project, editorState.getSelectedChannelId()).isValid())
+        return;
+
+    for (const auto& channel : project)
+    {
+        if (! channel.hasType (ids::CHANNEL))
+            continue;
+
+        editorState.setSelectedChannelId ((int) channel[ids::id]);
+        return;
+    }
+}
+
 void MainComponent::documentWasReplaced()
 {
     document.onProjectChanged = [this] { triggerAsyncUpdate(); };
+
+    // Before the refreshes: every one of them reads the selection, and a panel
+    // refreshed against a channel that is not there disables itself and stays
+    // disabled until something else touches it.
+    resolveSelectedChannel();
 
     transportBar.refresh();
     tabs.refresh();
@@ -388,6 +413,9 @@ void MainComponent::applySettings (const Settings& settings)
 
     editorState.setSelectedChannelId (settings.getSelectedChannelId());
     editorState.setSelectedMixerTrackId (settings.getSelectedMixerTrackId());
+
+    // Answered against the document, the way the pattern id below already is.
+    resolveSelectedChannel();
 
     // Through the transport bar rather than straight into EditorState, because
     // a remembered pattern id is a claim about a project the settings file has
