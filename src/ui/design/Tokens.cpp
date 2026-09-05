@@ -30,7 +30,10 @@ Palette darkPalette()
         .recording = juce::Colour (0xffff7a51),
         .success = juce::Colour (0xff3ecf8e),
         .warning = juce::Colour (0xfff2c14e),
-        .danger = juce::Colour (0xffff7a51),
+        // Red, and no longer the record colour. Hue 0 at the highest saturation
+        // that still clears 4.5:1 as text on surfaceHover: a deep red is too
+        // dark to read on any of the six grounds, so danger is a LIGHT red.
+        .danger = juce::Colour (0xffff7878),
 
         .funcTone = juce::Colour (0xffc9ab81),
         .funcTime = juce::Colour (0xffabbf7c),
@@ -63,8 +66,14 @@ Palette darkPalette()
     and the accent is still blue.
 
     Two values are unchanged from the dark palette - playhead and warning were
-    already past 7:1 - and `recording` and `danger` remain the same colour as
-    each other, as they are there.
+    already past 7:1.
+
+    `recording` and `danger` used to be one colour in both palettes, which meant
+    every trash glyph in the application was drawn in the record colour. They
+    are two hues now: recording keeps the orange it has always had, and danger
+    is red at hue 0. Both are raised the same way as everything else here - hue
+    and saturation fixed, lightness raised by bisection - which at full
+    brightness means saturation coming down rather than value going up.
 */
 Palette highContrastPalette()
 {
@@ -91,7 +100,7 @@ Palette highContrastPalette()
         .recording = juce::Colour (0xffffad93),
         .success = juce::Colour (0xff5cd7a0),
         .warning = juce::Colour (0xfff2c14e),
-        .danger = juce::Colour (0xffffad93),
+        .danger = juce::Colour (0xffffadad),
 
         .funcTone = juce::Colour (0xffc9ab81),
         .funcTime = juce::Colour (0xffabbf7c),
