@@ -1,10 +1,11 @@
 {
     "format": "dew-preset",
-    "formatVersion": 1,
+    "formatVersion": 2,
     "kind": "instrument",
     "type": "synth",
     "name": "Morphing Sweep",
     "description": "Five unison voices morphing across the table over the note.",
+    "category": "pads",
     "state": {
       "oscillators": [
         {

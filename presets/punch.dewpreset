@@ -1,10 +1,11 @@
 {
     "format": "dew-preset",
-    "formatVersion": 1,
+    "formatVersion": 2,
     "kind": "effect",
     "type": "compressor",
     "name": "Punch",
     "description": "A slow attack lets the hit through and clamps what follows.",
+    "category": "character",
     "state": {
       "threshold": -20.0,
       "ratio": 4.0,

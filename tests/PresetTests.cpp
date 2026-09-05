@@ -179,7 +179,7 @@ TEST_CASE ("a preset for one effect type is refused by another", "[preset]")
     auto* state = new juce::DynamicObject();
     state->setProperty (ids::roomSize, 0.9);
 
-    const Preset reverb { "effect", "reverb", "Cathedral", "", juce::var (state), {} };
+    const Preset reverb { "effect", "reverb", "Cathedral", "", {}, juce::var (state), {} };
 
     juce::UndoManager undo;
     CHECK_FALSE (ProjectEdits::applyEffectPreset (filter, reverb, &undo));

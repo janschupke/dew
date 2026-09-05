@@ -201,16 +201,11 @@ std::vector<Preset> presetsForSlot (const juce::ValueTree& effect)
 
 } // namespace
 
-juce::StringArray EffectChainComponent::presetMenuItems (int slot) const
+std::vector<PresetMenuRow> EffectChainComponent::presetMenuRowsFor (int slot) const
 {
-    juce::StringArray items;
-
-    // Name and description, as one row - see InstrumentPanel's twin.
-    for (const auto& preset : presetsForSlot (effectAt (slot)))
-        items.add (DewLookAndFeel::menuRow (PresetLibrary::displayName (preset),
-                                            PresetLibrary::describe (preset)));
-
-    return items;
+    // Grouped by category - see InstrumentPanel's twin, and presetMenuRows for
+    // when a heading is worth its row.
+    return presetMenuRows (presetsForSlot (effectAt (slot)));
 }
 
 bool EffectChainComponent::applyPresetChoice (int slot, int choice)
@@ -234,13 +229,10 @@ void EffectChainComponent::showPresetMenu (int slot, juce::Component& target)
     if (presets.empty())
         return;
 
-    // The seam's list, so what a test reads and what a person sees cannot be
+    // The seam's rows, so what a test reads and what a person sees cannot be
     // two different things.
     juce::PopupMenu menu;
-    const auto items = presetMenuItems (slot);
-
-    for (int i = 0; i < items.size(); ++i)
-        addGlyphItem (menu, i + 1, items[i], glyph::forAction (glyph::Action::preset));
+    addPresetRows (menu, presetMenuRowsFor (slot), onPresetHover);
 
     menu.setLookAndFeel (&getLookAndFeel());
     menu.showMenuAsync (juce::PopupMenu::Options().withTargetComponent (target),

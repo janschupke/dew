@@ -93,19 +93,6 @@ public:
     juce::PopupMenu::Options getOptionsForComboBoxPopupMenu (juce::ComboBox&,
                                                              juce::Label&) override;
 
-    /** A menu row's label and the sentence that explains it, as one string.
-
-        PopupMenu::Item carries a text and a shortcut and nothing else, and a
-        CustomComponent would mean re-implementing the highlight, the tick
-        gutter and every colour this class already decides. So a second line
-        travels inside the text, joined here rather than spelled at a call site,
-        and drawPopupMenuItem renders it dimmed underneath.
-
-        `detail` empty gives back `text` unchanged, so a row that has nothing to
-        add is an ordinary one-line row and costs nothing.
-    */
-    static juce::String menuRow (const juce::String& text, const juce::String& detail);
-
     void drawPopupMenuBackground (juce::Graphics&, int width, int height) override;
 
     void drawPopupMenuItem (juce::Graphics&, const juce::Rectangle<int>& area, bool isSeparator,
@@ -116,6 +103,20 @@ public:
     void getIdealPopupMenuItemSize (const juce::String& text, bool isSeparator,
                                     int standardMenuItemHeight, int& idealWidth,
                                     int& idealHeight) override;
+
+    /** A category heading inside a menu, and the room it takes.
+
+        The size hook exists only in its WithOptions form - JUCE declares no
+        plain variant for a header the way it does for an item - so this is the
+        one place the class reaches for that spelling.
+    */
+    void drawPopupMenuSectionHeader (juce::Graphics&, const juce::Rectangle<int>&,
+                                     const juce::String& sectionName) override;
+
+    void getIdealPopupMenuSectionHeaderSizeWithOptions (const juce::String& text,
+                                                        int standardMenuItemHeight, int& idealWidth,
+                                                        int& idealHeight,
+                                                        const juce::PopupMenu::Options&) override;
 
     int getPopupMenuBorderSize() override;
 

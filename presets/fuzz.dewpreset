@@ -1,10 +1,11 @@
 {
     "format": "dew-preset",
-    "formatVersion": 1,
+    "formatVersion": 2,
     "kind": "effect",
     "type": "drive",
     "name": "Fuzz",
     "description": "All the way, with the output pulled back to compensate.",
+    "category": "extreme",
     "state": {
       "drive": 28.0,
       "outputGain": 0.28,

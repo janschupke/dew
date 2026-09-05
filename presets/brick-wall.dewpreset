@@ -1,10 +1,11 @@
 {
     "format": "dew-preset",
-    "formatVersion": 1,
+    "formatVersion": 2,
     "kind": "effect",
     "type": "limiter",
     "name": "Brick Wall",
     "description": "Well into the signal, released fast: audibly held, and nothing above it.",
+    "category": "extreme",
     "state": {
       "ceiling": -12.0,
       "releaseMs": 20.0,

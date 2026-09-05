@@ -1,5 +1,6 @@
 #include "control/OpsSupport.h"
 #include "model/ModuleCatalog.h"
+#include "model/PresetCategory.h"
 #include "model/PresetLibrary.h"
 #include "model/ProjectSchema.h"
 
@@ -234,7 +235,10 @@ ControlResult listPresets (ControlHost&, const juce::var& args)
                       .set ("name", preset.name)
                       .set ("kind", preset.kind)
                       .set ("type", preset.typeId)
-                      .set ("description", preset.description));
+                      .set ("description", preset.description)
+                      .set ("category", preset.category.has_value()
+                                            ? presetCategoryToString (*preset.category)
+                                            : juce::String {}));
     }
 
     return ControlResult::success (Obj {}.set ("presets", arrayOf (rows)));

@@ -1,10 +1,11 @@
 {
     "format": "dew-preset",
-    "formatVersion": 1,
+    "formatVersion": 2,
     "kind": "effect",
     "type": "drive",
     "name": "Warm",
     "description": "A little weight, and no obvious distortion.",
+    "category": "gentle",
     "state": {
       "drive": 2.5,
       "outputGain": 0.85,

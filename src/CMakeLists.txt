@@ -305,6 +305,7 @@ add_library(dew_model STATIC
   model/ProjectSchemaTrees.cpp
   model/ModuleState.cpp
   model/PresetSerializer.cpp
+  model/PresetCategory.cpp
   model/PresetFactory.cpp
   model/PresetLibrary.cpp
   model/ProjectSerializer.cpp
@@ -552,6 +553,7 @@ add_library(dew_ui STATIC
   ui/Hotkeys.cpp
   ui/AutomationLane.cpp
   ui/ParamContextMenu.cpp
+  ui/PresetMenu.cpp
   ui/TimelinePaint.cpp
   ui/TimelineRuler.cpp
   ui/StepGridComponent.cpp

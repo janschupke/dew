@@ -1,10 +1,11 @@
 {
     "format": "dew-preset",
-    "formatVersion": 1,
+    "formatVersion": 2,
     "kind": "effect",
     "type": "compressor",
     "name": "Squash",
     "description": "Fast and hard, for a level that does not move at all.",
+    "category": "extreme",
     "state": {
       "threshold": -30.0,
       "ratio": 12.0,

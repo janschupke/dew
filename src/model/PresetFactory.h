@@ -4,6 +4,7 @@
 
 #include "i18n/Strings.h"
 #include "model/Preset.h"
+#include "model/PresetCategory.h"
 
 namespace dew
 {
@@ -35,6 +36,15 @@ struct PresetFactory
         /** What a person reads. Not what the FILE holds: see buildFor. */
         StringId name;
         StringId description;
+
+        /** Which group of its type's presets this one belongs in.
+
+            Here rather than on the builder for the same reason the name is: a
+            builder describes a SOUND, and a category is editorial. Required,
+            not optional - a preset the factory ships with no home would be one
+            that silently fell out of the grouping the moment the library grew.
+        */
+        PresetCategory category;
 
         /** The sound, and nothing else - no name, no description. */
         Preset (*build)();

@@ -1,10 +1,11 @@
 {
     "format": "dew-preset",
-    "formatVersion": 1,
+    "formatVersion": 2,
     "kind": "instrument",
     "type": "synth",
     "name": "Warm Pad",
     "description": "Three detuned voices under a slow attack.",
+    "category": "pads",
     "state": {
       "oscillators": [
         {

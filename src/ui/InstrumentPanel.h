@@ -8,6 +8,7 @@
 #include <vector>
 #include "ui/EffectChainHost.h"
 #include "ui/ParamContextMenu.h"
+#include "ui/PresetMenu.h"
 #include "ui/OscillatorSection.h"
 #include "ui/SampleSection.h"
 #include "ui/SoundFontSection.h"
@@ -65,8 +66,21 @@ public:
 
     /** What the preset button would offer, and what choosing item `choice`
         does. A menu cannot be driven headlessly - see MenuSeam.h. */
-    juce::StringArray presetMenuItems() const;
+    std::vector<PresetMenuRow> presetMenuRowsFor() const;
     bool applyPresetChoice (int choice);
+
+    /** Told what the preset row under the pointer is for, and an empty string
+        when the pointer leaves. MainComponent puts it in the status strip; a
+        popup menu is a window of its own, so HoverHelp cannot reach it. */
+    std::function<void (const juce::String&)> onPresetHover;
+
+    /** Where a preset row's description goes as the pointer passes over it.
+
+        The status strip answers at once where the floating tooltip waits, which
+        is the pair HoverHelp gives every other control - and a popup menu is a
+        window of its own, so HoverHelp's own listener cannot reach these rows.
+    */
+    void setPresetHoverSink (std::function<void (const juce::String&)>);
 
 private:
     void changeListenerCallback (juce::ChangeBroadcaster*) override;

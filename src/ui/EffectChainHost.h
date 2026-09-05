@@ -44,6 +44,14 @@ public:
         return chain;
     }
 
+    /** Where a preset row's description goes as the pointer passes over it.
+
+        The status strip answers at once where the floating tooltip waits, which
+        is the pair HoverHelp gives every other control - and a popup menu is a
+        window of its own, so HoverHelp's own listener cannot reach these rows.
+    */
+    void setPresetHoverSink (std::function<void (const juce::String&)>);
+
     /** Heading, chain and - in a row - the scrollbar under it. Whoever stacks
         this asks rather than repeating the arithmetic.
     */

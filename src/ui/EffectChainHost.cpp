@@ -45,6 +45,11 @@ EffectChainHost::EffectChainHost (ProjectDocument& d, EditorState& s, Orientatio
     addButton.setEnabled (chain.canAddEffect());
 }
 
+void EffectChainHost::setPresetHoverSink (std::function<void (const juce::String&)> sink)
+{
+    chain.onPresetHover = std::move (sink);
+}
+
 void EffectChainHost::setOwner (juce::ValueTree owner, juce::String name)
 {
     chain.setOwner (std::move (owner));

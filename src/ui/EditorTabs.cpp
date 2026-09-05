@@ -93,6 +93,11 @@ void EditorTabs::setPianoRollSnap (int index)
     pianoRoll.setSnap (NoteTools::snapFromIndex (index));
 }
 
+void EditorTabs::setPresetHoverSink (std::function<void (const juce::String&)> sink)
+{
+    mixer.setPresetHoverSink (std::move (sink));
+}
+
 void EditorTabs::setParamMenuHost (const paramMenu::Host* host)
 {
     channelRack.setParamMenuHost (host);

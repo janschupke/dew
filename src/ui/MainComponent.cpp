@@ -55,6 +55,16 @@ MainComponent::MainComponent (bool openAudioDevice)
     transportBar.setParamMenuHost (&paramMenuHost);
     instrumentPanel.setParamMenuHost (&paramMenuHost);
 
+    // A preset row says what it is for in the strip along the bottom, the way
+    // every other control in the window does. It cannot get there by itself:
+    // HoverHelp listens to this component's tree, and a popup menu is a
+    // separate window that tree does not contain.
+    const auto sayWhatThePresetIsFor = [this] (const juce::String& help)
+    { statusBar.setHoverHelp (help); };
+
+    instrumentPanel.setPresetHoverSink (sayWhatThePresetIsFor);
+    tabs.setPresetHoverSink (sayWhatThePresetIsFor);
+
     // A layout, not a paint.
     collapse.onChanged = [this] { resized(); };
 

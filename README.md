@@ -133,7 +133,7 @@ picture and nearly invisible in code.
 ## Test
 
 ```sh
-ctest --preset release        # 1296 tests
+ctest --preset release        # 1461 tests
 ```
 
 The gate, which is what CI runs and what a change has to pass:
@@ -230,8 +230,12 @@ licence question. Without it the format reports itself unavailable and the rest 
   type. Loading one is a single undo step. A preset carries the *sound* and nothing else —
   not a channel's name, colour, routing, level or base pitch, and not its effect chain — so
   loading one in the middle of a mix cannot move a fader or retune a part that is already
-  written. They ship as files under `presets/`, embedded in the binary the way the demos
-  are; there is no user save yet.
+  written. Each one also names a **category**, and a picker groups by it — but only where a
+  heading would gather a run of rows rather than stand over a single one, so the synth's
+  five sounds arrive under Bass, Keys and Pads while a three-preset effect menu stays flat.
+  What a preset is *for* is a sentence you get by hovering it, in the status strip at once
+  and as a tooltip if you rest — not a second line under every name. They ship as files
+  under `presets/`, embedded in the binary the way the demos are; there is no user save yet.
 - **Recording** — **+ Audio** adds a channel that plays a recording instead of its
   oscillators. Arm with **R**, press Record, and the take lands on the playlist at the
   bar the playhead was on. Its rack row shows the waveform; the instrument panel shows

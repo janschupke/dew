@@ -1,6 +1,10 @@
 #pragma once
 
+#include <optional>
+
 #include <juce_data_structures/juce_data_structures.h>
+
+#include "model/PresetCategory.h"
 
 namespace dew
 {
@@ -40,6 +44,15 @@ struct Preset
     */
     juce::String name;
     juce::String description;
+
+    /** What this preset is FOR, which is what a picker groups by.
+
+        Stored as the category's id, never its label, for the reason `typeId` is
+        - see PresetCategory. Empty for a preset written before the format
+        carried one, and for one whose category this dew does not know; a picker
+        offers those ungrouped rather than inventing a home for them.
+    */
+    std::optional<PresetCategory> category;
 
     /** The parameters, in the shape stateFor produces: flat for an effect,
         grouped the way the project file groups them for an instrument. */

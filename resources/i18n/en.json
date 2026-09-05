@@ -1028,6 +1028,15 @@
     }
   },
   "preset": {
+    "category": {
+      "gentle": "Gentle",
+      "character": "Character",
+      "extreme": "Extreme",
+      "bass": "Bass",
+      "keys": "Keys",
+      "pads": "Pads",
+      "texture": "Texture"
+    },
     "rumbleCut": {
       "name": "Rumble Cut",
       "description": "Takes the room out from under a sound."

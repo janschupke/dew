@@ -39,7 +39,7 @@ juce::var objectOf (std::initializer_list<Value> values)
 */
 Preset effectPreset (const char* typeId, std::initializer_list<Value> values)
 {
-    return { "effect", typeId, {}, {}, objectOf (values), {} };
+    return { "effect", typeId, {}, {}, {}, objectOf (values), {} };
 }
 
 /** A synth preset: up to three oscillator slots and an envelope.
@@ -61,7 +61,7 @@ Preset synthPreset (std::vector<juce::var> oscillators, std::initializer_list<Va
     state->setProperty ("oscillators", slots);
     state->setProperty ("amp", objectOf (amp));
 
-    return { "instrument", "synth", {}, {}, juce::var (state), {} };
+    return { "instrument", "synth", {}, {}, {}, juce::var (state), {} };
 }
 
 // clang-format off
@@ -71,7 +71,7 @@ Preset audioPreset (std::initializer_list<Value> sample)
     state->setProperty ("sample", objectOf (sample));
 
     // clang-format on
-    return { "instrument", "audio", {}, {}, juce::var (state), {} };
+    return { "instrument", "audio", {}, {}, {}, juce::var (state), {} };
 }
 
 // clang-format off
@@ -89,7 +89,7 @@ Preset soundFontPreset (std::initializer_list<Value> soundfont)
     state->setProperty ("soundfont", objectOf (soundfont));
 
     // clang-format on
-    return { "instrument", "soundfont", {}, {}, juce::var (state), {} };
+    return { "instrument", "soundfont", {}, {}, {}, juce::var (state), {} };
 }
 
 /** A classic oscillator slot. Gains are well under the 0.8 a single slot
@@ -292,6 +292,11 @@ Preset PresetFactory::buildFor (const Entry& entry)
     preset.name = trIn (referenceLocale(), entry.name);
     preset.description = trIn (referenceLocale(), entry.description);
 
+    // The category is NOT locale-dependent the way the two above are: it goes
+    // into the file as its stable id, so the file says the same thing whatever
+    // language wrote it.
+    preset.category = entry.category;
+
     return preset;
 }
 
@@ -299,83 +304,83 @@ const std::vector<PresetFactory::Entry>& PresetFactory::presets()
 {
     static const std::vector<Entry> all {
         { "rumble-cut.dewpreset", StringId::preset_rumbleCut_name,
-          StringId::preset_rumbleCut_description, &rumbleCut },
+          StringId::preset_rumbleCut_description, PresetCategory::gentle, &rumbleCut },
         { "warm-low-pass.dewpreset", StringId::preset_warmLowPass_name,
-          StringId::preset_warmLowPass_description, &warmLowPass },
+          StringId::preset_warmLowPass_description, PresetCategory::character, &warmLowPass },
         { "squelch.dewpreset", StringId::preset_squelch_name,
-          StringId::preset_squelch_description, &squelch },
+          StringId::preset_squelch_description, PresetCategory::extreme, &squelch },
         { "ambience.dewpreset", StringId::preset_ambience_name,
-          StringId::preset_ambience_description, &ambience },
+          StringId::preset_ambience_description, PresetCategory::gentle, &ambience },
         { "plate.dewpreset", StringId::preset_plate_name,
-          StringId::preset_plate_description, &plate },
+          StringId::preset_plate_description, PresetCategory::character, &plate },
         { "cathedral.dewpreset", StringId::preset_cathedral_name,
-          StringId::preset_cathedral_description, &cathedral },
+          StringId::preset_cathedral_description, PresetCategory::extreme, &cathedral },
         { "slapback.dewpreset", StringId::preset_slapback_name,
-          StringId::preset_slapback_description, &slapback },
+          StringId::preset_slapback_description, PresetCategory::character, &slapback },
         { "dub-echo.dewpreset", StringId::preset_dubEcho_name,
-          StringId::preset_dubEcho_description, &dubEcho },
+          StringId::preset_dubEcho_description, PresetCategory::extreme, &dubEcho },
         { "doubler.dewpreset", StringId::preset_doubler_name,
-          StringId::preset_doubler_description, &doubler },
+          StringId::preset_doubler_description, PresetCategory::gentle, &doubler },
         { "warm.dewpreset", StringId::preset_warmDrive_name,
-          StringId::preset_warmDrive_description, &warmDrive },
+          StringId::preset_warmDrive_description, PresetCategory::gentle, &warmDrive },
         { "fuzz.dewpreset", StringId::preset_fuzz_name,
-          StringId::preset_fuzz_description, &fuzz },
+          StringId::preset_fuzz_description, PresetCategory::extreme, &fuzz },
         { "parallel-grit.dewpreset", StringId::preset_parallelGrit_name,
-          StringId::preset_parallelGrit_description, &parallelGrit },
+          StringId::preset_parallelGrit_description, PresetCategory::character, &parallelGrit },
         { "saturate.dewpreset", StringId::preset_saturate_name,
-          StringId::preset_saturate_description, &saturate },
+          StringId::preset_saturate_description, PresetCategory::gentle, &saturate },
         { "crunch.dewpreset", StringId::preset_crunch_name,
-          StringId::preset_crunch_description, &crunch },
+          StringId::preset_crunch_description, PresetCategory::character, &crunch },
         { "ring-fold.dewpreset", StringId::preset_ringFold_name,
-          StringId::preset_ringFold_description, &ringFold },
+          StringId::preset_ringFold_description, PresetCategory::extreme, &ringFold },
         { "subtle-widen.dewpreset", StringId::preset_subtleWiden_name,
-          StringId::preset_subtleWiden_description, &subtleWiden },
+          StringId::preset_subtleWiden_description, PresetCategory::gentle, &subtleWiden },
         { "classic-chorus.dewpreset", StringId::preset_classicChorus_name,
-          StringId::preset_classicChorus_description, &classicChorus },
+          StringId::preset_classicChorus_description, PresetCategory::character, &classicChorus },
         { "vibrato.dewpreset", StringId::preset_vibrato_name,
-          StringId::preset_vibrato_description, &vibrato },
+          StringId::preset_vibrato_description, PresetCategory::extreme, &vibrato },
         { "slow-sweep.dewpreset", StringId::preset_slowSweep_name,
-          StringId::preset_slowSweep_description, &slowSweep },
+          StringId::preset_slowSweep_description, PresetCategory::character, &slowSweep },
         { "jet.dewpreset", StringId::preset_jetPhaser_name,
-          StringId::preset_jetPhaser_description, &jetPhaser },
+          StringId::preset_jetPhaser_description, PresetCategory::extreme, &jetPhaser },
         { "shimmer.dewpreset", StringId::preset_shimmer_name,
-          StringId::preset_shimmer_description, &shimmer },
+          StringId::preset_shimmer_description, PresetCategory::gentle, &shimmer },
         { "air.dewpreset", StringId::preset_air_name,
-          StringId::preset_air_description, &air },
+          StringId::preset_air_description, PresetCategory::gentle, &air },
         { "scoop.dewpreset", StringId::preset_scoop_name,
-          StringId::preset_scoop_description, &scoop },
+          StringId::preset_scoop_description, PresetCategory::character, &scoop },
         { "telephone.dewpreset", StringId::preset_telephone_name,
-          StringId::preset_telephone_description, &telephone },
+          StringId::preset_telephone_description, PresetCategory::extreme, &telephone },
         { "glue.dewpreset", StringId::preset_glue_name,
-          StringId::preset_glue_description, &glue },
+          StringId::preset_glue_description, PresetCategory::gentle, &glue },
         { "punch.dewpreset", StringId::preset_punch_name,
-          StringId::preset_punch_description, &punch },
+          StringId::preset_punch_description, PresetCategory::character, &punch },
         { "squash.dewpreset", StringId::preset_squash_name,
-          StringId::preset_squash_description, &squash },
+          StringId::preset_squash_description, PresetCategory::extreme, &squash },
         { "master-ceiling.dewpreset", StringId::preset_masterCeiling_name,
-          StringId::preset_masterCeiling_description, &masterCeiling },
+          StringId::preset_masterCeiling_description, PresetCategory::character, &masterCeiling },
         { "safety-net.dewpreset", StringId::preset_safetyNet_name,
-          StringId::preset_safetyNet_description, &safetyNet },
+          StringId::preset_safetyNet_description, PresetCategory::gentle, &safetyNet },
         { "brick-wall.dewpreset", StringId::preset_brickWall_name,
-          StringId::preset_brickWall_description, &brickWall },
+          StringId::preset_brickWall_description, PresetCategory::extreme, &brickWall },
         { "warm-pad.dewpreset", StringId::preset_warmPad_name,
-          StringId::preset_warmPad_description, &warmPad },
+          StringId::preset_warmPad_description, PresetCategory::pads, &warmPad },
         { "sub-bass.dewpreset", StringId::preset_subBass_name,
-          StringId::preset_subBass_description, &subBass },
+          StringId::preset_subBass_description, PresetCategory::bass, &subBass },
         { "pluck.dewpreset", StringId::preset_pluck_name,
-          StringId::preset_pluck_description, &pluck },
+          StringId::preset_pluck_description, PresetCategory::keys, &pluck },
         { "hollow-keys.dewpreset", StringId::preset_hollowKeys_name,
-          StringId::preset_hollowKeys_description, &hollowKeys },
+          StringId::preset_hollowKeys_description, PresetCategory::keys, &hollowKeys },
         { "morphing-sweep.dewpreset", StringId::preset_morphingSweep_name,
-          StringId::preset_morphingSweep_description, &morphingSweep },
+          StringId::preset_morphingSweep_description, PresetCategory::pads, &morphingSweep },
         { "looped-bed.dewpreset", StringId::preset_loopedBed_name,
-          StringId::preset_loopedBed_description, &loopedBed },
+          StringId::preset_loopedBed_description, PresetCategory::texture, &loopedBed },
         { "reverse-swell.dewpreset", StringId::preset_reverseSwell_name,
-          StringId::preset_reverseSwell_description, &reverseSwell },
+          StringId::preset_reverseSwell_description, PresetCategory::texture, &reverseSwell },
         { "softened.dewpreset", StringId::preset_softenedFont_name,
-          StringId::preset_softenedFont_description, &softenedFont },
+          StringId::preset_softenedFont_description, PresetCategory::texture, &softenedFont },
         { "stepped.dewpreset", StringId::preset_steppedFont_name,
-          StringId::preset_steppedFont_description, &steppedFont },
+          StringId::preset_steppedFont_description, PresetCategory::texture, &steppedFont },
     };
 
     // clang-format on

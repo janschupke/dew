@@ -6,6 +6,7 @@
 #include "ui/ParamContextMenu.h"
 #include "ui/design/Animator.h"
 #include "ui/EditorState.h"
+#include "ui/PresetMenu.h"
 #include "ui/primitives/DewControls.h"
 #include "ui/primitives/DewNumberField.h"
 
@@ -149,8 +150,13 @@ public:
 
     /** What showPresetMenu would offer, and what choosing item `choice` does.
         A menu cannot be driven headlessly - see MenuSeam.h. */
-    juce::StringArray presetMenuItems (int slot) const;
+    std::vector<PresetMenuRow> presetMenuRowsFor (int slot) const;
     bool applyPresetChoice (int slot, int choice);
+
+    /** Told what the preset row under the pointer is for, and an empty string
+        when the pointer leaves. MainComponent puts it in the status strip; a
+        popup menu is a window of its own, so HoverHelp cannot reach it. */
+    std::function<void (const juce::String&)> onPresetHover;
 
     /** Opens or closes one card, by position in the chain. */
     void setSlotExpanded (int index, bool expanded);

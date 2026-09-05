@@ -1,10 +1,11 @@
 {
     "format": "dew-preset",
-    "formatVersion": 1,
+    "formatVersion": 2,
     "kind": "instrument",
     "type": "synth",
     "name": "Pluck",
     "description": "No sustain: the decay is the whole sound.",
+    "category": "keys",
     "state": {
       "oscillators": [
         {

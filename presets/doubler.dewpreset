@@ -1,10 +1,11 @@
 {
     "format": "dew-preset",
-    "formatVersion": 1,
+    "formatVersion": 2,
     "kind": "effect",
     "type": "delay",
     "name": "Doubler",
     "description": "Too short to hear as an echo; it widens instead.",
+    "category": "gentle",
     "state": {
       "delayMs": 28.0,
       "feedback": 0.0,

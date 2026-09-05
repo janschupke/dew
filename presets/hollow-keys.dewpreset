@@ -1,10 +1,11 @@
 {
     "format": "dew-preset",
-    "formatVersion": 1,
+    "formatVersion": 2,
     "kind": "instrument",
     "type": "synth",
     "name": "Hollow Keys",
     "description": "A square under a triangle an octave up.",
+    "category": "keys",
     "state": {
       "oscillators": [
         {

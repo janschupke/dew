@@ -1,10 +1,11 @@
 {
     "format": "dew-preset",
-    "formatVersion": 1,
+    "formatVersion": 2,
     "kind": "effect",
     "type": "compressor",
     "name": "Glue",
     "description": "Two decibels at most, slow enough to leave the transients.",
+    "category": "gentle",
     "state": {
       "threshold": -14.0,
       "ratio": 2.0,

@@ -120,9 +120,9 @@ bool showsALiteral (const juce::String& raw)
     // the tests calls - dew's Edit menu shows the COMMAND's name, not the
     // transaction's. Translating a string nobody displays is paying a
     // translator for a key the orphan gate would then have to allow.
-    for (const auto* sink :
-         { "setTooltip (", "setButtonText (", "setText (", "setTitle (", "setSuffix (",
-           "showMessage (", "notes.push_back (", "helps.push_back (", "warnings.add (" })
+    for (const auto* sink : { "setTooltip (", "setButtonText (", "setText (", "setTitle (",
+                              "setSuffix (", "showMessage (", "notes.push_back (",
+                              "helps.push_back (", "warnings.add (", "addSectionHeader (" })
     {
         if (! line.contains (sink))
             continue;
@@ -188,6 +188,13 @@ TEST_CASE ("no source shows a person a string literal", "[build][gate][i18n]")
         showsALiteral ("    tempoField.setTooltip (tr (StringId::transport_tempo_help));"));
     CHECK_FALSE (showsALiteral ("    icon.setTooltip (\"\");"));
     CHECK_FALSE (showsALiteral ("    button.setComponentID (\"mute\");"));
+
+    // A section heading names a run of rows and is read exactly as they are.
+    // Its text is the FIRST argument, unlike addItem's, which is why it sits in
+    // the other list - and why a prefix test finds it where one for addItem
+    // would not.
+    CHECK (showsALiteral ("    menu.addSectionHeader (\"Pads\");"));
+    CHECK_FALSE (showsALiteral ("    menu.addSectionHeader (row.label);"));
 
     // And the menu-item shape, which the prefix test above cannot see.
     CHECK (showsALiteral ("    menu.addItem ((int) MenuItem::rename, \"Rename\");"));

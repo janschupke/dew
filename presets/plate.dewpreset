@@ -1,10 +1,11 @@
 {
     "format": "dew-preset",
-    "formatVersion": 1,
+    "formatVersion": 2,
     "kind": "effect",
     "type": "reverb",
     "name": "Plate",
     "description": "Bright, short and wide, sitting behind the source.",
+    "category": "character",
     "state": {
       "roomSize": 0.45,
       "damping": 0.35,

@@ -1,10 +1,11 @@
 {
     "format": "dew-preset",
-    "formatVersion": 1,
+    "formatVersion": 2,
     "kind": "instrument",
     "type": "audio",
     "name": "Looped Bed",
     "description": "Loops with short fades at both ends, so the seam does not click.",
+    "category": "texture",
     "state": {
       "sample": {
         "fadeInMs": 40.0,

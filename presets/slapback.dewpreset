@@ -1,10 +1,11 @@
 {
     "format": "dew-preset",
-    "formatVersion": 1,
+    "formatVersion": 2,
     "kind": "effect",
     "type": "delay",
     "name": "Slapback",
     "description": "One repeat, close behind.",
+    "category": "character",
     "state": {
       "delayMs": 110.0,
       "feedback": 0.12,

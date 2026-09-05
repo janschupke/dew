@@ -27,7 +27,7 @@ inline juce::ValueTree firstChannel (const juce::ValueTree& project)
 
 inline Preset instrumentPreset (const juce::String& typeId, const juce::var& state)
 {
-    return { "instrument", typeId, "Test", "", state, {} };
+    return { "instrument", typeId, "Test", "", {}, state, {} };
 }
 
 /** A synth preset that turns slot 0 into a sine and switches 1 and 2 off. */

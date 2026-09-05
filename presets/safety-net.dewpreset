@@ -1,10 +1,11 @@
 {
     "format": "dew-preset",
-    "formatVersion": 1,
+    "formatVersion": 2,
     "kind": "effect",
     "type": "limiter",
     "name": "Safety Net",
     "description": "Set low enough that nothing but a mistake reaches it.",
+    "category": "gentle",
     "state": {
       "ceiling": -6.0,
       "releaseMs": 100.0,

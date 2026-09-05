@@ -1,10 +1,11 @@
 {
     "format": "dew-preset",
-    "formatVersion": 1,
+    "formatVersion": 2,
     "kind": "effect",
     "type": "distortion",
     "name": "Ring Fold",
     "description": "A wavefolder past the point where it stops sounding like level.",
+    "category": "extreme",
     "state": {
       "distortionMode": "fold",
       "drive": 9.0,

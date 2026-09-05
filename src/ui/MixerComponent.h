@@ -37,6 +37,14 @@ public:
     /** Set from above; null means no automation menus. */
     void setParamMenuHost (const paramMenu::Host* host);
 
+    /** Where a preset row's description goes as the pointer passes over it.
+
+        The status strip answers at once where the floating tooltip waits, which
+        is the pair HoverHelp gives every other control - and a popup menu is a
+        window of its own, so HoverHelp's own listener cannot reach these rows.
+    */
+    void setPresetHoverSink (std::function<void (const juce::String&)>);
+
     /** The engine is optional: it only supplies meter levels, and the mixer is
         constructed without one in tests and in the screenshot tool.
     */

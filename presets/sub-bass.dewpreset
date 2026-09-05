@@ -1,10 +1,11 @@
 {
     "format": "dew-preset",
-    "formatVersion": 1,
+    "formatVersion": 2,
     "kind": "instrument",
     "type": "synth",
     "name": "Sub Bass",
     "description": "One sine an octave down, and nothing else.",
+    "category": "bass",
     "state": {
       "oscillators": [
         {

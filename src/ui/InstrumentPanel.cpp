@@ -114,6 +114,14 @@ InstrumentPanel::~InstrumentPanel()
 // served: DewKnob works it out from the ParamSpec's curve, once, for every knob
 // in the application rather than for these six.
 
+void InstrumentPanel::setPresetHoverSink (std::function<void (const juce::String&)> sink)
+{
+    // Both menus this panel can open: the channel's own presets, and the
+    // presets of every effect in the chain underneath them.
+    chainHost.setPresetHoverSink (sink);
+    onPresetHover = std::move (sink);
+}
+
 void InstrumentPanel::setParamMenuHost (const paramMenu::Host* host)
 {
     paramMenuHost = host;
@@ -346,19 +354,18 @@ std::vector<Preset> presetsForChannel (const juce::ValueTree& channel)
 
 } // namespace
 
-juce::StringArray InstrumentPanel::presetMenuItems() const
+std::vector<PresetMenuRow> InstrumentPanel::presetMenuRowsFor() const
 {
-    juce::StringArray items;
-
-    // Name and description, as one row. The description was authored,
-    // serialised into every .dewpreset and shown to nobody for the whole life
-    // of the feature; a picker that says only "Pluck" makes you audition the
-    // list to find out what is in it.
-    for (const auto& preset : presetsForChannel (selectedChannel()))
-        items.add (DewLookAndFeel::menuRow (PresetLibrary::displayName (preset),
-                                            PresetLibrary::describe (preset)));
-
-    return items;
+    // Grouped, because this is the picker the grouping was for: a synth channel
+    // offers five sounds where an effect slot offers three, and the five fall
+    // into bass, keys and pads without being forced.
+    //
+    // The description each row carries is no longer painted into it. It was
+    // authored, serialised into every .dewpreset and shown to nobody for the
+    // whole life of the feature, then shown to everybody at once - a picker
+    // that says only "Pluck" makes you audition the list, and one that explains
+    // every row at the same time is prose you have to read to find a name.
+    return presetMenuRows (presetsForChannel (selectedChannel()));
 }
 
 bool InstrumentPanel::applyPresetChoice (int choice)
@@ -380,15 +387,12 @@ void InstrumentPanel::showPresetMenu()
     if (presets.empty())
         return;
 
-    // Built from the same list the headless seam returns, not from a second
-    // walk over the presets. The two had already drifted once: presetMenuItems
-    // was the thing the tests read and showPresetMenu was the thing a person
-    // saw, and only one of them had been taught to translate a name.
+    // Built from the same rows the headless seam returns, not from a second
+    // walk over the presets. The two had already drifted once: the seam was the
+    // thing the tests read and showPresetMenu was the thing a person saw, and
+    // only one of them had been taught to translate a name.
     juce::PopupMenu menu;
-    const auto items = presetMenuItems();
-
-    for (int i = 0; i < items.size(); ++i)
-        addGlyphItem (menu, i + 1, items[i], glyph::forAction (glyph::Action::preset));
+    addPresetRows (menu, presetMenuRowsFor(), onPresetHover);
 
     menu.setLookAndFeel (&getLookAndFeel());
     menu.showMenuAsync (juce::PopupMenu::Options().withTargetComponent (presetButton),

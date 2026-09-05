@@ -140,7 +140,7 @@ TEST_CASE ("a preset is named from its file, not from its name", "[preset][libra
     // written by hand - falls back to what its file says rather than to
     // nothing. This is the case a lookup by id has to answer and a lookup by
     // name would answer wrongly.
-    Preset unknown { "effect", "reverb", "Somebody's Hall", "From elsewhere.", {}, {} };
+    Preset unknown { "effect", "reverb", "Somebody's Hall", "From elsewhere.", {}, {}, {} };
     CHECK (PresetLibrary::displayName (unknown) == "Somebody's Hall");
     CHECK (PresetLibrary::describe (unknown) == "From elsewhere.");
 }
@@ -221,7 +221,11 @@ TEST_CASE ("a preset file written by a newer dew is refused, not half-read", "[p
     auto json = PresetLibrary::jsonFor ("plate.dewpreset");
     REQUIRE (json.isNotEmpty());
 
-    const auto newer = json.replace ("\"formatVersion\": 1", "\"formatVersion\": 99");
+    // Derived from the constant, not spelled: this test used to say
+    // "formatVersion": 1 and became a no-op the moment the format gained a
+    // version, replacing nothing and then asserting about the original file.
+    const auto current = juce::String ("\"formatVersion\": ") + juce::String (kPresetFormatVersion);
+    const auto newer = json.replace (current, "\"formatVersion\": 99");
     REQUIRE (newer != json);
 
     const auto loaded = PresetSerializer::fromJsonString (newer);

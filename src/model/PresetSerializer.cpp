@@ -2,6 +2,7 @@
 
 #include "model/ModuleCatalog.h"
 #include "model/ModuleState.h"
+#include "model/PresetCategory.h"
 
 namespace dew
 {
@@ -17,6 +18,7 @@ constexpr const char* kKind = "kind";
 constexpr const char* kType = "type";
 constexpr const char* kName = "name";
 constexpr const char* kDescription = "description";
+constexpr const char* kCategory = "category";
 constexpr const char* kState = "state";
 
 /** Validates a preset's payload against the descriptor its type names.
@@ -63,6 +65,12 @@ juce::String PresetSerializer::toJsonString (const Preset& preset)
     object->setProperty (kType, preset.typeId);
     object->setProperty (kName, preset.name);
     object->setProperty (kDescription, preset.description);
+
+    // Written only when there is one, so a preset with no category is a file
+    // with no category key rather than one claiming an empty string.
+    if (preset.category.has_value())
+        object->setProperty (kCategory, presetCategoryToString (*preset.category));
+
     object->setProperty (kState, preset.state);
 
     const auto options = juce::JSON::FormatOptions()
@@ -111,6 +119,12 @@ PresetSerializer::LoadResult PresetSerializer::fromJsonString (const juce::Strin
     out.preset.typeId = object->getProperty (kType).toString();
     out.preset.name = object->getProperty (kName).toString();
     out.preset.description = object->getProperty (kDescription).toString();
+
+    // An absent category, and one this build does not know, are the same thing
+    // to a reader: no group. Refusing the file over it would make a preset
+    // unloadable for a reason that has nothing to do with the sound.
+    out.preset.category = presetCategoryFor (object->getProperty (kCategory).toString());
+
     out.preset.state = object->getProperty (kState);
 
     if (! validateInto (out.preset, out.warnings))

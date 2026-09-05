@@ -19,11 +19,12 @@ namespace dew
     the look and feel unwraps this and paints the path itself, in the same
     colour it has already decided to give the label.
 
-    The alternative was the trick menuRow uses for a second line - smuggle the
-    icon's name inside the item's text and split it back apart when drawing -
-    and it was rejected. A sentinel in the text leaks out through
-    ComboBox::getText, through the accessible name, and through dew::menuItems,
-    which is the seam every menu test in the repository reads.
+    The alternative was to smuggle the icon's name inside the item's text and
+    split it back apart when drawing, and it was rejected. A sentinel in the
+    text leaks out through ComboBox::getText, through the accessible name, and
+    through dew::menuItems, which is the seam every menu test in the repository
+    reads. A row that needs more than a label is a PopupMenu::CustomComponent -
+    see PresetMenuItem, which is what finally retired the second line.
 */
 class MenuGlyph final : public juce::DrawablePath
 {

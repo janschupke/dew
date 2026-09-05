@@ -52,46 +52,37 @@ TEST_CASE ("a combo box is painted in the dew idiom, not JUCE's", "[design][drop
     box.setLookAndFeel (nullptr);
 }
 
-TEST_CASE ("a menu row can carry a sentence under its label", "[design][dropdown]")
+TEST_CASE ("a category heading reads as a heading, not as a row", "[design][dropdown]")
 {
-    // What the preset pickers needed. PopupMenu::Item carries a text and a
-    // shortcut and nothing else, and a CustomComponent would mean
-    // re-implementing the highlight, the tick gutter and every colour this
-    // class already decides - so a second line travels inside the text and
-    // DewLookAndFeel::menuRow is the only place that joins it.
+    // What the preset pickers needed once their descriptions moved to a
+    // tooltip. The second line this class used to pack into a row's text is
+    // gone with them: it was a sentinel inside the item text, which is exactly
+    // what MenuGlyph.h says a row must not carry.
     const juce::ScopedJuceInitialiser_GUI juceInit;
 
     DewLookAndFeel lookAndFeel;
 
-    CHECK (DewLookAndFeel::menuRow ("Cathedral", "A long dark tail.")
-           == "Cathedral\nA long dark tail.");
+    auto rowWidth = 0;
+    auto rowHeight = 0;
+    lookAndFeel.getIdealPopupMenuItemSize ("Hollow Keys", false, 0, rowWidth, rowHeight);
 
-    // A row with nothing to add is an ordinary one-line row and costs nothing.
-    CHECK (DewLookAndFeel::menuRow ("Cathedral", {}) == "Cathedral");
+    auto headingWidth = 0;
+    auto headingHeight = 0;
+    lookAndFeel.getIdealPopupMenuSectionHeaderSizeWithOptions ("Keys", 0, headingWidth,
+                                                               headingHeight, {});
 
-    auto plainWidth = 0;
-    auto plainHeight = 0;
-    lookAndFeel.getIdealPopupMenuItemSize ("Cathedral", false, 0, plainWidth, plainHeight);
+    // Shorter than a row, not JUCE's row-and-a-half: a heading a row and a half
+    // tall separates the group it is meant to gather.
+    INFO ("row " << rowWidth << "x" << rowHeight << ", heading " << headingWidth << "x"
+                 << headingHeight);
+    CHECK (headingHeight > 0);
+    CHECK (headingHeight < rowHeight);
 
-    auto detailedWidth = 0;
-    auto detailedHeight = 0;
-    lookAndFeel.getIdealPopupMenuItemSize (
-        DewLookAndFeel::menuRow ("Cathedral", "A long dark tail, and then some more of it."), false,
-        0, detailedWidth, detailedHeight);
-
-    // Taller, and wide enough for the LONGER line. An ideal width taken from
-    // the label alone would clip every description it was given, which is the
-    // failure this is written for.
-    INFO ("plain " << plainWidth << "x" << plainHeight << ", detailed " << detailedWidth << "x"
-                   << detailedHeight);
-    CHECK (detailedHeight > plainHeight);
-    CHECK (detailedWidth > plainWidth);
-
-    // And both lines are painted. Drawn straight through the look and feel
-    // rather than through a menu window, which a headless test has no peer for.
-    struct Row : juce::Component
+    // And it paints. Drawn straight through the look and feel rather than
+    // through a menu window, which a headless test has no peer for.
+    struct Heading : juce::Component
     {
-        Row (DewLookAndFeel& l, juce::String t)
+        Heading (DewLookAndFeel& l, juce::String t)
             : lookAndFeel (l)
             , text (std::move (t))
         {
@@ -102,22 +93,26 @@ TEST_CASE ("a menu row can carry a sentence under its label", "[design][dropdown
 
         void paint (juce::Graphics& g) override
         {
-            lookAndFeel.drawPopupMenuItem (g, getLocalBounds(), false, true, false, false, false,
-                                           text, {}, nullptr, nullptr);
+            lookAndFeel.drawPopupMenuSectionHeader (g, getLocalBounds(), text);
         }
     };
 
-    Row plain { lookAndFeel, "Cathedral" };
-    plain.setSize (detailedWidth, detailedHeight);
+    Heading named { lookAndFeel, "Keys" };
+    named.setSize (rowWidth, headingHeight);
 
-    Row detailed { lookAndFeel, DewLookAndFeel::menuRow ("Cathedral", "A long dark tail.") };
-    detailed.setSize (detailedWidth, detailedHeight);
+    Heading blank { lookAndFeel, {} };
+    blank.setSize (rowWidth, headingHeight);
 
-    const auto plainInk = inkCoverage (render (plain));
-    const auto detailedInk = inkCoverage (render (detailed));
+    const auto namedInk = inkCoverage (render (named));
+    const auto blankInk = inkCoverage (render (blank));
 
-    INFO ("ink: label only " << plainInk << ", with a sentence " << detailedInk);
-    CHECK (detailedInk > plainInk * 1.5f);
+    INFO ("ink: named " << namedInk << ", blank " << blankInk);
+    CHECK (namedInk > 0.0f);
+
+    // The control case: nothing paints a heading with no name, so the ink above
+    // is the text rather than a background this happens to fill. exactlyEqual
+    // because the ci preset builds -Wfloat-equal and Catch2 decomposes ==.
+    CHECK (juce::exactlyEqual (blankInk, 0.0f));
 }
 
 TEST_CASE ("a dropdown's menu opens below the box, not over it", "[design][dropdown]")

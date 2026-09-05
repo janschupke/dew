@@ -17,8 +17,12 @@ inline constexpr const char* kPresetFormatTag = "dew-preset";
     A preset is a different document from a project, and versioning them
     together would make a preset saved by a newer dew unreadable for reasons
     that have nothing to do with either format.
+
+    2 added the category. A version 1 file still loads and simply arrives with
+    no category - the reader refuses only a version it is too old to understand
+    - so the bump records what the writer now emits rather than closing a door.
 */
-inline constexpr int kPresetFormatVersion = 1;
+inline constexpr int kPresetFormatVersion = 2;
 
 /** Reads and writes one .dewpreset file.
 

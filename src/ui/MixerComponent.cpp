@@ -15,6 +15,11 @@ using namespace tokens;
 
 // -----------------------------------------------------------------------------
 
+void MixerComponent::setPresetHoverSink (std::function<void (const juce::String&)> sink)
+{
+    chainHost.setPresetHoverSink (std::move (sink));
+}
+
 void MixerComponent::setParamMenuHost (const paramMenu::Host* host)
 {
     paramMenuHost = host;

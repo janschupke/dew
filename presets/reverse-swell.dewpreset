@@ -1,10 +1,11 @@
 {
     "format": "dew-preset",
-    "formatVersion": 1,
+    "formatVersion": 2,
     "kind": "instrument",
     "type": "audio",
     "name": "Reverse Swell",
     "description": "Played backwards into a long fade in.",
+    "category": "texture",
     "state": {
       "sample": {
         "fadeInMs": 600.0,
