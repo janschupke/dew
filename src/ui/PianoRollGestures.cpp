@@ -314,7 +314,7 @@ void PianoRollComponent::mouseDown (const juce::MouseEvent& event)
     selectOnly (draggedNote);
     ProjectEdits::growPatternToFitNotes (pattern, &undo);
 
-    gesture = Gesture::resizing;
+    gesture = Gesture::drawing;
     repaint();
 }
 
@@ -386,15 +386,40 @@ void PianoRollComponent::mouseDrag (const juce::MouseEvent& event)
     // to reach an off-grid position without going back to the dropdown.
     const auto snap = event.mods.isShiftDown() ? 1 : snapSteps();
 
-    if (gesture == Gesture::resizing)
+    if (gesture == Gesture::drawing)
+    {
+        // A SPAN between the cell the press landed in and the cell the pointer
+        // is in, so the note grows whichever way the hand goes. It used to
+        // share the resize branch below, which reads the note's own start - a
+        // start the press had already fixed - so dragging left produced a
+        // negative length, the jmax clamped it to one step, and the note the
+        // release then remembered as the default was that one step.
+        //
+        // dragOrigin rather than the note's step: the note MOVES during this
+        // gesture, and an anchor read from the thing being moved is not an
+        // anchor. The rubber band a few lines up normalises the same way.
+        const auto anchor = NoteTools::snapFloor (stepAtX (dragOrigin.x), snap);
+        const auto here = stepAtX (event.x);
+
+        const auto start = juce::jmax (0, juce::jmin (anchor, NoteTools::snapFloor (here, snap)));
+        const auto end = juce::jmax (anchor + snap, NoteTools::snapCeil (here + 1, snap));
+
+        ProjectEdits::moveNote (draggedNote, start, (int) draggedNote[ids::pitch], &undo);
+        ProjectEdits::resizeNote (draggedNote, end - start, &undo);
+    }
+    else if (gesture == Gesture::resizing)
     {
         // The note's END lands on a grid line, rather than its length becoming
         // a multiple of the grid: a note that already starts off-grid should be
         // draggable to a beat, not merely to a beat's width.
+        //
+        // One DIVISION is the floor, not one step: a drawn note is never
+        // shorter than a cell of the grid it was drawn on, and an edge dragged
+        // past its own start should land on the same length.
         const auto start = (int) draggedNote[ids::step];
         const auto end = NoteTools::snapCeil (stepAtX (event.x) + 1, snap);
 
-        ProjectEdits::resizeNote (draggedNote, juce::jmax (1, end - start), &undo);
+        ProjectEdits::resizeNote (draggedNote, juce::jmax (snap, end - start), &undo);
     }
     else if (gesture == Gesture::moving)
     {
@@ -462,7 +487,9 @@ void PianoRollComponent::mouseUp (const juce::MouseEvent& event)
 
     // The next note drawn takes the shape of the last one, so writing a passage
     // of held or quiet notes does not mean re-editing every one.
-    if (draggedNote.isValid() && (gesture == Gesture::resizing || gesture == Gesture::moving))
+    if (draggedNote.isValid()
+        && (gesture == Gesture::drawing || gesture == Gesture::resizing
+            || gesture == Gesture::moving))
         editorState.rememberNote ((int) draggedNote[ids::lengthSteps],
                                   (double) draggedNote[ids::velocity]);
 

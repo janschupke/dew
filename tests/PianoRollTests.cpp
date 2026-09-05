@@ -9,6 +9,8 @@
 #include <juce_gui_basics/juce_gui_basics.h>
 
 #include "model/EntityColour.h"
+#include "model/Meter.h"
+#include "model/NoteTools.h"
 #include "ui/ChannelRackComponent.h"
 #include "ui/ZoomButtons.h"
 #include "ui/design/Cursors.h"
@@ -56,6 +58,92 @@ TEST_CASE ("a new note takes the shape of the last one drawn", "[ui][pianoroll]"
 
     REQUIRE (h.countNotes() == 2);
     REQUIRE ((int) h.pattern().getChild (1)[ids::lengthSteps] == 4);
+}
+
+TEST_CASE ("a note is the same note whichever way it was drawn", "[ui][pianoroll]")
+{
+    // Path independence, which is the honest statement of the defect: drawing
+    // right to left gave a one-step note. The creation press fixed the note's
+    // step and the drag then shared the RESIZE branch, which measures from that
+    // fixed start - so a leftward pointer produced a negative length, the jmax
+    // clamped it to one, and the release remembered one step as the default
+    // shape for the next note as well.
+    const juce::ScopedJuceInitialiser_GUI juceInit;
+
+    const auto spanDrawn = [] (int fromStep, int toStep, int& step, int& length)
+    {
+        RollHarness h;
+        dragBetween (h.roll, pointFor (h, fromStep, 72), pointFor (h, toStep, 72));
+
+        REQUIRE (h.countNotes() == 1);
+
+        const auto note = h.pattern().getChild (0);
+        step = (int) note[ids::step];
+        length = (int) note[ids::lengthSteps];
+    };
+
+    int rightStep = 0, rightLength = 0;
+    int leftStep = 0, leftLength = 0;
+
+    spanDrawn (4, 11, rightStep, rightLength);
+    spanDrawn (11, 4, leftStep, leftLength);
+
+    // Drawn one way, the note runs from 4 to 12.
+    CHECK (rightStep == 4);
+    CHECK (rightLength == 8);
+
+    // Drawn the other, it is the same note. This is what failed: it was step 11,
+    // one step long.
+    CHECK (leftStep == rightStep);
+    CHECK (leftLength == rightLength);
+}
+
+TEST_CASE ("a note drawn leftwards does not poison the next one", "[ui][pianoroll]")
+{
+    // The second half of the same defect. rememberNote runs on the release of a
+    // draw, so a collapsed note taught the roll that one step was the shape a
+    // person wanted - and every note drawn afterwards came out one step long
+    // until somebody dragged a good one.
+    const juce::ScopedJuceInitialiser_GUI juceInit;
+    RollHarness h;
+
+    dragBetween (h.roll, pointFor (h, 11, 72), pointFor (h, 4, 72));
+
+    CHECK (h.editorState.getLastNoteLengthSteps() == 8);
+
+    clickAndRelease (h.roll, pointFor (h, 13, 72));
+
+    REQUIRE (h.countNotes() == 2);
+    CHECK ((int) h.pattern().getChild (1)[ids::lengthSteps] == 8);
+}
+
+TEST_CASE ("dragging a note's right edge past its own start stops at one division",
+           "[ui][pianoroll]")
+{
+    // The gesture the draw was sharing a branch with, and the reason they are
+    // now two: an EDGE has a fixed other end, so dragging it left shortens the
+    // note and stops. Only a note being DRAWN grows the other way.
+    const juce::ScopedJuceInitialiser_GUI juceInit;
+    RollHarness h;
+
+    dragBetween (h.roll, pointFor (h, 8, 72), pointFor (h, 15, 72));
+    REQUIRE ((int) h.pattern().getChild (0)[ids::lengthSteps] == 8);
+
+    const auto note = h.pattern().getChild (0);
+    const auto rightEdge = h.roll.getBoundsForNote (note).getRight() - 2;
+    const auto edgePoint = juce::Point<int> ((int) rightEdge, pointFor (h, 8, 72).y);
+
+    dragBetween (h.roll, edgePoint, pointFor (h, 2, 72));
+
+    // Still one note, still starting where it did, and never shorter than the
+    // grid division it was drawn on.
+    const auto meter = Meter::of (h.document.getState());
+    const auto division = NoteTools::stepsForSnap (h.roll.getSnap(), meter.stepsPerBeat,
+                                                   meter.beatsPerBar);
+
+    REQUIRE (h.countNotes() == 1);
+    CHECK ((int) h.pattern().getChild (0)[ids::step] == 8);
+    CHECK ((int) h.pattern().getChild (0)[ids::lengthSteps] == division);
 }
 
 TEST_CASE ("a note drawn past the end grows the pattern to hold it", "[ui][pianoroll]")

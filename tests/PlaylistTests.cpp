@@ -211,6 +211,48 @@ TEST_CASE ("the paint tool lays a clip in every bar it crosses", "[ui][playlist]
         CHECK (ProjectEdits::findClipAtBar (h.track (0), bar).isValid());
 }
 
+TEST_CASE ("a clip is the same clip whichever way it was drawn", "[ui][playlist]")
+{
+    // The piano roll's defect, in the view that copied its gesture: placing a
+    // clip and sizing it with one press shared the RESIZE branch, which
+    // measures from the clip's own startBar - fixed by the press - so dragging
+    // left gave a negative length and the jmax pinned it to one bar.
+    const juce::ScopedJuceInitialiser_GUI juceInit;
+
+    const auto spanDrawn = [] (int fromBar, int toBar, int& start, int& length)
+    {
+        PlaylistHarness h;
+
+        h.playlist.mouseDown (eventAt (h.playlist, pointFor (h, fromBar, 0)));
+
+        const auto step = toBar > fromBar ? 1 : -1;
+
+        for (int bar = fromBar; bar != toBar + step; bar += step)
+            h.playlist.mouseDrag (eventAt (h.playlist, pointFor (h, bar, 0), 1, {}, true));
+
+        h.playlist.mouseUp (eventAt (h.playlist, pointFor (h, toBar, 0), 1, {}, true));
+
+        REQUIRE (h.countClips (0) == 1);
+
+        const auto clip = ProjectEdits::findClipAtBar (h.track (0), juce::jmin (fromBar, toBar));
+        REQUIRE (clip.isValid());
+        start = (int) clip[ids::startBar];
+        length = (int) clip[ids::lengthBars];
+    };
+
+    int rightStart = 0, rightLength = 0;
+    int leftStart = 0, leftLength = 0;
+
+    spanDrawn (1, 4, rightStart, rightLength);
+    spanDrawn (4, 1, leftStart, leftLength);
+
+    CHECK (rightStart == 1);
+    CHECK (rightLength == 4);
+
+    CHECK (leftStart == rightStart);
+    CHECK (leftLength == rightLength);
+}
+
 TEST_CASE ("the paint tool does not stack a clip on one already there", "[ui][playlist]")
 {
     const juce::ScopedJuceInitialiser_GUI juceInit;

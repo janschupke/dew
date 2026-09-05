@@ -244,7 +244,18 @@ private:
     {
         none,
         moving,
+
+        /** An existing clip's RIGHT EDGE, which stops at its own start. */
         resizing,
+
+        /** A clip being drawn, whose length the same press is still setting.
+
+            Its own gesture for the reason PianoRollComponent's is: an edge and
+            a span want opposite things of a leftward drag, and sharing one
+            branch is why drawing right to left produced a one-bar clip.
+        */
+        drawing,
+
         draggingPoint,
         bendingSegment,
         painting
@@ -493,6 +504,10 @@ private:
     Gesture gesture = Gesture::none;
     int dragBarOffset = 0;
     int dropTrackIndex = -1;
+
+    /** The bar the press that is drawing a clip landed in. The clip's own
+        startBar cannot serve: it MOVES while the span grows leftwards. */
+    int drawAnchorBar = 0;
 
     /** A mod-drag copies rather than moves, and mod-shift gives the copy its
         own pattern. Latched at the press and cleared by the copy itself, so a

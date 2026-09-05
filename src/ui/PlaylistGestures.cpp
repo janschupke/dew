@@ -224,7 +224,8 @@ void PlaylistComponent::mouseDown (const juce::MouseEvent& event)
     draggedClip = ProjectEdits::addClip (track, editorState.getCurrentPatternId(), bar, 1, &undo);
     draggedClipTrack = track;
     dropTrackIndex = trackIndex;
-    gesture = Gesture::resizing;
+    drawAnchorBar = bar;
+    gesture = Gesture::drawing;
     ProjectEdits::growSongToFitClips (document.getState(), &undo);
     updateScrollBar();
     repaint();
@@ -376,7 +377,21 @@ void PlaylistComponent::mouseDrag (const juce::MouseEvent& event)
         return;
     }
 
-    if (gesture == Gesture::resizing)
+    if (gesture == Gesture::drawing)
+    {
+        // A SPAN between the bar the press landed in and the bar under the
+        // pointer, so a clip grows whichever way the hand goes. It shared the
+        // resize branch below, which measures from the clip's own startBar -
+        // fixed by the press - so a leftward drag gave a negative length and
+        // the jmax pinned it to one bar.
+        const auto here = barAtX (event.x);
+        const auto start = juce::jmax (0, juce::jmin (drawAnchorBar, here));
+        const auto end = juce::jmax (drawAnchorBar, here) + 1;
+
+        ProjectEdits::moveClip (draggedClip, start, &undo);
+        ProjectEdits::resizeClip (draggedClip, end - start, &undo);
+    }
+    else if (gesture == Gesture::resizing)
     {
         const auto length = barAtX (event.x) - (int) draggedClip[ids::startBar] + 1;
         ProjectEdits::resizeClip (draggedClip, juce::jmax (1, length), &undo);
@@ -425,7 +440,9 @@ void PlaylistComponent::mouseUp (const juce::MouseEvent& event)
 
     // The next clip painted takes the length of the last one sized, so laying a
     // run of four-bar clips does not mean resizing every one.
-    if (draggedClip.isValid() && (gesture == Gesture::resizing || gesture == Gesture::moving))
+    if (draggedClip.isValid()
+        && (gesture == Gesture::drawing || gesture == Gesture::resizing
+            || gesture == Gesture::moving))
         editorState.rememberClip ((int) draggedClip[ids::lengthBars]);
 
     draggedClip = {};

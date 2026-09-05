@@ -243,7 +243,22 @@ private:
     {
         none,
         moving,
+
+        /** An existing note's RIGHT EDGE. Dragging left past the note's own
+            start shortens it to one division and stops, which is what a right
+            edge should do. */
         resizing,
+
+        /** A note being drawn, whose length the same press is still setting.
+
+            Its own gesture rather than a second use of `resizing`, because the
+            two want opposite things of a leftward drag: an edge stops at its
+            note's start, and a drawn note is a SPAN between the press and the
+            pointer, so it grows the other way instead. Sharing the branch is
+            why drawing right to left collapsed to a one-division note.
+        */
+        drawing,
+
         selecting,
         velocity,
         auditioning,
