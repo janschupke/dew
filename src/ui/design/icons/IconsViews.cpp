@@ -47,6 +47,14 @@ juce::Path zoomOut()
     return p;
 }
 
+juce::Path search()
+{
+    // The magnifier with nothing laid over it. zoomIn and zoomOut are this
+    // path plus a plus or a minus, so the helper was already here and this is
+    // the shape it was factored out of.
+    return magnifier();
+}
+
 juce::Path fitToContent()
 {
     juce::Path p;
@@ -169,6 +177,7 @@ std::vector<NamedIcon> all()
         { "power", power },
         { "lock", lock },
         { "check", check },
+        { "cross", cross },
         { "chevronUp", chevronUp },
         { "chevronDown", chevronDown },
         { "chevronLeft", chevronLeft },
@@ -193,6 +202,7 @@ std::vector<NamedIcon> all()
 
         { "zoomIn", zoomIn },
         { "zoomOut", zoomOut },
+        { "search", search },
         { "fitToContent", fitToContent },
         { "rowsShorter", rowsShorter },
         { "rowsTaller", rowsTaller },

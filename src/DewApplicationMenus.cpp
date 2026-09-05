@@ -46,6 +46,13 @@ constexpr MenuBarItem menuBarOrder[] {
     MenuBarItem::project,
     MenuBarItem::audio,
     MenuBarItem::demos,
+
+    // macOS has no Help menu here because About is in the application menu,
+    // which is not on the bar - buildAppleMenu puts it there instead. Off
+    // Apple there is no such menu, so About needs one of its own.
+#if ! JUCE_MAC
+    MenuBarItem::help,
+#endif
 };
 // clang-format on
 
@@ -55,7 +62,11 @@ constexpr MenuBarItem menuBarOrder[] {
 // links. Nothing makes it appear on the BAR, though, which is this line: the
 // count is the enum's, so an enumerator the order above does not carry stops
 // the build here rather than going missing from the menu bar in silence.
+#if JUCE_MAC
 static_assert (std::size (menuBarOrder) == 7, "every MenuBarItem is on the bar exactly once");
+#else
+static_assert (std::size (menuBarOrder) == 8, "every MenuBarItem is on the bar exactly once");
+#endif
 
 StringId titleOf (MenuBarItem item)
 {
@@ -68,6 +79,7 @@ StringId titleOf (MenuBarItem item)
         case MenuBarItem::project: return StringId::menu_project;
         case MenuBarItem::audio: return StringId::menu_audio;
         case MenuBarItem::demos: return StringId::menu_demos;
+        case MenuBarItem::help: return StringId::menu_help;
     }
 
     return StringId::menu_file;
@@ -123,6 +135,14 @@ juce::PopupMenu DewApplication::getMenuForIndex (int topLevelMenuIndex, const ju
     {
         menu.addCommandItem (&commandManager, CommandIDs::editUndo);
         menu.addCommandItem (&commandManager, CommandIDs::editRedo);
+
+        // Where every platform but Apple keeps it. macOS is the exception and
+        // is served by buildAppleMenu, because a Mac user looks under the
+        // application's own name and nowhere else.
+#if ! JUCE_MAC
+        menu.addSeparator();
+        menu.addCommandItem (&commandManager, CommandIDs::preferences);
+#endif
     }
     else if (which == MenuBarItem::view)
     {
@@ -201,6 +221,10 @@ juce::PopupMenu DewApplication::getMenuForIndex (int topLevelMenuIndex, const ju
         menu.addSeparator();
         menu.addCommandItem (&commandManager, CommandIDs::mcpSettings);
     }
+    else if (which == MenuBarItem::help)
+    {
+        menu.addCommandItem (&commandManager, CommandIDs::about);
+    }
     else if (which == MenuBarItem::demos)
     {
         const auto& demos = ProjectFactory::demos();
@@ -228,6 +252,24 @@ void DewApplication::menuItemSelected (int menuItemID, int topLevelMenuIndex)
     if (menuItemID >= languageMenuBaseId
         && menuItemID <= languageMenuBaseId + availableLocales().size())
         chooseLanguage (menuItemID - languageMenuBaseId);
+}
+
+void DewApplication::buildAppleMenu()
+{
+    // Cleared first: initialise runs once, but a member that is filled rather
+    // than constructed should not depend on that to stay one menu long.
+    appleMenu.clear();
+
+#if JUCE_MAC
+    // The order macOS itself uses, above the Services entry JUCE appends: what
+    // this application IS, then how it is configured. Command items, so the
+    // command manager invokes them and shows their keys - and so menuItemSelected
+    // has nothing to do, which is why it can go on returning for a negative
+    // topLevelMenuIndex, the index an apple-menu item arrives with.
+    appleMenu.addCommandItem (&commandManager, CommandIDs::about);
+    appleMenu.addSeparator();
+    appleMenu.addCommandItem (&commandManager, CommandIDs::preferences);
+#endif
 }
 
 void DewApplication::openDemo (int index)

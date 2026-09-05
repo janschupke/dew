@@ -41,6 +41,7 @@ juce::Path mute();  ///< speaker with a cross
 juce::Path solo();  ///< headphones
 juce::Path power(); ///< effect bypass
 juce::Path check(); ///< a ticked menu item
+juce::Path cross(); ///< clears a field: the tick's opposite, and the same weight
 juce::Path lock();
 juce::Path chevronUp();
 juce::Path chevronDown();
@@ -69,6 +70,14 @@ juce::Path effectLimiter();
 // --- views -------------------------------------------------------------------
 juce::Path zoomIn();
 juce::Path zoomOut();
+
+/** The bare magnifier: looking WITHOUT changing what is shown.
+
+    zoomIn and zoomOut are the same glass with a plus and a minus laid over it,
+    so the three read as one family - which is the point, because a search box
+    and a zoom button are both "find what you are after".
+*/
+juce::Path search();
 juce::Path fitToContent();
 
 /** The vertical axis of the same idea: how tall a row is, drawn as how many

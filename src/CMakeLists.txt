@@ -47,6 +47,10 @@ target_compile_definitions(dew_juce_config
     JUCE_STANDALONE_APPLICATION=1
     DEW_VERSION_STRING="${PROJECT_VERSION}${DEW_VERSION_SUFFIX}"
     DEW_JUCE_PIN="${DEW_PIN_JUCE}"
+#The product's name, so the one place that spells it is the project() call.
+#The About window and getApplicationName both read it through BuildInfo, which
+#is where the rest of this binary's provenance already lives.
+    DEW_PRODUCT_NAME="${PROJECT_NAME}"
 )
 
 #The demo library, embedded so the Demos menu works from a build with no
@@ -472,6 +476,7 @@ add_library(dew_design STATIC
   ui/design/DewGallery.cpp
   ui/design/DewGalleryPalette.cpp
   ui/primitives/DewControls.cpp
+  ui/primitives/DewSearchField.cpp
   ui/primitives/DewKnob.cpp
   ui/primitives/DewPaint.cpp
   ui/primitives/DewMeter.cpp
@@ -530,7 +535,14 @@ add_library(dew_ui STATIC
   ui/EffectChainHost.cpp
   ui/AudioSettingsPanel.cpp
   ui/RenderPanel.cpp
+  ui/RenderChoices.cpp
   ui/MidiSettingsPanel.cpp
+  ui/AboutPanel.cpp
+  ui/PreferencesCatalog.cpp
+  ui/PreferencesPages.cpp
+  ui/PreferencesRendering.cpp
+  ui/PreferencesPanel.cpp
+  ui/PreferencesSearch.cpp
   ui/HoverHelp.cpp
   ui/StatusBar.cpp
   ui/TransportBar.cpp
@@ -603,6 +615,7 @@ target_sources(dew PRIVATE
   main.cpp
   DewApplication.cpp
   DewApplicationMenus.cpp
+  DewApplicationPrefs.cpp
 )
 
 target_link_libraries(dew

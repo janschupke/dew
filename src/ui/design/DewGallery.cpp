@@ -8,6 +8,7 @@
 #include "model/ModuleCatalog.h"
 #include "ui/design/DewGalleryPalette.h"
 #include "ui/design/Icons.h"
+#include "ui/primitives/DewSearchField.h"
 #include "ui/design/ParamPalette.h"
 #include "ui/design/Tokens.h"
 
@@ -222,6 +223,17 @@ DewGallery::DewGallery()
     unavailable->setEnabled (false);
     add (unavailable);
 
+    // --- the search field ----------------------------------------------------
+    // Shown with something typed in it, because the clear button only exists
+    // when there is something to clear - an empty one would be a picture of
+    // half the control.
+    auto* search = new DewSearchField();
+    search->setPlaceholder (tr (StringId::gallery_searchPlaceholder));
+    search->setTooltip (tr (StringId::gallery_searchPlaceholder));
+    search->setClearTooltip (tr (StringId::gallery_searchClear));
+    search->setText (tr (StringId::gallery_searchTyped), juce::dontSendNotification);
+    add (search);
+
     // --- signal scope, both states -------------------------------------------
     // Engine-less on purpose: neither starts a timer, so this page renders the
     // same way every time it is asked to.
@@ -364,6 +376,13 @@ int DewGallery::layOut (juce::Rectangle<int> area, bool apply)
             place (controls[index++], row.removeFromLeft (150).withHeight (size::controlHeight));
             row.removeFromLeft (space::md);
         }
+    }
+
+    // Search field.
+    {
+        auto row = sectionHeading ("Search field", size::controlHeight);
+
+        place (controls[index++], row.removeFromLeft (240).withHeight (size::controlHeight));
     }
 
     // Signal scope.

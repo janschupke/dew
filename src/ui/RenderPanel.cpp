@@ -3,6 +3,7 @@
 #include "i18n/Strings.h"
 #include "engine/Sequencer.h"
 #include "model/Ids.h"
+#include "ui/RenderChoices.h"
 #include "ui/design/Tokens.h"
 
 namespace dew
@@ -12,12 +13,6 @@ using namespace tokens;
 
 namespace
 {
-
-constexpr int rateIdBase = 1000; ///< sample rate in Hz IS the item id
-
-/** The rates every format takes, and the two more that only uncompressed ones do. */
-const juce::Array<int> allRates { 44100, 48000, 88200, 96000 };
-const juce::Array<int> mp3Rates { 32000, 44100, 48000 };
 
 juce::String describeSeconds (double seconds)
 {
@@ -63,9 +58,7 @@ RenderPanel::RenderPanel (ProjectDocument& d, EditorState& state, Settings* sett
     peakField.setValue (-1.0, juce::dontSendNotification);
     peakField.setTooltip (tr (StringId::render_peak_help));
 
-    depthBox.addItem (tr (StringId::render_depth_bits16), 16);
-    depthBox.addItem (tr (StringId::render_depth_bits24), 24);
-    depthBox.addItem (tr (StringId::render_depth_float32), 32);
+    renderChoices::fillDepths (depthBox);
     depthBox.setSelectedId (24, juce::dontSendNotification);
 
     ditherToggle.setToggleState (true, juce::dontSendNotification);
@@ -86,12 +79,13 @@ RenderPanel::RenderPanel (ProjectDocument& d, EditorState& state, Settings* sett
 
         const auto storedRate = settings->getRenderSampleRate();
 
-        if (allRates.contains (storedRate))
-            rateBox.setSelectedId (rateIdBase + storedRate, juce::dontSendNotification);
+        if (renderChoices::allRates().contains (storedRate))
+            rateBox.setSelectedId (renderChoices::rateIdBase + storedRate,
+                                   juce::dontSendNotification);
 
         const auto storedDepth = settings->getRenderBitDepth();
 
-        if (storedDepth == 16 || storedDepth == 24 || storedDepth == 32)
+        if (renderChoices::isOfferedDepth (storedDepth))
             depthBox.setSelectedId (storedDepth, juce::dontSendNotification);
 
         tailField.setValue (settings->getRenderTailSeconds(), juce::dontSendNotification);
@@ -233,8 +227,7 @@ void RenderPanel::rebuildFormats()
     formatBox.clear (juce::dontSendNotification);
     unavailableNote.clear();
 
-    for (const auto format :
-         { RenderFormat::wav, RenderFormat::flac, RenderFormat::mp3, RenderFormat::midi })
+    for (const auto format : renderChoices::formats())
     {
         const auto id = (int) format + 1;
         formatBox.addItem (OfflineRenderer::nameFor (format), id);
@@ -257,17 +250,7 @@ void RenderPanel::rebuildFormats()
 
     // The rate list narrows for mp3, so a rate that format cannot take does not
     // survive a switch to it.
-    const auto rates = currentFormat() == RenderFormat::mp3 ? mp3Rates : allRates;
-    const auto previous = rateBox.getSelectedId() - rateIdBase;
-
-    rateBox.clear (juce::dontSendNotification);
-
-    for (const auto rate : rates)
-        rateBox.addItem (tr (StringId::unit_hertzValue, Args {}.with ("value", rate)),
-                         rateIdBase + rate);
-
-    rateBox.setSelectedId (rateIdBase + (rates.contains (previous) ? previous : 44100),
-                           juce::dontSendNotification);
+    renderChoices::fillRates (rateBox, currentFormat());
 
     if (mp3QualityBox.getNumItems() == 0)
     {
@@ -405,7 +388,7 @@ RenderPanel::Request RenderPanel::getRequest() const
     Request request;
 
     request.options.format = currentFormat();
-    request.options.sampleRate = (double) (rateBox.getSelectedId() - rateIdBase);
+    request.options.sampleRate = (double) (rateBox.getSelectedId() - renderChoices::rateIdBase);
     request.options.tailSeconds = tailField.getValue();
     request.options.normalize = normalizeToggle.getToggleState();
     request.options.normalizePeakDb = (float) peakField.getValue();

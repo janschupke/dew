@@ -73,6 +73,8 @@ add_executable(dew_tests
   CanvasCursorTests.cpp
   TimelineRulerTests.cpp
   TypographyTests.cpp
+  PreferencesTests.cpp
+  AboutTests.cpp
   PianoRollTests.cpp
   PianoRollVelocityTests.cpp
   PianoRollViewTests.cpp

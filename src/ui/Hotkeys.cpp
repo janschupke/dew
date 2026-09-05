@@ -157,9 +157,12 @@ const std::vector<Binding<juce::CommandID>>& application()
           StringId::command_compileScore_name, StringId::command_compileScore_description,
           StringId::command_category_project },
 
-        { CommandIDs::audioSettings, { ',', juce::ModifierKeys::commandModifier },
-          StringId::command_audioSettings_name, StringId::command_audioSettings_description,
-          StringId::command_category_audio },
+        // Keyless since Preferences took cmd-comma, which is where every
+        // platform's convention says the settings window lives. The menu item
+        // stays: this dialog is still the place the device is chosen, and
+        // Preferences shows the very same panel on its Audio page.
+        { CommandIDs::audioSettings, Stroke {}, StringId::command_audioSettings_name,
+          StringId::command_audioSettings_description, StringId::command_category_audio },
         { CommandIDs::midiSettings, { ',', juce::ModifierKeys::commandModifier
                                            | juce::ModifierKeys::shiftModifier },
           StringId::command_midiSettings_name, StringId::command_midiSettings_description,
@@ -171,6 +174,13 @@ const std::vector<Binding<juce::CommandID>>& application()
         // keyless row collides with nothing.
         { CommandIDs::mcpSettings, Stroke {}, StringId::command_mcpSettings_name,
           StringId::command_mcpSettings_description, StringId::command_category_tools },
+
+        // The one stroke this table would be wrong to spell any other way.
+        { CommandIDs::preferences, { ',', juce::ModifierKeys::commandModifier },
+          StringId::command_preferences_name, StringId::command_preferences_description,
+          StringId::command_category_application },
+        { CommandIDs::about, Stroke {}, StringId::command_about_name,
+          StringId::command_about_description, StringId::command_category_application },
     };
 
     // clang-format on

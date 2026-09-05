@@ -3,6 +3,7 @@
 #include "ui/MainComponent.h"
 #include "ui/McpConnectionsPanel.h"
 #include "ui/McpConsentPanel.h"
+#include "ui/PreferencesPanel.h"
 
 namespace dew
 {
@@ -221,6 +222,35 @@ void MainComponent::showMcpSettings()
                                            });
 
     dialog::launch (panel, tr (StringId::mcp_connections_title), this);
+}
+
+void MainComponent::showPreferences (Settings& settings, juce::ApplicationCommandManager& commands,
+                                     std::function<void (int)> onLanguageChosen)
+{
+    // The grants outlive the endpoint being stopped, exactly as showMcpSettings
+    // needs them to, so they are made the same way and for the same reason.
+    if (mcpGrants == nullptr)
+        mcpGrants = std::make_unique<McpGrants> (settings);
+
+    PreferencesPanel::Hosts hosts;
+
+    hosts.audio = &audioHost;
+    hosts.engine = &engine;
+    hosts.midi = &midiHost;
+    hosts.commands = &commands;
+    hosts.grants = mcpGrants.get();
+    hosts.onLanguageChosen = std::move (onLanguageChosen);
+
+    // Fetched on demand rather than handed over: the switch on the Connections
+    // page destroys and recreates it.
+    hosts.mcpServer = [this] { return mcpServer.get(); };
+    hosts.onMcpEnabledChanged = [this]
+    {
+        if (mcpSettings != nullptr)
+            applyMcpSettings (*mcpSettings);
+    };
+
+    PreferencesPanel::show (settings, std::move (hosts), this);
 }
 
 } // namespace dew

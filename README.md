@@ -260,7 +260,8 @@ licence question. Without it the format reports itself unavailable and the rest 
   sample rate, release tail, normalize, fades, dither and stems. Runs off the message
   thread. **File**, or ⌘E.
 - **Audio settings** — driver, output, input, input channels, sample rate and buffer
-  size, with the resulting latency, an input meter and a test tone. **Audio**, or ⌘,.
+  size, with the resulting latency, an input meter and a test tone. **Audio**, or the
+  Audio page of Preferences, which shows the same panel.
 - **It remembers** — window geometry, interface scale, active tab, selections, the piano
   roll's zoom, scroll, row height and snap, the playlist's lane height, the score's text
   size, panel width and chosen device. The piano roll's *tool* deliberately
@@ -275,12 +276,21 @@ licence question. Without it the format reports itself unavailable and the rest 
   See **The score language** below.
 - **File** — New, Open, Save, Save As, dirty tracking, a save-before-closing prompt, and
   undo/redo over every edit.
+- **Preferences** — ⌘, — everything dew is configured by in one window you can search:
+  appearance, the audio and MIDI devices, what a render defaults to, and what is allowed
+  to drive dew over MCP. Typing filters it both ways at once, the way the two editors
+  people arrive from do — the category list narrows to what holds a match, and the pane
+  becomes one flat list of every match across every page. It replaces nothing: the Audio
+  menu still opens those dialogs, the View menu still holds the appearance submenus, and
+  both routes reach one implementation.
+- **About** — which version this is, the JUCE commit behind it, and the offer of source
+  that AGPLv3 obliges.
 
 ## Keyboard and mouse
 
 ⌘N ⌘O ⌘S ⇧⌘S · ⌘E render · ⌘R compile score · ⌘Z ⇧⌘Z · Space play · R record · ⌘L
-pattern/song · ⌘K add channel. ⌘1 – ⌘5 go to the five tabs, ⌃⇥ cycles them, ⌘\ folds the
-instrument panel away.
+pattern/song · ⌘K add channel · ⌘, preferences. ⌘1 – ⌘5 go to the five tabs, ⌃⇥ cycles
+them, ⌘\ folds the instrument panel away.
 
 Every key dew binds is a row in `src/ui/Hotkeys.h` and a gate refuses one spelled anywhere
 else. The full table — what each editor's keys mean, the tools, the canvas cursor, what a

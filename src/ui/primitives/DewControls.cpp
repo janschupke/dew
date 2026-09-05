@@ -61,6 +61,12 @@ DewButton::DewButton (const juce::String& text, Role r)
     setMouseCursor (cursor::clickable);
 }
 
+void DewButton::setTextJustification (juce::Justification j)
+{
+    justification = j;
+    repaint();
+}
+
 void DewButton::setRole (Role r)
 {
     role = r;
@@ -114,7 +120,12 @@ void DewButton::paintButton (juce::Graphics& g, bool highlighted, bool down)
 
     g.setColour (isEnabled() ? text : colour::textDisabled);
     g.setFont (type::font (type::body));
-    g.drawText (getButtonText(), getLocalBounds(), juce::Justification::centred, false);
+
+    const auto label = justification == juce::Justification::centred
+                           ? getLocalBounds()
+                           : getLocalBounds().reduced (space::md, 0);
+
+    g.drawText (getButtonText(), label, justification, false);
 
     paint::focusRing (g, *this, hasKeyboardFocus (true));
 }

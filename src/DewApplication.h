@@ -22,7 +22,15 @@ enum class MenuBarItem
     transport,
     project,
     audio,
-    demos
+    demos,
+
+    /** Off macOS only. About lives in the application menu there, which is not
+        on the bar at all - so this enumerator exists on every platform, and is
+        the one entry menuBarOrder carries only where there is a bar to put it
+        on. titleOf answers for it either way, because -Wswitch-enum is an error
+        under the ci preset and a switch that skipped it would not compile.
+    */
+    help
 };
 
 /** The application: the window, the menu bar, and the file lifecycle.
@@ -111,11 +119,26 @@ private:
     */
     void applyUiScale (double scale);
 
+    /** Theme, motion and interface size: the three settings that are commands,
+        and are now asked for by the View menu AND by the preferences window.
+
+        Implemented once, in DewApplicationPrefs.cpp, so the two callers cannot
+        come to disagree about what any of them does. Each takes a contiguous
+        run of ids in the same order as the thing it selects.
+    */
+    void tickViewPreference (juce::CommandID, juce::ApplicationCommandInfo&);
+    bool applyViewPreference (juce::CommandID);
+
     /** Opens a demo as an untitled document, so saving cannot overwrite it and
         the user is asked where it should go.
     */
     void openDemo (int index);
     void chooseLanguage (int index);
+
+    /** Fills `appleMenu`. macOS only; it is what setMacMainMenu puts at the top
+        of the application menu, where a Mac user looks for About and Settings.
+    */
+    void buildAppleMenu();
 
     /** Menu ids for the Demos menu, kept clear of the command ids. */
     static constexpr int demoMenuBaseId = 0x3000;
@@ -128,6 +151,14 @@ private:
 
     std::unique_ptr<MainWindow> mainWindow;
     juce::ApplicationCommandManager commandManager;
+
+    /** The application-menu items on macOS, HELD rather than built inline.
+
+        setMacMainMenu takes a `const PopupMenu*` and getMacExtraAppleItemsMenu
+        hands the same pointer back, so a temporary would be a dangling one the
+        moment initialise returned. Empty and unread everywhere else.
+    */
+    juce::PopupMenu appleMenu;
 
     JUCE_DECLARE_NON_COPYABLE (DewApplication)
 };

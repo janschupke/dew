@@ -116,6 +116,22 @@ public:
     /** Opens the MIDI settings over this window. */
     void showMidiSettings();
 
+    /** Opens the preferences window over this one.
+
+        Takes the command manager because three of its settings ARE commands -
+        theme, motion and interface size - and the page invokes them rather than
+        applying them, so DewApplication::perform stays the only implementation.
+        `onLanguageChosen` is the application's own chooseLanguage, for the one
+        setting that is data rather than a command.
+
+        This component supplies the hosts; the panel embeds the very same
+        AudioSettingsPanel, MidiSettingsPanel and McpConnectionsPanel that
+        showAudioSettings, showMidiSettings and showMcpSettings open, which is
+        why those three menu items still work and still mean the same thing.
+    */
+    void showPreferences (Settings&, juce::ApplicationCommandManager&,
+                          std::function<void (int)> onLanguageChosen);
+
     /** Opens the render dialog over this window.
 
         Takes the Settings the app owns, so the dialog can remember the format

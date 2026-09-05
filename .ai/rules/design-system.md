@@ -155,8 +155,9 @@ pointer, drawn in the palette's least readable colour at 2.6:1.
 
 ### Two palettes
 
-**View → Theme.** The default is dew as it has always looked, held to WCAG AA — 4.5:1 for
-anything read, 3:1 for an edge you have to find. **High contrast** is the same design with
+**View → Theme**, and **Preferences → Appearance**, which invokes the same command rather
+than applying a palette of its own. The default is dew as it has always looked, held to
+WCAG AA — 4.5:1 for anything read, 3:1 for an edge you have to find. **High contrast** is the same design with
 the distances opened up, held to AAA: 7:1 and 4.5:1.
 
 Every value in it is derived rather than chosen by eye. The surfaces were pushed down and
@@ -240,8 +241,8 @@ chosen number of milliseconds with no wall clock, so a test walks a whole intera
 frame by frame rather than sampling it at the ends. Reduce motion sets every duration to
 zero, which makes `animateTo` identical to `snapTo` — no call site needs a branch.
 
-Reduce motion is **View → Motion**, and it is three states rather than two: follow the
-system, full motion, reduce motion. A stored boolean cannot say "follow the OS", so
+Reduce motion is **View → Motion**, and **Preferences → Appearance**, and it is three
+states rather than two: follow the system, full motion, reduce motion. A stored boolean cannot say "follow the OS", so
 reading the preference into one at startup would silently overwrite a choice made in dew,
 and reading it only when the file had no value would mean a preference turned on later
 never arrived. `system` is the default.

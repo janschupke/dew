@@ -6,6 +6,7 @@
 #include "model/Ids.h"
 #include "model/ProjectEdits.h"
 #include "model/ProjectFactory.h"
+#include "ui/AboutPanel.h"
 #include "ui/Hotkeys.h"
 #include "ui/design/Animator.h"
 #include "ui/design/SystemMotionPreference.h"
@@ -59,7 +60,9 @@ DewApplication::~DewApplication() = default;
 
 const juce::String DewApplication::getApplicationName()
 {
-    return "dew";
+    // From BuildInfo rather than spelled here, so the project() name in
+    // CMakeLists.txt is the one place this application is named.
+    return BuildInfo::name();
 }
 const juce::String DewApplication::getApplicationVersion()
 {
@@ -113,8 +116,10 @@ void DewApplication::initialise (const juce::String&)
     //
     // Neither call takes ownership of the model, and the model is this
     // application object, so shutdown clears it before the window goes.
+    buildAppleMenu();
+
 #if JUCE_MAC
-    juce::MenuBarModel::setMacMainMenu (this);
+    juce::MenuBarModel::setMacMainMenu (this, &appleMenu);
 #else
     mainWindow->setMenuBar (this);
 #endif
@@ -293,42 +298,21 @@ void DewApplication::getCommandInfo (juce::CommandID id, juce::ApplicationComman
         case CommandIDs::fileNew:
         case CommandIDs::fileOpen: break;
 
+        // Named rather than left to the default below, which asks for the
+        // editor. About says what this binary IS and has to answer whether or
+        // not there is a window; Preferences needs the store it edits.
+        case CommandIDs::about: break;
+        case CommandIDs::preferences: info.setActive (settings != nullptr); break;
+
         case CommandIDs::viewUiScaleFirst:
         case CommandIDs::viewUiScale125:
         case CommandIDs::viewUiScale150:
         case CommandIDs::viewUiScale175:
-        {
-            // Ticked rather than merely listed: four items that all read as
-            // available say nothing about which one you are looking at.
-            const auto step = (int) (id - CommandIDs::viewUiScaleFirst);
-
-            info.setActive (settings != nullptr);
-            info.setTicked (
-                settings != nullptr && step >= 0 && step < Settings::numUiScaleSteps
-                && juce::approximatelyEqual (settings->getUiScale(), Settings::uiScaleSteps[step]));
-            break;
-        }
-
         case CommandIDs::viewMotionFirst:
         case CommandIDs::viewMotionFull:
         case CommandIDs::viewMotionReduced:
-        {
-            const auto step = (int) (id - CommandIDs::viewMotionFirst);
-
-            info.setActive (settings != nullptr);
-            info.setTicked (settings != nullptr && (int) settings->getMotionPreference() == step);
-            break;
-        }
-
         case CommandIDs::viewThemeFirst:
-        case CommandIDs::viewThemeHighContrast:
-        {
-            const auto step = (int) (id - CommandIDs::viewThemeFirst);
-
-            info.setActive (settings != nullptr);
-            info.setTicked ((int) theme::current() == step);
-            break;
-        }
+        case CommandIDs::viewThemeHighContrast: tickViewPreference (id, info); break;
 
         default:
             // Everything else needs the editor, and nothing more.
@@ -353,6 +337,27 @@ bool DewApplication::perform (const InvocationInfo& info)
 {
     auto* document = getDocument();
     auto* main = getMainComponent();
+
+    // BEFORE the guard below, because neither needs a document: About reports
+    // the binary, and Preferences edits a store the application owns.
+    if (info.commandID == CommandIDs::about)
+    {
+        AboutPanel::show (main);
+        return true;
+    }
+
+    if (info.commandID == CommandIDs::preferences)
+    {
+        if (main == nullptr || settings == nullptr)
+            return false;
+
+        // The language callback is this class's own chooseLanguage, so the
+        // panel and the View menu store the tag and say "next launch" through
+        // one implementation rather than two that have to agree.
+        main->showPreferences (*settings, commandManager,
+                               [this] (int index) { chooseLanguage (index); });
+        return true;
+    }
 
     if (document == nullptr || main == nullptr)
         return false;
@@ -487,50 +492,11 @@ bool DewApplication::perform (const InvocationInfo& info)
         case CommandIDs::viewUiScale125:
         case CommandIDs::viewUiScale150:
         case CommandIDs::viewUiScale175:
-        {
-            const auto step = (int) (info.commandID - CommandIDs::viewUiScaleFirst);
-
-            if (settings == nullptr || step < 0 || step >= Settings::numUiScaleSteps)
-                return false;
-
-            settings->setUiScale (Settings::uiScaleSteps[step]);
-            applyUiScale (Settings::uiScaleSteps[step]);
-            commandManager.commandStatusChanged();
-            return true;
-        }
-
         case CommandIDs::viewMotionFirst:
         case CommandIDs::viewMotionFull:
         case CommandIDs::viewMotionReduced:
-        {
-            const auto step = (int) (info.commandID - CommandIDs::viewMotionFirst);
-
-            if (settings == nullptr || step < 0 || step > (int) Settings::Motion::reduced)
-                return false;
-
-            settings->setMotionPreference ((Settings::Motion) step);
-            Animator::shared().setReduceMotion (
-                settings->getReduceMotion (systemPrefersReducedMotion()));
-            commandManager.commandStatusChanged();
-            return true;
-        }
-
         case CommandIDs::viewThemeFirst:
-        case CommandIDs::viewThemeHighContrast:
-        {
-            const auto kind = info.commandID == CommandIDs::viewThemeHighContrast
-                                  ? theme::Kind::highContrast
-                                  : theme::Kind::dark;
-
-            if (settings != nullptr)
-                settings->setThemeName (theme::name (kind));
-
-            if (main != nullptr)
-                theme::apply (kind, *main);
-
-            commandManager.commandStatusChanged();
-            return true;
-        }
+        case CommandIDs::viewThemeHighContrast: return applyViewPreference (info.commandID);
 
         case CommandIDs::addPattern:
         {

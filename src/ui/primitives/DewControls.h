@@ -83,6 +83,16 @@ public:
 
     void setRole (Role);
 
+    /** Where the label sits. Centred by default, which is what a button is.
+
+        A ghost button used as a LIST ROW is the case this exists for - a
+        preferences category, a search result - where centred text reads as a
+        row of floating labels rather than as a list. Anything but centred is
+        inset by one gap, because text against the very edge of a row reads as
+        clipped.
+    */
+    void setTextJustification (juce::Justification);
+
     /** What to offer when this control is right-clicked, or null for nothing.
 
         A CALLBACK rather than a target or a node, because dew_design "knows
@@ -109,6 +119,7 @@ private:
     ButtonLift lift { *this };
 
     Role role = Role::normal;
+    juce::Justification justification { juce::Justification::centred };
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (DewButton)
 };

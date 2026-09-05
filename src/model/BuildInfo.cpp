@@ -3,6 +3,11 @@
 namespace dew
 {
 
+juce::String BuildInfo::name()
+{
+    return DEW_PRODUCT_NAME;
+}
+
 juce::String BuildInfo::version()
 {
     return DEW_VERSION_STRING;
@@ -15,7 +20,7 @@ juce::String BuildInfo::jucePin()
 
 juce::String BuildInfo::summary()
 {
-    return "dew " + version() + "  ·  JUCE " + juce::String (JUCE_MAJOR_VERSION) + "."
+    return name() + " " + version() + "  ·  JUCE " + juce::String (JUCE_MAJOR_VERSION) + "."
            + juce::String (JUCE_MINOR_VERSION) + "." + juce::String (JUCE_BUILDNUMBER) + " @ "
            + jucePin().substring (0, 12);
 }

@@ -3,20 +3,15 @@
 #include "model/BuildInfo.h"
 #include "model/ProjectFactory.h"
 #include "model/ProjectSerializer.h"
-#include "ui/AudioSettingsPanel.h"
-#include "ui/MidiSettingsPanel.h"
 #include "ui/RenderPanel.h"
 #include "ui/MainComponent.h"
 #include "ui/ScoreEditorComponent.h"
-#include "ui/ConfirmPanel.h"
-#include "ui/McpConnectionsPanel.h"
-#include "ui/McpConsentPanel.h"
-#include "ui/RandomizePanel.h"
 #include "ui/design/DewLookAndFeel.h"
 #include "ui/design/Theme.h"
 #include "ui/design/DewGallery.h"
 #include "CliArgs.h"
 #include "IconRaster.h"
+#include "ShotPanels.h"
 #include "DocsSamples.h"
 #include "DocsTokens.h"
 
@@ -43,6 +38,8 @@ Usage:
   dew_shot confirm <out.png>                the confirmation a deletion asks
   dew_shot mcp-consent <out.png>            what a client is allowed by
   dew_shot mcp <out.png>                    the MCP settings
+  dew_shot preferences <out.png> [--page <name>] [--filter <text>]
+  dew_shot about <out.png>                  what this build is
 
 Options:
   --project <file.dew>   Project to load (default: the built-in demo)
@@ -51,6 +48,9 @@ Options:
   --size <WxH>           Default 1440x900
   --scale <n>            Render at n times the size, 1..4. Default 1
   --px <n>               icon only: edge length in pixels, 16..2048. Default 1024
+  --page <name>          preferences only: appearance | audio | midi | rendering
+                         | connections
+  --filter <text>        preferences only: apply a search, and shoot the result
   --theme <name>         dark | highContrast
   --help
 )";
@@ -97,40 +97,6 @@ int tabIndexFor (const juce::String& name)
     if (name == "score")
         return 4;
     return -1;
-}
-
-/** `scale` renders AT that scale rather than drawing at 1x and resampling.
-
-    Text on a control surface is the whole subject of these shots, and a
-    resampled 11px caption is mush. The component still lays out in logical
-    pixels, so a 2x shot is the same picture with more of it in rather than a
-    different one.
-*/
-juce::Result writePng (juce::Component& component, const juce::File& destination, int scale)
-{
-    juce::Image image (juce::Image::ARGB, component.getWidth() * scale,
-                       component.getHeight() * scale, true);
-
-    {
-        juce::Graphics g (image);
-        g.addTransform (juce::AffineTransform::scale ((float) scale));
-        component.paintEntireComponent (g, true);
-    }
-
-    destination.getParentDirectory().createDirectory();
-    destination.deleteFile();
-
-    auto stream = std::unique_ptr<juce::FileOutputStream> (destination.createOutputStream());
-
-    if (stream == nullptr)
-        return juce::Result::fail ("could not create " + destination.getFullPathName());
-
-    juce::PNGImageFormat png;
-
-    if (! png.writeImageToStream (image, *stream))
-        return juce::Result::fail ("could not encode a PNG");
-
-    return juce::Result::ok();
 }
 
 } // namespace
@@ -240,6 +206,14 @@ int main (int argc, char* argv[])
     // the reason a renderer does not need it.
     dew::theme::applyPalette (dew::theme::kindFor (args.value ("--theme", "dark")));
 
+    // AFTER the palette, because a panel copies colours when it is built - and
+    // --theme would otherwise be a flag these eight modes quietly ignored.
+    if (const auto code = dew::shot::shootPanel (
+            mode, juce::File::getCurrentWorkingDirectory().getChildFile (args.positional[1]), scale,
+            args.value ("--page"), args.value ("--filter"));
+        code >= 0)
+        return code;
+
     if (mode == "gallery")
     {
         dew::DewGallery gallery;
@@ -250,34 +224,11 @@ int main (int argc, char* argv[])
         const auto destination = juce::File::getCurrentWorkingDirectory().getChildFile (
             args.positional[1]);
 
-        if (const auto result = writePng (gallery, destination, scale); result.failed())
+        if (const auto result = dew::shot::writePng (gallery, destination, scale); result.failed())
             return fail (result.getErrorMessage());
 
         std::cout << "wrote " << destination.getFullPathName() << "  (" << gallery.getWidth() << "x"
                   << gallery.getHeight() << ")" << std::endl;
-        return 0;
-    }
-
-    if (mode == "audio")
-    {
-        // Without a device open, which is both the CI case and the one worth
-        // looking at: the panel has to be honest rather than blank.
-        dew::AudioEngine engine;
-        dew::LiveAudioHost host { engine };
-
-        dew::AudioSettingsPanel panel { host, engine };
-        panel.setVisible (true);
-        panel.setSize (dew::AudioSettingsPanel::preferredWidth,
-                       dew::AudioSettingsPanel::preferredHeight);
-
-        const auto destination = juce::File::getCurrentWorkingDirectory().getChildFile (
-            args.positional[1]);
-
-        if (const auto result = writePng (panel, destination, scale); result.failed())
-            return fail (result.getErrorMessage());
-
-        std::cout << "wrote " << destination.getFullPathName() << "  (" << panel.getWidth() << "x"
-                  << panel.getHeight() << ")" << std::endl;
         return 0;
     }
 
@@ -341,111 +292,7 @@ int main (int argc, char* argv[])
         const auto destination = juce::File::getCurrentWorkingDirectory().getChildFile (
             args.positional[1]);
 
-        if (const auto result = writePng (panel, destination, scale); result.failed())
-            return fail (result.getErrorMessage());
-
-        std::cout << "wrote " << destination.getFullPathName() << "  (" << panel.getWidth() << "x"
-                  << panel.getHeight() << ")" << std::endl;
-        return 0;
-    }
-
-    if (mode == "midi")
-    {
-        // The panel with whatever this machine actually has attached, which on
-        // CI is nothing - and "nothing" is the state most worth looking at.
-        dew::AudioEngine engine;
-        dew::LiveAudioHost host { engine };
-        dew::MidiInputHost midiHost { host.getDeviceManager(), engine };
-
-        dew::MidiSettingsPanel panel { midiHost, nullptr };
-        panel.setVisible (true);
-        panel.setSize (dew::MidiSettingsPanel::preferredWidth,
-                       dew::MidiSettingsPanel::preferredHeight);
-
-        const auto destination = juce::File::getCurrentWorkingDirectory().getChildFile (
-            args.positional[1]);
-
-        if (const auto result = writePng (panel, destination, scale); result.failed())
-            return fail (result.getErrorMessage());
-
-        std::cout << "wrote " << destination.getFullPathName() << "  (" << panel.getWidth() << "x"
-                  << panel.getHeight() << ")" << std::endl;
-        return 0;
-    }
-
-    if (mode == "confirm")
-    {
-        // Bare, like the randomize dialog below and for the same reason:
-        // dew_shot cannot capture a DialogWindow, so the content sizes itself.
-        dew::ConfirmPanel panel { { "Delete pattern",
-                                    "Delete \"Groove\"? Every clip that plays it goes with it.",
-                                    "Delete" } };
-        panel.setVisible (true);
-        panel.setSize (dew::ConfirmPanel::preferredWidth, dew::ConfirmPanel::preferredHeight);
-
-        const auto destination = juce::File::getCurrentWorkingDirectory().getChildFile (
-            args.positional[1]);
-
-        if (const auto result = writePng (panel, destination, scale); result.failed())
-            return fail (result.getErrorMessage());
-
-        std::cout << "wrote " << destination.getFullPathName() << "  (" << panel.getWidth() << "x"
-                  << panel.getHeight() << ")" << std::endl;
-        return 0;
-    }
-
-    if (mode == "mcp-consent")
-    {
-        // Bare, for the reason the confirmation above is: dew_shot cannot
-        // capture a DialogWindow, so the content sizes itself.
-        dew::McpConsentPanel panel { { "Claude Code", "1.2.3" } };
-        panel.setVisible (true);
-        panel.setSize (dew::McpConsentPanel::preferredWidth, dew::McpConsentPanel::preferredHeight);
-
-        const auto destination = juce::File::getCurrentWorkingDirectory().getChildFile (
-            args.positional[1]);
-
-        if (const auto result = writePng (panel, destination, scale); result.failed())
-            return fail (result.getErrorMessage());
-
-        std::cout << "wrote " << destination.getFullPathName() << "  (" << panel.getWidth() << "x"
-                  << panel.getHeight() << ")" << std::endl;
-        return 0;
-    }
-
-    if (mode == "mcp")
-    {
-        // No server and no settings: the panel is a VIEW, and the state it
-        // shows when there is neither is exactly the state worth a picture -
-        // the switch off and nothing listening.
-        dew::McpConnectionsPanel panel { {}, nullptr };
-        panel.setVisible (true);
-        panel.setSize (dew::McpConnectionsPanel::preferredWidth,
-                       dew::McpConnectionsPanel::preferredHeight);
-
-        const auto destination = juce::File::getCurrentWorkingDirectory().getChildFile (
-            args.positional[1]);
-
-        if (const auto result = writePng (panel, destination, scale); result.failed())
-            return fail (result.getErrorMessage());
-
-        std::cout << "wrote " << destination.getFullPathName() << "  (" << panel.getWidth() << "x"
-                  << panel.getHeight() << ")" << std::endl;
-        return 0;
-    }
-
-    if (mode == "randomize")
-    {
-        // Shot as a bare component: dew_shot cannot capture a DialogWindow, which
-        // is why the dialog's content sizes itself and says so publicly.
-        dew::RandomizePanel panel { {}, "Applies to the 12 selected notes" };
-        panel.setVisible (true);
-        panel.setSize (dew::RandomizePanel::preferredWidth, dew::RandomizePanel::preferredHeight);
-
-        const auto destination = juce::File::getCurrentWorkingDirectory().getChildFile (
-            args.positional[1]);
-
-        if (const auto result = writePng (panel, destination, scale); result.failed())
+        if (const auto result = dew::shot::writePng (panel, destination, scale); result.failed())
             return fail (result.getErrorMessage());
 
         std::cout << "wrote " << destination.getFullPathName() << "  (" << panel.getWidth() << "x"
@@ -516,7 +363,8 @@ int main (int argc, char* argv[])
             component.resized();
         }
 
-        if (const auto result = writePng (component, destination, scale); result.failed())
+        if (const auto result = dew::shot::writePng (component, destination, scale);
+            result.failed())
             return fail (result.getErrorMessage());
 
         std::cout << "wrote " << destination.getFullPathName() << "  (" << component.getWidth()

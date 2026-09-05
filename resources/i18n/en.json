@@ -1,4 +1,13 @@
 {
+  "about": {
+    "close": "Close",
+    "licence": "dew is free software under the GNU Affero General Public License, version 3. You are entitled to the source of the version you are running.",
+    "source": "Source",
+    "sourceHelp": "Open dew's source repository in your browser",
+    "tagline": "A desktop synth DAW.",
+    "thirdParty": "Built on JUCE. Every dependency, its version and its licence are listed in THIRD_PARTY.md beside this application.",
+    "title": "About dew"
+  },
   "audio": {
     "input": {
       "monoLeft": "Mono - left",
@@ -87,6 +96,10 @@
     }
   },
   "command": {
+    "about": {
+      "description": "Which version this is, and what it is built from",
+      "name": "About dew"
+    },
     "addChannel": {
       "description": "Add a new instrument channel",
       "name": "Add Channel"
@@ -100,6 +113,7 @@
       "name": "Audio Settings..."
     },
     "category": {
+      "application": "Application",
       "audio": "Audio",
       "edit": "Edit",
       "file": "File",
@@ -183,6 +197,10 @@
     "paintTool": {
       "description": "Draw notes or clips",
       "name": "Paint Tool"
+    },
+    "preferences": {
+      "description": "Change how dew looks, sounds and behaves",
+      "name": "Preferences..."
     },
     "selectAll": {
       "description": "Select everything on the channel",
@@ -369,6 +387,9 @@
   },
   "gallery": {
     "inertArea": "inert area",
+    "searchClear": "Clear the search",
+    "searchPlaceholder": "Search settings",
+    "searchTyped": "reverb",
     "title": "dew design system",
     "unavailable": "Unavailable"
   },
@@ -440,6 +461,7 @@
     "demos": "Demos",
     "edit": "Edit",
     "file": "File",
+    "help": "Help",
     "language": "Language",
     "languageSystem": "System",
     "motion": "Motion",
@@ -797,6 +819,93 @@
     },
     "missingAutomation": "missing automation",
     "title": "Playlist"
+  },
+  "preferences": {
+    "audio": {
+      "device": {
+        "description": "Which sound card dew plays through, and which input it records from.",
+        "title": "Output device"
+      },
+      "rate": {
+        "description": "How fast the device runs, and how much latency it trades for stability.",
+        "title": "Sample rate and buffer size"
+      }
+    },
+    "connections": {
+      "enable": {
+        "description": "Whether dew lets programs on this machine drive it over MCP.",
+        "title": "Local control"
+      },
+      "grants": {
+        "description": "Which programs have been let in, and what each of them may do.",
+        "title": "Allowed clients"
+      }
+    },
+    "language": {
+      "description": "The language dew runs in. Takes effect next launch.",
+      "title": "Language"
+    },
+    "midi": {
+      "channel": {
+        "description": "Which MIDI channel dew listens to, and how many semitones it adds.",
+        "title": "Channel and transpose"
+      },
+      "devices": {
+        "description": "Which MIDI controllers play the selected channel.",
+        "title": "Controllers"
+      }
+    },
+    "motion": {
+      "description": "Whether transitions animate, or are instant.",
+      "title": "Motion"
+    },
+    "page": {
+      "appearance": "Appearance",
+      "audio": "Audio",
+      "connections": "Connections",
+      "midi": "MIDI",
+      "rendering": "Rendering"
+    },
+    "render": {
+      "depth": {
+        "description": "How many bits carry each sample of a render.",
+        "title": "Bit depth"
+      },
+      "format": {
+        "description": "What a render is written as, until you choose otherwise in the render dialog.",
+        "title": "Format"
+      },
+      "normalize": {
+        "description": "Lift a finished render so its loudest peak reaches the ceiling.",
+        "title": "Normalize"
+      },
+      "rate": {
+        "description": "How many samples a second a render is written at.",
+        "title": "Sample rate"
+      },
+      "tail": {
+        "description": "How long a render keeps going after the last note, so reverb and delay finish.",
+        "title": "Tail"
+      }
+    },
+    "results": {
+      "row": "{page} \u00b7 {setting}"
+    },
+    "search": {
+      "clear": "Clear the search",
+      "empty": "Nothing matches \u201c{query}\u201d.",
+      "help": "Filter every setting by name",
+      "placeholder": "Search settings"
+    },
+    "theme": {
+      "description": "Which palette dew paints from.",
+      "title": "Theme"
+    },
+    "title": "Preferences",
+    "uiScale": {
+      "description": "How much bigger the whole interface is drawn.",
+      "title": "Interface size"
+    }
   },
   "randomize": {
     "hint": "Zero leaves a property untouched.",

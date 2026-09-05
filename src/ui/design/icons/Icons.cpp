@@ -278,6 +278,19 @@ juce::Path check()
     return strokeOf (line, tokens::icon::bold);
 }
 
+juce::Path cross()
+{
+    // The same weight and the same inset as check(), because the two are read
+    // as a pair - a tick and its undoing - and a lighter cross beside a bold
+    // tick reads as a different family rather than as the other answer.
+    juce::Path lines;
+    lines.startNewSubPath (0.26f, 0.26f);
+    lines.lineTo (0.74f, 0.74f);
+    lines.startNewSubPath (0.74f, 0.26f);
+    lines.lineTo (0.26f, 0.74f);
+    return strokeOf (lines, tokens::icon::bold);
+}
+
 juce::Path chevronUp()
 {
     juce::Path line;

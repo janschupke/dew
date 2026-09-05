@@ -64,6 +64,19 @@ enum
         settings do. */
     viewThemeFirst,
     viewThemeHighContrast = viewThemeFirst + 1,
+
+    /** The two that are not in a menu on every platform.
+
+        macOS puts both in the application menu, which is not on the bar at all
+        - so they are ids the command manager knows and the bar may or may not
+        show, which is exactly what a command id is for.
+
+        `about` is LAST, and HotkeyTests holds its lastCommand against it: the
+        table is walked from fileNew to here, so an id appended after this one
+        without moving that constant is a row the drift gate stops checking.
+    */
+    preferences,
+    about,
 };
 
 } // namespace CommandIDs

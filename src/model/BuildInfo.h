@@ -12,6 +12,12 @@ namespace dew
 */
 struct BuildInfo
 {
+    /** What this application is called - the project() name, reaching the
+        binary the way the version does. Deliberately NOT a catalogue key: a
+        product name is not a sentence, and the one thing a translator must not
+        do to it is translate it. */
+    static juce::String name();
+
     static juce::String version();
     static juce::String jucePin();
     static juce::String summary();

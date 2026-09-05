@@ -88,7 +88,11 @@ The piano roll, the playlist and the step grid each hold a `CanvasCursor`
 ## Why it is this way
 
 ⌘N ⌘O ⌘S ⇧⌘S · ⌘E render · ⌘R compile score · ⌘Z ⇧⌘Z · Space play · R record · ⌘L
-pattern/song · ⌘K add channel.
+pattern/song · ⌘K add channel · ⌘, preferences.
+
+⌘, is the settings window on every platform, so it is the one stroke this table would be
+wrong to spell any other way. It used to open Audio Settings, which now has no key of its
+own: the menu item is still there and Preferences shows the very same panel.
 
 ⌘1 – ⌘5 go to the channel rack, piano roll, playlist, mixer and score; ⌃⇥ and ⌃⇧⇥ cycle
 them, and ⌘\ folds the instrument panel away. They are in the **View** menu, which is
