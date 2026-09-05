@@ -222,19 +222,23 @@ void MixerComponent::updateRouting()
 
 void MixerComponent::resized()
 {
-    auto area = getLocalBounds().reduced (space::md);
+    auto area = getLocalBounds();
 
     // The chain row gets the bottom of the panel, at exactly the height one row
     // of cards needs: strips need the rest and a fader is useless once it is
     // shorter than a thumb. Still halved as a floor, for a very short window.
+    //
+    // Edge to edge, and flush against the strips. It used to be inset on all
+    // four sides and then trimmed again at the top, so the row was a rounded
+    // card floating on the window background with nothing joining it to the
+    // strip it belongs to. It is a BAND now - its own ground, with a rule along
+    // its top, which is what the host paints.
     const auto wanted = chainHost.getPreferredHeight() + tokens::space::md;
-    auto chainArea = area.removeFromBottom (juce::jmin (wanted, area.getHeight() / 2));
+    chainHost.setBounds (area.removeFromBottom (juce::jmin (wanted, area.getHeight() / 2)));
 
-    // Full width. The cards size themselves and scroll; it is the row that has
-    // the width to give them.
-    chainHost.setBounds (chainArea.withTrimmedTop (tokens::space::md));
-
-    stripViewport.setBounds (area);
+    // The strips keep the inset. They are objects on the window's ground; the
+    // band below them is a region OF it.
+    stripViewport.setBounds (area.reduced (space::md));
 
     // One column past the last strip, for the add button. The rack puts its add
     // button in the next empty ROW of the list rather than in a footer strip;

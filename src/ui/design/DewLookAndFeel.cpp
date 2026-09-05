@@ -290,16 +290,28 @@ void DewLookAndFeel::drawTabButton (juce::TabBarButton& button, juce::Graphics& 
                                : colour::background);
     g.fillRect (area);
 
+    // A rule on the LEADING edge of every tab but the first, spanning the same
+    // depth the tab's own background does.
+    //
+    // It used to be drawn on an INACTIVE tab's trailing edge, inset six pixels
+    // top and bottom - so the boundary beside the selected tab had no rule at
+    // all (the active tab drew none, and the tab before it is the one that
+    // would have), and the rules that did appear were a short stroke floating
+    // beside a block of colour running the bar's full height. A boundary
+    // belongs to the PAIR it separates, not to the state of one of them.
+    //
+    // Before the underline below, so the accent keeps the last rows for itself
+    // rather than being notched by a rule crossing it.
+    if (button.getIndex() > 0)
+    {
+        g.setColour (colour::divider);
+        g.drawVerticalLine (area.getX(), (float) area.getY(), (float) area.getBottom());
+    }
+
     if (active)
     {
         g.setColour (colour::accent);
-        g.fillRect (area.removeFromBottom (2));
-    }
-    else
-    {
-        g.setColour (colour::divider);
-        g.drawVerticalLine (area.getRight() - 1, (float) area.getY() + 6.0f,
-                            (float) area.getBottom() - 6.0f);
+        g.fillRect (area.removeFromBottom (juce::roundToInt (stroke::bold)));
     }
 
     g.setColour (active        ? colour::textPrimary

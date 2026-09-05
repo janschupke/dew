@@ -44,6 +44,7 @@ EffectCard::EffectCard (EffectChainComponent& o, ProjectDocument& d, EditorState
     };
     addAndMakeVisible (bypassButton);
 
+    expandButton.setComponentID ("effectExpand");
     expandButton.setTooltip (tr (StringId::effect_expand_help));
     expandButton.onClick = [this] { owner.setSlotExpanded (index, ! isExpanded()); };
     addAndMakeVisible (expandButton);
@@ -152,7 +153,8 @@ void EffectCard::mouseDown (const juce::MouseEvent& event)
     // toggles the card, which is the behaviour a header invites.
     const auto local = event.getEventRelativeTo (this).getPosition();
 
-    draggingFromGrip = gripBounds.contains (local);
+    // The card's own press, never one forwarded from a child - see mouseUp.
+    draggingFromGrip = event.originalComponent == this && gripBounds.contains (local);
 
     // Its own origin, because Component::getDistanceFromDragStart is fed by
     // the real pointer and reads zero in a headless harness - which is why
@@ -184,7 +186,15 @@ void EffectCard::mouseUp (const juce::MouseEvent& event)
     const auto local = event.getEventRelativeTo (this).getPosition();
 
     const auto wasGrip = draggingFromGrip;
-    const auto shouldToggle = ! owner.isHorizontal() && ! wasGrip && local.y < size::rowHeight
+
+    // The release has to be the CARD's own. forwardChildMouseEventsTo brings
+    // every child's mouse events here too, so without this the chevron folded
+    // the card twice - once through its own onClick and once through the header
+    // branch below - which is to say not at all, and bypass, preset, up, down
+    // and remove each folded it as a silent side effect of being pressed.
+    const auto onTheHeader = event.originalComponent == this && local.y < size::rowHeight;
+
+    const auto shouldToggle = ! owner.isHorizontal() && ! wasGrip && onTheHeader
                               && ! gesture::passedThreshold (pressedAt, local);
 
     draggingFromGrip = false;

@@ -180,6 +180,10 @@ private:
     static const int numMeterChoices;
     juce::Array<int> groupDividers;
 
+    /** Where the controls sit, from StripLayout::band. A group rule spans what
+        it separates rather than an inset chosen by eye. */
+    juce::Rectangle<int> controlBand;
+
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (TransportBar)
 };
 

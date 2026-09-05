@@ -47,6 +47,17 @@ InstrumentPanel::InstrumentPanel (ProjectDocument& d, EditorState& s, SamplePool
 
     addAndMakeVisible (chainHost);
 
+    // A card opening changes the chain's height, which changes the panel's,
+    // which is what the sidebar's viewport scrolls. Passed straight up rather
+    // than answered here: this panel does not own the scroller.
+    chainHost.onPreferredHeightChanged = [this]
+    {
+        resized();
+
+        if (onRequiredHeightChanged != nullptr)
+            onRequiredHeightChanged();
+    };
+
     titleLabel.setFont (tokens::type::font (tokens::type::title, true));
     addAndMakeVisible (titleLabel);
 
@@ -326,8 +337,22 @@ void InstrumentPanel::refresh()
 void InstrumentPanel::paint (juce::Graphics& g)
 {
     g.fillAll (tokens::colour::surface);
-    g.setColour (tokens::colour::divider);
-    g.drawVerticalLine (0, 0.0f, (float) getHeight());
+
+    // No rule down the left edge any more. The seam between the editor and this
+    // panel is one thing and it is drawn once, by the divider that is also what
+    // you drag and what folds the panel - two rules eight pixels apart, with a
+    // column of window background between them, was the whole of "two redundant
+    // gaps".
+
+    // The panel is a stack of full-bleed BANDS - the channel, its instrument,
+    // its effects - separated by a rule that runs edge to edge. The effect band
+    // draws its own top rule; this is the one above the instrument.
+    g.setColour (tokens::colour::dividerStrong);
+    g.drawHorizontalLine (instrumentBand.getY(), 0.0f, (float) getWidth());
+
+    paint::sectionHeading (
+        g, instrumentBand.withHeight (tokens::size::stripHeading).withTrimmedLeft (space::md),
+        "INSTRUMENT");
 
     // The kind of instrument, beside its name. The panel already shows it in
     // which controls are on show, but only to someone who knows what a
@@ -399,11 +424,8 @@ void InstrumentPanel::showPresetMenu()
                         [this] (int choice) { applyPresetChoice (choice); });
 }
 
-int InstrumentPanel::getRequiredHeight() const
+int InstrumentPanel::instrumentBandHeight() const
 {
-    // Mirrors resized() row for row. Every rung it names is the one resized()
-    // removes, in the same order, so the two cannot drift without the panel
-    // visibly disagreeing with its own scrollbar.
     const auto faceHeight = [this]
     {
         switch (showing)
@@ -416,21 +438,31 @@ int InstrumentPanel::getRequiredHeight() const
         return 0;
     }();
 
-    // The face, the routing row, the level knobs, and the envelope knobs when
-    // there is an envelope - each followed by the gap `row` leaves behind.
+    // The heading, then the face, the routing row and the level knobs - and the
+    // envelope knobs when there is an envelope. Each row is followed by the gap
+    // `row` leaves behind, and the last of those gaps is the band's own bottom
+    // padding, which is why nothing is added for it.
     auto rows = faceHeight + size::knob + size::knobRow + 3 * space::sm;
 
     if (showing == InstrumentType::synth)
         rows += size::knobRow + space::sm;
 
-    return space::md * 2 + size::iconButton + space::sm + rows + chainHost.getPreferredHeight();
+    return size::stripHeading + rows;
+}
+
+int InstrumentPanel::getRequiredHeight() const
+{
+    // The three bands, each asked for its own height rather than restated here.
+    // resized() removes exactly these, in this order, so the two cannot drift
+    // without the panel visibly disagreeing with its own scrollbar.
+    return titleBandHeight + instrumentBandHeight() + chainHost.getPreferredHeight();
 }
 
 void InstrumentPanel::resized()
 {
-    auto area = getLocalBounds().reduced (space::md);
+    auto area = getLocalBounds();
 
-    auto titleRow = area.removeFromTop (size::iconButton);
+    auto titleRow = area.removeFromTop (titleBandHeight).reduced (space::md);
 
     // The button on the right of the title, at the width the design system
     // gives a labelled control - the title takes whatever is left, which is
@@ -448,12 +480,17 @@ void InstrumentPanel::resized()
 
     titleLabel.setBounds (titleRow);
 
-    area.removeFromTop (space::sm);
+    // The instrument band: its heading, then its rows, inset from the panel's
+    // edges. The band itself is full-bleed - the rule above it and its ground
+    // run edge to edge - so the inset is on the CONTENT, not on the region.
+    instrumentBand = area.removeFromTop (instrumentBandHeight());
 
-    const auto row = [&area] (int height)
+    auto band = instrumentBand.reduced (space::md, 0).withTrimmedTop (size::stripHeading);
+
+    const auto row = [&band] (int height)
     {
-        auto r = area.removeFromTop (height);
-        area.removeFromTop (space::sm);
+        auto r = band.removeFromTop (height);
+        band.removeFromTop (space::sm);
         return r;
     };
 
@@ -506,7 +543,10 @@ void InstrumentPanel::resized()
 
     placeKnobs (row (size::knobRow), { &volumeKnob, &panKnob });
 
-    chainHost.setBounds (area);
+    // Exactly what it asked for, not "whatever is left". The band ends where
+    // its cards end, and when they need more than the window has,
+    // getRequiredHeight has already told MainComponent to scroll us.
+    chainHost.setBounds (area.withHeight (chainHost.getPreferredHeight()));
 }
 
 } // namespace dew

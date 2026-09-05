@@ -72,6 +72,7 @@ add_executable(dew_tests
   RightClickTests.cpp
   ContrastTests.cpp
   ReflowTests.cpp
+  ShellLayoutTests.cpp
   ThemeTests.cpp
   CanvasCursorTests.cpp
   TimelineRulerTests.cpp

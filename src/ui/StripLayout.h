@@ -31,6 +31,7 @@ public:
     StripLayout (juce::Rectangle<int> strip, int insetX, int insetY)
         : area (strip.reduced (insetX, insetY))
         , controlHeight (juce::jmin (tokens::size::controlHeight, area.getHeight()))
+        , controlBand (centred (area))
     {
     }
 
@@ -54,7 +55,7 @@ public:
         }
 
         c.setVisible (true);
-        c.setBounds (area.removeFromLeft (width).withHeight (controlHeight));
+        c.setBounds (centred (area.removeFromLeft (width)));
         area.removeFromLeft (tokens::space::xxs);
     }
 
@@ -79,7 +80,7 @@ public:
         it is laid out from the end everything else is not. */
     juce::Rectangle<int> placeFromRight (int width)
     {
-        return area.removeFromRight (width).withHeight (controlHeight);
+        return centred (area.removeFromRight (width));
     }
 
     /** A group break taken from the right, returning the rule's x. */
@@ -94,7 +95,17 @@ public:
     /** What is left, for the one control that takes the rest of the strip. */
     juce::Rectangle<int> remaining() const noexcept
     {
-        return area.withHeight (controlHeight);
+        return centred (area);
+    }
+
+    /** The band the controls occupy: the strip's inset area, centred on a
+        control's height. The transport bar draws its group rules down this, so
+        a rule spans exactly what it separates rather than an inset somebody
+        chose by eye - it was eight pixels, in a bar whose own inset is six.
+    */
+    juce::Rectangle<int> band() const noexcept
+    {
+        return controlBand;
     }
 
     int getRemainingWidth() const noexcept
@@ -108,8 +119,23 @@ public:
     }
 
 private:
+    /** A control's rectangle inside the slot it was given: as wide as the slot,
+        as tall as a control, and CENTRED in it.
+
+        withHeight, which this replaced, keeps the top edge - so a 26px control
+        in a 46px transport bar inset by six sat with six pixels above it and
+        fourteen below. The two editor toolbars are unmoved: a 34px strip inset
+        by four leaves exactly a control's height, and centring something in a
+        space its own size is where it already was.
+    */
+    juce::Rectangle<int> centred (juce::Rectangle<int> slot) const noexcept
+    {
+        return slot.withSizeKeepingCentre (slot.getWidth(), controlHeight);
+    }
+
     juce::Rectangle<int> area;
     int controlHeight;
+    juce::Rectangle<int> controlBand;
 };
 
 } // namespace dew

@@ -819,17 +819,12 @@ void rotary (juce::Graphics&, juce::Rectangle<float>, float proportion, bool ena
 void surface (juce::Graphics&, juce::Rectangle<int>, juce::Colour);
 void wellBackground (juce::Graphics&, juce::Rectangle<int>);
 
-/** The card a group of controls sits on: a rounded surface with a hairline
-    edge.
-
-    The mixer strip and the effect card each hand-rolled this same fill and
-    border, and the panels that hold them drew nothing at all - so an effect
-    chain floated on the window background with no edge to say where it
-    began. There was a DewPanel class meant for this; nothing ever
-    instantiated it, so it had drifted into being a fourth opinion rather
-    than the shared one.
-*/
-void container (juce::Graphics&, juce::Rectangle<int>);
+// container() - a rounded surface with a hairline edge, drawn UNDER a group of
+// controls - is gone with its one caller. The effect chain host drew it around
+// cards that already draw a rounded outlined body of their own, which is two
+// levels of containment saying the same thing, and it needed a gap of window
+// background all round to be seen at all. A region of the window is a BAND: its
+// own ground, a rule where it begins, and no gap. Nothing else ever called it.
 
 /** Fills the region beyond the content with a visibly inert texture, so an
     empty area reads as "nothing here" rather than as a broken control.

@@ -62,6 +62,13 @@ public:
     */
     int getRequiredHeight() const;
 
+    /** Fired when getRequiredHeight() moves, which a card opening or closing
+        does. MainComponent lays out again and the sidebar's own viewport picks
+        the growth up; without it the panel kept the height it was given and the
+        chain had nowhere to grow into.
+    */
+    std::function<void()> onRequiredHeightChanged;
+
     void refresh();
 
     /** What the preset button would offer, and what choosing item `choice`
@@ -155,6 +162,18 @@ private:
         end up describing two different instruments.
     */
     juce::Rectangle<int> titleGlyphBounds;
+
+    /** The title band: the channel's name, its glyph and the preset button.
+        Full-bleed, with the inset on the content rather than on the region. */
+    static constexpr int titleBandHeight = tokens::space::md * 2 + tokens::size::iconButton;
+
+    /** How tall the instrument band is, heading included. Asked by both
+        resized() and getRequiredHeight() so the two cannot disagree. */
+    int instrumentBandHeight() const;
+
+    /** Where that band ended up, so paint() can draw its rule and its heading
+        without repeating the arithmetic. */
+    juce::Rectangle<int> instrumentBand;
 
     /** Loads a factory preset onto the selected channel.
 

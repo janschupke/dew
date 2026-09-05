@@ -500,11 +500,12 @@ void TransportBar::paint (juce::Graphics& g)
     g.setColour (tokens::colour::dividerStrong);
     g.drawHorizontalLine (getHeight() - 1, 0.0f, (float) getWidth());
 
-    // Separators between the transport, the pattern controls and the readout.
+    // Separators between the transport, the pattern controls and the readout,
+    // down the band the controls themselves occupy.
     for (auto x : groupDividers)
     {
         g.setColour (tokens::colour::divider);
-        g.drawVerticalLine (x, 8.0f, (float) getHeight() - 8.0f);
+        g.drawVerticalLine (x, (float) controlBand.getY(), (float) controlBand.getBottom());
     }
 }
 
@@ -515,6 +516,8 @@ void TransportBar::resized()
     groupDividers.clear();
 
     StripLayout strip { getLocalBounds(), space::md, space::sm };
+
+    controlBand = strip.band();
 
     const auto place = [&strip] (juce::Component& c, int width) { strip.place (c, width); };
 

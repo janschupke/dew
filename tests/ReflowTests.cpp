@@ -2,6 +2,7 @@
 
 #include <juce_gui_basics/juce_gui_basics.h>
 
+#include "model/ProjectFactory.h"
 #include "ui/DewDialog.h"
 #include "ui/EffectChainHost.h"
 #include "ui/InstrumentPanel.h"
@@ -86,6 +87,106 @@ TEST_CASE ("a panel too tall for its viewport scrolls instead of clipping", "[ui
     CHECK (panel->getHeight() == panel->getRequiredHeight());
     CHECK (panel->getHeight() > viewport->getMaximumVisibleHeight());
     CHECK (viewport->getVerticalScrollBar().isVisible());
+}
+
+TEST_CASE ("the sidebar is the only thing that scrolls in it", "[ui][reflow]")
+{
+    // The effect chain used to carry a Viewport of its own in BOTH
+    // orientations, so in the sidebar it was a scroller nested inside the
+    // scroller that already held the panel. Opening a card grew the inner one,
+    // the panel kept the height it had been given, and the sidebar's own bar
+    // never came up - which is to say an opened card at the bottom of a full
+    // chain could not be reached at all.
+    //
+    // A ROW still scrolls: the mixer's chain is wider than the band it sits in
+    // and has nothing outside it to do the job.
+    const juce::ScopedJuceInitialiser_GUI juceInit;
+
+    const auto viewportsIn = [] (juce::Component& root)
+    {
+        auto count = 0;
+
+        for (auto* child : root.getChildren())
+            if (dynamic_cast<juce::Viewport*> (child) != nullptr)
+                ++count;
+
+        return count;
+    };
+
+    MainComponent component (false);
+    component.setSize (1400, 900);
+
+    auto* sidebarChain = dynamic_cast<EffectChainHost*> (
+        findDescendantWithID (component, "effectChainHost"));
+
+    REQUIRE (sidebarChain != nullptr);
+    CHECK (viewportsIn (*sidebarChain) == 0);
+
+    // The mixer's, which is the same class the other way round.
+    ProjectDocument document;
+    EditorState editorState;
+    document.setState (ProjectFactory::createDefault(), true);
+
+    EffectChainHost row { document, editorState, EffectChainHost::Orientation::horizontal };
+    row.setSize (600, 200);
+
+    CHECK (viewportsIn (row) == 1);
+}
+
+TEST_CASE ("opening every card scrolls the sidebar rather than clipping it", "[ui][reflow]")
+{
+    // What the nested viewport hid. At a roomy window size the panel is exactly
+    // its viewport and nothing scrolls; open every card in a full chain and the
+    // panel has to grow past it and the bar has to come up.
+    const juce::ScopedJuceInitialiser_GUI juceInit;
+
+    MainComponent component (false);
+    component.setSize (1400, 900);
+
+    auto* viewport = dynamic_cast<juce::Viewport*> (
+        component.findChildWithID ("instrumentPanelViewport"));
+    REQUIRE (viewport != nullptr);
+
+    auto* panel = dynamic_cast<InstrumentPanel*> (viewport->getViewedComponent());
+    REQUIRE (panel != nullptr);
+
+    auto* host = dynamic_cast<EffectChainHost*> (
+        findDescendantWithID (component, "effectChainHost"));
+    REQUIRE (host != nullptr);
+
+    auto& chain = host->getChain();
+
+    for (const auto* type : { "filter", "delay", "reverb", "chorus" })
+        chain.addEffectOfType (type);
+
+    REQUIRE (chain.getNumSlotRows() == 4);
+
+    for (int i = 0; i < chain.getNumSlotRows(); ++i)
+        chain.setSlotExpanded (i, true);
+
+    // Which cards are open is EditorState, and EditorState is a
+    // ChangeBroadcaster: the write is immediate, the notification is a message.
+    // Nothing has laid out again until it is delivered.
+    component.getEditorState().dispatchPendingMessages();
+
+    INFO ("panel " << panel->getHeight() << "px, viewport " << viewport->getMaximumVisibleHeight()
+                   << "px");
+
+    CHECK (panel->getHeight() == panel->getRequiredHeight());
+    CHECK (panel->getHeight() > viewport->getMaximumVisibleHeight());
+    CHECK (viewport->getVerticalScrollBar().isVisible());
+
+    // And the band is as tall as the cards in it, not "whatever was left".
+    CHECK (host->getHeight() == host->getPreferredHeight());
+
+    // Closing them all again puts the panel back inside its viewport.
+    for (int i = 0; i < chain.getNumSlotRows(); ++i)
+        chain.setSlotExpanded (i, false);
+
+    component.getEditorState().dispatchPendingMessages();
+
+    CHECK (panel->getHeight() == viewport->getMaximumVisibleHeight());
+    CHECK_FALSE (viewport->getVerticalScrollBar().isVisible());
 }
 
 TEST_CASE ("a dialog is never taller than the screen it opens on", "[ui][reflow]")

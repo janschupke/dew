@@ -11,7 +11,9 @@
 #include "model/ModuleCatalog.h"
 #include "model/ProjectSchema.h"
 #include "model/ProjectSerializer.h"
+#include "ui/EffectCard.h"
 #include "ui/design/Gestures.h"
+#include "ui/design/Tokens.h"
 
 #include "EffectChainHarness.h"
 #include "PaintProbe.h"
@@ -169,6 +171,117 @@ TEST_CASE ("cards expand and collapse independently", "[effects][ui]")
 
     // Closing one makes the chain shorter, which is what the host scrolls.
     REQUIRE (h.chain.getRequiredHeight() < allOpen);
+}
+
+namespace
+{
+
+/** The card in slot `slot`.
+
+    The cards are the chain's children, but not in slot ORDER: one being dragged
+    is brought to the front, so the child list is paint order. getSlotBounds is
+    the seam that already answers "where is slot n", so matching on it needs no
+    new API.
+*/
+EffectCard* cardAt (EffectChainComponent& chain, int slot)
+{
+    const auto bounds = chain.getSlotBounds (slot);
+
+    for (auto* child : chain.getChildren())
+        if (auto* card = dynamic_cast<EffectCard*> (child))
+            if (card->getBounds() == bounds)
+                return card;
+
+    return nullptr;
+}
+
+/** A press and a release on the card, as if they had arrived from `origin`.
+
+    forwardChildMouseEventsTo makes the card a listener on every control inside
+    it, so this is exactly the shape of event a button in the header delivers -
+    eventComponent is the card, originalComponent is the button.
+*/
+void pressAndRelease (EffectCard& card, juce::Component& origin, juce::Point<int> where)
+{
+    const auto position = where.toFloat();
+
+    const auto event = [&]
+    {
+        return juce::MouseEvent (juce::Desktop::getInstance().getMainMouseSource(), position,
+                                 juce::ModifierKeys(), 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, &card, &origin,
+                                 juce::Time::getCurrentTime(), position,
+                                 juce::Time::getCurrentTime(), 1, false);
+    };
+
+    card.mouseDown (event());
+    card.mouseUp (event());
+}
+
+} // namespace
+
+TEST_CASE ("a header button folds the card once, and the others not at all", "[effects][ui]")
+{
+    // The defect: EffectCard's constructor calls forwardChildMouseEventsTo, so
+    // a release on the chevron arrived TWICE - once as the button's own click,
+    // once here as a press on the header - and the two toggles cancelled. The
+    // chevron did nothing at all, which is what "not collapsing reliably" was,
+    // and bypass, preset, up, down and remove each folded the card as a silent
+    // side effect of being pressed.
+    const juce::ScopedJuceInitialiser_GUI juceInit;
+    ChainHarness h;
+
+    h.chain.addEffectOfType ("filter");
+    h.layOutLikeAHost();
+
+    auto* card = cardAt (h.chain, 0);
+    REQUIRE (card != nullptr);
+
+    auto* chevron = card->findChildWithID ("effectExpand");
+    REQUIRE (chevron != nullptr);
+
+    const auto wasOpen = h.chain.isSlotExpanded (0);
+
+    // The forwarded half on its own changes nothing: the release belongs to the
+    // button, and the button has its own answer to it.
+    pressAndRelease (*card, *chevron, chevron->getBounds().getCentre());
+    CHECK (h.chain.isSlotExpanded (0) == wasOpen);
+
+    // Both halves, which is what a real click is. Exactly one toggle.
+    pressAndRelease (*card, *chevron, chevron->getBounds().getCentre());
+    dynamic_cast<juce::Button&> (*chevron).onClick();
+    CHECK (h.chain.isSlotExpanded (0) == ! wasOpen);
+
+    // And a press on any OTHER header button leaves the fold alone.
+    for (auto* child : card->getChildren())
+    {
+        if (child == chevron || dynamic_cast<juce::Button*> (child) == nullptr)
+            continue;
+
+        pressAndRelease (*card, *child, child->getBounds().getCentre());
+        CHECK (h.chain.isSlotExpanded (0) == ! wasOpen);
+    }
+}
+
+TEST_CASE ("a click on the header itself still folds the card", "[effects][ui]")
+{
+    // The other half of the fix: the header is still the large target, and a
+    // press that lands on it rather than on one of its buttons must work as it
+    // always did.
+    const juce::ScopedJuceInitialiser_GUI juceInit;
+    ChainHarness h;
+
+    h.chain.addEffectOfType ("filter");
+    h.layOutLikeAHost();
+
+    auto* card = cardAt (h.chain, 0);
+    REQUIRE (card != nullptr);
+
+    const auto wasOpen = h.chain.isSlotExpanded (0);
+
+    // The middle of the header row, which is the name - no button is there.
+    pressAndRelease (*card, *card, { card->getWidth() / 2, tokens::size::rowHeight / 2 });
+
+    CHECK (h.chain.isSlotExpanded (0) == ! wasOpen);
 }
 
 TEST_CASE ("which cards are open survives a rebuild, and follows the effect", "[effects][ui]")

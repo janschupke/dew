@@ -68,6 +68,12 @@ MainComponent::MainComponent (bool openAudioDevice)
     // A layout, not a paint.
     collapse.onChanged = [this] { resized(); };
 
+    // An effect card opening makes the panel taller than the viewport showing
+    // it, and only the viewport's owner can do anything about that. The chain
+    // used to scroll inside a viewport of its own, nested in this one, so the
+    // growth went nowhere and the sidebar never learned there was more to see.
+    instrumentPanel.onRequiredHeightChanged = [this] { resized(); };
+
     juce::Desktop::getInstance().setDefaultLookAndFeel (&lookAndFeel);
 
     // Before the first projectChanged(), or the opening snapshot would resolve
@@ -287,14 +293,31 @@ void MainComponent::PanelDivider::resized()
         getLocalBounds().removeFromTop (tokens::size::iconButton).reduced (0, tokens::space::xxs));
 }
 
+bool MainComponent::PanelDivider::hitTest (int x, int y)
+{
+    // The chevron, wherever it is, and a band either side of the rule. The rest
+    // of this component is over the editor and over the panel, and belongs to
+    // them: without this it would take every click along the panel's left edge
+    // and there would be nothing on screen to say why.
+    if (toggleButton.getBounds().contains (x, y))
+        return true;
+
+    const auto rule = getWidth() / 2;
+
+    return x >= rule - tokens::space::xs && x <= rule + tokens::space::xs;
+}
+
 void MainComponent::PanelDivider::paint (juce::Graphics& g)
 {
-    g.fillAll (tokens::colour::background);
-
-    // Below the toggle only: a rule drawn through the button reads as a line
-    // with a hole in it.
+    // Transparent. This straddles the seam rather than reserving a column of
+    // its own, so the editor and the panel meet under it and the only thing
+    // drawn here is the rule they meet on.
+    //
+    // It runs the full height now, THROUGH the chevron rather than starting
+    // below it: the button is a small opaque rectangle sitting on the line, so
+    // the line reads as continuous behind it rather than as a rule with a hole.
     g.setColour (isMouseOverOrDragging() ? tokens::colour::accent : tokens::colour::dividerStrong);
-    g.drawVerticalLine (getWidth() / 2, (float) toggleButton.getBottom(), (float) getHeight());
+    g.drawVerticalLine (getWidth() / 2, 0.0f, (float) getHeight());
 }
 
 void MainComponent::setPanelWidth (int width)
@@ -517,10 +540,21 @@ void MainComponent::resized()
                                  juce::jmax (available, required));
     }
 
-    // The divider stays whichever way the panel goes - it is what the panel is
-    // brought back with.
-    divider.setBounds (area.removeFromRight (dividerWidth));
+    // The editor takes the rest, right up to the panel: there is no column
+    // between them any more.
     tabs.setBounds (area);
+
+    // And the seam STRADDLES the boundary they now share, on top of both. It
+    // stays whichever way the panel goes - it is what the panel is brought back
+    // with - so it is anchored on the panel's left edge rather than taken out
+    // of the editor's width.
+    // Clamped so a folded panel does not take the chevron off the edge with it:
+    // the toggle is the only way back.
+    const auto seamX = juce::jlimit (0, juce::jmax (0, getWidth() - seamWidth),
+                                     area.getRight() - seamWidth / 2);
+
+    divider.setBounds (seamX, area.getY(), seamWidth, area.getHeight());
+    divider.toFront (false);
 }
 
 } // namespace dew

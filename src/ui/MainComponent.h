@@ -332,6 +332,15 @@ private:
         void paint (juce::Graphics&) override;
         void resized() override;
 
+        /** The seam is a rule the panel abuts, and this component STRADDLES it:
+            it overlaps both the editor and the panel so the chevron can float
+            over the boundary with no column of background reserved for it. That
+            makes most of its width somebody else's, so only the band around the
+            rule and the chevron's own rectangle take the mouse - otherwise it
+            would quietly swallow every click along the panel's left edge.
+        */
+        bool hitTest (int x, int y) override;
+
         /** Points the chevron the way the panel will go when it is pressed. */
         void updateToggle();
 
@@ -428,10 +437,14 @@ private:
     ComponentMotion collapse { *this };
     bool panelCollapsed = false;
 
-    /** Wide enough to hold the collapse toggle. It was five pixels of drag
-        handle, which is not enough room for a control.
+    /** Wide enough to hold the collapse toggle, which is what the seam has to
+        carry. It is not a column of LAYOUT any more: the editor and the panel
+        meet, and this straddles the boundary they meet on - see
+        PanelDivider::hitTest. It used to be sixteen pixels of window background
+        with a rule down the middle, and the panel drew a second rule on its own
+        left edge, so the seam read as two lines with a gap between them.
     */
-    static constexpr int dividerWidth = 16;
+    static constexpr int seamWidth = tokens::size::iconButton;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (MainComponent)
 };

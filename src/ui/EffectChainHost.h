@@ -57,6 +57,16 @@ public:
     */
     int getPreferredHeight() const;
 
+    /** Fired when getPreferredHeight() moves - a card opened or closed, or a
+        chain rebuilt.
+
+        A column has no scroller of its own, so the host it is stacked in has to
+        lay out again or the growth goes nowhere. That is exactly what used to
+        happen: the inner viewport swallowed it, the sidebar never got taller,
+        and an opened card at the bottom of a full chain was unreachable.
+    */
+    std::function<void()> onPreferredHeightChanged;
+
 private:
     /** How near the edge a dragged card has to get before the view follows it,
         and how fast it then moves. */
@@ -64,10 +74,21 @@ private:
     static constexpr int autoScrollSpeed = tokens::space::lg;
 
     void layOutChain();
+    void notifyPreferredHeightChanged();
 
     juce::String ownerName;
 
+    /** Below the heading: what the chain is laid out in. */
+    juce::Rectangle<int> content;
+
+    /** What onPreferredHeightChanged last reported, so a rebuild that does not
+        move the height does not make the whole window lay out again. */
+    int lastPreferredHeight = 0;
+
     EffectChainComponent chain;
+
+    /** A ROW's scroller. Unused, and not in the component tree at all, when the
+        chain runs as a column - see the constructor. */
     juce::Viewport viewport;
     DewIconButton addButton { icons::plus(), "Add an effect" };
 

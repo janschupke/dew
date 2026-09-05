@@ -108,20 +108,6 @@ void surface (juce::Graphics& g, juce::Rectangle<int> bounds, juce::Colour c)
     g.fillRect (bounds);
 }
 
-void container (juce::Graphics& g, juce::Rectangle<int> bounds)
-{
-    if (bounds.isEmpty())
-        return;
-
-    const auto body = bounds.toFloat().reduced (stroke::whisper);
-
-    g.setColour (colour::surface);
-    g.fillRoundedRectangle (body, radius::md);
-
-    g.setColour (colour::outline);
-    g.drawRoundedRectangle (body, radius::md, stroke::hairline);
-}
-
 void wellBackground (juce::Graphics& g, juce::Rectangle<int> bounds)
 {
     g.setColour (colour::well);

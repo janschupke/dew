@@ -1,5 +1,7 @@
 #include "ui/EffectChainHost.h"
 
+#include <utility>
+
 #include "ui/design/Icons.h"
 #include "ui/design/Tokens.h"
 
@@ -15,12 +17,25 @@ EffectChainHost::EffectChainHost (ProjectDocument& d, EditorState& s, Orientatio
 
     chain.setOrientation (orientation);
 
-    // A chain scrolls along its own axis and only that one: the other dimension
-    // is whatever the host gives it, so a second bar would never have anything
-    // to scroll.
-    viewport.setViewedComponent (&chain, false);
-    viewport.setScrollBarsShown (! chain.isHorizontal(), chain.isHorizontal());
-    addAndMakeVisible (viewport);
+    // A ROW scrolls, a COLUMN does not.
+    //
+    // The mixer's chain is wider than the band it sits in, so it needs a
+    // scroller of its own. The instrument panel's is already inside one -
+    // MainComponent scrolls the whole sidebar - and a second viewport nested in
+    // the first is what stopped an opened card ever being reachable: the inner
+    // scroller absorbed the growth, so the panel never got taller and the
+    // sidebar's own bar never came up. One scroller per axis, owned by whoever
+    // is outermost.
+    if (chain.isHorizontal())
+    {
+        viewport.setViewedComponent (&chain, false);
+        viewport.setScrollBarsShown (false, true);
+        addAndMakeVisible (viewport);
+    }
+    else
+    {
+        addAndMakeVisible (chain);
+    }
 
     addButton.onClick = [this] { chain.showAddMenu (addButton); };
     addAndMakeVisible (addButton);
@@ -29,17 +44,26 @@ EffectChainHost::EffectChainHost (ProjectDocument& d, EditorState& s, Orientatio
     {
         addButton.setEnabled (chain.canAddEffect());
         layOutChain();
+        notifyPreferredHeightChanged();
     };
 
-    // The mixer's chain is a row wider than the band it sits in, so a card
-    // cannot be dragged past the edge of what is on screen without this. The
-    // chain is the SCROLLED component, so a point in its coordinates is a point
-    // in content space and has to be brought back into the viewport's.
+    // A card cannot be dragged past the edge of what is on screen without this.
+    // The chain is the SCROLLED component, so a point in its coordinates is a
+    // point in content space and has to be brought back into the scroller's -
+    // which in a column is the sidebar's viewport, not one of ours.
     chain.onDragNearEdge = [this] (juce::Point<int> positionInChain)
     {
-        const auto inViewport = positionInChain - viewport.getViewPosition();
+        auto* scroller = chain.isHorizontal() ? &viewport
+                                              : findParentComponentOfClass<juce::Viewport>();
 
-        viewport.autoScroll (inViewport.x, inViewport.y, autoScrollMargin, autoScrollSpeed);
+        if (scroller == nullptr)
+            return;
+
+        // getLocalPoint rather than two screen positions: a UI test paints into
+        // an Image with no peer, where a screen position is not a screen's.
+        const auto inScroller = scroller->getLocalPoint (&chain, positionInChain);
+
+        scroller->autoScroll (inScroller.x, inScroller.y, autoScrollMargin, autoScrollSpeed);
     };
 
     addButton.setEnabled (chain.canAddEffect());
@@ -73,11 +97,16 @@ int EffectChainHost::getPreferredHeight() const
 
 void EffectChainHost::paint (juce::Graphics& g)
 {
-    // A card under the whole chain, heading included. Without it the chain sat
-    // straight on the window background with nothing to say where it began, so
-    // in the mixer it read as loose controls under the strips rather than as a
-    // panel belonging to the selected one.
-    paint::container (g, getLocalBounds());
+    // A BAND, not a card. The chain used to draw a rounded outlined container
+    // around cards that already draw a rounded outlined body of their own -
+    // two levels of containment saying the same thing, with a gap of window
+    // background around the outer one so the row floated free of the strips it
+    // belongs to. A full-bleed surface with a rule along its top says the same
+    // thing once, and says it as a region rather than as an object.
+    g.fillAll (colour::surface);
+
+    g.setColour (colour::dividerStrong);
+    g.drawHorizontalLine (0, 0.0f, (float) getWidth());
 
     paint::sectionHeading (
         g, { space::md, 0, getWidth() - size::iconButton - space::md, tokens::size::stripHeading },
@@ -92,12 +121,24 @@ void EffectChainHost::paint (juce::Graphics& g)
 
 void EffectChainHost::resized()
 {
-    auto area = getLocalBounds().reduced (space::xs, 0);
-    auto heading = area.removeFromTop (tokens::size::stripHeading);
+    auto area = getLocalBounds();
 
-    addButton.setBounds (heading.removeFromRight (size::iconButton).reduced (space::xxs));
+    // The add button ends where the heading text begins, on the same margin the
+    // band's own contents use - so it lines up with the panel's preset button
+    // above it rather than sitting two pixels further out.
+    auto heading = area.removeFromTop (tokens::size::stripHeading).reduced (space::md, space::xxs);
 
-    viewport.setBounds (area.withTrimmedBottom (space::xs));
+    addButton.setBounds (heading.removeFromRight (size::iconButton));
+
+    // A column's cards line up with everything else in the panel, so the band's
+    // margin is the panel's. A ROW's is smaller by the gap layOutCards already
+    // leaves before the first card, which together come to the same thing.
+    content = area.reduced (chain.isHorizontal() ? space::xs : space::md, 0)
+                  .withTrimmedBottom (space::xs);
+
+    if (chain.isHorizontal())
+        viewport.setBounds (content);
+
     layOutChain();
 }
 
@@ -116,8 +157,21 @@ void EffectChainHost::layOutChain()
         return;
     }
 
-    chain.setSize (juce::jmax (120, viewport.getMaximumVisibleWidth()),
-                   juce::jmax (viewport.getMaximumVisibleHeight(), chain.getRequiredHeight()));
+    // A column takes exactly the height it asked for. Whoever stacks this asked
+    // for getPreferredHeight() and is scrolling us; giving the chain "whatever
+    // is left" here is what used to clip it instead.
+    chain.setBounds (content.withHeight (chain.getRequiredHeight()));
+}
+
+void EffectChainHost::notifyPreferredHeightChanged()
+{
+    const auto wanted = getPreferredHeight();
+
+    if (std::exchange (lastPreferredHeight, wanted) == wanted)
+        return;
+
+    if (onPreferredHeightChanged != nullptr)
+        onPreferredHeightChanged();
 }
 
 } // namespace dew
