@@ -19,6 +19,8 @@ they are the only thing standing between it and a second design system.
 | `website/src/generated/mcp-tools.json` | `dew_mcp schema` | the same pair |
 | `website/src/app/theme.generated.css` | `website/scripts/gen-theme.mjs` | `npm run theme:check` |
 | `website/src/app/icon.svg` | `website/scripts/gen-theme.mjs` | the same check |
+| `resources/icon/dew.svg` | `website/scripts/gen-theme.mjs` | the same check |
+| `resources/icon/dew.png` | `dew_shot icon`, via `./scripts/gen-shots.sh` | `tests/IconTests.cpp`, against the SVG's two fills |
 | `website/public/shots/*.png` | `./scripts/gen-shots.sh`, from the **release** build | **nothing byte-wise** — see below |
 
 Regenerate a JSON file in the commit that changes what it comes from, or the suite fails
@@ -26,6 +28,12 @@ naming the file and the command. Freshness is a **test**, not `git diff --exit-c
 would need `check.sh` to build a tool, run it and write into the working tree before
 diffing, and a gate that mutates the tree it is judging cannot run on a tree with work in
 it.
+
+The last two are the application's icon rather than the site's, and are in this table
+because `gen-theme.mjs` is what writes them: the mark is the accent on the window colour,
+so it comes from the palette like every other colour here. `juce_add_gui_app` wants
+`ICON_BIG` to exist at **configure** time and `dew_shot` is a target in the same project,
+so the PNG is committed rather than built.
 
 ## The screenshots are not reproducible, and are not gated on bytes
 

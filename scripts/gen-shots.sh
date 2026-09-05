@@ -66,6 +66,11 @@ shoot score        amber.dew       score
 # sections need.
 "$SHOT" gallery "$OUT/gallery.png" --size "$SIZE" --scale "$SCALE" --theme dark
 
+# The application icon, from the SVG gen-theme.mjs writes out of the palette.
+# It goes to resources/ rather than $OUT: it is not a screenshot, it is what
+# ICON_BIG points at, and tests/IconTests.cpp holds it against that SVG.
+"$SHOT" icon resources/icon/dew.png resources/icon/dew.svg
+
 echo
 echo "ok    $(find "$OUT" -name '*.png' | wc -l | tr -d ' ') shots in $OUT"
 echo "      look at them before committing - nothing downstream will"

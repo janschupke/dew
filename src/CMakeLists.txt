@@ -592,6 +592,10 @@ juce_add_gui_app(dew
   MICROPHONE_PERMISSION_TEXT "dew records audio from the input you choose in Audio Settings."
   NEEDS_MIDI_INPUT          TRUE
   NEEDS_MIDI_OUTPUT         FALSE
+  # Rasterised from resources/icon/dew.svg, which gen-theme.mjs writes from the
+  # palette, by `dew_shot icon`. Committed rather than built: JUCE needs the file
+  # at CONFIGURE time and the tool that makes it is a target in this project.
+  ICON_BIG                  "${CMAKE_SOURCE_DIR}/resources/icon/dew.png"
   DOCUMENT_EXTENSIONS       "dew"
 )
 

@@ -16,6 +16,7 @@
 #include "ui/design/Theme.h"
 #include "ui/design/DewGallery.h"
 #include "CliArgs.h"
+#include "IconRaster.h"
 #include "DocsSamples.h"
 #include "DocsTokens.h"
 
@@ -34,6 +35,7 @@ Usage:
   dew_shot gallery <out.png> [options]      the design system
   dew_shot tokens <out.json>                the design system, as data
   dew_shot samples <out.json> <a.score...>  scores, with their token runs
+  dew_shot icon <out.png> <in.svg>          the app icon, rasterised
   dew_shot audio <out.png>                  the audio settings panel
   dew_shot midi <out.png>                   the MIDI settings panel
   dew_shot render <out.png> [--project f] [--format wav|flac|mp3|midi]
@@ -48,6 +50,7 @@ Options:
   --completions          open the score tab's completion popup before shooting
   --size <WxH>           Default 1440x900
   --scale <n>            Render at n times the size, 1..4. Default 1
+  --px <n>               icon only: edge length in pixels, 16..2048. Default 1024
   --theme <name>         dark | highContrast
   --help
 )";
@@ -206,6 +209,27 @@ int main (int argc, char* argv[])
             juce::Desktop::getInstance().setDefaultLookAndFeel (nullptr);
         }
     } clearLookAndFeel;
+
+    // Rasterised from the SVG gen-theme.mjs writes out of the palette. The
+    // work is in IconRaster.h; what is here is the mode's arguments.
+    if (mode == "icon")
+    {
+        if (args.positional.size() < 3)
+            return fail ("icon needs an .svg to rasterise");
+
+        const auto cwd = juce::File::getCurrentWorkingDirectory();
+        const auto edge = juce::jlimit (16, 2048, args.value ("--px", "1024").getIntValue());
+        const auto destination = cwd.getChildFile (args.positional[1]);
+
+        if (const auto result = dew::shot::rasteriseIcon (cwd.getChildFile (args.positional[2]),
+                                                          destination, edge);
+            result.failed())
+            return fail (result.getErrorMessage());
+
+        std::cout << "wrote " << destination.getFullPathName() << "  (" << edge << "x" << edge
+                  << ")" << std::endl;
+        return 0;
+    }
 
     const auto size = parseSize (args.value ("--size", "1440x900"));
     const auto scale = juce::jlimit (1, 4, args.value ("--scale", "1").getIntValue());
