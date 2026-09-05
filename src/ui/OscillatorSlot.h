@@ -5,6 +5,7 @@
 #include <juce_gui_basics/juce_gui_basics.h>
 
 #include "i18n/Strings.h"
+#include "model/ModuleCatalog.h"
 #include "ui/design/MenuGlyph.h"
 #include "ui/design/Tokens.h"
 
@@ -27,49 +28,38 @@ using namespace tokens;
 namespace oscillatorChoices
 {
 
-/** A combo box's items: the string the document stores, and what the panel
-    calls it. One table per box rather than two parallel ladders, so an item's
-    id is its index in the table and nothing has to be kept in step by hand.
+/** The choices a parameter DECLARES, straight from the catalog.
+
+    These were three tables of {value, display} written out here - a third copy
+    of the wave, mode and source vocabularies, with their labels in hard-coded
+    English while the catalog's are StringIds. So the boxes offered untranslated
+    words and a fourth generator would have meant remembering this file.
+
+    The fallback comes from the spec too, so a call site no longer restates the
+    schema's default as a string beside the property it is reading.
 */
-struct NamedChoice
+inline const ParamSpec& choicesOf (const juce::Identifier& property)
 {
-    const char* value;
-    const char* display;
-};
+    return requireInstrumentParamSpec (property);
+}
 
-inline const NamedChoice waveChoices[] {
-    { "sine", "Sine" }, { "saw", "Saw" }, { "square", "Square" }, { "triangle", "Triangle" }
-};
-
-inline const NamedChoice modeChoices[] { { "classic", "Classic" }, { "wavetable", "Wavetable" } };
-
-// "LFO", not "Lfo": capitalising the stored name works for every other box here
-// and would be wrong for exactly this one.
-inline const NamedChoice sourceChoices[] { { "envelope", "Envelope" }, { "lfo", "LFO" } };
-
-/** The 1-based combo id of a stored name, falling back to the schema default.
-
-    `fallback` is a VALUE, not an index, so a caller names the default it wants
-    the way the schema does rather than counting rows to find it.
-*/
-template <size_t N>
-int idFor (const NamedChoice (&choices)[N], const juce::String& name, const char* fallback)
+inline int idFor (const ParamSpec& spec, const juce::String& name)
 {
-    for (size_t i = 0; i < N; ++i)
-        if (name == choices[i].value)
-            return (int) i + 1;
+    for (int i = 0; i < spec.numChoices; ++i)
+        if (name == spec.choices[i].id)
+            return i + 1;
 
-    for (size_t i = 0; i < N; ++i)
-        if (juce::String (fallback) == choices[i].value)
-            return (int) i + 1;
+    for (int i = 0; i < spec.numChoices; ++i)
+        if (spec.defaultText != nullptr && juce::String (spec.defaultText) == spec.choices[i].id)
+            return i + 1;
 
     return 1;
 }
 
-template <size_t N> void fill (juce::ComboBox& box, const NamedChoice (&choices)[N])
+inline void fill (juce::ComboBox& box, const ParamSpec& spec)
 {
-    for (size_t i = 0; i < N; ++i)
-        box.addItem (choices[i].display, (int) i + 1);
+    for (int i = 0; i < spec.numChoices; ++i)
+        box.addItem (tr (spec.choices[i].displayName), i + 1);
 }
 
 /** The same, with a picture on every row.
@@ -78,16 +68,16 @@ template <size_t N> void fill (juce::ComboBox& box, const NamedChoice (&choices)
     caller reuses the model's own reader - waveformFromString - instead of
     keeping a second table in step with this one by counting.
 */
-template <size_t N, typename GlyphFor>
-void fill (juce::ComboBox& box, const NamedChoice (&choices)[N], GlyphFor glyphFor)
+template <typename GlyphFor>
+void fill (juce::ComboBox& box, const ParamSpec& spec, GlyphFor glyphFor)
 {
-    for (size_t i = 0; i < N; ++i)
-        addGlyphItem (box, (int) i + 1, choices[i].display, glyphFor (choices[i].value));
+    for (int i = 0; i < spec.numChoices; ++i)
+        addGlyphItem (box, i + 1, tr (spec.choices[i].displayName), glyphFor (spec.choices[i].id));
 }
 
-template <size_t N> const char* valueOf (const NamedChoice (&choices)[N], int selectedId)
+inline const char* valueOf (const ParamSpec& spec, int selectedId)
 {
-    return choices[(size_t) juce::jlimit (0, (int) N - 1, selectedId - 1)].value;
+    return spec.choices[(size_t) juce::jlimit (0, spec.numChoices - 1, selectedId - 1)].id;
 }
 
 } // namespace oscillatorChoices

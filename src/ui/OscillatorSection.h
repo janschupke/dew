@@ -1,5 +1,8 @@
 #pragma once
 
+#include <utility>
+#include <vector>
+
 #include <juce_gui_basics/juce_gui_basics.h>
 
 #include "engine/EngineSnapshot.h"
@@ -68,6 +71,16 @@ public:
     {
         return wavetableMode ? classicHeight + wavetableExtra : classicHeight;
     }
+
+    /** Every control a GENERATOR owns, beside the property that says whose.
+
+        The pairing IS the panel's whole knowledge of the split now: the
+        registry decides what a slot shows and this says which control each of
+        its parameters is drawn as. Public so a test can hold the two against
+        each other - a control whose property no generator claims would be
+        shown for every generator, silently.
+    */
+    std::vector<std::pair<const juce::Identifier*, juce::Component*>> generatorControls();
 
     /** The height for the slot currently showing. Asked of the section rather
         than cached by the host, so there is only one copy of the answer and

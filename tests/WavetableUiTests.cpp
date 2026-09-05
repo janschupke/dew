@@ -14,6 +14,7 @@
 #include "engine/SynthChannel.h"
 #include "engine/Wavetable.h"
 #include "model/AutomationTargets.h"
+#include "model/GeneratorCatalog.h"
 #include "model/Ids.h"
 #include "model/ProjectEdits.h"
 #include "model/ProjectSerializer.h"
@@ -303,4 +304,78 @@ TEST_CASE ("the wavetable face fits the narrowest panel the app allows", "[ui][w
     REQUIRE (h.section.getModKnob().getRight() <= h.section.getRateKnob().getX());
 
     REQUIRE (fractionOfNonBackgroundPixels (renderToImage (h.section)) > 0.05f);
+}
+
+TEST_CASE ("the panel shows a slot the parameters its generator declares", "[ui][wavetable]")
+{
+    // What decides which face is on screen. It was a bool set by comparing a
+    // stored string to the literal "wavetable", plus a hand-written list of the
+    // seven wavetable controls - so a third generator meant finding that list
+    // and remembering what belonged in it.
+    //
+    // Now the registry decides and the panel only says which control each
+    // parameter is drawn as. This asserts the two still line up: a control
+    // whose property no generator claims would be shown for every generator,
+    // silently.
+    const juce::ScopedJuceInitialiser_GUI juceInit;
+
+    ProjectDocument document;
+    EditorState editorState;
+    document.setState (dew::testing::fixtureProject(), true);
+
+    OscillatorSection section { document, editorState };
+
+    juce::StringArray unclaimed;
+    auto claimed = 0;
+
+    for (const auto& [property, control] : section.generatorControls())
+    {
+        juce::ignoreUnused (control);
+
+        auto owned = false;
+
+        for (const auto& generator : generatorDescriptors())
+            for (int i = 0; i < generator.numParams; ++i)
+                if (*generator.params[i].property == *property)
+                    owned = true;
+
+        if (owned)
+            ++claimed;
+        else
+            unclaimed.add (property->toString());
+    }
+
+    // Control case: an empty map would claim every control well behaved.
+    INFO ("generator-owned controls: " << claimed);
+    REQUIRE (claimed > 5);
+
+    INFO ("controls whose property no generator declares:\n" << unclaimed.joinIntoString ("\n"));
+    CHECK (unclaimed.isEmpty());
+
+    // And every generator parameter a person can SET has a control. A parameter
+    // with no control is one the picker offers and the panel cannot reach.
+    juce::StringArray undrawn;
+
+    for (const auto& generator : generatorDescriptors())
+    {
+        for (int i = 0; i < generator.numParams; ++i)
+        {
+            auto drawn = false;
+
+            for (const auto& [property, control] : section.generatorControls())
+            {
+                juce::ignoreUnused (control);
+
+                if (*property == *generator.params[i].property)
+                    drawn = true;
+            }
+
+            if (! drawn)
+                undrawn.add (juce::String (generator.id) + " > "
+                             + generator.params[i].property->toString());
+        }
+    }
+
+    INFO ("generator parameters with no control:\n" << undrawn.joinIntoString ("\n"));
+    CHECK (undrawn.isEmpty());
 }

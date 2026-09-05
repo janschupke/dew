@@ -15,6 +15,7 @@
 #include "i18n/Strings.h"
 #include "ui/OscillatorSection.h"
 
+#include "model/GeneratorCatalog.h"
 #include "ui/OscillatorSlot.h"
 
 #include <cmath>
@@ -45,6 +46,26 @@ void OscillatorSection::refreshHeader()
     }
 }
 
+/** Every control whose parameter belongs to a generator rather than to the
+    slot, beside the property that says whose it is.
+
+    The pairing is the point: the registry decides what is shown, and this says
+    which control each of its parameters is drawn as. A generator with a
+    parameter nothing draws simply has no row here.
+*/
+std::vector<std::pair<const juce::Identifier*, juce::Component*>>
+OscillatorSection::generatorControls()
+{
+    return { { &ids::wave, &waveBox },
+             { &ids::wavetable, &tableBox },
+             { &ids::wavePositionSource, &sourceBox },
+             { &ids::wavePosition, &positionKnob },
+             { &ids::wavePositionMod, &modKnob },
+             { &ids::wavePositionRate, &rateKnob },
+             { &ids::unisonVoices, &unisonKnob },
+             { &ids::unisonDetune, &spreadKnob } };
+}
+
 void OscillatorSection::refreshControls()
 {
     const juce::ScopedValueSetter<bool> quiet (updating, true);
@@ -53,7 +74,8 @@ void OscillatorSection::refreshControls()
     const auto valid = slot.isValid();
 
     const auto wasWavetable = showingWavetable;
-    showingWavetable = valid && slot[ids::mode].toString() == "wavetable";
+    const auto generator = valid ? generatorFor (slot[ids::mode].toString()).id : "";
+    showingWavetable = valid && juce::String (generator) == "wavetable";
 
     enableButton.setEnabled (valid);
     modeBox.setEnabled (valid);
@@ -64,16 +86,13 @@ void OscillatorSection::refreshControls()
     detuneKnob.setEnabled (valid);
     gainKnob.setEnabled (valid);
 
-    // Exactly one face is on screen at a time, decided here and nowhere else -
-    // resized() and paint() both read the cached answer.
-    waveBox.setVisible (valid && ! showingWavetable);
-
-    const std::initializer_list<juce::Component*> wavetableOnly {
-        &tableBox, &sourceBox, &positionKnob, &modKnob, &rateKnob, &unisonKnob, &spreadKnob
-    };
-
-    for (auto* c : wavetableOnly)
-        c->setVisible (valid && showingWavetable);
+    // Which face is on screen is decided by which generator OWNS each control's
+    // parameter, asked of the registry. It was a bool and a hand-written list
+    // of the seven wavetable controls, so a third generator meant finding this
+    // list and remembering what belonged in it - and the bool was set by
+    // comparing a stored string to the literal "wavetable".
+    for (const auto& [property, control] : generatorControls())
+        control->setVisible (valid && ! isForeignGeneratorParam (generator, *property));
 
     if (wasWavetable != showingWavetable)
     {
@@ -101,12 +120,12 @@ void OscillatorSection::refreshControls()
     enableButton.setTooltip (
         tr (StringId::oscillator_enabled_help, Args {}.with ("index", selectedSlot + 1)));
 
-    modeBox.setSelectedId (idFor (modeChoices, slot[ids::mode].toString(), "classic"),
+    modeBox.setSelectedId (idFor (choicesOf (ids::mode), slot[ids::mode].toString()),
                            juce::dontSendNotification);
-    waveBox.setSelectedId (idFor (waveChoices, slot[ids::wave].toString(), "saw"),
+    waveBox.setSelectedId (idFor (choicesOf (ids::wave), slot[ids::wave].toString()),
                            juce::dontSendNotification);
     sourceBox.setSelectedId (
-        idFor (sourceChoices, slot[ids::wavePositionSource].toString(), "envelope"),
+        idFor (choicesOf (ids::wavePositionSource), slot[ids::wavePositionSource].toString()),
         juce::dontSendNotification);
 
     // A table name this build does not know shows as the first one, which is

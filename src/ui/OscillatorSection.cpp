@@ -51,21 +51,25 @@ OscillatorSection::OscillatorSection (ProjectDocument& d, EditorState& s)
     };
     addAndMakeVisible (enableButton);
 
-    fill (modeBox, modeChoices);
+    fill (modeBox, choicesOf (ids::mode));
     modeBox.setTooltip (tr (StringId::oscillator_mode_help));
     modeBox.onChange = [this]
     {
-        write (ids::mode, valueOf (modeChoices, modeBox.getSelectedId()), "Change oscillator mode");
+        write (ids::mode, valueOf (choicesOf (ids::mode), modeBox.getSelectedId()),
+               "Change oscillator mode");
     };
     addAndMakeVisible (modeBox);
 
     // The four wave icons existed for as long as the icon set has and were
     // drawn by nothing: the one place a person picks a shape showed the four as
     // four words.
-    fill (waveBox, waveChoices,
+    fill (waveBox, choicesOf (ids::wave),
           [] (const char* name) { return glyph::forWaveform (waveformFromString (name)); });
     waveBox.onChange = [this]
-    { write (ids::wave, valueOf (waveChoices, waveBox.getSelectedId()), "Change waveform"); };
+    {
+        write (ids::wave, valueOf (choicesOf (ids::wave), waveBox.getSelectedId()),
+               "Change waveform");
+    };
     waveBox.setTooltip (tr (StringId::oscillator_wave_help));
     addAndMakeVisible (waveBox);
 
@@ -82,11 +86,12 @@ OscillatorSection::OscillatorSection (ProjectDocument& d, EditorState& s)
     };
     addAndMakeVisible (tableBox);
 
-    fill (sourceBox, sourceChoices);
+    fill (sourceBox, choicesOf (ids::wavePositionSource));
     sourceBox.setTooltip (tr (StringId::oscillator_source_help));
     sourceBox.onChange = [this]
     {
-        write (ids::wavePositionSource, valueOf (sourceChoices, sourceBox.getSelectedId()),
+        write (ids::wavePositionSource,
+               valueOf (choicesOf (ids::wavePositionSource), sourceBox.getSelectedId()),
                "Change modulation source");
     };
     addAndMakeVisible (sourceBox);
