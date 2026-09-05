@@ -44,9 +44,18 @@ std::vector<juce::ValueTree> nodesFor (const juce::ValueTree& channel, const Par
     if (*group.node == ids::CHANNEL)
         return { channel };
 
-    // OSC and AMP hang off the INSTRUMENT child; SAMPLE off the channel itself.
-    const auto parent = (*group.node == ids::SAMPLE) ? channel
-                                                     : channel.getChildWithName (ids::INSTRUMENT);
+    // Which node a group lives ON, not which name it happens to have. OSC and
+    // AMP hang off the INSTRUMENT child; SAMPLE and SOUNDFONT off the channel
+    // itself. This named SAMPLE alone, so capturing a soundfont channel's state
+    // looked for SOUNDFONT under INSTRUMENT, found nothing, and returned the
+    // defaults - silently, as a preset of a sound nobody made.
+    //
+    // The apply side was generalised for this reason already; see
+    // ProjectEdits::applyInstrumentPreset. It was latent only because nothing
+    // in production captured state, which is a thing a preset system that can
+    // SAVE stops being true of.
+    const auto instrument = channel.getChildWithName (ids::INSTRUMENT);
+    const auto parent = instrument.getChildWithName (*group.node).isValid() ? instrument : channel;
 
     if (group.count <= 1)
         return { parent.getChildWithName (*group.node) };

@@ -284,3 +284,37 @@ TEST_CASE ("an unreadable choice falls back rather than storing nonsense", "[pre
     INFO ("warnings: " << warnings.joinIntoString (" | "));
     CHECK (warnings.size() >= 1);
 }
+
+TEST_CASE ("capturing a soundfont channel reads its offsets, not the defaults", "[preset]")
+{
+    // nodesFor named ids::SAMPLE alone when deciding whether a group hangs off
+    // the channel or off its INSTRUMENT child, and SOUNDFONT hangs off the
+    // channel too. So capture looked for it under INSTRUMENT, found nothing and
+    // returned the schema's defaults - a preset of a sound nobody made.
+    //
+    // Latent only because nothing in production captures state yet, which is a
+    // thing a preset system that can save stops being true of. The APPLY side
+    // was generalised for this reason already.
+    auto project = ProjectFactory::createDefault();
+    juce::UndoManager undo;
+
+    auto channel = ProjectEdits::addSoundFontChannel (project, "Font", &undo);
+    REQUIRE (channel.isValid());
+
+    auto node = channel.getChildWithName (ids::SOUNDFONT);
+    REQUIRE (node.isValid());
+
+    ProjectEdits::setProperty (node, ids::filterOffset, -1200.0, &undo, "Filter");
+    ProjectEdits::setProperty (node, ids::releaseScale, 3.0, &undo, "Release");
+
+    const auto state = stateFor (instrumentDescriptor (InstrumentType::soundfont), channel);
+    const auto* object = state.getDynamicObject();
+
+    REQUIRE (object != nullptr);
+
+    const auto* group = object->getProperty ("soundfont").getDynamicObject();
+    REQUIRE (group != nullptr);
+
+    CHECK ((double) group->getProperty (ids::filterOffset) == Catch::Approx (-1200.0));
+    CHECK ((double) group->getProperty (ids::releaseScale) == Catch::Approx (3.0));
+}
