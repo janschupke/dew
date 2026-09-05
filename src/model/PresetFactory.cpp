@@ -263,6 +263,28 @@ Preset morphingSweep()
                           { &ids::sustain, 0.5 }, { &ids::release, 0.8 } });
 }
 
+/** The other side of the wavetable: a short, bright, plucked thing rather than
+    a slow pad, so the two shipped patches show the generator doing two
+    different jobs. Two is also what PresetLibraryTests asks of every kind that
+    a picker offers on its own - one preset is a list with nothing to choose. */
+Preset foldedPluck()
+{
+    auto osc = objectOf ({ { &ids::enabled, true },
+                           { &ids::mode, "wavetable" },
+                           { &ids::wavetable, "fold" },
+                           { &ids::gain, 0.75 },
+                           { &ids::wavePosition, 0.65 },
+                           { &ids::wavePositionMod, -0.5 },
+                           { &ids::wavePositionSource, "envelope" },
+                           { &ids::unisonVoices, 2 },
+                           { &ids::unisonDetune, 6.0 } });
+
+    // clang-format off
+    return synthPreset ({ osc, oscOff(), oscOff() },
+                        { { &ids::attack, 0.001 }, { &ids::decay, 0.32 },
+                          { &ids::sustain, 0.0 }, { &ids::release, 0.18 } });
+}
+
 Preset loopedBed()    { return audioPreset ({ { &ids::fadeInMs, 40.0 }, { &ids::fadeOutMs, 40.0 },
                               { &ids::transpose, 0.0 }, { &ids::reverse, false },
                               { &ids::loop, true } }); }
@@ -373,6 +395,8 @@ const std::vector<PresetFactory::Entry>& PresetFactory::presets()
           StringId::preset_hollowKeys_description, PresetCategory::keys, &hollowKeys },
         { "morphing-sweep.dewpreset", StringId::preset_morphingSweep_name,
           StringId::preset_morphingSweep_description, PresetCategory::pads, &morphingSweep },
+        { "folded-pluck.dewpreset", StringId::preset_foldedPluck_name,
+          StringId::preset_foldedPluck_description, PresetCategory::keys, &foldedPluck },
         { "looped-bed.dewpreset", StringId::preset_loopedBed_name,
           StringId::preset_loopedBed_description, PresetCategory::texture, &loopedBed },
         { "reverse-swell.dewpreset", StringId::preset_reverseSwell_name,

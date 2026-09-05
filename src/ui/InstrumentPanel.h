@@ -74,6 +74,10 @@ public:
     /** What the preset button would offer, and what choosing item `choice`
         does. A menu cannot be driven headlessly - see MenuSeam.h. */
     std::vector<PresetMenuRow> presetMenuRowsFor() const;
+
+    /** Which generator the picker is offering for: the selected slot's on a
+        synth, and nothing - meaning all of them - on anything else. */
+    juce::String generatorOnShow() const;
     bool applyPresetChoice (int choice);
 
     /** Told what the preset row under the pointer is for, and an empty string

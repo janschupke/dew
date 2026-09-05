@@ -130,6 +130,7 @@ juce_add_binary_data(dew_preset_data
     "${CMAKE_SOURCE_DIR}/presets/sub-bass.dewpreset"
     "${CMAKE_SOURCE_DIR}/presets/pluck.dewpreset"
     "${CMAKE_SOURCE_DIR}/presets/hollow-keys.dewpreset"
+    "${CMAKE_SOURCE_DIR}/presets/folded-pluck.dewpreset"
     "${CMAKE_SOURCE_DIR}/presets/morphing-sweep.dewpreset"
     "${CMAKE_SOURCE_DIR}/presets/looped-bed.dewpreset"
     "${CMAKE_SOURCE_DIR}/presets/reverse-swell.dewpreset"

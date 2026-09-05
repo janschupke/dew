@@ -367,17 +367,33 @@ void InstrumentPanel::paint (juce::Graphics& g)
 namespace
 {
 
-/** The presets for a channel, which kind it is decides. An unknown `source`
-    offers nothing rather than guessing - buildSnapshot has already warned. */
-std::vector<Preset> presetsForChannel (const juce::ValueTree& channel)
+/** The presets for a channel, which kind it is decides - and, for a synth,
+    which GENERATOR the slot on show is running.
+
+    An unknown `source` offers nothing rather than guessing; buildSnapshot has
+    already warned about it.
+
+    A wavetable's patches are its own. Offered together, the only thing telling
+    a wavetable preset from a classic one was the sound it made - the two are
+    the same `"type": "synth"` in the file, and the picker had nothing else to
+    go on.
+*/
+std::vector<Preset> presetsForChannel (const juce::ValueTree& channel, juce::StringRef generator)
 {
     if (const auto type = instrumentTypeFor (channel[ids::source].toString()))
-        return PresetLibrary::presetsFor (*type);
+        return PresetLibrary::presetsFor (*type, generator);
 
     return {};
 }
 
 } // namespace
+
+juce::String InstrumentPanel::generatorOnShow() const
+{
+    // Only a synth has generators. An audio or soundfont channel asks for all
+    // of its own presets, which is what an empty generator means.
+    return showing == InstrumentType::synth ? oscSection.selectedGeneratorId() : juce::String();
+}
 
 std::vector<PresetMenuRow> InstrumentPanel::presetMenuRowsFor() const
 {
@@ -390,13 +406,13 @@ std::vector<PresetMenuRow> InstrumentPanel::presetMenuRowsFor() const
     // whole life of the feature, then shown to everybody at once - a picker
     // that says only "Pluck" makes you audition the list, and one that explains
     // every row at the same time is prose you have to read to find a name.
-    return presetMenuRows (presetsForChannel (selectedChannel()));
+    return presetMenuRows (presetsForChannel (selectedChannel(), generatorOnShow()));
 }
 
 bool InstrumentPanel::applyPresetChoice (int choice)
 {
     const auto channel = selectedChannel();
-    const auto presets = presetsForChannel (channel);
+    const auto presets = presetsForChannel (channel, generatorOnShow());
 
     if (choice < 1 || choice > (int) presets.size())
         return false;
@@ -407,7 +423,7 @@ bool InstrumentPanel::applyPresetChoice (int choice)
 
 void InstrumentPanel::showPresetMenu()
 {
-    const auto presets = presetsForChannel (selectedChannel());
+    const auto presets = presetsForChannel (selectedChannel(), generatorOnShow());
 
     if (presets.empty())
         return;

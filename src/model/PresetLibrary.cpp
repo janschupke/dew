@@ -1,5 +1,8 @@
 #include "model/PresetLibrary.h"
 
+#include "model/GeneratorCatalog.h"
+#include "model/Ids.h"
+
 #include <PresetData.h>
 
 #include "i18n/Strings.h"
@@ -79,6 +82,30 @@ juce::String PresetLibrary::describe (const Preset& preset)
     return preset.description;
 }
 
+juce::String Preset::generatorId() const
+{
+    if (! isInstrument())
+        return {};
+
+    const auto* oscillators = state.getProperty ("oscillators", {}).getArray();
+
+    if (oscillators == nullptr)
+        return {};
+
+    for (const auto& slot : *oscillators)
+    {
+        if (! (bool) slot.getProperty (ids::enabled.toString(), true))
+            continue;
+
+        // The stored spelling, resolved through the registry so a file naming a
+        // generator this build has not got reads as the first one rather than
+        // as a category of its own.
+        return generatorFor (slot.getProperty (ids::mode.toString(), "").toString()).id;
+    }
+
+    return {};
+}
+
 namespace
 {
 
@@ -103,6 +130,22 @@ std::vector<Preset> PresetLibrary::presetsFor (EffectType type)
 std::vector<Preset> PresetLibrary::presetsFor (InstrumentType type)
 {
     return matching ("instrument", instrumentTypeToString (type));
+}
+
+std::vector<Preset> PresetLibrary::presetsFor (InstrumentType type, juce::StringRef generator)
+{
+    auto all = matching ("instrument", instrumentTypeToString (type));
+
+    if (juce::String (generator).isEmpty())
+        return all;
+
+    std::vector<Preset> out;
+
+    for (auto& preset : all)
+        if (preset.generatorId() == juce::String (generator))
+            out.push_back (std::move (preset));
+
+    return out;
 }
 
 } // namespace dew

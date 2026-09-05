@@ -47,6 +47,16 @@ struct PresetLibrary
     /** The presets for one kind of channel, so the audio face of the instrument
         panel shows the audio presets without asking. */
     static std::vector<Preset> presetsFor (InstrumentType);
+
+    /** The presets for one instrument type written for one GENERATOR.
+
+        An empty generator means all of them, which is what an instrument with
+        no generators - audio, soundfont - asks for. This is what makes a
+        wavetable's presets independent: the picker on a wavetable slot offers
+        wavetable patches, and a classic slot offers classic ones, rather than
+        one list in which the only thing telling them apart was the sound.
+    */
+    static std::vector<Preset> presetsFor (InstrumentType, juce::StringRef generator);
 };
 
 } // namespace dew

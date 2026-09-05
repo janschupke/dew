@@ -1179,6 +1179,10 @@
       "name": "Hollow Keys",
       "description": "A square under a triangle an octave up."
     },
+    "foldedPluck": {
+      "name": "Folded Pluck",
+      "description": "A short, bright wavetable pluck that folds back as it decays."
+    },
     "morphingSweep": {
       "name": "Morphing Sweep",
       "description": "Five unison voices morphing across the table over the note."

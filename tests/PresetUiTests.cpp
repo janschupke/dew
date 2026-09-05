@@ -225,9 +225,14 @@ TEST_CASE ("the synth's presets are grouped, and a category names each run", "[p
 {
     const juce::ScopedJuceInitialiser_GUI juceInit;
 
-    const auto rows = presetMenuRows (PresetLibrary::presetsFor (InstrumentType::synth));
+    // The CLASSIC list, which is what a classic slot's picker shows. A
+    // wavetable patch and a classic one are the same `"type": "synth"` in the
+    // file, so an unfiltered list was one in which the only thing telling them
+    // apart was the sound - see Preset::generatorId.
+    const auto classic = PresetLibrary::presetsFor (InstrumentType::synth, "classic");
+    const auto rows = presetMenuRows (classic);
 
-    // Five sounds over three categories, two of which hold more than one - so
+    // Four sounds over three categories, one of which holds more than one - so
     // the headings are worth their rows and they appear.
     const auto headings = headingsOf (rows);
     REQUIRE (headings.size() == 3);
@@ -236,8 +241,7 @@ TEST_CASE ("the synth's presets are grouped, and a category names each run", "[p
     CHECK (headings.contains ("Pads"));
 
     // Every preset is still offered, and no heading is offered as one.
-    CHECK (labelsOf (rows).size()
-           == (int) PresetLibrary::presetsFor (InstrumentType::synth).size());
+    CHECK (labelsOf (rows).size() == (int) classic.size());
 
     for (const auto& row : rows)
         CHECK ((row.isHeader ? row.presetIndex == -1 : row.presetIndex >= 0));
@@ -256,6 +260,44 @@ TEST_CASE ("the synth's presets are grouped, and a category names each run", "[p
     }
 
     CHECK (underKeys == juce::StringArray { "Pluck", "Hollow Keys" });
+}
+
+TEST_CASE ("a generator's presets are its own", "[preset][ui]")
+{
+    // What "independent presets" means in the picker: a wavetable slot offers
+    // wavetable patches. They were one list, keyed on ("instrument", "synth")
+    // alone, so `morphing-sweep` sat between `pluck` and `warm-pad` with
+    // nothing but its name to say it was a different mechanism.
+    const juce::ScopedJuceInitialiser_GUI juceInit;
+
+    const auto classic = PresetLibrary::presetsFor (InstrumentType::synth, "classic");
+    const auto wavetable = PresetLibrary::presetsFor (InstrumentType::synth, "wavetable");
+
+    // Two of each at least: one preset is a list with nothing to choose, which
+    // is what PresetLibraryTests asks of every kind a picker offers on its own.
+    CHECK (classic.size() >= 2);
+    CHECK (wavetable.size() >= 2);
+
+    // Disjoint, and together the whole set - so filtering hides nothing.
+    CHECK (classic.size() + wavetable.size()
+           == PresetLibrary::presetsFor (InstrumentType::synth).size());
+
+    for (const auto& preset : wavetable)
+    {
+        INFO (preset.id);
+        CHECK (preset.generatorId() == "wavetable");
+    }
+
+    for (const auto& preset : classic)
+    {
+        INFO (preset.id);
+        CHECK (preset.generatorId() == "classic");
+    }
+
+    // An instrument with no generators asks for all of its own, which is what
+    // an empty generator means.
+    CHECK (PresetLibrary::presetsFor (InstrumentType::audio, "").size()
+           == PresetLibrary::presetsFor (InstrumentType::audio).size());
 }
 
 TEST_CASE ("a row's index addresses the preset, not its place in the menu", "[preset][ui]")

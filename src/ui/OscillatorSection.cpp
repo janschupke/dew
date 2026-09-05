@@ -1,5 +1,7 @@
 #include "ui/OscillatorSection.h"
 
+#include "model/GeneratorCatalog.h"
+
 #include "i18n/Strings.h"
 #include "ui/OscillatorSlot.h"
 
@@ -225,6 +227,13 @@ int OscillatorSection::getNumSlots() const
             ++count;
 
     return count;
+}
+
+juce::String OscillatorSection::selectedGeneratorId() const
+{
+    // Through the registry, so a slot naming a generator this build has not got
+    // reads as the first one rather than as a kind of its own.
+    return generatorFor (selectedSlotTree()[ids::mode].toString()).id;
 }
 
 juce::ValueTree OscillatorSection::slotAt (int index) const

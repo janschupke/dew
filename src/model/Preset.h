@@ -71,6 +71,20 @@ struct Preset
     */
     juce::String id;
 
+    /** Which generator this patch is written for - "classic", "wavetable" - or
+        empty for a preset that is not a synth's.
+
+        DERIVED from the state rather than stored as a key. A preset's
+        generator is a fact about the oscillators it sets, so a field would be
+        a second statement of it that a hand-edited file could contradict; and
+        an existing .dewpreset needs no rewriting to acquire one.
+
+        The first ENABLED slot decides. A patch that layers a wavetable under a
+        classic saw is offered under the generator it opens with, which is the
+        one whose face the panel is showing.
+    */
+    juce::String generatorId() const;
+
     bool isInstrument() const
     {
         return kind == "instrument";

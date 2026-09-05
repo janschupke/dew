@@ -91,6 +91,13 @@ public:
 
     // --- for tests -----------------------------------------------------------
     int getNumSlots() const;
+    /** Which generator the slot on show is running - "classic", "wavetable".
+
+        The panel's preset picker asks this: a wavetable's patches are its own,
+        and offering them beside the classic ones was a list in which the only
+        thing telling the two apart was the sound. */
+    juce::String selectedGeneratorId() const;
+
     int getSelectedSlot() const noexcept
     {
         return selectedSlot;

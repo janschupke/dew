@@ -1,0 +1,36 @@
+{
+    "format": "dew-preset",
+    "formatVersion": 2,
+    "kind": "instrument",
+    "type": "synth",
+    "name": "Folded Pluck",
+    "description": "A short, bright wavetable pluck that folds back as it decays.",
+    "category": "keys",
+    "state": {
+      "oscillators": [
+        {
+          "enabled": true,
+          "mode": "wavetable",
+          "wavetable": "fold",
+          "gain": 0.75,
+          "wavePosition": 0.65,
+          "wavePositionMod": -0.5,
+          "wavePositionSource": "envelope",
+          "unisonVoices": 2,
+          "unisonDetune": 6.0
+        },
+        {
+          "enabled": false
+        },
+        {
+          "enabled": false
+        }
+      ],
+      "amp": {
+        "attack": 0.001,
+        "decay": 0.32,
+        "sustain": 0.0,
+        "release": 0.18
+      }
+    }
+  }
