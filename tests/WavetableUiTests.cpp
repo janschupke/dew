@@ -189,13 +189,14 @@ TEST_CASE ("the wavetable controls write to the slot they are showing", "[ui][wa
     h.section.getUnisonKnob().setValue (4.0, juce::dontSendNotification);
     h.section.getUnisonKnob().onValueChange();
 
-    REQUIRE (h.slot (1)[ids::wavetable].toString() == wavetableAt (2).getName());
-    REQUIRE (h.slot (1)[ids::wavePositionSource].toString() == "lfo");
-    REQUIRE ((double) h.slot (1)[ids::wavePosition] == Approx (0.75));
+    const auto table = generatorNodeFor (h.slot (1), ids::wavePosition);
+    REQUIRE (table[ids::wavetable].toString() == wavetableAt (2).getName());
+    REQUIRE (table[ids::wavePositionSource].toString() == "lfo");
+    REQUIRE ((double) table[ids::wavePosition] == Approx (0.75));
 
     // Written as an int, so the file keeps the schema default's type.
-    REQUIRE (h.slot (1)[ids::unisonVoices].isInt());
-    REQUIRE ((int) h.slot (1)[ids::unisonVoices] == 4);
+    REQUIRE (table[ids::unisonVoices].isInt());
+    REQUIRE ((int) table[ids::unisonVoices] == 4);
 
     // The slot that is not showing is untouched.
     REQUIRE (h.slot (0)[ids::mode].toString() == "classic");

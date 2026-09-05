@@ -56,4 +56,16 @@ bool isForeignGeneratorParam (juce::StringRef id, const juce::Identifier& proper
     return false;
 }
 
+juce::ValueTree generatorNodeFor (const juce::ValueTree& slot, const juce::Identifier& property)
+{
+    for (const auto& generator : generatorDescriptors())
+        for (int i = 0; i < generator.numParams; ++i)
+            if (*generator.params[i].property == property)
+                return slot.getChildWithName (*generator.node);
+
+    // One of the slot's own - whether it is on, its octave, its detune, its
+    // gain, which generator it runs.
+    return slot;
+}
+
 } // namespace dew

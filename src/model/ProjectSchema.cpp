@@ -1,4 +1,8 @@
 #include "model/ProjectSchema.h"
+
+#include <map>
+
+#include "model/GeneratorCatalog.h"
 #include "model/ModuleCatalog.h"
 
 namespace dew
@@ -59,13 +63,58 @@ const ParamGroup& synthGroup (const juce::Identifier& node)
     such a file to say so. The slots the schema materialises alongside it are
     switched off by makeOscillatorSlot.
 */
+/** One generator's parameters, under a slot.
+
+    A node per generator rather than one flat run of every generator's
+    parameters, which is what this was. Both are always present and one of them
+    is inert - the shape every CHANNEL already has, carrying a SAMPLE and a
+    SOUNDFONT whichever kind it is - so the tree stays one shape and the editor
+    can point at a generator before you have committed to it.
+
+    What that buys over the flat node is that a classic slot stops storing the
+    seven wavetable properties it never reads. Twelve of them per example file,
+    on slots that were switched off.
+*/
+const NodeSpec& generatorSpec (juce::StringRef generator)
+{
+    static std::map<juce::String, NodeSpec> specs;
+
+    auto found = specs.find (juce::String (generator));
+
+    if (found == specs.end())
+    {
+        const auto& descriptor = generatorFor (generator);
+
+        std::vector<PropSpec> props;
+
+        for (int i = 0; i < descriptor.numParams; ++i)
+            props.push_back ({ *descriptor.params[i].property, descriptor.params[i].defaultVar() });
+
+        // The node the DESCRIPTOR names, so the mapping from a generator to
+        // its node is stated once - see GeneratorCatalog.h.
+        found = specs
+                    .emplace (juce::String (generator),
+                              NodeSpec { *descriptor.node, std::move (props), {} })
+                    .first;
+    }
+
+    return found->second;
+}
+
+const NodeSpec& classicSpec()
+{
+    return generatorSpec ("classic");
+}
+
+const NodeSpec& wavetableSpec()
+{
+    return generatorSpec ("wavetable");
+}
+
 const NodeSpec& oscSpec()
 {
-    // Generated from the catalog, which declares all thirteen: the classic half
-    // (`enabled`, `wave`, octave, detune, gain) and the wavetable half beside
-    // it. Flat rather than a child node of its own, for the reason effectSpec()
-    // gives - one declared table stays one walk in the reader, and a mode is a
-    // row rather than a new node type and a new branch.
+    // The SLOT's own five - whether it is on, its octave, its detune, its gain
+    // and which generator it runs - and then a node per generator.
     //
     // `enabled` defaults to true because a file written before there were slots
     // had exactly one oscillator and it was playing. The slots the schema
@@ -75,7 +124,12 @@ const NodeSpec& oscSpec()
         std::vector<PropSpec> props;
         appendGroup (props, synthGroup (ids::OSC));
 
-        return NodeSpec { ids::OSC, std::move (props), {} };
+        return NodeSpec { ids::OSC,
+                          std::move (props),
+                          { { "classic", &classicSpec(), false, 0, nullptr,
+                              /*omitWhenDefault*/ true },
+                            { "wavetable", &wavetableSpec(), false, 0, nullptr,
+                              /*omitWhenDefault*/ true } } };
     }();
 
     return spec;

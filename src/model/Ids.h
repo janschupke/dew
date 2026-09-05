@@ -12,6 +12,8 @@
           CHANNEL*                     -> "channels": []
             INSTRUMENT                 -> "instrument": {}
               OSC (x kMaxOscillators)  -> "oscillators": []
+                CLASSIC                -> "classic": {}
+                WAVETABLE              -> "wavetable": {}
               AMP                      -> "amp": {}
             SAMPLE                     -> "sample": {}
             SOUNDFONT                  -> "soundfont": {}
@@ -49,6 +51,13 @@ DEW_DECLARE_ID (PROJECT)
 DEW_DECLARE_ID (CHANNEL)
 DEW_DECLARE_ID (INSTRUMENT)
 DEW_DECLARE_ID (OSC)
+
+/** One node per generator, under every OSC slot. Both are always there and one
+    of them is inert, which is the shape every channel already has - it carries
+    a SAMPLE and a SOUNDFONT whichever kind it is. See GeneratorCatalog.h. */
+DEW_DECLARE_ID (CLASSIC)
+DEW_DECLARE_ID (WAVETABLE)
+
 DEW_DECLARE_ID (AMP)
 DEW_DECLARE_ID (SAMPLE)
 DEW_DECLARE_ID (SOUNDFONT)
@@ -88,9 +97,10 @@ DEW_DECLARE_ID (octave)
 DEW_DECLARE_ID (detuneCents)
 DEW_DECLARE_ID (gain)
 
-// An oscillator slot in "wavetable" mode reads these and ignores `wave`; one in
-// "classic" mode does the reverse. Both sets live on the same node, the way
-// every effect type's parameters share one EFFECT node.
+// `mode` names which generator a slot runs. The parameters below it live on
+// that generator's own node under the slot - CLASSIC holds `wave`, WAVETABLE
+// holds the rest - so a classic slot no longer stores seven wavetable
+// properties it never reads. See GeneratorCatalog.h.
 DEW_DECLARE_ID (mode)
 DEW_DECLARE_ID (wavetable)
 DEW_DECLARE_ID (wavePosition)

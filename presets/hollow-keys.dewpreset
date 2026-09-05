@@ -1,6 +1,6 @@
 {
     "format": "dew-preset",
-    "formatVersion": 2,
+    "formatVersion": 3,
     "kind": "instrument",
     "type": "synth",
     "name": "Hollow Keys",
@@ -10,17 +10,23 @@
       "oscillators": [
         {
           "enabled": true,
-          "wave": "square",
           "octave": 0,
           "detuneCents": 0.0,
-          "gain": 0.55
+          "gain": 0.55,
+          "mode": "classic",
+          "classic": {
+            "wave": "square"
+          }
         },
         {
           "enabled": true,
-          "wave": "triangle",
           "octave": 1,
           "detuneCents": -5.0,
-          "gain": 0.3
+          "gain": 0.3,
+          "mode": "classic",
+          "classic": {
+            "wave": "triangle"
+          }
         },
         {
           "enabled": false

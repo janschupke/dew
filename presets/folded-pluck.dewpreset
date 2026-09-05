@@ -1,6 +1,6 @@
 {
     "format": "dew-preset",
-    "formatVersion": 2,
+    "formatVersion": 3,
     "kind": "instrument",
     "type": "synth",
     "name": "Folded Pluck",
@@ -10,14 +10,16 @@
       "oscillators": [
         {
           "enabled": true,
-          "mode": "wavetable",
-          "wavetable": "fold",
           "gain": 0.75,
-          "wavePosition": 0.65,
-          "wavePositionMod": -0.5,
-          "wavePositionSource": "envelope",
-          "unisonVoices": 2,
-          "unisonDetune": 6.0
+          "mode": "wavetable",
+          "wavetable": {
+            "wavetable": "fold",
+            "wavePosition": 0.65,
+            "wavePositionMod": -0.5,
+            "wavePositionSource": "envelope",
+            "unisonVoices": 2,
+            "unisonDetune": 6.0
+          }
         },
         {
           "enabled": false

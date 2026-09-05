@@ -21,8 +21,14 @@ inline constexpr const char* kPresetFormatTag = "dew-preset";
     2 added the category. A version 1 file still loads and simply arrives with
     no category - the reader refuses only a version it is too old to understand
     - so the bump records what the writer now emits rather than closing a door.
+
+    3 moved a slot's generator parameters onto that generator's key inside it,
+    following the project format's v15. A version 2 preset still LOADS - the
+    keys it names simply are not where the reader looks, so those parameters
+    arrive at their defaults - which is the one case here that is not harmless,
+    so the bump is what tells you the file needs rewriting.
 */
-inline constexpr int kPresetFormatVersion = 2;
+inline constexpr int kPresetFormatVersion = 3;
 
 /** Reads and writes one .dewpreset file.
 

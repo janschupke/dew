@@ -1,5 +1,6 @@
 #include <catch2/catch_test_macros.hpp>
 
+#include "model/GeneratorCatalog.h"
 #include "model/Ids.h"
 #include "app/ProjectDocument.h"
 #include "model/ProjectFactory.h"
@@ -245,7 +246,7 @@ TEST_CASE ("nested structure survives the round trip", "[schema]")
     const auto channel = loaded.getChildWithName (ids::CHANNEL);
     const auto osc = channel.getChildWithName (ids::INSTRUMENT).getChildWithName (ids::OSC);
     REQUIRE (osc.isValid());
-    REQUIRE (osc[ids::wave].toString() == "sine");
+    REQUIRE (generatorNodeFor (osc, ids::wave)[ids::wave].toString() == "sine");
 
     const auto
         clip = loaded.getChildWithName (ids::PLAYLIST).getChild (0).getChildWithName (ids::CLIP);

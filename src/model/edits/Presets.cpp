@@ -100,8 +100,6 @@ bool ProjectEdits::applyInstrumentPreset (juce::ValueTree channel, const Preset&
     if (undo != nullptr && ! continuingTransaction)
         undo->beginNewTransaction (transactionName);
 
-    const auto instrument = channel.getChildWithName (ids::INSTRUMENT);
-
     for (int g = 0; g < descriptor.numGroups; ++g)
     {
         const auto& group = descriptor.groups[g];
@@ -109,17 +107,41 @@ bool ProjectEdits::applyInstrumentPreset (juce::ValueTree channel, const Preset&
         if (! group.inPreset)
             continue;
 
+        // The SAME walk the capture side uses. It was written out again here,
+        // and the two had already drifted once - this one learned to ask which
+        // node a group lives on and nodesFor still named ids::SAMPLE - so a
+        // generator's group, which hangs off each slot, would have been a third
+        // copy to keep in step.
+        const auto nodes = nodesFor (channel, group);
+
+        // A nested group's values live INSIDE its owner's element, the way they
+        // do in the project file - see stateFor.
+        if (group.under != nullptr)
+        {
+            const auto* owner = groupOn (descriptor, *group.under);
+
+            if (owner == nullptr)
+                continue;
+
+            const auto* ownerSlots = object->getProperty (juce::Identifier (owner->jsonKey))
+                                         .getArray();
+
+            if (ownerSlots == nullptr)
+                continue;
+
+            for (size_t i = 0; i < nodes.size() && (int) i < ownerSlots->size(); ++i)
+                if (const auto* slot = (*ownerSlots)[(int) i].getDynamicObject())
+                    writeParams (nodes[i], slot->getProperty (juce::Identifier (group.jsonKey)),
+                                 group.params, group.numParams, undo, transactionName);
+
+            continue;
+        }
+
         const auto value = object->getProperty (juce::Identifier (group.jsonKey));
-        // Which node a group lives on, not which name it happens to have. It
-        // was a compare against ids::SAMPLE alone, and a third instrument whose
-        // parameters also hang off the CHANNEL would have had every one of them
-        // written into an INSTRUMENT child that does not contain them - a
-        // preset that loaded, reported success and changed nothing.
-        const auto parent = channel.getChildWithName (*group.node).isValid() ? channel : instrument;
 
         if (group.count <= 1)
         {
-            writeParams (parent.getChildWithName (*group.node), value, group.params,
+            writeParams (nodes.empty() ? juce::ValueTree() : nodes.front(), value, group.params,
                          group.numParams, undo, transactionName);
             continue;
         }
@@ -129,20 +151,9 @@ bool ProjectEdits::applyInstrumentPreset (juce::ValueTree channel, const Preset&
         if (slots == nullptr)
             continue;
 
-        auto index = 0;
-
-        for (const auto& child : parent)
-        {
-            if (! child.hasType (*group.node))
-                continue;
-
-            if (index >= slots->size())
-                break;
-
-            writeParams (child, (*slots)[index], group.params, group.numParams, undo,
+        for (size_t i = 0; i < nodes.size() && (int) i < slots->size(); ++i)
+            writeParams (nodes[i], (*slots)[(int) i], group.params, group.numParams, undo,
                          transactionName);
-            ++index;
-        }
     }
 
     return true;

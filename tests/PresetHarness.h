@@ -2,6 +2,7 @@
 
 #include <juce_data_structures/juce_data_structures.h>
 
+#include "model/GeneratorCatalog.h"
 #include "model/Ids.h"
 #include "model/Preset.h"
 
@@ -33,11 +34,16 @@ inline Preset instrumentPreset (const juce::String& typeId, const juce::var& sta
 /** A synth preset that turns slot 0 into a sine and switches 1 and 2 off. */
 inline Preset subBassPreset()
 {
+    // The generator's parameters sit INSIDE the slot, under its key, the way
+    // the project file holds them - see ProjectSchema's v15.
+    auto* classic = new juce::DynamicObject();
+    classic->setProperty (ids::wave, "sine");
+
     auto* osc0 = new juce::DynamicObject();
     osc0->setProperty (ids::enabled, true);
-    osc0->setProperty (ids::wave, "sine");
     osc0->setProperty (ids::octave, -1);
     osc0->setProperty (ids::gain, 0.9);
+    osc0->setProperty ("classic", juce::var (classic));
 
     auto* off = new juce::DynamicObject();
     off->setProperty (ids::enabled, false);

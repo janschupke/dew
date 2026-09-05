@@ -1,5 +1,5 @@
 {
-    "formatVersion": 14,
+    "formatVersion": 15,
     "name": "Drift",
     "tempoBpm": 84.0,
     "stepsPerBeat": 4,
@@ -26,14 +26,15 @@
               "detuneCents": 0.0,
               "gain": 0.8,
               "mode": "wavetable",
-              "wave": "saw",
-              "wavetable": "formant",
-              "wavePosition": 0.15,
-              "wavePositionMod": 0.55,
-              "wavePositionSource": "lfo",
-              "wavePositionRate": 0.08,
-              "unisonVoices": 7,
-              "unisonDetune": 14.0
+              "wavetable": {
+                "wavetable": "formant",
+                "wavePosition": 0.15,
+                "wavePositionMod": 0.55,
+                "wavePositionSource": "lfo",
+                "wavePositionRate": 0.08,
+                "unisonVoices": 7,
+                "unisonDetune": 14.0
+              }
             },
             {
               "enabled": true,
@@ -41,29 +42,22 @@
               "detuneCents": 0.0,
               "gain": 0.45,
               "mode": "wavetable",
-              "wave": "saw",
-              "wavetable": "harmonics",
-              "wavePosition": 0.35,
-              "wavePositionMod": 0.25,
-              "wavePositionSource": "lfo",
-              "wavePositionRate": 0.05,
-              "unisonVoices": 5,
-              "unisonDetune": 22.0
+              "wavetable": {
+                "wavetable": "harmonics",
+                "wavePosition": 0.35,
+                "wavePositionMod": 0.25,
+                "wavePositionSource": "lfo",
+                "wavePositionRate": 0.05,
+                "unisonVoices": 5,
+                "unisonDetune": 22.0
+              }
             },
             {
               "enabled": false,
               "octave": 0,
               "detuneCents": 0.0,
               "gain": 0.8,
-              "mode": "classic",
-              "wave": "saw",
-              "wavetable": "basic",
-              "wavePosition": 0.0,
-              "wavePositionMod": 0.0,
-              "wavePositionSource": "envelope",
-              "wavePositionRate": 1.0,
-              "unisonVoices": 1,
-              "unisonDetune": 0.0
+              "mode": "classic"
             }
           ],
           "amp": {
@@ -181,44 +175,29 @@
               "detuneCents": 0.0,
               "gain": 0.8,
               "mode": "wavetable",
-              "wave": "saw",
-              "wavetable": "harmonics",
-              "wavePosition": 0.05,
-              "wavePositionMod": 0.9,
-              "wavePositionSource": "envelope",
-              "wavePositionRate": 1.0,
-              "unisonVoices": 5,
-              "unisonDetune": 16.0
+              "wavetable": {
+                "wavetable": "harmonics",
+                "wavePosition": 0.05,
+                "wavePositionMod": 0.9,
+                "wavePositionSource": "envelope",
+                "wavePositionRate": 1.0,
+                "unisonVoices": 5,
+                "unisonDetune": 16.0
+              }
             },
             {
               "enabled": false,
               "octave": 0,
               "detuneCents": 0.0,
               "gain": 0.8,
-              "mode": "classic",
-              "wave": "saw",
-              "wavetable": "basic",
-              "wavePosition": 0.0,
-              "wavePositionMod": 0.0,
-              "wavePositionSource": "envelope",
-              "wavePositionRate": 1.0,
-              "unisonVoices": 1,
-              "unisonDetune": 0.0
+              "mode": "classic"
             },
             {
               "enabled": false,
               "octave": 0,
               "detuneCents": 0.0,
               "gain": 0.8,
-              "mode": "classic",
-              "wave": "saw",
-              "wavetable": "basic",
-              "wavePosition": 0.0,
-              "wavePositionMod": 0.0,
-              "wavePositionSource": "envelope",
-              "wavePositionRate": 1.0,
-              "unisonVoices": 1,
-              "unisonDetune": 0.0
+              "mode": "classic"
             }
           ],
           "amp": {
@@ -273,44 +252,29 @@
               "detuneCents": 0.0,
               "gain": 0.9,
               "mode": "wavetable",
-              "wave": "saw",
-              "wavetable": "fold",
-              "wavePosition": 0.1,
-              "wavePositionMod": 0.35,
-              "wavePositionSource": "envelope",
-              "wavePositionRate": 1.0,
-              "unisonVoices": 1,
-              "unisonDetune": 0.0
+              "wavetable": {
+                "wavetable": "fold",
+                "wavePosition": 0.1,
+                "wavePositionMod": 0.35,
+                "wavePositionSource": "envelope",
+                "wavePositionRate": 1.0,
+                "unisonVoices": 1,
+                "unisonDetune": 0.0
+              }
             },
             {
               "enabled": false,
               "octave": 0,
               "detuneCents": 0.0,
               "gain": 0.8,
-              "mode": "classic",
-              "wave": "saw",
-              "wavetable": "basic",
-              "wavePosition": 0.0,
-              "wavePositionMod": 0.0,
-              "wavePositionSource": "envelope",
-              "wavePositionRate": 1.0,
-              "unisonVoices": 1,
-              "unisonDetune": 0.0
+              "mode": "classic"
             },
             {
               "enabled": false,
               "octave": 0,
               "detuneCents": 0.0,
               "gain": 0.8,
-              "mode": "classic",
-              "wave": "saw",
-              "wavetable": "basic",
-              "wavePosition": 0.0,
-              "wavePositionMod": 0.0,
-              "wavePositionSource": "envelope",
-              "wavePositionRate": 1.0,
-              "unisonVoices": 1,
-              "unisonDetune": 0.0
+              "mode": "classic"
             }
           ],
           "amp": {
@@ -365,44 +329,29 @@
               "detuneCents": 0.0,
               "gain": 0.75,
               "mode": "wavetable",
-              "wave": "saw",
-              "wavetable": "pulse",
-              "wavePosition": 0.8,
-              "wavePositionMod": -0.55,
-              "wavePositionSource": "envelope",
-              "wavePositionRate": 1.0,
-              "unisonVoices": 3,
-              "unisonDetune": 8.0
+              "wavetable": {
+                "wavetable": "pulse",
+                "wavePosition": 0.8,
+                "wavePositionMod": -0.55,
+                "wavePositionSource": "envelope",
+                "wavePositionRate": 1.0,
+                "unisonVoices": 3,
+                "unisonDetune": 8.0
+              }
             },
             {
               "enabled": false,
               "octave": 0,
               "detuneCents": 0.0,
               "gain": 0.8,
-              "mode": "classic",
-              "wave": "saw",
-              "wavetable": "basic",
-              "wavePosition": 0.0,
-              "wavePositionMod": 0.0,
-              "wavePositionSource": "envelope",
-              "wavePositionRate": 1.0,
-              "unisonVoices": 1,
-              "unisonDetune": 0.0
+              "mode": "classic"
             },
             {
               "enabled": false,
               "octave": 0,
               "detuneCents": 0.0,
               "gain": 0.8,
-              "mode": "classic",
-              "wave": "saw",
-              "wavetable": "basic",
-              "wavePosition": 0.0,
-              "wavePositionMod": 0.0,
-              "wavePositionSource": "envelope",
-              "wavePositionRate": 1.0,
-              "unisonVoices": 1,
-              "unisonDetune": 0.0
+              "mode": "classic"
             }
           ],
           "amp": {
@@ -457,44 +406,29 @@
               "detuneCents": 0.0,
               "gain": 0.7,
               "mode": "wavetable",
-              "wave": "saw",
-              "wavetable": "basic",
-              "wavePosition": 0.25,
-              "wavePositionMod": 0.4,
-              "wavePositionSource": "lfo",
-              "wavePositionRate": 0.3,
-              "unisonVoices": 5,
-              "unisonDetune": 11.0
+              "wavetable": {
+                "wavetable": "basic",
+                "wavePosition": 0.25,
+                "wavePositionMod": 0.4,
+                "wavePositionSource": "lfo",
+                "wavePositionRate": 0.3,
+                "unisonVoices": 5,
+                "unisonDetune": 11.0
+              }
             },
             {
               "enabled": false,
               "octave": 0,
               "detuneCents": 0.0,
               "gain": 0.8,
-              "mode": "classic",
-              "wave": "saw",
-              "wavetable": "basic",
-              "wavePosition": 0.0,
-              "wavePositionMod": 0.0,
-              "wavePositionSource": "envelope",
-              "wavePositionRate": 1.0,
-              "unisonVoices": 1,
-              "unisonDetune": 0.0
+              "mode": "classic"
             },
             {
               "enabled": false,
               "octave": 0,
               "detuneCents": 0.0,
               "gain": 0.8,
-              "mode": "classic",
-              "wave": "saw",
-              "wavetable": "basic",
-              "wavePosition": 0.0,
-              "wavePositionMod": 0.0,
-              "wavePositionSource": "envelope",
-              "wavePositionRate": 1.0,
-              "unisonVoices": 1,
-              "unisonDetune": 0.0
+              "mode": "classic"
             }
           ],
           "amp": {

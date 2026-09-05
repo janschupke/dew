@@ -231,8 +231,9 @@ static_assert (kNumSlotParams + kNumClassicParams + kNumWavetableParams
     See GeneratorCatalog.h for why this is a table rather than a bool.
 */
 const GeneratorDescriptor generators[] {
-    { "classic", StringId::choice_oscMode_classic, oscSpecs + kNumSlotParams, kNumClassicParams },
-    { "wavetable", StringId::choice_oscMode_wavetable,
+    { "classic", StringId::choice_oscMode_classic, &ids::CLASSIC, oscSpecs + kNumSlotParams,
+      kNumClassicParams },
+    { "wavetable", StringId::choice_oscMode_wavetable, &ids::WAVETABLE,
       oscSpecs + kNumSlotParams + kNumClassicParams, kNumWavetableParams },
 };
 
@@ -361,8 +362,17 @@ const ParamGroup synthGroups[] {
     { &ids::CHANNEL, "", StringId::group_channel_name, channelSpecs, (int) std::size (channelSpecs),
       1,
       /*inPreset*/ false },
-    { &ids::OSC, "oscillators", StringId::group_oscillator_name, oscSpecs,
-      (int) std::size (oscSpecs), kMaxOscillators },
+    { &ids::OSC, "oscillators", StringId::group_oscillator_name, oscSpecs, kNumSlotParams,
+      kMaxOscillators },
+
+    // One per slot, under it. The registry says which parameters are whose and
+    // this says where they live; a third generator is a row in both.
+    { &ids::CLASSIC, "classic", StringId::choice_oscMode_classic, oscSpecs + kNumSlotParams,
+      kNumClassicParams, kMaxOscillators, /*inPreset*/ true, &ids::OSC },
+    { &ids::WAVETABLE, "wavetable", StringId::choice_oscMode_wavetable,
+      oscSpecs + kNumSlotParams + kNumClassicParams, kNumWavetableParams, kMaxOscillators,
+      /*inPreset*/ true, &ids::OSC },
+
     { &ids::AMP, "amp", StringId::group_amp_name, ampSpecs, (int) std::size (ampSpecs) },
 };
 

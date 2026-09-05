@@ -52,6 +52,25 @@ struct ChildSpec
         declared defaults", which is right for anything uniform.
     */
     juce::ValueTree (*makeSlot) (const NodeSpec&, int index) = nullptr;
+
+    /** Leave this child OUT of the file when every property on it is still its
+        declared default.
+
+        For the node an oscillator slot carries for the generator it is NOT
+        running. Both are always present IN MEMORY, which is what keeps the
+        canonical tree one shape and lets the editor point at a generator before
+        you have committed to it; a file does not need the editor's convenience.
+        Without this, every classic slot in every project stored seven wavetable
+        properties nothing would ever read - twelve of them per example.
+
+        Lossless, and that is the whole reason it is "when default" rather than
+        "when inert": a slot somebody dialled a wavetable into and then switched
+        back still writes it, so switching a generator is not a way to lose the
+        other one's settings on the next save. A child that IS at its defaults
+        reads back as exactly what it was, because treeFromVar materialises a
+        missing one from those same defaults.
+    */
+    bool omitWhenDefault = false;
 };
 
 struct NodeSpec
@@ -133,8 +152,23 @@ struct NodeSpec
     "compressor", so effectTypeFor returns nothing and the slot would be dropped
     on the next save with nothing said. The version gate turns that into a
     refusal, which is the whole reason it exists.
+
+    v15 moved a slot's generator parameters onto that generator's own node:
+    CLASSIC holds `wave`, WAVETABLE holds the table, the position and the unison
+    stack, and the slot keeps what is the SLOT's - whether it is on, its octave,
+    its detune, its gain and which generator it runs.
+
+    A shape change, so it needs a real migration and gets one; see
+    migrateGeneratorParamsToNodes, which moves BOTH halves rather than only the
+    one the slot is running, so loading and saving a v14 file is not a way to
+    lose settings somebody dialled in before switching back.
+
+    Both nodes are always present and one of them is inert, which is the shape
+    every channel already has - it carries a SAMPLE and a SOUNDFONT whichever
+    kind it is. What it buys is that a slot the factory writes no longer stores
+    the seven wavetable properties a classic oscillator never reads.
 */
-inline constexpr int kFormatVersion = 14;
+inline constexpr int kFormatVersion = 15;
 
 /** How many effects one channel or mixer track may carry. A document limit
     rather than an engine one: a chain longer than this cannot be saved, so it

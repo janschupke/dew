@@ -1,6 +1,6 @@
 {
     "format": "dew-preset",
-    "formatVersion": 2,
+    "formatVersion": 3,
     "kind": "instrument",
     "type": "synth",
     "name": "Sub Bass",
@@ -10,10 +10,13 @@
       "oscillators": [
         {
           "enabled": true,
-          "wave": "sine",
           "octave": -1,
           "detuneCents": 0.0,
-          "gain": 0.9
+          "gain": 0.9,
+          "mode": "classic",
+          "classic": {
+            "wave": "sine"
+          }
         },
         {
           "enabled": false

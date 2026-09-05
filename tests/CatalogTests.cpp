@@ -7,6 +7,7 @@
 #include "model/Ids.h"
 #include "model/AutomationTargets.h"
 #include "engine/Wavetable.h"
+#include "model/GeneratorCatalog.h"
 #include "model/ModuleCatalog.h"
 #include "model/ProjectEdits.h"
 #include "model/ProjectFactory.h"
@@ -371,6 +372,19 @@ TEST_CASE ("each parameter table is its own, whatever its length", "[catalog][pa
     CHECK (&ampParamSpecs() != &mixerTrackParamSpecs());
 }
 
+namespace
+{
+
+/** One generator's own parameters - generatorParamSpecs prepends the slot's,
+    which live on the slot rather than on the generator's node. */
+std::vector<ParamSpec> generatorParamsOnly (juce::StringRef id)
+{
+    const auto& descriptor = generatorFor (id);
+    return { descriptor.params, descriptor.params + descriptor.numParams };
+}
+
+} // namespace
+
 TEST_CASE ("every instrument parameter says the same thing to the file and to the engine",
            "[catalog][params]")
 {
@@ -403,10 +417,17 @@ TEST_CASE ("every instrument parameter says the same thing to the file and to th
 
     const auto sample = defaultTreeFor (childSpecFor (channelNode, "sample"));
 
+    // Each generator's parameters live on its own node under the slot, so the
+    // slot carries the slot's own five and the generators carry theirs.
+    const auto classic = osc.getChildWithName (ids::CLASSIC);
+    const auto wavetable = osc.getChildWithName (ids::WAVETABLE);
+
     const Case cases[] {
         { channel, channelParamSpecs(), "channel" },
         { amp, ampParamSpecs(), "amp" },
-        { osc, oscParamSpecs(), "oscillator" },
+        { osc, oscSlotParamSpecs(), "oscillator slot" },
+        { classic, generatorParamsOnly ("classic"), "classic generator" },
+        { wavetable, generatorParamsOnly ("wavetable"), "wavetable generator" },
         { sample, sampleParamSpecs(), "sample" },
     };
 

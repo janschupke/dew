@@ -41,6 +41,11 @@ struct GeneratorDescriptor
 
     StringId displayName;
 
+    /** The node under an oscillator slot that holds this generator's
+        parameters: ids::CLASSIC, ids::WAVETABLE. Both are always present and
+        one is inert, which is the shape every channel already has. */
+    const juce::Identifier* node;
+
     /** The parameters this generator alone reads. The slot's shared five -
         enabled, wave-independent octave, detune, gain and the mode itself - are
         in neither table, because they belong to the SLOT. */
@@ -75,5 +80,18 @@ std::vector<ParamSpec> generatorParamSpecs (juce::StringRef id);
 /** Whether `property` belongs to a generator OTHER than `id` - so a control, a
     picker or a snapshot can tell "not mine" from "not a parameter". */
 bool isForeignGeneratorParam (juce::StringRef id, const juce::Identifier& property);
+
+/** The node under `slot` that actually holds `property`.
+
+    The slot itself for one of the SLOT's own five, and the owning generator's
+    child node for anything else. One answer, asked by the engine's reader, by
+    every control the panel builds, by the demo builders and by the parameter
+    menu - so nesting a generator's parameters is not eight places that each
+    have to remember the new depth.
+
+    An invalid tree when the slot has no such child, which a caller writing
+    through ProjectEdits will report rather than write into nothing.
+*/
+juce::ValueTree generatorNodeFor (const juce::ValueTree& slot, const juce::Identifier& property);
 
 } // namespace dew

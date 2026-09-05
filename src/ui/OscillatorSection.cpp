@@ -181,13 +181,23 @@ void OscillatorSection::setParamMenuHost (const paramMenu::Host* host)
     // happened to be selected when the host arrived.
     const auto slot = [this] { return selectedSlotTree(); };
 
+    // A generator's knob points at that generator's node, not at the slot -
+    // asked the same way every read and write in this file asks.
+    const auto owner = [this] (const juce::Identifier& property)
+    { return [this, &property] { return generatorNodeFor (selectedSlotTree(), property); }; };
+
     paramMenu::attachTo (host, detuneKnob, slot, requireInstrumentParamSpec (ids::detuneCents));
     paramMenu::attachTo (host, gainKnob, slot, requireInstrumentParamSpec (ids::gain));
-    paramMenu::attachTo (host, positionKnob, slot, requireInstrumentParamSpec (ids::wavePosition));
-    paramMenu::attachTo (host, modKnob, slot, requireInstrumentParamSpec (ids::wavePositionMod));
-    paramMenu::attachTo (host, rateKnob, slot, requireInstrumentParamSpec (ids::wavePositionRate));
-    paramMenu::attachTo (host, unisonKnob, slot, requireInstrumentParamSpec (ids::unisonVoices));
-    paramMenu::attachTo (host, spreadKnob, slot, requireInstrumentParamSpec (ids::unisonDetune));
+    paramMenu::attachTo (host, positionKnob, owner (ids::wavePosition),
+                         requireInstrumentParamSpec (ids::wavePosition));
+    paramMenu::attachTo (host, modKnob, owner (ids::wavePositionMod),
+                         requireInstrumentParamSpec (ids::wavePositionMod));
+    paramMenu::attachTo (host, rateKnob, owner (ids::wavePositionRate),
+                         requireInstrumentParamSpec (ids::wavePositionRate));
+    paramMenu::attachTo (host, unisonKnob, owner (ids::unisonVoices),
+                         requireInstrumentParamSpec (ids::unisonVoices));
+    paramMenu::attachTo (host, spreadKnob, owner (ids::unisonDetune),
+                         requireInstrumentParamSpec (ids::unisonDetune));
 }
 
 void OscillatorSection::attachKnob (DewKnob& knob, const juce::Identifier& property,
@@ -297,12 +307,17 @@ void OscillatorSection::write (const juce::Identifier& property, const juce::var
     if (updating)
         return;
 
-    auto slot = selectedSlotTree();
+    const auto slot = selectedSlotTree();
 
-    if (! slot.isValid())
+    // The node the parameter actually lives on: the slot for its own five, and
+    // the owning generator's child for anything else. ONE write path, so
+    // nesting them was this line rather than every control.
+    const auto target = generatorNodeFor (slot, property);
+
+    if (! target.isValid())
         return;
 
-    ProjectEdits::setProperty (slot, property, value, &document.getUndoManager(), transactionName,
+    ProjectEdits::setProperty (target, property, value, &document.getUndoManager(), transactionName,
                                gestureActive);
 
     gestureActive = inDrag;

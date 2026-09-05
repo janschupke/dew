@@ -10,6 +10,7 @@
 
 #include <PresetData.h>
 
+#include "model/GeneratorCatalog.h"
 #include "model/Ids.h"
 #include "model/ModuleCatalog.h"
 #include "model/ModuleState.h"
@@ -114,7 +115,7 @@ TEST_CASE ("loading an instrument preset is one undo step", "[preset]")
     REQUIRE (ProjectEdits::applyInstrumentPreset (channel, subBassPreset(), &undo));
 
     const auto osc = ProjectEdits::oscillatorAt (channel, 0);
-    CHECK (osc[ids::wave].toString() == "sine");
+    CHECK (generatorNodeFor (osc, ids::wave)[ids::wave].toString() == "sine");
     CHECK ((int) osc[ids::octave] == -1);
 
     REQUIRE (undo.canUndo());
@@ -259,8 +260,11 @@ TEST_CASE ("a preset carrying the channel's own parameters is refused, not obeye
 
 TEST_CASE ("an unreadable choice falls back rather than storing nonsense", "[preset]")
 {
+    auto* classic = new juce::DynamicObject();
+    classic->setProperty (ids::wave, "sawtooth"); // not one of the four
+
     auto* osc = new juce::DynamicObject();
-    osc->setProperty (ids::wave, "sawtooth"); // not one of the four
+    osc->setProperty ("classic", juce::var (classic));
 
     juce::Array<juce::var> slots;
     slots.add (juce::var (osc));
@@ -279,7 +283,9 @@ TEST_CASE ("an unreadable choice falls back rather than storing nonsense", "[pre
     REQUIRE (out != nullptr);
     REQUIRE (out->size() == kMaxOscillators);
 
-    CHECK ((*out)[0].getDynamicObject()->getProperty (ids::wave).toString() == "saw");
+    const auto slotClassic = (*out)[0].getDynamicObject()->getProperty ("classic");
+    REQUIRE (slotClassic.getDynamicObject() != nullptr);
+    CHECK (slotClassic.getDynamicObject()->getProperty (ids::wave).toString() == "saw");
 
     INFO ("warnings: " << warnings.joinIntoString (" | "));
     CHECK (warnings.size() >= 1);

@@ -190,6 +190,25 @@ juce::ValueTree canonicalTree (const juce::ValueTree& tree, const NodeSpec& spec
     return out;
 }
 
+namespace
+{
+
+/** Whether every property on `tree` is still the default the spec declares.
+
+    Properties only, and deliberately: nothing that carries this flag has
+    children, and a recursive answer would be a rule nobody has needed.
+*/
+bool isAllDefault (const juce::ValueTree& tree, const NodeSpec& spec)
+{
+    for (const auto& prop : spec.props)
+        if (! tree.getProperty (prop.id, prop.defaultValue).equals (prop.defaultValue))
+            return false;
+
+    return true;
+}
+
+} // namespace
+
 juce::var varFromTree (const juce::ValueTree& tree, const NodeSpec& spec)
 {
     auto* object = new juce::DynamicObject();
@@ -212,9 +231,12 @@ juce::var varFromTree (const juce::ValueTree& tree, const NodeSpec& spec)
         else
         {
             const auto node = tree.getChildWithName (child.spec->type);
-            object->setProperty (
-                child.jsonKey,
-                varFromTree (node.isValid() ? node : defaultTreeFor (*child.spec), *child.spec));
+            const auto written = node.isValid() ? node : defaultTreeFor (*child.spec);
+
+            if (child.omitWhenDefault && isAllDefault (written, *child.spec))
+                continue;
+
+            object->setProperty (child.jsonKey, varFromTree (written, *child.spec));
         }
     }
 

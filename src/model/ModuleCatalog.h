@@ -107,6 +107,18 @@ struct ParamGroup
     /** Whether a preset carries this group. False for the channel's own
         parameters: they are the instrument's, but they are not its SOUND. */
     bool inPreset = true;
+
+    /** The node these hang off, when it is not the channel or its INSTRUMENT
+        child: ids::OSC for a generator's, one per slot.
+
+        LAST, because every row before this one is initialised positionally and
+        a field in the middle would have re-pointed all of them.
+
+        A group used to be found at exactly one depth, so nesting a generator's
+        parameters under a slot would have been a second walk written beside the
+        first. Saying where a group LIVES keeps it one walk - see nodesFor.
+    */
+    const juce::Identifier* under = nullptr;
 };
 
 /** What one instrument is, in the same terms an effect is.

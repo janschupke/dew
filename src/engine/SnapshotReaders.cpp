@@ -15,6 +15,7 @@
 #include <cmath>
 
 #include "model/AssetPaths.h"
+#include "model/GeneratorCatalog.h"
 #include "model/Ids.h"
 #include "model/ModuleCatalog.h"
 
@@ -56,7 +57,14 @@ OscBankSnapshot readOscBank (const juce::ValueTree& instrument, const juce::Stri
         auto& s = bank.slots[(size_t) bank.numSlots++];
         s.enabled = (bool) osc.getProperty (ids::enabled, true);
         s.mode = oscModeFromString (osc[ids::mode].toString());
-        s.wave = waveformFromString (osc[ids::wave].toString());
+
+        // Each generator's parameters live on its own node under the slot. The
+        // node a property lives on is the MODEL's answer - generatorNodeFor -
+        // so this reader does not carry its own copy of which is whose.
+        const auto classic = generatorNodeFor (osc, ids::wave);
+        const auto wavetable = generatorNodeFor (osc, ids::wavePosition);
+
+        s.wave = waveformFromString (classic[ids::wave].toString());
         // Clamped by the declared spec rather than by a number written here.
         // These used to be a second opinion about the range, and the knobs were
         // a third: the octave stepper offered three when the engine renders
@@ -65,7 +73,7 @@ OscBankSnapshot readOscBank (const juce::ValueTree& instrument, const juce::Stri
         s.detuneCents = clampBySpec (ids::detuneCents, osc);
         s.gain = clampBySpec (ids::gain, osc);
 
-        const auto tableName = osc[ids::wavetable].toString();
+        const auto tableName = wavetable[ids::wavetable].toString();
         const auto tableIndex = wavetableIndexFor (tableName);
 
         // A name this build does not know is a fault in the FILE, not a
@@ -75,12 +83,12 @@ OscBankSnapshot readOscBank (const juce::ValueTree& instrument, const juce::Stri
                   + "\", which this build does not have; using the first one.");
 
         s.table = juce::jmax (0, tableIndex);
-        s.position = clampBySpec (ids::wavePosition, osc);
-        s.positionMod = clampBySpec (ids::wavePositionMod, osc);
-        s.positionSource = positionSourceFromString (osc[ids::wavePositionSource].toString());
-        s.positionRate = clampBySpec (ids::wavePositionRate, osc);
-        s.unisonVoices = (int) clampBySpec (ids::unisonVoices, osc);
-        s.unisonDetune = clampBySpec (ids::unisonDetune, osc);
+        s.position = clampBySpec (ids::wavePosition, wavetable);
+        s.positionMod = clampBySpec (ids::wavePositionMod, wavetable);
+        s.positionSource = positionSourceFromString (wavetable[ids::wavePositionSource].toString());
+        s.positionRate = clampBySpec (ids::wavePositionRate, wavetable);
+        s.unisonVoices = (int) clampBySpec (ids::unisonVoices, wavetable);
+        s.unisonDetune = clampBySpec (ids::unisonDetune, wavetable);
 
         bank.anyEnabled = bank.anyEnabled || s.enabled;
     }

@@ -1,6 +1,7 @@
 #include "model/DemoBuilders.h"
 
 #include "model/EntityColour.h"
+#include "model/GeneratorCatalog.h"
 #include "model/ProjectEdits.h"
 #include "model/ProjectSchema.h"
 
@@ -73,7 +74,7 @@ juce::ValueTree makeChannel (int id, const juce::String& name, const juce::Strin
     channel.setProperty (ids::volume, volume, nullptr);
 
     auto osc = ProjectEdits::oscillatorAt (channel, 0);
-    osc.setProperty (ids::wave, wave, nullptr);
+    generatorNodeFor (osc, ids::wave).setProperty (ids::wave, wave, nullptr);
     osc.setProperty (ids::octave, octave, nullptr);
 
     setAmp (channel, attack, decay, sustain, release);
@@ -248,7 +249,7 @@ void setClassicOsc (juce::ValueTree channel, int slot, const juce::String& wave,
 
     osc.setProperty (ids::enabled, true, nullptr);
     osc.setProperty (ids::mode, "classic", nullptr);
-    osc.setProperty (ids::wave, wave, nullptr);
+    generatorNodeFor (osc, ids::wave).setProperty (ids::wave, wave, nullptr);
     osc.setProperty (ids::octave, octave, nullptr);
     osc.setProperty (ids::detuneCents, detuneCents, nullptr);
     osc.setProperty (ids::gain, gain, nullptr);
@@ -265,13 +266,16 @@ void setWavetableOsc (juce::ValueTree channel, int slot, const juce::String& tab
 
     osc.setProperty (ids::enabled, true, nullptr);
     osc.setProperty (ids::mode, "wavetable", nullptr);
-    osc.setProperty (ids::wavetable, table, nullptr);
-    osc.setProperty (ids::wavePosition, position, nullptr);
-    osc.setProperty (ids::wavePositionMod, mod, nullptr);
-    osc.setProperty (ids::wavePositionSource, source, nullptr);
-    osc.setProperty (ids::wavePositionRate, rate, nullptr);
-    osc.setProperty (ids::unisonVoices, unisonVoices, nullptr);
-    osc.setProperty (ids::unisonDetune, unisonDetune, nullptr);
+
+    auto wavetable = generatorNodeFor (osc, ids::wavePosition);
+    wavetable.setProperty (ids::wavetable, table, nullptr);
+    wavetable.setProperty (ids::wavePosition, position, nullptr);
+    wavetable.setProperty (ids::wavePositionMod, mod, nullptr);
+    wavetable.setProperty (ids::wavePositionSource, source, nullptr);
+    wavetable.setProperty (ids::wavePositionRate, rate, nullptr);
+    wavetable.setProperty (ids::unisonVoices, unisonVoices, nullptr);
+    wavetable.setProperty (ids::unisonDetune, unisonDetune, nullptr);
+
     osc.setProperty (ids::octave, octave, nullptr);
     osc.setProperty (ids::gain, gain, nullptr);
 }

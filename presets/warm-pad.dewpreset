@@ -1,6 +1,6 @@
 {
     "format": "dew-preset",
-    "formatVersion": 2,
+    "formatVersion": 3,
     "kind": "instrument",
     "type": "synth",
     "name": "Warm Pad",
@@ -10,24 +10,33 @@
       "oscillators": [
         {
           "enabled": true,
-          "wave": "saw",
           "octave": 0,
           "detuneCents": -7.0,
-          "gain": 0.5
+          "gain": 0.5,
+          "mode": "classic",
+          "classic": {
+            "wave": "saw"
+          }
         },
         {
           "enabled": true,
-          "wave": "saw",
           "octave": 0,
           "detuneCents": 7.0,
-          "gain": 0.5
+          "gain": 0.5,
+          "mode": "classic",
+          "classic": {
+            "wave": "saw"
+          }
         },
         {
           "enabled": true,
-          "wave": "sine",
           "octave": -1,
           "detuneCents": 0.0,
-          "gain": 0.35
+          "gain": 0.35,
+          "mode": "classic",
+          "classic": {
+            "wave": "sine"
+          }
         }
       ],
       "amp": {

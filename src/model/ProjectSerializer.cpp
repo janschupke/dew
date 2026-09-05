@@ -1,5 +1,7 @@
 #include "model/ProjectSerializer.h"
 
+#include "model/GeneratorCatalog.h"
+
 #include "model/ProjectSchema.h"
 
 namespace dew
@@ -53,6 +55,95 @@ void migrateOscillatorsToArray (juce::var& project)
 
         instrument->removeProperty ("osc");
         instrument->setProperty ("oscillators", slots);
+    }
+}
+
+/** v14 -> v15: a slot's generator parameters moved onto that generator's node.
+
+    Runs on the parsed JSON for the reasons the v5 migration gives: the schema's
+    unknown-key sweep would report the flat keys as ones it does not recognise
+    and drop them - a warning on a file that is perfectly valid for the version
+    it claims - and by the time there is a tree the generator nodes have already
+    been filled with defaults, so there is nothing left to migrate into.
+
+    BOTH halves are moved, not only the one the slot is running. A file whose
+    slot is classic still carries whatever wavetable settings somebody dialled
+    in before switching back, and dropping them here would make loading and
+    saving a v14 file a way to lose them. What the new shape saves is space in
+    files written from NOW on, where a slot the factory made carries defaults.
+*/
+void migrateGeneratorParamsToNodes (juce::var& project)
+{
+    auto* root = project.getDynamicObject();
+
+    if (root == nullptr)
+        return;
+
+    auto* channels = root->getProperty ("channels").getArray();
+
+    if (channels == nullptr)
+        return;
+
+    for (const auto& channelValue : *channels)
+    {
+        auto* channel = channelValue.getDynamicObject();
+
+        if (channel == nullptr)
+            continue;
+
+        auto* instrument = channel->getProperty ("instrument").getDynamicObject();
+
+        if (instrument == nullptr)
+            continue;
+
+        auto* slots = instrument->getProperty ("oscillators").getArray();
+
+        if (slots == nullptr)
+            continue;
+
+        for (const auto& slotValue : *slots)
+        {
+            auto* slot = slotValue.getDynamicObject();
+
+            if (slot == nullptr)
+                continue;
+
+            // Which key belongs to which generator is the registry's answer,
+            // not a list written out here - see GeneratorCatalog.h.
+            for (const auto& generator : generatorDescriptors())
+            {
+                const juce::Identifier key (generator.id);
+
+                // Already in the new shape: leave it alone. A file can arrive
+                // here claiming an older version while carrying the current
+                // one - a test builds exactly that, and so does anything that
+                // edits a version field by hand - and overwriting the node it
+                // already has would empty it.
+                //
+                // An OBJECT, not merely the key: the wavetable generator's node
+                // and the wavetable CHOICE are both spelled "wavetable", so a
+                // v14 slot has that key already and it holds a string. Asking
+                // whether the key exists skipped the migration entirely and
+                // left every wavetable setting behind.
+                if (slot->getProperty (key).getDynamicObject() != nullptr)
+                    continue;
+
+                auto moved = juce::var (new juce::DynamicObject());
+
+                for (int i = 0; i < generator.numParams; ++i)
+                {
+                    const auto& property = *generator.params[i].property;
+
+                    if (! slot->hasProperty (property))
+                        continue;
+
+                    moved.getDynamicObject()->setProperty (property, slot->getProperty (property));
+                    slot->removeProperty (property);
+                }
+
+                slot->setProperty (key, moved);
+            }
+        }
     }
 }
 
@@ -132,6 +223,9 @@ ProjectSerializer::LoadResult ProjectSerializer::fromJsonString (const juce::Str
     // only where the shape of a node changed.
     if (version < 6)
         migrateOscillatorsToArray (parsed);
+
+    if (version < 15)
+        migrateGeneratorParamsToNodes (parsed);
 
     loaded.tree = treeFromVar (parsed, projectSpec(), loaded.warnings);
 

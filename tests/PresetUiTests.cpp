@@ -10,6 +10,7 @@
 
 #include <PresetData.h>
 
+#include "model/GeneratorCatalog.h"
 #include "model/Ids.h"
 #include "model/ModuleCatalog.h"
 #include "model/ModuleState.h"
@@ -192,7 +193,7 @@ TEST_CASE ("the instrument panel offers the presets for the channel it is on", "
     REQUIRE (panel.applyPresetChoice (choiceFor (rows, "Sub Bass")));
 
     const auto osc = ProjectEdits::oscillatorAt (firstChannel (document.getState()), 0);
-    CHECK (osc[ids::wave].toString() == "sine");
+    CHECK (generatorNodeFor (osc, ids::wave)[ids::wave].toString() == "sine");
     CHECK_FALSE (
         (bool) ProjectEdits::oscillatorAt (firstChannel (document.getState()), 1)[ids::enabled]);
 }

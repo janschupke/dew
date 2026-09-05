@@ -98,11 +98,32 @@ Preset soundFontPreset (std::initializer_list<Value> soundfont)
     but the first off in the first place. */
 juce::var classicOsc (const char* wave, int octave, double detune, double gain)
 {
-    return objectOf ({ { &ids::enabled, true },
-                       { &ids::wave, wave },
-                       { &ids::octave, octave },
-                       { &ids::detuneCents, detune },
-                       { &ids::gain, gain } });
+    // A generator's parameters sit INSIDE the slot, keyed by the generator, the
+    // way the project file holds them - which is what lets a preset body be
+    // read straight out of a .dew.
+    // The var is HELD, not borrowed from: objectOf returns by value and a
+    // DynamicObject is reference counted, so `objectOf(...).getDynamicObject()`
+    // hands back a pointer into a temporary that is freed at the semicolon.
+    auto slot = objectOf ({ { &ids::enabled, true },
+                            { &ids::octave, octave },
+                            { &ids::detuneCents, detune },
+                            { &ids::gain, gain },
+                            { &ids::mode, "classic" } });
+
+    slot.getDynamicObject()->setProperty ("classic", objectOf ({ { &ids::wave, wave } }));
+
+    return slot;
+}
+
+/** A wavetable slot: the slot's own, and the generator's under its key. */
+juce::var wavetableOsc (double gain, std::initializer_list<Value> wavetable)
+{
+    auto slot = objectOf (
+        { { &ids::enabled, true }, { &ids::gain, gain }, { &ids::mode, "wavetable" } });
+
+    slot.getDynamicObject()->setProperty ("wavetable", objectOf (wavetable));
+
+    return slot;
 }
 
 juce::var oscOff()
@@ -247,15 +268,12 @@ Preset hollowKeys()   { return synthPreset ({ classicOsc ("square", 0, 0.0, 0.55
     classic slot that asked for five voices would silently get one. */
 Preset morphingSweep()
 {
-    auto osc = objectOf ({ { &ids::enabled, true },
-                           { &ids::mode, "wavetable" },
-                           { &ids::wavetable, "harmonics" },
-                           { &ids::gain, 0.7 },
-                           { &ids::wavePosition, 0.0 },
-                           { &ids::wavePositionMod, 0.85 },
-                           { &ids::wavePositionSource, "envelope" },
-                           { &ids::unisonVoices, 5 },
-                           { &ids::unisonDetune, 14.0 } });
+    auto osc = wavetableOsc (0.7, { { &ids::wavetable, "harmonics" },
+                                    { &ids::wavePosition, 0.0 },
+                                    { &ids::wavePositionMod, 0.85 },
+                                    { &ids::wavePositionSource, "envelope" },
+                                    { &ids::unisonVoices, 5 },
+                                    { &ids::unisonDetune, 14.0 } });
 
     // clang-format off
     return synthPreset ({ osc, oscOff(), oscOff() },
@@ -269,15 +287,13 @@ Preset morphingSweep()
     a picker offers on its own - one preset is a list with nothing to choose. */
 Preset foldedPluck()
 {
-    auto osc = objectOf ({ { &ids::enabled, true },
-                           { &ids::mode, "wavetable" },
-                           { &ids::wavetable, "fold" },
-                           { &ids::gain, 0.75 },
-                           { &ids::wavePosition, 0.65 },
-                           { &ids::wavePositionMod, -0.5 },
-                           { &ids::wavePositionSource, "envelope" },
-                           { &ids::unisonVoices, 2 },
-                           { &ids::unisonDetune, 6.0 } });
+    auto osc = wavetableOsc (0.75,
+                             { { &ids::wavetable, "fold" },
+                               { &ids::wavePosition, 0.65 },
+                               { &ids::wavePositionMod, -0.5 },
+                               { &ids::wavePositionSource, "envelope" },
+                               { &ids::unisonVoices, 2 },
+                               { &ids::unisonDetune, 6.0 } });
 
     // clang-format off
     return synthPreset ({ osc, oscOff(), oscOff() },

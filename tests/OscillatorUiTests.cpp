@@ -11,6 +11,7 @@
 
 #include "engine/SynthChannel.h"
 #include "io/OfflineRenderer.h"
+#include "model/GeneratorCatalog.h"
 #include "model/Ids.h"
 #include "app/ProjectDocument.h"
 #include "model/ProjectEdits.h"
@@ -73,7 +74,7 @@ TEST_CASE ("selecting a slot changes which oscillator the controls edit", "[ui][
     const juce::ScopedJuceInitialiser_GUI juceInit;
     OscHarness h;
 
-    const auto originalFirstWave = h.slot (0)[ids::wave].toString();
+    const auto originalFirstWave = generatorNodeFor (h.slot (0), ids::wave)[ids::wave].toString();
 
     h.section.selectSlot (1);
     REQUIRE (h.section.getSelectedSlot() == 1);
@@ -83,8 +84,8 @@ TEST_CASE ("selecting a slot changes which oscillator the controls edit", "[ui][
     h.section.getWaveBox().setSelectedId (3, juce::dontSendNotification);
     h.section.getWaveBox().onChange();
 
-    REQUIRE (h.slot (1)[ids::wave].toString() == "square");
-    REQUIRE (h.slot (0)[ids::wave].toString() == originalFirstWave);
+    REQUIRE (generatorNodeFor (h.slot (1), ids::wave)[ids::wave].toString() == "square");
+    REQUIRE (generatorNodeFor (h.slot (0), ids::wave)[ids::wave].toString() == originalFirstWave);
 }
 
 TEST_CASE ("selecting a slot is not an edit", "[ui][oscillator]")
@@ -132,7 +133,7 @@ TEST_CASE ("switching an oscillator on leaves its settings alone", "[ui][oscilla
 
     // A slot you switch off keeps the sound you gave it, so switching it back
     // on returns what you had rather than a fresh default.
-    REQUIRE (h.slot (1)[ids::wave].toString() == "sine");
+    REQUIRE (generatorNodeFor (h.slot (1), ids::wave)[ids::wave].toString() == "sine");
 }
 
 TEST_CASE ("the header follows every slot, the controls follow one", "[ui][oscillator]")
@@ -162,8 +163,9 @@ TEST_CASE ("another channel's oscillators are not this section's business", "[ui
     // The filter this replaced matched by node TYPE, so this edit refreshed a
     // panel showing an entirely different channel.
     auto otherOsc = ProjectEdits::oscillatorAt (other, 0);
-    otherOsc.setProperty (ids::wave, otherOsc[ids::wave].toString() == "sine" ? "saw" : "sine",
-                          nullptr);
+    auto otherWave = generatorNodeFor (otherOsc, ids::wave);
+    otherWave.setProperty (ids::wave, otherWave[ids::wave].toString() == "sine" ? "saw" : "sine",
+                           nullptr);
 
     REQUIRE (h.section.getWaveBox().getSelectedId() == firstWaveId);
 }

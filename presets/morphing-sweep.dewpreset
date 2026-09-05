@@ -1,6 +1,6 @@
 {
     "format": "dew-preset",
-    "formatVersion": 2,
+    "formatVersion": 3,
     "kind": "instrument",
     "type": "synth",
     "name": "Morphing Sweep",
@@ -10,14 +10,16 @@
       "oscillators": [
         {
           "enabled": true,
-          "mode": "wavetable",
-          "wavetable": "harmonics",
           "gain": 0.7,
-          "wavePosition": 0.0,
-          "wavePositionMod": 0.85,
-          "wavePositionSource": "envelope",
-          "unisonVoices": 5,
-          "unisonDetune": 14.0
+          "mode": "wavetable",
+          "wavetable": {
+            "wavetable": "harmonics",
+            "wavePosition": 0.0,
+            "wavePositionMod": 0.85,
+            "wavePositionSource": "envelope",
+            "unisonVoices": 5,
+            "unisonDetune": 14.0
+          }
         },
         {
           "enabled": false

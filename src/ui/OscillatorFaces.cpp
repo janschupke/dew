@@ -122,27 +122,31 @@ void OscillatorSection::refreshControls()
 
     modeBox.setSelectedId (idFor (choicesOf (ids::mode), slot[ids::mode].toString()),
                            juce::dontSendNotification);
-    waveBox.setSelectedId (idFor (choicesOf (ids::wave), slot[ids::wave].toString()),
+    // Each generator's parameters live on its own node under the slot.
+    const auto classic = generatorNodeFor (slot, ids::wave);
+    const auto wavetable = generatorNodeFor (slot, ids::wavePosition);
+
+    waveBox.setSelectedId (idFor (choicesOf (ids::wave), classic[ids::wave].toString()),
                            juce::dontSendNotification);
     sourceBox.setSelectedId (
-        idFor (choicesOf (ids::wavePositionSource), slot[ids::wavePositionSource].toString()),
+        idFor (choicesOf (ids::wavePositionSource), wavetable[ids::wavePositionSource].toString()),
         juce::dontSendNotification);
 
     // A table name this build does not know shows as the first one, which is
     // also what the engine falls back to - the panel must not disagree with
     // what is actually sounding.
-    const auto table = wavetableIndexFor (slot[ids::wavetable].toString());
+    const auto table = wavetableIndexFor (wavetable[ids::wavetable].toString());
     tableBox.setSelectedId (juce::jmax (0, table) + 1, juce::dontSendNotification);
 
     octaveSlider.setValue ((double) slot[ids::octave], juce::dontSendNotification);
     detuneKnob.setValue ((double) slot[ids::detuneCents], juce::dontSendNotification);
     gainKnob.setValue ((double) slot[ids::gain], juce::dontSendNotification);
 
-    positionKnob.setValue ((double) slot[ids::wavePosition], juce::dontSendNotification);
-    modKnob.setValue ((double) slot[ids::wavePositionMod], juce::dontSendNotification);
-    rateKnob.setValue ((double) slot[ids::wavePositionRate], juce::dontSendNotification);
-    unisonKnob.setValue ((double) (int) slot[ids::unisonVoices], juce::dontSendNotification);
-    spreadKnob.setValue ((double) slot[ids::unisonDetune], juce::dontSendNotification);
+    positionKnob.setValue ((double) wavetable[ids::wavePosition], juce::dontSendNotification);
+    modKnob.setValue ((double) wavetable[ids::wavePositionMod], juce::dontSendNotification);
+    rateKnob.setValue ((double) wavetable[ids::wavePositionRate], juce::dontSendNotification);
+    unisonKnob.setValue ((double) (int) wavetable[ids::unisonVoices], juce::dontSendNotification);
+    spreadKnob.setValue ((double) wavetable[ids::unisonDetune], juce::dontSendNotification);
 }
 
 void OscillatorSection::paintShape (juce::Graphics& g) const
@@ -154,9 +158,10 @@ void OscillatorSection::paintShape (juce::Graphics& g) const
     if (! slot.isValid())
         return;
 
-    const auto index = wavetableIndexFor (slot[ids::wavetable].toString());
+    const auto wavetable = generatorNodeFor (slot, ids::wavePosition);
+    const auto index = wavetableIndexFor (wavetable[ids::wavetable].toString());
     const auto& table = wavetableAt (juce::jmax (0, index));
-    const auto position = (float) (double) slot[ids::wavePosition];
+    const auto position = (float) (double) wavetable[ids::wavePosition];
 
     const auto area = shapeBounds.reduced (space::xs).toFloat();
     const auto columns = juce::jmax (2, (int) area.getWidth());

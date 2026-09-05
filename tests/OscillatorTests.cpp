@@ -11,6 +11,7 @@
 
 #include "engine/SynthChannel.h"
 #include "io/OfflineRenderer.h"
+#include "model/GeneratorCatalog.h"
 #include "model/Ids.h"
 #include "app/ProjectDocument.h"
 #include "model/ProjectEdits.h"
@@ -68,7 +69,7 @@ TEST_CASE ("every oscillator keeps its own settings across a round trip", "[sche
 
     auto second = ProjectEdits::oscillatorAt (channel, 1);
     second.setProperty (ids::enabled, true, nullptr);
-    second.setProperty (ids::wave, "square", nullptr);
+    generatorNodeFor (second, ids::wave).setProperty (ids::wave, "square", nullptr);
     second.setProperty (ids::octave, -1, nullptr);
     second.setProperty (ids::detuneCents, 7.0, nullptr);
     second.setProperty (ids::gain, 0.42, nullptr);
@@ -82,14 +83,14 @@ TEST_CASE ("every oscillator keeps its own settings across a round trip", "[sche
 
     const auto reloaded = ProjectEdits::oscillatorAt (firstChannel (loaded.tree), 1);
     REQUIRE ((bool) reloaded[ids::enabled] == true);
-    REQUIRE (reloaded[ids::wave].toString() == "square");
+    REQUIRE (generatorNodeFor (reloaded, ids::wave)[ids::wave].toString() == "square");
     REQUIRE ((int) reloaded[ids::octave] == -1);
     REQUIRE ((double) reloaded[ids::detuneCents] == Approx (7.0));
     REQUIRE ((double) reloaded[ids::gain] == Approx (0.42));
 
     // The first slot is untouched by any of that.
     const auto first = ProjectEdits::oscillatorAt (firstChannel (loaded.tree), 0);
-    REQUIRE (first[ids::wave].toString() != "square");
+    REQUIRE (generatorNodeFor (first, ids::wave)[ids::wave].toString() != "square");
 
     // detuneCents is a double in the schema, and has to stay one in the file:
     // an integer there would hand the rounding to the schema's coercion.
@@ -139,7 +140,7 @@ TEST_CASE ("a v5 project's one oscillator becomes the first slot", "[schema][com
 
     const auto first = ProjectEdits::oscillatorAt (channel, 0);
     REQUIRE ((bool) first[ids::enabled] == true);
-    REQUIRE (first[ids::wave].toString() == "square");
+    REQUIRE (generatorNodeFor (first, ids::wave)[ids::wave].toString() == "square");
     REQUIRE ((int) first[ids::octave] == -1);
     REQUIRE ((double) first[ids::detuneCents] == Approx (7.0));
     REQUIRE ((double) first[ids::gain] == Approx (0.55));

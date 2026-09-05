@@ -1,5 +1,7 @@
 #pragma once
 
+#include <vector>
+
 #include <juce_data_structures/juce_data_structures.h>
 
 #include "model/ModuleCatalog.h"
@@ -30,6 +32,27 @@ namespace dew
     as a preset's - so a channel's name, colour, routing and level are absent by
     construction rather than by a list of exceptions somebody has to maintain.
 */
+/** The nodes one group covers on a channel, in the order the document holds
+    them.
+
+    Public, and used by BOTH the capture and the apply path. The two had the
+    same walk written out twice and had already drifted: the apply side learned
+    to ask which node a group lives on and the capture side still named
+    ids::SAMPLE, so capturing a soundfont channel returned the defaults.
+
+    A group under another node - a generator's, one per oscillator slot - is
+    reached here as well, so nesting one is a row in the catalog rather than a
+    third walk.
+*/
+std::vector<juce::ValueTree> nodesFor (const juce::ValueTree& channel, const ParamGroup&);
+
+/** The group a descriptor declares for one node type, or null.
+
+    A nested group needs its OWNER's json key to find the element it sits in,
+    and both the capture and the apply path need the same answer.
+*/
+const ParamGroup* groupOn (const InstrumentDescriptor&, const juce::Identifier& node);
+
 juce::var stateFor (const EffectDescriptor&, const juce::ValueTree& effect);
 juce::var stateFor (const InstrumentDescriptor&, const juce::ValueTree& channel);
 

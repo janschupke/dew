@@ -4,6 +4,7 @@
 #include "i18n/Strings.h"
 #include "io/OfflineRenderer.h"
 #include "model/DemoLibrary.h"
+#include "model/GeneratorCatalog.h"
 #include "model/Ids.h"
 #include "model/ProjectFactory.h"
 #include "model/ProjectSchema.h"
@@ -391,9 +392,11 @@ TEST_CASE ("each demo exercises the part of the app it is named for", "[demos]")
                     continue;
 
                 ++wavetableSlots;
-                tables.addIfNotAlreadyThere (osc[ids::wavetable].toString());
-                sources.addIfNotAlreadyThere (osc[ids::wavePositionSource].toString());
-                widest = juce::jmax (widest, (int) osc[ids::unisonVoices]);
+
+                const auto table = generatorNodeFor (osc, ids::wavePosition);
+                tables.addIfNotAlreadyThere (table[ids::wavetable].toString());
+                sources.addIfNotAlreadyThere (table[ids::wavePositionSource].toString());
+                widest = juce::jmax (widest, (int) table[ids::unisonVoices]);
             }
         }
 

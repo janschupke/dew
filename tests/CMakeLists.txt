@@ -64,6 +64,7 @@ add_executable(dew_tests
   OscillatorUiTests.cpp
   WavetableTests.cpp
   WavetableEngineTests.cpp
+  WavetableSchemaTests.cpp
   WavetableUiTests.cpp
   TimelineViewTests.cpp
   ScrollSpeedTests.cpp

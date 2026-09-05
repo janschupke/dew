@@ -1,6 +1,6 @@
 {
     "format": "dew-preset",
-    "formatVersion": 2,
+    "formatVersion": 3,
     "kind": "instrument",
     "type": "synth",
     "name": "Pluck",
@@ -10,17 +10,23 @@
       "oscillators": [
         {
           "enabled": true,
-          "wave": "saw",
           "octave": 0,
           "detuneCents": 0.0,
-          "gain": 0.7
+          "gain": 0.7,
+          "mode": "classic",
+          "classic": {
+            "wave": "saw"
+          }
         },
         {
           "enabled": true,
-          "wave": "square",
           "octave": 0,
           "detuneCents": 9.0,
-          "gain": 0.35
+          "gain": 0.35,
+          "mode": "classic",
+          "classic": {
+            "wave": "square"
+          }
         },
         {
           "enabled": false
