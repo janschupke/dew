@@ -115,6 +115,23 @@ public:
         the change lives in the application above it. */
     void showLanguageNotice();
 
+    /** Says that the stored audio device could not be opened, and why.
+
+        Here for the same reason showLanguageNotice is: the status bar is this
+        component's, and the session restore that discovers it is above. */
+    void showAudioRestoreFailure (const juce::String& error);
+
+    /** Says that the last run of dew ended in a crash, and where the evidence
+        is. Named a DIRECTORY rather than a file: what somebody does next is
+        open the folder, and the operating system's own fuller report is not in
+        it - the marker names where that lives. */
+    void showCrashNotice (const juce::File& logFolder);
+
+    /** Says that the endpoint was switched on but could not listen. The switch
+        reading "on" beside a panel reading "Not running" is a contradiction,
+        and this is the half that explains it. */
+    void showMcpUnavailable();
+
     /** Opens the audio settings over this window. */
     void showAudioSettings();
 

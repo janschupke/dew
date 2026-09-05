@@ -1,3 +1,4 @@
+#include "app/Diagnostics.h"
 #include "model/ProjectFactory.h"
 #include "ui/DewDialog.h"
 #include "ui/MainComponent.h"
@@ -208,13 +209,19 @@ void MainComponent::applyMcpSettings (Settings& settings)
     // is a fixed default is that `claude mcp add` should need running once.
     const auto wanted = settings.getMcpPort();
 
-    if (wanted != 0 && mcpServer->start (wanted))
+    if ((wanted != 0 && mcpServer->start (wanted))
+        || mcpServer->start (control::McpServer::defaultPort) || mcpServer->start (0))
+    {
+        diagnostics::log ("mcp endpoint listening on " + mcpServer->getUrl());
         return;
+    }
 
-    if (mcpServer->start (control::McpServer::defaultPort))
-        return;
-
-    mcpServer->start (0);
+    // Said, rather than left as a switch reading "on" above a panel reading
+    // "Not running". Every port was refused, which is the machine's answer and
+    // not something the person did - so the message is the only way they learn
+    // there is nothing to connect to.
+    diagnostics::log ("mcp endpoint could not bind any port");
+    showMcpUnavailable();
 }
 
 void MainComponent::showMcpSettings()

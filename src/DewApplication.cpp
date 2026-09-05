@@ -1,5 +1,6 @@
 #include "DewApplication.h"
 
+#include "app/Diagnostics.h"
 #include "i18n/Strings.h"
 #include "model/BuildInfo.h"
 #include "model/DemoLibrary.h"
@@ -71,6 +72,16 @@ const juce::String DewApplication::getApplicationVersion()
 
 void DewApplication::initialise (const juce::String&)
 {
+    // FIRST of all, before the Settings that everything else waits on. A fault
+    // during startup is exactly the one nobody can describe afterwards, and a
+    // handler installed after it would have missed it. Nothing here reads a
+    // catalogue: this runs before setLocale, and it is diagnostic text anyway.
+    // summary() already names the version and the JUCE pin, so only the machine
+    // is added: a report that does not say which OS it came off is a report
+    // half the answers cannot be looked up from.
+    diagnostics::begin (BuildInfo::summary() + "  ·  "
+                        + juce::SystemStats::getOperatingSystemName());
+
     settings = std::make_unique<Settings>();
 
     // FIRST, and before anything reads a string. tr() hands out references into
@@ -146,6 +157,11 @@ void DewApplication::shutdown()
 
     mainWindow.reset();
     settings.reset();
+
+    // LAST, so anything the teardown above wanted to say still had somewhere to
+    // say it.
+    diagnostics::log ("shutdown");
+    diagnostics::end();
 }
 
 void DewApplication::restoreSession()
@@ -160,12 +176,30 @@ void DewApplication::restoreSession()
     // The device before anything is heard, so the first sound already comes out
     // of whatever was chosen last time.
     if (auto state = settings->getAudioState())
-        main->getAudioHost().restoreState (*state);
+    {
+        // Said rather than dropped. This used to discard the string it returns,
+        // so dew came up on a device nobody chose and gave no reason - and the
+        // person's next move is Audio Settings, which is what the message names.
+        if (const auto error = main->getAudioHost().restoreState (*state); error.isNotEmpty())
+        {
+            diagnostics::log ("audio state not restored: " + error);
+            main->showAudioRestoreFailure (error);
+        }
+    }
 
     // The endpoint LAST, and by reference rather than by value: a grant the
     // user gives has to be written back when they give it, which is minutes
     // after this runs. It starts nothing unless the switch is on.
     main->applyMcpSettings (*settings);
+
+    // After the window is up, because it speaks through the status bar. A
+    // marker can only have been left by a launch that is already over.
+    if (const auto crash = diagnostics::unreportedCrash(); crash.existsAsFile())
+    {
+        diagnostics::log ("previous launch left " + crash.getFileName());
+        main->showCrashNotice (crash.getParentDirectory());
+        diagnostics::markReported (crash);
+    }
 }
 
 void DewApplication::saveSession()

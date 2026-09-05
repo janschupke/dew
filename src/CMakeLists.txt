@@ -509,6 +509,7 @@ target_link_libraries(dew_design
 #-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
 add_library(dew_app STATIC
   app/Settings.cpp
+  app/Diagnostics.cpp
   app/ProjectDocument.cpp
 )
 

@@ -1075,10 +1075,13 @@
   },
   "status": {
     "audioNotOpened": "Audio device not opened",
+    "audioNotRestored": "The audio device saved last time could not be opened: {error}",
     "audioUnavailable": "Audio unavailable: {error}",
+    "crashedLastTime": "dew stopped unexpectedly last time. What it recorded is in {folder}.",
     "dropouts": "{count, plural, one {# drop} other {# drops}}",
     "languageChanged": "Language changed - it takes effect next time dew starts.",
     "loadWarnings": "{count, plural, one {# item} other {# items}} in this file were not understood: {first}",
+    "mcpUnavailable": "MCP could not listen on any port, so nothing can connect.",
     "meterChanged": "Time signature is now {meter}.",
     "meterChangedRounded": "Time signature is now {meter}. Some clips were rounded to the nearest bar.",
     "notes": "{count, plural, one {# note} other {# notes}}",

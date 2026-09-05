@@ -261,6 +261,24 @@ void MainComponent::showLanguageNotice()
     statusBar.showMessage (tr (StringId::status_languageChanged), StatusBar::Severity::info);
 }
 
+void MainComponent::showAudioRestoreFailure (const juce::String& error)
+{
+    statusBar.showMessage (tr (StringId::status_audioNotRestored, Args {}.with ("error", error)),
+                           StatusBar::Severity::warning);
+}
+
+void MainComponent::showCrashNotice (const juce::File& logFolder)
+{
+    statusBar.showMessage (
+        tr (StringId::status_crashedLastTime, Args {}.with ("folder", logFolder.getFullPathName())),
+        StatusBar::Severity::warning);
+}
+
+void MainComponent::showMcpUnavailable()
+{
+    statusBar.showMessage (tr (StringId::status_mcpUnavailable), StatusBar::Severity::error);
+}
+
 void MainComponent::showLoadWarnings (const juce::StringArray& warnings)
 {
     if (warnings.isEmpty())
