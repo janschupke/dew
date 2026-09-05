@@ -343,7 +343,7 @@
     }
   },
   "effect": {
-    "bypassed": "BYPASSED",
+    "bypassed": "OFF",
     "chain": {
       "title": "Effect chain"
     },
@@ -364,6 +364,9 @@
     },
     "eq": {
       "name": "EQ"
+    },
+    "enabled": {
+      "help": "Turn this effect on or off"
     },
     "expand": {
       "help": "Show or hide this effect's controls"
@@ -499,6 +502,9 @@
     "title": "Mixer"
   },
   "oscillator": {
+    "enabled": {
+      "help": "Turn oscillator {index} on or off"
+    },
     "mod": {
       "help": "How far the source moves the position, and which way"
     },
@@ -657,12 +663,12 @@
       "name": "Mode"
     },
     "mute": {
-      "caption": "MUTE",
-      "name": "Mute"
+      "caption": "OFF",
+      "name": "Off"
     },
     "muted": {
-      "caption": "MUTE",
-      "name": "Mute"
+      "caption": "OFF",
+      "name": "Off"
     },
     "octave": {
       "caption": "OCT",

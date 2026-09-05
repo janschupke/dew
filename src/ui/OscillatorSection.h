@@ -212,7 +212,7 @@ private:
 
     juce::OwnedArray<SlotButton> slotButtons;
 
-    DewIconButton enableButton { icons::power(), "Turn this oscillator on or off" };
+    DewIconButton enableButton { icons::power(), {} };
 
     DewDropdown modeBox;
 

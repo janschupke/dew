@@ -136,13 +136,13 @@ MixerStrip::MixerStrip (ProjectDocument& d, juce::ValueTree t, bool isMasterStri
             {
                 ProjectEdits::setPropertyOnEvery (track.getParent(), ids::MIXER_TRACK, ids::mute,
                                                   muted, &document.getUndoManager(),
-                                                  muted ? "Silence every insert"
-                                                        : "Play every insert");
+                                                  muted ? "Turn every insert off"
+                                                        : "Turn every insert on");
                 return;
             }
 
             ProjectEdits::setProperty (track, ids::mute, muted, &document.getUndoManager(),
-                                       muted ? "Silence insert" : "Play insert");
+                                       muted ? "Turn insert off" : "Turn insert on");
         };
         addAndMakeVisible (enabledButton);
     }

@@ -126,7 +126,7 @@ private:
         silence. It lights when the lane is off, the way every toggle in dew
         lights for the state worth noticing.
     */
-    DewIconButton enabledButton { icons::mute(), {} };
+    DewIconButton enabledButton { icons::power(), {} };
 
     bool resizing = false;
     int resizeOriginY = 0;

@@ -220,33 +220,6 @@ juce::Path quantize()
 
 // --- state -------------------------------------------------------------------
 
-juce::Path mute()
-{
-    juce::Path p;
-    p.addRectangle (0.12f, 0.38f, 0.16f, 0.24f);
-    p.startNewSubPath (0.28f, 0.38f);
-    p.lineTo (0.52f, 0.16f);
-    p.lineTo (0.52f, 0.84f);
-    p.lineTo (0.28f, 0.62f);
-    p.closeSubPath();
-
-    p.addPath (strokedLine (0.62f, 0.36f, 0.88f, 0.64f, tokens::icon::regular));
-    p.addPath (strokedLine (0.88f, 0.36f, 0.62f, 0.64f, tokens::icon::regular));
-    return p;
-}
-
-juce::Path solo()
-{
-    juce::Path band;
-    band.addCentredArc (0.5f, 0.52f, 0.32f, 0.32f, 0.0f, -juce::MathConstants<float>::halfPi * 1.6f,
-                        juce::MathConstants<float>::halfPi * 1.6f, true);
-
-    auto p = strokeOf (band, tokens::icon::regular);
-    p.addRoundedRectangle (0.14f, 0.52f, 0.16f, 0.32f, 0.06f);
-    p.addRoundedRectangle (0.70f, 0.52f, 0.16f, 0.32f, 0.06f);
-    return p;
-}
-
 juce::Path power()
 {
     juce::Path arc;

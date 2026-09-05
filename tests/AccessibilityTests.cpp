@@ -263,7 +263,7 @@ TEST_CASE ("a primitive tells the design system what moved the keyboard onto it"
 
     DewButton button { "Play" };
     DewIconButton icon { icons::zoomIn(), {} };
-    DewLetterToggle letter { "M", tokens::colour::warning, "Mute" };
+    DewLetterToggle letter { "R", tokens::colour::recording, "Arm for recording" };
     DewDropdown dropdown;
     DewNumberField field;
 

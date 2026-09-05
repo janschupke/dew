@@ -127,7 +127,7 @@ ControlResult write (ControlHost& host, const juce::var& args)
 
         if (hasArg (entry, "enabled"))
             ProjectEdits::setProperty (effect, ids::enabled, flagArg (entry, "enabled"), undo,
-                                       "Bypass effect", true);
+                                       "Turn effect off", true);
 
         if (hasArg (entry, "preset"))
         {

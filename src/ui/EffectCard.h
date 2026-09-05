@@ -159,7 +159,7 @@ private:
 
     juce::Rectangle<int> gripBounds, iconBounds, nameBounds, modeCaptionBounds;
 
-    DewIconButton bypassButton { icons::power(), "Bypass this effect" };
+    DewIconButton bypassButton { icons::power(), {} };
     DewIconButton expandButton { icons::chevronDown(), "Show or hide this effect's controls" };
     DewIconButton upButton { icons::chevronUp(), "Move earlier in the chain" };
     DewIconButton downButton { icons::chevronDown(), "Move later in the chain" };

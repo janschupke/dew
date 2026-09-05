@@ -118,7 +118,7 @@ private:
     /** Whether the channel plays. One state, the same control the playlist and
         the mixer now carry, and the same shift-click. See
         PlaylistTrackHeader::enabledButton for why there is one and not two. */
-    DewIconButton enabledButton { icons::mute(), {} };
+    DewIconButton enabledButton { icons::power(), {} };
 
     DewKnob volumeKnob { requireInstrumentParamSpec (ids::volume) };
     DewKnob panKnob { requireInstrumentParamSpec (ids::pan) };

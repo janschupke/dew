@@ -175,7 +175,7 @@ TEST_CASE ("a mute curve silences a channel and lets it back in", "[automation][
     // Muted for the first two bars, then heard. Stepped, so it is a jump at bar
     // three rather than a fade across the clip.
     auto automation = ProjectEdits::addAutomation (
-        project, targetNamed (project, first[ids::name].toString() + " > Mute"), &undo);
+        project, targetNamed (project, first[ids::name].toString() + " > Off"), &undo);
     setCurve (automation, { { 0.0, 1.0 }, { 32.0, 0.0 } }, &undo);
 
     auto track = project.getChildWithName (ids::PLAYLIST).getChild (0);

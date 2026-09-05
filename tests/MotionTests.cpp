@@ -371,28 +371,28 @@ TEST_CASE ("a button lifts into a hover rather than cutting to it", "[motion][bu
 
 TEST_CASE ("a toggle crosses between its two colours", "[motion][button]")
 {
-    // Mute, solo, arm and bypass switched colour outright, and those are the
-    // four states a person flips most often while listening - the one moment a
-    // hard cut is most likely to read as a glitch rather than as a change.
+    // On/off and arm switched colour outright, and those are the states a
+    // person flips most often while listening - the one moment a hard cut is
+    // most likely to read as a glitch rather than as a change.
     const juce::ScopedJuceInitialiser_GUI juceInit;
     ScopedAnimation animating;
 
-    DewLetterToggle toggle { "M", tokens::colour::warning, "Mute" };
+    DewLetterToggle toggle { "R", tokens::colour::recording, "Arm for recording" };
     toggle.setSize (size::letterToggle, size::letterToggle);
 
-    const auto off = testing::coverageOf (testing::render (toggle), tokens::colour::warning);
+    const auto off = testing::coverageOf (testing::render (toggle), tokens::colour::recording);
 
     toggle.setToggleState (true, juce::dontSendNotification);
 
     // Not yet: the cross is a transition, and no time has passed.
-    CHECK (testing::coverageOf (testing::render (toggle), tokens::colour::warning)
+    CHECK (testing::coverageOf (testing::render (toggle), tokens::colour::recording)
            == Approx (off).margin (0.02));
 
     Animator::shared().advance (motion::quickMs / 2);
-    const auto midway = testing::coverageOf (testing::render (toggle), tokens::colour::warning);
+    const auto midway = testing::coverageOf (testing::render (toggle), tokens::colour::recording);
 
     Animator::shared().advance (motion::quickMs);
-    const auto on = testing::coverageOf (testing::render (toggle), tokens::colour::warning);
+    const auto on = testing::coverageOf (testing::render (toggle), tokens::colour::recording);
 
     INFO ("off " << off << ", midway " << midway << ", on " << on);
     CHECK (on > off);

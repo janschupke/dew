@@ -176,8 +176,6 @@ std::vector<NamedIcon> all()
         { "palette", palette },
         { "pattern", pattern },
 
-        { "mute", mute },
-        { "solo", solo },
         { "power", power },
         { "lock", lock },
         { "check", check },

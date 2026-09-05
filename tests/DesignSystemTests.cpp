@@ -115,7 +115,7 @@ TEST_CASE ("primitives paint in every state", "[design][primitives]")
 
     SECTION ("letter toggle reflects its state")
     {
-        DewLetterToggle toggle ("M", tokens::colour::warning, "Mute");
+        DewLetterToggle toggle ("R", tokens::colour::recording, "Arm for recording");
         toggle.setSize (26, 20);
 
         const auto off = render (toggle);

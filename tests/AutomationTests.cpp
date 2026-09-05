@@ -199,7 +199,7 @@ TEST_CASE ("a fresh curve over a discrete target is stepped", "[automation]")
     for (const auto& point : ProjectEdits::sortedAutomationPoints (continuous))
         REQUIRE (point[ids::shape].toString() == "curve");
 
-    auto stepped = ProjectEdits::addAutomation (project, targetNamed (project, "Kick > Mute"),
+    auto stepped = ProjectEdits::addAutomation (project, targetNamed (project, "Kick > Off"),
                                                 &undo);
 
     for (const auto& point : ProjectEdits::sortedAutomationPoints (stepped))

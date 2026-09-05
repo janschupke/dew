@@ -93,9 +93,13 @@ void OscillatorSection::refreshControls()
 
     enableButton.setToggleState (enabled, juce::dontSendNotification);
     repaint();
-    enableButton.setTooltip (enabled
-                                 ? "Turn oscillator " + juce::String (selectedSlot + 1) + " off"
-                                 : "Turn oscillator " + juce::String (selectedSlot + 1) + " on");
+
+    // One sentence whatever the state, which is what the other four on/off
+    // controls say - "Turn this channel on or off", and the same for a track,
+    // an insert and an effect. A tooltip that read the state back was a fifth
+    // way of saying the same thing, and the only one that needed two strings.
+    enableButton.setTooltip (
+        tr (StringId::oscillator_enabled_help, Args {}.with ("index", selectedSlot + 1)));
 
     modeBox.setSelectedId (idFor (modeChoices, slot[ids::mode].toString(), "classic"),
                            juce::dontSendNotification);

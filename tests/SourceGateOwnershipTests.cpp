@@ -206,13 +206,17 @@ TEST_CASE ("no source spells an automatable parameter as a string literal", "[bu
     // table the gate silently did not cover.
     auto names = dew::automatableParameterNames();
 
-    // Two whole directories are exempt for the same reason the effect ids below
-    // are. ui/design/icons is a registry of ICON names, and "mute" is one of
-    // them; src/lang is the score language, whose keywords are its own
-    // vocabulary and address its own tree, not the project's. Both became
-    // offenders the moment mute turned into an automatable parameter, and
-    // neither is the defect this gate exists to catch - which is a property name
-    // written by hand where a property is being RESOLVED.
+    // src/lang is exempt for the same reason the effect ids below are: the score
+    // language's keywords are its own vocabulary and address its own tree, not
+    // the project's, and a keyword that happens to share a spelling with a
+    // parameter is not the defect this gate exists to catch - which is a
+    // property name written by hand where a property is being RESOLVED.
+    //
+    // ui/design/icons was exempt too, because its registry named an icon "mute"
+    // and mute is an automatable parameter. That icon is gone - one on/off
+    // glyph now, not a crossed speaker beside a power symbol - and the gate
+    // reported the exemption as suppressing nothing, which is the mechanism
+    // that keeps this list from becoming a place things are added to.
     //
     // Ids.h was a third, and it was never needed: DEW_DECLARE_ID spells a name
     // with the preprocessor's # operator, so "cutoff" does not appear as a
@@ -232,18 +236,13 @@ TEST_CASE ("no source spells an automatable parameter as a string literal", "[bu
     const auto found = dew::testing::offenders (
         [&names] (const juce::String& line)
         {
-            // The exemption is the DIRECTORY ui/design/icons, not a file in it.
-            // The catalog names its own icons as strings - { "mute", mute } - and
-            // several of those names are also parameter names. It was one file and
-            // one entry; splitting it into three would have meant three entries,
-            // which is the list SourceScan.h warns a fourth file falls off.
             for (const auto& name : names)
                 if (line.contains ("\"" + name + "\""))
                     return true;
 
             return false;
         },
-        { "ui/design/icons", "lang" });
+        { "lang" });
 
     INFO ("automatable parameters written as string literals:\n" << found.joinIntoString ("\n"));
     CHECK (found.isEmpty());

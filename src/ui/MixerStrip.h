@@ -208,7 +208,7 @@ private:
     /** Whether the insert plays. One state, the same control the playlist and
         the channel rack now carry, and the same shift-click. See
         PlaylistTrackHeader::enabledButton for why there is one and not two. */
-    DewIconButton enabledButton { icons::mute(), {} };
+    DewIconButton enabledButton { icons::power(), {} };
 
     /** Owned here, and destroyed before the controls they watch. */
     std::vector<std::unique_ptr<paramMenu::Trigger>> paramMenuTriggers;

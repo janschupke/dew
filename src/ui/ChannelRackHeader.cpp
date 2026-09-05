@@ -61,12 +61,12 @@ ChannelRackHeader::ChannelRackHeader (ProjectDocument& d, EditorState& s, juce::
         {
             ProjectEdits::setPropertyOnEvery (
                 channel.getParent(), ids::CHANNEL, ids::muted, muted, &document.getUndoManager(),
-                muted ? "Silence every channel" : "Play every channel");
+                muted ? "Turn every channel off" : "Turn every channel on");
             return;
         }
 
         ProjectEdits::setProperty (channel, ids::muted, muted, &document.getUndoManager(),
-                                   muted ? "Silence channel" : "Play channel");
+                                   muted ? "Turn channel off" : "Turn channel on");
     };
     addAndMakeVisible (enabledButton);
 

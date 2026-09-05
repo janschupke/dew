@@ -111,11 +111,16 @@ DewGallery::DewGallery()
     add (new DewIconButton (icons::plus(), "Add"));
     add (new DewIconButton (icons::trash(), "Delete", DewIconButton::Role::danger));
 
-    auto* muted = new DewLetterToggle ("M", colour::warning, "Mute");
-    muted->setToggleState (true, juce::dontSendNotification);
-    add (muted);
+    // The on/off indicator every row carries, on the reference page as it is
+    // everywhere else. It was an "M" and an "S" here - the last two letters in
+    // the application, on the one surface whose job is to say what the set is.
+    auto* off = new DewIconButton (icons::power(), "Turn off");
+    off->setClickingTogglesState (true);
+    off->setOnColour (colour::warning);
+    off->setToggleState (true, juce::dontSendNotification);
+    add (off);
 
-    add (new DewLetterToggle ("S", colour::success, "Solo"));
+    add (new DewLetterToggle ("R", colour::recording, "Arm for recording"));
 
     // A disabled one, because that is a state this page had no sample of - and
     // the state that was wrong: a disabled icon button used to dim only its

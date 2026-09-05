@@ -33,6 +33,7 @@ EffectCard::EffectCard (EffectChainComponent& o, ProjectDocument& d, EditorState
     // here; falling back keeps the editor usable rather than empty.
     type = effectTypeFor (effect[ids::type].toString()).value_or (EffectType::filter);
 
+    bypassButton.setTooltip (tr (StringId::effect_enabled_help));
     bypassButton.setClickingTogglesState (true);
     bypassButton.setToggleState (! (bool) effect[ids::enabled], juce::dontSendNotification);
     bypassButton.setOnColour (colour::warning);
@@ -40,7 +41,7 @@ EffectCard::EffectCard (EffectChainComponent& o, ProjectDocument& d, EditorState
     {
         owner.selectSlot (index);
         ProjectEdits::setProperty (effect, ids::enabled, ! bypassButton.getToggleState(),
-                                   &document.getUndoManager(), "Bypass effect");
+                                   &document.getUndoManager(), "Turn effect off");
     };
     addAndMakeVisible (bypassButton);
 
