@@ -19,7 +19,10 @@ export interface Requirement {
 
 /** From the Brewfile, which is what `brew bundle` reads. */
 export const requirements: readonly Requirement[] = [
-  { name: 'macOS 11 or newer', need: 'The deployment target. There is no other platform.' },
+  {
+    name: 'macOS 11 or newer',
+    need: 'The deployment target for these commands. Windows and Linux build from the same presets.',
+  },
   {
     name: 'Xcode command line tools',
     need: 'The compiler, and the clang-format the gate checks with. Nothing else to install.',

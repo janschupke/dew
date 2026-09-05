@@ -103,7 +103,7 @@
   },
   "score": {
     "title": "The score language",
-    "lead": "A song written as text and compiled to real patterns, notes and clips. Seven block keywords, and the set is closed.",
+    "lead": "A song written as text and compiled to patterns, notes and clips. Twelve blocks, seven of them at the top level, and the set is closed.",
     "exampleCaption": "examples/amber.score — the one CI compiles and renders.",
     "referenceLink": "Every block and key",
     "noExpressions": "There is no expression language: no arithmetic, no variables, no conditionals. That restriction is what makes completion a table lookup, and what lets the grid be computed before anything is generated."
@@ -112,7 +112,7 @@
     "title": "Setup",
     "lead": "dew builds from source in three commands. There are binaries too, if you would rather not.",
     "requirementsTitle": "What you need",
-    "requirementsBody": "macOS, and nothing that is not already on a machine somebody writes software on. brew bundle installs the rest from the Brewfile in the repository root.",
+    "requirementsBody": "Nothing beyond what a machine used for writing software already has. brew bundle installs the rest from the Brewfile in the repository root.",
     "buildTitle": "Build it",
     "buildBody": "The first configure fetches JUCE and Catch2 from source — a few seconds, shallow, cached per machine under ~/.cache/CPM. One build is slow and the rest are not.",
     "presetsTitle": "The presets",
