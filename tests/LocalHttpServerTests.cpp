@@ -207,7 +207,8 @@ TEST_CASE ("stopping is not a hang, with or without traffic", "[http]")
 class PumpedDispatcher : public McpServer::Dispatcher
 {
 public:
-    bool run (std::function<void()> work, int timeoutMs) override
+    bool run (std::function<void()> work, int timeoutMs,
+              const std::atomic<bool>& abandoned) override
     {
         auto job = std::make_shared<Job>();
         job->work = std::move (work);
@@ -217,7 +218,20 @@ public:
             queue.push_back (job);
         }
 
-        return job->done.wait (timeoutMs);
+        // Sliced the way the real one is, so a test exercises the same giving-up
+        // as the application rather than a wait that only this class has.
+        constexpr int sliceMs = 25;
+
+        for (int waited = 0; waited < timeoutMs; waited += sliceMs)
+        {
+            if (job->done.wait (juce::jmin (sliceMs, timeoutMs - waited)))
+                return true;
+
+            if (abandoned.load (std::memory_order_relaxed))
+                return false;
+        }
+
+        return false;
     }
 
     /** Called on the test thread. Runs whatever is waiting. */
@@ -427,4 +441,77 @@ TEST_CASE ("a request carrying its session reaches the document", "[http][mcp][s
     // The document moved, on the thread that owns it, because a socket said so.
     REQUIRE (juce::exactlyEqual ((double) host.project()[dew::ids::tempoBpm], 143.0));
     REQUIRE (host.undoDepth() == 1);
+}
+
+TEST_CASE ("switching the endpoint off does not strand a request in flight", "[http][mcp][server]")
+{
+    FakeHost host;
+
+    class Grants : public McpServer::GrantStore
+    {
+    public:
+        Grant grantFor (const juce::String&) const override
+        {
+            return Grant::readWrite;
+        }
+        void setGrant (const juce::String&, Grant) override {}
+    } grants;
+
+    class Prompt : public McpServer::ConsentPrompt
+    {
+    public:
+        void ask (const McpServer::ClientInfo&, std::function<void (Grant)> reply) override
+        {
+            reply (Grant::readWrite);
+        }
+    } prompt;
+
+    // Never pumped, deliberately. That is what a message thread looks like from
+    // the socket's side while it is busy - and it is exactly the state it is in
+    // when it is inside stop(), joining this very thread.
+    PumpedDispatcher dispatcher;
+    McpServer server { host, grants, prompt, dispatcher };
+
+    REQUIRE (server.start (0));
+
+    struct Caller : juce::Thread
+    {
+        explicit Caller (int p)
+            : juce::Thread ("client")
+            , port (p)
+        {
+        }
+
+        void run() override
+        {
+            Client client;
+            client.send (port, postTo ("{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"initialize\","
+                                       "\"params\":{\"clientInfo\":{\"name\":\"Test Client\","
+                                       "\"version\":\"1.0\"}}}"));
+            finished = true;
+        }
+
+        int port;
+        std::atomic<bool> finished { false };
+    };
+
+    Caller caller { server.getPort() };
+    caller.startThread();
+
+    // Let it get as far as the hop it will block on. Without this the test
+    // could stop a server nothing had reached yet, which proves nothing.
+    juce::Thread::sleep (300);
+
+    // The measurement. stop() joins the acceptor with a two-second budget, and
+    // the acceptor is waiting on a dispatcher nobody is pumping - so before the
+    // abandon flag this ran the budget out and JUCE killed the thread.
+    const auto before = juce::Time::getMillisecondCounter();
+    server.stop();
+    const auto took = juce::Time::getMillisecondCounter() - before;
+
+    INFO ("stop took " << took << " ms");
+    REQUIRE (took < 1500);
+    REQUIRE_FALSE (server.isRunning());
+
+    caller.stopThread (2000);
 }

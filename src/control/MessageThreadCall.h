@@ -1,5 +1,6 @@
 #pragma once
 
+#include <atomic>
 #include <functional>
 #include <memory>
 
@@ -32,9 +33,24 @@ namespace dew::control
     the wait gives up, the posted lambda may still run later, and it must not
     write into a stack frame that has gone.
 
-    @returns false if the message thread did not get to it in time.
+    ### And why it is also abandonable
+
+    A timeout alone is not enough, because the message thread can be blocked on
+    THIS thread finishing. Turning the endpoint off destroys the server from the
+    message thread, which joins the socket thread with a two-second budget - and
+    if that thread is here, waiting for a message only the joining thread could
+    deliver, neither moves. The wait gives up after twenty seconds; JUCE gives
+    up after two and kills the thread, mid-request, holding a socket.
+
+    So the wait is sliced and `abandoned` is checked between slices. Whoever is
+    tearing the caller down sets it before it starts, and this returns "no"
+    while there is still time to unwind properly.
+
+    @returns false if the message thread did not get to it in time, or if the
+             caller was abandoned while waiting.
 */
-template <typename Fn> bool callOnMessageThread (Fn&& fn, int timeoutMs)
+template <typename Fn>
+bool callOnMessageThread (Fn&& fn, int timeoutMs, const std::atomic<bool>& abandoned)
 {
     // Already there - the ordinary case for a test, and for anything the
     // interface itself calls. Posting would deadlock: the message thread would
@@ -59,7 +75,22 @@ template <typename Fn> bool callOnMessageThread (Fn&& fn, int timeoutMs)
             shared->done.signal();
         });
 
-    return shared->done.wait (timeoutMs);
+    // Short enough that a teardown waiting on this thread is not kept past its
+    // own budget, long enough that an ordinary hop does not spin.
+    constexpr int sliceMs = 25;
+
+    for (int waited = 0; waited < timeoutMs; waited += sliceMs)
+    {
+        if (shared->done.wait (juce::jmin (sliceMs, timeoutMs - waited)))
+            return true;
+
+        // AFTER the wait, not before: a caller that was abandoned while the
+        // work was already running should still see it finish.
+        if (abandoned.load (std::memory_order_relaxed))
+            return false;
+    }
+
+    return false;
 }
 
 } // namespace dew::control

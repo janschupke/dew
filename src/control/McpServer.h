@@ -1,5 +1,6 @@
 #pragma once
 
+#include <atomic>
 #include <map>
 #include <mutex>
 
@@ -104,8 +105,14 @@ public:
         virtual ~Dispatcher() = default;
 
         /** Runs `work` on the document's thread and waits for it.
-            @returns false if it did not get to it in time. */
-        virtual bool run (std::function<void()> work, int timeoutMs) = 0;
+
+            @param abandoned  set by whoever is tearing the caller down. Checked
+                   WHILE waiting, because the thread this is waiting on may be
+                   the one waiting to join this thread - see the argument in
+                   MessageThreadCall.h.
+            @returns false if it did not get to it in time, or was abandoned. */
+        virtual bool run (std::function<void()> work, int timeoutMs,
+                          const std::atomic<bool>& abandoned) = 0;
     };
 
     /** JUCE's message thread. What the application uses. */
@@ -147,6 +154,10 @@ public:
         socket thread cannot wait forever. */
     static constexpr int consentTimeoutMs = 180000;
 
+    /** How often that wait looks up to see whether the endpoint has been
+        switched off underneath it. */
+    static constexpr int consentSliceMs = 50;
+
     /** Answers one HTTP request. Public so a test can drive the whole protocol
         - Origin rules, sessions, consent and all - with no socket at all. */
     LocalHttpServer::Response handle (const LocalHttpServer::Request&);
@@ -167,6 +178,15 @@ private:
         message thread while a request is in flight. */
     mutable std::mutex lock;
     std::map<juce::String, ClientInfo> sessions;
+
+    /** Set by stop() before it touches the transport, so a request already
+        waiting on the document thread gives up rather than being killed.
+
+        The message thread destroys this server and then joins the socket
+        thread with a two-second budget; a request in flight is waiting on that
+        same message thread for up to twenty. Without this the join times out
+        and JUCE kills the thread mid-request. */
+    std::atomic<bool> abandoned { false };
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (McpServer)
 };

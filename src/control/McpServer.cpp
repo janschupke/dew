@@ -183,9 +183,10 @@ McpServer::Dispatcher& McpServer::messageThread()
     class MessageThread : public Dispatcher
     {
     public:
-        bool run (std::function<void()> work, int timeoutMs) override
+        bool run (std::function<void()> work, int timeoutMs,
+                  const std::atomic<bool>& givenUp) override
         {
-            return callOnMessageThread (std::move (work), timeoutMs);
+            return callOnMessageThread (std::move (work), timeoutMs, givenUp);
         }
     };
 
@@ -209,12 +210,23 @@ McpServer::~McpServer()
 
 bool McpServer::start (int port)
 {
+    // Cleared here rather than only in the constructor, so a server that was
+    // stopped and started again is not permanently refusing to wait.
+    abandoned.store (false, std::memory_order_relaxed);
+
     return transport.start (port, [this] (const LocalHttpServer::Request& request)
                             { return handle (request); });
 }
 
 void McpServer::stop()
 {
+    // BEFORE the transport, and that order is the whole point. Stopping the
+    // transport joins the socket thread with a two-second budget, and this runs
+    // on the message thread - which is the thread a request in flight is
+    // waiting on. Set first, the waiter gives up and unwinds; set after, or not
+    // at all, the join times out and JUCE kills the thread mid-request.
+    abandoned.store (true, std::memory_order_relaxed);
+
     transport.stop();
 
     const std::lock_guard<std::mutex> guard { lock };
@@ -266,9 +278,27 @@ Grant McpServer::grantFor (const ClientInfo& client)
                             answer->given.signal();
                         });
         },
-        documentTimeoutMs);
+        documentTimeoutMs, abandoned);
 
-    if (! asked || ! answer->given.wait (consentTimeoutMs))
+    // Sliced for the reason the dispatcher's wait is, and more urgently: three
+    // minutes is a very long time to hold a socket thread that the message
+    // thread may already be trying to join. An endpoint switched off while a
+    // dialog is open answers "no" and lets go.
+    const auto waitForAnswer = [this, &answer]
+    {
+        for (int waited = 0; waited < consentTimeoutMs; waited += consentSliceMs)
+        {
+            if (answer->given.wait (consentSliceMs))
+                return true;
+
+            if (abandoned.load (std::memory_order_relaxed))
+                return false;
+        }
+
+        return false;
+    };
+
+    if (! asked || ! waitForAnswer())
         return Grant::none;
 
     const auto decided = answer->grant.load();
@@ -278,7 +308,7 @@ Grant McpServer::grantFor (const ClientInfo& client)
     // storing a refusal would mean a client they later want could never ask.
     if (decided != Grant::none)
         dispatcher.run ([this, client, decided] { grants.setGrant (client.name, decided); },
-                        documentTimeoutMs);
+                        documentTimeoutMs, abandoned);
 
     return decided;
 }
@@ -379,7 +409,7 @@ LocalHttpServer::Response McpServer::handle (const LocalHttpServer::Request& req
     // socket thread's, and nothing below it is.
     const auto ran = dispatcher.run ([this, &message, grant, &reply]
                                      { reply = mcp::dispatch (host, message, grant); },
-                                     documentTimeoutMs);
+                                     documentTimeoutMs, abandoned);
 
     if (! ran)
         return protocolError (503, mcp::internalError,
