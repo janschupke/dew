@@ -158,6 +158,14 @@ void MainComponent::ConsentAdapter::ask (const control::McpServer::ClientInfo& c
 
 // --- the endpoint -------------------------------------------------------------
 
+McpGrants& MainComponent::ensureMcpGrants (Settings& settings)
+{
+    if (mcpGrants == nullptr)
+        mcpGrants = std::make_unique<McpGrants> (settings);
+
+    return *mcpGrants;
+}
+
 void MainComponent::applyMcpSettings (Settings& settings)
 {
     mcpSettings = &settings;
@@ -176,8 +184,14 @@ void MainComponent::applyMcpSettings (Settings& settings)
     {
         consentPrompt.hook = consentWithPanel (this);
 
-        mcpGrants = std::make_unique<McpGrants> (settings);
-        mcpServer = std::make_unique<control::McpServer> (controlHost, *mcpGrants, consentPrompt);
+        // ensureMcpGrants, never a fresh one. This function is what the switch
+        // in the settings panel calls, and that panel is holding the grants by
+        // pointer while it waits for the call to come back - so rebuilding them
+        // here freed the object the panel read the moment control returned to
+        // it. The server below holds them by reference and would go the same
+        // way. They are a view over Settings; there is nothing to rebuild.
+        mcpServer = std::make_unique<control::McpServer> (controlHost, ensureMcpGrants (settings),
+                                                          consentPrompt);
     }
 
     if (mcpServer->isRunning())
@@ -208,13 +222,14 @@ void MainComponent::showMcpSettings()
     // The grants outlive the server being stopped, so the panel can still list
     // and revoke what was allowed while the endpoint is switched off - which is
     // exactly when somebody is most likely to be looking.
-    if (mcpGrants == nullptr && mcpSettings != nullptr)
-        mcpGrants = std::make_unique<McpGrants> (*mcpSettings);
+    if (mcpSettings != nullptr)
+        ensureMcpGrants (*mcpSettings);
 
-    // The server is fetched on demand rather than handed over: the switch on
-    // this very panel destroys and recreates it.
-    auto* panel = new McpConnectionsPanel ([this] { return mcpServer.get(); }, mcpGrants.get(),
-                                           mcpSettings,
+    // Both fetched on demand rather than handed over: the switch on this very
+    // panel stops and starts the endpoint, and asking each time is what makes
+    // the panel independent of when that happens.
+    auto* panel = new McpConnectionsPanel ([this] { return mcpServer.get(); },
+                                           [this] { return mcpGrants.get(); }, mcpSettings,
                                            [this]
                                            {
                                                if (mcpSettings != nullptr)
@@ -229,8 +244,7 @@ void MainComponent::showPreferences (Settings& settings, juce::ApplicationComman
 {
     // The grants outlive the endpoint being stopped, exactly as showMcpSettings
     // needs them to, so they are made the same way and for the same reason.
-    if (mcpGrants == nullptr)
-        mcpGrants = std::make_unique<McpGrants> (settings);
+    ensureMcpGrants (settings);
 
     PreferencesPanel::Hosts hosts;
 
@@ -238,11 +252,11 @@ void MainComponent::showPreferences (Settings& settings, juce::ApplicationComman
     hosts.engine = &engine;
     hosts.midi = &midiHost;
     hosts.commands = &commands;
-    hosts.grants = mcpGrants.get();
     hosts.onLanguageChosen = std::move (onLanguageChosen);
 
-    // Fetched on demand rather than handed over: the switch on the Connections
-    // page destroys and recreates it.
+    // Both fetched on demand rather than handed over: the switch on the
+    // Connections page stops and starts the endpoint.
+    hosts.grants = [this] { return mcpGrants.get(); };
     hosts.mcpServer = [this] { return mcpServer.get(); };
     hosts.onMcpEnabledChanged = [this]
     {

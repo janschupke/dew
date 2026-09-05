@@ -207,7 +207,27 @@ public:
         return mcpServer.get();
     }
 
+    /** What the user has allowed, or nullptr before anything has asked for it.
+        Public for the same reason getMcpServer is, and for one more: that this
+        pointer does NOT move is the invariant an open settings panel rests on,
+        and a test can only pin an invariant it can see. */
+    McpGrants* getMcpGrants() noexcept
+    {
+        return mcpGrants.get();
+    }
+
 private:
+    /** The grants, made once and never replaced.
+
+        Not a convenience. An open McpConnectionsPanel holds this by pointer and
+        a live McpServer holds it by REFERENCE, so replacing it leaves both
+        reading freed memory - which is exactly what ticking the switch used to
+        do, by way of applyMcpSettings rebuilding the grants underneath the very
+        panel whose click had called it. There is nothing to rebuild anyway:
+        McpGrants is a view over Settings and holds no state of its own.
+    */
+    McpGrants& ensureMcpGrants (Settings&);
+
     /** Picks the destination and starts the background render. Split from the
         dialog so that the panel never touches a file, which is what keeps it
         constructible in a test and in dew_shot.

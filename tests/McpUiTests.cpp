@@ -170,7 +170,7 @@ TEST_CASE ("the connections panel says it is off when nothing is listening", "[u
     auto settings = temp.open();
     McpGrants grants { *settings };
 
-    McpConnectionsPanel panel { {}, &grants, settings.get() };
+    McpConnectionsPanel panel { {}, [&grants] { return &grants; }, settings.get() };
     panel.setSize (McpConnectionsPanel::preferredWidth, McpConnectionsPanel::preferredHeight);
 
     // Openable with no endpoint at all, because "it is not running" is what
@@ -192,7 +192,7 @@ TEST_CASE ("the connections panel lists what is allowed and revokes it", "[ui][m
     grants.setGrant ("Claude Code", control::Grant::readWrite);
     grants.setGrant ("A Reader", control::Grant::read);
 
-    McpConnectionsPanel panel { {}, &grants, settings.get() };
+    McpConnectionsPanel panel { {}, [&grants] { return &grants; }, settings.get() };
     panel.setSize (McpConnectionsPanel::preferredWidth, McpConnectionsPanel::preferredHeight);
 
     REQUIRE (panel.getNumGrantRows() == 2);
@@ -219,7 +219,9 @@ TEST_CASE ("the switch is what turns the endpoint on, and it is remembered", "[u
     REQUIRE_FALSE (settings->getMcpEnabled());
 
     auto asked = 0;
-    McpConnectionsPanel panel { {}, &grants, settings.get(), [&asked] { ++asked; } };
+    McpConnectionsPanel panel {
+        {}, [&grants] { return &grants; }, settings.get(), [&asked] { ++asked; }
+    };
 
     panel.getEnableButton().setToggleState (true, juce::dontSendNotification);
     panel.getEnableButton().onClick();
@@ -229,6 +231,65 @@ TEST_CASE ("the switch is what turns the endpoint on, and it is remembered", "[u
     // The panel does not own the endpoint - it is a view - so it tells whoever
     // does that the switch moved.
     REQUIRE (asked == 1);
+}
+
+TEST_CASE ("the switch survives the application rebuilding what the panel was given", "[ui][mcp]")
+{
+    const juce::ScopedJuceInitialiser_GUI juceInit;
+
+    TempSettings temp;
+    auto settings = temp.open();
+
+    // Owned the way MainComponent owns it, because the bug was in the OWNERSHIP
+    // and a stack grants object cannot express it. Ticking the switch called
+    // applyMcpSettings, which replaced this unique_ptr - freeing the object the
+    // panel was still holding - and the refresh at the end of the click then
+    // read it. dew segfaulted before the window had finished repainting.
+    auto grants = std::make_unique<McpGrants> (*settings);
+
+    grants->setGrant ("Claude Code", control::Grant::readWrite);
+
+    McpConnectionsPanel panel { {},
+                                [&grants] { return grants.get(); },
+                                settings.get(),
+                                [&grants, &settings]
+                                {
+                                    // What applyMcpSettings used to do, verbatim.
+                                    grants = std::make_unique<McpGrants> (*settings);
+                                } };
+
+    panel.setSize (McpConnectionsPanel::preferredWidth, McpConnectionsPanel::preferredHeight);
+
+    panel.getEnableButton().setToggleState (true, juce::dontSendNotification);
+    panel.getEnableButton().onClick();
+
+    // Asked again rather than remembered, so the replacement is the one read.
+    REQUIRE (settings->getMcpEnabled());
+    REQUIRE (panel.getNumGrantRows() == 1);
+    REQUIRE (panel.getGrantRowText (0).contains ("Claude Code"));
+}
+
+TEST_CASE ("a panel given no grants at all is still openable", "[ui][mcp]")
+{
+    const juce::ScopedJuceInitialiser_GUI juceInit;
+
+    TempSettings temp;
+    auto settings = temp.open();
+
+    // dew_shot builds it exactly this way, and an empty std::function has to
+    // read as "nothing to list" rather than as a call through nothing.
+    McpConnectionsPanel panel { {}, nullptr, settings.get() };
+    panel.setSize (McpConnectionsPanel::preferredWidth, McpConnectionsPanel::preferredHeight);
+
+    REQUIRE (panel.getNumGrantRows() == 0);
+    REQUIRE (testing::inkCoverage (testing::render (panel)) > 0.0f);
+
+    // Answers null every time rather than only when empty, which is the other
+    // way a callback-shaped dependency goes wrong.
+    McpConnectionsPanel gone { {}, [] { return nullptr; }, settings.get() };
+    gone.setSize (McpConnectionsPanel::preferredWidth, McpConnectionsPanel::preferredHeight);
+
+    REQUIRE (gone.getNumGrantRows() == 0);
 }
 
 TEST_CASE ("the panel shows a command that names the live address", "[ui][mcp]")
@@ -264,7 +325,8 @@ TEST_CASE ("the panel shows a command that names the live address", "[ui][mcp]")
     control::McpServer server { host, grants, prompt };
     REQUIRE (server.start (0));
 
-    McpConnectionsPanel panel { [&server] { return &server; }, &grants, settings.get() };
+    McpConnectionsPanel panel { [&server] { return &server; }, [&grants] { return &grants; },
+                                settings.get() };
 
     // Spelled out with the port in it, because the port is not fixed - dew
     // takes the next free one when its own is busy - so "add the URL above"

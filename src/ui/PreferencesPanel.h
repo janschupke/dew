@@ -58,11 +58,12 @@ public:
         AudioEngine* engine = nullptr;
         MidiInputHost* midi = nullptr;
 
-        /** ASKED FOR each time rather than held, because turning the MCP switch
-            off destroys the endpoint - the contract McpConnectionsPanel
-            documents, passed straight through. */
+        /** BOTH asked for each time rather than held, because the MCP switch
+            calls back into the application and the application may rebuild
+            either of them - the contract McpConnectionsPanel documents, passed
+            straight through. */
         std::function<control::McpServer*()> mcpServer;
-        McpGrants* grants = nullptr;
+        std::function<McpGrants*()> grants;
         std::function<void()> onMcpEnabledChanged;
 
         /** The application's own chooseLanguage. Index 0 is "follow the

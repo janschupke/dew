@@ -27,10 +27,11 @@ StringId nameOfGrant (control::Grant grant)
 
 } // namespace
 
-McpConnectionsPanel::McpConnectionsPanel (std::function<control::McpServer*()> s, McpGrants* g,
-                                          Settings* st, std::function<void()> onChanged)
+McpConnectionsPanel::McpConnectionsPanel (std::function<control::McpServer*()> s,
+                                          std::function<McpGrants*()> g, Settings* st,
+                                          std::function<void()> onChanged)
     : server (std::move (s))
-    , grants (g)
+    , grants (std::move (g))
     , settings (st)
     , onEnabledChanged (std::move (onChanged))
 {
@@ -39,7 +40,7 @@ McpConnectionsPanel::McpConnectionsPanel (std::function<control::McpServer*()> s
     enableButton.setToggleState (settings != nullptr && settings->getMcpEnabled(),
                                  juce::dontSendNotification);
 
-    enableButton.onClick = [this]
+    enableButton.onClick = [this, self = juce::Component::SafePointer<McpConnectionsPanel> (this)]
     {
         if (settings != nullptr)
             settings->setMcpEnabled (enableButton.getToggleState());
@@ -50,6 +51,13 @@ McpConnectionsPanel::McpConnectionsPanel (std::function<control::McpServer*()> s
         // read back rather than predicted.
         if (onEnabledChanged)
             onEnabledChanged();
+
+        // Checked, because the line above is a call OUT of this panel into the
+        // application, and an application is entitled to close a window while
+        // answering it. Everything refresh touches is fetched fresh for the
+        // same reason; this covers the panel itself.
+        if (self == nullptr)
+            return;
 
         refresh();
     };
@@ -98,12 +106,22 @@ juce::String McpConnectionsPanel::getGrantRowText (int index) const
     return row.entry.clientName + " - " + tr (nameOfGrant (row.entry.grant));
 }
 
+McpGrants* McpConnectionsPanel::grantsNow() const
+{
+    return grants ? grants() : nullptr;
+}
+
 void McpConnectionsPanel::revokeRow (int index)
 {
-    if (grants == nullptr || index < 0 || index >= (int) rows.size())
+    if (index < 0 || index >= (int) rows.size())
         return;
 
-    grants->revoke (rows[(size_t) index].entry.clientName);
+    auto* store = grantsNow();
+
+    if (store == nullptr)
+        return;
+
+    store->revoke (rows[(size_t) index].entry.clientName);
     refresh();
 }
 
@@ -119,10 +137,12 @@ void McpConnectionsPanel::rebuildRows()
     rows.clear();
     list.removeAllChildren();
 
-    if (grants == nullptr)
+    auto* store = grantsNow();
+
+    if (store == nullptr)
         return;
 
-    for (const auto& entry : grants->all())
+    for (const auto& entry : store->all())
     {
         Row row;
         row.entry = entry;
@@ -132,12 +152,23 @@ void McpConnectionsPanel::rebuildRows()
         // The client's NAME rather than the row's index, because revoking one
         // rebuilds the list and every index after it means something else.
         const auto name = entry.clientName;
-        row.revoke->onClick = [this, name]
+        row.revoke->onClick =
+            [this, name, self = juce::Component::SafePointer<McpConnectionsPanel> (this)]
         {
-            if (grants != nullptr)
-                grants->revoke (name);
+            if (auto* current = grantsNow())
+                current->revoke (name);
 
-            refresh();
+            // POSTED, not called. refresh() rebuilds the rows, and this button
+            // is one of them - so calling it here would destroy the std::function
+            // that is executing, out from under its own captures. The chain
+            // reorder makes the same move for the same reason: report the
+            // gesture, then touch nothing of yourself.
+            juce::MessageManager::callAsync (
+                [self]
+                {
+                    if (self != nullptr)
+                        self->refresh();
+                });
         };
 
         list.addAndMakeVisible (*row.revoke);

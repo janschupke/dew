@@ -36,15 +36,22 @@ public:
                         or returning null, means it is not running - which the
                         panel says rather than refusing to open, because that is
                         the answer somebody opening this most often wants.
-        @param grants   may be null; the list is then empty.
+        @param grants   ASKED FOR too, and for the same reason rather than a
+                        weaker one: the switch on this panel calls out to the
+                        application and the application is entitled to rebuild
+                        what it owns, so anything held across that call is held
+                        across a call that can free it. It used to be a bare
+                        pointer and ticking the switch segfaulted dew. Null, or
+                        returning null, means the list is empty.
         @param settings where the switch is remembered. Null in dew_shot, which
                         renders the panel with no application around it.
         @param onEnabledChanged  called after the switch is written, so whoever
                         owns the endpoint can start or stop it. The panel does
                         not own one and must not: it is a view.
     */
-    McpConnectionsPanel (std::function<control::McpServer*()> server, McpGrants* grants,
-                         Settings* settings = nullptr, std::function<void()> onEnabledChanged = {});
+    McpConnectionsPanel (std::function<control::McpServer*()> server,
+                         std::function<McpGrants*()> grants, Settings* settings = nullptr,
+                         std::function<void()> onEnabledChanged = {});
 
     void paint (juce::Graphics&) override;
     void resized() override;
@@ -80,8 +87,12 @@ private:
 
     void rebuildRows();
 
+    /** The grants right now, or nullptr. One place asks, so the "is there a
+        function, and did it answer" pair is written once. */
+    McpGrants* grantsNow() const;
+
     std::function<control::McpServer*()> server;
-    McpGrants* grants = nullptr;
+    std::function<McpGrants*()> grants;
     Settings* settings = nullptr;
     std::function<void()> onEnabledChanged;
 
