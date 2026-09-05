@@ -172,6 +172,11 @@ public:
     int getPianoRollRowHeight() const;
     void setPianoRollRowHeight (int);
 
+    /** How tall the piano roll's velocity lane is. Same contract as the two
+        above: raw here, clamped where the range is declared. */
+    int getPianoRollVelocityHeight() const;
+    void setPianoRollVelocityHeight (int);
+
     /** Which rung of tokens::type's code scale the score tab draws at.
 
         Stored RAW, and clamped where it is read - the rungs are a design-system

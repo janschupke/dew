@@ -48,8 +48,8 @@ juce::Rectangle<int> PianoRollComponent::noteArea() const
 {
     const auto content = contentArea();
     const auto top = content.getY() + size::rulerHeight;
-    const auto bottom = juce::jmax (top,
-                                    content.getBottom() - size::scrollThickness - velocityHeight);
+    const auto bottom = juce::jmax (top, content.getBottom() - size::scrollThickness
+                                             - velocityLaneHeight);
 
     return { size::gutterKeyboard, top,
              juce::jmax (0, getWidth() - size::gutterKeyboard - size::scrollThickness),
@@ -66,11 +66,43 @@ juce::Rectangle<int> PianoRollComponent::velocityArea() const
 {
     const auto content = contentArea();
     const auto top = juce::jmax (content.getY(),
-                                 content.getBottom() - size::scrollThickness - velocityHeight);
+                                 content.getBottom() - size::scrollThickness - velocityLaneHeight);
 
     return { size::gutterKeyboard, top,
              juce::jmax (0, getWidth() - size::gutterKeyboard - size::scrollThickness),
-             velocityHeight };
+             velocityLaneHeight };
+}
+
+juce::Rectangle<int> PianoRollComponent::velocityResizeArea() const
+{
+    return velocityArea().withHeight (resizeBandHeight);
+}
+
+void PianoRollComponent::setVelocityHeight (int height)
+{
+    // Clamps whatever it is given, INCLUDING a negative. A drag computes a
+    // height by subtraction, so pulling the edge hard down asks for one - and a
+    // guard that returned early on it left the lane stuck at whatever it was
+    // rather than at its floor. "0 means leave the default" is the settings
+    // contract and belongs where the settings arrive, which is EditorTabs.
+    //
+    // The lane may not take the note grid with it. A window short enough that
+    // the range's own floor would leave nothing to write in gets whatever is
+    // left, which is the same shape jmax already gives noteArea.
+    const auto content = contentArea();
+    const auto room = juce::jmax (size::velocityLaneMin, content.getHeight() - size::rulerHeight
+                                                             - size::scrollThickness
+                                                             - size::pianoRowMin);
+
+    const auto wanted = juce::jlimit (size::velocityLaneMin,
+                                      juce::jmin (size::velocityLaneMax, room), height);
+
+    if (std::exchange (velocityLaneHeight, wanted) == wanted)
+        return;
+
+    updateScrollBars();
+    resized();
+    repaint();
 }
 
 float PianoRollComponent::contentWidth() const

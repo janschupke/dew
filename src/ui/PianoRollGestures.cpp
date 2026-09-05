@@ -10,10 +10,10 @@
 // the hit test found. The four handlers stay together so that decision reads
 // as one.
 //
-// The two strips either side of the grid come with them. Auditioning belongs
-// to the keyboard, which is pressed and released by the same handlers; the
-// velocity lane is a second editor over the same notes, and its hit test has
-// to agree with the bar the painter drew.
+// Auditioning comes with them: it belongs to the keyboard, which is pressed
+// and released by the same handlers. The velocity lane's own arithmetic went
+// to PianoRollVelocity.cpp when this file reached the length gate; what is
+// left here is which of the nine meanings a press has.
 //
 // The drag state stays declared on the class. mouseUp resets every field of it
 // in one place, and a gesture that ends in a file which cannot see the whole
@@ -57,7 +57,16 @@ juce::MouseCursor PianoRollComponent::cursorFor (juce::Point<int> position) cons
         return cursor::clickable;
 
     if (velocityArea().contains (position))
-        return cursor::value;
+    {
+        // The lane's top edge makes it taller; a bar in it changes a number.
+        // Two different gestures, and they were one cursor over the whole lane
+        // - so the pointer offered a resize everywhere, including where there
+        // was nothing to resize and nothing to drag.
+        if (velocityResizeArea().contains (position))
+            return cursor::resizeY;
+
+        return velocityBarAt (position).isValid() ? cursor::value : cursor::idle;
+    }
 
     if (! noteArea().contains (position))
         return cursor::idle;
@@ -84,6 +93,14 @@ void PianoRollComponent::mouseExit (const juce::MouseEvent&)
 
 void PianoRollComponent::mouseDoubleClick (const juce::MouseEvent& event)
 {
+    // On the lane's own edge, a double-click puts it back - the same way a
+    // double-click on a playlist track header resets the lane height there.
+    if (velocityResizeArea().contains (event.getPosition()))
+    {
+        setVelocityHeight (size::velocityLaneDefault);
+        return;
+    }
+
     // On the ruler, a double-click clears the span - one rule, shared with the
     // playlist and the channel rack rather than repeated in each of them.
     if (rulerArea().contains (event.getPosition()))
@@ -177,6 +194,20 @@ void PianoRollComponent::mouseDown (const juce::MouseEvent& event)
 
     if (velocityArea().contains (event.getPosition()))
     {
+        // The edge before the lane, so a press aimed at the boundary makes the
+        // lane taller rather than writing a velocity of nearly one into
+        // whatever note happened to be under it. A popup press starts neither.
+        if (! event.mods.isPopupMenu() && velocityResizeArea().contains (event.getPosition()))
+        {
+            resizingVelocityLane = true;
+            velocityResizeOriginY = event.getScreenPosition().y;
+            velocityHeightAtDragStart = velocityLaneHeight;
+            return;
+        }
+
+        if (event.mods.isPopupMenu())
+            return;
+
         gesture = Gesture::velocity;
 
         // A press that lands ON a bar grabs it, so a vertical drag reshapes
@@ -322,6 +353,17 @@ void PianoRollComponent::mouseDrag (const juce::MouseEvent& event)
 {
     auto& undo = document.getUndoManager();
 
+    if (resizingVelocityLane)
+    {
+        // SCREEN coordinates and a delta from the press, not a position: the
+        // lane's own top edge is what this moves, so its local frame slides
+        // under the pointer while the pointer is being read in it. Up is a
+        // taller lane, which is why the delta is subtracted.
+        setVelocityHeight (velocityHeightAtDragStart
+                           - (event.getScreenPosition().y - velocityResizeOriginY));
+        return;
+    }
+
     if (gesture == Gesture::auditioning)
     {
         // Sliding down the keyboard plays what it passes over.
@@ -462,6 +504,7 @@ void PianoRollComponent::mouseUp (const juce::MouseEvent& event)
 {
     stopAudition();
     draggedVelocityNote = {};
+    resizingVelocityLane = false;
 
     // Falls through rather than returning: a ruler gesture leaves none of the
     // note-editing state set, so the reset at the bottom is a no-op for it.
@@ -533,76 +576,5 @@ void PianoRollComponent::stopAudition()
     auditionPitch = -1;
     repaint (keyboardArea());
 }
-
-juce::Rectangle<float> PianoRollComponent::velocityBarBounds (const juce::ValueTree& note) const
-{
-    const auto area = velocityArea();
-    const auto velocity = (float) juce::jlimit (0.0, 1.0, (double) note[ids::velocity]);
-    const auto barWidth = (float) juce::jlimit (3.0, 14.0, timeline.pixelsPerStep * 0.7);
-    const auto x = (float) size::gutterKeyboard
-                   + timeline.xForStep ((double) (int) note[ids::step]);
-
-    const auto floor = (float) area.getBottom() - (float) barPadding;
-    const auto height = velocity * (float) juce::jmax (1, area.getHeight() - barPadding * 2);
-
-    return { x + 1.0f, floor - height, barWidth, height };
-}
-
-juce::ValueTree PianoRollComponent::velocityBarAt (juce::Point<int> position) const
-{
-    const auto channelId = editorState.getSelectedChannelId();
-
-    for (const auto& note : currentPattern())
-    {
-        if (! note.hasType (ids::NOTE) || (int) note[ids::ch] != channelId)
-            continue;
-
-        // Generous vertically: the bar is a few pixels wide and its top is what
-        // you aim at, so the whole column counts as a grab.
-        const auto bar = velocityBarBounds (note);
-        const auto column = juce::Rectangle<float> (
-            bar.getX() - 2.0f, (float) velocityArea().getY(), bar.getWidth() + 4.0f,
-            (float) velocityArea().getHeight());
-
-        if (column.contains (position.toFloat()))
-            return note;
-    }
-
-    return {};
-}
-
-void PianoRollComponent::applyVelocityAt (juce::Point<int> position)
-{
-    const auto lane = velocityArea();
-
-    // Mapped against the same geometry velocityBarBounds draws with. These
-    // disagreed by 8px, so the bar top never sat under the cursor dragging it.
-    const auto floor = lane.getBottom() - barPadding;
-    const auto span = juce::jmax (1, lane.getHeight() - barPadding * 2);
-    const auto value = juce::jlimit (0.0, 1.0, (double) (floor - position.y) / (double) span);
-
-    auto& undo = document.getUndoManager();
-
-    if (draggedVelocityNote.isValid())
-    {
-        ProjectEdits::setNoteVelocity (draggedVelocityNote, value, &undo);
-        repaint (lane);
-        return;
-    }
-
-    const auto channelId = editorState.getSelectedChannelId();
-    const auto step = stepAtX (position.x);
-
-    // Only notes that start under the pointer, so dragging across the lane
-    // paints a velocity curve without also hitting every held note under it.
-    for (auto note : currentPattern())
-        if (note.hasType (ids::NOTE) && (int) note[ids::ch] == channelId
-            && (int) note[ids::step] == step && (selection.isEmpty() || isSelected (note)))
-            ProjectEdits::setNoteVelocity (note, value, &undo);
-
-    repaint (lane);
-}
-
-// --- notifications -----------------------------------------------------------
 
 } // namespace dew

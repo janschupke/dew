@@ -72,6 +72,10 @@ public:
     int getPianoRollRowHeight() const;
     void setPianoRollRowHeight (int height);
 
+    /** The piano roll's velocity lane height, on the same contract. */
+    int getPianoRollVelocityHeight() const;
+    void setPianoRollVelocityHeight (int height);
+
     /** The score tab's text size, as a rung index. */
     int getScoreFontStep() const;
     void setScoreFontStep (int step);

@@ -566,6 +566,7 @@ add_library(dew_ui STATIC
   ui/PianoRollGestures.cpp
   ui/PianoRollPaint.cpp
   ui/PianoRollTools.cpp
+  ui/PianoRollVelocity.cpp
   ui/PianoRollView.cpp
   ui/PlaylistComponent.cpp
   ui/PlaylistGestures.cpp

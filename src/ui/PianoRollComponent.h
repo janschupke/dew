@@ -140,6 +140,10 @@ public:
     {
         return velocityArea();
     }
+    juce::Rectangle<int> getVelocityResizeArea() const
+    {
+        return velocityResizeArea();
+    }
     juce::Rectangle<int> getRulerArea() const
     {
         return rulerArea();
@@ -185,6 +189,24 @@ public:
     void zoomRowsBy (double factor);
 
     void fitRowsToWindow();
+
+    /** How tall the velocity lane is, in pixels.
+
+        On the VIEW, which is the rule PlaylistComponent's lane height states:
+        it is not part of the music, it must not dirty a project or land on the
+        undo stack, and EditorState is a ChangeBroadcaster whose other listeners
+        have no interest in it. The precedent beside this one is pitchScrollPx.
+    */
+    int getVelocityHeight() const noexcept
+    {
+        return velocityLaneHeight;
+    }
+
+    /** Clamped to the token range, and to whatever the window can spare while
+        still leaving a row to write notes in. Takes a negative: a drag computes
+        its height by subtraction. "0 means leave the default" is the settings
+        contract and lives in EditorTabs, beside the playlist's. */
+    void setVelocityHeight (int height);
 
     /** The snap grid, persisted between launches. The tool deliberately is not:
         opening into Paint or Slice means the first click of a session writes or
@@ -338,6 +360,9 @@ private:
     juce::Rectangle<int> noteArea() const;
     juce::Rectangle<int> velocityArea() const;
 
+    /** The band at the lane's top edge that a drag grabs. */
+    juce::Rectangle<int> velocityResizeArea() const;
+
     float contentWidth() const;
     int stepAtX (int x) const;
     int pitchAtY (int y) const;
@@ -392,7 +417,11 @@ private:
     static constexpr int lowestPitch = NoteTools::lowestPitch;   ///< C0
     static constexpr int highestPitch = NoteTools::highestPitch; ///< C8
     static constexpr int numRows = highestPitch - lowestPitch + 1;
-    static constexpr int velocityHeight = 62;
+
+    /** How far into the lane's top edge a press counts as a resize. The same
+        band the playlist's track headers use, for the same reason: thin enough
+        that the rest of the lane is still the lane. */
+    static constexpr int resizeBandHeight = tokens::space::xs;
 
     /** Space above and below a velocity bar. Shared by painting and hit-testing
         so the two cannot drift apart again.
@@ -423,6 +452,19 @@ private:
     */
     RowView rows { tokens::size::pianoRowDefault, 0.0, tokens::size::pianoRowMin,
                    tokens::size::pianoRowMax };
+
+    /** See getVelocityHeight. Was a static constexpr 62, which is why the lane
+        could not be resized while its cursor said it could. */
+    int velocityLaneHeight = tokens::size::velocityLaneDefault;
+
+    /** Set while a press on the lane's top edge is dragging it. Screen
+        coordinates and a delta, for the reason PlaylistTrackHeader gives: the
+        lane's own frame moves under the pointer as the height changes, and
+        getDistanceFromDragStart asks the mouse SOURCE, which no synthetic event
+        ever pressed. */
+    bool resizingVelocityLane = false;
+    int velocityResizeOriginY = 0;
+    int velocityHeightAtDragStart = tokens::size::velocityLaneDefault;
 
     juce::Array<juce::ValueTree> selection;
     juce::ValueTree draggedNote;

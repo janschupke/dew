@@ -131,6 +131,17 @@ void EditorTabs::setPianoRollRowHeight (int height)
         pianoRoll.setRowHeight (height);
 }
 
+int EditorTabs::getPianoRollVelocityHeight() const
+{
+    return pianoRoll.getVelocityHeight();
+}
+
+void EditorTabs::setPianoRollVelocityHeight (int height)
+{
+    if (height > 0)
+        pianoRoll.setVelocityHeight (height);
+}
+
 int EditorTabs::getScoreFontStep() const
 {
     return scoreEditor.getFontStep();

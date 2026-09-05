@@ -414,7 +414,23 @@ TEST_CASE ("the pointer says what a note will do", "[ui][pianoroll][cursor]")
 
     CHECK (cursorAt (h.roll.getKeyboardArea().getCentre()) == cursor::clickable);
     CHECK (cursorAt (h.roll.getRulerArea().getCentre()) == cursor::clickable);
-    CHECK (cursorAt (h.roll.getVelocityArea().getCentre()) == cursor::value);
+    // The velocity lane says three different things, and it used to say one.
+    // Every pixel of it showed cursor::value - which IS UpDownResizeCursor - so
+    // the pointer offered to make the lane taller everywhere, including where
+    // there was nothing under it at all and the lane could not be resized.
+    const auto lane = h.roll.getVelocityArea();
+
+    // A bar: the note above was written at the note area's centre, so its bar
+    // is at the same x.
+    CHECK (cursorAt ({ (int) bounds.getX() + 2, lane.getCentreY() }) == cursor::value);
+
+    // Beside it: nothing to drag, so nothing offered. This is the assertion the
+    // whole complaint reduces to.
+    CHECK (cursorAt ({ lane.getRight() - 4, lane.getCentreY() }) == cursor::idle);
+
+    // And the lane's own top edge, which is the one place a vertical drag DOES
+    // resize something.
+    CHECK (cursorAt ({ lane.getCentreX(), lane.getY() + 1 }) == cursor::resizeY);
 
     // A tool outranks what is under the pointer.
     h.roll.getToolbar().setTool (RollTool::slice);

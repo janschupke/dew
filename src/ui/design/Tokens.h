@@ -454,6 +454,25 @@ static_assert (pianoRowMin < pianoRowRoomy && pianoRowRoomy < pianoRowMax,
 static_assert (pianoRowMin <= pianoRowDefault && pianoRowDefault <= pianoRowMax,
                "the default has to be reachable");
 
+/** How tall the piano roll's velocity lane is: a range, like a lane's.
+
+    It was a constant 62, and the pointer said otherwise - the lane showed an
+    up-down arrow everywhere, which reads as "drag me taller" and was not on
+    offer. A curve drawn 54px tall is as coarse as an automation lane in a 34px
+    track, and for the same reason: the padding takes a fixed bite out of both
+    ends, so the shorter the lane the more of it is margin.
+
+    Not multiples of a rung: a velocity bar is not a list row, and the numbers
+    that make a curve editable have nothing to do with the ones that make a
+    channel header hold a knob.
+*/
+inline constexpr int velocityLaneMin = 40;     ///< the shallowest a bar still reads at
+inline constexpr int velocityLaneDefault = 62; ///< so nothing re-flows on upgrade
+inline constexpr int velocityLaneMax = 260;
+
+static_assert (velocityLaneMin <= velocityLaneDefault && velocityLaneDefault <= velocityLaneMax,
+               "the default has to be reachable");
+
 inline constexpr int letterToggle = 24; ///< a toggle on a row: R, and the on/off indicator
 inline constexpr int meterHeight = 10;
 

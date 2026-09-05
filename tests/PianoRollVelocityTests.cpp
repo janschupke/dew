@@ -181,3 +181,90 @@ TEST_CASE ("auditioning a key writes no notes", "[ui][pianoroll]")
 
     REQUIRE (h.countNotes() == 0);
 }
+
+TEST_CASE ("the velocity lane can be made taller by its own edge", "[ui][pianoroll]")
+{
+    // The lane's height was a static constexpr 62 while its cursor was an
+    // up-down arrow over every pixel of it. The pointer promised a gesture the
+    // view had no state to perform, and a press aimed at the boundary wrote a
+    // velocity of nearly one into whatever note was under it instead.
+    const juce::ScopedJuceInitialiser_GUI juceInit;
+    RollHarness h;
+
+    REQUIRE (h.roll.getVelocityHeight() == tokens::size::velocityLaneDefault);
+
+    const auto grab = h.roll.getVelocityResizeArea().getCentre();
+
+    // Up is taller: the lane's top edge moves towards the ruler.
+    h.roll.mouseDown (eventAt (h.roll, grab));
+    h.roll.mouseDrag (eventAt (h.roll, { grab.x, grab.y - 40 }, {}, 1, true));
+    h.roll.mouseUp (eventAt (h.roll, { grab.x, grab.y - 40 }, {}, 1, true));
+
+    CHECK (h.roll.getVelocityHeight() == tokens::size::velocityLaneDefault + 40);
+
+    // And the note grid gave up exactly what the lane took, so the two still
+    // meet - which is the invariant a second layout constant would break.
+    CHECK (h.roll.getNoteArea().getBottom() == h.roll.getVelocityArea().getY());
+}
+
+TEST_CASE ("the velocity lane clamps at both ends of its range", "[ui][pianoroll]")
+{
+    const juce::ScopedJuceInitialiser_GUI juceInit;
+    RollHarness h;
+
+    const auto dragEdgeBy = [&h] (int deltaY)
+    {
+        const auto grab = h.roll.getVelocityResizeArea().getCentre();
+        h.roll.mouseDown (eventAt (h.roll, grab));
+        h.roll.mouseDrag (eventAt (h.roll, { grab.x, grab.y - deltaY }, {}, 1, true));
+        h.roll.mouseUp (eventAt (h.roll, { grab.x, grab.y - deltaY }, {}, 1, true));
+    };
+
+    dragEdgeBy (-1000);
+    CHECK (h.roll.getVelocityHeight() == tokens::size::velocityLaneMin);
+
+    dragEdgeBy (1000);
+
+    // The ceiling is the range's, or whatever the window can spare while still
+    // leaving a row to write notes in - whichever is smaller.
+    CHECK (h.roll.getVelocityHeight() <= tokens::size::velocityLaneMax);
+    CHECK (h.roll.getVelocityHeight() > tokens::size::velocityLaneDefault);
+    CHECK (h.roll.getNoteArea().getHeight() >= tokens::size::pianoRowMin);
+}
+
+TEST_CASE ("a right press on the lane's edge starts nothing", "[ui][pianoroll]")
+{
+    // The rule every other control in dew follows, applied to the one gesture
+    // in this view that is a resize. A popup press must not resize and must not
+    // write a velocity either.
+    const juce::ScopedJuceInitialiser_GUI juceInit;
+    RollHarness h;
+
+    juce::UndoManager& undo = h.document.getUndoManager();
+    auto note = ProjectEdits::addNote (h.pattern(), 1, 0, 4, 72, 0.5f, &undo);
+    undo.beginNewTransaction();
+
+    const auto grab = h.roll.getVelocityResizeArea().getCentre();
+    const auto right = juce::ModifierKeys (juce::ModifierKeys::rightButtonModifier);
+
+    h.roll.mouseDown (eventAt (h.roll, grab, right));
+    h.roll.mouseDrag (eventAt (h.roll, { grab.x, grab.y - 40 }, right, 1, true));
+    h.roll.mouseUp (eventAt (h.roll, { grab.x, grab.y - 40 }, right, 1, true));
+
+    CHECK (h.roll.getVelocityHeight() == tokens::size::velocityLaneDefault);
+    CHECK (juce::exactlyEqual ((double) note[ids::velocity], 0.5));
+}
+
+TEST_CASE ("a double-click on the lane's edge puts it back", "[ui][pianoroll]")
+{
+    // The same gesture a playlist track header offers for its lane height.
+    const juce::ScopedJuceInitialiser_GUI juceInit;
+    RollHarness h;
+
+    h.roll.setVelocityHeight (tokens::size::velocityLaneDefault + 60);
+    REQUIRE (h.roll.getVelocityHeight() == tokens::size::velocityLaneDefault + 60);
+
+    h.roll.mouseDoubleClick (eventAt (h.roll, h.roll.getVelocityResizeArea().getCentre(), {}, 2));
+
+    CHECK (h.roll.getVelocityHeight() == tokens::size::velocityLaneDefault);
+}

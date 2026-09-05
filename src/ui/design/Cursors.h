@@ -45,6 +45,17 @@ inline const juce::MouseCursor move { juce::MouseCursor::DraggingHandCursor };
     handle, a panel divider. */
 inline const juce::MouseCursor resizeX { juce::MouseCursor::LeftRightResizeCursor };
 
+/** A drag changes how TALL this is: the edge between two stacked panels.
+
+    The same arrow as `value` and NOT the same word, which is the whole reason
+    it is here. The piano roll's velocity lane showed `value` over every pixel
+    of itself - bars and empty space alike - and a person read the up-down arrow
+    as an offer to make the lane taller, which it was not: the lane was a
+    constant. One arrow meaning two things is only a problem when a view offers
+    both, and this one now does.
+*/
+inline const juce::MouseCursor resizeY { juce::MouseCursor::UpDownResizeCursor };
+
 /** A press marks the grid rather than picking something up - the paint and
     slice tools, where the pointer is a nib and not a hand. */
 inline const juce::MouseCursor nib { juce::MouseCursor::CrosshairCursor };

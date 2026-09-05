@@ -392,6 +392,16 @@ void Settings::setPianoRollRowHeight (int height)
     file().setValue ("pianoRollRowHeight", height);
 }
 
+int Settings::getPianoRollVelocityHeight() const
+{
+    return juce::jmax (0, file().getIntValue ("pianoRollVelocityHeight", 0));
+}
+
+void Settings::setPianoRollVelocityHeight (int height)
+{
+    file().setValue ("pianoRollVelocityHeight", height);
+}
+
 int Settings::getScoreFontStep() const
 {
     // Raw, and clamped by the reader: which rungs exist is a design-system fact
