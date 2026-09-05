@@ -2,6 +2,8 @@
 
 #include <juce_gui_basics/juce_gui_basics.h>
 
+#include "i18n/Strings.h"
+
 #include "io/SoundFontPool.h"
 #include "model/Ids.h"
 #include "model/ModuleCatalog.h"
@@ -106,7 +108,7 @@ private:
     const paramMenu::Host* paramMenuHost = nullptr;
 
     juce::Label fileLabel;
-    DewButton loadButton { "Load..." };
+    DewButton loadButton { tr (StringId::soundfont_load_label) };
     DewDropdown presetBox;
     juce::Label presetLabel;
 

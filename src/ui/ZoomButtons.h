@@ -2,6 +2,8 @@
 
 #include <juce_gui_basics/juce_gui_basics.h>
 
+#include "i18n/Strings.h"
+
 #include "ui/design/Icons.h"
 #include "ui/design/Tokens.h"
 #include "ui/primitives/DewControls.h"
@@ -69,9 +71,9 @@ public:
     }
 
 private:
-    DewIconButton zoomOutButton { icons::zoomOut(), "Zoom out (-)" };
-    DewIconButton zoomInButton { icons::zoomIn(), "Zoom in (+)" };
-    DewIconButton zoomFitButton { icons::fitToContent(), "Fit to the window (0)" };
+    DewIconButton zoomOutButton { icons::zoomOut(), tr (StringId::zoom_out_help) };
+    DewIconButton zoomInButton { icons::zoomIn(), tr (StringId::zoom_in_help) };
+    DewIconButton zoomFitButton { icons::fitToContent(), tr (StringId::zoom_fit_help) };
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (ZoomButtons)
 };

@@ -2,6 +2,8 @@
 
 #include <juce_gui_basics/juce_gui_basics.h>
 
+#include "i18n/Strings.h"
+
 #include "app/ProjectDocument.h"
 #include "ui/EditorState.h"
 #include <memory>
@@ -186,7 +188,7 @@ private:
         honest "modified" state to show once a knob has been touched. A button
         promises only what it does - load one.
     */
-    DewButton presetButton { "Preset" };
+    DewButton presetButton { tr (StringId::instrument_preset_label) };
 
     /** The channel's oscillator slots. Its own component: it carries its own
         selection, its own listener scoped to one instrument's nodes and its own

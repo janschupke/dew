@@ -2,6 +2,8 @@
 
 #include <juce_gui_basics/juce_gui_basics.h>
 
+#include "i18n/Strings.h"
+
 #include "model/NoteTools.h"
 #include "ui/VerticalZoomButtons.h"
 #include "ui/ToolbarOverflow.h"
@@ -121,10 +123,9 @@ private:
     SnapDivision snap = SnapDivision::sixteenth;
     int beatUnit = 4;
 
-    DewIconButton selectButton { icons::pointer(), "Select tool (1)" };
-    DewIconButton paintButton { icons::pencil(), "Paint tool - drag to write a run of notes (2)" };
-    DewIconButton sliceButton { icons::scissors(),
-                                "Slice tool - drag across notes to cut them (3)" };
+    DewIconButton selectButton { icons::pointer(), tr (StringId::pianoRoll_toolSelect_help) };
+    DewIconButton paintButton { icons::pencil(), tr (StringId::pianoRoll_toolPaint_help) };
+    DewIconButton sliceButton { icons::scissors(), tr (StringId::pianoRoll_toolSlice_help) };
 
     /** The two dropdowns in this strip said nothing about what they were: one
         showed a channel name and the other a fraction, and neither is
@@ -140,22 +141,23 @@ private:
     */
     DewDropdown channelBox;
 
-    ZoomButtons zoomButtons { "Fit the pattern to the window (0)" };
+    ZoomButtons zoomButtons { tr (StringId::pianoRoll_zoomFit_help) };
 
-    VerticalZoomButtons rowHeightButtons { "Shorter rows (alt--)", "Taller rows (alt-+)",
-                                           "Fit the notes to the window (alt-0)" };
+    VerticalZoomButtons rowHeightButtons { tr (StringId::pianoRoll_rowsShorter_help),
+                                           tr (StringId::pianoRoll_rowsTaller_help),
+                                           tr (StringId::pianoRoll_rowsFit_help) };
 
-    DewIconButton quantizeButton { icons::quantize(), "Quantize to the snap grid (Q)" };
-    DewIconButton randomizeButton { icons::dice(), "Randomize velocity and timing (R)" };
+    DewIconButton quantizeButton { icons::quantize(), tr (StringId::pianoRoll_quantize_help) };
+    DewIconButton randomizeButton { icons::dice(), tr (StringId::pianoRoll_randomize_help) };
 
     /** Opened when the strip could not fit everything, and hidden otherwise.
         Its rows are the controls that were dropped, labelled with their own
         tooltips - see ToolbarOverflow. */
-    DewIconButton overflowButton { icons::more(), "More toolbar controls" };
+    DewIconButton overflowButton { icons::more(), tr (StringId::toolbar_overflow_help) };
     ToolbarOverflow overflow;
 
-    DewIconButton upButton { icons::chevronUp(), "Up a semitone (Up)" };
-    DewIconButton downButton { icons::chevronDown(), "Down a semitone (Down)" };
+    DewIconButton upButton { icons::chevronUp(), tr (StringId::pianoRoll_semitoneUp_help) };
+    DewIconButton downButton { icons::chevronDown(), tr (StringId::pianoRoll_semitoneDown_help) };
     DewButton octaveUpButton { "+12", DewButton::Role::normal };
     DewButton octaveDownButton { "-12", DewButton::Role::normal };
 

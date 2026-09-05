@@ -2,6 +2,8 @@
 
 #include <juce_gui_basics/juce_gui_basics.h>
 
+#include "i18n/Strings.h"
+
 #include "engine/AudioEngine.h"
 #include "app/ProjectDocument.h"
 #include "ui/ConfirmPanel.h"
@@ -478,11 +480,12 @@ private:
     juce::Component headerHolder;
 
     juce::OwnedArray<PlaylistTrackHeader> headers;
-    DewButton addAutomationButton { "+ Automation", DewButton::Role::ghost };
+    DewButton addAutomationButton { tr (StringId::playlist_addAutomation_label),
+                                    DewButton::Role::ghost };
 
     // In the header column below the last track: the next empty row of the list,
     // where the track it adds will appear.
-    DewButton addTrackButton { "+ Track", DewButton::Role::ghost };
+    DewButton addTrackButton { tr (StringId::playlist_addTrack_label), DewButton::Role::ghost };
 
     juce::ValueTree draggedClip;
     juce::ValueTree draggedClipTrack;

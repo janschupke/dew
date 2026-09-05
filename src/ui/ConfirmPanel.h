@@ -81,12 +81,12 @@ private:
 
     Request request;
 
-    DewButton cancelButton { "Cancel", DewButton::Role::ghost };
+    DewButton cancelButton { tr (StringId::dialog_cancel), DewButton::Role::ghost };
 
     /** Role::danger, always. Everything dew asks about is a deletion, and a
         confirmation whose acting button looks like an ordinary primary action
         is a confirmation that trains people to press it. */
-    DewButton confirmButton { "Delete", DewButton::Role::danger };
+    DewButton confirmButton { tr (StringId::dialog_confirmDelete), DewButton::Role::danger };
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (ConfirmPanel)
 };

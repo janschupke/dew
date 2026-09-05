@@ -4,6 +4,8 @@
 
 #include <juce_gui_basics/juce_gui_basics.h>
 
+#include "i18n/Strings.h"
+
 #include "model/EffectType.h"
 #include "model/ParamSpec.h"
 
@@ -158,11 +160,11 @@ private:
     juce::Rectangle<int> gripBounds, iconBounds, nameBounds, modeCaptionBounds;
 
     DewIconButton bypassButton { icons::power(), {} };
-    DewIconButton expandButton { icons::chevronDown(), "Show or hide this effect's controls" };
-    DewIconButton upButton { icons::chevronUp(), "Move earlier in the chain" };
-    DewIconButton downButton { icons::chevronDown(), "Move later in the chain" };
-    DewIconButton presetButton { icons::preset(), "Load a preset for this effect" };
-    DewIconButton removeButton { icons::trash(), "Remove this effect",
+    DewIconButton expandButton { icons::chevronDown(), tr (StringId::effect_expand_help) };
+    DewIconButton upButton { icons::chevronUp(), tr (StringId::effect_moveUp_help) };
+    DewIconButton downButton { icons::chevronDown(), tr (StringId::effect_moveDown_help) };
+    DewIconButton presetButton { icons::preset(), tr (StringId::effect_preset_help) };
+    DewIconButton removeButton { icons::trash(), tr (StringId::effect_remove_help),
                                  DewIconButton::Role::danger };
 
     juce::OwnedArray<ParamWidget> params;

@@ -18,7 +18,10 @@
     "test": {
       "help": "Play a short note through the current device"
     },
-    "title": "Audio settings"
+    "title": "Audio settings",
+    "testTone": {
+      "label": "Test tone"
+    }
   },
   "automation": {
     "master": "Master",
@@ -29,10 +32,12 @@
   },
   "channelRack": {
     "addAudio": {
-      "help": "Add a channel that plays a recording"
+      "help": "Add a channel that plays a recording",
+      "label": "+ Audio"
     },
     "addSoundFont": {
-      "help": "Add a channel that plays a soundfont file"
+      "help": "Add a channel that plays a soundfont file",
+      "label": "+ Font"
     },
     "addSynth": {
       "help": "Add a synth channel"
@@ -48,7 +53,10 @@
       "removeChannel": "Remove channel",
       "rename": "Rename"
     },
-    "title": "Channel rack"
+    "title": "Channel rack",
+    "addChannel": {
+      "label": "+ Channel"
+    }
   },
   "choice": {
     "distortionMode": {
@@ -340,7 +348,8 @@
     "removeTrack": {
       "body": "Remove \"{name}\"? Every clip on it goes with it.",
       "title": "Remove track"
-    }
+    },
+    "cancel": "Cancel"
   },
   "effect": {
     "bypassed": "OFF",
@@ -382,6 +391,21 @@
     },
     "reverb": {
       "name": "Reverb"
+    },
+    "moveUp": {
+      "help": "Move earlier in the chain"
+    },
+    "moveDown": {
+      "help": "Move later in the chain"
+    },
+    "remove": {
+      "help": "Remove this effect"
+    },
+    "add": {
+      "help": "Add an effect"
+    },
+    "preset": {
+      "help": "Load a preset for this effect"
     }
   },
   "file": {
@@ -428,7 +452,8 @@
       "help": "Which mixer track this channel plays through"
     },
     "preset": {
-      "help": "Load a factory sound onto this channel"
+      "help": "Load a factory sound onto this channel",
+      "label": "Preset"
     },
     "soundfont": {
       "name": "SoundFont"
@@ -454,9 +479,9 @@
       "title": "MCP"
     },
     "consent": {
-      "body": "It will be able to read this project and, if you let it, change anything in it \u2014 instruments, effects, the mixer, the notes and the arrangement. Every change it makes is one step of your undo history. You can revoke this at any time in MCP settings.",
+      "body": "It will be able to read this project and, if you let it, change anything in it — instruments, effects, the mixer, the notes and the arrangement. Every change it makes is one step of your undo history. You can revoke this at any time in MCP settings.",
       "deny": "Deny",
-      "question": "Allow \u201c{client}\u201d to control dew?",
+      "question": "Allow “{client}” to control dew?",
       "read": "Read only",
       "title": "Allow a program to control dew",
       "write": "Read and change"
@@ -485,7 +510,8 @@
   },
   "mixer": {
     "addInsert": {
-      "help": "Add a mixer insert"
+      "help": "Add a mixer insert",
+      "label": "+ Insert"
     },
     "enabled": {
       "help": "Turn this insert on or off. Shift-click to say it of every insert"
@@ -800,14 +826,49 @@
     "snap": {
       "help": "Grid the editing gestures snap to"
     },
-    "title": "Piano roll"
+    "title": "Piano roll",
+    "toolSelect": {
+      "help": "Select tool (1)"
+    },
+    "toolPaint": {
+      "help": "Paint tool - drag to write a run of notes (2)"
+    },
+    "toolSlice": {
+      "help": "Slice tool - drag across notes to cut them (3)"
+    },
+    "quantize": {
+      "help": "Quantize to the snap grid (Q)"
+    },
+    "randomize": {
+      "help": "Randomize velocity and timing (R)"
+    },
+    "semitoneUp": {
+      "help": "Up a semitone (Up)"
+    },
+    "semitoneDown": {
+      "help": "Down a semitone (Down)"
+    },
+    "zoomFit": {
+      "help": "Fit the pattern to the window (0)"
+    },
+    "rowsShorter": {
+      "help": "Shorter rows (alt--)"
+    },
+    "rowsTaller": {
+      "help": "Taller rows (alt-+)"
+    },
+    "rowsFit": {
+      "help": "Fit the notes to the window (alt-0)"
+    }
   },
   "playlist": {
     "addAutomation": {
-      "help": "Add an automation lane for a parameter"
+      "help": "Add an automation lane for a parameter",
+      "label": "+ Automation"
     },
     "addTrack": {
-      "help": "Add a track to the arrangement"
+      "help": "Add a track to the arrangement",
+      "label": "+ Track"
     },
     "enabled": {
       "help": "Turn this track on or off. Shift-click to say it of every track"
@@ -829,7 +890,13 @@
       "resetHeight": "Reset track height"
     },
     "missingAutomation": "missing automation",
-    "title": "Playlist"
+    "title": "Playlist",
+    "toolSelect": {
+      "help": "Select tool (1)"
+    },
+    "toolPaint": {
+      "help": "Paint tool - drag to lay a run of clips (2)"
+    }
   },
   "preferences": {
     "audio": {
@@ -900,11 +967,11 @@
       }
     },
     "results": {
-      "row": "{page} \u00b7 {setting}"
+      "row": "{page} · {setting}"
     },
     "search": {
       "clear": "Clear the search",
-      "empty": "Nothing matches \u201c{query}\u201d.",
+      "empty": "Nothing matches “{query}”.",
       "help": "Filter every setting by name",
       "placeholder": "Search settings"
     },
@@ -922,6 +989,9 @@
     "hint": "Zero leaves a property untouched.",
     "step": {
       "help": "How far a note can move in time, either way. Zero leaves timing alone"
+    },
+    "apply": {
+      "label": "Randomize"
     }
   },
   "render": {
@@ -940,20 +1010,30 @@
     },
     "tail": {
       "help": "Time rendered after the music ends, so release tails are not cut off"
+    },
+    "start": {
+      "label": "Render"
     }
   },
   "sample": {
-    "title": "Sample"
+    "title": "Sample",
+    "reverse": {
+      "help": "Play the sample backwards"
+    },
+    "loop": {
+      "help": "Loop the sample to fill the clip"
+    }
   },
   "score": {
     "compile": {
-      "help": "Turn this score into patterns, notes and clips (cmd-R)"
+      "help": "Turn this score into patterns, notes and clips (cmd-R)",
+      "label": "Compile"
     },
     "compiled": "Score compiled: {patterns, plural, one {# pattern} other {# patterns}}, {clips, plural, one {# clip} other {# clips}}, {notes, plural, one {# note} other {# notes}}",
     "errors": "Score has {count, plural, one {# error} other {# errors}} - nothing was written",
     "keptByHand": " - {count, plural, one {# pattern was} other {# patterns were}} edited by hand and left alone",
     "position": "{line}:{column}",
-    "heading": "Score   \u2303Space completes"
+    "heading": "Score   ⌃Space completes"
   },
   "soundFont": {
     "load": {
@@ -996,6 +1076,30 @@
     },
     "tempo": {
       "help": "Tempo - drag up and down, or double-click to type"
+    },
+    "play": {
+      "help": "Play or pause (Space)"
+    },
+    "stop": {
+      "help": "Stop and rewind"
+    },
+    "record": {
+      "help": "Record into the armed channel (R)"
+    },
+    "addPattern": {
+      "help": "Add a pattern"
+    },
+    "clonePattern": {
+      "help": "Duplicate this pattern"
+    },
+    "deletePattern": {
+      "help": "Delete this pattern"
+    },
+    "modePattern": {
+      "label": "Pattern"
+    },
+    "modeSong": {
+      "label": "Song"
     }
   },
   "unit": {
@@ -1970,6 +2074,35 @@
       "labelInstance": {
         "detail": "name this instance so inserting before it cannot move it"
       }
+    }
+  },
+  "toolbar": {
+    "overflow": {
+      "help": "More toolbar controls"
+    }
+  },
+  "zoom": {
+    "out": {
+      "help": "Zoom out (-)"
+    },
+    "in": {
+      "help": "Zoom in (+)"
+    },
+    "fit": {
+      "help": "Fit to the window (0)"
+    }
+  },
+  "shell": {
+    "hidePanel": {
+      "help": "Hide the instrument panel"
+    },
+    "showPanel": {
+      "help": "Show the instrument panel"
+    }
+  },
+  "soundfont": {
+    "load": {
+      "label": "Load..."
     }
   }
 }

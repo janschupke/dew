@@ -2,6 +2,8 @@
 
 #include <juce_gui_basics/juce_gui_basics.h>
 
+#include "i18n/Strings.h"
+
 #include "io/SamplePool.h"
 #include "app/ProjectDocument.h"
 #include "model/ModuleCatalog.h"
@@ -120,8 +122,8 @@ private:
     DewKnob fadeOutKnob { requireInstrumentParamSpec (ids::fadeOutMs) };
     DewKnob transposeKnob { requireInstrumentParamSpec (ids::transpose) };
 
-    DewIconButton reverseButton { icons::rewind(), "Play the sample backwards" };
-    DewIconButton loopButton { icons::loop(), "Loop the sample to fill the clip" };
+    DewIconButton reverseButton { icons::rewind(), tr (StringId::sample_reverse_help) };
+    DewIconButton loopButton { icons::loop(), tr (StringId::sample_loop_help) };
 
     Handle dragging = Handle::none;
 

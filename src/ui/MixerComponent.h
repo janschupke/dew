@@ -2,6 +2,8 @@
 
 #include <juce_gui_basics/juce_gui_basics.h>
 
+#include "i18n/Strings.h"
+
 #include "engine/AudioEngine.h"
 #include "app/ProjectDocument.h"
 #include "ui/ConfirmPanel.h"
@@ -116,7 +118,7 @@ private:
 
     /** In the scrolling holder after the last strip, not in a footer: the same
         place the channel rack puts its add button, for the same reason. */
-    DewButton addStripButton { "+ Insert", DewButton::Role::ghost };
+    DewButton addStripButton { tr (StringId::mixer_addInsert_label), DewButton::Role::ghost };
 
     EffectChainHost chainHost;
 

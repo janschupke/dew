@@ -2,6 +2,8 @@
 
 #include <juce_gui_basics/juce_gui_basics.h>
 
+#include "i18n/Strings.h"
+
 #include "app/ProjectDocument.h"
 #include "ui/EditorState.h"
 #include "ui/EffectChainComponent.h"
@@ -90,7 +92,7 @@ private:
     /** A ROW's scroller. Unused, and not in the component tree at all, when the
         chain runs as a column - see the constructor. */
     juce::Viewport viewport;
-    DewIconButton addButton { icons::plus(), "Add an effect" };
+    DewIconButton addButton { icons::plus(), tr (StringId::effect_add_help) };
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (EffectChainHost)
 };

@@ -3,6 +3,8 @@
 #include <juce_audio_devices/juce_audio_devices.h>
 #include <juce_gui_basics/juce_gui_basics.h>
 
+#include "i18n/Strings.h"
+
 #include "engine/AudioEngine.h"
 #include "io/LiveAudioHost.h"
 #include "ui/primitives/DewControls.h"
@@ -95,7 +97,7 @@ private:
     juce::Array<juce::Rectangle<int>> labelBounds;
     juce::StringArray labels;
 
-    DewButton testButton { "Test tone", DewButton::Role::normal };
+    DewButton testButton { tr (StringId::audio_testTone_label), DewButton::Role::normal };
 
     juce::String summaryText;
     bool updating = false;

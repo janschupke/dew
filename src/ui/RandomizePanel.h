@@ -2,6 +2,8 @@
 
 #include <juce_gui_basics/juce_gui_basics.h>
 
+#include "i18n/Strings.h"
+
 #include "model/NoteTools.h"
 #include "ui/primitives/DewControls.h"
 #include "ui/primitives/DewNumberField.h"
@@ -61,8 +63,8 @@ private:
     DewNumberField velocityField;
     DewNumberField stepField;
 
-    DewButton cancelButton { "Cancel", DewButton::Role::ghost };
-    DewButton applyButton { "Randomize", DewButton::Role::primary };
+    DewButton cancelButton { tr (StringId::dialog_cancel), DewButton::Role::ghost };
+    DewButton applyButton { tr (StringId::randomize_apply_label), DewButton::Role::primary };
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (RandomizePanel)
 };

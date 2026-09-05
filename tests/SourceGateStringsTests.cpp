@@ -131,6 +131,48 @@ bool showsALiteral (const juce::String& raw)
 
         if (rest.startsWith ("\"") && ! rest.startsWith ("\"\""))
             return true;
+
+        // A TERNARY, which the prefix test above cannot see: what follows the
+        // sink is a condition, and the two sentences are past it. Three
+        // controls read their own state back that way - the transport's mode
+        // button and the panel chevron - and the gate reported all three clean.
+        if (rest.contains ("?") && rest.contains ("\""))
+            return true;
+    }
+
+    // A tooltip handed to a CONSTRUCTOR, which the sinks above cannot see: they
+    // ask what follows `setTooltip (`, and a control given its sentence at the
+    // point it is declared never calls one. Twenty-nine did, so most of the
+    // toolbar and the whole transport bar were English written into a header -
+    // and the gate this file exists to be reported it all as clean.
+    //
+    // Any literal in the braces, not only the second argument: DewIconButton
+    // takes a path then a sentence, DewLetterToggle a letter then a colour then
+    // a sentence, and a LETTER is a literal that stays one. So the letter is
+    // excluded by being one character rather than by counting arguments.
+    for (const auto* control : { "DewIconButton", "DewLetterToggle", "DewButton" })
+    {
+        if (! line.contains (control))
+            continue;
+
+        const auto braces = line.fromFirstOccurrenceOf ("{", false, false);
+
+        for (auto i = 0; i < braces.length(); ++i)
+        {
+            if (braces[i] != '"')
+                continue;
+
+            const auto text = braces.substring (i + 1).upToFirstOccurrenceOf ("\"", false, false);
+            i += text.length() + 1;
+
+            // A letter is a label, not a sentence: the channel rack's R names
+            // the control, and the roll's "+12" is a number of semitones. Both
+            // are the same in every language, so what is asked here is whether
+            // the literal is WORDS - more than one character, and some of them
+            // letters.
+            if (text.length() > 1 && text.containsAnyOf ("abcdefghijklmnopqrstuvwxyz"))
+                return true;
+        }
     }
 
     // A menu item's text is its SECOND argument - addItem (id, "Rename") - so
@@ -187,7 +229,19 @@ TEST_CASE ("no source shows a person a string literal", "[build][gate][i18n]")
     CHECK_FALSE (
         showsALiteral ("    tempoField.setTooltip (tr (StringId::transport_tempo_help));"));
     CHECK_FALSE (showsALiteral ("    icon.setTooltip (\"\");"));
+
+    // The ternary shape, before and after.
+    CHECK (showsALiteral ("    b.setButtonText (song ? \"Song\" : \"Pattern\");"));
+    CHECK_FALSE (showsALiteral ("    b.setButtonText (tr (song ? StringId::a : StringId::b));"));
     CHECK_FALSE (showsALiteral ("    button.setComponentID (\"mute\");"));
+
+    // A tooltip handed to a constructor, before and after. The letter toggle's
+    // R is its own name and stays a literal.
+    CHECK (showsALiteral ("    DewIconButton stopButton { icons::stop(), \"Stop and rewind\" };"));
+    CHECK_FALSE (showsALiteral (
+        "    DewIconButton stopButton { icons::stop(), tr (StringId::transport_stop_help) };"));
+    CHECK_FALSE (showsALiteral (
+        "    DewLetterToggle armButton { \"R\", colour::recording, tr (StringId::x) };"));
 
     // A section heading names a run of rows and is read exactly as they are.
     // Its text is the FIRST argument, unlike addItem's, which is why it sits in

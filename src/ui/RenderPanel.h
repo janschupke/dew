@@ -2,6 +2,8 @@
 
 #include <juce_gui_basics/juce_gui_basics.h>
 
+#include "i18n/Strings.h"
+
 #include "app/Settings.h"
 #include "io/OfflineRenderer.h"
 #include "app/ProjectDocument.h"
@@ -160,8 +162,8 @@ private:
     DewCheckbox ditherToggle { "Dither" };
     DewCheckbox stemsToggle { "One file per mixer track" };
 
-    DewButton renderButton { "Render", DewButton::Role::primary };
-    DewButton cancelButton { "Cancel", DewButton::Role::ghost };
+    DewButton renderButton { tr (StringId::render_start_label), DewButton::Role::primary };
+    DewButton cancelButton { tr (StringId::dialog_cancel), DewButton::Role::ghost };
 
     std::vector<Row> rows;
 

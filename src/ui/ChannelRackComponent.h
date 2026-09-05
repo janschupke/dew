@@ -2,6 +2,8 @@
 
 #include <juce_gui_basics/juce_gui_basics.h>
 
+#include "i18n/Strings.h"
+
 #include "engine/AudioEngine.h"
 #include "app/ProjectDocument.h"
 #include "ui/ConfirmPanel.h"
@@ -99,9 +101,11 @@ private:
     // In the header column, below the last channel, and inside the scrolling
     // holder - so it is the next empty ROW of the list rather than an action
     // parked in a footer strip at the far end of the panel.
-    DewButton addChannelButton { "+ Channel", DewButton::Role::ghost };
-    DewButton addAudioButton { "+ Audio", DewButton::Role::ghost };
-    DewButton addSoundFontButton { "+ Font", DewButton::Role::ghost };
+    DewButton addChannelButton { tr (StringId::channelRack_addChannel_label),
+                                 DewButton::Role::ghost };
+    DewButton addAudioButton { tr (StringId::channelRack_addAudio_label), DewButton::Role::ghost };
+    DewButton addSoundFontButton { tr (StringId::channelRack_addSoundFont_label),
+                                   DewButton::Role::ghost };
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (ChannelRackComponent)
 };

@@ -24,7 +24,7 @@ MixerStrip::MixerStrip (ProjectDocument& d, juce::ValueTree t, bool isMasterStri
     , track (std::move (t))
     , isMaster (isMasterStrip)
 {
-    nameLabel.setText (isMaster ? "Master" : track[ids::name].toString(),
+    nameLabel.setText (isMaster ? tr (StringId::automation_master) : track[ids::name].toString(),
                        juce::dontSendNotification);
     nameLabel.setJustificationType (juce::Justification::centred);
     nameLabel.setFont (tokens::type::font (tokens::type::small, true));

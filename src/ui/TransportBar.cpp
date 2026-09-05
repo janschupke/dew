@@ -114,7 +114,8 @@ TransportBar::TransportBar (ProjectDocument& d, AudioEngine& e, EditorState& s)
     modeButton.onClick = [this]
     {
         const auto song = modeButton.getToggleState();
-        modeButton.setButtonText (song ? "Song" : "Pattern");
+        modeButton.setButtonText (
+            tr (song ? StringId::transport_modeSong_label : StringId::transport_modePattern_label));
         engine.setMode (song ? Transport::Mode::song : Transport::Mode::pattern);
         engine.rewind();
     };
@@ -225,7 +226,8 @@ void TransportBar::refresh()
 
     const auto song = engine.getMode() == Transport::Mode::song;
     modeButton.setToggleState (song, juce::dontSendNotification);
-    modeButton.setButtonText (song ? "Song" : "Pattern");
+    modeButton.setButtonText (
+        tr (song ? StringId::transport_modeSong_label : StringId::transport_modePattern_label));
     playButton.setIcon (engine.isPlaying() ? icons::pause() : icons::play());
 
     // Otherwise the readout is blank until the first timer tick.

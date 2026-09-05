@@ -440,7 +440,7 @@ private:
         strip - which is beside the panel, and stays reachable once the panel it
         hides is gone. On the SHELL rather than on the divider: the shell is
         what it acts on, and the strip only says where it goes. */
-    DewIconButton panelToggle { icons::chevronRight(), "Hide the instrument panel" };
+    DewIconButton panelToggle { icons::chevronRight(), tr (StringId::shell_hidePanel_help) };
 
     /** Points the chevron the way the panel will go when it is pressed. */
     void updatePanelToggle();

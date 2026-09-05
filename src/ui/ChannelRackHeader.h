@@ -2,6 +2,8 @@
 
 #include <juce_gui_basics/juce_gui_basics.h>
 
+#include "i18n/Strings.h"
+
 #include "model/Ids.h"
 #include "model/ModuleCatalog.h"
 
@@ -122,7 +124,8 @@ private:
 
     DewKnob volumeKnob { requireInstrumentParamSpec (ids::volume) };
     DewKnob panKnob { requireInstrumentParamSpec (ids::pan) };
-    DewLetterToggle armButton { "R", tokens::colour::recording, "Arm this channel for recording" };
+    DewLetterToggle armButton { "R", tokens::colour::recording,
+                                tr (StringId::channelRack_arm_help) };
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (ChannelRackHeader)
 };

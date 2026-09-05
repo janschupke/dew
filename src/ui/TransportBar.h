@@ -2,6 +2,8 @@
 
 #include <juce_gui_basics/juce_gui_basics.h>
 
+#include "i18n/Strings.h"
+
 #include "engine/AudioEngine.h"
 #include "model/Meter.h"
 #include "app/ProjectDocument.h"
@@ -130,9 +132,10 @@ private:
     AudioEngine& engine;
     EditorState& editorState;
 
-    DewIconButton playButton { icons::play(), "Play or pause (Space)", DewIconButton::Role::go };
-    DewIconButton stopButton { icons::stop(), "Stop and rewind" };
-    DewIconButton recordButton { icons::record(), "Record into the armed channel (R)",
+    DewIconButton playButton { icons::play(), tr (StringId::transport_play_help),
+                               DewIconButton::Role::go };
+    DewIconButton stopButton { icons::stop(), tr (StringId::transport_stop_help) };
+    DewIconButton recordButton { icons::record(), tr (StringId::transport_record_help),
                                  DewIconButton::Role::record };
     const paramMenu::Host* paramMenuHost = nullptr;
 
@@ -145,16 +148,17 @@ private:
     */
     DewDropdown meterBox;
 
-    DewButton modeButton { "Pattern", DewButton::Role::normal };
+    DewButton modeButton { tr (StringId::transport_modePattern_label), DewButton::Role::normal };
 
     // Pattern management lives here because the pattern selector does: adding a
     // pattern used to be reachable only from a menu shortcut, which meant it
     // read as "you cannot add more patterns".
     DewLabel patternCaption;
     DewDropdown patternBox;
-    DewIconButton addPatternButton { icons::plus(), "Add a pattern" };
-    DewIconButton clonePatternButton { icons::duplicate(), "Duplicate this pattern" };
-    DewIconButton deletePatternButton { icons::trash(), "Delete this pattern",
+    DewIconButton addPatternButton { icons::plus(), tr (StringId::transport_addPattern_help) };
+    DewIconButton clonePatternButton { icons::duplicate(),
+                                       tr (StringId::transport_clonePattern_help) };
+    DewIconButton deletePatternButton { icons::trash(), tr (StringId::transport_deletePattern_help),
                                         DewIconButton::Role::danger };
     DewNumberField patternLengthField;
 

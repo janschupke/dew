@@ -270,7 +270,7 @@ private:
     juce::ListBox list { "scoreDiagnostics", this };
 
     ScoreCompletionList completions;
-    DewButton compileButton { "Compile", DewButton::Role::primary };
+    DewButton compileButton { tr (StringId::score_compile_label), DewButton::Role::primary };
     juce::Label heading;
 
     std::vector<lang::Diagnostic> diagnostics;

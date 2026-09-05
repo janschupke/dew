@@ -310,8 +310,8 @@ void MainComponent::PanelDivider::mouseDrag (const juce::MouseEvent& event)
 void MainComponent::updatePanelToggle()
 {
     panelToggle.setIcon (panelCollapsed ? icons::chevronLeft() : icons::chevronRight());
-    panelToggle.setTooltip (panelCollapsed ? "Show the instrument panel"
-                                           : "Hide the instrument panel");
+    panelToggle.setTooltip (
+        tr (panelCollapsed ? StringId::shell_showPanel_help : StringId::shell_hidePanel_help));
 }
 
 bool MainComponent::PanelDivider::hitTest (int x, int)

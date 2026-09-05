@@ -2,6 +2,8 @@
 
 #include <juce_gui_basics/juce_gui_basics.h>
 
+#include "i18n/Strings.h"
+
 #include "ui/VerticalZoomButtons.h"
 #include "ui/ToolbarOverflow.h"
 #include "ui/ZoomButtons.h"
@@ -80,11 +82,11 @@ private:
     PlaylistTool tool = PlaylistTool::select;
 
     /** Shown only when the strip has run out of room - see ToolbarOverflow. */
-    DewIconButton overflowButton { icons::more(), "More toolbar controls" };
+    DewIconButton overflowButton { icons::more(), tr (StringId::toolbar_overflow_help) };
     ToolbarOverflow overflow;
 
-    DewIconButton selectButton { icons::pointer(), "Select tool (1)" };
-    DewIconButton paintButton { icons::pencil(), "Paint tool - drag to lay a run of clips (2)" };
+    DewIconButton selectButton { icons::pointer(), tr (StringId::playlist_toolSelect_help) };
+    DewIconButton paintButton { icons::pencil(), tr (StringId::playlist_toolPaint_help) };
 
     ZoomButtons zoomButtons { "Fit the song to the window (0)" };
     VerticalZoomButtons heightButtons { "Shorter tracks (alt--)", "Taller tracks (alt-+)",
