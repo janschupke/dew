@@ -69,12 +69,18 @@ const std::vector<ParamSpec>& mixerTrackParams();
 /** Parameters automatable on the master. */
 const std::vector<ParamSpec>& masterParams();
 
-/** Parameters automatable on one oscillator slot.
+/** Parameters automatable on a slot running this GENERATOR: the slot's own,
+    plus that generator's - see GeneratorCatalog.h.
 
-    Only offered for a slot in wavetable mode - see availableAutomationTargets.
-    A classic oscillator's wave position means nothing, and offering it would be
-    a control that silently did nothing.
+    A wave position on a classic slot means nothing and is not offered. What was
+    wrong was the shape of that rule: the whole scope was gated on the mode, so
+    a classic slot offered NOTHING at all and its `gain` - declared automatable
+    in the catalog since it was written - could not be reached.
 */
+const std::vector<ParamSpec>& oscParams (juce::StringRef generator);
+
+/** Every parameter ANY generator offers, for the lookup that has a stored
+    property and no slot to ask which generator it came from. */
 const std::vector<ParamSpec>& oscParams();
 
 /** Parameters automatable on an effect of this type. */

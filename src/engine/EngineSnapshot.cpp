@@ -7,7 +7,9 @@
 #include <atomic>
 #include <cmath>
 
+#include "model/GeneratorCatalog.h"
 #include "model/Ids.h"
+#include "model/InstrumentType.h"
 #include "model/Meter.h"
 
 namespace dew
@@ -368,15 +370,24 @@ EngineSnapshot buildSnapshot (const juce::ValueTree& project, juce::StringArray*
 
                 resolved = a.targetIndex >= 0;
 
-                // An oscillator slot that is no longer in wavetable mode has
-                // nothing to drive, so the clip is dropped rather than left
-                // pointing at a parameter the voice will not read.
+                // The slot has to exist, and the parameter has to be one the
+                // generator it runs actually reads - otherwise the clip is
+                // dropped rather than left pointing at something the voice will
+                // never look at.
+                //
+                // Asked of the MODEL, which owns the split, rather than
+                // re-derived here as "is this slot a wavetable". That spelling
+                // dropped a curve over a CLASSIC slot's gain too, because it
+                // asked about the slot where the question is about the
+                // parameter.
                 if (resolved && a.scope == AutomationScope::channelOsc)
                 {
                     const auto& slots = snapshot.channels[(size_t) a.targetIndex].osc;
 
                     resolved = a.slotIndex >= 0 && a.slotIndex < slots.numSlots
-                               && slots.slots[(size_t) a.slotIndex].mode == OscMode::wavetable;
+                               && ! isForeignGeneratorParam (
+                                   oscModeToString (slots.slots[(size_t) a.slotIndex].mode),
+                                   property);
                 }
 
                 if (resolved && a.scope == AutomationScope::channelEffect)

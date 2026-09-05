@@ -141,8 +141,22 @@ const AudioEngine::ChannelOverrides* AudioEngine::overridesFor (const ChannelSna
         else if (active.scope == AutomationScope::channelOsc && active.slotIndex >= 0
                  && active.slotIndex < overrides.osc.numSlots)
         {
+            auto& slot = overrides.osc.slots[(size_t) active.slotIndex];
+
+            // All five the catalog declares, not only the position. The other
+            // four reached the snapshot and stopped here, so a curve drawn over
+            // an oscillator's gain or its unison spread moved a line on screen
+            // and nothing in the sound.
             if (active.param == AutomationParam::position)
-                overrides.osc.slots[(size_t) active.slotIndex].position = active.value;
+                slot.position = active.value;
+            else if (active.param == AutomationParam::positionMod)
+                slot.positionMod = active.value;
+            else if (active.param == AutomationParam::positionRate)
+                slot.positionRate = active.value;
+            else if (active.param == AutomationParam::unisonDetune)
+                slot.unisonDetune = active.value;
+            else if (active.param == AutomationParam::gain)
+                slot.gain = active.value;
         }
         else if (active.scope == AutomationScope::channelEffect && active.slotIndex >= 0
                  && active.slotIndex < overrides.effects.numSlots)

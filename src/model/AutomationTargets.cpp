@@ -1,6 +1,10 @@
 #include "model/ParamNames.h"
 #include "model/AutomationTargets.h"
 
+#include <map>
+
+#include "model/GeneratorCatalog.h"
+
 #include <cmath>
 
 #include "model/Ids.h"
@@ -137,6 +141,34 @@ const std::vector<ParamSpec>& masterParams()
     return specs;
 }
 
+/** Everything automatable on a slot running `generator`.
+
+    The slot's own parameters plus that generator's, which is what the registry
+    already says - see GeneratorCatalog.h. It used to be the whole OSC table
+    behind a mode check that returned NOTHING for a classic slot, so a classic
+    oscillator's `gain` was declared automatable in the catalog and unreachable
+    in the picker.
+*/
+const std::vector<ParamSpec>& oscParams (juce::StringRef generator)
+{
+    static std::map<juce::String, std::vector<ParamSpec>> byGenerator = []
+    {
+        std::map<juce::String, std::vector<ParamSpec>> all;
+
+        for (const auto& descriptor : generatorDescriptors())
+            all[descriptor.id] = automatableIn (generatorParamSpecs (descriptor.id));
+
+        return all;
+    }();
+
+    const auto found = byGenerator.find (generatorFor (generator).id);
+
+    jassert (found != byGenerator.end());
+    return found->second;
+}
+
+/** Every parameter any generator offers, for the lookup that has only a stored
+    property to go on and no slot to ask. */
 const std::vector<ParamSpec>& oscParams()
 {
     static const auto specs = automatableIn (oscParamSpecs());
@@ -298,10 +330,15 @@ std::optional<AutomationTarget> automationTargetFor (const juce::ValueTree& proj
     }
     else if (node.hasType (ids::OSC))
     {
-        // A wave position on a CLASSIC slot means nothing, so a slot switched
-        // back drops out of the picker and leaves any clip pointing at it inert
-        // - which is what an effect slot that changes type already does.
-        if (node[ids::mode].toString() != "wavetable")
+        // A parameter belonging to a generator this slot is not running means
+        // nothing here, so a slot switched back drops out of the picker and
+        // leaves any clip pointing at it inert - which is what an effect slot
+        // that changes type already does.
+        //
+        // The parameter, not the whole scope. Gating the scope on the mode is
+        // what cost a classic slot its `gain`: the catalog declared it
+        // automatable and the picker offered nothing at all.
+        if (isForeignGeneratorParam (node[ids::mode].toString(), property))
             return {};
 
         const auto channel = parent.getParent();
@@ -518,9 +555,13 @@ std::vector<AutomationTarget> availableAutomationTargets (const juce::ValueTree&
 
         offer (channel, channelParams());
 
-        for (const auto& osc : channel.getChildWithName (ids::INSTRUMENT))
-            if (osc.hasType (ids::OSC))
-                offer (osc, oscParams());
+        // Only a SYNTH's slots. Every channel carries three inert OSC nodes to
+        // keep the canonical tree one shape, so a soundfont channel with a
+        // stray slot used to advertise a target the engine never renders.
+        if (instrumentTypeFor (channel[ids::source].toString()) == InstrumentType::synth)
+            for (const auto& osc : channel.getChildWithName (ids::INSTRUMENT))
+                if (osc.hasType (ids::OSC))
+                    offer (osc, oscParams (osc[ids::mode].toString()));
 
         offerChain (channel);
     }

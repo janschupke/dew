@@ -290,6 +290,15 @@ enum class AutomationParam
         filter-mode curve would be silently ignored. */
     filterMode,
     distortionMode,
+
+    /** The rest of an oscillator slot's own. `position` above was the only one
+        of the five the engine ever applied, so wavePositionMod,
+        wavePositionRate and unisonDetune were declared automatable in the
+        catalog, offered by the picker, drawn as curves - and read by nothing. */
+    positionMod,
+    positionRate,
+    unisonDetune,
+
     enabled,    ///< an effect slot's bypass
     oscEnabled, ///< an oscillator slot's on/off
     muted,      ///< a channel's or a mixer track's mute

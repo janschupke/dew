@@ -9,6 +9,7 @@
 #include <catch2/matchers/catch_matchers_floating_point.hpp>
 
 #include "engine/EngineSnapshot.h"
+#include "engine/SnapshotReaders.h"
 #include "io/OfflineRenderer.h"
 #include "model/ProjectFactory.h"
 #include "model/ProjectSerializer.h"
@@ -137,12 +138,17 @@ TEST_CASE ("a node with nothing to automate resolves to nothing", "[automation]"
     REQUIRE_FALSE (automationTargetFor (project, {}, ids::volume).has_value());
 }
 
-TEST_CASE ("a classic oscillator slot offers nothing to automate", "[automation]")
+TEST_CASE ("a slot offers its generator's parameters and not another's", "[automation]")
 {
     // A wave position on a slot that is not running a wavetable would be a
     // control that silently did nothing. The picker has always skipped it; the
     // resolver has to agree, or a right-click would offer what the picker does
     // not.
+    //
+    // What was wrong was the SHAPE of that rule. The whole scope was gated on
+    // the mode, so a classic slot offered nothing at all - and its `gain`,
+    // declared automatable in the catalog since the catalog was written, could
+    // not be reached from anywhere.
     auto project = ProjectFactory::createDefault();
     juce::UndoManager undo;
 
@@ -151,10 +157,46 @@ TEST_CASE ("a classic oscillator slot offers nothing to automate", "[automation]
     REQUIRE (osc.isValid());
 
     ProjectEdits::setProperty (osc, ids::mode, "classic", &undo, "Classic");
-    REQUIRE_FALSE (automationTargetFor (project, osc, ids::wavePosition).has_value());
+    CHECK_FALSE (automationTargetFor (project, osc, ids::wavePosition).has_value());
+
+    // The slot's own, which a mode gate had no business refusing.
+    CHECK (automationTargetFor (project, osc, ids::gain).has_value());
 
     ProjectEdits::setProperty (osc, ids::mode, "wavetable", &undo, "Wavetable");
-    REQUIRE (automationTargetFor (project, osc, ids::wavePosition).has_value());
+    CHECK (automationTargetFor (project, osc, ids::wavePosition).has_value());
+    CHECK (automationTargetFor (project, osc, ids::gain).has_value());
+
+    // And the picker agrees with the resolver, which is the pair the whole
+    // table exists to keep honest.
+    ProjectEdits::setProperty (osc, ids::mode, "classic", &undo, "Classic");
+
+    juce::StringArray offered;
+
+    for (const auto& target : availableAutomationTargets (project))
+        if (target.scope == AutomationScope::channelOsc)
+            offered.add (target.property.toString());
+
+    INFO ("offered on a classic slot:\n" << offered.joinIntoString ("\n"));
+    CHECK (offered.contains ("gain"));
+    CHECK_FALSE (offered.contains ("wavePosition"));
+}
+
+TEST_CASE ("every parameter a slot offers is one the engine applies", "[automation][engine]")
+{
+    // Four of the five the catalog declares reached the snapshot and stopped
+    // there: AudioEngineAutomation applied `position` and nothing else, so a
+    // curve over an oscillator's gain, its position mod, its LFO rate or its
+    // unison spread moved a line on screen and nothing in the sound.
+    for (const auto* generator : { "classic", "wavetable" })
+    {
+        for (const auto& spec : oscParams (generator))
+        {
+            const auto param = snapshotRead::automationParamFromIdentifier (*spec.property);
+
+            INFO (generator << " > " << spec.property->toString());
+            CHECK (param != AutomationParam::none);
+        }
+    }
 }
 
 TEST_CASE ("the target list covers channels, effects, tracks and master", "[automation]")
