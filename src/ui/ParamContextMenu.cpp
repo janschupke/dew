@@ -4,6 +4,8 @@
 #include "model/ParamNames.h"
 #include "model/Ids.h"
 #include "model/ProjectEdits.h"
+#include "ui/design/Glyphs.h"
+#include "ui/design/MenuGlyph.h"
 
 namespace dew::paramMenu
 {
@@ -32,9 +34,11 @@ juce::PopupMenu build (const juce::ValueTree& project, const juce::ValueTree& ow
     // nothing can automate - an envelope stage, a base pitch - simply has no
     // item, rather than one that opens and then fails.
     if (automationTargetFor (project, owner, *spec.property).has_value())
-        menu.addItem ((int) Item::createClip, tr (StringId::param_menu_createClip));
+        addGlyphItem (menu, (int) Item::createClip, tr (StringId::param_menu_createClip),
+                      glyph::forAction (glyph::Action::automate));
 
-    menu.addItem ((int) Item::resetToDefault, tr (StringId::param_menu_resetToDefault));
+    addGlyphItem (menu, (int) Item::resetToDefault, tr (StringId::param_menu_resetToDefault),
+                  glyph::forAction (glyph::Action::reset));
     return menu;
 }
 

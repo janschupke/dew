@@ -9,6 +9,9 @@
 #include "model/Meter.h"
 #include "model/ProjectEdits.h"
 #include "ui/design/DewLookAndFeel.h"
+#include "ui/design/Glyphs.h"
+#include "ui/design/Icons.h"
+#include "ui/design/MenuGlyph.h"
 #include "ui/StripLayout.h"
 #include "ui/design/Tokens.h"
 
@@ -342,11 +345,16 @@ void TransportBar::rebuildPatternList()
 
     for (const auto& pattern : document.getState())
         if (pattern.hasType (ids::PATTERN))
-            patternBox.addItem (pattern[ids::name].toString(), (int) pattern[ids::id]);
+            addGlyphItem (patternBox, (int) pattern[ids::id], pattern[ids::name].toString(),
+                          icons::pattern());
 
-    // Well above any pattern id, so it can never collide with one.
+    // Well above any pattern id, so it can never collide with one. Glyphed
+    // too, and with a DIFFERENT glyph: the last row is the one that makes a
+    // pattern rather than one that opens one, and the separator alone said so
+    // only to someone already looking for it.
     patternBox.addSeparator();
-    patternBox.addItem (tr (StringId::transport_newPattern), newPatternItemId);
+    addGlyphItem (patternBox, newPatternItemId, tr (StringId::transport_newPattern),
+                  glyph::forAction (glyph::Action::add));
 
     setCurrentPattern (editorState.getCurrentPatternId());
     patternBox.setSelectedId (editorState.getCurrentPatternId(), juce::dontSendNotification);

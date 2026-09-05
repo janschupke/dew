@@ -11,6 +11,8 @@
 #include "model/ProjectEdits.h"
 #include "model/ProjectSchema.h"
 #include "ui/design/Gestures.h"
+#include "ui/design/Glyphs.h"
+#include "ui/design/MenuGlyph.h"
 #include "ui/Hotkeys.h"
 #include "ui/design/Tokens.h"
 
@@ -168,8 +170,11 @@ void EffectChainComponent::showAddMenu (juce::Component& target)
     // because it exists, not because someone remembered a third list.
     const auto& all = effectDescriptors();
 
+    // Ten glyphs that already existed and that this menu - the one place a
+    // person chooses between the ten - showed as ten words.
     for (int i = 0; i < (int) all.size(); ++i)
-        menu.addItem (i + 1, tr (all[(size_t) i].displayName));
+        addGlyphItem (menu, i + 1, tr (all[(size_t) i].displayName),
+                      glyph::forEffect (all[(size_t) i].type));
 
     menu.setLookAndFeel (&getLookAndFeel());
     menu.showMenuAsync (juce::PopupMenu::Options().withTargetComponent (target),
@@ -235,11 +240,7 @@ void EffectChainComponent::showPresetMenu (int slot, juce::Component& target)
     const auto items = presetMenuItems (slot);
 
     for (int i = 0; i < items.size(); ++i)
-    {
-        juce::PopupMenu::Item item (items[i]);
-        item.itemID = i + 1;
-        menu.addItem (item);
-    }
+        addGlyphItem (menu, i + 1, items[i], glyph::forAction (glyph::Action::preset));
 
     menu.setLookAndFeel (&getLookAndFeel());
     menu.showMenuAsync (juce::PopupMenu::Options().withTargetComponent (target),

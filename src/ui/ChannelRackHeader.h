@@ -44,19 +44,32 @@ public:
     enum class MenuItem
     {
         rename = 1,
-        addChannel,
-        removeChannel
+        addChannel, ///< the row the instrument submenu hangs off; never chosen
+        removeChannel,
+
+        // Appended rather than inserted, which is why they sit after remove
+        // instead of beside addChannel: the ids above them are already spoken
+        // for, here and in the colour submenu's base below.
+        addSynth,
+        addAudio,
+        addSoundFont
     };
 
     /** Where the colour submenu's ids start: after this row's own, so the two
         numberings cannot collide. */
-    static constexpr int colourBaseId = (int) MenuItem::removeChannel + 1;
+    static constexpr int colourBaseId = (int) MenuItem::addSoundFont + 1;
 
     juce::PopupMenu buildMenu() const override;
     void applyMenuChoice (int choice) override;
 
-    /** Add and remove belong to the rack, which owns the list and rebuilds it. */
-    std::function<void()> onAddChannel;
+    /** Add and remove belong to the rack, which owns the list and rebuilds it.
+
+        Add carries the KIND now that the menu offers all three. The rack was
+        already the only thing that could make one of each - three buttons under
+        the list have done so since before the menu existed - so this asks it
+        for the one the menu named rather than teaching the row how.
+    */
+    std::function<void (InstrumentType)> onAddChannel;
     std::function<void (int channelId)> onRemoveChannel;
 
     /** Every control on this row that was built from a ParamSpec gets its

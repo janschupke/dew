@@ -4,6 +4,7 @@
 #include "model/Ids.h"
 #include "model/Meter.h"
 #include "model/ProjectEdits.h"
+#include "ui/design/Glyphs.h"
 #include "ui/design/Tokens.h"
 #include "ui/MenuSeam.h"
 #include "ui/primitives/DewControls.h"
@@ -100,6 +101,12 @@ ChannelRackComponent::ChannelRackComponent (ProjectDocument& d, AudioEngine& e, 
     addAndMakeVisible (viewport);
 
     addChannelButton.onClick = [this] { addChannel(); };
+
+    // The kind each button makes, said in a picture as well as in its word.
+    addChannelButton.setGlyph (glyph::forInstrument (InstrumentType::synth));
+    addAudioButton.setGlyph (glyph::forInstrument (InstrumentType::audio));
+    addSoundFontButton.setGlyph (glyph::forInstrument (InstrumentType::soundfont));
+
     addAudioButton.onClick = [this] { addAudioChannel(); };
     addSoundFontButton.onClick = [this] { addSoundFontChannel(); };
 
@@ -143,6 +150,21 @@ void ChannelRackComponent::setParamMenuHost (const paramMenu::Host* host)
 void ChannelRackComponent::refresh()
 {
     rebuildHeaders();
+}
+
+void ChannelRackComponent::addChannelOfType (InstrumentType type)
+{
+    // The three add functions differ in what they arm and what they select
+    // afterwards, not only in what they create, so this dispatches to them
+    // rather than reaching past them to one parameterised edit.
+    switch (type)
+    {
+        case InstrumentType::synth: addChannel(); return;
+        case InstrumentType::audio: addAudioChannel(); return;
+        case InstrumentType::soundfont: addSoundFontChannel(); return;
+    }
+
+    jassertfalse;
 }
 
 void ChannelRackComponent::addChannel()
@@ -242,7 +264,7 @@ void ChannelRackComponent::rebuildHeaders()
 
     for (auto* header : headers)
     {
-        header->onAddChannel = [this] { addChannel(); };
+        header->onAddChannel = [this] (InstrumentType type) { addChannelOfType (type); };
         header->onRemoveChannel = [this] (int id) { removeChannel (id); };
         contentHolder.addAndMakeVisible (header);
 

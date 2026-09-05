@@ -30,10 +30,35 @@ built on it. [Why it is this way](#why-it-is-this-way), below, argues why.
 
 ## Icons and the gallery
 
-Icons are `juce::Path` in `src/ui/design/Icons.cpp`, never shipped assets. Any grid
-dimension must derive from `icons::all().size()` — the gallery's icon grid was once a
-hard-coded two rows, and three new icons drew straight over the section below, on the one
-page whose job is to show what the design system looks like.
+Icons are `juce::Path` in `src/ui/design/icons/*.cpp`, never shipped assets. Adding one
+is a function, a declaration in `Icons.h` and a row in `icons::all()` — an icon left out
+of that list is drawn by nothing and checked by nothing. Any grid dimension must derive
+from `icons::all().size()` — the gallery's icon grid was once a hard-coded two rows, and
+three new icons drew straight over the section below, on the one page whose job is to
+show what the design system looks like.
+
+**Which glyph a CONCEPT wears is `src/ui/design/Glyphs.h`, and only there.**
+`glyph::forEffect`, `forInstrument`, `forWaveform` and `forAction` are switches with no
+`default`, so a new kind of thing is a compile error rather than one that silently wears
+the first shape in the list. This is `ParamPalette.h` for pictures, and the same rule
+applies: `Icons.h` is the vocabulary and knows nothing but JUCE, so the join between it
+and the document model lives in its own header.
+
+**A menu row's glyph travels in `PopupMenu::Item::image`, as a `MenuGlyph`** — see
+`src/ui/design/MenuGlyph.h`. Add rows with `addGlyphItem` / `addGlyphSubMenu`, which is
+what makes a row with no picture visible as a plain `addItem` at the call site. Two rules
+hold:
+
+- **A menu is fully glyphed or not glyphed at all**, the same rule the tick gutter
+  follows: a menu where some rows are indented and others are not reads as misaligned.
+- **The glyph is painted in the row's own text colour**, never its own. That is what
+  makes it legible on the accent fill *and* what keeps it inside the contrast
+  `ContrastTests` has already proven for menu text — a glyph with a colour of its own
+  would be a new pair to answer for in both palettes.
+
+Do NOT smuggle a glyph's name into the item text the way `menuRow` smuggles a second
+line. A sentinel there leaks out through `ComboBox::getText`, through the accessible
+name, and through `dew::menuItems` — the seam every menu test in the repository reads.
 
 **Render `dew_shot gallery out.png` after touching a token, an icon or a primitive**, and
 look at it. A layout defect is obvious in a picture and nearly invisible in code, and

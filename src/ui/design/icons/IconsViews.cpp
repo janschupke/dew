@@ -171,6 +171,10 @@ std::vector<NamedIcon> all()
         { "scissors", scissors },
         { "dice", dice },
         { "quantize", quantize },
+        { "open", open },
+        { "reset", reset },
+        { "palette", palette },
+        { "pattern", pattern },
 
         { "mute", mute },
         { "solo", solo },
@@ -188,6 +192,10 @@ std::vector<NamedIcon> all()
         { "waveSaw", waveSaw },
         { "waveSquare", waveSquare },
         { "waveTriangle", waveTriangle },
+
+        { "instrumentSynth", instrumentSynth },
+        { "instrumentAudio", instrumentAudio },
+        { "instrumentSoundFont", instrumentSoundFont },
 
         { "effectFilter", effectFilter },
         { "effectReverb", effectReverb },
@@ -209,6 +217,9 @@ std::vector<NamedIcon> all()
         { "fitRows", fitRows },
         { "automation", automation },
         { "preset", preset },
+        { "shapeLine", shapeLine },
+        { "shapeCurve", shapeCurve },
+        { "shapeStep", shapeStep },
     };
 }
 

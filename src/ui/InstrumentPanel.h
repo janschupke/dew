@@ -134,6 +134,14 @@ private:
 
     juce::Label titleLabel;
 
+    /** Where the selected channel's KIND is drawn, beside its name.
+
+        Set in resized() and painted in paint(), from the `showing` member the
+        panel has already worked out - so the glyph and the face below it cannot
+        end up describing two different instruments.
+    */
+    juce::Rectangle<int> titleGlyphBounds;
+
     /** Loads a factory preset onto the selected channel.
 
         A button opening a menu rather than a ComboBox, and deliberately: a

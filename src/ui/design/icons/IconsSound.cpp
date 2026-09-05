@@ -1,11 +1,11 @@
-// Waveforms and effect types.
+// Waveforms, instruments and effect types.
 //
-// One of three translation units holding dew's icon catalog, which was 682
-// lines in one file. The shared stroke helpers are IconStroke.h.
+// One of the translation units holding dew's icon catalog, which was 682 lines
+// in one file. The shared stroke helpers are IconStroke.h.
 //
-// The four oscillator shapes and the ten effects. These are the icons that
-// have to LOOK like the thing rather than stand for it, which is why a saw
-// is drawn as a saw and not as the letter S.
+// The four oscillator shapes, the three kinds of instrument and the ten
+// effects. These are the icons that have to LOOK like the thing rather than
+// stand for it, which is why a saw is drawn as a saw and not as the letter S.
 
 #include "ui/design/Icons.h"
 
@@ -69,6 +69,66 @@ juce::Path waveTriangle()
     wave.lineTo (0.71f, 0.2f);
     wave.lineTo (0.92f, 0.66f);
     return strokeOf (wave, tokens::icon::regular);
+}
+
+// --- instruments -------------------------------------------------------------
+//
+// Three silhouettes rather than three drawings: a frame with knobs, a run of
+// bars about a centre line, and a keyboard. They sit next to each other in the
+// add-channel menu and that is the only place any of them has to work, so what
+// matters is that no two share an outline at 14px.
+
+juce::Path instrumentSynth()
+{
+    // A module with knobs on it: sound that is BUILT. Not a waveform - the
+    // oscillator icons are already waveforms, and a synth that wore one of
+    // them would say "sine" where it means "synthesiser".
+    juce::Path frame;
+    frame.addRoundedRectangle (0.12f, 0.20f, 0.76f, 0.60f, 0.09f);
+    auto p = strokeOf (frame, tokens::icon::regular);
+
+    for (int i = 0; i < 3; ++i)
+        p.addEllipse (0.22f + (float) i * 0.24f, 0.42f, 0.16f, 0.16f);
+
+    return p;
+}
+
+juce::Path instrumentAudio()
+{
+    // A sample's envelope: bars about a CENTRE line, where the EQ's bars stand
+    // on the floor. The two are the same five rectangles otherwise, and that
+    // one difference is what tells a recording from a filter bank.
+    juce::Path p;
+    const float heights[] = { 0.18f, 0.40f, 0.62f, 0.46f, 0.26f };
+
+    for (int i = 0; i < 5; ++i)
+    {
+        const auto x = 0.12f + (float) i * 0.17f;
+        p.addRoundedRectangle (x, 0.5f - heights[i] * 0.5f, 0.10f, heights[i], 0.04f);
+    }
+
+    return p;
+}
+
+juce::Path instrumentSoundFont()
+{
+    // Keys: a font is somebody else's instrument, recorded a note at a time.
+    juce::Path body;
+    body.addRoundedRectangle (0.12f, 0.24f, 0.76f, 0.52f, 0.06f);
+    auto p = strokeOf (body, tokens::icon::regular);
+
+    // Below the frame's stroke rather than under it: the top line is centred on
+    // 0.24 and half a stroke wide either side, so keys drawn from there are
+    // half buried and the three read as one filled box with two notches.
+    p.addRoundedRectangle (0.31f, 0.30f, 0.11f, 0.26f, 0.03f);
+    p.addRoundedRectangle (0.58f, 0.30f, 0.11f, 0.26f, 0.03f);
+
+    juce::Path divider;
+    divider.startNewSubPath (0.5f, 0.56f);
+    divider.lineTo (0.5f, 0.76f);
+    p.addPath (strokeOf (divider, tokens::icon::hair));
+
+    return p;
 }
 
 // --- effects -----------------------------------------------------------------

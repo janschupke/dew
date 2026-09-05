@@ -6,6 +6,8 @@
 #include "model/EntityColour.h"
 #include "app/ProjectDocument.h"
 #include "model/ProjectEdits.h"
+#include "ui/design/Glyphs.h"
+#include "ui/design/MenuGlyph.h"
 
 namespace dew::colourMenu
 {
@@ -62,7 +64,12 @@ inline void addTo (juce::PopupMenu& menu, const juce::ValueTree& node, int baseI
     colours.addItem (defaultItemFor (baseId), tr (StringId::colour_default), true,
                      ! chosen.has_value());
 
-    menu.addSubMenu (tr (StringId::colour_menu), colours);
+    // The submenu's own rows stay unglyphed. Their subject IS a colour, and a
+    // menu glyph is painted in the row's text colour - a swatch drawn in the
+    // colour of the word beside it would say nothing, and one drawn in its own
+    // colour would be eight new pairs to prove against two palettes.
+    addGlyphSubMenu (menu, tr (StringId::colour_menu), std::move (colours),
+                     glyph::forAction (glyph::Action::colour));
 }
 
 /** Applies a choice if it belongs to this submenu, and says whether it did.

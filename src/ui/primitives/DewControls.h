@@ -222,6 +222,20 @@ public:
     */
     void setTextJustification (juce::Justification);
 
+    /** A picture beside the word, or an empty path for none.
+
+        A PATH rather than an icon's name, for the reason onContextMenu is a
+        callback: dew_design "knows nothing about a project" - its own
+        CMakeLists says so - and a button that named an instrument type would
+        know about one. The editor that knows what the button adds is the one
+        that chooses the shape.
+
+        The glyph and the label are centred as one group, so a button with a
+        picture is still a centred button rather than a left-aligned one that
+        happens to have space on the right.
+    */
+    void setGlyph (juce::Path);
+
     /** What to offer when this control is right-clicked, or null for nothing.
 
         A CALLBACK rather than a target or a node, because dew_design "knows
@@ -266,6 +280,7 @@ private:
 
     Role role = Role::normal;
     juce::Justification justification { juce::Justification::centred };
+    juce::Path glyph;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (DewButton)
 };

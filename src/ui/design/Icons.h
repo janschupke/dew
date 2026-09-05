@@ -36,6 +36,15 @@ juce::Path scissors(); ///< the slice tool
 juce::Path dice();     ///< randomize
 juce::Path quantize(); ///< align notes to the grid
 
+/** The actions a context menu spends. Rename is the pencil, add is the plus and
+    remove is the trash, all of which already existed; these are the three a
+    menu asked for that nothing else in dew had a shape for.
+*/
+juce::Path open();    ///< bring a pattern already in the project into view
+juce::Path reset();   ///< back to the default: the loop's ring with ONE head
+juce::Path palette(); ///< a droplet, for the colour submenu
+juce::Path pattern(); ///< a rhythm: four slots, one of them empty
+
 // --- state -------------------------------------------------------------------
 juce::Path mute();  ///< speaker with a cross
 juce::Path solo();  ///< headphones
@@ -54,6 +63,11 @@ juce::Path waveSine();
 juce::Path waveSaw();
 juce::Path waveSquare();
 juce::Path waveTriangle();
+
+// --- instruments -------------------------------------------------------------
+juce::Path instrumentSynth();     ///< a module with knobs: sound that is built
+juce::Path instrumentAudio();     ///< a sample's envelope, about a centre line
+juce::Path instrumentSoundFont(); ///< keys: somebody else's instrument, recorded
 
 // --- effects -----------------------------------------------------------------
 juce::Path effectFilter();
@@ -91,6 +105,15 @@ juce::Path fitRows();     ///< fitToContent, turned through a right angle
 
 juce::Path automation(); ///< a curve with points
 juce::Path preset();     ///< a saved sound to load
+
+/** How an automation segment gets from one point to the next.
+
+    One family: the same two end points every time, so the only thing that
+    differs between the three is the thing the menu is asking about.
+*/
+juce::Path shapeLine();
+juce::Path shapeCurve();
+juce::Path shapeStep();
 
 /** Scales `path` to fit `bounds` while keeping its proportions and centring it. */
 juce::Path fitted (juce::Path path, juce::Rectangle<float> bounds);

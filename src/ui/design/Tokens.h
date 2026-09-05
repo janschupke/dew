@@ -357,6 +357,18 @@ namespace size
 inline constexpr int controlHeight = 26; ///< buttons, combo boxes, number fields
 inline constexpr int controlHeightSm = 20;
 inline constexpr int iconButton = 24;
+
+/** The column a ROW spends on a leading glyph, and the mark inside it.
+
+    A menu item, a dropdown option and a button with a picture beside its word
+    all reserve the same column, because a dropdown's closed box sits directly
+    on top of the list it opens and a glyph that moved between the two would
+    read as the list jumping.
+*/
+inline constexpr int glyphColumn = 16;
+inline constexpr int glyphMark = 14;
+
+static_assert (glyphMark <= glyphColumn, "a glyph has to fit the column it is given");
 inline constexpr int knob = 44;
 inline constexpr int knobSm = 26;    ///< a knob on a row, drawn without its caption
 inline constexpr int rowHeight = 34; ///< channel rack and playlist rows

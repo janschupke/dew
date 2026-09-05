@@ -8,6 +8,8 @@
 #include "model/EntityColour.h"
 #include "model/ProjectEdits.h"
 #include "ui/ColourMenu.h"
+#include "ui/design/Glyphs.h"
+#include "ui/design/MenuGlyph.h"
 #include "ui/design/Cursors.h"
 #include "ui/design/DewLookAndFeel.h"
 #include "ui/design/Gestures.h"
@@ -249,14 +251,15 @@ juce::PopupMenu MixerStrip::buildMenu() const
     // about and the master is part of it.
     if (! isMaster)
     {
-        menu.addItem ((int) MenuItem::rename, tr (StringId::mixer_menu_rename));
+        addGlyphItem (menu, (int) MenuItem::rename, tr (StringId::mixer_menu_rename),
+                      glyph::forAction (glyph::Action::rename));
         colourMenu::addTo (menu, track, colourBaseId);
     }
 
     const auto inserts = ProjectEdits::countMixerTracks (document.getState());
 
-    menu.addItem ((int) MenuItem::addInsert, tr (StringId::mixer_menu_addInsert),
-                  inserts < kMaxMixerTracks);
+    addGlyphItem (menu, (int) MenuItem::addInsert, tr (StringId::mixer_menu_addInsert),
+                  glyph::forAction (glyph::Action::add), inserts < kMaxMixerTracks);
 
     // Rename / Add / - / Remove, which is the shape the rack's and the
     // playlist's menus already have: the separator sits immediately above
@@ -264,8 +267,8 @@ juce::PopupMenu MixerStrip::buildMenu() const
     if (! isMaster)
     {
         menu.addSeparator();
-        menu.addItem ((int) MenuItem::removeInsert, tr (StringId::mixer_menu_removeInsert),
-                      inserts > 1);
+        addGlyphItem (menu, (int) MenuItem::removeInsert, tr (StringId::mixer_menu_removeInsert),
+                      glyph::forAction (glyph::Action::remove), inserts > 1);
     }
 
     return menu;

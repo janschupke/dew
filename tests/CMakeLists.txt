@@ -17,6 +17,8 @@ add_executable(dew_tests
   McpUiTests.cpp
   FixtureProjectTests.cpp
   DesignSystemTests.cpp
+  GlyphTests.cpp
+  MenuGlyphTests.cpp
   ParamRoleTests.cpp
   DesignDropdownTests.cpp
   DesignGalleryTests.cpp

@@ -67,6 +67,12 @@ void DewButton::setTextJustification (juce::Justification j)
     repaint();
 }
 
+void DewButton::setGlyph (juce::Path p)
+{
+    glyph = std::move (p);
+    repaint();
+}
+
 void DewButton::setRole (Role r)
 {
     role = r;
@@ -121,9 +127,33 @@ void DewButton::paintButton (juce::Graphics& g, bool highlighted, bool down)
     g.setColour (isEnabled() ? text : colour::textDisabled);
     g.setFont (type::font (type::body));
 
-    const auto label = justification == juce::Justification::centred
-                           ? getLocalBounds()
-                           : getLocalBounds().reduced (space::md, 0);
+    auto label = justification == juce::Justification::centred
+                     ? getLocalBounds()
+                     : getLocalBounds().reduced (space::md, 0);
+
+    if (! glyph.isEmpty())
+    {
+        // The glyph and the word are placed as one group so a centred button
+        // stays centred. Measured rather than guessed: a fixed inset would put
+        // the pair off centre by however wide the word happened to be.
+        const auto column = size::glyphColumn + space::xs;
+        const auto word = juce::GlyphArrangement::getStringWidthInt (type::font (type::body),
+                                                                     getButtonText());
+        auto group = label.withSizeKeepingCentre (juce::jmin (label.getWidth(), column + word),
+                                                  label.getHeight());
+
+        if (justification != juce::Justification::centred)
+            group.setX (label.getX());
+
+        icons::draw (g, glyph,
+                     group.removeFromLeft (size::glyphColumn)
+                         .toFloat()
+                         .withSizeKeepingCentre ((float) size::glyphMark, (float) size::glyphMark),
+                     isEnabled() ? text : colour::textDisabled);
+
+        group.removeFromLeft (space::xs);
+        label = group;
+    }
 
     g.drawText (getButtonText(), label, justification, false);
 

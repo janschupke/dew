@@ -7,6 +7,8 @@
 #include "model/ProjectEdits.h"
 #include "ui/ColourMenu.h"
 #include "ui/design/Cursors.h"
+#include "ui/design/Glyphs.h"
+#include "ui/design/MenuGlyph.h"
 
 namespace dew
 {
@@ -123,14 +125,49 @@ void ChannelRackHeader::refresh()
 
 // --- the menu ----------------------------------------------------------------
 
+namespace
+{
+
+/** The id the instrument submenu gives one kind of channel. */
+int addItemFor (InstrumentType type)
+{
+    switch (type)
+    {
+        case InstrumentType::synth: return (int) ChannelRackHeader::MenuItem::addSynth;
+        case InstrumentType::audio: return (int) ChannelRackHeader::MenuItem::addAudio;
+        case InstrumentType::soundfont: return (int) ChannelRackHeader::MenuItem::addSoundFont;
+    }
+
+    jassertfalse;
+    return 0;
+}
+
+} // namespace
+
 juce::PopupMenu ChannelRackHeader::buildMenu() const
 {
     juce::PopupMenu menu;
-    menu.addItem ((int) MenuItem::rename, tr (StringId::channelRack_menu_rename));
+    addGlyphItem (menu, (int) MenuItem::rename, tr (StringId::channelRack_menu_rename),
+                  glyph::forAction (glyph::Action::rename));
     colourMenu::addTo (menu, channel, colourBaseId);
-    menu.addItem ((int) MenuItem::addChannel, tr (StringId::channelRack_menu_addChannel));
+
+    // Built from the catalog rather than from three written-out rows, so a new
+    // kind of instrument appears here because it exists. Nothing in the UI read
+    // instrumentDescriptors before this; the three buttons under the list each
+    // knew their own kind and none of them knew there were three.
+    juce::PopupMenu kinds;
+
+    for (const auto& instrument : instrumentDescriptors())
+        addGlyphItem (kinds, addItemFor (instrument.type), tr (instrument.displayName),
+                      glyph::forInstrument (instrument.type));
+
+    addGlyphSubMenu (menu, tr (StringId::channelRack_menu_addChannel), std::move (kinds),
+                     glyph::forAction (glyph::Action::add));
+
     menu.addSeparator();
-    menu.addItem ((int) MenuItem::removeChannel, tr (StringId::channelRack_menu_removeChannel));
+    addGlyphItem (menu, (int) MenuItem::removeChannel,
+                  tr (StringId::channelRack_menu_removeChannel),
+                  glyph::forAction (glyph::Action::remove));
     return menu;
 }
 
@@ -142,10 +179,21 @@ void ChannelRackHeader::applyMenuChoice (int choice)
     switch ((MenuItem) choice)
     {
         case MenuItem::rename: nameLabel.showEditor(); break;
-        case MenuItem::addChannel:
+
+        // The parent row of the submenu. It carries no id, so choosing it is
+        // not something that can happen; the case is here so the switch still
+        // names every item and the compiler still checks that it does.
+        case MenuItem::addChannel: break;
+
+        case MenuItem::addSynth:
+        case MenuItem::addAudio:
+        case MenuItem::addSoundFont:
             if (onAddChannel)
-                onAddChannel();
+                for (const auto& instrument : instrumentDescriptors())
+                    if (addItemFor (instrument.type) == choice)
+                        onAddChannel (instrument.type);
             break;
+
         case MenuItem::removeChannel:
             if (onRemoveChannel)
                 onRemoveChannel (getChannelId());

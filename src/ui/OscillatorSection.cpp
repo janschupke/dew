@@ -8,6 +8,7 @@
 #include "model/ProjectEdits.h"
 #include "model/ProjectSchema.h"
 #include "ui/design/Cursors.h"
+#include "ui/design/Glyphs.h"
 
 namespace dew
 {
@@ -56,7 +57,11 @@ OscillatorSection::OscillatorSection (ProjectDocument& d, EditorState& s)
     };
     addAndMakeVisible (modeBox);
 
-    fill (waveBox, waveChoices);
+    // The four wave icons existed for as long as the icon set has and were
+    // drawn by nothing: the one place a person picks a shape showed the four as
+    // four words.
+    fill (waveBox, waveChoices,
+          [] (const char* name) { return glyph::forWaveform (waveformFromString (name)); });
     waveBox.onChange = [this]
     { write (ids::wave, valueOf (waveChoices, waveBox.getSelectedId()), "Change waveform"); };
     waveBox.setTooltip (tr (StringId::oscillator_wave_help));

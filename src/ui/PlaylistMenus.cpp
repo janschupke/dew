@@ -21,6 +21,9 @@
 #include "model/Ids.h"
 #include "model/ProjectEdits.h"
 #include "ui/MenuSeam.h"
+#include "ui/design/Glyphs.h"
+#include "ui/design/Icons.h"
+#include "ui/design/MenuGlyph.h"
 #include "ui/design/Tokens.h"
 
 namespace dew
@@ -89,17 +92,22 @@ juce::PopupMenu PlaylistComponent::buildClipMenu (const juce::ValueTree& track, 
         const auto bend = (double) owner[ids::curve];
         const auto straight = shape == SegmentShape::curve && juce::approximatelyEqual (bend, 0.0);
 
-        menu.addItem ((int) ClipMenuItem::shapeLine, tr (StringId::playlist_clip_line), true,
-                      straight);
-        menu.addItem ((int) ClipMenuItem::shapeCurve, tr (StringId::playlist_clip_curve), true,
-                      shape == SegmentShape::curve && ! straight);
-        menu.addItem ((int) ClipMenuItem::shapeStep, tr (StringId::playlist_clip_step), true,
-                      shape == SegmentShape::step);
+        // Ticked AND pictured at once, which is the case the glyph column
+        // exists for: the tick says which shape this segment IS, the glyph says
+        // what each of the three would look like.
+        addGlyphItem (menu, (int) ClipMenuItem::shapeLine, tr (StringId::playlist_clip_line),
+                      icons::shapeLine(), true, straight);
+        addGlyphItem (menu, (int) ClipMenuItem::shapeCurve, tr (StringId::playlist_clip_curve),
+                      icons::shapeCurve(), true, shape == SegmentShape::curve && ! straight);
+        addGlyphItem (menu, (int) ClipMenuItem::shapeStep, tr (StringId::playlist_clip_step),
+                      icons::shapeStep(), true, shape == SegmentShape::step);
     };
 
     if (menuPoint.isValid())
     {
-        menu.addItem ((int) ClipMenuItem::deletePoint, tr (StringId::playlist_clip_deletePoint));
+        addGlyphItem (menu, (int) ClipMenuItem::deletePoint,
+                      tr (StringId::playlist_clip_deletePoint),
+                      glyph::forAction (glyph::Action::remove));
         menu.addSeparator();
 
         // The shapes of the segment this point OWNS - the one to its right,
@@ -118,7 +126,8 @@ juce::PopupMenu PlaylistComponent::buildClipMenu (const juce::ValueTree& track, 
 
     if (! clip.isValid())
     {
-        menu.addItem ((int) ClipMenuItem::addClip, tr (StringId::playlist_clip_addClip));
+        addGlyphItem (menu, (int) ClipMenuItem::addClip, tr (StringId::playlist_clip_addClip),
+                      glyph::forAction (glyph::Action::add));
         return menu;
     }
 
@@ -127,20 +136,24 @@ juce::PopupMenu PlaylistComponent::buildClipMenu (const juce::ValueTree& track, 
     // arrangement.
     if (ProjectEdits::isMidiClip (clip))
     {
-        menu.addItem ((int) ClipMenuItem::openPattern, tr (StringId::playlist_clip_openPattern));
+        addGlyphItem (menu, (int) ClipMenuItem::openPattern,
+                      tr (StringId::playlist_clip_openPattern),
+                      glyph::forAction (glyph::Action::open));
 
         // Gives THIS clip a pattern of its own. A pattern is shared by every
         // clip that names it, so the only way to vary one repeat of a phrase
         // was to make a pattern in the transport bar and re-point the clip by
         // hand.
-        menu.addItem ((int) ClipMenuItem::duplicatePattern,
-                      tr (StringId::playlist_clip_duplicatePattern));
+        addGlyphItem (menu, (int) ClipMenuItem::duplicatePattern,
+                      tr (StringId::playlist_clip_duplicatePattern),
+                      glyph::forAction (glyph::Action::duplicate));
     }
 
     if (menu.getNumItems() > 0)
         menu.addSeparator();
 
-    menu.addItem ((int) ClipMenuItem::deleteClip, tr (StringId::playlist_clip_deleteClip));
+    addGlyphItem (menu, (int) ClipMenuItem::deleteClip, tr (StringId::playlist_clip_deleteClip),
+                  glyph::forAction (glyph::Action::remove));
     return menu;
 }
 
@@ -364,7 +377,8 @@ void PlaylistComponent::showAutomationMenu()
         if (group != currentGroup)
         {
             if (currentGroup.isNotEmpty())
-                menu.addSubMenu (currentGroup, submenu);
+                addGlyphSubMenu (menu, currentGroup, submenu,
+                                 glyph::forAction (glyph::Action::automate));
 
             submenu.clear();
             currentGroup = group;
@@ -375,7 +389,7 @@ void PlaylistComponent::showAutomationMenu()
     }
 
     if (currentGroup.isNotEmpty())
-        menu.addSubMenu (currentGroup, submenu);
+        addGlyphSubMenu (menu, currentGroup, submenu, glyph::forAction (glyph::Action::automate));
 
     menu.showMenuAsync (juce::PopupMenu::Options().withTargetComponent (addAutomationButton),
                         [this, targets] (int choice)

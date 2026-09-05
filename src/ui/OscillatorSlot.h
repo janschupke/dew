@@ -5,6 +5,7 @@
 #include <juce_gui_basics/juce_gui_basics.h>
 
 #include "i18n/Strings.h"
+#include "ui/design/MenuGlyph.h"
 #include "ui/design/Tokens.h"
 
 #include "ui/OscillatorSection.h"
@@ -69,6 +70,19 @@ template <size_t N> void fill (juce::ComboBox& box, const NamedChoice (&choices)
 {
     for (size_t i = 0; i < N; ++i)
         box.addItem (choices[i].display, (int) i + 1);
+}
+
+/** The same, with a picture on every row.
+
+    `glyphFor` is handed the STORED name rather than the row's index, so a
+    caller reuses the model's own reader - waveformFromString - instead of
+    keeping a second table in step with this one by counting.
+*/
+template <size_t N, typename GlyphFor>
+void fill (juce::ComboBox& box, const NamedChoice (&choices)[N], GlyphFor glyphFor)
+{
+    for (size_t i = 0; i < N; ++i)
+        addGlyphItem (box, (int) i + 1, choices[i].display, glyphFor (choices[i].value));
 }
 
 template <size_t N> const char* valueOf (const NamedChoice (&choices)[N], int selectedId)

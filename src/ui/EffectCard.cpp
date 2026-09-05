@@ -11,6 +11,7 @@
 #include "ui/EffectChainComponent.h"
 #include "ui/design/Cursors.h"
 #include "ui/design/Gestures.h"
+#include "ui/design/Glyphs.h"
 #include "ui/design/Icons.h"
 #include "ui/design/ParamPalette.h"
 
@@ -18,35 +19,6 @@ namespace dew
 {
 
 using namespace tokens;
-
-namespace
-{
-
-juce::Path iconForType (EffectType type)
-{
-    // Every case listed and nothing after the switch, so a new effect type is a
-    // compile error here rather than a card that silently wears the filter's
-    // icon. It was the last of the four things that used to go quietly wrong
-    // when someone added a type.
-    switch (type)
-    {
-        case EffectType::filter: return icons::effectFilter();
-        case EffectType::reverb: return icons::effectReverb();
-        case EffectType::delay: return icons::effectDelay();
-        case EffectType::drive: return icons::effectDrive();
-        case EffectType::distortion: return icons::effectDistortion();
-        case EffectType::chorus: return icons::effectChorus();
-        case EffectType::phaser: return icons::effectPhaser();
-        case EffectType::eq: return icons::effectEq();
-        case EffectType::compressor: return icons::effectCompressor();
-        case EffectType::limiter: return icons::effectLimiter();
-    }
-
-    jassertfalse;
-    return {};
-}
-
-} // namespace
 
 EffectCard::EffectCard (EffectChainComponent& o, ProjectDocument& d, EditorState& s,
                         juce::ValueTree e, int i)
@@ -298,7 +270,7 @@ void EffectCard::paint (juce::Graphics& g)
     const auto textColour = bypassed ? colour::textDisabled : colour::textPrimary;
 
     icons::draw (g, icons::grip(), gripBounds.toFloat(), colour::textDisabled);
-    icons::draw (g, iconForType (type), iconBounds.toFloat(),
+    icons::draw (g, glyph::forEffect (type), iconBounds.toFloat(),
                  bypassed ? colour::textDisabled : functionColour);
 
     g.setColour (textColour);

@@ -11,6 +11,9 @@
 #include "model/ProjectEdits.h"
 #include "ui/design/Cursors.h"
 #include "ui/design/DewLookAndFeel.h"
+#include "ui/design/Glyphs.h"
+#include "ui/design/Icons.h"
+#include "ui/design/MenuGlyph.h"
 
 namespace dew
 {
@@ -317,6 +320,15 @@ void InstrumentPanel::paint (juce::Graphics& g)
     g.fillAll (tokens::colour::surface);
     g.setColour (tokens::colour::divider);
     g.drawVerticalLine (0, 0.0f, (float) getHeight());
+
+    // The kind of instrument, beside its name. The panel already shows it in
+    // which controls are on show, but only to someone who knows what a
+    // soundfont section looks like.
+    if (showingAny && ! titleGlyphBounds.isEmpty())
+        icons::draw (g, glyph::forInstrument (showing),
+                     titleGlyphBounds.toFloat().withSizeKeepingCentre (
+                         (float) tokens::size::glyphMark, (float) tokens::size::glyphMark),
+                     tokens::colour::textPrimary);
 }
 
 namespace
@@ -376,7 +388,7 @@ void InstrumentPanel::showPresetMenu()
     const auto items = presetMenuItems();
 
     for (int i = 0; i < items.size(); ++i)
-        menu.addItem (i + 1, items[i]);
+        addGlyphItem (menu, i + 1, items[i], glyph::forAction (glyph::Action::preset));
 
     menu.setLookAndFeel (&getLookAndFeel());
     menu.showMenuAsync (juce::PopupMenu::Options().withTargetComponent (presetButton),
@@ -421,6 +433,15 @@ void InstrumentPanel::resized()
     // what it did before there was anything beside it.
     presetButton.setBounds (titleRow.removeFromRight (size::gutterLabel));
     titleRow.removeFromRight (space::sm);
+
+    // The glyph column is taken only when there is a channel to describe, so an
+    // empty panel's placeholder is not indented past a picture of nothing.
+    titleGlyphBounds = showingAny ? titleRow.removeFromLeft (size::glyphColumn)
+                                  : juce::Rectangle<int>();
+
+    if (showingAny)
+        titleRow.removeFromLeft (space::sm);
+
     titleLabel.setBounds (titleRow);
 
     area.removeFromTop (space::sm);

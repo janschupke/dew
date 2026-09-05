@@ -42,6 +42,10 @@ public:
 
     void addChannel();
 
+    /** Adds the kind the menu named, by asking whichever of the three below
+        knows how. The rack is the only thing that can make all three. */
+    void addChannelOfType (InstrumentType);
+
     /** Adds a channel that plays a recording rather than its oscillators, and
         arms it - the reason to add one is to record into it.
     */

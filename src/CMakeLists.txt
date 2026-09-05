@@ -471,8 +471,10 @@ add_library(dew_design STATIC
   ui/design/SystemMotionPreference.cpp
   ui/design/Theme.cpp
   ui/design/icons/Icons.cpp
+  ui/design/icons/IconsActions.cpp
   ui/design/icons/IconsSound.cpp
   ui/design/icons/IconsViews.cpp
+  ui/design/MenuGlyph.cpp
   ui/design/DewGallery.cpp
   ui/design/DewGalleryPalette.cpp
   ui/primitives/DewControls.cpp
@@ -482,6 +484,7 @@ add_library(dew_design STATIC
   ui/primitives/DewMeter.cpp
   ui/primitives/DewNumberField.cpp
   ui/design/DewLookAndFeel.cpp
+  ui/design/DewLookAndFeelMenus.cpp
   ui/design/SignalScope.cpp
 )
 

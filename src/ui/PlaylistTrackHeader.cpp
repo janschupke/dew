@@ -5,6 +5,8 @@
 #include "model/Ids.h"
 #include "model/ProjectEdits.h"
 #include "ui/ColourMenu.h"
+#include "ui/design/Glyphs.h"
+#include "ui/design/MenuGlyph.h"
 #include "ui/design/Cursors.h"
 
 namespace dew
@@ -65,16 +67,20 @@ PlaylistTrackHeader::PlaylistTrackHeader (ProjectDocument& d, juce::ValueTree t)
 juce::PopupMenu PlaylistTrackHeader::buildMenu() const
 {
     juce::PopupMenu menu;
-    menu.addItem ((int) MenuItem::rename, tr (StringId::playlist_menu_rename));
+    addGlyphItem (menu, (int) MenuItem::rename, tr (StringId::playlist_menu_rename),
+                  glyph::forAction (glyph::Action::rename));
     colourMenu::addTo (menu, track, colourBaseId);
-    menu.addItem ((int) MenuItem::addTrack, tr (StringId::playlist_menu_addTrack));
+    addGlyphItem (menu, (int) MenuItem::addTrack, tr (StringId::playlist_menu_addTrack),
+                  glyph::forAction (glyph::Action::add));
     menu.addSeparator();
 
     // Here as well as on the toolbar and on alt-0, because this is the menu
     // you are already in when a drag on the edge above went too far.
-    menu.addItem ((int) MenuItem::resetHeight, tr (StringId::playlist_menu_resetHeight));
+    addGlyphItem (menu, (int) MenuItem::resetHeight, tr (StringId::playlist_menu_resetHeight),
+                  glyph::forAction (glyph::Action::reset));
     menu.addSeparator();
-    menu.addItem ((int) MenuItem::removeTrack, tr (StringId::playlist_menu_removeTrack));
+    addGlyphItem (menu, (int) MenuItem::removeTrack, tr (StringId::playlist_menu_removeTrack),
+                  glyph::forAction (glyph::Action::remove));
     return menu;
 }
 
