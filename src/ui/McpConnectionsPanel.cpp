@@ -149,9 +149,9 @@ void McpConnectionsPanel::paint (juce::Graphics& g)
 {
     using namespace tokens;
 
-    g.fillAll (colour::background);
+    paintBackground (g);
 
-    auto area = getLocalBounds().reduced (space::xl);
+    auto area = contentBounds();
 
     area.removeFromTop (size::controlHeight);
 
@@ -220,7 +220,7 @@ void McpConnectionsPanel::resized()
 {
     using namespace tokens;
 
-    auto area = getLocalBounds().reduced (space::xl);
+    auto area = contentBounds();
 
     enableButton.setBounds (area.removeFromTop (size::controlHeight));
 
@@ -250,7 +250,7 @@ void McpConnectionsPanel::resized()
     for (auto& row : rows)
     {
         juce::Rectangle<int> bounds { 0, y, list.getWidth(), size::controlHeight };
-        row.revoke->setBounds (bounds.removeFromRight (96));
+        row.revoke->setBounds (bounds.removeFromRight (dialog::buttonWidthFor (*row.revoke)));
         y += rowHeight;
     }
 }

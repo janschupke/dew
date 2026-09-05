@@ -159,7 +159,7 @@ int RenderPanel::getRequiredHeight() const
             ++visibleRows;
 
     // Mirrors resized(), which is the only way the two can be trusted to agree.
-    return space::xl * 2 + visibleRows * (size::controlHeight + space::sm) + space::md
+    return chromeHeight() + visibleRows * (size::controlHeight + space::sm) + space::md
            + size::controlHeight * 2 + space::lg + size::controlHeight;
 }
 
@@ -470,14 +470,10 @@ void RenderPanel::setScopeForTesting (int itemId)
 
 void RenderPanel::resized()
 {
-    auto area = getLocalBounds().reduced (space::xl);
+    auto area = contentBounds();
 
     // The footer first, off the bottom, so the rows above never run into it.
-    auto footer = area.removeFromBottom (size::controlHeight);
-
-    renderButton.setBounds (footer.removeFromRight (110));
-    footer.removeFromRight (space::md);
-    cancelButton.setBounds (footer.removeFromRight (90));
+    layOutFooter (area, { &renderButton, &cancelButton });
 
     area.removeFromBottom (space::lg);
 
@@ -491,7 +487,7 @@ void RenderPanel::resized()
 
         auto line = area.removeFromTop (size::controlHeight);
 
-        row.labelBounds = line.removeFromLeft (74);
+        row.labelBounds = line.removeFromLeft (size::gutterLabel);
         line.removeFromLeft (space::md);
 
         // A toggle carries its own text, so it gets the whole row.
@@ -508,7 +504,7 @@ void RenderPanel::resized()
 
 void RenderPanel::paint (juce::Graphics& g)
 {
-    g.fillAll (colour::background);
+    paintBackground (g);
 
     g.setFont (type::font (type::caption));
     g.setColour (colour::textSecondary);

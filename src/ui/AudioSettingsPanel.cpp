@@ -273,7 +273,7 @@ void AudioSettingsPanel::timerCallback()
 
 void AudioSettingsPanel::resized()
 {
-    auto area = getLocalBounds().reduced (space::xl);
+    auto area = contentBounds();
     labelBounds.clearQuick();
 
     juce::ComboBox* boxes[] { &typeBox,         &outputBox, &inputBox,
@@ -298,12 +298,16 @@ void AudioSettingsPanel::resized()
     // arithmetic a second time, in a const method called from paint(), and
     // adding a seventh row would have moved the boxes and left the meter.
     meterArea = area.withHeight (size::meterHeight).withTrimmedLeft (size::gutterLabel + space::md);
-    testButton.setBounds (area.removeFromBottom (size::controlHeight).removeFromRight (110));
+
+    auto footer = area;
+    layOutFooter (footer, { &testButton });
 }
 
 void AudioSettingsPanel::paint (juce::Graphics& g)
 {
-    g.fillAll (colour::background);
+    paintBackground (g);
+
+    const auto content = contentBounds();
 
     g.setFont (type::font (type::caption));
     g.setColour (colour::textSecondary);
@@ -350,14 +354,15 @@ void AudioSettingsPanel::paint (juce::Graphics& g)
 
     g.setFont (type::font (type::caption));
     g.setColour (colour::textSecondary);
-    g.drawText (tr (StringId::audio_inputLevel), meter.withX (space::xl).withWidth (66),
+    // Beside the bar rather than at a fixed 16 from the panel's own edge: that
+    // spelling of the inset stopped being true the moment this panel could be
+    // laid out inside somebody else's pane.
+    g.drawText (tr (StringId::audio_inputLevel),
+                meter.withX (content.getX()).withWidth (size::gutterLabel),
                 juce::Justification::centredLeft, false);
 
     // The live state, under the controls: what the choices above added up to.
-    const auto summary = getLocalBounds()
-                             .reduced (space::xl)
-                             .withTop (getHeight() - space::xl - size::controlHeight * 2
-                                       - space::md)
+    const auto summary = content.withTop (content.getBottom() - size::controlHeight * 2 - space::md)
                              .withHeight (size::controlHeight);
 
     const auto open = deviceManager.getCurrentAudioDevice() != nullptr;
@@ -373,7 +378,7 @@ void AudioSettingsPanel::paint (juce::Graphics& g)
 
 void AudioSettingsPanel::show (LiveAudioHost& host, AudioEngine& engine, juce::Component* parent)
 {
-    dialog::launch (new AudioSettingsPanel (host, engine), "Audio Settings", parent);
+    dialog::launch (new AudioSettingsPanel (host, engine), tr (StringId::audio_title), parent);
 }
 
 } // namespace dew

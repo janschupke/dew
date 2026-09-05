@@ -6,6 +6,7 @@
 
 #include "control/McpProtocol.h"
 #include "i18n/Strings.h"
+#include "ui/DewDialog.h"
 #include "ui/primitives/DewControls.h"
 
 namespace dew
@@ -25,11 +26,11 @@ namespace dew
     asked: no check dew could perform would be worth as much as somebody
     recognising the thing they just started.
 
-    Like every other dew dialog it is a juce::Component in a modeless
-    DialogWindow through dialog::launch, because JUCE_MODAL_LOOPS_PERMITTED is
-    0 here - so the answer arrives in a callback and cannot arrive inline.
+    Like every other dew dialog it is a dialog::Panel in a modeless DialogWindow
+    through dialog::launch, because JUCE_MODAL_LOOPS_PERMITTED is 0 here - so
+    the answer arrives in a callback and cannot arrive inline.
 */
-class McpConsentPanel : public juce::Component
+class McpConsentPanel : public dialog::Panel
 {
 public:
     /** Who is asking. A struct because the request TRAVELS: the server hands it
@@ -79,7 +80,11 @@ public:
         button row. Wider and taller than ConfirmPanel because this asks
         somebody to make a decision rather than to confirm one they already
         made - and measured against a render rather than guessed: at 208 there
-        was a band of empty ground between the sentence and the buttons. */
+        was a band of empty ground between the sentence and the buttons.
+
+        The WIDTH has to hold three buttons that measure their own words, so a
+        language whose "Allow reading and changing" is much longer than the
+        English needs this raised - and a dew_shot render is what says so. */
     static constexpr int preferredHeight = 186;
 
 private:

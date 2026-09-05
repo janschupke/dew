@@ -4,6 +4,7 @@
 
 #include "app/Settings.h"
 #include "io/MidiInputHost.h"
+#include "ui/DewDialog.h"
 #include "ui/primitives/DewControls.h"
 
 namespace dew
@@ -21,7 +22,7 @@ namespace dew
     because a tick that silently disappears is a tick the user cannot untick or
     account for.
 */
-class MidiSettingsPanel : public juce::Component, private juce::Timer
+class MidiSettingsPanel : public dialog::Panel, private juce::Timer
 {
 public:
     MidiSettingsPanel (MidiInputHost&, Settings* settingsToUpdate = nullptr);

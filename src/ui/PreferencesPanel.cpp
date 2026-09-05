@@ -27,16 +27,20 @@ using namespace tokens;
 namespace
 {
 
-/** The category column. Not a rung of the size ladder: it is as wide as the
-    longest page name at body size plus the room a ghost button needs, and
-    nothing else in dew is that wide for that reason. */
-constexpr int sidebarWidth = 190;
-
 /** One group, so choosing a page unchooses the last one without this having to
     say which that was. */
 constexpr int categoryRadioGroup = 1;
 
 } // namespace
+
+// The three pages that ARE panels dew already had are stretched to the pane
+// now, but a panel is still only as good as the width it was laid out for: at
+// 485 the MCP page's address and command lines were being clipped by 35px and
+// nothing said so, because removeFromLeft silently clamps to what it is given.
+static_assert (PreferencesPanel::contentPaneWidth >= AudioSettingsPanel::preferredWidth
+                   && PreferencesPanel::contentPaneWidth >= MidiSettingsPanel::preferredWidth
+                   && PreferencesPanel::contentPaneWidth >= McpConnectionsPanel::preferredWidth,
+               "the content pane must be at least as wide as the widest panel it hosts");
 
 PreferencesPanel::PreferencesPanel (Settings& s, Hosts hosts)
     : settings (s)
@@ -124,13 +128,12 @@ void PreferencesPanel::buildPages (Hosts& hosts)
         add (prefs::Page::audio,
              std::make_unique<HostedPage> (
                  std::make_unique<AudioSettingsPanel> (*hosts.audio, *hosts.engine),
-                 AudioSettingsPanel::preferredWidth, AudioSettingsPanel::preferredHeight));
+                 AudioSettingsPanel::preferredHeight));
 
     if (hosts.midi != nullptr)
-        add (prefs::Page::midi,
-             std::make_unique<HostedPage> (
-                 std::make_unique<MidiSettingsPanel> (*hosts.midi, &settings),
-                 MidiSettingsPanel::preferredWidth, MidiSettingsPanel::preferredHeight));
+        add (prefs::Page::midi, std::make_unique<HostedPage> (
+                                    std::make_unique<MidiSettingsPanel> (*hosts.midi, &settings),
+                                    MidiSettingsPanel::preferredHeight));
 
     add (prefs::Page::rendering, std::make_unique<RenderingPage> (settings));
 
@@ -138,7 +141,7 @@ void PreferencesPanel::buildPages (Hosts& hosts)
          std::make_unique<HostedPage> (
              std::make_unique<McpConnectionsPanel> (hosts.mcpServer, hosts.grants, &settings,
                                                     hosts.onMcpEnabledChanged),
-             McpConnectionsPanel::preferredWidth, McpConnectionsPanel::preferredHeight));
+             McpConnectionsPanel::preferredHeight));
 }
 
 PreferencesPage* PreferencesPanel::getPageComponent (prefs::Page page) const
@@ -181,11 +184,11 @@ void PreferencesPanel::show (Settings& settings, Hosts hosts, juce::Component* p
 
 void PreferencesPanel::paint (juce::Graphics& g)
 {
-    g.fillAll (colour::background);
+    paintBackground (g);
 
     // The sidebar sits on its own ground, which is what makes it read as a
     // list of places rather than as four buttons floating beside the content.
-    auto area = getLocalBounds().reduced (space::xl);
+    auto area = contentBounds();
     area.removeFromTop (size::controlHeight + space::lg);
 
     paint::surface (g, area.removeFromLeft (sidebarWidth), colour::surface);
@@ -206,7 +209,7 @@ void PreferencesPanel::paint (juce::Graphics& g)
 
 void PreferencesPanel::resized()
 {
-    auto area = getLocalBounds().reduced (space::xl);
+    auto area = contentBounds();
 
     search.setBounds (area.removeFromTop (size::controlHeight));
     area.removeFromTop (space::lg);
@@ -231,14 +234,21 @@ void PreferencesPanel::resized()
     resultsViewport.setBounds (area);
     contentViewport.setBounds (area);
 
+    // The scrollbar's width is reserved whether or not it is showing, the way
+    // EffectChainHost reserves its height and for the same reason: asking the
+    // viewport what is visible depends on whether the bar is up, which depends
+    // on the width being set right here, so the two chase each other a frame at
+    // a time. Without the reservation the right-hand column of a page tall
+    // enough to scroll is quietly clipped by ten pixels.
+    const auto pane = contentViewport.getWidth() - contentViewport.getScrollBarThickness();
+
     if (auto* page = getPageComponent (selected))
     {
-        content.setSize (contentViewport.getWidth(),
-                         juce::jmax (contentViewport.getHeight(), page->getRequiredHeight()));
+        content.setSize (pane, juce::jmax (contentViewport.getHeight(), page->getRequiredHeight()));
         page->setBounds (content.getLocalBounds());
     }
 
-    layOutResults (area.getWidth());
+    layOutResults (resultsViewport.getWidth() - resultsViewport.getScrollBarThickness());
 }
 
 } // namespace dew

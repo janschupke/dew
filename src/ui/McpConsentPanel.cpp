@@ -29,8 +29,7 @@ void McpConsentPanel::answer (control::Grant grant)
     auto reply = onAnswered;
     onAnswered = nullptr;
 
-    if (auto* dialog = findParentComponentOfClass<juce::DialogWindow>())
-        dialog->exitModalState (0);
+    close();
 
     if (reply)
         reply (grant);
@@ -62,9 +61,9 @@ void McpConsentPanel::paint (juce::Graphics& g)
 {
     using namespace tokens;
 
-    g.fillAll (colour::background);
+    paintBackground (g);
 
-    auto area = getLocalBounds().reduced (space::xl);
+    auto area = contentBounds();
     area.removeFromBottom (size::controlHeight + space::xl);
 
     auto question = area.removeFromTop (size::controlHeight);
@@ -90,20 +89,16 @@ void McpConsentPanel::resized()
 {
     using namespace tokens;
 
-    auto area = getLocalBounds().reduced (space::xl);
-    auto buttons = area.removeFromBottom (size::controlHeight);
+    auto area = contentBounds();
 
     // Right-aligned with the widest grant outermost, which is where every other
     // dew dialog puts its acting button - and deny furthest from the thumb.
     //
-    // The widths are measured rather than chosen: at 140 the primary button
-    // read "Allow reading and changi", which is invisible in the code and
-    // obvious in one dew_shot render.
-    writeButton.setBounds (buttons.removeFromRight (150));
-    buttons.removeFromRight (space::md);
-    readButton.setBounds (buttons.removeFromRight (110));
-    buttons.removeFromRight (space::md);
-    denyButton.setBounds (buttons.removeFromRight (96));
+    // The three widths - 150, 110 and 96 - were measured by hand against one
+    // render, after 140 had shipped the primary button reading "Allow reading
+    // and changi". layOutFooter measures them on every layout instead, which is
+    // the only version of that check a translation cannot get past.
+    layOutFooter (area, { &writeButton, &readButton, &denyButton });
 }
 
 ConsentHook consentWithPanel (juce::Component* parent)

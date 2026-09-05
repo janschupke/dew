@@ -136,13 +136,7 @@ void RenderingPage::buildRows()
 
 void RenderingPage::resized()
 {
-    auto area = getLocalBounds();
-
-    for (const auto& row : rows)
-    {
-        row->setBounds (area.removeFromTop (PreferencesRow::height()));
-        area.removeFromTop (space::lg);
-    }
+    prefs::stackRows (rows, getLocalBounds());
 }
 
 void RenderingPage::reveal (const prefs::Entry* entry)
@@ -153,7 +147,7 @@ void RenderingPage::reveal (const prefs::Entry* entry)
 
 int RenderingPage::getRequiredHeight() const
 {
-    return (int) rows.size() * (PreferencesRow::height() + space::lg);
+    return prefs::stackHeight ((int) rows.size());
 }
 
 } // namespace dew

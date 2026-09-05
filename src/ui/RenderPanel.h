@@ -7,6 +7,7 @@
 #include "app/Settings.h"
 #include "io/OfflineRenderer.h"
 #include "app/ProjectDocument.h"
+#include "ui/DewDialog.h"
 #include "ui/EditorState.h"
 #include "ui/primitives/DewControls.h"
 #include "ui/primitives/DewNumberField.h"
@@ -33,7 +34,7 @@ namespace dew
     this stays constructible with no message loop, no file system and no engine -
     which is what lets a test and dew_shot both build one.
 */
-class RenderPanel : public juce::Component, private juce::ChangeListener
+class RenderPanel : public dialog::Panel, private juce::ChangeListener
 {
 public:
     /** What the user asked for. The destination is the caller's problem. */

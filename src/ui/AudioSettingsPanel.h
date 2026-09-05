@@ -7,6 +7,7 @@
 
 #include "engine/AudioEngine.h"
 #include "io/LiveAudioHost.h"
+#include "ui/DewDialog.h"
 #include "ui/primitives/DewControls.h"
 
 namespace dew
@@ -28,7 +29,7 @@ namespace dew
     tells LiveAudioHost to reopen with input channels. The meter beside it is
     the confirmation that both worked, which a combo box alone cannot give.
 */
-class AudioSettingsPanel : public juce::Component, private juce::ChangeListener, private juce::Timer
+class AudioSettingsPanel : public dialog::Panel, private juce::ChangeListener, private juce::Timer
 {
 public:
     AudioSettingsPanel (LiveAudioHost&, AudioEngine&);

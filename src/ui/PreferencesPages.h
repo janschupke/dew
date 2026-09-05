@@ -7,6 +7,7 @@
 #include <juce_gui_basics/juce_gui_basics.h>
 
 #include "app/Settings.h"
+#include "ui/DewDialog.h"
 #include "ui/PreferencesCatalog.h"
 #include "ui/primitives/DewControls.h"
 #include "ui/primitives/DewNumberField.h"
@@ -65,6 +66,14 @@ public:
         constant so that nothing declares a dimension the token ladder owns. */
     static int height() noexcept;
 
+    /** How tall the description's own line is.
+
+        Its own box rather than a control-sized one: the description used to be
+        centred inside size::controlHeightSm, which put four pixels of slack
+        above it and four below, and read as a second row rather than as the
+        explanation of the one above it. */
+    static int descriptionHeight() noexcept;
+
 private:
     const prefs::Entry& entry;
     juce::Component& control;
@@ -72,6 +81,24 @@ private:
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (PreferencesRow)
 };
+
+// -----------------------------------------------------------------------------
+
+namespace prefs
+{
+
+/** Stacks `rows` down `area`, and how tall a stack of `count` of them is.
+
+    One implementation, because the two pages that stack rows had two of each -
+    and both of their getRequiredHeight counted one gap too many, so every page
+    asked its viewport for twelve pixels it had nothing to put in.
+*/
+void stackRows (const std::vector<std::unique_ptr<PreferencesRow>>& rows,
+                juce::Rectangle<int> area);
+
+int stackHeight (int count);
+
+} // namespace prefs
 
 // -----------------------------------------------------------------------------
 
@@ -149,16 +176,25 @@ private:
 
 /** A page that IS one of the panels dew already had.
 
-    Audio, MIDI and MCP are not re-implemented here. The panel is embedded at
-    its own preferred width, left-aligned rather than stretched, because it was
-    laid out for that width and a device chooser spread across a wider pane
-    reads as a different control.
+    Audio, MIDI and MCP are not re-implemented here. The panel is EMBEDDED: it
+    fills the pane and applies none of the inset it would apply in a dialog of
+    its own, because this window has already applied one.
+
+    It used to be placed at its own standalone preferredWidth and left-aligned,
+    on the reasoning that a panel laid out for 420 should not be spread across
+    the pane. Three things were wrong with that. The panels lay out responsively
+    - only the label gutter is fixed, and every control beside it stretches - so
+    there was nothing to spread. The two narrow ones left 65px of empty pane
+    beside them. And the wide one did not fit at all: removeFromLeft clamps
+    silently, so MCP's 520 became 485 and its address lines were clipped by a
+    window that never said so.
 */
 class HostedPage : public PreferencesPage
 {
 public:
-    explicit HostedPage (std::unique_ptr<juce::Component> panel, int preferredWidth,
-                         int preferredHeight);
+    /** @param standaloneHeight  the panel's own preferredHeight, which includes
+                                 the inset it no longer applies. */
+    explicit HostedPage (std::unique_ptr<dialog::Panel> panel, int standaloneHeight);
 
     void resized() override;
     int getRequiredHeight() const override;
@@ -170,8 +206,7 @@ public:
     }
 
 private:
-    std::unique_ptr<juce::Component> panel;
-    int panelWidth = 0;
+    std::unique_ptr<dialog::Panel> panel;
     int panelHeight = 0;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (HostedPage)

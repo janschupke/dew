@@ -525,7 +525,7 @@ void MainComponent::showMidiSettings()
     panel->onDevicesChanged = [this]
     { statusBar.showMessage (midiHost.describeInputs(), StatusBar::Severity::info); };
 
-    dialog::launch (panel, "MIDI Settings", this);
+    dialog::launch (panel, tr (StringId::midi_title), this);
 }
 
 void MainComponent::resized()

@@ -301,7 +301,7 @@ void MainComponent::showRenderDialog (Settings* settingsToUpdate)
         close();
     };
 
-    dialog::launch (panel, "Render", this);
+    dialog::launch (panel, tr (StringId::render_title), this);
 }
 
 void MainComponent::showAudioSettings()
@@ -311,6 +311,6 @@ void MainComponent::showAudioSettings()
     panel->onDeviceChanged = [this]
     { statusBar.showMessage (audioHost.describeDevice(), StatusBar::Severity::info); };
 
-    dialog::launch (panel, "Audio Settings", this);
+    dialog::launch (panel, tr (StringId::audio_title), this);
 }
 } // namespace dew

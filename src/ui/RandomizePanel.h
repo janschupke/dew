@@ -5,6 +5,7 @@
 #include "i18n/Strings.h"
 
 #include "model/NoteTools.h"
+#include "ui/DewDialog.h"
 #include "ui/primitives/DewControls.h"
 #include "ui/primitives/DewNumberField.h"
 
@@ -21,7 +22,7 @@ namespace dew
     it would render as JUCE's default tick box in an application whose design
     system exists to avoid exactly that.
 */
-class RandomizePanel : public juce::Component
+class RandomizePanel : public dialog::Panel
 {
 public:
     /** `scopeText` says what the edit will hit, so the dialog does not have to
@@ -56,8 +57,6 @@ public:
     static constexpr int preferredHeight = 186;
 
 private:
-    void closeDialog();
-
     juce::String scopeText;
 
     DewNumberField velocityField;

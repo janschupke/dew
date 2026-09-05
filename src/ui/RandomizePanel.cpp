@@ -28,7 +28,7 @@ RandomizePanel::RandomizePanel (NoteTools::RandomizeOptions initial, juce::Strin
 
     setOptions (initial);
 
-    cancelButton.onClick = [this] { closeDialog(); };
+    cancelButton.onClick = [this] { close(); };
     addAndMakeVisible (cancelButton);
 
     applyButton.onClick = [this]
@@ -40,7 +40,7 @@ RandomizePanel::RandomizePanel (NoteTools::RandomizeOptions initial, juce::Strin
         if (onApply)
             onApply (options);
 
-        closeDialog();
+        close();
     };
     addAndMakeVisible (applyButton);
 
@@ -58,12 +58,6 @@ void RandomizePanel::setOptions (const NoteTools::RandomizeOptions& options)
     stepField.setValue ((double) options.stepAmount, juce::dontSendNotification);
 }
 
-void RandomizePanel::closeDialog()
-{
-    if (auto* dialog = findParentComponentOfClass<juce::DialogWindow>())
-        dialog->exitModalState (0);
-}
-
 void RandomizePanel::show (NoteTools::RandomizeOptions initial, juce::String scopeText,
                            juce::Component* parent,
                            std::function<void (const NoteTools::RandomizeOptions&)> onApply)
@@ -71,28 +65,31 @@ void RandomizePanel::show (NoteTools::RandomizeOptions initial, juce::String sco
     auto* panel = new RandomizePanel (initial, std::move (scopeText));
     panel->onApply = std::move (onApply);
 
-    dialog::launch (panel, "Randomize", parent);
+    dialog::launch (panel, tr (StringId::randomize_title), parent);
 }
 
 void RandomizePanel::paint (juce::Graphics& g)
 {
     using namespace tokens;
 
-    g.fillAll (colour::background);
+    paintBackground (g);
 
-    auto area = getLocalBounds().reduced (space::xl);
+    auto area = contentBounds();
 
     g.setColour (colour::textSecondary);
     g.setFont (type::font (type::small));
     g.drawText (scopeText, area.removeFromTop (size::controlHeight),
                 juce::Justification::centredLeft, true);
 
+    // Directly above the footer, measured from the bottom of the content rather
+    // than from the panel's own height - which is the same rectangle right up
+    // until the inset stops being applied.
+    const auto content = contentBounds();
+
     g.setColour (colour::textDisabled);
     g.setFont (type::font (type::caption));
     g.drawText (tr (StringId::randomize_hint),
-                getLocalBounds()
-                    .reduced (space::xl)
-                    .withTop (getHeight() - space::xl - size::controlHeight * 2 - space::sm)
+                content.withTop (content.getBottom() - size::controlHeight * 2 - space::sm)
                     .withHeight (size::controlHeight),
                 juce::Justification::centredLeft, true);
 }
@@ -101,7 +98,7 @@ void RandomizePanel::resized()
 {
     using namespace tokens;
 
-    auto area = getLocalBounds().reduced (space::xl);
+    auto area = contentBounds();
 
     area.removeFromTop (size::controlHeight); // the scope sentence, painted
     area.removeFromTop (space::md);
@@ -116,10 +113,8 @@ void RandomizePanel::resized()
     fields.removeFromLeft (space::md);
     stepField.setBounds (fields.removeFromLeft (fieldWidth));
 
-    auto buttons = getLocalBounds().reduced (space::xl).removeFromBottom (size::controlHeight);
-    applyButton.setBounds (buttons.removeFromRight (100));
-    buttons.removeFromRight (space::sm);
-    cancelButton.setBounds (buttons.removeFromRight (76));
+    auto footer = contentBounds();
+    layOutFooter (footer, { &applyButton, &cancelButton });
 }
 
 } // namespace dew

@@ -13,7 +13,7 @@ ConfirmPanel::ConfirmPanel (Request r)
 
     confirmButton.setButtonText (request.confirmText);
 
-    cancelButton.onClick = [this] { closeDialog(); };
+    cancelButton.onClick = [this] { close(); };
     addAndMakeVisible (cancelButton);
 
     confirmButton.onClick = [this]
@@ -23,7 +23,7 @@ ConfirmPanel::ConfirmPanel (Request r)
         // callback, which is a member.
         auto confirmed = onConfirm;
 
-        closeDialog();
+        close();
 
         if (confirmed)
             confirmed();
@@ -31,14 +31,6 @@ ConfirmPanel::ConfirmPanel (Request r)
     addAndMakeVisible (confirmButton);
 
     setSize (preferredWidth, preferredHeight);
-}
-
-void ConfirmPanel::closeDialog()
-{
-    // Null when the panel is built bare, which is how a test drives it: there
-    // is no dialog to leave, and the buttons still do their work.
-    if (auto* dialog = findParentComponentOfClass<juce::DialogWindow>())
-        dialog->exitModalState (0);
 }
 
 void ConfirmPanel::show (Request r, juce::Component* parent, std::function<void()> onConfirmed)
@@ -55,9 +47,9 @@ void ConfirmPanel::paint (juce::Graphics& g)
 {
     using namespace tokens;
 
-    g.fillAll (colour::background);
+    paintBackground (g);
 
-    auto area = getLocalBounds().reduced (space::xl);
+    auto area = contentBounds();
     area.removeFromBottom (size::controlHeight + space::xl);
 
     g.setColour (colour::textPrimary);
@@ -73,14 +65,12 @@ void ConfirmPanel::resized()
 {
     using namespace tokens;
 
-    auto area = getLocalBounds().reduced (space::xl);
-    auto buttons = area.removeFromBottom (size::controlHeight);
+    auto area = contentBounds();
 
     // Right-aligned, acting button outermost, which is where the other dew
-    // dialogs put theirs.
-    confirmButton.setBounds (buttons.removeFromRight (96));
-    buttons.removeFromRight (space::md);
-    cancelButton.setBounds (buttons.removeFromRight (96));
+    // dialogs put theirs - and now literally so, through the one that lays them
+    // all out.
+    layOutFooter (area, { &confirmButton, &cancelButton });
 }
 
 ConfirmHook confirmWithPanel (juce::Component* parent)

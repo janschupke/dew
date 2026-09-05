@@ -189,9 +189,15 @@ bool showsALiteral (const juce::String& raw)
     // stays one: "E401" is not a sentence, it is an identifier that happens to
     // be spelled in quotes, and it is the first argument rather than the
     // second.
-    for (const auto* sink : { "addItem (", "addSubMenu (", "drawText (", "drawFittedText (",
-                              "FileChooser> (", "FileBasedDocument (", "diagnostics.error (",
-                              "diagnostics.warning (", "diagnostics.add (", "related.push_back (" })
+    // A dialog's title is its SECOND argument too, and it is the one sentence of
+    // a dialog that is not inside the panel: four of the nine were still raw
+    // English - "Render", "Audio Settings", "MIDI Settings", "Randomize" - long
+    // after every word inside those same panels had been translated, because no
+    // sink in this list could see them.
+    for (const auto* sink :
+         { "addItem (", "addSubMenu (", "drawText (", "drawFittedText (", "FileChooser> (",
+           "FileBasedDocument (", "diagnostics.error (", "diagnostics.warning (",
+           "diagnostics.add (", "related.push_back (", "dialog::launch (" })
     {
         if (! line.contains (sink))
             continue;

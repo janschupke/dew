@@ -8,9 +8,11 @@
 
 #include "app/Settings.h"
 #include "control/McpServer.h"
+#include "ui/DewDialog.h"
 #include "ui/McpGrants.h"
 #include "ui/PreferencesCatalog.h"
 #include "ui/PreferencesPages.h"
+#include "ui/design/Tokens.h"
 #include "ui/primitives/DewControls.h"
 #include "ui/primitives/DewSearchField.h"
 
@@ -40,7 +42,7 @@ class MidiInputHost;
     components, and its Appearance page invokes the very same commands the View
     menu does. There is one implementation of each setting and two ways in.
 */
-class PreferencesPanel : public juce::Component
+class PreferencesPanel : public dialog::Panel
 {
 public:
     /** What the window needs from the application around it.
@@ -119,7 +121,24 @@ public:
     /** The page component in front, so a test can reach an embedded panel. */
     PreferencesPage* getPageComponent (prefs::Page) const;
 
-    static constexpr int preferredWidth = 720;
+    /** The category column. Not a rung of the size ladder: it is as wide as the
+        longest page name at body size plus the room a ghost button needs, and
+        nothing else in dew is that wide for that reason.
+
+        In the header rather than the .cpp because the window's own width is
+        DERIVED from it - it was a bare 720 that had drifted 35px narrower than
+        the widest panel it hosts, and a number nothing computes is a number
+        nothing keeps true. */
+    static constexpr int sidebarWidth = 190;
+
+    /** The content pane, which is as wide as the widest page this window hosts.
+        A static_assert in the .cpp holds it against the three. */
+    static constexpr int contentPaneWidth = 520;
+
+    static constexpr int preferredWidth = tokens::space::xl * 2 + sidebarWidth
+                                          + tokens::stroke::hairlinePx + tokens::space::lg
+                                          + contentPaneWidth;
+
     static constexpr int preferredHeight = 480;
 
 private:

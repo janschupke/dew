@@ -2,6 +2,7 @@
 
 #include <juce_gui_basics/juce_gui_basics.h>
 
+#include "ui/DewDialog.h"
 #include "ui/primitives/DewControls.h"
 
 namespace dew
@@ -23,7 +24,7 @@ namespace dew
     the source to whoever holds the binary, and the button beside it is that
     offer being kept.
 */
-class AboutPanel : public juce::Component
+class AboutPanel : public dialog::Panel
 {
 public:
     AboutPanel();
@@ -58,8 +59,6 @@ public:
     static constexpr int preferredHeight = 260;
 
 private:
-    void closeDialog();
-
     DewButton sourceButton { {}, DewButton::Role::ghost };
     DewButton closeButton { {}, DewButton::Role::primary };
 

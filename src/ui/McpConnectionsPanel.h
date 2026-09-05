@@ -4,6 +4,7 @@
 
 #include "app/Settings.h"
 #include "control/McpServer.h"
+#include "ui/DewDialog.h"
 #include "ui/McpGrants.h"
 #include "ui/primitives/DewControls.h"
 
@@ -25,7 +26,7 @@ namespace dew
     rows in a Viewport, test accessors instead of a driveable dialog, and a
     `preferredWidth`/`preferredHeight` pair so dew_shot can render it bare.
 */
-class McpConnectionsPanel : public juce::Component
+class McpConnectionsPanel : public dialog::Panel
 {
 public:
     /** @param server  ASKED FOR each time rather than held, and that is not a

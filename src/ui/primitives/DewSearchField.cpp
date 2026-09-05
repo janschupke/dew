@@ -22,6 +22,14 @@ DewSearchField::DewSearchField()
     editor.setMultiLine (false);
     editor.setReturnKeyStartsNewLine (false);
     editor.setBorder ({});
+
+    // The LEFT indent is JUCE's own default, so nothing moves sideways. The top
+    // one has to go: setTextToShowWhenEmpty centres the placeholder inside a
+    // rectangle whose top has already been trimmed by topIndent, while the text
+    // that replaces it compensates for the trim and centres properly - so the
+    // two did not sit on the same line, and the placeholder read as two pixels
+    // low in every search box in the application.
+    editor.setIndents (space::xs, 0);
     editor.setJustification (juce::Justification::centredLeft);
     editor.setMouseCursor (cursor::value);
 

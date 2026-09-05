@@ -6,6 +6,7 @@
 
 #include "i18n/Strings.h"
 
+#include "ui/DewDialog.h"
 #include "ui/primitives/DewControls.h"
 
 namespace dew
@@ -19,15 +20,15 @@ namespace dew
     application whose whole design system exists so that nothing is system would
     be the one window that looked like somebody else's.
 
-    So it is the same juce::Component-in-a-DialogWindow every other dew panel
-    is, and inherits the dropdown, focus, escape and title-bar behaviour those
-    already have through dialog::launch.
+    So it is the same dialog::Panel-in-a-DialogWindow every other dew panel is,
+    and inherits the inset, the ground, the footer and the escape and title-bar
+    behaviour those already have through dialog::launch.
 
     It knows nothing about a document. What it confirms is a sentence and a
     callback, which is what lets the transport bar, the channel rack, the
     playlist and the mixer all use it while each keeps its own reason.
 */
-class ConfirmPanel : public juce::Component
+class ConfirmPanel : public dialog::Panel
 {
 public:
     /** What is being asked.
@@ -77,8 +78,6 @@ public:
     static constexpr int preferredHeight = 128;
 
 private:
-    void closeDialog();
-
     Request request;
 
     DewButton cancelButton { tr (StringId::dialog_cancel), DewButton::Role::ghost };

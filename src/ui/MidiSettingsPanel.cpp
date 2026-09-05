@@ -241,7 +241,7 @@ bool MidiSettingsPanel::isDeviceRowTicked (int index) const
 
 void MidiSettingsPanel::resized()
 {
-    auto area = getLocalBounds().reduced (space::xl);
+    auto area = contentBounds();
 
     // The heading sits above the list; paint() draws it into this strip.
     area.removeFromTop (size::controlHeightSm + space::xs);
@@ -269,9 +269,9 @@ void MidiSettingsPanel::resized()
 
 void MidiSettingsPanel::paint (juce::Graphics& g)
 {
-    g.fillAll (colour::background);
+    paintBackground (g);
 
-    auto area = getLocalBounds().reduced (space::xl);
+    auto area = contentBounds();
 
     paint::sectionHeading (g, area.removeFromTop (size::controlHeightSm), "INPUTS");
 
@@ -287,9 +287,9 @@ void MidiSettingsPanel::paint (juce::Graphics& g)
         g.drawText (labels[i], labelBounds[i], juce::Justification::centredLeft, false);
 
     // The live state, under the controls: what the choices above added up to.
-    const auto summary = getLocalBounds()
-                             .reduced (space::xl)
-                             .withTop (getHeight() - space::xl - size::controlHeight)
+    const auto content = contentBounds();
+
+    const auto summary = content.withTop (content.getBottom() - size::controlHeight)
                              .withHeight (size::controlHeight);
 
     // Three states, not two: nothing asked for, asked for but not here, and
@@ -312,7 +312,8 @@ void MidiSettingsPanel::paint (juce::Graphics& g)
 void MidiSettingsPanel::show (MidiInputHost& hostToUse, Settings* settingsToUse,
                               juce::Component* parent)
 {
-    dialog::launch (new MidiSettingsPanel (hostToUse, settingsToUse), "MIDI Settings", parent);
+    dialog::launch (new MidiSettingsPanel (hostToUse, settingsToUse), tr (StringId::midi_title),
+                    parent);
 }
 
 } // namespace dew

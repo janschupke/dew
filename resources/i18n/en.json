@@ -1011,13 +1011,14 @@
     }
   },
   "randomize": {
+    "apply": {
+      "label": "Randomize"
+    },
     "hint": "Zero leaves a property untouched.",
     "step": {
       "help": "How far a note can move in time, either way. Zero leaves timing alone"
     },
-    "apply": {
-      "label": "Randomize"
-    }
+    "title": "Randomize"
   },
   "render": {
     "depth": {
@@ -1033,12 +1034,13 @@
       "selection": "Selection: bars {from} to {to}",
       "song": "Song"
     },
+    "start": {
+      "label": "Render"
+    },
     "tail": {
       "help": "Time rendered after the music ends, so release tails are not cut off"
     },
-    "start": {
-      "label": "Render"
-    }
+    "title": "Render"
   },
   "sample": {
     "title": "Sample",

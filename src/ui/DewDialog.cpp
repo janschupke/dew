@@ -74,4 +74,76 @@ void launch (juce::Component* content, const juce::String& title, juce::Componen
     options.launchAsync();
 }
 
+// --- the panel every dialog's content is --------------------------------------
+
+juce::Rectangle<int> Panel::contentBounds() const
+{
+    return embedded ? getLocalBounds() : getLocalBounds().reduced (tokens::space::xl);
+}
+
+int Panel::chromeHeight() const
+{
+    return embedded ? 0 : tokens::space::xl * 2;
+}
+
+void Panel::setEmbedded (bool shouldBeEmbedded)
+{
+    if (embedded == shouldBeEmbedded)
+        return;
+
+    embedded = shouldBeEmbedded;
+
+    // Both, and in this order: the inset every layout is measured from has just
+    // moved, and a panel that only repainted would draw its labels where its
+    // controls are no longer.
+    resized();
+    repaint();
+}
+
+void Panel::paintBackground (juce::Graphics& g) const
+{
+    // An embedded panel is transparent, so the pane it sits in stays one
+    // surface. Filling here would draw the background colour over whatever the
+    // window had already painted - which is the same colour today and is the
+    // window's decision rather than this panel's.
+    if (! embedded)
+        g.fillAll (tokens::colour::background);
+}
+
+juce::Rectangle<int> Panel::layOutFooter (juce::Rectangle<int>& area,
+                                          std::initializer_list<juce::Button*> rightToLeft)
+{
+    const auto strip = area.removeFromBottom (tokens::size::controlHeight);
+    auto remaining = strip;
+
+    for (auto* button : rightToLeft)
+    {
+        if (button == nullptr)
+            continue;
+
+        button->setBounds (remaining.removeFromRight (buttonWidthFor (*button)));
+        remaining.removeFromRight (tokens::space::md);
+    }
+
+    return strip;
+}
+
+void Panel::close()
+{
+    if (auto* window = findParentComponentOfClass<juce::DialogWindow>())
+        window->exitModalState (0);
+}
+
+int buttonWidthFor (const juce::Button& button)
+{
+    using namespace tokens;
+
+    // space::md each side is the inset DewButton draws its own label inside, and
+    // space::xs beyond it so a word never touches the rounding.
+    const auto word = juce::GlyphArrangement::getStringWidthInt (type::font (type::body),
+                                                                 button.getButtonText());
+
+    return juce::jmax (size::buttonMinWidth, word + (space::md + space::xs) * 2);
+}
+
 } // namespace dew::dialog

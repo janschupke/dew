@@ -392,6 +392,19 @@ inline constexpr int rowHeight = 34; ///< channel rack and playlist rows
 inline constexpr int rulerHeight = 22;
 inline constexpr int minTouchTarget = 24; ///< nothing clickable smaller than this
 
+/** The narrowest a dialog's footer button may be: "Cancel" and room around it.
+
+    Five panels spelled a footer width by hand - 76, 90, 96, 100, 110 and 150
+    between them - and one of them read "Allow reading and changi" until
+    somebody rendered it. A button wider than this measures its own words, so
+    this is a FLOOR rather than a width.
+
+    It is the same number as gutterLabel and is not the same measurement: one is
+    a settings form's label column, this is the smallest a button may be. A
+    button that borrowed the gutter would follow the form's column when it
+    moved, which is a relationship neither of them has. */
+inline constexpr int buttonMinWidth = 76;
+
 /** Horizontal strips, shortest to tallest.
 
     Six of these were declared in six files with nothing relating them: the

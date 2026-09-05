@@ -44,21 +44,13 @@ AboutPanel::AboutPanel()
     closeButton.setButtonText (tr (StringId::about_close));
     closeButton.setTooltip (tr (StringId::about_close));
     closeButton.setTitle (tr (StringId::about_close));
-    closeButton.onClick = [this] { closeDialog(); };
+    closeButton.onClick = [this] { close(); };
     addAndMakeVisible (closeButton);
 }
 
 juce::String AboutPanel::getBuildText() const
 {
     return BuildInfo::summary();
-}
-
-void AboutPanel::closeDialog()
-{
-    // Null when the panel is built bare, which is how a test and dew_shot drive
-    // it: there is no dialog to leave, and the buttons still do their work.
-    if (auto* dialog = findParentComponentOfClass<juce::DialogWindow>())
-        dialog->exitModalState (0);
 }
 
 void AboutPanel::show (juce::Component* parent)
@@ -68,9 +60,9 @@ void AboutPanel::show (juce::Component* parent)
 
 void AboutPanel::paint (juce::Graphics& g)
 {
-    g.fillAll (colour::background);
+    paintBackground (g);
 
-    auto area = getLocalBounds().reduced (space::xl);
+    auto area = contentBounds();
 
     g.setColour (colour::textPrimary);
     g.setFont (type::font (type::display, true));
@@ -106,11 +98,12 @@ void AboutPanel::paint (juce::Graphics& g)
 
 void AboutPanel::resized()
 {
-    auto footer = getLocalBounds().reduced (space::xl).removeFromBottom (size::controlHeight);
+    auto area = contentBounds();
 
-    closeButton.setBounds (footer.removeFromRight (size::gutterLabel));
-    footer.removeFromRight (space::md);
-    sourceButton.setBounds (footer.removeFromRight (size::gutterLabel));
+    // Both were size::gutterLabel, which is a settings form's label column and
+    // was standing in for "as wide as a small button". They measure their own
+    // words now, which is what "Show the source" needs and "Close" does not.
+    layOutFooter (area, { &closeButton, &sourceButton });
 }
 
 } // namespace dew
