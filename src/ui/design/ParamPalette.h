@@ -28,7 +28,13 @@ inline juce::Colour forRole (ParamRole role) noexcept
 {
     switch (role)
     {
-        case ParamRole::level: return tokens::colour::funcLevel;
+        // Level is the exception, and deliberately: volume and gain are the
+        // controls a person reaches for most, and the app's own colour is what
+        // says "this is the one you hold". The function palette keeps the
+        // parameter's MEANING, and funcLevel keeps saying it where a level is
+        // a signal rather than a control - the mixer's meter.
+        case ParamRole::level: return tokens::colour::accent;
+
         case ParamRole::stereo: return tokens::colour::funcStereo;
         case ParamRole::tone: return tokens::colour::funcTone;
         case ParamRole::time: return tokens::colour::funcTime;

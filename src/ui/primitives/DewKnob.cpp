@@ -273,6 +273,6 @@ void DewKnob::paint (juce::Graphics& g)
     // Around the whole knob, caption and readout included, rather than around
     // the rotary alone: the focus is on the slider INSIDE this, and a ring that
     // hugged it would sit in the middle of the control rather than on its edge.
-    paint::focusRing (g, *this, hasKeyboardFocus (true));
+    paint::focusRing (g, *this, focus::ringVisibleFor (hasKeyboardFocus (true)));
 }
 } // namespace dew

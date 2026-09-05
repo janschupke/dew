@@ -56,6 +56,17 @@ public:
     */
     juce::Label* createSliderTextBox (juce::Slider&) override;
 
+    /** The + and - a Slider makes for IncDecButtons.
+
+        JUCE hands back a plain TextButton, and a plain juce::Button completes a
+        click for whichever mouse button pressed it - so right-clicking the
+        octave stepper's + moved the oscillator up an octave and wrote an undo
+        step for it. There is no other way in: the two buttons are children the
+        slider creates for itself, so a DewSlider cannot refuse the press on
+        their behalf and this hook is the only place that can.
+    */
+    juce::Button* createSliderButton (juce::Slider&, bool isIncrement) override;
+
     /** Tabs fell through to LookAndFeel_V4, which meant no dew hover treatment
         and a tab bar that did not look like the rest of the application.
     */

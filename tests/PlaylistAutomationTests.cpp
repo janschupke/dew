@@ -559,15 +559,18 @@ TEST_CASE ("an automation clip is drawn in its target's function colour",
     // Deliberately NOT asserting the absence of `warning`, which is what these
     // used to be drawn in: warning and the playhead are seven degrees apart and
     // coverageOf matches within 24 per channel, so such an assertion passed or
-    // failed on whether the playhead was in frame. And the two function colours
-    // are close by design, so it is which one WINS that says anything.
-    const std::vector<juce::Colour> choices { tokens::colour::funcLevel,
-                                              tokens::colour::funcStereo };
-
+    // failed on whether the playhead was in frame.
+    //
+    // Nor a contest between the two lanes' colours any more. A LEVEL is the
+    // accent since volume and gain became the controls the app's own colour
+    // marks, and accent is also what a freshly created clip is SELECTED in - so
+    // "which colour wins" on a pan lane started answering `accent` and saying
+    // nothing about the curve. The claim is the same one and is made the other
+    // way round: each lane carries its own target's colour and not the other's.
     const auto volumeLane = render (h.playlist);
 
-    CHECK (coverageOf (volumeLane, tokens::colour::funcLevel) > 0.0f);
-    CHECK (strongestCoverage (volumeLane, choices) == 0);
+    CHECK (coverageOf (volumeLane, tokens::colour::accent) > 0.0f);
+    CHECK (juce::exactlyEqual (coverageOf (volumeLane, tokens::colour::funcStereo), 0.0f));
 
     // The same clip pointed somewhere else is a different colour, which is the
     // whole claim: the colour comes from the TARGET, not from the clip kind.
@@ -582,5 +585,4 @@ TEST_CASE ("an automation clip is drawn in its target's function colour",
     const auto panLane = render (pan.playlist);
 
     CHECK (coverageOf (panLane, tokens::colour::funcStereo) > 0.0f);
-    CHECK (strongestCoverage (panLane, choices) == 1);
 }

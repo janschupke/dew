@@ -303,6 +303,37 @@ void TransportBar::addPattern()
     engine.setCurrentPatternId ((int) pattern[ids::id]);
 }
 
+void TransportBar::setCurrentPattern (int wantedId)
+{
+    auto id = wantedId;
+
+    if (! ProjectEdits::findPattern (document.getState(), id).isValid())
+    {
+        // The first pattern the PROJECT has. A project with none leaves the id
+        // alone rather than inventing one: there is nothing to open, and the
+        // dropdown's first row is the "New pattern" sentinel.
+        id = 0;
+
+        for (const auto& pattern : document.getState())
+        {
+            if (! pattern.hasType (ids::PATTERN))
+                continue;
+
+            id = (int) pattern[ids::id];
+            break;
+        }
+
+        if (id == 0)
+            return;
+    }
+
+    editorState.setCurrentPatternId (id);
+    engine.setCurrentPatternId (id);
+
+    if (patternBox.indexOfItemId (id) >= 0)
+        patternBox.setSelectedId (id, juce::dontSendNotification);
+}
+
 void TransportBar::rebuildPatternList()
 {
     const juce::ScopedValueSetter<bool> quiet (updatingPatternList, true);
@@ -317,16 +348,8 @@ void TransportBar::rebuildPatternList()
     patternBox.addSeparator();
     patternBox.addItem (tr (StringId::transport_newPattern), newPatternItemId);
 
-    auto id = editorState.getCurrentPatternId();
-
-    if (patternBox.indexOfItemId (id) < 0 && patternBox.getNumItems() > 0)
-    {
-        id = patternBox.getItemId (0);
-        editorState.setCurrentPatternId (id);
-        engine.setCurrentPatternId (id);
-    }
-
-    patternBox.setSelectedId (id, juce::dontSendNotification);
+    setCurrentPattern (editorState.getCurrentPatternId());
+    patternBox.setSelectedId (editorState.getCurrentPatternId(), juce::dontSendNotification);
 }
 
 void TransportBar::changeListenerCallback (juce::ChangeBroadcaster*)

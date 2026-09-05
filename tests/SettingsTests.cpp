@@ -196,6 +196,7 @@ TEST_CASE ("the audio device state survives a restart", "[settings]")
 
 // --- applied to the editor ---------------------------------------------------
 
+#include "model/Ids.h"
 #include "ui/MainComponent.h"
 #include "ui/design/Tokens.h"
 
@@ -268,6 +269,53 @@ TEST_CASE ("a session is restored into the editor and captured back out", "[sett
         REQUIRE (roundTripped->getPlaylistTrackHeight() <= dew::tokens::size::trackHeightMax);
         REQUIRE (roundTripped->getPlaylistTrackHeight() >= dew::tokens::size::trackHeightMin);
     }
+}
+
+TEST_CASE ("a remembered pattern that the project has not got opens the first one",
+           "[settings][ui]")
+{
+    const juce::ScopedJuceInitialiser_GUI juceInit;
+    TempSettings temp;
+
+    // The startup path used to write the remembered id straight into
+    // EditorState. Settings::getCurrentPatternId only clamps it to one or more,
+    // and the project a settings file was written beside is deliberately NOT
+    // remembered - so any id above the pattern count was restored intact and
+    // pointed the whole editor at a pattern that does not exist: a blank
+    // dropdown, a disabled length field, an empty roll, and a sequencer with no
+    // material, which in pattern mode is silence.
+    auto settings = temp.open();
+    settings->setCurrentPatternId (4242);
+
+    dew::MainComponent component (false);
+    component.setSize (1400, 800);
+    component.applySettings (*settings);
+
+    const auto& project = component.getDocument().getState();
+    const auto first = project.getChildWithName (dew::ids::PATTERN);
+    REQUIRE (first.isValid());
+
+    const auto firstId = (int) first[dew::ids::id];
+    const auto restored = component.getEditorState().getCurrentPatternId();
+
+    INFO ("restored pattern " << restored << ", first is " << firstId);
+    CHECK (restored == firstId);
+
+    // The ENGINE too. EditorState and the engine hold the same id separately,
+    // and the path that only set the first one is how a restored session could
+    // show one pattern and play another.
+    CHECK (component.getEngine().getCurrentPatternId() == firstId);
+
+    // Control case: an id the project HAS is left exactly where it is, so this
+    // is a fallback rather than a reset.
+    auto sane = temp.open();
+    sane->setCurrentPatternId (firstId);
+
+    dew::MainComponent second (false);
+    second.setSize (1400, 800);
+    second.applySettings (*sane);
+
+    CHECK (second.getEditorState().getCurrentPatternId() == firstId);
 }
 
 TEST_CASE ("the instrument panel can be resized, and the width is what is saved", "[settings][ui]")

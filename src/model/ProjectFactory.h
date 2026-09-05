@@ -65,7 +65,6 @@ struct ProjectFactory
             the demo's own project name is - so there is no stored copy that
             could disagree with it. */
         StringId menuName;
-        StringId description;
 
         juce::ValueTree (*build)();
     };

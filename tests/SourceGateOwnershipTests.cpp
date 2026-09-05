@@ -1,5 +1,7 @@
 #include <catch2/catch_test_macros.hpp>
 
+#include <algorithm>
+
 #include "SourceScan.h"
 #include "model/AutomationTargets.h"
 #include "model/ModuleCatalog.h"
@@ -357,5 +359,99 @@ TEST_CASE ("no source binds a key outside the hotkey registry", "[build][gate][h
         { "ui/Hotkeys.cpp", "ui/ScoreEditorComponent.cpp" });
 
     INFO ("keys bound outside the registry:\n" << found.joinIntoString ("\n"));
+    CHECK (found.isEmpty());
+}
+
+TEST_CASE ("no menu-bar menu carries a popup's second line", "[build][gate][menus]")
+{
+    // DewLookAndFeel::menuRow packs a sentence under a label by joining the two
+    // with a newline, and DewLookAndFeel::drawPopupMenuItem is what knows to
+    // split it again. That is a POPUP affordance, and the menu bar is not a
+    // popup: on macOS it is the native one - DewApplication calls
+    // MenuBarModel::setMacMainMenu - so its items are NSMenuItems that no look
+    // and feel of dew's ever paints. The Demos menu shipped eight rows that way
+    // and what a person read was the description.
+    //
+    // Asked as a shape rather than as a path, so the rule survives the file
+    // being split: a translation unit that implements getMenuForIndex is
+    // building the menu bar, and must not call menuRow anywhere in it. The two
+    // legitimate callers - the instrument panel's presets and the effect
+    // chain's - implement no such thing and are not touched.
+    juce::StringArray found;
+    auto menuBarFiles = 0;
+
+    for (const auto& file : sourceFiles())
+    {
+        const auto lines = codeLinesWithNumbersOf (file);
+
+        const auto buildsTheMenuBar = std::any_of (
+            lines.begin(), lines.end(),
+            [] (const CodeLine& line) { return line.text.contains ("getMenuForIndex"); });
+
+        if (! buildsTheMenuBar)
+            continue;
+
+        ++menuBarFiles;
+
+        for (const auto& line : lines)
+            if (line.text.contains ("menuRow"))
+                found.add (relativePathOf (file) + ":" + juce::String (line.number) + "  "
+                           + line.text.trim());
+    }
+
+    // Control case: a gate that found no menu bar at all would pass in silence,
+    // which is exactly how this class of scanner dies.
+    INFO ("translation units building the menu bar: " << menuBarFiles);
+    REQUIRE (menuBarFiles > 0);
+
+    INFO ("menu-bar rows carrying a second line:\n" << found.joinIntoString ("\n"));
+    CHECK (found.isEmpty());
+}
+
+TEST_CASE ("a control that arms a popup press also disarms it", "[build][gate][gesture]")
+{
+    // The half of the rule that a walk of the window cannot check, and that
+    // being unable to check it is exactly how it went missing for months.
+    //
+    // Every control refused a right press in mouseDown and stopped there.
+    // juce::Button re-arms itself in mouseDrag - updateState (over, true), for
+    // whichever mouse button is held - and completes the click in mouseUp, so a
+    // right-press that moved one pixel fired the button anyway. The piano
+    // roll's octave pair is where it was noticed; it was true of every button
+    // in the application.
+    //
+    // Not testable through the window: Button::isMouseSourceOver asks
+    // Component::isMouseOver, which reads the real pointer, and a headless
+    // harness has none - so a synthetic right-drag never reaches the state the
+    // defect needs. What IS checkable is that the three phases were written
+    // together, which is what PopupPress exists to make one decision.
+    juce::StringArray found;
+    auto arming = 0;
+
+    for (const auto& file : sourceFiles())
+    {
+        const auto lines = codeLinesWithNumbersOf (file);
+
+        const auto has = [&lines] (const char* call)
+        {
+            return std::any_of (lines.begin(), lines.end(), [call] (const CodeLine& line)
+                                { return line.text.contains (call); });
+        };
+
+        if (! has ("popupPress.down ("))
+            continue;
+
+        ++arming;
+
+        if (! has ("popupPress.dragging()") || ! has ("popupPress.releasing()"))
+            found.add (relativePathOf (file)
+                       + "  arms a popup press and does not refuse the drag or the release");
+    }
+
+    // Control case: a gate that found nothing arming one would pass in silence.
+    INFO ("translation units arming a popup press: " << arming);
+    REQUIRE (arming > 3);
+
+    INFO ("controls that refuse only the press:\n" << found.joinIntoString ("\n"));
     CHECK (found.isEmpty());
 }

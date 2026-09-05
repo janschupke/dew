@@ -339,6 +339,10 @@ private:
         MainComponent& owner;
         int widthAtDragStart = 0;
 
+        /** True while a right press is still down, so the drag it arms moves
+            nothing. See PopupPress. */
+        bool popupPressed = false;
+
         /** At the top of the divider rather than inside the panel: it has to
             stay reachable once the panel it hides is gone.
         */

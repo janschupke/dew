@@ -36,6 +36,24 @@ public:
     /** Called when the document is replaced wholesale. */
     void refresh();
 
+    /** Points the editor, the engine and the dropdown at `wantedId`, or at the
+        project's FIRST pattern when it has no such pattern.
+
+        The rule lived inside rebuildPatternList, which meant it ran on every
+        path that replaced the document and on none of the paths that only
+        restored a remembered id. Startup was the second kind: applySettings
+        wrote a pattern id straight into EditorState, and a stale one - a
+        project that has since lost that pattern, or a settings file written
+        beside a different one - left the dropdown blank, the length field
+        disabled, the roll empty and the sequencer with nothing to play.
+
+        Answered from the DOCUMENT rather than from the dropdown. The dropdown's
+        first row is a pattern only while there is one; with an empty project it
+        is the "New pattern" sentinel, and that used to reach the engine as a
+        pattern id of a million.
+    */
+    void setCurrentPattern (int wantedId);
+
     /** Starts or stops a take. Wired by the parent rather than reached through
         a back-pointer, like every other cross-component call in the editor -
         recording needs the document, the device and the playlist at once, and

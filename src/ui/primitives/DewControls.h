@@ -7,6 +7,7 @@
 #include "engine/WaveformPeaks.h"
 #include "model/ParamSpec.h"
 #include "ui/design/Animator.h"
+#include "ui/design/Focus.h"
 
 #include "ui/design/Icons.h"
 #include "ui/design/Tokens.h"
@@ -62,6 +63,134 @@ private:
     ComponentMotion toggled;
 };
 
+/** The right button, refused for the WHOLE press.
+
+    Every control in dew already refused a popup press in mouseDown, and that
+    was half a rule. juce::Button re-arms itself on a drag:
+
+        void Button::mouseDrag (const MouseEvent& e)
+        {
+            updateState (isMouseSourceOver (e), true);   // whichever button
+        }
+
+        void Button::mouseUp (const MouseEvent& e)
+        {
+            const auto wasDown = isDown();
+            ...
+            if (wasDown && wasOver && ! triggerOnMouseDown)
+                internalClickCallback (e.mods);
+        }
+
+    So a right-press that moved a single pixel before releasing put the button
+    back into buttonDown and the release completed the click. It applied to
+    every button in the application - the transport, the tools, both zoom
+    groups, delete pattern, and the piano roll's octave pair, which is where it
+    was first noticed.
+
+    A LATCH rather than re-reading the modifiers at each phase. The modifiers on
+    a release are the modifiers as they are then, and ctrl-click on macOS is a
+    popup press whose ctrl may well be up by the time the button comes up - so
+    the only reliable statement is the one made at the press and remembered.
+
+    A member rather than MouseEvent::mouseWasDraggedSinceMouseDown, which asks
+    the mouse SOURCE and reads false for every synthetic event in the suite.
+*/
+class PopupPress
+{
+public:
+    /** Call FIRST in mouseDown. True when the press was the right button, in
+        which case the control must do nothing else with it. Opens `hook` if
+        there is one.
+
+        Swallowing it with no hook is the point and is what this used to get
+        wrong: a person aiming at a menu that is not there asked for nothing,
+        not for the button.
+    */
+    bool down (const juce::MouseEvent& event, const std::function<void()>& hook)
+    {
+        held = event.mods.isPopupMenu();
+
+        if (! held)
+            return false;
+
+        if (hook != nullptr)
+            hook();
+
+        return true;
+    }
+
+    /** Call FIRST in mouseDrag. True while the press that is still down was a
+        popup press. */
+    bool dragging() const noexcept
+    {
+        return held;
+    }
+
+    /** Call FIRST in mouseUp. True when this release ends a popup press, and
+        clears the latch so the next press starts from nothing. */
+    bool releasing() noexcept
+    {
+        const auto was = held;
+        held = false;
+        return was;
+    }
+
+private:
+    bool held = false;
+};
+
+/** juce::Slider, minus the defect that a right-drag moves the value.
+
+    The same rule the buttons follow, applied to the one JUCE control dew builds
+    on directly. juce::Slider only treats a right press as a menu when
+    setPopupMenuEnabled is on, and nothing in dew turns it on - so the press
+    fell through to the drag branch, armed a gesture and moved the value. A
+    right-drag on a knob, on a mixer fader or on an octave stepper wrote an undo
+    step for a gesture nobody asked for.
+
+    A subclass rather than setPopupMenuEnabled, because JUCE's own menu is
+    "Velocity mode" and "Rotary mode", which are not dew's vocabulary and would
+    appear in a design system that owns every other menu in the application.
+
+    Everything else is stock: DewLookAndFeel already draws the rotary, the
+    linear track and the text box, so what the control lacked was not an
+    appearance but a refusal.
+*/
+class DewSlider : public juce::Slider
+{
+public:
+    using juce::Slider::Slider;
+
+    void mouseDown (const juce::MouseEvent& event) override
+    {
+        if (popupPress.down (event, nullptr))
+            return;
+
+        juce::Slider::mouseDown (event);
+    }
+
+    void mouseDrag (const juce::MouseEvent& event) override
+    {
+        if (popupPress.dragging())
+            return;
+
+        juce::Slider::mouseDrag (event);
+    }
+
+    void mouseUp (const juce::MouseEvent& event) override
+    {
+        if (popupPress.releasing())
+            return;
+
+        juce::Slider::mouseUp (event);
+    }
+
+private:
+    PopupPress popupPress;
+
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (DewSlider)
+};
+
 /** A text button in one of the system's roles.
 
     Roles rather than colours: callers say what a button MEANS and the design
@@ -109,6 +238,22 @@ public:
         arming a press that then never completes. */
     void mouseDown (const juce::MouseEvent&) override;
 
+    /** Above Button's own handling in all three phases - see PopupPress. */
+    void mouseDrag (const juce::MouseEvent&) override;
+    void mouseUp (const juce::MouseEvent&) override;
+
+    /** Tells the design system what moved the keyboard here, so a ring is
+        drawn for a tab and not for a click - see focus::ringVisible.
+
+        Above juce::Button's own handling rather than instead of it: the base repaints,
+        and the note has to happen first so the repaint it schedules paints the
+        answer. */
+    void focusGained (FocusChangeType cause) override
+    {
+        focus::noteFocusChange (cause);
+        juce::Button::focusGained (cause);
+    }
+
 protected:
     void buttonStateChanged() override
     {
@@ -117,6 +262,7 @@ protected:
 
 private:
     ButtonLift lift { *this };
+    PopupPress popupPress;
 
     Role role = Role::normal;
     juce::Justification justification { juce::Justification::centred };
@@ -184,6 +330,21 @@ public:
     void paintButton (juce::Graphics&, bool shouldDrawHighlighted, bool shouldDrawDown) override;
     void mouseDown (const juce::MouseEvent&) override;
 
+    /** See PopupPress. */
+    void mouseDrag (const juce::MouseEvent&) override;
+    void mouseUp (const juce::MouseEvent&) override;
+
+    /** See DewButton::focusGained.
+
+        Above juce::Button's own handling rather than instead of it: the base repaints,
+        and the note has to happen first so the repaint it schedules paints the
+        answer. */
+    void focusGained (FocusChangeType cause) override
+    {
+        focus::noteFocusChange (cause);
+        juce::Button::focusGained (cause);
+    }
+
 protected:
     void buttonStateChanged() override
     {
@@ -197,6 +358,7 @@ private:
     juce::Colour restingTint() const;
 
     ButtonLift lift { *this };
+    PopupPress popupPress;
 
     juce::Path icon;
     juce::Colour onColour = tokens::colour::accent;
@@ -233,6 +395,21 @@ public:
     void paintButton (juce::Graphics&, bool shouldDrawHighlighted, bool shouldDrawDown) override;
     void mouseDown (const juce::MouseEvent&) override;
 
+    /** See PopupPress. */
+    void mouseDrag (const juce::MouseEvent&) override;
+    void mouseUp (const juce::MouseEvent&) override;
+
+    /** See DewButton::focusGained.
+
+        Above juce::Button's own handling rather than instead of it: the base repaints,
+        and the note has to happen first so the repaint it schedules paints the
+        answer. */
+    void focusGained (FocusChangeType cause) override
+    {
+        focus::noteFocusChange (cause);
+        juce::Button::focusGained (cause);
+    }
+
 protected:
     void buttonStateChanged() override
     {
@@ -241,6 +418,7 @@ protected:
 
 private:
     ButtonLift lift { *this };
+    PopupPress popupPress;
 
     juce::String letter;
     juce::Colour onColour;
@@ -265,6 +443,13 @@ public:
     explicit DewCheckbox (const juce::String& text = {});
 
     void mouseDown (const juce::MouseEvent&) override;
+
+    /** See PopupPress. */
+    void mouseDrag (const juce::MouseEvent&) override;
+    void mouseUp (const juce::MouseEvent&) override;
+
+private:
+    PopupPress popupPress;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (DewCheckbox)
 };
@@ -349,6 +534,15 @@ public:
         status-bar explanation and nothing for a screen reader.
     */
     void setTooltip (const juce::String&) override;
+
+    /** A dropdown states focus by turning its BORDER accent rather than by
+        adding a ring - DewLookAndFeel::drawComboBox - and that is the same
+        statement, so it answers to the same rule. See DewButton::focusGained. */
+    void focusGained (FocusChangeType cause) override
+    {
+        focus::noteFocusChange (cause);
+        juce::ComboBox::focusGained (cause);
+    }
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (DewDropdown)
 };
@@ -460,6 +654,16 @@ public:
     */
     void mouseDown (const juce::MouseEvent&) override;
 
+    /** focusOfChildComponentChanged rather than focusGained, because a knob is a
+        Component wrapping the juce::Slider that carries the range, the value and
+        the keyboard. The ring is drawn around the wrapper and the focus is on
+        the child, so this is the only hook that fires. */
+    void focusOfChildComponentChanged (FocusChangeType cause) override
+    {
+        focus::noteFocusChange (cause);
+        repaint();
+    }
+
 private:
     /** Where the needle actually is, which is not always where the value is.
 
@@ -495,7 +699,7 @@ private:
         distance it made. That reads as a knob that is not listening, and it is
         the one thing a value control cannot be.
     */
-    juce::Slider slider { juce::Slider::RotaryVerticalDrag, juce::Slider::NoTextBox };
+    DewSlider slider { juce::Slider::RotaryVerticalDrag, juce::Slider::NoTextBox };
     ComponentMotion needle { *this };
     bool needleSeeded = false;
     bool dragging = false;
@@ -522,6 +726,25 @@ private:
     through its own onDragStart, which a test can verify exists and works.
 */
 void forwardChildMouseEventsTo (juce::Component& parent);
+
+/** Whether this event happened ON `self` rather than on a child that forwards
+    to it.
+
+    The other half of forwardChildMouseEventsTo, and the half that was missing.
+    Forwarding is for HOVER - a row should light up while the pointer is over
+    one of its buttons - but JUCE delivers a forwarded press to the listener as
+    well as to the control, and three rows in dew opened a context menu from
+    their own mouseDown. So a right-click on a mixer strip's fader, its pan knob
+    or its M and S opened the CONTROL's parameter menu and the STRIP's menu, one
+    on top of the other, and the channel rack did the same.
+
+    eventComponent rather than a hit test: it is what JUCE already knows and it
+    stays right when a control moves.
+*/
+inline bool isOwnPress (const juce::MouseEvent& event, const juce::Component& self) noexcept
+{
+    return event.eventComponent == &self;
+}
 
 /** The word beside a control that is not a knob, as a Label.
 

@@ -329,7 +329,10 @@ void PlaylistComponent::paint (juce::Graphics& g)
                                             (float) size::rulerHeight }));
     }
 
-    g.setFont (type::font (type::caption));
+    // The same rung TimelineRuler numbers its bars at, and it has to stay the
+    // same: the playlist paints its own ruler rather than hosting that one, so
+    // these two lines are the whole of what keeps the two agreeing.
+    g.setFont (type::font (type::small));
 
     for (int bar = painted.getStart(); bar < painted.getEnd(); ++bar)
     {

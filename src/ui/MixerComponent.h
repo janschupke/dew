@@ -108,7 +108,7 @@ private:
 
     /** In the scrolling holder after the last strip, not in a footer: the same
         place the channel rack puts its add button, for the same reason. */
-    DewButton addStripButton { "+", DewButton::Role::ghost };
+    DewButton addStripButton { "+ Insert", DewButton::Role::ghost };
 
     EffectChainHost chainHost;
 

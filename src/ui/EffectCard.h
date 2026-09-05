@@ -149,6 +149,11 @@ private:
     juce::Point<int> pressedAt;
     bool updating = false;
     bool draggingFromGrip = false;
+
+    /** The right button, refused for the whole press. A card is not a Dew
+        primitive - it is a Component with its own gesture - so it carries the
+        latch itself. See PopupPress. */
+    PopupPress popupPress;
     bool inDrag = false;
     bool gestureActive = false;
 

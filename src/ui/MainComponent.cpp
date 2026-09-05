@@ -241,13 +241,23 @@ MainComponent::PanelDivider::PanelDivider (MainComponent& o)
     addAndMakeVisible (toggleButton);
 }
 
-void MainComponent::PanelDivider::mouseDown (const juce::MouseEvent&)
+void MainComponent::PanelDivider::mouseDown (const juce::MouseEvent& event)
 {
+    // The right button moves nothing here either. A latch rather than a second
+    // read of the modifiers on the drag, for the reason PopupPress gives.
+    popupPressed = event.mods.isPopupMenu();
+
+    if (popupPressed)
+        return;
+
     widthAtDragStart = owner.panelWidth;
 }
 
 void MainComponent::PanelDivider::mouseDrag (const juce::MouseEvent& event)
 {
+    if (popupPressed)
+        return;
+
     // Dragging brings a folded panel back. Otherwise a collapse would strand
     // the width being dragged behind a panel nothing can be seen of.
     owner.setPanelCollapsed (false);
@@ -352,7 +362,13 @@ void MainComponent::applySettings (const Settings& settings)
 
     editorState.setSelectedChannelId (settings.getSelectedChannelId());
     editorState.setSelectedMixerTrackId (settings.getSelectedMixerTrackId());
-    editorState.setCurrentPatternId (settings.getCurrentPatternId());
+
+    // Through the transport bar rather than straight into EditorState, because
+    // a remembered pattern id is a claim about a project the settings file has
+    // never seen: Settings::getCurrentPatternId only clamps it to one or more.
+    // The bar answers it against the document, falls back to the first pattern
+    // there is, and tells the engine - none of which the raw setter does.
+    transportBar.setCurrentPattern (settings.getCurrentPatternId());
 
     tabs.setCurrentTabIndex (settings.getTabIndex(), false);
     tabs.applyPianoRollView (settings.getPianoRollZoom(), settings.getPianoRollScroll(),

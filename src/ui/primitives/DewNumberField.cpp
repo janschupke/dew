@@ -276,7 +276,7 @@ void DewNumberField::paint (juce::Graphics& g)
         g.fillPath (arrows);
     }
 
-    paint::focusRing (g, *this, hasKeyboardFocus (true));
+    paint::focusRing (g, *this, focus::ringVisibleFor (hasKeyboardFocus (true)));
 }
 
 } // namespace dew

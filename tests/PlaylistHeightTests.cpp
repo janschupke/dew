@@ -340,6 +340,91 @@ TEST_CASE ("a grab away from the edge is still a press on the track", "[ui][play
     CHECK (h.playlist.getTrackHeight() == before);
 }
 
+TEST_CASE ("a trackpad's fragments of a notch add up to a notch", "[ui][playlist][height]")
+{
+    const juce::ScopedJuceInitialiser_GUI juceInit;
+    PlaylistHarness h;
+
+    // The defect this exists for: a lane height is a whole pixel and a zoom is
+    // a FACTOR, so lround(34 * 2^(0.002 * 3)) is 34 and every event a trackpad
+    // sends rounded straight back to the height it started at. The gesture was
+    // implemented, tested and shipped, and it did nothing at all on the device
+    // most of this app is driven with - the mouse-wheel test above passed
+    // because one notch clears the rounding in a single event.
+    const auto wheel = [] (float deltaY)
+    {
+        juce::MouseWheelDetails w {};
+        w.deltaX = 0.0f;
+        w.deltaY = deltaY;
+        w.isReversed = false;
+        w.isSmooth = true;
+        w.isInertial = false;
+        return w;
+    };
+
+    const auto at = pointFor (h, 1, 0);
+    const auto before = h.playlist.getTrackHeight();
+
+    const auto crossZoom = juce::ModifierKeys::commandModifier | juce::ModifierKeys::shiftModifier;
+
+    // The magnitude matters and is not a round number picked for tidiness. JUCE
+    // reports a precise scrolling delta as pixels over 512, so a slow trackpad
+    // drag arrives as events of a couple of thousandths - and at 0.002 the
+    // factor is 1.004, which of a 34px lane asks for 34.14 and rounds back to
+    // 34. Anything larger clears the rounding in one event and proves nothing.
+    for (int i = 0; i < 100; ++i)
+        h.playlist.mouseWheelMove (eventAt (h.playlist, at, 1, crossZoom), wheel (0.002f));
+
+    INFO ("height went from " << before << " to " << h.playlist.getTrackHeight());
+    CHECK (h.playlist.getTrackHeight() > before);
+
+    // And back down again, which is the other half: a fraction that only ever
+    // accumulated upward would make the gesture one-way.
+    const auto taller = h.playlist.getTrackHeight();
+
+    for (int i = 0; i < 100; ++i)
+        h.playlist.mouseWheelMove (eventAt (h.playlist, at, 1, crossZoom), wheel (-0.002f));
+
+    CHECK (h.playlist.getTrackHeight() < taller);
+}
+
+TEST_CASE ("fragments of a wheel notch land where one notch lands", "[ui][playlist][height]")
+{
+    const juce::ScopedJuceInitialiser_GUI juceInit;
+
+    // Path independence, on the axis the resize drag already asserts it on. A
+    // hundred events of a two-hundredth is one event of a half, because a zoom
+    // composes: (2^(0.002 * k))^100 is 2^(0.2 * k).
+    const auto heightAfter = [] (int events, float deltaY)
+    {
+        PlaylistHarness h;
+
+        juce::MouseWheelDetails w {};
+        w.deltaX = 0.0f;
+        w.deltaY = deltaY;
+        w.isReversed = false;
+        w.isSmooth = true;
+        w.isInertial = false;
+
+        const auto at = pointFor (h, 1, 0);
+        const auto crossZoom = juce::ModifierKeys::commandModifier
+                               | juce::ModifierKeys::shiftModifier;
+
+        for (int i = 0; i < events; ++i)
+            h.playlist.mouseWheelMove (eventAt (h.playlist, at, 1, crossZoom), w);
+
+        return h.playlist.getTrackHeight();
+    };
+
+    // Within a pixel: the two paths agree in the real number and can round to
+    // either side of the same half.
+    const auto whole = heightAfter (1, 0.2f);
+    const auto fragments = heightAfter (100, 0.002f);
+
+    INFO ("one notch: " << whole << "  twenty fragments: " << fragments);
+    CHECK (std::abs (whole - fragments) <= 1);
+}
+
 TEST_CASE ("each wheel modifier moves a different axis", "[ui][playlist][height]")
 {
     const juce::ScopedJuceInitialiser_GUI juceInit;

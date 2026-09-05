@@ -60,22 +60,14 @@ juce::ValueTree ProjectFactory::createDefault (juce::StringRef locale)
 const std::vector<ProjectFactory::Demo>& ProjectFactory::demos()
 {
     static const std::vector<Demo> library {
-        { "demo.dew",        StringId::demo_gettingStarted_name,
-          StringId::demo_gettingStarted_description,  &ProjectFactory::createDemo },
-        { "melody.dew",      StringId::demo_pianoRoll_name,
-          StringId::demo_pianoRoll_description,       &ProjectFactory::createMelodyDemo },
-        { "effects.dew",     StringId::demo_effectChain_name,
-          StringId::demo_effectChain_description,     &ProjectFactory::createEffectsDemo },
-        { "automation.dew",  StringId::demo_automation_name,
-          StringId::demo_automation_description,      &ProjectFactory::createAutomationDemo },
-        { "wavetable.dew",   StringId::demo_wavetable_name,
-          StringId::demo_wavetable_description,       &ProjectFactory::createWavetableDemo },
-        { "layers.dew",      StringId::demo_oscillatorStack_name,
-          StringId::demo_oscillatorStack_description, &ProjectFactory::createLayersDemo },
-        { "arrangement.dew", StringId::demo_songStructure_name,
-          StringId::demo_songStructure_description,   &ProjectFactory::createArrangementDemo },
-        { "amber.dew",       StringId::demo_compiledScore_name,
-          StringId::demo_compiledScore_description,   &ProjectFactory::createScoreDemo },
+        { "demo.dew",        StringId::demo_gettingStarted_name,   &ProjectFactory::createDemo },
+        { "melody.dew",      StringId::demo_pianoRoll_name,        &ProjectFactory::createMelodyDemo },
+        { "effects.dew",     StringId::demo_effectChain_name,      &ProjectFactory::createEffectsDemo },
+        { "automation.dew",  StringId::demo_automation_name,       &ProjectFactory::createAutomationDemo },
+        { "wavetable.dew",   StringId::demo_wavetable_name,        &ProjectFactory::createWavetableDemo },
+        { "layers.dew",      StringId::demo_oscillatorStack_name,  &ProjectFactory::createLayersDemo },
+        { "arrangement.dew", StringId::demo_songStructure_name,    &ProjectFactory::createArrangementDemo },
+        { "amber.dew",       StringId::demo_compiledScore_name,    &ProjectFactory::createScoreDemo },
     };
 
     // clang-format on

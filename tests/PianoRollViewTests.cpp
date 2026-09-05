@@ -43,6 +43,44 @@ TEST_CASE ("pinching zooms around the pointer", "[ui][pianoroll]")
     REQUIRE (std::abs (after - stepUnderAnchor) < 1.0e-6);
 }
 
+TEST_CASE ("a trackpad's fragments of a notch add up over the pitch rows", "[ui][pianoroll]")
+{
+    const juce::ScopedJuceInitialiser_GUI juceInit;
+    RollHarness h;
+
+    // The playlist's lanes and the roll's pitch rows run the same arithmetic -
+    // RowView - and this is the second of its two callers. A pitch row starts at
+    // 14px, where a fragment of a notch asks for 14.06 and rounds back to 14, so
+    // cross-zooming a roll on a trackpad did nothing at all.
+    const auto wheel = [] (float deltaY)
+    {
+        juce::MouseWheelDetails w {};
+        w.deltaX = 0.0f;
+        w.deltaY = deltaY;
+        w.isReversed = false;
+        w.isSmooth = true;
+        w.isInertial = false;
+        return w;
+    };
+
+    const auto area = h.roll.getNoteArea();
+    const auto at = juce::Point<int> (area.getCentreX(), area.getCentreY());
+    const auto crossZoom = juce::ModifierKeys::commandModifier | juce::ModifierKeys::shiftModifier;
+
+    const auto before = h.roll.getRowHeight();
+    const auto zoomBefore = h.roll.getTimeline().pixelsPerStep;
+
+    for (int i = 0; i < 100; ++i)
+        h.roll.mouseWheelMove (eventAt (h.roll, at, crossZoom), wheel (0.002f));
+
+    INFO ("row height went from " << before << " to " << h.roll.getRowHeight());
+    CHECK (h.roll.getRowHeight() > before);
+
+    // And it was the OTHER axis throughout: a cross-zoom that also moved time
+    // would be the modifier test above failing in a way this one hides.
+    CHECK (juce::exactlyEqual (h.roll.getTimeline().pixelsPerStep, zoomBefore));
+}
+
 TEST_CASE ("the roll frames the pattern rather than opening at an arbitrary zoom",
            "[ui][pianoroll]")
 {

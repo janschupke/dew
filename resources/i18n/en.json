@@ -998,36 +998,28 @@
   "demo": {
     "missing": "The demo \"{name}\" is missing from this build.",
     "gettingStarted": {
-      "name": "Getting Started",
-      "description": "A four-bar groove: kick, snare, bass and a lead line."
+      "name": "Getting Started"
     },
     "pianoRoll": {
-      "name": "Piano Roll",
-      "description": "Chords, held notes and a velocity shape."
+      "name": "Piano Roll"
     },
     "effectChain": {
-      "name": "Effect Chain",
-      "description": "A pad through a filter and chorus, a pluck into a delay, reverb on the mix."
+      "name": "Effect Chain"
     },
     "automation": {
-      "name": "Automation",
-      "description": "A filter sweep over four bars, then a fade."
+      "name": "Automation"
     },
     "wavetable": {
-      "name": "Wavetable",
-      "description": "Five wavetables, unison and a morph position drawn across thirty-two bars."
+      "name": "Wavetable"
     },
     "oscillatorStack": {
-      "name": "Oscillator Stack",
-      "description": "Three oscillators a channel: octaves, cent detune and per-slot gain."
+      "name": "Oscillator Stack"
     },
     "songStructure": {
-      "name": "Song Structure",
-      "description": "Three lanes coming and going over thirty-two bars, and a drum bus."
+      "name": "Song Structure"
     },
     "compiledScore": {
-      "name": "Compiled from a Score",
-      "description": "Fifty-two bars written as text: pads, a bass, a lead and a voice answering it."
+      "name": "Compiled from a Score"
     }
   },
   "preset": {

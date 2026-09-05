@@ -127,7 +127,7 @@ void DewButton::paintButton (juce::Graphics& g, bool highlighted, bool down)
 
     g.drawText (getButtonText(), label, justification, false);
 
-    paint::focusRing (g, *this, hasKeyboardFocus (true));
+    paint::focusRing (g, *this, focus::ringVisibleFor (hasKeyboardFocus (true)));
 }
 
 // --- DewIconButton -----------------------------------------------------------
@@ -208,7 +208,7 @@ void DewIconButton::paintButton (juce::Graphics& g, bool highlighted, bool down)
 
     icons::draw (g, icon, bounds.reduced (bounds.getWidth() * 0.28f), tint);
 
-    paint::focusRing (g, *this, hasKeyboardFocus (true));
+    paint::focusRing (g, *this, focus::ringVisibleFor (hasKeyboardFocus (true)));
 }
 
 // --- DewLetterToggle ---------------------------------------------------------
@@ -254,55 +254,90 @@ void DewLetterToggle::paintButton (juce::Graphics& g, bool, bool)
     g.setFont (type::font (type::small, true));
     g.drawText (letter, getLocalBounds(), juce::Justification::centred, false);
 
-    paint::focusRing (g, *this, hasKeyboardFocus (true));
+    paint::focusRing (g, *this, focus::ringVisibleFor (hasKeyboardFocus (true)));
 }
 
 /** One rule for every control: a right-click opens the menu if there is one,
-    and is swallowed either way.
+    and is swallowed for the WHOLE press either way.
 
     Above each class's own handling rather than inside it, so a right-click never
     arms a drag or a toggle that then never completes.
 
-    Swallowing it even with NO menu is the point, and is what this used to get
-    wrong. juce::Button completes a click for whichever mouse button pressed it,
-    so falling through on a null hook meant every button in dew without a
-    context menu - play, stop, record, delete pattern, every tool and every zoom
-    - fired on a right-click. A person aiming at a menu that is not there asked
-    for nothing, not for the button.
+    The latch, and why all three phases are here rather than only the press,
+    are PopupPress's - and the half that was missing is the reason the piano
+    roll's octave buttons still transposed on a right-click months after every
+    control in dew was supposed to refuse one.
 */
-static bool consumePopupPress (const juce::MouseEvent& event, const std::function<void()>& hook)
-{
-    if (! event.mods.isPopupMenu())
-        return false;
-
-    if (hook != nullptr)
-        hook();
-
-    return true;
-}
-
 void DewButton::mouseDown (const juce::MouseEvent& event)
 {
-    if (consumePopupPress (event, onContextMenu))
+    if (popupPress.down (event, onContextMenu))
         return;
 
     juce::Button::mouseDown (event);
+}
+
+void DewButton::mouseDrag (const juce::MouseEvent& event)
+{
+    if (popupPress.dragging())
+        return;
+
+    juce::Button::mouseDrag (event);
+}
+
+void DewButton::mouseUp (const juce::MouseEvent& event)
+{
+    if (popupPress.releasing())
+        return;
+
+    juce::Button::mouseUp (event);
 }
 
 void DewIconButton::mouseDown (const juce::MouseEvent& event)
 {
-    if (consumePopupPress (event, onContextMenu))
+    if (popupPress.down (event, onContextMenu))
         return;
 
     juce::Button::mouseDown (event);
 }
 
+void DewIconButton::mouseDrag (const juce::MouseEvent& event)
+{
+    if (popupPress.dragging())
+        return;
+
+    juce::Button::mouseDrag (event);
+}
+
+void DewIconButton::mouseUp (const juce::MouseEvent& event)
+{
+    if (popupPress.releasing())
+        return;
+
+    juce::Button::mouseUp (event);
+}
+
 void DewLetterToggle::mouseDown (const juce::MouseEvent& event)
 {
-    if (consumePopupPress (event, onContextMenu))
+    if (popupPress.down (event, onContextMenu))
         return;
 
     juce::Button::mouseDown (event);
+}
+
+void DewLetterToggle::mouseDrag (const juce::MouseEvent& event)
+{
+    if (popupPress.dragging())
+        return;
+
+    juce::Button::mouseDrag (event);
+}
+
+void DewLetterToggle::mouseUp (const juce::MouseEvent& event)
+{
+    if (popupPress.releasing())
+        return;
+
+    juce::Button::mouseUp (event);
 }
 
 DewCheckbox::DewCheckbox (const juce::String& text)
@@ -321,16 +356,41 @@ void DewCheckbox::mouseDown (const juce::MouseEvent& event)
 {
     // No hook: a checkbox names no parameter, so there is nothing to offer. The
     // press is still consumed, because the alternative is toggling it.
-    if (event.mods.isPopupMenu())
+    if (popupPress.down (event, nullptr))
         return;
 
     juce::ToggleButton::mouseDown (event);
 }
 
+void DewCheckbox::mouseDrag (const juce::MouseEvent& event)
+{
+    if (popupPress.dragging())
+        return;
+
+    juce::ToggleButton::mouseDrag (event);
+}
+
+void DewCheckbox::mouseUp (const juce::MouseEvent& event)
+{
+    if (popupPress.releasing())
+        return;
+
+    juce::ToggleButton::mouseUp (event);
+}
+
 void DewKnob::mouseDown (const juce::MouseEvent& event)
 {
-    if (consumePopupPress (event, onContextMenu))
+    // A knob needs no latch of its own: this runs as a LISTENER on the slider
+    // inside it, and the slider is a DewSlider, which refuses the right button
+    // for the whole press on its own account. Opening the menu is all that is
+    // left to do here.
+    if (event.mods.isPopupMenu())
+    {
+        if (onContextMenu != nullptr)
+            onContextMenu();
+
         return;
+    }
 
     slider.setMouseDragSensitivity (gesture::dragPixelsFor (event.mods));
 }

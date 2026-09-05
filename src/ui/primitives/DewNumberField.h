@@ -2,6 +2,7 @@
 
 #include <juce_gui_basics/juce_gui_basics.h>
 
+#include "ui/design/Focus.h"
 #include "ui/design/Tokens.h"
 
 namespace dew
@@ -89,6 +90,21 @@ public:
     void mouseWheelMove (const juce::MouseEvent&, const juce::MouseWheelDetails&) override;
     void mouseEnter (const juce::MouseEvent&) override;
     void mouseExit (const juce::MouseEvent&) override;
+
+    /** Both hooks, because a number field holds the keyboard two ways: itself
+        while it is being dragged or nudged, and the juce::TextEditor it opens
+        while a value is being typed. See DewButton::focusGained. */
+    void focusGained (FocusChangeType cause) override
+    {
+        focus::noteFocusChange (cause);
+        repaint();
+    }
+
+    void focusOfChildComponentChanged (FocusChangeType cause) override
+    {
+        focus::noteFocusChange (cause);
+        repaint();
+    }
 
 private:
     juce::String displayText() const;

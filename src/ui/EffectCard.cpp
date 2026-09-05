@@ -162,7 +162,19 @@ void EffectCard::refreshValues()
 
 void EffectCard::mouseDown (const juce::MouseEvent& event)
 {
+    // Selecting the slot is fine on any button - a menu should act on the card
+    // that was clicked, which is the rule the rack and the mixer already state.
+    // Everything below it is not: a right press armed the grip reorder, and the
+    // release then expanded or collapsed the card.
     owner.selectSlot (index);
+
+    popupPress.down (event, nullptr);
+
+    if (popupPress.dragging())
+    {
+        draggingFromGrip = false;
+        return;
+    }
 
     // A press on the grip starts a reorder; anywhere else on the header
     // toggles the card, which is the behaviour a header invites.
@@ -183,7 +195,7 @@ void EffectCard::mouseDrag (const juce::MouseEvent& event)
 {
     // forwardChildMouseEventsTo means a drag on a KNOB arrives here too, so
     // the gate is that a grip was pressed - not that the pointer moved.
-    if (! draggingFromGrip)
+    if (popupPress.dragging() || ! draggingFromGrip)
         return;
 
     // Nothing of this card is touched after the call. The chain owns the
@@ -194,6 +206,9 @@ void EffectCard::mouseDrag (const juce::MouseEvent& event)
 
 void EffectCard::mouseUp (const juce::MouseEvent& event)
 {
+    if (popupPress.releasing())
+        return;
+
     const auto local = event.getEventRelativeTo (this).getPosition();
 
     const auto wasGrip = draggingFromGrip;

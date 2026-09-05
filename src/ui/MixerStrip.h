@@ -116,12 +116,17 @@ private:
     void paintRouting (juce::Graphics&);
 
     static constexpr int meterWidth = 8;
-    static constexpr int routingHeight = 58;
+    static constexpr int routingHeight = 66;
 
     /** One row of the routing list. The painter and the hit test both need it
         and both had it written out, which is a click that selects the wrong
-        channel the moment one of them changes. */
-    static constexpr int routingRowHeight = 12;
+        channel the moment one of them changes.
+
+        Fourteen rather than twelve, because the name inside it moved up a rung:
+        an eleven-point name in a twelve-pixel row was the smallest text in the
+        window and it is a LINK - clicking it selects that channel and switches
+        tab. routingHeight goes with it so the same four rows still fit. */
+    static constexpr int routingRowHeight = 14;
     static constexpr int tickIntervalMs = 1000 / tokens::motion::uiRefreshHz;
 
     ProjectDocument& document;
@@ -146,7 +151,9 @@ private:
     bool gestureActive = false;
 
     juce::Label nameLabel;
-    juce::Slider gainSlider;
+    /** DewSlider rather than juce::Slider: a right-drag on a fader used to
+        arm the drag branch and write an undo step. See DewSlider. */
+    DewSlider gainSlider;
 
     /** Latches shift onto the fader at the moment of press.
 

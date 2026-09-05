@@ -39,7 +39,7 @@ void PlaylistComponent::scrollTracksTo (double offsetPx)
     repaint();
 }
 
-void PlaylistComponent::setTrackHeight (int wanted)
+void PlaylistComponent::setTrackHeight (double wanted)
 {
     // The clamp, the anchor on the middle of the view, and the "already fits"
     // case are RowView's, and the piano roll's pitch rows run the same

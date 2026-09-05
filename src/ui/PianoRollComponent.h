@@ -175,7 +175,10 @@ public:
     {
         return rows.height;
     }
-    void setRowHeight (int);
+    /** Real rather than whole, for the reason RowView::exactHeight gives: a
+        wheel notch asks for a fraction of a pixel and the fraction has to reach
+        the next event. Every other caller hands it a whole one. */
+    void setRowHeight (double);
 
     /** Multiplies the row height, or fits every pitch that has a note in it
         when `factor` is 0 - the shape ZoomButtons reports. */

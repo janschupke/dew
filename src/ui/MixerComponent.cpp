@@ -244,12 +244,15 @@ void MixerComponent::resized()
     for (auto* strip : strips)
         strip->setBounds (holder.removeFromLeft (size::mixerStripWidth));
 
-    // Top of the column, level with the strip names rather than centred down a
-    // 500px lane, where it read as something dropped rather than offered.
-    addStripButton.setBounds (holder.removeFromLeft (size::mixerStripWidth)
-                                  .withHeight (size::iconButton)
-                                  .translated (0, space::md)
-                                  .withSizeKeepingCentre (size::iconButton, size::iconButton));
+    // The head of the next column, at the strip's own inset, filling its width
+    // - which is what "+ Track" does in the playlist's next empty ROW and what
+    // "+ Channel" does in the rack's. It was a 24px square centred across a
+    // 72px column, so the one add button in the app with no noun on it was also
+    // the only one that did not line up with anything: a glyph dropped in a gap
+    // rather than an offer at the head of a column.
+    auto column = holder.removeFromLeft (size::mixerStripWidth).reduced (space::sm, space::md);
+
+    addStripButton.setBounds (column.removeFromTop (size::controlHeightSm));
 }
 
 void MixerComponent::addMixerTrack()

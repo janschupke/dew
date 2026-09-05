@@ -122,22 +122,31 @@ TEST_CASE ("the function palette is one family", "[design][tokens][role]")
 {
     using namespace tokens;
 
-    struct Named
+    // The family is a set of COLOURS, not a set of roles, because the two
+    // stopped being the same list. `generic` was never a function - it is the
+    // accent everything multipurpose already uses - and `level` joined it: a
+    // volume or a gain is the control a person reaches for most and the app's
+    // own colour is what says so.
+    //
+    // funcLevel is still in the palette and still painted, on the mixer's
+    // meter, so it is still held to every rule the rest of the family is: a
+    // level as a SIGNAL is a function, a level as a CONTROL is the primary.
+    const struct
     {
         const char* name;
-        ParamRole role;
-    };
-
-    // Every role but `generic`, which is not a function and is deliberately the
-    // accent everything multipurpose already uses.
-    const Named functions[] {
-        { "level", ParamRole::level }, { "stereo", ParamRole::stereo },
-        { "tone", ParamRole::tone },   { "time", ParamRole::time },
-        { "space", ParamRole::space }, { "modulation", ParamRole::modulation },
-        { "pitch", ParamRole::pitch },
+        juce::Colour value;
+    } functions[] {
+        { "Level", colour::funcLevel },
+        { "Stereo", palette::forRole (ParamRole::stereo) },
+        { "Tone", palette::forRole (ParamRole::tone) },
+        { "Time", palette::forRole (ParamRole::time) },
+        { "Space", palette::forRole (ParamRole::space) },
+        { "Modulation", palette::forRole (ParamRole::modulation) },
+        { "Pitch", palette::forRole (ParamRole::pitch) },
     };
 
     CHECK (palette::forRole (ParamRole::generic) == colour::accent);
+    CHECK (palette::forRole (ParamRole::level) == colour::accent);
 
     /** Degrees apart on the wheel, the short way round. */
     const auto hueGap = [] (juce::Colour a, juce::Colour b)
@@ -148,7 +157,7 @@ TEST_CASE ("the function palette is one family", "[design][tokens][role]")
 
     for (const auto& f : functions)
     {
-        const auto c = palette::forRole (f.role);
+        const auto c = f.value;
 
         // One family: a palette whose members had different chroma would read
         // as some colours and some highlights rather than as a set.
@@ -179,15 +188,14 @@ TEST_CASE ("the function palette is one family", "[design][tokens][role]")
     for (const auto& a : functions)
         for (const auto& b : functions)
         {
-            if (a.role == b.role)
+            if (a.value == b.value)
                 continue;
 
             // Told apart at the width of a knob's arc, which is the smallest
             // thing any of them is ever drawn as.
-            INFO ("func" << a.name << " and func" << b.name << " are "
-                         << hueGap (palette::forRole (a.role), palette::forRole (b.role))
+            INFO ("func" << a.name << " and func" << b.name << " are " << hueGap (a.value, b.value)
                          << " degrees apart");
-            CHECK (hueGap (palette::forRole (a.role), palette::forRole (b.role)) > 30.0f);
+            CHECK (hueGap (a.value, b.value) > 30.0f);
         }
 }
 
@@ -197,7 +205,11 @@ TEST_CASE ("a knob built from a spec paints its parameter's function colour",
     const juce::ScopedJuceInitialiser_GUI juceInit;
 
     // Cutoff is a tone control and volume is a level one. Both used to paint
-    // the same accent arc, which is the whole reason for this change.
+    // the same accent arc, which is the whole reason for this change - and
+    // volume has since been given it back on purpose, because the control a
+    // person reaches for most is the one the app's own colour should mark. So
+    // the claim here is no longer "never the accent" but "the colour its ROLE
+    // maps to", which is what forRole says and what a knob has to obey.
     const auto renderKnob = [] (const ParamSpec& spec, double value)
     {
         DewKnob knob { spec };
@@ -238,9 +250,12 @@ TEST_CASE ("a knob built from a spec paints its parameter's function colour",
     const auto& volume = requireInstrumentParamSpec (ids::volume);
     const auto volumeImage = renderKnob (volume, 0.8);
 
-    CHECK (coverageOf (volumeImage, tokens::colour::funcLevel) > 0.0f);
-    CHECK (strongest (volumeImage) == Fn::level);
-    CHECK (juce::exactlyEqual (coverageOf (volumeImage, tokens::colour::accent), 0.0f));
+    // A LEVEL is the accent, and funcLevel - which it used to be - must not be
+    // on it at all: the two are close enough on the wheel that "contains some
+    // accent" would pass while still painting green.
+    CHECK (coverageOf (volumeImage, tokens::colour::accent) > 0.0f);
+    CHECK (strongest (volumeImage) == Fn::accent);
+    CHECK (juce::exactlyEqual (coverageOf (volumeImage, tokens::colour::funcLevel), 0.0f));
 
     const auto& pan = requireInstrumentParamSpec (ids::pan);
     const auto panImage = renderKnob (pan, -0.7);
@@ -253,8 +268,9 @@ TEST_CASE ("a knob built from a spec paints its parameter's function colour",
 
     CHECK (strongest (attackImage) == Fn::time);
 
-    // And a spec-built knob is never the accent any more, which is what the
-    // whole change is: accent means selection, not "this is a value".
+    // And a knob whose role IS a function is never the accent, which is the
+    // half of the original change that still stands: accent no longer means
+    // "this is a value", it means level, selection and focus.
     CHECK (juce::exactlyEqual (coverageOf (attackImage, tokens::colour::accent), 0.0f));
 }
 

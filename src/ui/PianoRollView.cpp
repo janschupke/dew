@@ -263,7 +263,7 @@ void PianoRollComponent::zoomToFit()
     repaint();
 }
 
-void PianoRollComponent::setRowHeight (int wanted)
+void PianoRollComponent::setRowHeight (double wanted)
 {
     // The anchor, the clamp and the "it already fits" case are RowView's, and
     // the playlist's lanes run the same arithmetic. Ninety-seven rows at the

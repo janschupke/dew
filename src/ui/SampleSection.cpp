@@ -263,6 +263,15 @@ void SampleSection::mouseMove (const juce::MouseEvent& event)
 
 void SampleSection::mouseDown (const juce::MouseEvent& event)
 {
+    // A right press on a trim handle opened a "Trim sample" transaction and
+    // armed the drag, so a right-drag moved the trim and left an undo step
+    // named after a gesture nobody made.
+    if (event.mods.isPopupMenu())
+    {
+        dragging = Handle::none;
+        return;
+    }
+
     dragging = handleAt (event.position);
 
     if (dragging != Handle::none)

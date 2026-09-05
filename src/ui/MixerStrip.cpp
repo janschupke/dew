@@ -204,6 +204,13 @@ void MixerStrip::mouseDown (const juce::MouseEvent& event)
     // HeaderRow states for the rack and the playlist.
     select();
 
+    // The menu is the STRIP's, so only a press on the strip may open it. A
+    // press on the fader, the pan knob or a letter toggle arrives here too -
+    // forwardChildMouseEventsTo - and every one of those carries a parameter
+    // menu of its own, so both opened. See isOwnPress.
+    if (! isOwnPress (event, *this))
+        return;
+
     if (event.mods.isPopupMenu())
     {
         showMenu (event);
@@ -470,12 +477,20 @@ void MixerStrip::paintMeter (juce::Graphics& g)
 
     auto bar = well.withTop (well.getBottom() - proportion * well.getHeight());
 
+    // funcLevel below the mark rather than success, and that is the whole of
+    // what the function palette still says about a level. The controls that SET
+    // one - this strip's fader, the rack's volume knob, an oscillator's gain -
+    // took the app's own colour when level stopped being a function colour, and
+    // a meter is the other half of that: not a control you hold but the signal
+    // it passes, which is what funcLevel was named for. success stays what it
+    // has always been, which is a verdict, and warning and danger stay the two
+    // verdicts a meter is actually allowed to give.
     g.setColour (level >= 1.0f                       ? colour::danger
                  : proportion > meter::hotProportion ? colour::warning
-                                                     : colour::success);
+                                                     : colour::funcLevel);
     g.fillRoundedRectangle (bar, radius::xs);
 
-    // Where the meter stops being green, said by POSITION as well as by hue -
+    // Where the meter stops being nominal, said by POSITION as well as by hue -
     // the bar's height carries the level, but the threshold it crosses was
     // carried by the colour change alone.
     const auto hotY = well.getBottom() - meter::hotProportion * well.getHeight();
@@ -500,12 +515,12 @@ void MixerStrip::paintRouting (juce::Graphics& g)
     if (routedNames.isEmpty())
     {
         g.setColour (colour::textDisabled);
-        g.setFont (type::font (type::caption));
+        g.setFont (type::font (type::small));
         g.drawText (tr (StringId::mixer_empty), area, juce::Justification::centredTop, false);
         return;
     }
 
-    g.setFont (type::font (type::caption));
+    g.setFont (type::font (type::small));
 
     for (int i = 0; i < routedNames.size() && area.getHeight() >= routingRowHeight; ++i)
     {

@@ -67,6 +67,7 @@ add_executable(dew_tests
   EntityColourTests.cpp
   HoverHelpTests.cpp
   AccessibilityTests.cpp
+  RightClickTests.cpp
   ContrastTests.cpp
   ReflowTests.cpp
   ThemeTests.cpp

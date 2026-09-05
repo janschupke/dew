@@ -1,5 +1,6 @@
 #include "ui/design/DewLookAndFeel.h"
 
+#include "ui/design/Focus.h"
 #include "ui/design/Icons.h"
 #include "ui/design/Tokens.h"
 
@@ -161,6 +162,57 @@ void DewLookAndFeel::drawTooltip (juce::Graphics& g, const juce::String& text, i
     layOutTooltip (text, colour::textPrimary).draw (g, bounds);
 }
 
+namespace
+{
+
+/** The + or the - on an IncDecButtons slider, refusing the right button.
+
+    Its own type rather than a lambda on the stock one, because the refusal has
+    to happen in all three phases - Button::mouseDrag re-arms a press whichever
+    mouse button made it - and PopupPress is what states that once.
+*/
+class SliderStepButton : public juce::TextButton
+{
+public:
+    using juce::TextButton::TextButton;
+
+    void mouseDown (const juce::MouseEvent& event) override
+    {
+        if (popupPress.down (event, nullptr))
+            return;
+
+        juce::TextButton::mouseDown (event);
+    }
+
+    void mouseDrag (const juce::MouseEvent& event) override
+    {
+        if (popupPress.dragging())
+            return;
+
+        juce::TextButton::mouseDrag (event);
+    }
+
+    void mouseUp (const juce::MouseEvent& event) override
+    {
+        if (popupPress.releasing())
+            return;
+
+        juce::TextButton::mouseUp (event);
+    }
+
+private:
+    PopupPress popupPress;
+};
+
+} // namespace
+
+juce::Button* DewLookAndFeel::createSliderButton (juce::Slider&, bool isIncrement)
+{
+    // The same two glyphs LookAndFeel_V2 uses, so nothing about the control
+    // moves; only what it does with a right press.
+    return new SliderStepButton (isIncrement ? "+" : "-");
+}
+
 juce::Label* DewLookAndFeel::createSliderTextBox (juce::Slider& slider)
 {
     // V2 returns its own private SliderLabelComp, which cannot be constructed
@@ -296,9 +348,12 @@ void DewLookAndFeel::drawComboBox (juce::Graphics& g, int width, int height, boo
                                    : colour::surfaceRaised);
     g.fillRoundedRectangle (bounds, radius::md);
 
-    g.setColour (box.hasKeyboardFocus (false) ? colour::accent
-                 : over                       ? colour::outline.brighter (emphasis::controlLift)
-                                              : colour::outline);
+    // A dropdown says focus with its border where the hand-painted primitives
+    // add a ring, and the two are the same statement - so the border answers
+    // the same question about whether it should be MADE. See focus::ringVisible.
+    g.setColour (focus::ringVisibleFor (box.hasKeyboardFocus (false)) ? colour::accent
+                 : over ? colour::outline.brighter (emphasis::controlLift)
+                        : colour::outline);
     g.drawRoundedRectangle (bounds, radius::md, stroke::hairline);
 
     // The app's own chevron rather than JUCE's triangle.

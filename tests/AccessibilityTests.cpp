@@ -2,8 +2,11 @@
 
 #include <juce_gui_basics/juce_gui_basics.h>
 
+#include "model/ModuleCatalog.h"
 #include "ui/MainComponent.h"
+#include "ui/design/Focus.h"
 #include "ui/primitives/DewControls.h"
+#include "ui/primitives/DewNumberField.h"
 #include "ControlWalkHarness.h"
 #include "PaintProbe.h"
 
@@ -182,7 +185,11 @@ public:
     void paint (juce::Graphics& g) override
     {
         g.fillAll (tokens::colour::surfaceRaised);
-        paint::focusRing (g, *this, focused);
+
+        // The predicate a primitive actually passes, not the raw flag: whether
+        // a control HAS the keyboard and whether it should say so are two
+        // questions, and this probe is the only place both are measurable.
+        paint::focusRing (g, *this, focus::ringVisibleFor (focused));
     }
 
 private:
@@ -206,10 +213,95 @@ TEST_CASE ("a focused control draws a ring, and an unfocused one draws none", "[
     RingProbe unfocused { false };
     RingProbe focused { true };
 
+    focus::noteFocusChange (juce::Component::focusChangedByTabKey);
+
     const auto without = testing::coverageOf (testing::render (unfocused), tokens::colour::accent);
     const auto with = testing::coverageOf (testing::render (focused), tokens::colour::accent);
 
     // exactlyEqual, because the ci preset builds with -Wfloat-equal as an error.
     CHECK (juce::exactlyEqual (without, 0.0f));
     CHECK (with > 0.0f);
+}
+
+TEST_CASE ("a ring is drawn for the keyboard and not for the mouse", "[ui][a11y][focus]")
+{
+    // A ring answers "where will the next keystroke go", which is a question
+    // you only have while your hands are on the keyboard - the pointer already
+    // says where the next click goes by being where it is. Every primitive
+    // ended its paint with hasKeyboardFocus alone, so clicking a knob ringed it
+    // in the same accent the app uses for selection and left it there.
+    const juce::ScopedJuceInitialiser_GUI juceInit;
+
+    RingProbe focused { true };
+
+    focus::noteFocusChange (juce::Component::focusChangedByMouseClick);
+    const auto afterClick = testing::coverageOf (testing::render (focused), tokens::colour::accent);
+
+    focus::noteFocusChange (juce::Component::focusChangedByTabKey);
+    const auto afterTab = testing::coverageOf (testing::render (focused), tokens::colour::accent);
+
+    CHECK (juce::exactlyEqual (afterClick, 0.0f));
+    CHECK (afterTab > 0.0f);
+
+    // focusChangedDirectly is a deliberate move that was not a click - a view
+    // handing focus on, a dialog opening - and reads as the keyboard. The three
+    // canvases reach it from their own mouseDown and paint no ring either way:
+    // they draw paint::cursorOutline, which CanvasCursor::isPlaced refuses
+    // until the keyboard has placed it.
+    focus::noteFocusChange (juce::Component::focusChangedDirectly);
+    CHECK (testing::coverageOf (testing::render (focused), tokens::colour::accent) > 0.0f);
+}
+
+TEST_CASE ("a primitive tells the design system what moved the keyboard onto it",
+           "[ui][a11y][focus]")
+{
+    // The half the probe above cannot cover: that the controls actually REPORT
+    // it. grabKeyboardFocus does nothing without a ComponentPeer and this
+    // harness has none, so the hook is driven directly - which is the same
+    // reason paint::focusRing takes its flag as an argument.
+    const juce::ScopedJuceInitialiser_GUI juceInit;
+
+    DewButton button { "Play" };
+    DewIconButton icon { icons::zoomIn(), {} };
+    DewLetterToggle letter { "M", tokens::colour::warning, "Mute" };
+    DewDropdown dropdown;
+    DewNumberField field;
+
+    struct Named
+    {
+        const char* name;
+        juce::Component* control;
+    };
+
+    const Named controls[] {
+        { "DewButton", &button },     { "DewIconButton", &icon },   { "DewLetterToggle", &letter },
+        { "DewDropdown", &dropdown }, { "DewNumberField", &field },
+    };
+
+    for (const auto& c : controls)
+    {
+        INFO (c.name);
+
+        focus::noteFocusChange (juce::Component::focusChangedByTabKey);
+        c.control->focusGained (juce::Component::focusChangedByMouseClick);
+        CHECK_FALSE (focus::ringVisible());
+
+        focus::noteFocusChange (juce::Component::focusChangedByMouseClick);
+        c.control->focusGained (juce::Component::focusChangedByTabKey);
+        CHECK (focus::ringVisible());
+    }
+
+    // A knob is the awkward one: the wrapper paints the ring and the slider
+    // inside it carries the keyboard, so focusGained never fires on the thing
+    // that draws. focusOfChildComponentChanged is the only hook there is.
+    const auto& spec = requireInstrumentParamSpec (ids::volume);
+    DewKnob knob { spec };
+
+    focus::noteFocusChange (juce::Component::focusChangedByTabKey);
+    knob.focusOfChildComponentChanged (juce::Component::focusChangedByMouseClick);
+    CHECK_FALSE (focus::ringVisible());
+
+    focus::noteFocusChange (juce::Component::focusChangedByMouseClick);
+    knob.focusOfChildComponentChanged (juce::Component::focusChangedByTabKey);
+    CHECK (focus::ringVisible());
 }

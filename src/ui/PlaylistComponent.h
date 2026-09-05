@@ -191,8 +191,12 @@ public:
 
     /** The one mutator. Clamps to the ladder, keeps the lane under the middle of
         the view where it is, and re-lays everything that depends on the height.
+
+        Takes a real number because a wheel notch asks for a fraction of a pixel
+        and the fraction has to survive to the next event - see
+        RowView::exactHeight. Every other caller hands it a whole one.
     */
-    void setTrackHeight (int height);
+    void setTrackHeight (double height);
 
     /** A factor to multiply the height by, or 0 to fit the tracks to the window
         - the same shape zoomBy/zoomToFit already report on the other axis, so

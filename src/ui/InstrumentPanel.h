@@ -158,7 +158,7 @@ private:
         refresh() is the single place that decides. */
     SoundFontSection soundFontSection;
 
-    juce::Slider basePitchSlider { juce::Slider::IncDecButtons, juce::Slider::TextBoxLeft };
+    DewSlider basePitchSlider { juce::Slider::IncDecButtons, juce::Slider::TextBoxLeft };
     DewLabel basePitchLabel;
 
     /** The envelope and the levels, as the same control the oscillator section

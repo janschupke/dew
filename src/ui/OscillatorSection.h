@@ -220,7 +220,7 @@ private:
 
     DewDropdown tableBox, sourceBox;
 
-    juce::Slider octaveSlider { juce::Slider::IncDecButtons, juce::Slider::TextBoxLeft };
+    DewSlider octaveSlider { juce::Slider::IncDecButtons, juce::Slider::TextBoxLeft };
     DewLabel octaveLabel;
 
     // Every one of these used to state its range here, a second time. The

@@ -54,7 +54,12 @@ void paint (juce::Graphics& g, juce::Rectangle<int> bounds, const TimelineView& 
     // window when the material is shorter than the view.
     const auto range = timeline.visibleStepRange ((float) bounds.getWidth());
 
-    g.setFont (type::font (type::caption));
+    // A rung above the caption the rest of the ladder's floor sits on. A bar
+    // number is read at a glance from across a desk while your hands are
+    // elsewhere, which is a different job from a knob's caption - and 11px in
+    // textSecondary was the smallest thing in the window doing the most
+    // frequently read work in it.
+    g.setFont (type::font (type::small));
 
     for (int step = range.getStart(); step <= range.getEnd(); ++step)
     {
@@ -160,6 +165,20 @@ void Gesture::applySpan (double from, double to)
 
 bool Gesture::mouseDown (const juce::MouseEvent& event)
 {
+    // A right press on a ruler used to SEEK - it fell straight through to the
+    // scrubbing branch, so aiming at a menu that is not there moved the
+    // playhead and, in a take, moved where the take was going. The rule dew
+    // holds everywhere else is that the right button opens a menu or does
+    // nothing; a ruler has no menu, so it does nothing.
+    //
+    // Returning true still, because the press is CONSUMED: falling through
+    // would hand it to whatever is under the ruler.
+    if (event.mods.isPopupMenu())
+    {
+        mode = Mode::none;
+        return true;
+    }
+
     anchorRaw = unitAt (event.x);
     clearsIfUnmoved = false;
 

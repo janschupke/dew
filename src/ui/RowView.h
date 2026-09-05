@@ -33,6 +33,23 @@ struct RowView
     int minHeight = 1;
     int maxHeight = 1;
 
+    /** The height before it was rounded to a pixel, or 0 meaning "the integer
+        above is the truth" - the state a view starts in.
+
+        A wheel notch is a FACTOR, and a trackpad sends that factor in
+        fragments: 2^(0.002 x 3) is 1.004, which of a 34px lane asks for
+        34.14px. Rounding at every event answered 34 for ever, so the one
+        gesture this axis has did nothing at all on a trackpad while working
+        from a mouse - and it looked like a missing feature rather than a
+        rounding bug. The horizontal axis never had it, because
+        TimelineView::pixelsPerStep is a double and this was not.
+
+        Kept even when the rounded height does not move, which is the whole
+        point: twenty events that each ask for a seventh of a pixel are one
+        pixel and a half, not nothing.
+    */
+    double exactHeight = 0.0;
+
     /** How tall this many rows are, whether or not that fits. */
     double contentHeight (int rows) const noexcept
     {
@@ -78,9 +95,14 @@ struct RowView
         scroll it started with, because re-centring between drag samples moves
         the grabbed edge away from the hand holding it.
     */
-    bool setHeight (int wanted, double viewHeight, int rows) noexcept
+    bool setHeight (double wanted, double viewHeight, int rows) noexcept
     {
-        const auto clamped = juce::jlimit (minHeight, maxHeight, wanted);
+        // Clamped as a REAL number and remembered as one, so a zoom that runs
+        // into an end stop does not have to be wound back out of a value it
+        // never actually reached.
+        exactHeight = juce::jlimit ((double) minHeight, (double) maxHeight, wanted);
+
+        const auto clamped = juce::roundToInt (exactHeight);
 
         if (clamped == height || height <= 0)
             return false;
@@ -98,10 +120,15 @@ struct RowView
     /** The height a zoom by this factor asks for, before clamping. Separate
         from setHeight because a factor of zero or less means "fit" in both
         editors, and what fitting means is theirs to say.
+
+        In pixels and a fraction of one, not in whole pixels: it multiplies the
+        height the last zoom ASKED for rather than the pixel that was drawn, so
+        a hundred fragments of a notch compose into the same distance one notch
+        travels. See exactHeight.
     */
-    int zoomedHeight (double factor) const noexcept
+    double zoomedHeight (double factor) const noexcept
     {
-        return (int) std::lround ((double) height * factor);
+        return (exactHeight > 0.0 ? exactHeight : (double) height) * factor;
     }
 
     /** The height at which this many rows exactly fill the view.

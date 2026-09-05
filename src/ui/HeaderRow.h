@@ -2,6 +2,7 @@
 
 #include <juce_gui_basics/juce_gui_basics.h>
 
+#include "ui/primitives/DewControls.h"
 #include "ui/primitives/HoverTracker.h"
 
 namespace dew
@@ -69,6 +70,12 @@ private:
         headerPressed();
 
         if (! event.mods.isPopupMenu())
+            return;
+
+        // The menu is the ROW's. The channel rack forwards its children's mouse
+        // events here for hover, so a right-click on a knob or on M opened that
+        // control's parameter menu and this one on top of it. See isOwnPress.
+        if (! isOwnPress (event, *this))
             return;
 
         auto menu = buildMenu();
