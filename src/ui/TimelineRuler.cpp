@@ -64,9 +64,9 @@ void paint (juce::Graphics& g, juce::Rectangle<int> bounds, const TimelineView& 
 
     // A rung above the caption the rest of the ladder's floor sits on. A bar
     // number is read at a glance from across a desk while your hands are
-    // elsewhere, which is a different job from a knob's caption - and 11px in
-    // textSecondary was the smallest thing in the window doing the most
-    // frequently read work in it.
+    // elsewhere, which is a different job from a knob's caption - and the
+    // ladder's floor in textSecondary was the smallest thing in the window
+    // doing the most frequently read work in it.
     g.setFont (type::font (type::small));
 
     const auto pixelsPerBar = timeline.pixelsPerStep * (double) stepsPerBar;

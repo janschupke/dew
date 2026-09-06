@@ -348,11 +348,22 @@ namespace type
     that a caption had to be smaller than the smallest comfortable size -
     and the two smallest rungs are the ones almost every label in the
     application lands on.
+
+    It went up again, and by a whole rung rather than at the bottom: 11 was
+    still the size the ruler numbers and every knob caption were drawn at,
+    which is the most frequently read text in the window doing its work at
+    the smallest size in it. Shifting the four rungs together rather than
+    lifting only the floor is what keeps them four rungs - raising `caption`
+    alone would have landed it on `small`, and a ladder with two names for
+    one size is a ladder nobody can choose from.
+
+    `display` stays: it is a heading rung rather than a reading one, and it
+    was never part of the complaint.
 */
-inline constexpr float caption = 11.0f; ///< knob labels, ruler numbers
-inline constexpr float small = 12.0f;   ///< strip names, secondary text
-inline constexpr float body = 13.0f;    ///< default
-inline constexpr float title = 15.0f;   ///< panel headings
+inline constexpr float caption = 12.0f; ///< knob labels, ruler numbers
+inline constexpr float small = 13.0f;   ///< strip names, secondary text
+inline constexpr float body = 14.0f;    ///< default
+inline constexpr float title = 16.0f;   ///< panel headings
 inline constexpr float display = 20.0f;
 
 /** The score tab's own rungs.
@@ -391,7 +402,7 @@ inline constexpr int iconButton = 24;
     Ask the control instead - DewNumberField::preferredHeight - and this is the
     one number the answer is built from.
 */
-inline constexpr int captionBand = 12;
+inline constexpr int captionBand = 14;
 
 static_assert ((float) captionBand >= type::caption,
                "a caption band has to hold the caption it is named for");
@@ -467,8 +478,8 @@ inline constexpr int scrollThickness = 10;
 
 /** A captioned knob. DewKnob hard-coded 13 and 14 in three places, and six
     call sites independently spelled 68 for a row holding one. */
-inline constexpr int knobCaption = 15;
-inline constexpr int knobValue = 16;
+inline constexpr int knobCaption = 16;
+inline constexpr int knobValue = 17;
 inline constexpr int knobRow = 68;
 
 static_assert (knobRow >= knobCaption + knobSm + knobValue,

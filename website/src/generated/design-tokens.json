@@ -86,10 +86,10 @@
     "bold": 2
   },
   "type": {
-    "caption": 11,
-    "small": 12,
-    "body": 13,
-    "title": 15,
+    "caption": 12,
+    "small": 13,
+    "body": 14,
+    "title": 16,
     "display": 20,
     "codeSmall": 12,
     "codeBody": 14,

@@ -95,9 +95,10 @@ void PreferencesRow::paint (juce::Graphics& g)
     g.setFont (type::font (type::body));
     g.drawFittedText (tr (entry.title), title, juce::Justification::centredLeft, 1);
 
-    // type::small rather than type::caption: eleven pixels is the size the
+    // type::small rather than type::caption: the caption rung is the size the
     // ruler numbers and the knob captions are, and a sentence explaining a
-    // setting is read rather than glanced at.
+    // setting is read rather than glanced at. The distance between the two
+    // rungs is the point, not the pixel counts - both have moved up once.
     g.setColour (colour::textSecondary);
     g.setFont (type::font (type::small));
     g.drawFittedText (tr (entry.description), area.removeFromTop (descriptionHeight()),
