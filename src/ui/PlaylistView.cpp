@@ -408,6 +408,21 @@ void PlaylistComponent::mouseWheelMove (const juce::MouseEvent& event,
 
 void PlaylistComponent::mouseMagnify (const juce::MouseEvent& event, float scaleFactor)
 {
+    // A pinch reads the same modifier map a wheel notch does. It used to ignore
+    // event.mods entirely, so the one gesture on a trackpad that IS a zoom
+    // could only ever reach the time axis - while the wheel, which needs a
+    // modifier to zoom at all, could reach both.
+    //
+    // A factor of zero or less would mean "fit", which a pinch cannot ask for.
+    if (scaleFactor <= 0.0f)
+        return;
+
+    if (gesture::intentOf (event.mods) == gesture::WheelIntent::zoomOtherAxis)
+    {
+        zoomTracksBy ((double) scaleFactor);
+        return;
+    }
+
     zoomBy ((double) scaleFactor, (float) (event.x - size::gutterTrack));
 }
 } // namespace dew

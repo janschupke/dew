@@ -233,9 +233,15 @@ Removing an effect does not: it destroys only itself. It is all undoable either 
 question is about blast radius.
 
 Scrolling and zooming: wheel to scroll, ⌘-wheel or a trackpad pinch to zoom around the
-pointer, shift-wheel to scroll in time, ⌘⇧-wheel to zoom the OTHER axis — lane height in
-the playlist, pitch-row height in the piano roll. Natural scrolling is honoured, because
-the system reports it rather than applying it.
+pointer, shift-wheel to scroll in time, ⌘⇧-wheel **or ⌘⇧-pinch** to zoom the OTHER axis —
+lane height in the playlist, pitch-row height in the piano roll. Natural scrolling is
+honoured, because the system reports it rather than applying it.
+
+**A pinch reads the same modifier map a notch does.** `mouseMagnify` ignored `event.mods`
+outright in all three views, so the one gesture on a trackpad that IS a zoom could only
+ever reach the time axis, while the wheel — which needs a modifier to zoom at all — could
+reach both. It goes through `gesture::intentOf` now. The step grid still does not: it has
+one axis, which is the same reason it is not a caller for the wheel.
 
 **A notch is a fixed number of pixels, everywhere.** It used to be six *steps*
 horizontally, which is 18px zoomed out and 720px zoomed in; one *lane* down the playlist,

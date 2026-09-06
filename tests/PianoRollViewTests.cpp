@@ -329,3 +329,33 @@ TEST_CASE ("the end of the pattern is marked, and past it is dimmer", "[pianorol
     REQUIRE (beyondMean < insideMean);
     REQUIRE (beyondMean > 0.0);
 }
+
+TEST_CASE ("a pinch reads the same modifiers a wheel notch does", "[ui][pianoroll]")
+{
+    // The roll's half of the playlist case of the same name. Command-shift is
+    // "the other axis" for a wheel notch and was not for a pinch, which read no
+    // modifiers at all.
+    const juce::ScopedJuceInitialiser_GUI juceInit;
+    RollHarness h;
+
+    const auto area = h.roll.getNoteArea();
+    const auto anchor = juce::Point<int> (area.getCentreX(), area.getCentreY());
+    const auto crossZoom = juce::ModifierKeys::commandModifier | juce::ModifierKeys::shiftModifier;
+
+    const auto rowsBefore = h.roll.getRowHeight();
+    const auto timeBefore = h.roll.getTimeline().pixelsPerStep;
+
+    h.roll.mouseMagnify (eventAt (h.roll, anchor, crossZoom), 2.0f);
+
+    INFO ("row " << rowsBefore << " -> " << h.roll.getRowHeight());
+    CHECK (h.roll.getRowHeight() > rowsBefore);
+    CHECK (juce::exactlyEqual (h.roll.getTimeline().pixelsPerStep, timeBefore));
+
+    // The control case: a bare pinch still zooms time and leaves the rows.
+    const auto tallerRows = h.roll.getRowHeight();
+
+    h.roll.mouseMagnify (eventAt (h.roll, anchor), 2.0f);
+
+    CHECK (h.roll.getTimeline().pixelsPerStep > timeBefore);
+    CHECK (h.roll.getRowHeight() == tallerRows);
+}

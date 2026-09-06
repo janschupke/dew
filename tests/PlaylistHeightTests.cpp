@@ -522,3 +522,41 @@ TEST_CASE ("the pointer says what a clip will do", "[ui][playlist][cursor]")
     h.playlist.mouseExit (eventAt (h.playlist, { -1, -1 }));
     CHECK (h.playlist.getMouseCursor() == cursor::idle);
 }
+
+TEST_CASE ("a pinch reads the same modifiers a wheel notch does", "[ui][playlist][height]")
+{
+    /*  mouseMagnify ignored event.mods outright, in all three views. So the one
+        gesture on a trackpad that IS a zoom could only ever reach the time
+        axis, while the wheel - which needs a modifier to zoom at all - could
+        reach both. Command-shift is "the other axis" everywhere else in dew.
+
+        Both halves, because either alone passes for the wrong reason: a pinch
+        that had simply been re-pointed at the lanes would fail the control
+        case below it.
+    */
+    const juce::ScopedJuceInitialiser_GUI juceInit;
+    PlaylistHarness h;
+
+    const auto at = pointFor (h, 1, 0);
+    const auto crossZoom = juce::ModifierKeys::commandModifier | juce::ModifierKeys::shiftModifier;
+
+    const auto lanesBefore = h.playlist.getTrackHeight();
+    const auto timeBefore = h.playlist.getTimeline().pixelsPerStep;
+
+    h.playlist.mouseMagnify (eventAt (h.playlist, at, 1, crossZoom), 2.0f);
+
+    INFO ("lane " << lanesBefore << " -> " << h.playlist.getTrackHeight());
+    CHECK (h.playlist.getTrackHeight() > lanesBefore);
+
+    // And it left the time axis alone, which is the half that says this is a
+    // second axis rather than a re-pointed gesture.
+    CHECK (juce::exactlyEqual (h.playlist.getTimeline().pixelsPerStep, timeBefore));
+
+    // The control case: a bare pinch still zooms time and leaves the lanes.
+    const auto tallerLanes = h.playlist.getTrackHeight();
+
+    h.playlist.mouseMagnify (eventAt (h.playlist, at), 2.0f);
+
+    CHECK (h.playlist.getTimeline().pixelsPerStep > timeBefore);
+    CHECK (h.playlist.getTrackHeight() == tallerLanes);
+}

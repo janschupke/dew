@@ -400,6 +400,14 @@ void PianoRollComponent::mouseMagnify (const juce::MouseEvent& event, float scal
     if (scaleFactor <= 0.0f)
         return;
 
+    // And it reads the same modifier map a wheel notch does, rather than
+    // ignoring event.mods the way it used to - see PlaylistComponent's.
+    if (gesture::intentOf (event.mods) == gesture::WheelIntent::zoomOtherAxis)
+    {
+        zoomRowsBy ((double) scaleFactor);
+        return;
+    }
+
     timeline.zoomAround ((double) scaleFactor, (float) (event.x - size::gutterKeyboard));
     updateScrollBars();
     repaint();
