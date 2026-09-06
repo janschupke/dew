@@ -166,6 +166,7 @@ void DewButton::paintButton (juce::Graphics& g, bool highlighted, bool down)
 DewIconButton::DewIconButton (juce::Path i, const juce::String& tooltipText, Role r)
     : PopupSafeButton<juce::Button> (tooltipText)
     , icon (std::move (i))
+    , onColour (onColourFor (r))
     , role (r)
 {
     setTooltip (tooltipText);
@@ -181,6 +182,7 @@ void DewIconButton::setTooltip (const juce::String& text)
 void DewIconButton::setRole (Role r)
 {
     role = r;
+    onColour = onColourFor (r);
     repaint();
 }
 
@@ -195,12 +197,30 @@ juce::Colour DewIconButton::restingTint() const
     switch (role)
     {
         case Role::go: return colour::success;
-        case Role::record: return colour::recording;
+
+        // The same red a trash can rests in, and not colour::recording. There
+        // is exactly one red on these grounds that can be drawn WITH - 4.5:1 on
+        // surfaceHover caps a hue-0 red at the saturation danger already sits
+        // at - so recording is the fill this role crosses TO, below, and never
+        // the glyph it rests in. A record button is told from a delete button
+        // by its shape and by where it sits, which is how every desk does it.
+        case Role::record: return colour::danger;
+
         case Role::danger: return colour::danger;
         case Role::neutral: break;
     }
 
     return colour::textPrimary;
+}
+
+juce::Colour DewIconButton::onColourFor (Role r) noexcept
+{
+    // What the button fills with once it is ON. Part of the ROLE, not of the
+    // call site: recording is a fill-only colour, and leaving it to be set by
+    // hand is what would let it be passed somewhere it has to be legible as a
+    // glyph. The transport bar used to say this itself, one line after naming
+    // the role that means it.
+    return r == Role::record ? colour::recording : colour::accent;
 }
 
 void DewIconButton::setOnColour (juce::Colour c)

@@ -134,9 +134,17 @@ TEST_CASE ("every text role is readable on the surfaces it is drawn on", "[desig
                                                            { "playhead", p.playhead },
                                                            { "success", p.success },
                                                            { "warning", p.warning },
-                                                           { "danger", p.danger },
-                                                           { "recording", p.recording } })
+                                                           { "danger", p.danger } })
             checkAll (surfaces (p), role, c, text, name, failures);
+
+        // recording is NOT in that list, and its absence is the rule rather
+        // than an omission: it is a FILL-ONLY colour. Hue 0 at value 1 clears
+        // 4.5:1 on surfaceHover only up to the saturation danger already sits
+        // at, so a deeper red cannot be drawn WITH on these grounds - and a
+        // record control rests in danger for exactly that reason. What it has
+        // to clear is the fill rule below. Listing it here as well would be a
+        // gate asserting a pair nothing paints, which is what the accent's own
+        // note two lines down refuses.
 
         // The accent is text on a PANEL - a selected slot's name, a heading -
         // and never on a hovered control, whose own text is textPrimary or
@@ -224,6 +232,10 @@ TEST_CASE ("text on a filled control is readable on every fill", "[design][contr
                     { "success", p.success },
                     { "warning", p.warning },
                     { "danger", p.danger },
+                    // The armed record button and the armed "R" on a channel
+                    // row. This is the ONLY rule recording answers to, and the
+                    // reason it is allowed to be the deep red danger cannot be.
+                    { "recording", p.recording },
                     { "keyWhite", p.keyWhite } },
                   "textOnAccent", p.textOnAccent, text, name, failures);
 

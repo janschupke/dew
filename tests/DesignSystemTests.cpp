@@ -192,10 +192,12 @@ TEST_CASE ("an icon button's role colours its glyph", "[design][primitives]")
     //
     // Counted rather than compared as a fraction - -Wfloat-equal is an error
     // under the ci preset, and "none of them" is an integer statement anyway.
-    const auto glyphPixels = [] (DewIconButton::Role role, juce::Path icon, juce::Colour target)
+    const auto pixelsWhen =
+        [] (DewIconButton::Role role, juce::Path icon, juce::Colour target, bool on)
     {
         DewIconButton button (std::move (icon), "Tip", role);
         button.setSize (48, 48);
+        button.setToggleState (on, juce::dontSendNotification);
 
         const auto image = render (button);
         auto matching = 0;
@@ -215,10 +217,26 @@ TEST_CASE ("an icon button's role colours its glyph", "[design][primitives]")
         return matching;
     };
 
-    CHECK (glyphPixels (DewIconButton::Role::record, icons::record(), tokens::colour::recording)
-           > 0);
+    const auto glyphPixels = [&] (DewIconButton::Role role, juce::Path icon, juce::Colour target)
+    { return pixelsWhen (role, std::move (icon), target, false); };
+
+    // A record button RESTS in the same red a trash can does, and deliberately:
+    // there is one red on these grounds that can be drawn with at all - 4.5:1
+    // on surfaceHover caps a hue-0 red at the saturation danger sits at - so a
+    // second, deeper red could only ever be a fill.
+    CHECK (glyphPixels (DewIconButton::Role::record, icons::record(), tokens::colour::danger) > 0);
     CHECK (glyphPixels (DewIconButton::Role::danger, icons::trash(), tokens::colour::danger) > 0);
     CHECK (glyphPixels (DewIconButton::Role::go, icons::play(), tokens::colour::success) > 0);
+
+    // ...and it is the FILL that tells the two apart. Armed, a record button
+    // crosses to colour::recording, which nothing else in the set does; that is
+    // what Role::record means and why the fill belongs to the role rather than
+    // to whoever constructs the button.
+    CHECK (
+        pixelsWhen (DewIconButton::Role::record, icons::record(), tokens::colour::recording, true)
+        > 0);
+    CHECK (pixelsWhen (DewIconButton::Role::danger, icons::trash(), tokens::colour::recording, true)
+           == 0);
 
     // The control case, and the one that says the ROLE is doing the work: the
     // same glyph with no role paints none of those pixels. Without it the three

@@ -401,7 +401,7 @@ public:
     {
         neutral, ///< the text colour: says nothing beyond its shape
         go,      ///< starts sound: play
-        record,  ///< arms or runs a take
+        record,  ///< arms or runs a take: rests in red, FILLS with the deep red
         danger   ///< destroys something: every trash can
     };
 
@@ -433,8 +433,18 @@ public:
     */
     void setTooltip (const juce::String&) override;
 
-    /** Colour used when the button is toggled on. Defaults to the accent. */
+    /** Colour used when the button is toggled on. Defaults to what the ROLE
+        means - the accent for most, the deep record red for Role::record. Set
+        it by hand only for a fill the role does not already name. */
     void setOnColour (juce::Colour);
+
+    /** The fill a role crosses to when the button goes on.
+
+        Part of the role rather than of the call site, because recording is a
+        FILL-ONLY colour: it is deliberately too deep to read as a glyph, and
+        leaving it to be assigned by hand is what would let it be handed to
+        something that draws with it. See restingTint. */
+    static juce::Colour onColourFor (Role) noexcept;
 
     /** A glyph in a square, not a word in a box - see tokens::size::iconButton. */
     int preferredHeight() const

@@ -63,9 +63,9 @@ TransportBar::TransportBar (ProjectDocument& d, AudioEngine& e, EditorState& s)
 
     // Neither of those writes the icon. It is POLLED - see timerCallback.
 
-    // The icon and the colour have existed in the design system since before
-    // anything could record; this is their first call site.
-    recordButton.setOnColour (tokens::colour::recording);
+    // No setOnColour here any more: the fill an armed record button crosses to
+    // is what DewIconButton::Role::record MEANS, so the role carries it. It was
+    // stated here, one line after naming the role that already implied it.
     recordButton.onClick = [this]
     {
         if (onToggleRecord != nullptr)
