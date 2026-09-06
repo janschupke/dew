@@ -26,10 +26,18 @@ juce::Colour playheadColour (float brightness)
 
 void verticalGrid (juce::Graphics& g, const TimelineView& timeline, juce::Range<int> steps,
                    int stepsPerBar, int stepsPerBeat, float originX, juce::Range<float> y,
-                   float rightEdge)
+                   float rightEdge, int snapSteps)
 {
     const auto bar = juce::jmax (1, stepsPerBar);
     const auto beat = juce::jmax (1, stepsPerBeat);
+
+    // Only where it says something: a cell as coarse as a beat is already a
+    // beat line, and one too narrow to see is the wall the step cutoff exists
+    // to prevent.
+    const auto snap = snapSteps > 1 && snapSteps < beat
+                              && timeline.pixelsPerStep * (double) snapSteps >= subBeatCutoffPx
+                          ? snapSteps
+                          : 0;
 
     for (int step = steps.getStart(); step <= steps.getEnd(); ++step)
     {
@@ -42,6 +50,8 @@ void verticalGrid (juce::Graphics& g, const TimelineView& timeline, juce::Range<
             g.setColour (colour::dividerStrong);
         else if (step % beat == 0)
             g.setColour (colour::divider);
+        else if (snap > 0 && step % snap == 0)
+            g.setColour (colour::divider.withAlpha (emphasis::dimmed));
         else if (timeline.pixelsPerStep >= subBeatCutoffPx)
             g.setColour (colour::divider.withAlpha (emphasis::subdued));
         else

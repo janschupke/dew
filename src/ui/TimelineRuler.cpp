@@ -29,6 +29,13 @@ void paint (juce::Graphics& g, juce::Rectangle<int> bounds, const TimelineView& 
     const auto stepsPerBar = juce::jmax (1, style.stepsPerBar);
     const auto stepsPerBeat = juce::jmax (1, stepsPerBar / juce::jmax (1, style.beatsPerBar));
 
+    // Same rule the grid below applies: only where the cell says something the
+    // beat tick does not, and only where there is room to see it.
+    const auto snapSteps = style.snapSteps > 1 && style.snapSteps < stepsPerBeat
+                                   && timeline.pixelsPerStep * (double) style.snapSteps >= 10.0
+                               ? style.snapSteps
+                               : 0;
+
     // Before the bar lines and numbers, so they stay legible on top of it -
     // the order the playlist's own strip already uses.
     if (style.hasSelection())
@@ -90,6 +97,14 @@ void paint (juce::Graphics& g, juce::Rectangle<int> bounds, const TimelineView& 
         {
             g.setColour (beyond ? colour::divider.withAlpha (emphasis::subdued) : colour::divider);
             g.drawVerticalLine ((int) x, (float) bounds.getBottom() - 6.0f,
+                                (float) bounds.getBottom());
+        }
+        else if (snapSteps > 0 && step % snapSteps == 0)
+        {
+            // Half the beat tick's reach, and dimmer: it is a subdivision of the
+            // thing above it and has to read as one.
+            g.setColour (colour::divider.withAlpha (beyond ? emphasis::wash : emphasis::subdued));
+            g.drawVerticalLine ((int) x, (float) bounds.getBottom() - 3.0f,
                                 (float) bounds.getBottom());
         }
     }

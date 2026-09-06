@@ -14,6 +14,7 @@
 #include "model/EntityColour.h"
 #include "model/Ids.h"
 #include "model/Meter.h"
+#include "model/NoteTools.h"
 #include "model/ProjectEdits.h"
 #include "ui/design/DewLookAndFeel.h"
 #include "ui/RandomizePanel.h"
@@ -99,6 +100,10 @@ void PianoRollComponent::paintRuler (juce::Graphics& g)
     style.totalSteps = numSteps();
     style.playing = engine.isPlaying();
 
+    // The grid the notes will land on, marked where the ruler counts. Without
+    // it the snap dropdown was the only sign a division had changed.
+    style.snapSteps = NoteTools::snaps (toolbar.getSnap()) ? snapSteps() : 0;
+
     // Asked of the roll rather than worked out here, so the ruler's head and
     // the grid's line agree in song mode as well as in pattern mode.
     if (const auto at = playheadInPattern())
@@ -178,7 +183,8 @@ void PianoRollComponent::paintNotes (juce::Graphics& g)
 
     timelinePaint::verticalGrid (
         g, timeline, range, stepsPerBar, stepsPerBeat, (float) size::gutterKeyboard,
-        { (float) area.getY(), (float) area.getBottom() }, (float) area.getRight());
+        { (float) area.getY(), (float) area.getBottom() }, (float) area.getRight(),
+        NoteTools::snaps (toolbar.getSnap()) ? snapSteps() : 0);
 
     // Past the end of the pattern is still drawn - it is just dimmed, with the
     // end itself marked. It used to be hatched over, which turned every window

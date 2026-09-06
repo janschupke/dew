@@ -159,6 +159,11 @@ namespace
 */
 void frameTwoBarsOverOneBarPattern (dew::testing::RollHarness& h)
 {
+    // These cases are about the pattern's LENGTH, not about the grid, so they
+    // aim at raw steps and say so rather than inheriting whatever division the
+    // project's grid makes the default.
+    h.roll.setSnap (SnapDivision::off);
+
     juce::UndoManager scratch;
 
     auto far = ProjectEdits::addNote (h.pattern(), 1, 20, 1, 72, 1.0f, &scratch);

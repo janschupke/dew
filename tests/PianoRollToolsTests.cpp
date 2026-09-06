@@ -89,17 +89,33 @@ TEST_CASE ("at a coarse grid a note is written at the start of the cell clicked"
     CHECK ((int) note[ids::lengthSteps] == 4);
 }
 
-TEST_CASE ("the finest grid leaves the original behaviour exactly as it was", "[ui][rolltools]")
+TEST_CASE ("no grid leaves the original behaviour exactly as it was", "[ui][rolltools]")
 {
     const juce::ScopedJuceInitialiser_GUI juceInit;
     RollHarness h;
 
-    REQUIRE (h.roll.getSnap() == SnapDivision::sixteenth);
+    // What "the finest grid" used to mean, and no longer can. A sixteenth at
+    // four steps to a beat IS a step, so the roll opened on a division that
+    // snapped to nothing and called it a grid; `off` is the entry that says so
+    // rather than the entry that happens to behave that way.
+    h.roll.setSnap (SnapDivision::off);
 
     clickAndRelease (h.roll, pointFor (h, 5, 66));
 
     REQUIRE (h.countNotes() == 1);
     CHECK ((int) h.pattern().getChild (0)[ids::step] == 5);
+}
+
+TEST_CASE ("the roll opens on a division its project can express", "[ui][rolltools]")
+{
+    const juce::ScopedJuceInitialiser_GUI juceInit;
+    RollHarness h;
+
+    // A default project has four steps to a beat, so the finest division that
+    // moves anything is the eighth. Opening on the sixteenth was opening on the
+    // identity, which is what made Quantize appear to do nothing at all.
+    CHECK (h.roll.getSnap() == SnapDivision::eighth);
+    CHECK (NoteTools::fitsGrid (h.roll.getSnap(), 4));
 }
 
 TEST_CASE ("a dragged chord keeps its offsets while the grabbed note lands on the grid",
@@ -161,6 +177,10 @@ TEST_CASE ("the paint tool writes a note in every cell a stroke crosses", "[ui][
     const juce::ScopedJuceInitialiser_GUI juceInit;
     RollHarness h;
 
+    // One cell per STEP, which is what "every cell a stroke crosses" means to
+    // count. The default grid is coarser than a step now, so the division is
+    // stated rather than assumed.
+    h.roll.setSnap (SnapDivision::off);
     h.roll.setTool (EditorTool::paint);
 
     dragBetween (h.roll, pointFor (h, 0, 66), pointFor (h, 5, 66), 24);
@@ -183,6 +203,7 @@ TEST_CASE ("painting back over a cell does not stack a second note in it", "[ui]
     const juce::ScopedJuceInitialiser_GUI juceInit;
     RollHarness h;
 
+    h.roll.setSnap (SnapDivision::off);
     h.roll.setTool (EditorTool::paint);
 
     const auto from = pointFor (h, 0, 66);
@@ -220,6 +241,7 @@ TEST_CASE ("a whole paint stroke is one undo step", "[ui][rolltools]")
     const juce::ScopedJuceInitialiser_GUI juceInit;
     RollHarness h;
 
+    h.roll.setSnap (SnapDivision::off);
     h.roll.setTool (EditorTool::paint);
     dragBetween (h.roll, pointFor (h, 0, 66), pointFor (h, 5, 66), 24);
 

@@ -68,7 +68,10 @@ public:
         Handed in for the same reason the channels are: this strip never reads
         the document. Relabels the box in place, keeping the current selection.
     */
-    void setBeatUnit (int);
+    /** The project's grid, so the snap dropdown can say which divisions it can
+        actually express. `beatUnit` names them and `stepsPerBeat` decides which
+        of them fall on whole steps - see NoteTools::fitsGrid. */
+    void setGrid (int stepsPerBeat, int beatsPerBar, int beatUnit);
     int getBeatUnit() const noexcept
     {
         return beatUnit;
@@ -115,7 +118,17 @@ private:
     void rebuildSnapBox();
 
     SnapDivision snap = SnapDivision::sixteenth;
-    int beatUnit = 4;
+    /** ZERO until setGrid has been called, deliberately.
+
+        Initialised to a real metre they would have matched the default project
+        exactly, so setGrid's "nothing changed" guard would take the first call
+        and the snap would never be clamped against a grid it does not fit -
+        which is how the strip opened showing a sixteenth in a project whose
+        finest expressible division is an eighth.
+    */
+    int beatUnit = 0;
+    int stepsPerBeat = 0;
+    int beatsPerBar = 0;
 
     ToolStrip tools {
         *this,

@@ -287,16 +287,23 @@ void Settings::setMixerEffectBandHeight (int pixels)
 
 int Settings::getPianoRollSnap() const
 {
-    // A division that does not exist falls back to the finest one, which is the
-    // behaviour the roll had before there was a grid at all.
-    const auto stored = file().getIntValue ("pianoRollSnap", 0);
+    // A NEW key, deliberately. The ladder gained entries below the sixteenth -
+    // "off" among them - so index 0 stopped meaning what it meant, and reading
+    // the old key would silently turn the grid off for everybody who had ever
+    // touched it.
+    // The finest division a DEFAULT project can actually express. A sixteenth
+    // at four steps to a beat is a step, so it snaps to nothing - which is what
+    // the old default was, and what made Quantize look broken out of the box.
+    const auto fallback = NoteTools::indexOfSnap (SnapDivision::eighth);
+    const auto stored = file().getIntValue ("pianoRollSnapDivision", fallback);
 
-    return (stored >= 0 && stored < NoteTools::numSnapDivisions) ? stored : 0;
+    return (stored >= 0 && stored < NoteTools::numSnapDivisions) ? stored : fallback;
 }
 
 void Settings::setPianoRollSnap (int index)
 {
-    file().setValue ("pianoRollSnap", juce::jlimit (0, NoteTools::numSnapDivisions - 1, index));
+    file().setValue ("pianoRollSnapDivision",
+                     juce::jlimit (0, NoteTools::numSnapDivisions - 1, index));
 }
 
 int Settings::getPanelWidth() const

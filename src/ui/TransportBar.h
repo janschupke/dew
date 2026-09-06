@@ -187,6 +187,10 @@ private:
     void rebuildMeterList();
     void refreshMeter();
     void applyMeterChoice (int itemId);
+
+    void rebuildGridList();
+    void refreshGrid();
+    void applyGridChoice (int itemId);
     juce::ValueTree currentPattern() const;
 
     /** Patterns in the DOCUMENT. The pattern box is not a count of them: it
@@ -246,6 +250,14 @@ private:
     */
     DewDropdown meterBox;
 
+    /** The grid: how finely a beat is divided, which is what decides the
+        finest note the project can PLACE and which snap divisions the piano
+        roll can offer. Beside the metre because the two are the same kind of
+        fact - one says how time is grouped, the other how finely it is cut -
+        and because changing either rescales the document.
+    */
+    DewDropdown gridBox;
+
     DewButton modeButton { tr (StringId::transport_modePattern_label), DewButton::Role::normal };
 
     // Pattern management lives here because the pattern selector does: adding a
@@ -268,6 +280,7 @@ private:
 
     bool updatingPatternList = false;
     bool updatingMeterBox = false;
+    bool updatingGridBox = false;
 
     /** The meters offered, in the order they are listed. Beats per bar and the
         beat unit; anything else is reachable only by editing the file, and is

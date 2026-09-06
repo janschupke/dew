@@ -38,6 +38,15 @@ struct Style
     */
     int totalSteps = 16;
 
+    /** The active snap cell, in steps, or zero for none.
+
+        A third tier of tick, shorter than a beat's. The ruler counted bars and
+        beats and nothing else, so a view snapped to sixteenths had no mark
+        anywhere saying where a sixteenth was - which is half of why changing
+        the snap division looked like it did nothing at all.
+    */
+    int snapSteps = 0;
+
     /** Position to mark, in steps, or a negative number for none. */
     double playheadSteps = -1.0;
 

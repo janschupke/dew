@@ -113,6 +113,7 @@ TransportBar::TransportBar (ProjectDocument& d, AudioEngine& e, EditorState& s)
     addAndMakeVisible (tempoField);
 
     rebuildMeterList();
+    rebuildGridList();
     meterBox.setComponentID ("timeSignature");
     meterBox.setTooltip (tr (StringId::transport_meter_help));
     meterBox.onChange = [this]
@@ -123,6 +124,17 @@ TransportBar::TransportBar (ProjectDocument& d, AudioEngine& e, EditorState& s)
         applyMeterChoice (meterBox.getSelectedId());
     };
     addAndMakeVisible (meterBox);
+
+    gridBox.setComponentID ("gridResolution");
+    gridBox.setTooltip (tr (StringId::transport_grid_help));
+    gridBox.onChange = [this]
+    {
+        if (updatingGridBox)
+            return;
+
+        applyGridChoice (gridBox.getSelectedId());
+    };
+    addAndMakeVisible (gridBox);
 
     modeButton.setTooltip (tr (StringId::transport_mode_help));
     modeButton.setClickingTogglesState (true);
@@ -220,6 +232,7 @@ void TransportBar::refresh()
 {
     tempoField.setValue ((double) document.getState()[ids::tempoBpm], juce::dontSendNotification);
     refreshMeter();
+    refreshGrid();
     rebuildPatternList();
     refreshPatternControls();
 
@@ -365,7 +378,17 @@ void TransportBar::valueTreePropertyChanged (juce::ValueTree& tree,
         tempoField.setValue ((double) tree[ids::tempoBpm], juce::dontSendNotification);
     else if ((property == ids::beatsPerBar || property == ids::beatUnit)
              && tree.hasType (ids::PROJECT))
+    {
         refreshMeter();
+
+        // The metre names the grid too: "1/16" is a sixteenth only while a beat
+        // is a quarter, and the list says so in the notation of the project it
+        // is in.
+        rebuildGridList();
+        refreshGrid();
+    }
+    else if (property == ids::stepsPerBeat && tree.hasType (ids::PROJECT))
+        refreshGrid();
     else if (property == ids::name && tree.hasType (ids::PATTERN))
         rebuildPatternList();
 }
@@ -525,6 +548,10 @@ void TransportBar::resized()
 
     place (tempoField, 96);
     place (meterBox, 72);
+
+    // Wider than the metre beside it: "4/4" is three characters and a grid can
+    // read "1/32 T", which is six and was an ellipsis at the metre's width.
+    place (gridBox, 88);
     strip.gap();
     place (modeButton, 78);
 

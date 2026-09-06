@@ -134,6 +134,7 @@ add_executable(dew_tests
   WebsiteShotTests.cpp
   GestureTests.cpp
   FocusGroupTests.cpp
+  GridResolutionTests.cpp
   HotkeyTests.cpp
   SourceGateTests.cpp
   SourceGateDesignTests.cpp

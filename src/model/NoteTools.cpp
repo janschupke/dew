@@ -7,25 +7,99 @@ namespace dew
 {
 
 const SnapDivision NoteTools::allSnapDivisions[NoteTools::numSnapDivisions] = {
-    SnapDivision::sixteenth, SnapDivision::eighth, SnapDivision::quarter, SnapDivision::half,
-    SnapDivision::bar
+    SnapDivision::off,       SnapDivision::thirtysecond,  SnapDivision::sixteenthTriplet,
+    SnapDivision::sixteenth, SnapDivision::eighthTriplet, SnapDivision::eighth,
+    SnapDivision::quarter,   SnapDivision::half,          SnapDivision::bar
 };
+
+const int NoteTools::gridResolutions[NoteTools::numGridResolutions] = { 4, 8, 12, 24 };
+
+namespace
+{
+
+/** A division as a fraction of a beat: numerator over denominator.
+
+    Written as the fraction rather than as a step count so `fitsGrid` and
+    `stepsForSnap` answer from ONE statement of what a division IS. They used to
+    be the same switch twice, which is two places for a triplet to be wrong in.
+*/
+struct BeatFraction
+{
+    int numerator = 1;
+    int denominator = 1;
+};
+
+BeatFraction fractionOf (SnapDivision division) noexcept
+{
+    switch (division)
+    {
+        case SnapDivision::off: return { 0, 0 }; ///< not a fraction of a beat either
+        case SnapDivision::thirtysecond: return { 1, 8 };
+        case SnapDivision::sixteenthTriplet: return { 1, 6 };
+        case SnapDivision::sixteenth: return { 1, 4 };
+        case SnapDivision::eighthTriplet: return { 1, 3 };
+        case SnapDivision::eighth: return { 1, 2 };
+        case SnapDivision::quarter: return { 1, 1 };
+        case SnapDivision::half: return { 2, 1 };
+        case SnapDivision::bar: return { 0, 0 }; ///< the bar is not a fraction of a beat
+    }
+
+    return { 1, 4 };
+}
+
+/** Whether a division lands on whole steps at all, which is a weaker question
+    than fitsGrid asks and the right one for NAMING a grid.
+
+    At eight steps to a beat a thirty-second IS a step: you can place one, which
+    is what the grid gets its name from, but snapping to it would move nothing -
+    which is why fitsGrid refuses it and this does not.
+*/
+bool placesOnGrid (SnapDivision division, int stepsPerBeat) noexcept
+{
+    const auto fraction = fractionOf (division);
+    const auto cell = juce::jmax (1, stepsPerBeat) * fraction.numerator;
+
+    return fraction.denominator > 0 && cell % fraction.denominator == 0
+           && cell / fraction.denominator >= 1;
+}
+
+} // namespace
 
 int NoteTools::stepsForSnap (SnapDivision division, int stepsPerBeat, int beatsPerBar) noexcept
 {
     const auto perBeat = juce::jmax (1, stepsPerBeat);
-    const auto perBar = perBeat * juce::jmax (1, beatsPerBar);
 
-    switch (division)
-    {
-        case SnapDivision::sixteenth: return juce::jmax (1, perBeat / 4);
-        case SnapDivision::eighth: return juce::jmax (1, perBeat / 2);
-        case SnapDivision::quarter: return perBeat;
-        case SnapDivision::half: return perBeat * 2;
-        case SnapDivision::bar: return perBar;
-    }
+    // One step, which is the finest position a note can hold and therefore the
+    // identity. Not the quarter its beat fraction would give: `off` shares that
+    // fraction because it is not a fraction of a beat at all.
+    if (division == SnapDivision::off)
+        return 1;
 
-    return 1;
+    if (division == SnapDivision::bar)
+        return perBeat * juce::jmax (1, beatsPerBar);
+
+    const auto fraction = fractionOf (division);
+
+    return juce::jmax (1, perBeat * fraction.numerator / fraction.denominator);
+}
+
+bool NoteTools::fitsGrid (SnapDivision division, int stepsPerBeat, int beatsPerBar) noexcept
+{
+    // The absence of a grid fits every grid.
+    if (division == SnapDivision::off)
+        return true;
+
+    if (division == SnapDivision::bar)
+        return juce::jmax (1, beatsPerBar) >= 1;
+
+    const auto perBeat = juce::jmax (1, stepsPerBeat);
+    const auto fraction = fractionOf (division);
+    const auto cell = perBeat * fraction.numerator;
+
+    // Exact, AND coarser than a step. A division that lands between steps
+    // cannot be snapped to; one that IS a step is the identity, and offering it
+    // is how Quantize came to look like it did nothing.
+    return cell % fraction.denominator == 0 && cell / fraction.denominator > 1;
 }
 
 juce::String NoteTools::nameForSnap (SnapDivision division, int beatUnit)
@@ -36,9 +110,16 @@ juce::String NoteTools::nameForSnap (SnapDivision division, int beatUnit)
     const auto unit = juce::jmax (1, beatUnit);
     const auto noteValue = [unit] (int multiplier) { return juce::String (unit * multiplier); };
 
+    // A triplet is three in the time of two, so it is named after the note it
+    // subdivides with a T after it - "1/8 T" is three in the time of two
+    // eighths, which is what every score and every other sequencer calls it.
     switch (division)
     {
+        case SnapDivision::off: return "Off";
+        case SnapDivision::thirtysecond: return "1/" + noteValue (8);
+        case SnapDivision::sixteenthTriplet: return "1/" + noteValue (4) + " T";
         case SnapDivision::sixteenth: return "1/" + noteValue (4);
+        case SnapDivision::eighthTriplet: return "1/" + noteValue (2) + " T";
         case SnapDivision::eighth: return "1/" + noteValue (2);
         case SnapDivision::quarter: return "1/" + noteValue (1);
         case SnapDivision::half:
@@ -47,6 +128,44 @@ juce::String NoteTools::nameForSnap (SnapDivision division, int beatUnit)
     }
 
     return "1/" + noteValue (4);
+}
+
+juce::String NoteTools::nameForGrid (int stepsPerBeat, int beatUnit)
+{
+    // Named after what it BUYS - the finest note it can place - rather than
+    // after its step count, which is a number with no musical meaning to
+    // anybody choosing one.
+    const auto triplets = placesOnGrid (SnapDivision::sixteenthTriplet, stepsPerBeat);
+
+    for (const auto division :
+         { SnapDivision::thirtysecond, SnapDivision::sixteenthTriplet, SnapDivision::sixteenth })
+    {
+        if (! placesOnGrid (division, stepsPerBeat))
+            continue;
+
+        const auto name = nameForSnap (division, beatUnit);
+
+        // A grid that places triplets says so, unless the note it is named
+        // after is already one.
+        return triplets && division != SnapDivision::sixteenthTriplet ? name + " T" : name;
+    }
+
+    return nameForSnap (SnapDivision::sixteenth, beatUnit);
+}
+
+SnapDivision NoteTools::nearestFittingSnap (SnapDivision wanted, int stepsPerBeat,
+                                            int beatsPerBar) noexcept
+{
+    if (fitsGrid (wanted, stepsPerBeat, beatsPerBar))
+        return wanted;
+
+    // The ladder runs finest to coarsest, so walking forward from `wanted` is
+    // walking towards divisions this grid is more likely to hold.
+    for (int i = indexOfSnap (wanted) + 1; i < numSnapDivisions; ++i)
+        if (fitsGrid (allSnapDivisions[i], stepsPerBeat, beatsPerBar))
+            return allSnapDivisions[i];
+
+    return SnapDivision::bar;
 }
 
 SnapDivision NoteTools::snapFromIndex (int index) noexcept

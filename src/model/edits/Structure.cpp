@@ -5,9 +5,11 @@
 // one struct of static functions and stays where it was; this directory is
 // where they are defined.
 //
-// Two edits that act on the PROJECT rather than on anything in it.
-// Changing the meter rescales every clip, because a clip is stored in
-// bars; the score is text the compiler owns and the document carries.
+// Three edits that act on the PROJECT rather than on anything in it.
+// Changing the meter rescales every clip, because a clip is stored in bars;
+// changing the grid resolution rescales every NOTE, for the mirror-image
+// reason - a note is stored in steps, and stepsPerBeat is what a step is worth;
+// the score is text the compiler owns and the document carries.
 // =============================================================================
 
 #include "model/ProjectEdits.h"
@@ -18,6 +20,63 @@
 
 namespace dew
 {
+
+void ProjectEdits::setGridResolution (juce::ValueTree project, int wanted, juce::UndoManager* undo)
+{
+    if (! project.isValid())
+        return;
+
+    const auto before = juce::jmax (1, (int) Meter::of (project).stepsPerBeat);
+    const auto after = juce::jmax (1, wanted);
+
+    if (after == before)
+        return;
+
+    // Steps in, time out, steps back - the shape setMeter's own rescale below
+    // is written in, so there is one place to read the intent and no ratio to
+    // get upside down.
+    const auto rescaled = [before, after] (double steps)
+    { return steps * (double) after / (double) before; };
+
+    project.setProperty (ids::stepsPerBeat, after, undo);
+
+    for (auto pattern : project)
+    {
+        if (! pattern.hasType (ids::PATTERN))
+            continue;
+
+        pattern.setProperty (
+            ids::lengthSteps,
+            juce::jmax (1, juce::roundToInt (rescaled ((int) pattern[ids::lengthSteps]))), undo);
+
+        for (auto note : pattern)
+        {
+            if (! note.hasType (ids::NOTE))
+                continue;
+
+            note.setProperty (ids::step,
+                              juce::jmax (0, juce::roundToInt (rescaled ((int) note[ids::step]))),
+                              undo);
+            note.setProperty (
+                ids::lengthSteps,
+                juce::jmax (1, juce::roundToInt (rescaled ((int) note[ids::lengthSteps]))), undo);
+        }
+    }
+
+    // A DOUBLE, unlike a note's step, so it is rescaled without rounding - a
+    // curve point is wherever the pointer left it, and rounding one to a step
+    // would move every automated sweep in the project a little every time the
+    // grid was touched.
+    for (auto automation : project)
+    {
+        if (! automation.hasType (ids::AUTOMATION))
+            continue;
+
+        for (auto point : automation)
+            if (point.hasType (ids::POINT))
+                point.setProperty (ids::step, rescaled ((double) point[ids::step]), undo);
+    }
+}
 
 void ProjectEdits::setMeter (juce::ValueTree project, int beatsPerBar, int beatUnit,
                              juce::UndoManager* undo, bool* wasExact)

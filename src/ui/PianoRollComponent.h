@@ -376,6 +376,10 @@ private:
     */
     int stepsPerBar() const;
 
+    /** Tells the toolbar the project's grid, so the snap dropdown can say which
+        divisions it can express. */
+    void setToolbarGrid();
+
     /** Sets the pattern's length to what its notes need, in whole bars.
 
         Every gesture that adds, moves, resizes or removes a note ends here, so

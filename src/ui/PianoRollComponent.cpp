@@ -168,7 +168,7 @@ void PianoRollComponent::updateChannelList()
 
     // The snap divisions are fractions of a beat, so their labels depend on
     // what a beat is called.
-    toolbar.setBeatUnit (Meter::of (document.getState()).beatUnit);
+    setToolbarGrid();
 }
 
 int PianoRollComponent::numSteps() const
@@ -221,6 +221,12 @@ std::optional<double> PianoRollComponent::playheadInPattern() const
 int PianoRollComponent::stepsPerBeat() const
 {
     return juce::jmax (1, (int) document.getState()[ids::stepsPerBeat]);
+}
+
+void PianoRollComponent::setToolbarGrid()
+{
+    const auto meter = Meter::of (document.getState());
+    toolbar.setGrid (meter.stepsPerBeat, meter.beatsPerBar, meter.beatUnit);
 }
 
 int PianoRollComponent::stepsPerBar() const
@@ -496,8 +502,11 @@ void PianoRollComponent::valueTreePropertyChanged (juce::ValueTree&,
     if (property == ids::name)
         updateChannelList();
 
-    if (property == ids::beatUnit)
-        toolbar.setBeatUnit (Meter::of (document.getState()).beatUnit);
+    // Any of the three: the unit names the divisions, the resolution decides
+    // which of them fall on whole steps, and the beats per bar decide what
+    // "Bar" is worth.
+    if (property == ids::beatUnit || property == ids::stepsPerBeat || property == ids::beatsPerBar)
+        setToolbarGrid();
 
     repaint();
 }

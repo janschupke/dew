@@ -51,6 +51,13 @@ void PianoRollComponent::quantizeScope()
     if (! pattern.isValid() || scope.isEmpty())
         return;
 
+    // Nothing to quantize TO. Refused rather than run as the identity, which is
+    // what it used to be at every grid: an operation that opens a transaction,
+    // moves every note to itself and reports success is indistinguishable from
+    // one that is broken.
+    if (! NoteTools::snaps (toolbar.getSnap()))
+        return;
+
     auto& undo = document.getUndoManager();
     undo.beginNewTransaction ("Quantize");
     NoteTools::quantize (pattern, scope, snapSteps(), stepsPerBar(), &undo);

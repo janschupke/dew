@@ -577,6 +577,26 @@ struct ProjectEdits
         Does nothing at all when the meter is unchanged, so this is safe to call
         from a combo box that re-selects the value it already had.
     */
+    /** Changes how many STEPS there are in a beat, rescaling the whole document
+        so nothing moves in time.
+
+        `stepsPerBeat` owns how long a step is - Transport::samplesPerStepFor
+        divides by it - so raising it without rescaling would keep every note's
+        step number and halve the duration of the project. Every step-valued
+        thing in the document therefore moves in the same undo transaction:
+        each note's start and length, each pattern's length, and each automation
+        point's position, which is a double.
+
+        Clips do NOT move. They are stored in bars, and a bar is a bar whatever
+        it is divided into - which is the same reason setMeter has to rescale
+        them and this does not.
+
+        The guard is a render: the same project at four steps to a beat and at
+        eight must be sample-identical. Verify a change to this by skipping one
+        of the rescales and confirming that test fails.
+    */
+    static void setGridResolution (juce::ValueTree project, int stepsPerBeat, juce::UndoManager*);
+
     static void setMeter (juce::ValueTree project, int beatsPerBar, int beatUnit,
                           juce::UndoManager*, bool* wasExact = nullptr);
 

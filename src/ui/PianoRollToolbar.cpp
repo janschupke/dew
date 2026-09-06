@@ -168,17 +168,37 @@ void PianoRollToolbar::rebuildSnapBox()
     snapBox.clear (juce::dontSendNotification);
 
     for (int i = 0; i < NoteTools::numSnapDivisions; ++i)
-        snapBox.addItem (NoteTools::nameForSnap (NoteTools::allSnapDivisions[i], beatUnit), i + 1);
+    {
+        const auto division = NoteTools::allSnapDivisions[i];
+        snapBox.addItem (NoteTools::nameForSnap (division, beatUnit), i + 1);
+
+        // OFFERED and disabled rather than absent. A division this grid cannot
+        // express is a real division that this project cannot use, and a list
+        // that simply left it out would say the application does not have
+        // triplets rather than that the grid does not - which is the difference
+        // between a missing feature and a setting to change.
+        if (! NoteTools::fitsGrid (division, stepsPerBeat, beatsPerBar))
+            snapBox.setItemEnabled (i + 1, false);
+    }
 
     snapBox.setSelectedId (NoteTools::indexOfSnap (snap) + 1, juce::dontSendNotification);
 }
 
-void PianoRollToolbar::setBeatUnit (int newBeatUnit)
+void PianoRollToolbar::setGrid (int newStepsPerBeat, int newBeatsPerBar, int newBeatUnit)
 {
-    if (newBeatUnit == beatUnit)
+    if (newBeatUnit == beatUnit && newStepsPerBeat == stepsPerBeat && newBeatsPerBar == beatsPerBar)
         return;
 
     beatUnit = newBeatUnit;
+    stepsPerBeat = newStepsPerBeat;
+    beatsPerBar = newBeatsPerBar;
+
+    // A division the new grid cannot express stops being selected. Leaving it
+    // would be a dropdown showing a setting that is not in force - the snap
+    // would quietly behave as the identity while the box still named a
+    // sixteenth.
+    setSnap (NoteTools::nearestFittingSnap (snap, stepsPerBeat, beatsPerBar));
+
     rebuildSnapBox();
 }
 

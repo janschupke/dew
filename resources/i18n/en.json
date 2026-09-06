@@ -1262,6 +1262,9 @@
     "rendering": "Rendering {file}..."
   },
   "transport": {
+    "grid": {
+      "help": "Grid - the finest note the project can place, and what snap can offer"
+    },
     "meter": {
       "format": "{beats}/{unit}",
       "help": "Time signature - beats to the bar, and what a beat is"

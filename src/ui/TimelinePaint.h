@@ -32,12 +32,20 @@ namespace dew::timelinePaint
     step at full weight, so zooming out turned its background into a solid
     block of divider colour.
 
+    `snapSteps` adds a fourth weight, between the beat and the step: the cells
+    of the grid a note will actually LAND on. Without it a snap division was
+    a thing the dropdown claimed and the canvas showed no sign of, so changing
+    it looked like it did nothing - the grid was drawn from the METRE, which the
+    snap has nothing to do with. Zero, the default, is the old drawing exactly;
+    a division as coarse as a beat or wider is already a line and adds none.
+
     @param steps      the range to walk, from TimelineView::visibleStepRange
     @param originX    the caller's content origin (a keyboard or header gutter)
     @param rightEdge  stop here; a component may be narrower than its range
 */
 void verticalGrid (juce::Graphics&, const TimelineView&, juce::Range<int> steps, int stepsPerBar,
-                   int stepsPerBeat, float originX, juce::Range<float> y, float rightEdge);
+                   int stepsPerBeat, float originX, juce::Range<float> y, float rightEdge,
+                   int snapSteps = 0);
 
 /** The column of the step the transport is inside. Drawn under everything, and
     only while playing: a stopped transport highlighting a step reads as a

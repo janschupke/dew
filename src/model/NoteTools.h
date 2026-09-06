@@ -5,16 +5,36 @@
 namespace dew
 {
 
-/** Grid divisions the editors can snap to.
+/** Grid divisions the editors can snap to, finest first.
 
     Musical divisions rather than literal step counts: a step is a subdivision of
     a beat, `stepsPerBeat` is a project property, and the ruler already derives
     bar lines from it. Hard-coding 16 for a bar would make the dropdown lie about
     any project that did not use the default.
+
+    Not every division fits every grid, which is the point of having more of them
+    than a default project can use. At four steps to a beat a sixteenth IS a
+    step, so every finer division and every triplet falls between two of them -
+    and `fitsGrid` is what lets the dropdown grey those out rather than round
+    them to something else and claim it snapped. Raising the project's grid
+    resolution is what turns them on; see ProjectEdits::setGridResolution.
 */
 enum class SnapDivision
 {
+    /** No grid at all: a note goes where the pointer put it.
+
+        Which a step-based document CAN express, unlike the finer divisions - a
+        step is the finest position a note holds, so "off" and "one step" are
+        the same placement. It is here because they are not the same INTENT:
+        every other division is a promise that things line up, and this is the
+        one entry that promises they will not.
+    */
+    off,
+
+    thirtysecond,
+    sixteenthTriplet,
     sixteenth,
+    eighthTriplet,
     eighth,
     quarter,
     half,
@@ -49,15 +69,71 @@ struct NoteTools
     static constexpr int highestPitch = 108;
 
     // --- snapping ------------------------------------------------------------
-    static constexpr int numSnapDivisions = 5;
+    static constexpr int numSnapDivisions = 9;
 
     static const SnapDivision allSnapDivisions[numSnapDivisions];
 
     /** Steps in one grid cell. Never less than one: a zero-width grid would make
         every snap a division by zero, and a step is already the finest position
         a note can hold.
+
+        A division the grid cannot express answers one, which is the identity -
+        so a caller that ignores `fitsGrid` gets the old behaviour rather than a
+        crash. The dropdown does not ignore it.
     */
     static int stepsForSnap (SnapDivision, int stepsPerBeat, int beatsPerBar = 4) noexcept;
+
+    /** Whether this division lands on whole steps at this grid, and is coarser
+        than one step.
+
+        Both halves matter and they fail differently. A triplet at four steps to
+        a beat falls BETWEEN steps, so snapping to it would move a note
+        somewhere the division does not name. A sixteenth at four steps to a
+        beat IS a step, so snapping to it moves nothing - which is why Quantize
+        appeared to do nothing at all in a default project, and is the defect
+        this predicate exists to make visible.
+
+        `off` fits every grid, being the absence of one.
+    */
+    static bool fitsGrid (SnapDivision, int stepsPerBeat, int beatsPerBar = 4) noexcept;
+
+    /** `wanted` if this grid can express it, and otherwise the next COARSER
+        division that it can.
+
+        Coarser rather than finer because a coarser grid is always expressible -
+        the bar is the floor - and because rounding the other way would answer
+        with a division that lands between steps, which is the thing fitsGrid
+        exists to refuse. `off` is returned unchanged; it fits every grid.
+
+        Used when the project's grid RESOLUTION changes under a division that
+        was fine on the old one: leaving it selected would be a dropdown showing
+        a setting that is not in force.
+    */
+    static SnapDivision nearestFittingSnap (SnapDivision wanted, int stepsPerBeat,
+                                            int beatsPerBar = 4) noexcept;
+
+    /** Whether this division snaps at all. False only for `off`, and named so
+        the call sites read as the question they are asking rather than as a
+        comparison against one enumerator.
+    */
+    static bool snaps (SnapDivision division) noexcept
+    {
+        return division != SnapDivision::off;
+    }
+
+    /** The grid resolutions a project can be set to, in steps per beat.
+
+        Four rungs rather than a free number, and each one is what it BUYS: 4
+        places sixteenths, 8 adds thirty-seconds, 12 adds triplets, 24 adds
+        both. A grid nothing can be expressed on is not a grid, and a spin box
+        of arbitrary integers would offer thirty of them.
+    */
+    static constexpr int numGridResolutions = 4;
+
+    static const int gridResolutions[numGridResolutions];
+
+    /** What a grid is called: the finest division it can place. */
+    static juce::String nameForGrid (int stepsPerBeat, int beatUnit = 4);
 
     /** The division's label. `beatUnit` is the project's notational denominator:
         the divisions are relative to a BEAT, so "quarter" is one beat and reads
@@ -155,7 +231,17 @@ struct NoteTools
     struct RandomizeOptions
     {
         double velocityAmount = 0.25; ///< +/- around each note's velocity, in velocity units
-        int stepAmount = 0;           ///< +/- around each note's start, in steps
+
+        /** +/- around each note's start, in steps.
+
+            One rather than zero. At zero the default apply moved nothing at all
+            - it changed velocity, which shows only as the alpha of a note and a
+            bar in the lane below - so the honest reading of pressing Randomize
+            and watching the grid was that the button did nothing. A step is the
+            smallest disturbance the document can hold, which is the right
+            default for a humanise pass.
+        */
+        int stepAmount = 1;
     };
 
     /** Disturbs velocity and start step, once, in place.
