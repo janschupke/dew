@@ -9,13 +9,20 @@
 #include "engine/EngineSnapshot.h"
 #include "engine/Sequencer.h"
 #include "engine/TempoMap.h"
+#include "engine/SampleProvider.h"
+#include "engine/SoundFontProvider.h"
+#include "io/SoundFontFile.h"
 #include "model/AutomationTargets.h"
+#include "model/EffectType.h"
 #include "model/GeneratorCatalog.h"
 #include "model/Ids.h"
+#include "model/ModuleCatalog.h"
 #include "model/ProjectEdits.h"
 #include "model/ProjectFactory.h"
+#include "model/ProjectSchema.h"
 
 #include "EffectDspHarness.h"
+#include "FixtureSoundFont.h"
 
 using namespace dew;
 
@@ -59,8 +66,27 @@ using namespace dew;
 namespace
 {
 
-std::atomic<bool> counting { false };
-std::atomic<int> allocations { 0 };
+// THREAD-LOCAL, and that is the whole correctness of this file rather than a
+// detail of it.
+//
+// operator new is replaced program-wide, so a process-wide flag counts every
+// thread in the process - and on macOS this process has threads dew did not
+// start. LaunchServices keeps an XPC connection whose event handler runs on a
+// libdispatch queue and allocates a std::vector when a notification arrives,
+// at a moment nothing here controls. Armed process-wide, that lands inside the
+// window every few runs and the gate fails naming dew's render path for an
+// allocation in _MyCFXPCCreateCFObjectFromXPCObject.
+//
+// It was invisible while the window was short. Widening the fixture to cover
+// the effect chains, the FM loop and the two sampled sources made the window
+// long enough to hit it about three runs in ten - a flaky gate, which is worse
+// than a narrow one, because it is the kind people learn to re-run.
+//
+// thread_local answers the question the gate means to ask: did the thread that
+// is rendering allocate. A stray allocation on a system thread is not a defect
+// in the render path and must not be reported as one.
+thread_local bool counting = false;
+thread_local int allocations = 0;
 
 // Only the replaced operator new calls this, and that is only replaced when a
 // sanitizer has not already taken the allocator - so under asan and tsan it is
@@ -68,30 +94,33 @@ std::atomic<int> allocations { 0 };
 #if ! defined(DEW_SANITIZER_OWNS_THE_ALLOCATOR)
 inline void noteAllocation() noexcept
 {
-    if (counting.load (std::memory_order_relaxed))
-        allocations.fetch_add (1, std::memory_order_relaxed);
+    if (counting)
+        ++allocations;
 }
 #endif
 
 /** Arms the counter for a scope, and always disarms - a REQUIRE that throws
     inside the window must not leave every later test counting.
+
+    Arms the CALLING thread only. Every test here renders on its own thread, so
+    that is the thread whose allocations are the finding.
 */
 struct ScopedAllocationCount
 {
     ScopedAllocationCount()
     {
-        allocations.store (0, std::memory_order_relaxed);
-        counting.store (true, std::memory_order_relaxed);
+        allocations = 0;
+        counting = true;
     }
 
     ~ScopedAllocationCount()
     {
-        counting.store (false, std::memory_order_relaxed);
+        counting = false;
     }
 
     int count() const noexcept
     {
-        return allocations.load (std::memory_order_relaxed);
+        return allocations;
     }
 };
 
@@ -202,16 +231,68 @@ void operator delete[] (void* p, std::size_t, std::align_val_t) noexcept
 namespace
 {
 
+/** A provider that answers with one font, whatever it is asked for.
+
+    The engine opens no files, so the only way a soundfont reaches the render
+    path in a test is through this interface. Built in memory by
+    SoundFontBuilder rather than read from a committed .sf2, which is what lets
+    the whole suite run with no asset beside it.
+*/
+struct OneFontProvider : SoundFontProvider
+{
+    std::shared_ptr<const SoundFontData> font;
+
+    std::shared_ptr<const SoundFontData> soundFontFor (const juce::String&) override
+    {
+        return font;
+    }
+};
+
+/** The same, for an audio channel's take. */
+struct OneSampleProvider : SampleProvider
+{
+    std::shared_ptr<const juce::AudioBuffer<float>> audio;
+
+    std::shared_ptr<const juce::AudioBuffer<float>> audioFor (const juce::String&,
+                                                              double& sourceSampleRate) override
+    {
+        sourceSampleRate = 48000.0;
+        return audio;
+    }
+};
+
 /** A project built to be as hard on the render path as the schema permits.
 
     Deliberately past every bound rather than near it: enough channels to fill
     the rack, a note on the SAME step of every one of them so one block starts
     them all at once, and more overlapping automation clips than
     kMaxAutomations, which is the case that used to reallocate.
+
+    It also has to be past every BRANCH, which for a long time it was not. The
+    fixture filled the rack with synth channels and nothing else, so
+    `chain.anyEnabled()` was false everywhere, `bank.anyFm` was false, and no
+    channel carried a take or a font. Four of the five things processBlock can
+    render - every effect body, the FM voice loop, SamplePlayer and
+    SoundFontChannel - were outside the armed window, and the gate reported a
+    clean count for paths it had never entered. That is the failure this file's
+    own comments name; it was true of this file.
+
+    The audio and soundfont channels are added FIRST, before the rack is
+    filled. buildSnapshot drops channels past kMaxChannels in document order,
+    so a channel appended after the loop would be dropped and the path it
+    exists to reach would go unmeasured - silently, which is the whole problem
+    again.
 */
 juce::ValueTree maximalProject()
 {
     auto project = ProjectFactory::createDefault();
+
+    // First, so the kMaxChannels cap below cannot drop them.
+    auto audioChannel = ProjectEdits::addAudioChannel (project, "Take", nullptr);
+    ProjectEdits::setSampleSource (audioChannel, "take.wav", 48000, 48000, nullptr);
+
+    auto fontChannel = ProjectEdits::addSoundFontChannel (project, "Font", nullptr);
+    ProjectEdits::setSoundFontSource (fontChannel, "font.sf2", 0, 0, "Ramp", nullptr);
 
     for (int i = 0; i < kMaxChannels; ++i)
         ProjectEdits::addChannel (project, "Ch" + juce::String (i), nullptr);
@@ -245,7 +326,58 @@ juce::ValueTree maximalProject()
             lfo.setProperty (ids::lfoToPitch, 3.0, nullptr);
             lfo.setProperty (ids::lfoToVolume, 0.5, nullptr);
             lfo.setProperty (ids::lfoToPan, 0.8, nullptr);
+
+            // A bent matrix, so the voice latches fmActive and runs the SECOND
+            // render loop. The defaults are the identity - every amount zero,
+            // every output one - and a voice that latched a false anyFm runs
+            // the loop that predates the matrix, expression for expression. So
+            // an untouched fixture measures SynthVoice::renderAdd twice and
+            // SynthVoice::renderAddFm never.
+            slot.setProperty (ids::fmTo1, 0.4, nullptr);
+            slot.setProperty (ids::fmTo2, 0.3, nullptr);
+            slot.setProperty (ids::fmTo3, 0.2, nullptr);
+            slot.setProperty (ids::fmOut, 0.9, nullptr);
         }
+    }
+
+    // A full chain on every owner the schema offers one to, cycling through the
+    // types so all ten process() bodies are inside the window. Nine per chain
+    // is kMaxEffectsPerChain, and addEffect refuses past it rather than
+    // growing, so this saturates rather than overflowing.
+    //
+    // Cycling rather than "one of each on one channel": a chain holds nine and
+    // there are ten types, so no single chain can cover them.
+    auto effectType = 0;
+
+    for (auto owner : ProjectEdits::effectChainOwners (project))
+    {
+        for (int slot = 0; slot < kMaxEffectsPerChain; ++slot)
+        {
+            const auto type = effectTypeToString ((EffectType) (effectType % kNumEffectTypes));
+            ++effectType;
+
+            ProjectEdits::addEffect (project, owner, type, nullptr);
+        }
+    }
+
+    // A PATTERN clip, and an AUDIO clip, both over bar 0 where the playhead
+    // starts.
+    //
+    // Without the first of these the fixture played nothing at all. The test
+    // runs in song mode - it has to, because collectAutomation only runs there
+    // - and in song mode the playlist decides what sounds, not the pattern.
+    // The rack full of channels, the note on every one of them and every slot's
+    // LFO were all real in the document and none of them ever reached the audio
+    // thread: SynthVoice::start was not called once inside the armed window, so
+    // the gate was measuring the metronome, the automation walk and the mixer,
+    // and no voice. Verified by making start() allocate and watching the gate
+    // stay green.
+    {
+        auto notes = ProjectEdits::addPlaylistTrack (project, "Notes", nullptr);
+        ProjectEdits::addClip (notes, (int) pattern[ids::id], 0, 4, nullptr);
+
+        auto take = ProjectEdits::addPlaylistTrack (project, "Take", nullptr);
+        ProjectEdits::addAudioClip (take, (int) audioChannel[ids::id], 0, 4, nullptr);
     }
 
     // More automation CLIPS than the active-automation vector is reserved for,
@@ -316,6 +448,32 @@ TEST_CASE ("the render path allocates nothing", "[realtime][gate][allocation]")
     AudioEngine engine;
     engine.prepare (sampleRate, blockSize);
 
+    // The providers have to outlive setProject, which is where the snapshot
+    // fetches through them. dew_engine opens no files, so without these the
+    // audio and soundfont channels resolve to nothing and render nothing -
+    // which is how they stayed outside this window for so long.
+    OneFontProvider fonts;
+    {
+        const auto bytes = testing::SoundFontBuilder::minimal().build();
+        auto parsed = SoundFontFile::parse (bytes.getData(), bytes.getSize(), "Fixture");
+        REQUIRE (parsed.isValid());
+        fonts.font = std::make_shared<const SoundFontData> (std::move (parsed.font));
+    }
+
+    OneSampleProvider samples;
+    {
+        auto take = std::make_shared<juce::AudioBuffer<float>> (2, 48000);
+
+        for (int channel = 0; channel < 2; ++channel)
+            for (int i = 0; i < take->getNumSamples(); ++i)
+                take->setSample (channel, i, (float) std::sin (i * 0.01) * 0.5f);
+
+        samples.audio = take;
+    }
+
+    engine.setSoundFontPool (&fonts);
+    engine.setSamplePool (&samples);
+
     juce::StringArray warnings;
     auto project = maximalProject();
 
@@ -332,6 +490,37 @@ TEST_CASE ("the render path allocates nothing", "[realtime][gate][allocation]")
     REQUIRE (automationClips > kMaxAutomations);
 
     engine.setProject (project, &warnings);
+
+    // The fixture must PROVE it reached each branch, not merely intend to. Every
+    // check below corresponds to a render path that was outside this window
+    // until the fixture grew: a snapshot that quietly resolved none of them
+    // would leave the allocation count green and meaningless.
+    {
+        // The same call setProject makes, with the same providers, so what is
+        // asserted here is what the engine is about to render.
+        juce::StringArray snapshotWarnings;
+        const auto snapshot = buildSnapshot (project, &snapshotWarnings, &samples, &fonts);
+
+        auto withFm = 0, withEffects = 0, withAudio = 0, withFont = 0;
+
+        for (const auto& channel : snapshot.channels)
+        {
+            if (channel.osc.anyFm)
+                ++withFm;
+            if (channel.effects.anyEnabled())
+                ++withEffects;
+            if (channel.audio != nullptr)
+                ++withAudio;
+            if (channel.soundFont != nullptr)
+                ++withFont;
+        }
+
+        INFO (snapshotWarnings.joinIntoString ("\n"));
+        CHECK (withFm > 0);      // SynthVoice::renderAddFm
+        CHECK (withEffects > 0); // every EffectModule::process
+        CHECK (withAudio == 1);  // SamplePlayer::renderAdd
+        CHECK (withFont == 1);   // SoundFontChannel / SoundFontVoice
+    }
 
     // Song mode, not pattern: collectAutomation only runs in song mode, and the
     // automation clips below are the whole point of the fixture.
@@ -391,6 +580,27 @@ TEST_CASE ("the render path allocates nothing", "[realtime][gate][allocation]")
     // non-zero: a vector that reallocated has a different capacity.
     CHECK (engine.getTriggerCapacity() == triggerCapacity);
     CHECK (engine.getActiveAutomationCapacity() == automationCapacity);
+
+    // Panic is its own window. It runs on the audio thread and it is the one
+    // call that touches EVERY pooled module - modulePool.resetAll() walks all
+    // of them calling reset() - so it is both the widest sweep the render path
+    // makes and the rarest, which is a combination nothing else here covers.
+    // A reverb that allocated in reset() would be invisible to the loop above.
+    auto allocatedInPanic = 0;
+
+    {
+        ScopedAllocationCount counter;
+
+        engine.panic();
+
+        for (int i = 0; i < 8; ++i)
+            engine.processBlock (block);
+
+        allocatedInPanic = counter.count();
+    }
+
+    INFO ("allocations inside panic() and the eight blocks after it: " << allocatedInPanic);
+    CHECK (allocatedInPanic == 0);
 #endif
 }
 
