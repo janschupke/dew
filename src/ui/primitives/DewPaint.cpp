@@ -110,6 +110,32 @@ void surface (juce::Graphics& g, juce::Rectangle<int> bounds, juce::Colour c)
     g.fillRect (bounds);
 }
 
+void verticalText (juce::Graphics& g, juce::Rectangle<int> bounds, const juce::String& text,
+                   juce::Colour colour, const juce::Font& font, juce::Justification justification)
+{
+    if (bounds.isEmpty() || text.isEmpty())
+        return;
+
+    const juce::Graphics::ScopedSaveState state (g);
+
+    // Negative, so the baseline sweeps anticlockwise on a screen whose y grows
+    // downwards - which is the direction that leaves the text reading upwards.
+    g.addTransform (juce::AffineTransform::rotation (-juce::MathConstants<float>::halfPi,
+                                                     (float) bounds.getCentreX(),
+                                                     (float) bounds.getCentreY()));
+
+    // The block with its axes exchanged, because the rotation has already
+    // exchanged them: this is the rectangle the READER sees, and it is what
+    // drawText has to be given for its justification and its ellipsis to mean
+    // what the caller asked for.
+    const auto turned = juce::Rectangle<int> (0, 0, bounds.getHeight(), bounds.getWidth())
+                            .withCentre (bounds.getCentre());
+
+    g.setColour (colour);
+    g.setFont (font);
+    g.drawText (text, turned, justification, true);
+}
+
 void wellBackground (juce::Graphics& g, juce::Rectangle<int> bounds)
 {
     g.setColour (colour::well);

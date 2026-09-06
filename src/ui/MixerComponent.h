@@ -19,9 +19,10 @@ namespace dew
     and solo - plus master; along the bottom, the effect chain of whichever
     strip is selected, its effects side by side.
 
-    The chain editor is shared rather than one per strip: a strip is 96px wide,
-    which is nowhere near enough to edit a delay in, and a single editor also
-    makes it obvious which chain you are looking at.
+    The chain editor is shared rather than one per strip: a strip is a narrow
+    column - see tokens::size::mixerStripWidth - which is nowhere near enough to
+    edit a delay in, and a single editor also makes it obvious which chain you
+    are looking at.
 
     It runs across rather than down because that is the shape the space has. A
     column of cards in the bottom of a mixer is a narrow slot with a thousand

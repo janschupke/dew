@@ -52,7 +52,13 @@ MixerStrip::MixerStrip (ProjectDocument& d, juce::ValueTree t, bool isMasterStri
         ProjectEdits::setProperty (track, ids::name, nameLabel.getText(),
                                    &document.getUndoManager(), "Rename mixer track");
     };
-    addAndMakeVisible (nameLabel);
+
+    // INVISIBLE until somebody renames. The name on screen is painted, turned
+    // on its side down the bottom of the strip, and a rotated juce::Label is
+    // not something anybody can type into - so this is the editor and nothing
+    // else, laid horizontally across the strip for as long as an edit lasts.
+    nameLabel.onEditorHide = [this] { nameLabel.setVisible (false); };
+    addChildComponent (nameLabel);
 
     // The strip sets clickable on itself, and JUCE asks the DEEPEST
     // component, so the fader has to say what it is or it inherits nothing
@@ -180,6 +186,7 @@ void MixerStrip::setRouting (juce::Array<juce::var> names, juce::Array<juce::Col
     routedNames = std::move (names);
     routedColours = std::move (colours);
     routedIds = std::move (ids);
+    refreshRoutingTooltip();
     repaint();
 }
 
@@ -191,10 +198,22 @@ void MixerStrip::select()
 
 // --- the pointer -------------------------------------------------------------
 
+void MixerStrip::beginRename()
+{
+    if (isMaster)
+        return;
+
+    // Laid ACROSS the strip rather than down it - resized() put it there - for
+    // the one reason the painted name is turned and this is not: a caret is not
+    // something anybody can read sideways.
+    nameLabel.setVisible (true);
+    nameLabel.showEditor();
+}
+
 void MixerStrip::mouseDoubleClick (const juce::MouseEvent& event)
 {
-    if (! isMaster && nameLabel.getBounds().contains (event.getPosition()))
-        nameLabel.showEditor();
+    if (nameBounds.contains (event.getPosition()))
+        beginRename();
 }
 
 void MixerStrip::mouseEnter (const juce::MouseEvent&)
@@ -227,15 +246,11 @@ void MixerStrip::mouseDown (const juce::MouseEvent& event)
         return;
     }
 
-    // A routing row names a channel; clicking it should go there.
-    if (routingBounds.contains (event.getPosition()) && onChannelClicked != nullptr)
-    {
-        const auto row = (event.getPosition().y - routingBounds.getY() - tokens::space::xs)
-                         / routingRowHeight;
-
-        if (juce::isPositiveAndBelow (row, routedIds.size()))
-            onChannelClicked (routedIds[row]);
-    }
+    // The dots say how many channels arrive here; the list says which, and a
+    // channel named in it is a channel you can go to. That last part is what
+    // the painted rows were for, and it survives them.
+    if (routingBounds.contains (event.getPosition()))
+        showRoutingList (event.getPosition());
 }
 
 // --- the menu ----------------------------------------------------------------
@@ -280,7 +295,7 @@ void MixerStrip::applyMenuChoice (int choice)
 
     switch ((MenuItem) choice)
     {
-        case MenuItem::rename: nameLabel.showEditor(); return;
+        case MenuItem::rename: beginRename(); return;
 
         case MenuItem::addInsert:
             if (onAddInsert)
@@ -318,85 +333,25 @@ void MixerStrip::showMenu (const juce::MouseEvent& event)
 
 // --- painting and layout -----------------------------------------------------
 
-void MixerStrip::paint (juce::Graphics& g)
-{
-    const auto body = paint::bodyRect (*this, 2.0f);
-
-    g.setColour (selected ? tokens::colour::surfaceRaised
-                          : tokens::colour::surface.brighter (hover.lift()));
-    g.fillRoundedRectangle (body, tokens::radius::md);
-
-    // Master gets a neutral outline rather than an accent one: now that it
-    // is selectable, an accent border on it always would read as selected.
-    if (isMaster || selected)
-    {
-        g.setColour (selected ? tokens::colour::accent : tokens::colour::outline);
-        g.drawRoundedRectangle (body, tokens::radius::md,
-                                selected ? tokens::stroke::regular : tokens::stroke::hairline);
-    }
-
-    // A cap along the top edge, so which strip is selected is readable from
-    // across the mixer rather than from a few percent of brightness.
-    //
-    // The same cap carries the strip's own colour when it has one and is not
-    // selected. One band rather than two: selection is the louder fact and
-    // has to win, and two stripes across a 60px strip is a pattern rather
-    // than a signal.
-    const auto cap = selected ? std::optional<juce::Colour> (tokens::colour::accent)
-                              : entityColour::stored (track);
-
-    if (cap.has_value())
-    {
-        g.setColour (*cap);
-        g.fillRoundedRectangle (body.withHeight (3.0f), tokens::radius::xs);
-    }
-
-    paintMeter (g);
-    paintRouting (g);
-
-    // How many effects the strip carries, so it says what it holds without
-    // having to be selected first. Top corner rather than the bottom, which
-    // is where the fader's value box already is.
-    const auto effectCount = ProjectEdits::countEffects (track);
-
-    if (effectCount > 0 && ! badgeBounds.isEmpty())
-    {
-        g.setColour (tokens::colour::accent);
-        g.fillRoundedRectangle (badgeBounds.toFloat(), tokens::radius::sm);
-
-        g.setColour (tokens::colour::textOnAccent);
-        g.setFont (tokens::type::font (tokens::type::caption, true));
-        g.drawText (juce::String (effectCount), badgeBounds, juce::Justification::centred, false);
-    }
-
-    // Last, over the cap, the meter and the badge, the way a rack row and a
-    // playlist header now do it.
-    silence::paintOver (g, getLocalBounds(), (bool) track[ids::mute]);
-}
-
 void MixerStrip::resized()
 {
     using namespace tokens;
 
     auto area = getLocalBounds().reduced (space::sm, space::md);
 
-    auto nameRow = area.removeFromTop (nameRowHeight);
-
-    // The badge takes its slot from the NAME ROW, so the label is laid out in
-    // what is left rather than underneath it. Only when there is something to
-    // count: a strip with no effects gives the whole row to its name, which is
-    // what every strip did before there was a badge at all.
+    // The badge has a row of its own now that the name is not one. Only when
+    // there is something to count: a strip with no effects gives the height
+    // back to the fader, which is what every strip did before there was a
+    // badge at all.
     if (ProjectEdits::countEffects (track) > 0)
     {
-        badgeBounds = nameRow.removeFromRight (size::glyphColumn)
+        badgeBounds = area.removeFromTop (badgeRowHeight)
+                          .removeFromRight (size::glyphColumn)
                           .withSizeKeepingCentre (size::glyphColumn, size::captionBand);
-        nameRow.removeFromRight (space::xxs);
+        area.removeFromTop (space::xs);
     }
     else
         badgeBounds = {};
-
-    nameLabel.setBounds (nameRow);
-    area.removeFromTop (space::xs);
 
     if (! isMaster)
     {
@@ -418,11 +373,30 @@ void MixerStrip::resized()
         area.removeFromTop (space::xs);
     }
 
-    // The routing list sits at the bottom; the fader and its meter take
-    // what is left.
-    routingBounds = isMaster
-                        ? juce::Rectangle<int>()
-                        : area.removeFromBottom (juce::jmin (routingHeight, area.getHeight() / 3));
+    // The name goes at the BOTTOM, turned on its side - which is where a mixer
+    // puts one, and the reason a strip no longer has to be as wide as the
+    // longest name in the project. Master's name is as short as a name gets and
+    // is laid out the same way, so the row of strips has one baseline.
+    // At most a third of what is left, which is the rule the routing list used
+    // to follow and for the same reason: a block that took a fixed height off a
+    // short strip took it off the FADER, and a fader with no height left is a
+    // strip with nothing to drag.
+    nameBounds = area.removeFromBottom (juce::jmin (nameBlockHeight, area.getHeight() / 3));
+
+    // The editor is laid out with everything else and only its VISIBILITY
+    // moves. A control whose bounds appear the first time it is used is a
+    // control with no size for as long as nobody has renamed anything, which is
+    // most of the time - and is exactly what the strip's layout test looks for.
+    nameLabel.setBounds (nameBounds.withHeight (size::controlHeightSm)
+                             .withY (nameBounds.getCentreY() - size::controlHeightSm / 2));
+    area.removeFromBottom (space::xs);
+
+    // A row of coloured dots above it, one per channel arriving here. The names
+    // are in this strip's tooltip and in the list a click on the row opens.
+    routingBounds = isMaster ? juce::Rectangle<int>() : area.removeFromBottom (routingHeight);
+
+    if (! isMaster)
+        area.removeFromBottom (space::xs);
 
     meterBounds = area.removeFromRight (meterWidth).reduced (0, space::xxs);
     area.removeFromRight (space::xs);
@@ -513,83 +487,46 @@ void MixerStrip::valueTreePropertyChanged (juce::ValueTree&, const juce::Identif
     }
 }
 
-void MixerStrip::paintMeter (juce::Graphics& g)
+void MixerStrip::refreshRoutingTooltip()
 {
-    using namespace tokens;
+    juce::StringArray names;
 
-    if (meterBounds.isEmpty())
-        return;
+    for (const auto& name : routedNames)
+        names.add (name.toString());
 
-    const auto well = meterBounds.toFloat();
+    // The strip's own tooltip, so hovering anywhere on it that is not a control
+    // says what arrives here. TooltipWindow asks the DEEPEST component under
+    // the pointer, and the fader, the pan knob and the toggle all answer for
+    // themselves - which is right: what they do is not what this says.
+    const auto joined = names.joinIntoString (", ");
 
-    g.setColour (colour::wellDeep);
-    g.fillRoundedRectangle (well, radius::xs);
-
-    if (level <= 0.0f)
-        return;
-
-    // Scaled the way a level is heard rather than by amplitude: linear, a
-    // healthy mix sits in the bottom fifth of the meter and looks broken.
-    const auto proportion = meter::proportionForGain (level);
-
-    auto bar = well.withTop (well.getBottom() - proportion * well.getHeight());
-
-    // funcLevel below the mark rather than success, and that is the whole of
-    // what the function palette still says about a level. The controls that SET
-    // one - this strip's fader, the rack's volume knob, an oscillator's gain -
-    // took the app's own colour when level stopped being a function colour, and
-    // a meter is the other half of that: not a control you hold but the signal
-    // it passes, which is what funcLevel was named for. success stays what it
-    // has always been, which is a verdict, and warning and danger stay the two
-    // verdicts a meter is actually allowed to give.
-    g.setColour (level >= 1.0f                       ? colour::danger
-                 : proportion > meter::hotProportion ? colour::warning
-                                                     : colour::funcLevel);
-    g.fillRoundedRectangle (bar, radius::xs);
-
-    // Where the meter stops being nominal, said by POSITION as well as by hue -
-    // the bar's height carries the level, but the threshold it crosses was
-    // carried by the colour change alone.
-    const auto hotY = well.getBottom() - meter::hotProportion * well.getHeight();
-
-    g.setColour (colour::dividerStrong);
-    g.fillRect (well.getX(), hotY, well.getWidth(), stroke::hairline);
+    setTooltip (names.isEmpty()
+                    ? tr (StringId::mixer_empty)
+                    : tr (StringId::mixer_routing_help, Args {}.with ("channels", joined)));
 }
 
-void MixerStrip::paintRouting (juce::Graphics& g)
+void MixerStrip::showRoutingList (juce::Point<int> at)
 {
-    using namespace tokens;
-
-    if (routingBounds.isEmpty())
+    if (routedIds.isEmpty() || onChannelClicked == nullptr)
         return;
 
-    auto area = routingBounds;
+    juce::PopupMenu menu;
 
-    g.setColour (colour::divider);
-    g.drawHorizontalLine (area.getY(), (float) area.getX(), (float) area.getRight());
-    area.removeFromTop (space::xs);
+    for (int i = 0; i < routedIds.size(); ++i)
+        menu.addItem (i + 1, routedNames[i].toString(), true, false);
 
-    if (routedNames.isEmpty())
-    {
-        g.setColour (colour::textDisabled);
-        g.setFont (type::font (type::small));
-        g.drawText (tr (StringId::mixer_empty), area, juce::Justification::centredTop, false);
-        return;
-    }
-
-    g.setFont (type::font (type::small));
-
-    for (int i = 0; i < routedNames.size() && area.getHeight() >= routingRowHeight; ++i)
-    {
-        auto row = area.removeFromTop (routingRowHeight);
-
-        const auto dot = row.removeFromLeft (8).withSizeKeepingCentre (5, 5).toFloat();
-        g.setColour (i < routedColours.size() ? routedColours[i] : colour::textDisabled);
-        g.fillEllipse (dot);
-
-        g.setColour (colour::textSecondary);
-        g.drawText (routedNames[i].toString(), row, juce::Justification::centredLeft, true);
-    }
+    // Modal, like every other list in dew that you pick one thing out of, and
+    // it keeps the affordance the painted rows had: a channel named here is a
+    // channel you can go to.
+    menu.showMenuAsync (
+        juce::PopupMenu::Options {}
+            .withParentComponent (getTopLevelComponent())
+            .withTargetScreenArea (juce::Rectangle<int> (localPointToGlobal (at), { 1, 1 })),
+        [this, ids = routedIds] (int chosen)
+        {
+            if (juce::isPositiveAndBelow (chosen - 1, ids.size()) && onChannelClicked != nullptr)
+                onChannelClicked (ids[chosen - 1]);
+        });
 }
 
 } // namespace dew

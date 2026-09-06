@@ -591,6 +591,9 @@
     "pan": {
       "name": "Pan"
     },
+    "routing": {
+      "help": "Routed here: {channels} \u2013 click the dots to go to one"
+    },
     "title": "Mixer"
   },
   "oscillator": {

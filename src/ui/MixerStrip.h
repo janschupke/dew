@@ -37,7 +37,9 @@ namespace dew
     two toggles, and it is a column rather than a row; what it borrows from that
     base is the three-line menu seam, which it states rather than inherits.
 */
-class MixerStrip : public juce::Component, private juce::ValueTree::Listener
+class MixerStrip : public juce::Component,
+                   public juce::SettableTooltipClient,
+                   private juce::ValueTree::Listener
 {
 public:
     MixerStrip (ProjectDocument&, juce::ValueTree, bool isMasterStrip);
@@ -135,25 +137,52 @@ private:
     void applyMuteState();
 
     void paintMeter (juce::Graphics&);
+    void paintName (juce::Graphics&);
     void paintRouting (juce::Graphics&);
 
-    /** The name row. It was a bare 18 in resized(), which is also where the
-        badge now takes its slot - the two have to agree about how tall the row
-        is, so they read it from one place. */
-    static constexpr int nameRowHeight = 18;
+    /** Restates the strip's tooltip from the routing it was last given. */
+    void refreshRoutingTooltip();
+
+    /** The channels arriving here, by name, as a menu you can pick one out of
+        to go to it. */
+    void showRoutingList (juce::Point<int> at);
+
+    /** Opens the strip's name for editing.
+
+        The label is invisible until this is called. The name is PAINTED, on its
+        side, and a rotated juce::Label is not something anybody can type into -
+        so the label becomes a plain horizontal editor laid across the strip for
+        as long as the edit lasts, and goes away again after. Two callers, the
+        double-click and the menu item, so the rule is stated once.
+    */
+    void beginRename();
+
+    /** The badge's slot at the top of the strip, empty when there is nothing to
+        count. It had the name row's right-hand end; the name is not a row any
+        more, so it has a row of its own. */
+    static constexpr int badgeRowHeight = 16;
+
+    /** The block the name is turned inside, down the bottom of the strip.
+
+        A HEIGHT even though the text reads across it, because it is a height on
+        the screen and the layout is what this number is for. Long enough for
+        about a dozen characters at the small size, which is more than the
+        seventy-two pixel row it replaces ever held.
+    */
+    static constexpr int nameBlockHeight = 92;
 
     static constexpr int meterWidth = 8;
-    static constexpr int routingHeight = 66;
 
-    /** One row of the routing list. The painter and the hit test both need it
-        and both had it written out, which is a click that selects the wrong
-        channel the moment one of them changes.
+    /** The row of coloured dots that says which channels arrive here - one dot
+        each, no names. The names are in the tooltip and in the list a click on
+        this row opens; on the strip itself they were four rows of eleven-point
+        text spending a quarter of the column's height on something you read
+        once. */
+    static constexpr int routingHeight = 12;
 
-        Fourteen rather than twelve, because the name inside it moved up a rung:
-        an eleven-point name in a twelve-pixel row was the smallest text in the
-        window and it is a LINK - clicking it selects that channel and switches
-        tab. routingHeight goes with it so the same four rows still fit. */
-    static constexpr int routingRowHeight = 14;
+    /** One channel's dot. Five was the dot inside the old fourteen-pixel row;
+        seven, on a row of its own, is a mark rather than a speck. */
+    static constexpr int routingDotSize = 7;
     static constexpr int tickIntervalMs = 1000 / tokens::motion::uiRefreshHz;
 
     ProjectDocument& document;
@@ -166,7 +195,7 @@ private:
     float level = 0.0f;
     float lastPaintedLevel = -1.0f;
 
-    juce::Rectangle<int> meterBounds, routingBounds;
+    juce::Rectangle<int> meterBounds, routingBounds, nameBounds;
 
     /** Where the effect-count badge goes, and empty when there is nothing to
         count. LAID OUT rather than painted at an offset from the strip's right

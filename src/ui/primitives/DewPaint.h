@@ -41,6 +41,26 @@ void rotary (juce::Graphics&, juce::Rectangle<float>, float proportion, bool ena
              juce::Colour value);
 
 void surface (juce::Graphics&, juce::Rectangle<int>, juce::Colour);
+
+/** A line of text turned on its side, reading BOTTOM TO TOP.
+
+    The one place dew rotates anything, and it exists for the mixer. A strip is
+    a COLUMN, and its name laid out across the top was the reason the column
+    could not be narrower: "Drums Bus" in anything under about seventy pixels is
+    an ellipsis and two letters, so the longest word in the mixer was setting
+    the width of every strip in it. Turned, a name has the strip's height to use
+    and the strip's width stops being about the name at all.
+
+    Bottom to top rather than top to bottom because that is the way a book spine
+    and every other mixer read, and a column of names turned the other way is a
+    page you tilt your head the wrong way for.
+
+    `bounds` is the block the text is turned inside. It is fitted to that
+    block's HEIGHT - which is the reading direction once it is turned - and
+    centred across its width.
+*/
+void verticalText (juce::Graphics&, juce::Rectangle<int> bounds, const juce::String&, juce::Colour,
+                   const juce::Font&, juce::Justification = juce::Justification::centred);
 void wellBackground (juce::Graphics&, juce::Rectangle<int>);
 
 // container() - a rounded surface with a hairline edge, drawn UNDER a group of

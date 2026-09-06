@@ -604,6 +604,7 @@ add_library(dew_ui STATIC
   ui/PlaylistTrackHeader.cpp
   ui/MixerComponent.cpp
   ui/MixerStrip.cpp
+  ui/MixerStripPaint.cpp
   ui/ScoreTokeniser.cpp
   ui/ScoreCompletionList.cpp
   ui/ScoreEditorComponent.cpp

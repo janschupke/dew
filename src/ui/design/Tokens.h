@@ -565,8 +565,16 @@ inline constexpr int waveformInset = 2; ///< was -2, -2 and -3 in three painters
     inside it. 96 was chosen when the mixer held four inserts and nothing could
     change that; a mixer is read across, so the number that matters is how many
     fit at once, and it now has to hold as many as somebody adds.
+
+    72 was the next answer, and what held it there was the NAME: laid across the
+    top of the strip, "Drums Bus" needs about seventy pixels and anything less
+    is an ellipsis and two letters, so the longest word in the project was
+    setting the width of every strip in the mixer. The name is turned on its
+    side now - see paint::verticalText - and the routing list under the fader
+    has become a row of dots, so what is left to fit is the pan knob and its
+    insets, which is exactly what the assert below says.
 */
-inline constexpr int mixerStripWidth = 72;
+inline constexpr int mixerStripWidth = 56;
 
 static_assert (mixerStripWidth >= knobSm + 2 * space::md + 2 * space::sm,
                "a strip must hold its pan knob and the insets around it");
