@@ -1,5 +1,5 @@
 {
-    "formatVersion": 15,
+    "formatVersion": 16,
     "name": "Piano Roll",
     "tempoBpm": 96.0,
     "stepsPerBeat": 4,
@@ -1070,6 +1070,7 @@
         {
           "name": "Arrangement",
           "mute": false,
+          "gain": 1.0,
           "colour": "",
           "genId": "",
           "clips": [
@@ -1150,6 +1151,7 @@
         {
           "name": "Track 2",
           "mute": false,
+          "gain": 1.0,
           "colour": "",
           "genId": "",
           "clips": []
@@ -1157,6 +1159,7 @@
         {
           "name": "Track 3",
           "mute": false,
+          "gain": 1.0,
           "colour": "",
           "genId": "",
           "clips": []
@@ -1164,6 +1167,7 @@
         {
           "name": "Track 4",
           "mute": false,
+          "gain": 1.0,
           "colour": "",
           "genId": "",
           "clips": []

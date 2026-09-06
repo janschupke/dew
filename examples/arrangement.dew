@@ -1,5 +1,5 @@
 {
-    "formatVersion": 15,
+    "formatVersion": 16,
     "name": "Song Structure",
     "tempoBpm": 128.0,
     "stepsPerBeat": 4,
@@ -1889,6 +1889,7 @@
         {
           "name": "Drums",
           "mute": false,
+          "gain": 1.0,
           "colour": "",
           "genId": "",
           "clips": [
@@ -1933,6 +1934,7 @@
         {
           "name": "Bass",
           "mute": false,
+          "gain": 1.0,
           "colour": "",
           "genId": "",
           "clips": [
@@ -1968,6 +1970,7 @@
         {
           "name": "Keys",
           "mute": false,
+          "gain": 1.0,
           "colour": "",
           "genId": "",
           "clips": [

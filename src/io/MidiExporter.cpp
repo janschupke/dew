@@ -49,7 +49,11 @@ std::vector<PlacedNote> collectNotes (const EngineSnapshot& snapshot,
 {
     std::vector<PlacedNote> notes;
 
-    const auto push = [&] (const NoteSnapshot& note, juce::int64 step)
+    // The lane's gain scales the exported velocity exactly as it scales the
+    // triggered one - the parity test drives Sequencer::collect over the same
+    // span and requires the two to agree, and a lane gain honoured by only one
+    // of them is precisely the drift it exists to catch.
+    const auto push = [&] (const NoteSnapshot& note, juce::int64 step, float trackGain)
     {
         if (note.channelIndex < 0 || note.channelIndex >= (int) snapshot.channels.size())
             return;
@@ -63,7 +67,7 @@ std::vector<PlacedNote> collectNotes (const EngineSnapshot& snapshot,
         // centres and what a lit step-grid cell writes; the engine never reads it,
         // so adding it here would transpose the MIDI away from the audio.
         notes.push_back ({ note.channelIndex, step, juce::jmax (1, note.lengthSteps), note.pitch,
-                           note.velocity });
+                           note.velocity * trackGain });
     };
 
     if (options.mode == Transport::Mode::pattern)
@@ -72,7 +76,7 @@ std::vector<PlacedNote> collectNotes (const EngineSnapshot& snapshot,
             return notes;
 
         for (const auto& note : snapshot.patterns[(size_t) patternIndex].notes)
-            push (note, note.step);
+            push (note, note.step, 1.0f);
 
         return notes;
     }
@@ -103,7 +107,7 @@ std::vector<PlacedNote> collectNotes (const EngineSnapshot& snapshot,
 
             for (const auto& note : pattern.notes)
                 if (note.step == local)
-                    push (note, step);
+                    push (note, step, clip.trackGain);
         }
     }
 

@@ -359,6 +359,22 @@ struct ClipSnapshot
         here so the sequencer never has to look a track up.
     */
     bool trackAudible = true;
+
+    /** How loud that track is, folded in for the same reason.
+
+        A SCALE ON THE TRIGGER, not a bus gain, and that is a limitation worth
+        stating rather than hiding. Pan and volume are applied once per channel
+        (AudioEngineBlock) and once per mixer track; by the time a signal
+        reaches either, the notes every lane contributed have been summed into
+        one buffer, so a lane cannot attenuate what it no longer owns. What a
+        lane CAN do is decide how hard it hits the note in the first place,
+        which is per-trigger and needs no second mixing stage.
+
+        That is also why there is no lane PAN. Position is not expressible as a
+        property of a trigger the way loudness is, and a control that silently
+        did nothing would be worse than an absent one.
+    */
+    float trackGain = 1.0f;
 };
 
 struct MixerTrackSnapshot

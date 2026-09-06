@@ -2,6 +2,9 @@
 
 #include <juce_gui_basics/juce_gui_basics.h>
 
+#include "model/Ids.h"
+#include "model/ModuleCatalog.h"
+
 #include "app/ProjectDocument.h"
 #include "ui/HeaderRow.h"
 #include "ui/design/Icons.h"
@@ -127,6 +130,30 @@ private:
         lights for the state worth noticing.
     */
     DewIconButton enabledButton { icons::power(), {} };
+
+    /** How loud this lane is.
+
+        The same control the channel rack's row carries, in the same order
+        relative to the name and the on/off - a lane and a channel are the two
+        things you balance a song with, and one of them had no way to say it.
+
+        There is no PAN beside it, and that is a fact about the engine rather
+        than a gap in the row: pan is applied once per channel and once per
+        mixer track, and by the time a signal reaches either, the notes every
+        lane contributed are already summed into one buffer. Volume works
+        because it is expressible on the TRIGGER - see ClipSnapshot::trackGain.
+    */
+    DewKnob volumeKnob { requireInstrumentParamSpec (ids::volume) };
+
+    /** True while refresh() is writing values into controls, so a control's own
+        callback does not write them straight back into the document. */
+    bool updating = false;
+
+    /** True between a knob's onEditStart and onEditEnd, and whether a
+        transaction is already open for that drag - see the volume knob's
+        onValueChange. The rack's rows carry the same pair for the same reason. */
+    bool inDrag = false;
+    bool gestureActive = false;
 
     bool resizing = false;
     int resizeOriginY = 0;

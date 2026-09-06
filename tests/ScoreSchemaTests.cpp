@@ -197,10 +197,10 @@ TEST_CASE ("a project from before the score loads as one nobody compiled",
     // payload still loads without a warning. It has done that once already -
     // v11 made an automation point's step a double, v12 gave a playlist track
     // and a mixer strip a colour, v13 gave every channel a SOUNDFONT node, and
-    // v14 added four effect types and the nine parameters they brought, and v15
-    // moved a slot's generator parameters onto that generator's node - so
-    // update the number when the rest of this test still passes, and do not
-    // delete it.
+    // v14 added four effect types and the nine parameters they brought, v15
+    // moved a slot's generator parameters onto that generator's node, and v16
+    // gave a playlist track a gain - so update the number when the rest of this
+    // test still passes, and do not delete it.
     REQUIRE ((int) loaded.tree[ids::formatVersion] == kFormatVersion);
-    REQUIRE (kFormatVersion == 15);
+    REQUIRE (kFormatVersion == 16);
 }

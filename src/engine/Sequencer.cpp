@@ -56,7 +56,9 @@ void Sequencer::collect (const EngineSnapshot& snapshot, Transport::Mode mode,
     // it actually starts rather than from the beginning of the song.
     juce::int64 currentStep = 0;
 
-    const auto emit = [&] (const NoteSnapshot& note, int offset)
+    // A lane's gain, as a scale on the notes it triggers. One in pattern mode -
+    // a pattern is played on its own, with no lane above it to be quieter than.
+    const auto emit = [&] (const NoteSnapshot& note, int offset, float trackGain)
     {
         if (note.channelIndex < 0 || note.channelIndex >= (int) snapshot.channels.size())
             return;
@@ -65,7 +67,7 @@ void Sequencer::collect (const EngineSnapshot& snapshot, Transport::Mode mode,
         trigger.sampleOffset = offset;
         trigger.channelIndex = note.channelIndex;
         trigger.pitch = note.pitch;
-        trigger.velocity = note.velocity;
+        trigger.velocity = note.velocity * trackGain;
         // The span, not a rate times a length: a note that runs through a tempo
         // change lasts the musical length it was written with.
         trigger.durationSamples = (int) std::llround (
@@ -103,7 +105,7 @@ void Sequencer::collect (const EngineSnapshot& snapshot, Transport::Mode mode,
 
             for (const auto& note : pattern.notes)
                 if (note.step == local)
-                    emit (note, offset);
+                    emit (note, offset, 1.0f);
         }
         else
         {
@@ -131,7 +133,7 @@ void Sequencer::collect (const EngineSnapshot& snapshot, Transport::Mode mode,
 
                 for (const auto& note : pattern.notes)
                     if (note.step == local)
-                        emit (note, offset);
+                        emit (note, offset, clip.trackGain);
             }
         }
     }

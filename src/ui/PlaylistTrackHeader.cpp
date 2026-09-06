@@ -47,6 +47,14 @@ PlaylistTrackHeader::PlaylistTrackHeader (ProjectDocument& d, juce::ValueTree t)
     enabledButton.setTooltip (tr (StringId::playlist_enabled_help));
     enabledButton.setToggleState ((bool) track[ids::mute], juce::dontSendNotification);
 
+    // Guarded, for the reason the rack's refresh is: setValue fires
+    // onValueChange, and writing the value back into the document from here
+    // would open an undo step for every repaint.
+    {
+        const juce::ScopedValueSetter<bool> quiet (updating, true);
+        volumeKnob.setValue ((double) track[ids::gain], juce::dontSendNotification);
+    }
+
     // onModifiedClick rather than onClick, because shift IS the gesture here.
     // Every lane takes the state this one just took, as ONE undo step - which
     // is how "silence everything but that" is asked for now that a lane has no
@@ -67,6 +75,42 @@ PlaylistTrackHeader::PlaylistTrackHeader (ProjectDocument& d, juce::ValueTree t)
                                    muted ? "Turn track off" : "Turn track on");
     };
     addAndMakeVisible (enabledButton);
+
+    // Volume on the lane itself, so an arrangement can be balanced without
+    // reaching for whichever channel happens to be playing on it. Same range
+    // and same compact treatment as a rack row's; no caption fits on a 34px
+    // row there either.
+    volumeKnob.setCompact (true);
+    volumeKnob.setTooltip (tr (StringId::playlist_volume_help));
+    volumeKnob.setValue ((double) track[ids::gain], juce::dontSendNotification);
+
+    volumeKnob.onEditStart = [this]
+    {
+        inDrag = true;
+        gestureActive = false;
+    };
+    volumeKnob.onEditEnd = [this]
+    {
+        inDrag = false;
+        gestureActive = false;
+    };
+
+    volumeKnob.onValueChange = [this]
+    {
+        if (updating)
+            return;
+
+        // The first value of a drag opens the transaction and the rest join it;
+        // a wheel or a keypress is not part of a drag and opens its own. A rack
+        // row says this the same way, for the same reason.
+        ProjectEdits::setProperty (track, ids::gain, volumeKnob.getValue(),
+                                   &document.getUndoManager(), "Change track volume",
+                                   gestureActive);
+
+        gestureActive = inDrag;
+    };
+
+    addAndMakeVisible (volumeKnob);
 }
 
 juce::PopupMenu PlaylistTrackHeader::buildMenu() const
@@ -217,13 +261,23 @@ void PlaylistTrackHeader::resized()
     auto row = area.removeFromTop (juce::jmin (area.getHeight(), size::rowHeight))
                    .reduced (space::sm, space::xs);
 
-    // The indicator leads the row and the name follows it, on ONE rung at every
-    // lane height. There used to be a second rung past the roomy threshold,
-    // holding the two toggles under the name; with one indicator there is
-    // nothing to put on it, and a state that moved to a different row as the
-    // lane grew was a state you had to look for twice.
-    enabledButton.setBounds (row.removeFromLeft (size::letterToggle).reduced (0, space::xxs));
-    row.removeFromLeft (space::sm);
+    // Name, volume, on/off - the order a channel rack row reads in, laid out
+    // right to left so the name takes what is left. A lane and a channel are
+    // the two things a song is balanced with and they read the same way now;
+    // they used to be mirror images, the lane leading with its indicator and
+    // the row trailing with it, so the same three facts sat in the opposite
+    // order an inch apart.
+    //
+    // Still ONE rung at every lane height. There used to be a second rung past
+    // the roomy threshold holding the toggles under the name, and a state that
+    // moved to a different row as the lane grew was a state you had to look
+    // for twice.
+    enabledButton.setBounds (row.removeFromRight (size::letterToggle).reduced (0, space::xxs));
+    row.removeFromRight (space::xs);
+
+    volumeKnob.setBounds (
+        row.removeFromRight (size::knobSm).withSizeKeepingCentre (size::knobSm, size::knobSm));
+    row.removeFromRight (space::sm);
 
     nameLabel.setBounds (row);
 }

@@ -1,3 +1,4 @@
+#include <catch2/catch_approx.hpp>
 #include <catch2/catch_test_macros.hpp>
 
 #include "engine/Sequencer.h"
@@ -242,4 +243,59 @@ TEST_CASE ("the demo project schedules notes on every channel", "[sequencer][dem
         INFO ("channel " << i << " (" << snapshot.channels[i].id << ") never plays");
         REQUIRE (channelPlayed[i]);
     }
+}
+
+TEST_CASE ("a playlist lane's gain scales the notes it triggers", "[sequencer][playlist]")
+{
+    // A lane could say whether it played and not how loudly. The gain is a
+    // scale on the TRIGGER rather than a bus: pan and volume are applied once
+    // per channel and once per mixer track, and by the time a signal reaches
+    // either, the notes every lane contributed have been summed into one
+    // buffer - so a lane cannot attenuate what it no longer owns, but it can
+    // decide how hard it hits the note in the first place.
+    auto snapshot = snapshotWithSteps ({ 0 });
+    snapshot.patterns[0].notes[0].velocity = 1.0f;
+
+    const auto stepsPerBar = snapshot.stepsPerBar();
+
+    ClipSnapshot clip;
+    clip.patternIndex = 0;
+    clip.startBar = 0;
+    clip.lengthBars = 1;
+    clip.trackGain = 0.5f;
+    snapshot.clips.push_back (clip);
+
+    constexpr double samplesPerStep = 6000.0;
+
+    std::vector<juce::int64> offsets;
+    const auto triggers = collectOver (snapshot, Transport::Mode::song, 0,
+                                       (juce::int64) stepsPerBar * (juce::int64) samplesPerStep,
+                                       512, samplesPerStep, 0, offsets);
+
+    REQUIRE (triggers.size() == 1);
+    CHECK (triggers[0].velocity == Catch::Approx (0.5f));
+
+    // The control case, and the one that says the gain is doing the work rather
+    // than the note being quiet: the same note on a lane at full.
+    snapshot.clips[0].trackGain = 1.0f;
+
+    offsets.clear();
+    const auto full = collectOver (snapshot, Transport::Mode::song, 0,
+                                   (juce::int64) stepsPerBar * (juce::int64) samplesPerStep, 512,
+                                   samplesPerStep, 0, offsets);
+
+    REQUIRE (full.size() == 1);
+    CHECK (full[0].velocity == Catch::Approx (1.0f));
+
+    // PATTERN mode has no lane above it to be quieter than, so the gain does
+    // not reach it - a pattern auditioned on its own plays as written.
+    snapshot.clips[0].trackGain = 0.25f;
+
+    offsets.clear();
+    const auto pattern = collectOver (snapshot, Transport::Mode::pattern, 0,
+                                      (juce::int64) 16 * (juce::int64) samplesPerStep, 512,
+                                      samplesPerStep, 0, offsets);
+
+    REQUIRE (! pattern.empty());
+    CHECK (pattern[0].velocity == Catch::Approx (1.0f));
 }

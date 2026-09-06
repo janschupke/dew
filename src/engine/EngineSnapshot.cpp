@@ -464,6 +464,10 @@ EngineSnapshot buildSnapshot (const juce::ValueTree& project, juce::StringArray*
 
         const auto trackAudible = ! (bool) track[ids::mute];
 
+        // Clamped rather than trusted: a hand-edited file can say anything, and
+        // a negative gain would invert every note the lane triggers.
+        const auto trackGain = juce::jlimit (0.0f, 1.0f, (float) (double) track[ids::gain]);
+
         for (const auto& clip : track)
         {
             if (! clip.hasType (ids::CLIP))
@@ -473,6 +477,7 @@ EngineSnapshot buildSnapshot (const juce::ValueTree& project, juce::StringArray*
             c.startBar = juce::jmax (0, (int) clip[ids::startBar]);
             c.lengthBars = juce::jmax (1, (int) clip[ids::lengthBars]);
             c.trackAudible = trackAudible;
+            c.trackGain = trackGain;
 
             if (clip[ids::kind].toString() == "automation")
             {

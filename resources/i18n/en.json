@@ -934,6 +934,9 @@
     },
     "toolPaint": {
       "help": "Paint tool - drag to lay a run of clips (2)"
+    },
+    "volume": {
+      "help": "How loud this track's clips play"
     }
   },
   "preferences": {

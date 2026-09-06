@@ -1,5 +1,5 @@
 {
-    "formatVersion": 15,
+    "formatVersion": 16,
     "name": "Amber",
     "tempoBpm": 96.0,
     "stepsPerBeat": 4,
@@ -5427,6 +5427,7 @@
         {
           "name": "Track 1",
           "mute": false,
+          "gain": 1.0,
           "colour": "",
           "genId": "",
           "clips": []
@@ -5434,6 +5435,7 @@
         {
           "name": "Track 2",
           "mute": false,
+          "gain": 1.0,
           "colour": "",
           "genId": "",
           "clips": []
@@ -5441,6 +5443,7 @@
         {
           "name": "Track 3",
           "mute": false,
+          "gain": 1.0,
           "colour": "",
           "genId": "",
           "clips": []
@@ -5448,6 +5451,7 @@
         {
           "name": "Track 4",
           "mute": false,
+          "gain": 1.0,
           "colour": "",
           "genId": "",
           "clips": []
@@ -5455,6 +5459,7 @@
         {
           "name": "Score",
           "mute": false,
+          "gain": 1.0,
           "colour": "",
           "genId": "lane:score",
           "clips": [

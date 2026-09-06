@@ -168,7 +168,7 @@ struct NodeSpec
     kind it is. What it buys is that a slot the factory writes no longer stores
     the seven wavetable properties a classic oscillator never reads.
 */
-inline constexpr int kFormatVersion = 15;
+inline constexpr int kFormatVersion = 16;
 
 /** How many effects one channel or mixer track may carry. A document limit
     rather than an engine one: a chain longer than this cannot be saved, so it

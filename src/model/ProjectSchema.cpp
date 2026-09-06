@@ -438,6 +438,12 @@ const NodeSpec& playlistTrackSpec()
         ids::PLAYLIST_TRACK,
         { { ids::name, "Track" },
           { ids::mute, false },
+          // How loud this LANE is. Not a bus - see the engine's note on
+          // ClipSnapshot::trackGain - but a scale on what its clips trigger,
+          // which is the one thing a lane genuinely owns. A file written before
+          // version 16 has no such property and defaults to 1.0, which is what
+          // every lane did when it could not carry one.
+          { ids::gain, 1.0 },
           // Empty means inherit: the lane takes the colour of its POSITION,
           // which is what it did before it could carry one of its own.
           { ids::colour, "" },

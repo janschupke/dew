@@ -1,5 +1,5 @@
 {
-    "formatVersion": 15,
+    "formatVersion": 16,
     "name": "Automation",
     "tempoBpm": 126.0,
     "stepsPerBeat": 4,
@@ -1713,6 +1713,7 @@
         {
           "name": "Arrangement",
           "mute": false,
+          "gain": 1.0,
           "colour": "",
           "genId": "",
           "clips": [
@@ -1757,6 +1758,7 @@
         {
           "name": "Filter",
           "mute": false,
+          "gain": 1.0,
           "colour": "",
           "genId": "",
           "clips": [
@@ -1783,6 +1785,7 @@
         {
           "name": "Pump",
           "mute": false,
+          "gain": 1.0,
           "colour": "",
           "genId": "",
           "clips": [
@@ -1845,6 +1848,7 @@
         {
           "name": "Delay",
           "mute": false,
+          "gain": 1.0,
           "colour": "",
           "genId": "",
           "clips": [
@@ -1871,6 +1875,7 @@
         {
           "name": "Master",
           "mute": false,
+          "gain": 1.0,
           "colour": "",
           "genId": "",
           "clips": [
@@ -1888,6 +1893,7 @@
         {
           "name": "Tempo",
           "mute": false,
+          "gain": 1.0,
           "colour": "",
           "genId": "",
           "clips": [

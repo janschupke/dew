@@ -3,6 +3,7 @@
 
 #include "io/OfflineRenderer.h"
 #include "model/Ids.h"
+#include "model/ProjectSerializer.h"
 #include "FixtureProject.h"
 
 using namespace dew;
@@ -196,4 +197,47 @@ TEST_CASE ("a completed render replaces the file at its destination", "[engine][
 
     reader.reset();
     target.deleteFile();
+}
+
+TEST_CASE ("a playlist lane's gain reaches the render and the file", "[engine][render][playlist]")
+{
+    // Three things have to agree about a lane's gain, and two of them are easy
+    // to miss. OfflineRenderer builds its OWN snapshot, so anything buildSnapshot
+    // needs that is not threaded through has every render and stem export drop
+    // it without a word; and the property has to survive a save and a load, or
+    // the mix is right until the project is reopened.
+    auto project = dew::testing::fixtureProject();
+
+    auto playlist = project.getChildWithName (ids::PLAYLIST);
+    REQUIRE (playlist.isValid());
+
+    juce::AudioBuffer<float> loud;
+    REQUIRE (OfflineRenderer::renderToBuffer (project, loud, {}).ok());
+
+    const auto loudPeak = loud.getMagnitude (0, 0, loud.getNumSamples());
+    REQUIRE (loudPeak > 0.0f);
+
+    for (auto track : playlist)
+        if (track.hasType (ids::PLAYLIST_TRACK))
+            track.setProperty (ids::gain, 0.25, nullptr);
+
+    juce::AudioBuffer<float> quiet;
+    REQUIRE (OfflineRenderer::renderToBuffer (project, quiet, {}).ok());
+
+    const auto quietPeak = quiet.getMagnitude (0, 0, quiet.getNumSamples());
+
+    INFO ("loud " << loudPeak << ", quiet " << quietPeak);
+    CHECK (quietPeak < loudPeak);
+    CHECK (quietPeak > 0.0f);
+
+    // And it round-trips. A gain the writer drops is a mix that is right until
+    // the project is opened again.
+    const auto written = ProjectSerializer::toJsonString (project);
+    const auto loaded = ProjectSerializer::fromJsonString (written);
+
+    REQUIRE (loaded.tree.isValid());
+
+    for (const auto& track : loaded.tree.getChildWithName (ids::PLAYLIST))
+        if (track.hasType (ids::PLAYLIST_TRACK))
+            CHECK ((double) track[ids::gain] == Approx (0.25));
 }

@@ -567,7 +567,19 @@ TEST_CASE ("an automation clip is drawn in its target's function colour",
     // "which colour wins" on a pan lane started answering `accent` and saying
     // nothing about the curve. The claim is the same one and is made the other
     // way round: each lane carries its own target's colour and not the other's.
-    const auto volumeLane = render (h.playlist);
+    // The LANES, not the whole component. The track gutter carries a volume
+    // knob now, and every rotary arc in dew is drawn in the accent - so the
+    // antialiased edge of one lands at about #95b7de, which is inside
+    // coverageOf's 24-per-channel tolerance of funcStereo on all three
+    // channels. Measuring a region that holds controls measures the controls;
+    // this claim is about the CURVES.
+    const auto lanesOf = [] (const juce::Image& image)
+    {
+        return image.getClippedImage (
+            image.getBounds().withTrimmedLeft (tokens::size::gutterTrack));
+    };
+
+    const auto volumeLane = lanesOf (render (h.playlist));
 
     CHECK (coverageOf (volumeLane, tokens::colour::accent) > 0.0f);
     CHECK (juce::exactlyEqual (coverageOf (volumeLane, tokens::colour::funcStereo), 0.0f));
@@ -582,7 +594,7 @@ TEST_CASE ("an automation clip is drawn in its target's function colour",
     pan.playlist.refresh();
     pan.playlist.resized();
 
-    const auto panLane = render (pan.playlist);
+    const auto panLane = lanesOf (render (pan.playlist));
 
     CHECK (coverageOf (panLane, tokens::colour::funcStereo) > 0.0f);
 }
