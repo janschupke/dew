@@ -31,6 +31,12 @@ EffectChainHost::EffectChainHost (ProjectDocument& d, EditorState& s, Orientatio
     {
         viewport.setViewedComponent (&chain, false);
         viewport.setScrollBarsShown (false, true);
+
+        // The app's own thickness, not JUCE's default eight. Every other
+        // scroller in dew - the roll, the playlist, the step grid - is
+        // size::scrollThickness, and this one quietly drifted two pixels
+        // narrower while bandHeightForRows reserved room for whatever it was.
+        viewport.setScrollBarThickness (tokens::size::scrollThickness);
         addAndMakeVisible (viewport);
     }
     else
@@ -90,8 +96,12 @@ void EffectChainHost::setOwner (juce::ValueTree owner, juce::String name)
 
 int EffectChainHost::bandHeightForRows (int rows) const
 {
+    // The heading, the cards, the scrollbar reserved whether or not it shows,
+    // and ONE bottom margin - the same space::xs resized() trims below, said
+    // here so the two agree. Everything else that used to be in this sum was
+    // another statement of the same margin by somebody else.
     return tokens::size::stripHeading + EffectChainComponent::requiredHeightForRows (rows)
-           + space::xs + viewport.getScrollBarThickness();
+           + viewport.getScrollBarThickness() + space::xs;
 }
 
 int EffectChainHost::getPreferredHeight() const
@@ -101,6 +111,8 @@ int EffectChainHost::getPreferredHeight() const
     if (chain.isHorizontal())
         return bandHeightForRows (chain.getKnobRowBudget());
 
+    // A column reserves no scrollbar - the sidebar's own viewport scrolls it -
+    // but keeps the same single bottom margin a row has.
     return tokens::size::stripHeading + chain.getRequiredHeight() + space::xs;
 }
 

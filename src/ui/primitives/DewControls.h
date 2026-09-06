@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cmath>
 #include <functional>
 
 #include <juce_gui_basics/juce_gui_basics.h>
@@ -8,6 +9,7 @@
 #include "model/ParamSpec.h"
 #include "ui/design/Animator.h"
 #include "ui/design/Focus.h"
+#include "ui/design/Gestures.h"
 
 #include "ui/design/Icons.h"
 #include "ui/design/Tokens.h"
@@ -294,6 +296,39 @@ public:
             return;
 
         juce::Slider::mouseUp (event);
+    }
+
+    /** A SIDEWAYS notch is not for the value. It scrolls whatever the slider is
+        sitting in.
+
+        juce::Slider::mouseWheelMove returns true for any notch on any style
+        with the wheel enabled, so the event never reaches the Viewport above it
+        - and juce_Slider.cpp picks the dominant axis, taking -deltaX when the
+        horizontal component wins. So swiping sideways across the mixer, over a
+        fader, moved that fader's gain instead of scrolling the row: the one
+        gesture whose whole purpose is to reach the strip you cannot see.
+
+        The value keeps the vertical notch, which is the one a wheel sends and
+        the one a person means on a fader. Only the horizontal-dominant case is
+        handed upwards, and handed rather than swallowed - Component's own
+        implementation is what walks up to the Viewport.
+
+        Read through gesture::deltaOf because a view that reads wheel.deltaX for
+        itself is exactly what the gesture gate refuses; three views once had
+        three ideas about which way a notch pointed.
+    */
+    void mouseWheelMove (const juce::MouseEvent& event,
+                         const juce::MouseWheelDetails& wheel) override
+    {
+        const auto delta = gesture::deltaOf (wheel);
+
+        if (std::abs (delta.x) > std::abs (delta.y))
+        {
+            juce::Component::mouseWheelMove (event, wheel);
+            return;
+        }
+
+        juce::Slider::mouseWheelMove (event, wheel);
     }
 
 private:

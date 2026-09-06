@@ -41,8 +41,6 @@ class EffectChainComponent;
 class EffectCard : public juce::Component
 {
 public:
-    static constexpr int modeColumnWidth = 120; ///< fits "Low pass" and the chevron
-
     /** The drag grip: two columns of dots, and the one thing in the header that
         is not on the icon-button rung because it is not a button. */
     static constexpr int gripWidth = 14;

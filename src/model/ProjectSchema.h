@@ -174,7 +174,7 @@ inline constexpr int kFormatVersion = 15;
     rather than an engine one: a chain longer than this cannot be saved, so it
     can never turn into an effect that silently stopped working.
 */
-inline constexpr int kMaxEffectsPerChain = 4;
+inline constexpr int kMaxEffectsPerChain = 9;
 
 /** How many inserts the mixer may hold, master excluded.
 
@@ -188,6 +188,16 @@ inline constexpr int kMaxEffectsPerChain = 4;
     cannot walk past it either.
 */
 inline constexpr int kMaxMixerTracks = 32;
+
+/** How many inserts a NEW project starts with.
+
+    A number rather than a literal in the factory's loop, which is where it
+    lived while it was four and where nothing could see it. Twenty because a
+    mixer you have to add to before you can route anything is a mixer that
+    reads as broken, and because the strip is 72px: twenty of them is about the
+    width of a window, which is the point at which pinning the master stopped
+    being cosmetic. Still well under kMaxMixerTracks. */
+inline constexpr int kDefaultMixerTracks = 20;
 
 /** How many oscillators one channel carries.
 

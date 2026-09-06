@@ -31,7 +31,10 @@ MixerStrip::MixerStrip (ProjectDocument& d, juce::ValueTree t, bool isMasterStri
     // One strip is one group. Beside the label rather than anywhere else so a
     // rename keeps the two in step - see the ids::name branch of valueTree-
     // PropertyChanged, which is the other place this has to be said.
-    setComponentID ("mixerStrip");
+    // The master answers to a name of its own. It is pinned outside the
+    // viewport the inserts scroll in, so a walk of the holder no longer reaches
+    // it and a test that wants it has to be able to ask.
+    setComponentID (isMaster ? "mixerMaster" : "mixerStrip");
     setTitle (nameLabel.getText());
     setFocusContainerType (FocusContainerType::focusContainer);
     nameLabel.setJustificationType (juce::Justification::centred);
@@ -381,17 +384,14 @@ void MixerStrip::paint (juce::Graphics& g)
     // is where the fader's value box already is.
     const auto effectCount = ProjectEdits::countEffects (track);
 
-    if (effectCount > 0)
+    if (effectCount > 0 && ! badgeBounds.isEmpty())
     {
-        const auto badge = juce::Rectangle<float> ((float) getWidth() - 22.0f, 5.0f, 16.0f, 12.0f);
-
         g.setColour (tokens::colour::accent);
-        g.fillRoundedRectangle (badge, tokens::radius::sm);
+        g.fillRoundedRectangle (badgeBounds.toFloat(), tokens::radius::sm);
 
         g.setColour (tokens::colour::textOnAccent);
         g.setFont (tokens::type::font (tokens::type::caption, true));
-        g.drawText (juce::String (effectCount), badge.toNearestInt(), juce::Justification::centred,
-                    false);
+        g.drawText (juce::String (effectCount), badgeBounds, juce::Justification::centred, false);
     }
 
     // Last, over the cap, the meter and the badge, the way a rack row and a
@@ -405,7 +405,22 @@ void MixerStrip::resized()
 
     auto area = getLocalBounds().reduced (space::sm, space::md);
 
-    nameLabel.setBounds (area.removeFromTop (18));
+    auto nameRow = area.removeFromTop (nameRowHeight);
+
+    // The badge takes its slot from the NAME ROW, so the label is laid out in
+    // what is left rather than underneath it. Only when there is something to
+    // count: a strip with no effects gives the whole row to its name, which is
+    // what every strip did before there was a badge at all.
+    if (ProjectEdits::countEffects (track) > 0)
+    {
+        badgeBounds = nameRow.removeFromRight (size::glyphColumn)
+                          .withSizeKeepingCentre (size::glyphColumn, size::captionBand);
+        nameRow.removeFromRight (space::xxs);
+    }
+    else
+        badgeBounds = {};
+
+    nameLabel.setBounds (nameRow);
     area.removeFromTop (space::xs);
 
     if (! isMaster)
@@ -483,6 +498,29 @@ void MixerStrip::applyMuteState()
     // be muted, so nothing here reaches it.
     silence::applyTo (*this, muted, &enabledButton);
     repaint();
+}
+
+void MixerStrip::repaintForEffectChange (const juce::ValueTree& child)
+{
+    if (! child.hasType (ids::EFFECT))
+        return;
+
+    // resized(), not repaint(): the badge either appears or goes away, and the
+    // name row's width depends on which. A repaint alone would draw the new
+    // count into a slot laid out for the old one - or into no slot at all, the
+    // first time an effect is added.
+    resized();
+    repaint();
+}
+
+void MixerStrip::valueTreeChildAdded (juce::ValueTree&, juce::ValueTree& child)
+{
+    repaintForEffectChange (child);
+}
+
+void MixerStrip::valueTreeChildRemoved (juce::ValueTree&, juce::ValueTree& child, int)
+{
+    repaintForEffectChange (child);
 }
 
 void MixerStrip::valueTreePropertyChanged (juce::ValueTree&, const juce::Identifier& property)

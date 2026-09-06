@@ -113,6 +113,19 @@ private:
     void showMenu (const juce::MouseEvent&);
     void valueTreePropertyChanged (juce::ValueTree&, const juce::Identifier& property) override;
 
+    /** The effect badge counts EFFECT children, so the strip has to hear about
+        them. It listened to the track and implemented only the property hook,
+        which meant the count it painted was whatever it had been when
+        something unrelated last caused a repaint - hovering the strip, muting
+        it, selecting another one. Adding an effect changed the band below and
+        left the badge above it stale. */
+    void valueTreeChildAdded (juce::ValueTree&, juce::ValueTree& child) override;
+    void valueTreeChildRemoved (juce::ValueTree&, juce::ValueTree& child, int) override;
+
+    /** Repaints when `child` is an effect of THIS track. Shared by the two
+        hooks above so they cannot come to disagree about what counts. */
+    void repaintForEffectChange (const juce::ValueTree& child);
+
     /** The toggle's state and the strip's dimming, together, because they are
         one fact and used to be set at two call sites that disagreed: the
         constructor lit the toggle and the property change lit the toggle, and
@@ -121,6 +134,11 @@ private:
 
     void paintMeter (juce::Graphics&);
     void paintRouting (juce::Graphics&);
+
+    /** The name row. It was a bare 18 in resized(), which is also where the
+        badge now takes its slot - the two have to agree about how tall the row
+        is, so they read it from one place. */
+    static constexpr int nameRowHeight = 18;
 
     static constexpr int meterWidth = 8;
     static constexpr int routingHeight = 66;
@@ -147,6 +165,14 @@ private:
     float lastPaintedLevel = -1.0f;
 
     juce::Rectangle<int> meterBounds, routingBounds;
+
+    /** Where the effect-count badge goes, and empty when there is nothing to
+        count. LAID OUT rather than painted at an offset from the strip's right
+        edge: it was four bare floats putting a 16px block at x 50..66 of a
+        72px strip, straight through the name label - which, being a child,
+        painted over it. A slot the name row gives up is a slot the name row
+        knows it has given up. */
+    juce::Rectangle<int> badgeBounds;
     juce::Array<juce::var> routedNames;
     juce::Array<juce::Colour> routedColours;
     juce::Array<int> routedIds;

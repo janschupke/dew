@@ -47,7 +47,7 @@ juce::ValueTree ProjectFactory::createDefault (juce::StringRef locale)
         playlist.appendChild (makePlaylistTrack (numbered (StringId::project_trackN, i)), nullptr);
 
     auto mixer = project.getChildWithName (ids::MIXER);
-    for (int i = 1; i <= 4; ++i)
+    for (int i = 1; i <= kDefaultMixerTracks; ++i)
         mixer.appendChild (makeMixerTrack (i, numbered (StringId::project_insertN, i)), nullptr);
 
     // Children were appended in construction order, not schema order; loading a

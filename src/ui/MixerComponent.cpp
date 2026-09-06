@@ -28,8 +28,7 @@ void MixerComponent::setParamMenuHost (const paramMenu::Host* host)
 
     // The strips are built before the host arrives, so this re-attaches rather
     // than only recording the pointer for the next rebuild.
-    for (auto* strip : strips)
-        strip->attachParamMenus (host);
+    forEachStrip ([host] (auto* strip) { strip->attachParamMenus (host); });
 }
 
 MixerComponent::MixerComponent (ProjectDocument& d, EditorState& s, AudioEngine* e)
@@ -120,23 +119,31 @@ void MixerComponent::rebuildStrips()
 
     // Master had no onSelected at all, so clicking it did nothing and its chain
     // could never be edited. It selects like any other strip now.
+    masterStrip.reset();
+
     if (const auto master = mixer.getChildWithName (ids::MASTER); master.isValid())
     {
-        auto* strip = strips.add (new MixerStrip (document, master, true));
-        strip->attachParamMenus (paramMenuHost);
-        strip->onSelected = [this] { editorState.setSelectedMixerTrackId (masterTrackId); };
+        masterStrip = std::make_unique<MixerStrip> (document, master, true);
+        masterStrip->attachParamMenus (paramMenuHost);
+        masterStrip->onSelected = [this] { editorState.setSelectedMixerTrackId (masterTrackId); };
     }
 
     // Both edits belong to the mixer, not to the strip the menu opened on: that
     // strip is deleted by the rebuild either one causes.
-    for (auto* strip : strips)
-    {
-        strip->onAddInsert = [this] { addMixerTrack(); };
-        strip->onRemoveInsert = [this] (int id) { removeMixerTrack (id); };
-    }
+    forEachStrip (
+        [this] (auto* strip)
+        {
+            strip->onAddInsert = [this] { addMixerTrack(); };
+            strip->onRemoveInsert = [this] (int id) { removeMixerTrack (id); };
+        });
 
+    // The inserts scroll; the master does not. That is the whole of the
+    // difference, and it is a difference of PARENT rather than of position.
     for (auto* strip : strips)
         stripHolder.addAndMakeVisible (strip);
+
+    if (masterStrip != nullptr)
+        addAndMakeVisible (*masterStrip);
 
     updateRouting();
     pointChainAtSelectedTrack();
@@ -159,6 +166,16 @@ void MixerComponent::valueTreeChildRemoved (juce::ValueTree&, juce::ValueTree& c
 void MixerComponent::paint (juce::Graphics& g)
 {
     g.fillAll (tokens::colour::background);
+
+    // A rule between the pinned master and the inserts that scroll past it.
+    // Without one the master reads as the first insert rather than as the bus
+    // they all arrive at, which is the whole reason it is pinned.
+    if (! masterSeam.isEmpty())
+    {
+        g.setColour (tokens::colour::dividerStrong);
+        g.fillRect (
+            masterSeam.withWidth (tokens::stroke::hairlinePx).withX (masterSeam.getCentreX()));
+    }
 }
 
 void MixerComponent::pointChainAtSelectedTrack()
@@ -181,9 +198,12 @@ void MixerComponent::pointChainAtSelectedTrack()
                                            ? "Master"
                                            : selectedTrack[ids::name].toString());
 
-    for (auto* strip : strips)
-        strip->setSelected (strip->isMasterStrip() ? selectedId == masterTrackId
-                                                   : strip->getTrackId() == selectedId);
+    forEachStrip (
+        [selectedId] (auto* strip)
+        {
+            strip->setSelected (strip->isMasterStrip() ? selectedId == masterTrackId
+                                                       : strip->getTrackId() == selectedId);
+        });
 }
 
 void MixerComponent::changeListenerCallback (juce::ChangeBroadcaster*)
@@ -196,48 +216,55 @@ void MixerComponent::timerCallback()
     if (engine == nullptr)
         return;
 
+    // The index IS the insert index now. It used to be the array position with
+    // the master sitting at the end of it, which happened to agree only because
+    // the master was last.
     for (int i = 0; i < strips.size(); ++i)
-    {
-        auto* strip = strips[i];
-        strip->setLevel (strip->isMasterStrip() ? engine->readAndClearMasterPeak()
-                                                : engine->readAndClearTrackPeak (i));
-    }
+        strips[i]->setLevel (engine->readAndClearTrackPeak (i));
+
+    if (masterStrip != nullptr)
+        masterStrip->setLevel (engine->readAndClearMasterPeak());
 }
 
 void MixerComponent::updateRouting()
 {
     // Which channels feed each insert. Without this the mixer is a row of
     // anonymous faders and there is nothing to say what any of them carries.
-    for (auto* strip : strips)
-    {
-        juce::Array<juce::var> names;
-        juce::Array<juce::Colour> colours;
-        juce::Array<int> channelIds;
-
-        if (! strip->isMasterStrip())
+    forEachStrip (
+        [this] (auto* strip)
         {
-            for (const auto& channel : document.getState())
+            juce::Array<juce::var> names;
+            juce::Array<juce::Colour> colours;
+            juce::Array<int> channelIds;
+
+            // Nothing is routed INTO the master by a channel's mixerTrackId -
+            // everything reaches it through an insert - so it is given an empty
+            // list rather than skipped, which is what clears one if a strip
+            // ever stops being the master it was built as.
+            if (! strip->isMasterStrip())
             {
-                if (! channel.hasType (ids::CHANNEL)
-                    || (int) channel[ids::mixerTrackId] != strip->getTrackId())
-                    continue;
+                for (const auto& channel : document.getState())
+                {
+                    if (! channel.hasType (ids::CHANNEL)
+                        || (int) channel[ids::mixerTrackId] != strip->getTrackId())
+                        continue;
 
-                names.add (channel[ids::name].toString());
-                colours.add (entityColour::of (channel));
-                channelIds.add ((int) channel[ids::id]);
+                    names.add (channel[ids::name].toString());
+                    colours.add (entityColour::of (channel));
+                    channelIds.add ((int) channel[ids::id]);
+                }
             }
-        }
 
-        strip->onChannelClicked = [this] (int channelId)
-        {
-            editorState.setSelectedChannelId (channelId);
+            strip->onChannelClicked = [this] (int channelId)
+            {
+                editorState.setSelectedChannelId (channelId);
 
-            if (onShowChannelRack != nullptr)
-                onShowChannelRack();
-        };
+                if (onShowChannelRack != nullptr)
+                    onShowChannelRack();
+            };
 
-        strip->setRouting (std::move (names), std::move (colours), std::move (channelIds));
-    }
+            strip->setRouting (std::move (names), std::move (colours), std::move (channelIds));
+        });
 }
 
 int MixerComponent::bandHeight() const
@@ -291,12 +318,38 @@ void MixerComponent::resized()
     // its top, which is what the host paints.
     const auto depth = juce::jmin (bandHeight(), area.getHeight() / 2 - tokens::space::md);
 
+    // `depth` exactly, with nothing added. It used to be given depth + space::md
+    // while the ROWS were computed from depth alone, so the band was always
+    // eight pixels taller than the number of knob rows it had chosen to hold -
+    // and bandHeightForRows, which knobRowsFitting inverts by walking, was no
+    // longer describing the band anyone saw.
     chainHost.setKnobRows (chainHost.knobRowsFitting (depth));
-    chainHost.setBounds (area.removeFromBottom (depth + tokens::space::md));
+    chainHost.setBounds (area.removeFromBottom (depth));
 
     // The strips keep the inset. They are objects on the window's ground; the
     // band below them is a region OF it.
-    stripViewport.setBounds (area.reduced (space::md));
+    auto stripArea = area.reduced (space::md);
+
+    // The master, PINNED to the left, outside the viewport that scrolls.
+    //
+    // Every signal in the project passes through it, so it is the one strip
+    // that has to be reachable from wherever the row happens to be scrolled -
+    // and at twenty inserts the row is always scrolled. It sat at the far right
+    // of the holder before, which put it furthest from the inserts a person
+    // scrolls to and off the screen entirely at any useful width.
+    //
+    // Left rather than right because a mixer is read left to right and the
+    // master is where the signal ends up: keeping it in view means keeping the
+    // destination in view, and the leading edge is the one that never moves.
+    if (masterStrip != nullptr)
+    {
+        masterStrip->setBounds (stripArea.removeFromLeft (size::mixerStripWidth));
+        masterSeam = stripArea.removeFromLeft (space::md).withTrimmedTop (0);
+    }
+    else
+        masterSeam = {};
+
+    stripViewport.setBounds (stripArea);
 
     // One column past the last strip, for the add button. The rack puts its add
     // button in the next empty ROW of the list rather than in a footer strip;
@@ -373,11 +426,16 @@ void MixerComponent::removeMixerTrack (int mixerTrackId)
 
 MixerStrip* MixerComponent::stripFor (int mixerTrackId) const
 {
-    for (auto* strip : strips)
-        if (strip->getTrackId() == mixerTrackId)
-            return strip;
+    MixerStrip* found = nullptr;
 
-    return nullptr;
+    forEachStrip (
+        [&found, mixerTrackId] (auto* strip)
+        {
+            if (found == nullptr && strip->getTrackId() == mixerTrackId)
+                found = strip;
+        });
+
+    return found;
 }
 
 bool MixerComponent::applyMixerTrackMenuChoice (int mixerTrackId, int choice)

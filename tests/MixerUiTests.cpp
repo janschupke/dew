@@ -13,6 +13,7 @@
 #include "app/ProjectDocument.h"
 #include "model/ProjectEdits.h"
 #include "model/ProjectFactory.h"
+#include "model/ProjectSchema.h"
 #include "ui/EditorState.h"
 #include "ui/MixerComponent.h"
 #include "ui/design/Gestures.h"
@@ -86,7 +87,13 @@ TEST_CASE ("strips scroll rather than vanishing when there are many", "[mixer][u
     juce::UndoManager& undo = document.getUndoManager();
     auto mixerTree = document.getState().getChildWithName (ids::MIXER);
 
-    for (int i = 5; i <= 24; ++i)
+    // Topped up to `wanted` rather than counted from a literal five: the
+    // factory ships kDefaultMixerTracks of them now, and a loop starting below
+    // that would append a second insert carrying an id the project already has.
+    constexpr int wanted = 24;
+    static_assert (wanted > kDefaultMixerTracks, "the top-up loop has to add something");
+
+    for (int i = kDefaultMixerTracks + 1; i <= wanted; ++i)
     {
         juce::ValueTree track (ids::MIXER_TRACK);
         track.setProperty (ids::id, i, nullptr);
@@ -117,8 +124,8 @@ TEST_CASE ("strips scroll rather than vanishing when there are many", "[mixer][u
 
     walk (mixer);
 
-    // Twenty-four inserts plus the master, and every one of them has real width.
-    REQUIRE (faders.size() == 25);
+    // Every insert plus the master, and every one of them has real width.
+    REQUIRE (faders.size() == wanted + 1);
 
     for (auto* strip : faders)
     {
@@ -436,7 +443,7 @@ TEST_CASE ("an insert can be added and removed from its own strip", "[mixer][ui]
 
     const auto before = ProjectEdits::countMixerTracks (h.document.getState());
     const auto stripsBefore = h.mixer.getNumStrips();
-    REQUIRE (before == 4);
+    REQUIRE (before == kDefaultMixerTracks);
 
     REQUIRE (h.mixer.applyMixerTrackMenuChoice (1, addInsertChoice));
     CHECK (ProjectEdits::countMixerTracks (h.document.getState()) == before + 1);
@@ -509,11 +516,8 @@ TEST_CASE ("a strip is one column wide and still holds its controls", "[mixer][u
     auto* holder = add->getParentComponent();
     auto strips = 0;
 
-    for (auto* strip : holder->getChildren())
+    const auto checkStrip = [&strips] (juce::Component* strip)
     {
-        if (strip == add)
-            continue;
-
         ++strips;
         CHECK (strip->getWidth() == tokens::size::mixerStripWidth);
 
@@ -526,7 +530,62 @@ TEST_CASE ("a strip is one column wide and still holds its controls", "[mixer][u
             CHECK (control->getHeight() > 0);
             CHECK (strip->getLocalBounds().contains (control->getBounds()));
         }
-    }
+    };
+
+    for (auto* strip : holder->getChildren())
+        if (strip != add)
+            checkStrip (strip);
+
+    // The master is pinned OUTSIDE the scrolling holder, so walking the holder
+    // alone stopped covering the one strip every signal passes through. It is
+    // held to the same column width and the same "every control fits" rule.
+    auto* master = findDescendantWithID (h.mixer, "mixerMaster");
+    REQUIRE (master != nullptr);
+    checkStrip (master);
 
     CHECK (strips == h.mixer.getNumStrips());
+}
+
+TEST_CASE ("a sideways notch over a fader scrolls rather than moving it", "[mixer][ui][gesture]")
+{
+    // juce::Slider::mouseWheelMove returns true for ANY notch with the wheel
+    // enabled, so the event never reached the Viewport the strips sit in - and
+    // juce_Slider picks the dominant axis, taking -deltaX when the horizontal
+    // component wins. So swiping sideways across the mixer, over a fader, moved
+    // that fader's gain: the one gesture whose whole purpose is to reach the
+    // strip you cannot see was the one that edited the mix instead.
+    const juce::ScopedJuceInitialiser_GUI juceInit;
+
+    const auto wheelOf = [] (float deltaX, float deltaY)
+    {
+        juce::MouseWheelDetails w {};
+        w.deltaX = deltaX;
+        w.deltaY = deltaY;
+        w.isReversed = false;
+        w.isSmooth = false;
+        w.isInertial = false;
+        return w;
+    };
+
+    DewSlider fader;
+    fader.setSliderStyle (juce::Slider::LinearVertical);
+    fader.setRange (0.0, 1.0, 0.0);
+    fader.setValue (0.5, juce::dontSendNotification);
+    fader.setSize (24, 200);
+
+    const juce::MouseEvent event (juce::Desktop::getInstance().getMainMouseSource(),
+                                  { 12.0f, 100.0f }, juce::ModifierKeys(), 1.0f, 0.0f, 0.0f, 0.0f,
+                                  0.0f, &fader, &fader, juce::Time::getCurrentTime(),
+                                  { 12.0f, 100.0f }, juce::Time::getCurrentTime(), 1, false);
+
+    const auto before = fader.getValue();
+
+    fader.mouseWheelMove (event, wheelOf (0.8f, 0.0f));
+    CHECK (juce::exactlyEqual (fader.getValue(), before));
+
+    // The control case, and the one that says the guard is about the AXIS and
+    // not about refusing the wheel: a vertical notch is what a person means on
+    // a fader, and it still moves it.
+    fader.mouseWheelMove (event, wheelOf (0.0f, 0.8f));
+    CHECK (! juce::exactlyEqual (fader.getValue(), before));
 }

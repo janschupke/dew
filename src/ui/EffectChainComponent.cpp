@@ -309,7 +309,12 @@ void EffectChainComponent::setKnobRowBudget (int rows)
 
 int EffectChainComponent::requiredHeightForRows (int rows)
 {
-    return EffectCard::heightForRows (rows) + space::xs + space::sm;
+    // Exactly a card, because that is all a row holds: layOutCards puts every
+    // card at y = 0 at this height, so anything added here is band with nothing
+    // in it. It used to add xs + sm on top - ten pixels of a band that also
+    // reserved a scrollbar, trimmed its own bottom, and was then handed another
+    // eight by the mixer.
+    return EffectCard::heightForRows (rows);
 }
 
 int EffectChainComponent::getRequiredHeight() const
@@ -322,13 +327,18 @@ int EffectChainComponent::getRequiredHeight() const
 
     auto height = 0;
 
+    // The gap goes BETWEEN cards, not after the last one - the band's own
+    // bottom margin is the host's, stated once in bandHeightForRows.
     for (auto* card : cards)
         height += card->getRequiredHeight() + space::xs;
+
+    if (! cards.isEmpty())
+        height -= space::xs;
 
     if (cards.isEmpty())
         height += size::rowHeight;
 
-    return height + space::sm;
+    return height;
 }
 
 int EffectChainComponent::getRequiredWidth() const

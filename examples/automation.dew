@@ -1977,6 +1977,150 @@
               "ceiling": -0.3
             }
           ]
+        },
+        {
+          "id": 5,
+          "name": "Insert 5",
+          "gain": 0.85,
+          "pan": 0.0,
+          "mute": false,
+          "colour": "",
+          "effects": []
+        },
+        {
+          "id": 6,
+          "name": "Insert 6",
+          "gain": 0.85,
+          "pan": 0.0,
+          "mute": false,
+          "colour": "",
+          "effects": []
+        },
+        {
+          "id": 7,
+          "name": "Insert 7",
+          "gain": 0.85,
+          "pan": 0.0,
+          "mute": false,
+          "colour": "",
+          "effects": []
+        },
+        {
+          "id": 8,
+          "name": "Insert 8",
+          "gain": 0.85,
+          "pan": 0.0,
+          "mute": false,
+          "colour": "",
+          "effects": []
+        },
+        {
+          "id": 9,
+          "name": "Insert 9",
+          "gain": 0.85,
+          "pan": 0.0,
+          "mute": false,
+          "colour": "",
+          "effects": []
+        },
+        {
+          "id": 10,
+          "name": "Insert 10",
+          "gain": 0.85,
+          "pan": 0.0,
+          "mute": false,
+          "colour": "",
+          "effects": []
+        },
+        {
+          "id": 11,
+          "name": "Insert 11",
+          "gain": 0.85,
+          "pan": 0.0,
+          "mute": false,
+          "colour": "",
+          "effects": []
+        },
+        {
+          "id": 12,
+          "name": "Insert 12",
+          "gain": 0.85,
+          "pan": 0.0,
+          "mute": false,
+          "colour": "",
+          "effects": []
+        },
+        {
+          "id": 13,
+          "name": "Insert 13",
+          "gain": 0.85,
+          "pan": 0.0,
+          "mute": false,
+          "colour": "",
+          "effects": []
+        },
+        {
+          "id": 14,
+          "name": "Insert 14",
+          "gain": 0.85,
+          "pan": 0.0,
+          "mute": false,
+          "colour": "",
+          "effects": []
+        },
+        {
+          "id": 15,
+          "name": "Insert 15",
+          "gain": 0.85,
+          "pan": 0.0,
+          "mute": false,
+          "colour": "",
+          "effects": []
+        },
+        {
+          "id": 16,
+          "name": "Insert 16",
+          "gain": 0.85,
+          "pan": 0.0,
+          "mute": false,
+          "colour": "",
+          "effects": []
+        },
+        {
+          "id": 17,
+          "name": "Insert 17",
+          "gain": 0.85,
+          "pan": 0.0,
+          "mute": false,
+          "colour": "",
+          "effects": []
+        },
+        {
+          "id": 18,
+          "name": "Insert 18",
+          "gain": 0.85,
+          "pan": 0.0,
+          "mute": false,
+          "colour": "",
+          "effects": []
+        },
+        {
+          "id": 19,
+          "name": "Insert 19",
+          "gain": 0.85,
+          "pan": 0.0,
+          "mute": false,
+          "colour": "",
+          "effects": []
+        },
+        {
+          "id": 20,
+          "name": "Insert 20",
+          "gain": 0.85,
+          "pan": 0.0,
+          "mute": false,
+          "colour": "",
+          "effects": []
         }
       ]
     },

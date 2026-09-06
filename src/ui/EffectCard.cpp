@@ -102,6 +102,21 @@ std::vector<int> EffectCard::groupSizes() const
 
     std::vector<int> groups;
 
+    // The type's choice, FIRST and as a group of one - in a ROW only.
+    //
+    // Across a row it used to be a 120px column of the card's whole height that
+    // used one knob row of it, so a four-row band left 222 pixels of empty
+    // column beside a single stack of knobs. As a group it packs and wraps like
+    // everything else, and the card is as wide as its controls rather than as
+    // wide as a reserved column plus its controls.
+    //
+    // Down a COLUMN it stays a full-width row above the grid. The sidebar is
+    // narrow enough that a shared cell width is about seventy pixels, and
+    // "Low pass" in seventy pixels is "Low...". The dead column was a row
+    // problem; solving it in both places would trade it for a truncation.
+    if (modeBox != nullptr && owner.isHorizontal())
+        groups.push_back (1);
+
     if (own > 0)
         groups.push_back (own);
 
@@ -138,9 +153,7 @@ int EffectCard::getRequiredHeight() const
 
 int EffectCard::getRequiredWidth() const
 {
-    const auto mode = modeBox != nullptr ? modeColumnWidth : 0;
-
-    return juce::jmax (cardMinWidth, KnobGrid::widthFor (gridPlan()) + mode + 2 * space::sm);
+    return juce::jmax (cardMinWidth, KnobGrid::widthFor (gridPlan()) + 2 * space::sm);
 }
 
 void EffectCard::refreshValues()
@@ -362,25 +375,12 @@ void EffectCard::resized()
     {
         modeBox->setVisible (visible);
 
-        if (visible)
+        // A column puts it above the grid at the card's full width; a row lets
+        // the grid place it, as the first cell - see groupSizes.
+        if (visible && ! owner.isHorizontal())
         {
-            if (owner.isHorizontal())
-            {
-                // Beside the parameters as one more column, because there
-                // is no room above them in a card of fixed height.
-                auto cell = area.removeFromLeft (modeColumnWidth)
-                                .removeFromTop (tokens::size::knobRow)
-                                .reduced (space::xxs, 0);
-
-                modeCaptionBounds = cell.removeFromTop (size::captionBand);
-                modeBox->setBounds (
-                    cell.withSizeKeepingCentre (cell.getWidth(), size::controlHeight));
-            }
-            else
-            {
-                modeBox->setBounds (area.removeFromTop (size::controlHeight));
-                area.removeFromTop (space::sm);
-            }
+            modeBox->setBounds (area.removeFromTop (size::controlHeight));
+            area.removeFromTop (space::sm);
         }
     }
 
@@ -448,6 +448,7 @@ void EffectCard::layOutParams (juce::Rectangle<int> area, bool visible)
         for (auto* control : params)
             componentFor (*control)->setVisible (false);
 
+        modeCaptionBounds = {};
         return;
     }
 
@@ -456,14 +457,32 @@ void EffectCard::layOutParams (juce::Rectangle<int> area, bool visible)
     // still this card's is what a cell HOLDS.
     const auto placed = KnobGrid::place (area, gridPlan());
 
-    for (int i = 0; i < params.size() && i < (int) placed.cells.size(); ++i)
+    // The choice takes the first cell, because groupSizes put it first. Its
+    // caption is drawn in the same band a knob's is, so a dropdown in the grid
+    // reads as one of the row rather than as a thing parked beside it.
+    auto next = (size_t) 0;
+
+    modeCaptionBounds = {};
+
+    if (modeBox != nullptr && owner.isHorizontal())
+    {
+        if (! placed.cells.empty())
+        {
+            auto cell = placed.cells[next++];
+
+            modeCaptionBounds = cell.removeFromTop (size::captionBand);
+            modeBox->setBounds (cell.withSizeKeepingCentre (cell.getWidth(), size::controlHeight));
+        }
+    }
+
+    for (int i = 0; i < params.size() && next < placed.cells.size(); ++i, ++next)
     {
         auto* control = params[i];
         auto* component = componentFor (*control);
 
         component->setVisible (true);
 
-        auto cell = placed.cells[(size_t) i];
+        auto cell = placed.cells[next];
 
         // A knob fills its cell; a number field is a fixed-height control
         // and stretching it just makes a tall empty box. ASKED rather than

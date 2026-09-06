@@ -55,11 +55,11 @@ juce::ValueTree ProjectFactory::createEffectsDemo()
     setClassicOsc (kick, 0, "sine", 0, 0.8);
     setAmp (kick, 0.001, 0.160, 0.000, 0.060);
 
-    // A chain four deep, which is the documented maximum and which nothing
-    // shipped had ever reached - the longest chain in the library was two.
-    // Order is the point: the filter shapes the saw, the drive works on what
-    // is left, the chorus widens THAT, and the delay repeats the finished
-    // sound. Put the drive last and it distorts the delay's tail instead.
+    // A chain four deep - the longest in the library, which shipped nothing
+    // past two before it. Four is a musical choice, not the schema's limit;
+    // a chain may now be nine. Order is the point: the filter shapes the saw, the drive works on
+    // what is left, the chorus widens THAT, and the delay repeats the finished sound. Put the drive
+    // last and it distorts the delay's tail instead.
     pad.appendChild (makeEffect (1, "filter", { { ids::cutoff, 1400.0 }, { ids::resonance, 1.6 } }),
                      nullptr);
     pad.appendChild (

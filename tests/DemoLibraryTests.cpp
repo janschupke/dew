@@ -353,7 +353,15 @@ TEST_CASE ("each demo exercises the part of the app it is named for", "[demos]")
             }
         }
 
-        REQUIRE (deepest == kMaxEffectsPerChain);
+        // Four, and not "the maximum": this used to read kMaxEffectsPerChain
+        // because the two numbers happened to be equal, so raising the cap to
+        // nine failed a test about a DEMO. The demo's depth is a musical
+        // statement - filter, drive, chorus, delay, in that order, each working
+        // on what the one before it left - and inventing five more effects to
+        // keep a test true would be writing content to satisfy an assertion.
+        // What still ties it to the schema is that it has to fit.
+        REQUIRE (deepest == 4);
+        REQUIRE (deepest <= kMaxEffectsPerChain);
         REQUIRE (bypassed);
         REQUIRE (filterModes.size() >= 3);
     }

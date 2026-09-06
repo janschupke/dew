@@ -90,7 +90,12 @@ public:
     /** How many strips are showing, master included. */
     int getNumStrips() const noexcept
     {
-        return strips.size();
+        // Master included. It stopped living in `strips` when it was pinned
+        // outside the scrolling holder, and "how many strips are there" is a
+        // question about the mixer rather than about which parent each one
+        // happens to have - one test counts them by walking the tree and
+        // compares the two numbers.
+        return strips.size() + (masterStrip != nullptr ? 1 : 0);
     }
 
     /** How deep the effect band is, in PIXELS, and the one place it is clamped.
@@ -144,6 +149,23 @@ private:
         which carries no id property and so reads as 0. */
     MixerStrip* stripFor (int mixerTrackId) const;
 
+    /** Every strip there is, master included.
+
+        The master left `strips` when it left the scrolling holder, and eight
+        loops in this file walk "all the strips" for things that have nothing to
+        do with where a strip sits - attaching param menus, marking the
+        selection, rebuilding the routing list. Each of those would have needed
+        a second line remembering the master, and the one that forgot would have
+        been a master strip that quietly stopped answering. */
+    template <typename Fn> void forEachStrip (Fn&& fn) const
+    {
+        for (auto* strip : strips)
+            fn (strip);
+
+        if (masterStrip != nullptr)
+            fn (masterStrip.get());
+    }
+
     /** The band's depth, resolving "never set" to the depth it opens at. */
     int bandHeight() const;
 
@@ -152,7 +174,25 @@ private:
     ProjectDocument& document;
     EditorState& editorState;
     AudioEngine* engine = nullptr;
+    /** The inserts, in document order. The master is NOT among them - see
+        masterStrip. */
     juce::OwnedArray<MixerStrip> strips;
+
+    /** The master, pinned to the left of the viewport rather than scrolled with
+        the inserts.
+
+        It used to be appended to `strips` and laid out last, so on a mixer wide
+        enough to need scrolling - which twenty inserts always is - the one
+        strip every signal passes through was the one you had to scroll away
+        from everything else to reach. Owned separately because "outside the
+        scrolling holder" is exactly what the fix is; a flag inside the array
+        would have to be read by every loop that walks it. */
+    std::unique_ptr<MixerStrip> masterStrip;
+
+    /** The gap between the pinned master and the scrolling inserts, with the
+        rule painted down the middle of it. */
+    juce::Rectangle<int> masterSeam;
+
     juce::Viewport stripViewport;
     juce::Component stripHolder;
 
