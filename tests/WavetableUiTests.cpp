@@ -181,7 +181,7 @@ TEST_CASE ("the wavetable controls write to the slot they are showing", "[ui][wa
 
     h.select (1);
     h.choose (h.section.getModeBox(), "Wavetable");
-    h.choose (h.section.getTableBox(), wavetableAt (2).getDisplayName());
+    h.choose (h.section.getTableBox(), tr (wavetableAt (2).getDisplayName()));
     h.choose (h.section.getSourceBox(), "LFO");
 
     h.section.getPositionKnob().setValue (0.75, juce::dontSendNotification);

@@ -14,6 +14,7 @@
 
 #include <cmath>
 
+#include "i18n/Strings.h"
 #include "model/AssetPaths.h"
 #include "model/GeneratorCatalog.h"
 #include "model/Ids.h"
@@ -95,8 +96,8 @@ OscBankSnapshot readOscBank (const juce::ValueTree& instrument, const juce::Stri
 
         if (bank.numSlots >= kMaxOscillators)
         {
-            warn (ownerName + " has more than " + juce::String (kMaxOscillators)
-                  + " oscillators; the rest are not rendered.");
+            warn (tr (StringId::warning_tooManyOscillators,
+                      Args {}.with ("owner", ownerName).count (kMaxOscillators)));
             break;
         }
 
@@ -125,8 +126,8 @@ OscBankSnapshot readOscBank (const juce::ValueTree& instrument, const juce::Stri
         // A name this build does not know is a fault in the FILE, not a
         // different sound: say so rather than quietly play something else.
         if (tableIndex < 0 && s.mode == OscMode::wavetable)
-            warn (ownerName + " asks for wavetable \"" + tableName
-                  + "\", which this build does not have; using the first one.");
+            warn (tr (StringId::warning_wavetableMissing,
+                      Args {}.with ("owner", ownerName).with ("table", tableName)));
 
         s.table = juce::jmax (0, tableIndex);
         s.position = clampBySpec (ids::wavePosition, wavetable);
@@ -405,8 +406,8 @@ EffectChainSnapshot readEffectChain (const juce::ValueTree& owner, const juce::S
 
         if (chain.numSlots >= kMaxEffectsPerChain)
         {
-            warn (ownerName + " has more than " + juce::String (kMaxEffectsPerChain)
-                  + " effects; the rest are not rendered.");
+            warn (tr (StringId::warning_tooManyEffectsInChain,
+                      Args {}.with ("owner", ownerName).count (kMaxEffectsPerChain)));
             break;
         }
 
@@ -419,8 +420,8 @@ EffectChainSnapshot readEffectChain (const juce::ValueTree& owner, const juce::S
 
         if (! type.has_value())
         {
-            warn (ownerName + " has an effect of unknown type \"" + typeName
-                  + "\"; it is not rendered.");
+            warn (tr (StringId::warning_effectTypeUnknown,
+                      Args {}.with ("owner", ownerName).with ("type", typeName)));
             continue;
         }
 
@@ -433,8 +434,8 @@ EffectChainSnapshot readEffectChain (const juce::ValueTree& owner, const juce::S
 
         if (slot.unitIndex < 0)
         {
-            warn ("More than " + juce::String (kMaxEffectUnits) + " effects in the project; "
-                  + ownerName + " is not fully rendered.");
+            warn (tr (StringId::warning_tooManyEffectUnits,
+                      Args {}.with ("owner", ownerName).count (kMaxEffectUnits)));
             break;
         }
 
@@ -485,16 +486,18 @@ void readSoundFont (ChannelSnapshot& c, const juce::ValueTree& channel,
 
     if (font == nullptr)
     {
-        warn ("Channel \"" + channel[ids::name].toString() + "\" refers to soundfont \"" + path
-              + "\", which could not be read; it will not play.");
+        warn (tr (StringId::warning_soundFontUnreadable,
+                  Args {}.with ("name", channel[ids::name].toString()).with ("file", path)));
         return;
     }
 
     if (font->presetFor (settings.bank, settings.program) == nullptr)
     {
-        warn ("Channel \"" + channel[ids::name].toString() + "\" asks for \""
-              + node[ids::presetName].toString() + "\", which \"" + path
-              + "\" does not contain; it will not play.");
+        warn (tr (StringId::warning_soundFontPresetMissing,
+                  Args {}
+                      .with ("name", channel[ids::name].toString())
+                      .with ("preset", node[ids::presetName].toString())
+                      .with ("file", path)));
         return;
     }
 
@@ -528,8 +531,8 @@ void readSample (ChannelSnapshot& c, const juce::ValueTree& channel, SampleProvi
 
     if (audio == nullptr || audio->getNumSamples() == 0)
     {
-        warn ("Channel \"" + channel[ids::name].toString() + "\" refers to audio \"" + path
-              + "\", which could not be read; it will not play.");
+        warn (tr (StringId::warning_audioUnreadable,
+                  Args {}.with ("name", channel[ids::name].toString()).with ("file", path)));
         return;
     }
 

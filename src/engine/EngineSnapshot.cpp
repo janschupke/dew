@@ -7,6 +7,7 @@
 #include <atomic>
 #include <cmath>
 
+#include "i18n/Strings.h"
 #include "model/GeneratorCatalog.h"
 #include "model/Ids.h"
 #include "model/TreeWalk.h"
@@ -16,6 +17,23 @@
 
 namespace dew
 {
+
+namespace
+{
+
+/** How a channel is named in a warning about it.
+
+    Written out four times as "Channel \"" + name + "\"" before it was a
+    message, which is three chances for the quoting to drift and one place a
+    translator could not reach at all.
+*/
+juce::String channelOwner (const juce::ValueTree& channel)
+{
+    return tr (StringId::warning_ownerChannel,
+               Args {}.with ("name", channel[ids::name].toString()));
+}
+
+} // namespace
 
 int EngineSnapshot::patternIndexForId (int patternId) const
 {
@@ -165,7 +183,8 @@ EngineSnapshot buildSnapshot (const juce::ValueTree& project, juce::StringArray*
 
     // Before the tracks, so the master's effects claim their pool units first
     // and adding an insert cannot move them.
-    snapshot.masterEffects = snapshotRead::readEffectChain (master, "Master", unitOwners, warn);
+    snapshot.masterEffects = snapshotRead::readEffectChain (
+        master, tr (StringId::warning_ownerMaster), unitOwners, warn);
 
     for (const auto& track : mixer)
     {
@@ -174,8 +193,7 @@ EngineSnapshot buildSnapshot (const juce::ValueTree& project, juce::StringArray*
 
         if ((int) snapshot.mixerTracks.size() >= kMaxMixerTracks)
         {
-            warn ("More than " + juce::String (kMaxMixerTracks)
-                  + " mixer tracks; the rest are not rendered.");
+            warn (tr (StringId::warning_tooManyMixerTracks, Args {}.count (kMaxMixerTracks)));
             break;
         }
 
@@ -186,7 +204,10 @@ EngineSnapshot buildSnapshot (const juce::ValueTree& project, juce::StringArray*
         m.mute = (bool) track[ids::mute];
 
         m.effects = snapshotRead::readEffectChain (
-            track, "Mixer track " + track[ids::name].toString(), unitOwners, warn);
+            track,
+            tr (StringId::warning_ownerMixerTrack,
+                Args {}.with ("name", track[ids::name].toString())),
+            unitOwners, warn);
 
         snapshot.mixerTracks.push_back (m);
     }
@@ -199,8 +220,7 @@ EngineSnapshot buildSnapshot (const juce::ValueTree& project, juce::StringArray*
 
         if ((int) snapshot.channels.size() >= kMaxChannels)
         {
-            warn ("More than " + juce::String (kMaxChannels)
-                  + " channels; the rest are not rendered.");
+            warn (tr (StringId::warning_tooManyChannels, Args {}.count (kMaxChannels)));
             break;
         }
 
@@ -211,9 +231,8 @@ EngineSnapshot buildSnapshot (const juce::ValueTree& project, juce::StringArray*
         c.muted = (bool) channel[ids::muted];
 
         const auto instrument = channel.getChildWithName (ids::INSTRUMENT);
-        c.osc = snapshotRead::readOscBank (instrument,
-                                           "Channel \"" + channel[ids::name].toString() + "\"",
-                                           snapshot.tempoBpm, snapshot.beatUnit, warn);
+        c.osc = snapshotRead::readOscBank (instrument, channelOwner (channel), snapshot.tempoBpm,
+                                           snapshot.beatUnit, warn);
         c.amp = snapshotRead::readAmp (instrument.getChildWithName (ids::AMP));
 
         // Resolve the mixer routing now; the audio thread must not search.
@@ -226,14 +245,14 @@ EngineSnapshot buildSnapshot (const juce::ValueTree& project, juce::StringArray*
 
         if (c.mixerTrackIndex < 0 && ! snapshot.mixerTracks.empty())
         {
-            warn ("Channel \"" + channel[ids::name].toString() + "\" routes to mixer track "
-                  + juce::String (mixerTrackId)
-                  + ", which does not exist; using the first insert.");
+            warn (tr (
+                StringId::warning_channelRouteMissing,
+                Args {}.with ("name", channel[ids::name].toString()).with ("track", mixerTrackId)));
             c.mixerTrackIndex = 0;
         }
 
-        c.effects = snapshotRead::readEffectChain (
-            channel, "Channel \"" + channel[ids::name].toString() + "\"", unitOwners, warn);
+        c.effects = snapshotRead::readEffectChain (channel, channelOwner (channel), unitOwners,
+                                                   warn);
 
         // Through the catalog, and REPORTED when it is not one dew knows. This
         // was a ternary against "audio", so every other string - a kind added
@@ -245,8 +264,9 @@ EngineSnapshot buildSnapshot (const juce::ValueTree& project, juce::StringArray*
         const auto source = instrumentTypeFor (sourceId);
 
         if (! source.has_value())
-            warn ("Channel \"" + channel[ids::name].toString() + "\" plays \"" + sourceId
-                  + "\", which this build does not know; playing it as a synth.");
+            warn (tr (
+                StringId::warning_channelSourceUnknown,
+                Args {}.with ("name", channel[ids::name].toString()).with ("source", sourceId)));
 
         c.source = source.value_or (InstrumentType::synth);
 
@@ -291,16 +311,17 @@ EngineSnapshot buildSnapshot (const juce::ValueTree& project, juce::StringArray*
 
             if (n.channelIndex < 0)
             {
-                warn ("A note in pattern " + juce::String (p.id) + " refers to channel "
-                      + note[ids::ch].toString() + ", which does not exist; it will not sound.");
+                warn (
+                    tr (StringId::warning_noteChannelMissing,
+                        Args {}.with ("pattern", p.id).with ("channel", note[ids::ch].toString())));
                 continue;
             }
 
             // A note starting past the end of its pattern would never play.
             if (n.step >= p.lengthSteps)
             {
-                warn ("A note in pattern " + juce::String (p.id) + " starts at step "
-                      + juce::String (n.step) + ", past the pattern's length; it will not sound.");
+                warn (tr (StringId::warning_notePastEnd,
+                          Args {}.with ("pattern", p.id).with ("step", n.step)));
                 continue;
             }
 
@@ -321,8 +342,7 @@ EngineSnapshot buildSnapshot (const juce::ValueTree& project, juce::StringArray*
 
         if ((int) snapshot.automations.size() >= kMaxAutomations)
         {
-            warn ("More than " + juce::String (kMaxAutomations)
-                  + " automations; the rest are ignored.");
+            warn (tr (StringId::warning_tooManyAutomations, Args {}.count (kMaxAutomations)));
             break;
         }
 
@@ -450,8 +470,8 @@ EngineSnapshot buildSnapshot (const juce::ValueTree& project, juce::StringArray*
 
         if (spec == nullptr || a.param == AutomationParam::none)
         {
-            warn ("Automation \"" + automation[ids::name].toString()
-                  + "\" targets something that no longer exists; it is ignored.");
+            warn (tr (StringId::warning_automationTargetMissing,
+                      Args {}.with ("name", automation[ids::name].toString())));
             automationIds.add (-1);
             snapshot.automations.push_back ({});
             continue;
@@ -509,8 +529,8 @@ EngineSnapshot buildSnapshot (const juce::ValueTree& project, juce::StringArray*
 
                 if (c.automationIndex < 0)
                 {
-                    warn ("A clip refers to automation " + clip[ids::automationId].toString()
-                          + ", which does not exist; it will do nothing.");
+                    warn (tr (StringId::warning_clipAutomationMissing,
+                              Args {}.with ("id", clip[ids::automationId].toString())));
                     continue;
                 }
 
@@ -530,8 +550,8 @@ EngineSnapshot buildSnapshot (const juce::ValueTree& project, juce::StringArray*
 
                 if (c.channelIndex < 0)
                 {
-                    warn ("A clip refers to channel " + juce::String (channelId)
-                          + ", which does not exist; it will not play.");
+                    warn (
+                        tr (StringId::warning_clipChannelMissing, Args {}.with ("id", channelId)));
                     continue;
                 }
 
@@ -543,8 +563,8 @@ EngineSnapshot buildSnapshot (const juce::ValueTree& project, juce::StringArray*
 
             if (c.patternIndex < 0)
             {
-                warn ("A clip refers to pattern " + clip[ids::patternId].toString()
-                      + ", which does not exist; it will not play.");
+                warn (tr (StringId::warning_clipPatternMissing,
+                          Args {}.with ("id", clip[ids::patternId].toString())));
                 continue;
             }
 

@@ -241,11 +241,11 @@ const std::vector<Wavetable>& bank()
     {
         std::vector<Wavetable> built;
         built.reserve (5);
-        built.emplace_back ("basic", "Basic Shapes", basicSpectrum);
-        built.emplace_back ("pulse", "Pulse", pulseSpectrum);
-        built.emplace_back ("harmonics", "Harmonics", harmonicsSpectrum);
-        built.emplace_back ("formant", "Formant", formantSpectrum);
-        built.emplace_back ("fold", "Fold", foldSpectrum);
+        built.emplace_back ("basic", StringId::choice_wavetable_basic, basicSpectrum);
+        built.emplace_back ("pulse", StringId::choice_wavetable_pulse, pulseSpectrum);
+        built.emplace_back ("harmonics", StringId::choice_wavetable_harmonics, harmonicsSpectrum);
+        built.emplace_back ("formant", StringId::choice_wavetable_formant, formantSpectrum);
+        built.emplace_back ("fold", StringId::choice_wavetable_fold, foldSpectrum);
         return built;
     }();
 
@@ -265,10 +265,10 @@ int wavetableMipFor (double phaseIncrement) noexcept
     return juce::jlimit (0, kWavetableMips - 1, (int) std::ceil (needed));
 }
 
-Wavetable::Wavetable (juce::String tableName, juce::String tableDisplayName,
+Wavetable::Wavetable (juce::String tableName, StringId tableDisplayName,
                       const FrameSpectrum& spectrum)
     : name (std::move (tableName))
-    , displayName (std::move (tableDisplayName))
+    , displayName (tableDisplayName)
 {
     int offset = 0;
 

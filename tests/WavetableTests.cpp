@@ -237,7 +237,7 @@ TEST_CASE ("a table is addressed by name, and an unknown one is refused", "[wave
     {
         INFO ("index " << i);
         REQUIRE (wavetableIndexFor (wavetableAt (i).getName()) == i);
-        REQUIRE (wavetableAt (i).getDisplayName().isNotEmpty());
+        REQUIRE (tr (wavetableAt (i).getDisplayName()).isNotEmpty());
     }
 
     // -1 rather than 0: a name the build does not know is a fault in the file,

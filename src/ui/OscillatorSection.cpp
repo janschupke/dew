@@ -89,7 +89,7 @@ OscillatorSection::OscillatorSection (ProjectDocument& d, EditorState& s)
     // The table list comes from the engine's bank rather than a second list
     // here, so adding a factory table needs no change in the panel at all.
     for (int i = 0; i < wavetableCount(); ++i)
-        tableBox.addItem (wavetableAt (i).getDisplayName(), i + 1);
+        tableBox.addItem (tr (wavetableAt (i).getDisplayName()), i + 1);
 
     tableBox.setTooltip (tr (StringId::oscillator_table_help));
     tableBox.onChange = [this]

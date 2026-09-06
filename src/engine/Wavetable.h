@@ -2,6 +2,8 @@
 
 #include <juce_core/juce_core.h>
 
+#include "i18n/StringIds.h"
+
 #include <array>
 #include <functional>
 #include <vector>
@@ -86,7 +88,7 @@ public:
     */
     using FrameSpectrum = std::function<void (int frame, std::vector<float>& amplitudes)>;
 
-    Wavetable (juce::String name, juce::String displayName, const FrameSpectrum&);
+    Wavetable (juce::String name, StringId displayName, const FrameSpectrum&);
 
     /** One frame's samples at one mip, with a wrapped guard sample at [size],
         so interpolation never needs a modulo.
@@ -104,8 +106,13 @@ public:
         return name;
     }
 
-    /** What the panel's dropdown shows. */
-    const juce::String& getDisplayName() const noexcept
+    /** What the panel's dropdown shows, as a key rather than as words.
+
+        The words used to be here as well as in ModuleCatalog's ParamChoice row
+        for the same table, which is two declarations of one name and the older
+        of them was the one nobody could translate.
+    */
+    StringId getDisplayName() const noexcept
     {
         return displayName;
     }
@@ -113,7 +120,8 @@ public:
 private:
     float sampleAt (int frame, int mip, double phase) const noexcept;
 
-    juce::String name, displayName;
+    juce::String name;
+    StringId displayName;
 
     std::vector<float> storage;
     std::array<int, kWavetableMips> mipOffset {};

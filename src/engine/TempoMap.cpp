@@ -6,6 +6,7 @@
 #include <cmath>
 
 #include "engine/EngineSnapshot.h"
+#include "i18n/Strings.h"
 
 namespace dew
 {
@@ -97,8 +98,8 @@ TempoMap TempoMap::build (const EngineSnapshot& snapshot, juce::StringArray* war
     if (steps > maxSteps)
     {
         if (warnings != nullptr)
-            warnings->add ("This arrangement is too long for a tempo curve; it plays at "
-                           + juce::String (snapshot.tempoBpm, 1) + " throughout.");
+            warnings->add (tr (StringId::warning_tempoCurveTooLong,
+                               Args {}.with ("tempo", juce::String (snapshot.tempoBpm, 1))));
 
         return fallback();
     }
