@@ -268,3 +268,30 @@ TEST_CASE ("a double-click on the lane's edge puts it back", "[ui][pianoroll]")
 
     CHECK (h.roll.getVelocityHeight() == tokens::size::velocityLaneDefault);
 }
+
+TEST_CASE ("where a key is pressed across is how hard it sounds", "[ui][pianoroll]")
+{
+    // The keyboard's 54 pixels were doing nothing at all: mouseDown had the x
+    // of the press one line above and threw it away, so every key sounded at
+    // whatever velocity the roll had last DRAWN a note with - a number that has
+    // nothing to do with the press and that a person auditioning a sound has no
+    // way to change without drawing something first.
+    const juce::ScopedJuceInitialiser_GUI juceInit;
+
+    const auto near = PianoRollComponent::auditionVelocityForX (0);
+    const auto middle = PianoRollComponent::auditionVelocityForX (tokens::size::gutterKeyboard / 2);
+    const auto far = PianoRollComponent::auditionVelocityForX (tokens::size::gutterKeyboard - 1);
+
+    INFO ("near " << near << ", middle " << middle << ", far " << far);
+    CHECK (near < middle);
+    CHECK (middle < far);
+
+    // The near edge still SOUNDS. A keyboard with a silent strip down one side
+    // reads as a keyboard with a dead spot, so this is floored at the same 0.05
+    // EditorState::rememberNote clamps a drawn note to.
+    CHECK (near >= 0.05f);
+    CHECK (far <= 1.0f);
+
+    // Past the gutter cannot exceed full - a drag does not stop at the edge.
+    CHECK (PianoRollComponent::auditionVelocityForX (tokens::size::gutterKeyboard * 4) <= 1.0f);
+}

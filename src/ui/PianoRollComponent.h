@@ -161,6 +161,21 @@ public:
         return auditionPitch;
     }
 
+    /** How hard a press at `x` hits, across the keyboard gutter.
+
+        The near edge is quiet and the far edge is full, which is how a keyboard
+        with no aftertouch has always been played - and it is what the gutter's
+        54 pixels were doing with nothing at all before: the x of the press was
+        available at the call site and thrown away one line later, so every key
+        sounded at whatever velocity the roll had last DRAWN a note with, a
+        number a person auditioning a sound cannot change without drawing
+        something first.
+
+        Static and public because it is the whole rule, and pure: a test can
+        pin the curve without a window, a channel or an engine behind it.
+    */
+    static float auditionVelocityForX (int x) noexcept;
+
     /** Where the view is, so a session can be restored to it. */
     void captureView (double& zoom, double& scroll, double& pitchScroll) const;
     void applyView (double zoom, double scroll, double pitchScroll);
@@ -404,9 +419,14 @@ private:
     juce::ValueTree velocityBarAt (juce::Point<int>) const;
 
     /** Sounds `pitch` on the selected channel, releasing whatever was sounding.
-        A no-op when that pitch is already the one being auditioned.
+        A no-op when that pitch and that velocity are already what is sounding.
+
+        `velocity` comes from WHERE ACROSS THE KEY the press landed - see
+        auditionVelocityForX. A no-op on pitch alone would swallow a slide along
+        one key, which is the whole gesture on a keyboard 54 pixels wide.
     */
-    void startAudition (int pitch);
+    void startAudition (int pitch, float velocity);
+
     void stopAudition();
     bool isOnRightEdge (const juce::ValueTree& note, juce::Point<int>) const;
 
@@ -530,6 +550,11 @@ private:
         released. -1 when nothing is being auditioned.
     */
     int auditionPitch = -1;
+
+    /** What it is sounding AT, so a slide across one key re-triggers it. Held
+        beside the pitch because "already sounding" is a question about the
+        pair: on a 54px keyboard the whole velocity range is one key wide. */
+    float auditionVelocity = 0.0f;
 
     juce::ValueTree draggedVelocityNote;
 

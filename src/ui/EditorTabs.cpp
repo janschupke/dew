@@ -94,6 +94,30 @@ void EditorTabs::resized()
     tabStripTrailing->setBounds (slot.withSizeKeepingCentre (size::iconButton, size::iconButton));
 }
 
+void EditorTabs::paintOverChildren (juce::Graphics& g)
+{
+    const auto& bar = getTabbedButtonBar();
+
+    if (bar.getRight() >= getWidth())
+        return;
+
+    // The strip's bottom hairline, continued across whatever the bar does not
+    // cover.
+    //
+    // DewLookAndFeel::drawTabAreaBehindFrontButton draws that rule across the
+    // TabbedButtonBar, and resized() above shrinks the bar by 32 pixels to
+    // reserve the sidebar toggle's slot - so the rule stopped 32 pixels short
+    // of the right edge and the strip had a bite out of it under the button.
+    // Nothing else painted there: EditorTabs had no paint() at all and
+    // MainComponent just fills the background.
+    //
+    // Measured from the BAR rather than from the slot resized() remembered: the
+    // bar's own right edge is the thing the rule stops at, so asking it cannot
+    // drift from whatever that width turns out to be.
+    g.setColour (tokens::colour::dividerStrong);
+    g.drawHorizontalLine (bar.getBottom() - 1, (float) bar.getRight(), (float) getWidth());
+}
+
 void EditorTabs::compileScore()
 {
     setCurrentTabIndex (getNumTabs() - 1);

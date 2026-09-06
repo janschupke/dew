@@ -96,8 +96,13 @@ TEST_CASE ("the instrument panel folds away, and comes back", "[ui][smoke]")
     // to press once the panel it hides is gone.
     CHECK (toggle->isVisible());
     CHECK (toggle->getWidth() > 0);
-    CHECK (divider->getWidth() > 0);
-    CHECK (divider->isVisible());
+
+    // The DIVIDER is not. There is nothing on the other side of the seam to
+    // resize, so it clamped against the window edge and sat there as a live
+    // resize-cursor drag target on top of the editor - a grab handle for a
+    // thing that is not on screen, and a drag on it sprang the panel open
+    // under the pointer. The chevron above is the way back.
+    CHECK_FALSE (divider->isVisible());
 
     // And it is INSIDE the strip rather than over it, which is the whole
     // change: the tab bar gave up the width instead of being painted on.
@@ -115,6 +120,11 @@ TEST_CASE ("the instrument panel folds away, and comes back", "[ui][smoke]")
 
     CHECK (panel->getWidth() == openWidth);
     CHECK (panel->isVisible());
+
+    // And the seam comes back with it, or the panel could never be resized
+    // again after one fold.
+    CHECK (divider->isVisible());
+    CHECK (divider->getWidth() > 0);
 }
 
 TEST_CASE ("the editor survives being resized to its limits", "[ui][smoke]")

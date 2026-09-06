@@ -111,10 +111,12 @@ TransportBar::TransportBar (ProjectDocument& d, AudioEngine& e, EditorState& s)
     modeButton.setClickingTogglesState (true);
     modeButton.onClick = [this]
     {
-        const auto song = modeButton.getToggleState();
-        modeButton.setButtonText (
-            tr (song ? StringId::transport_modeSong_label : StringId::transport_modePattern_label));
-        engine.setMode (song ? Transport::Mode::song : Transport::Mode::pattern);
+        // Tells the ENGINE and nothing else. The caption and the fill follow
+        // from refreshEngineState, which is the one reader - two writers, one
+        // of which every other route bypassed, is exactly how the button came
+        // to disagree with the transport.
+        engine.setMode (modeButton.getToggleState() ? Transport::Mode::song
+                                                    : Transport::Mode::pattern);
         engine.rewind();
     };
     addAndMakeVisible (modeButton);
@@ -222,13 +224,10 @@ void TransportBar::refresh()
     rebuildPatternList();
     refreshPatternLength();
 
-    const auto song = engine.getMode() == Transport::Mode::song;
-    modeButton.setToggleState (song, juce::dontSendNotification);
-    modeButton.setButtonText (
-        tr (song ? StringId::transport_modeSong_label : StringId::transport_modePattern_label));
-    // Otherwise the readout and the icon are blank and stale until the first
-    // timer tick.
-    refreshPlayIcon();
+    // Otherwise the readout, the icon and the mode are blank and stale until
+    // the first timer tick. The same call the timer makes, so a document
+    // replace and a tick cannot come to disagree about what the engine says.
+    refreshEngineState();
     updatePositionLabel();
 }
 
@@ -403,13 +402,40 @@ void TransportBar::valueTreeChildRemoved (juce::ValueTree&, juce::ValueTree& chi
 void TransportBar::timerCallback()
 {
     updatePositionLabel();
+    refreshEngineState();
+}
+
+void TransportBar::refreshEngineState()
+{
     refreshPlayIcon();
 
     // Polled with the playhead rather than pushed: a take can also end from the
     // menu, from the keyboard, or because the device went away, and this is
     // already the thing running at the rate a transport reads at.
     if (isRecording != nullptr)
-        recordButton.setToggleState (isRecording(), juce::dontSendNotification);
+    {
+        const auto recording = isRecording() ? 1 : 0;
+
+        if (std::exchange (showingRecording, recording) != recording)
+            recordButton.setToggleState (recording != 0, juce::dontSendNotification);
+    }
+
+    // The mode, which was the one engine-owned control nobody polled.
+    //
+    // refresh() set it, and refresh() runs when the document is REPLACED - so
+    // cmd-L and the Transport menu both flipped the engine while the button
+    // kept a stale fill AND a stale caption until something unrelated happened
+    // to open a project. The click handler wrote both halves itself, which is
+    // what hid it: the only route anybody tested was the one route that also
+    // updated the button.
+    const auto song = engine.getMode() == Transport::Mode::song ? 1 : 0;
+
+    if (std::exchange (showingSongMode, song) == song)
+        return;
+
+    modeButton.setToggleState (song != 0, juce::dontSendNotification);
+    modeButton.setButtonText (tr (song != 0 ? StringId::transport_modeSong_label
+                                            : StringId::transport_modePattern_label));
 }
 
 void TransportBar::refreshPlayIcon()

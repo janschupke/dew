@@ -101,6 +101,16 @@ public:
 private:
     void resized() override;
 
+    /** Carries the tab strip's hairline across the slot resized() reserves for
+        the sidebar toggle.
+
+        paintOverChildren, not paint: JUCE clips a parent's paint() to the
+        region its opaque children do not cover, and the tab bar and the content
+        component between them leave nothing - so paint() was never reached at
+        all. Verified by filling the whole component magenta from paint() and
+        seeing not one pixel of it. */
+    void paintOverChildren (juce::Graphics&) override;
+
     /** Every tab button this bar makes, refusing the right button.
 
         A stock juce::TabbedComponent hands out stock TabBarButtons, and

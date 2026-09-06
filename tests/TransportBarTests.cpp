@@ -47,6 +47,17 @@ struct BarHarness
         return *dynamic_cast<DewIconButton*> (bar.getChildren().getFirst());
     }
 
+    /** The mode button - the only DewButton on the strip. */
+    DewButton& mode()
+    {
+        for (auto* child : bar.getChildren())
+            if (auto* button = dynamic_cast<DewButton*> (child))
+                return *button;
+
+        FAIL ("no mode button on the transport bar");
+        return *dynamic_cast<DewButton*> (bar.getChildren().getFirst());
+    }
+
     DewLookAndFeel lookAndFeel;
     ProjectDocument document;
     AudioEngine engine;
@@ -101,4 +112,45 @@ TEST_CASE ("a poll that changes nothing changes nothing", "[transport][ui]")
         h.bar.refreshPlayIcon();
 
     CHECK (h.play().getIcon() == after);
+}
+
+TEST_CASE ("the mode button follows the engine, whatever moved it", "[transport][ui]")
+{
+    /*  The same defect the play icon had, in the one engine-owned control that
+        was never joined to the poll that fixed it.
+
+        refresh() set the mode button, and refresh() runs when the document is
+        REPLACED - so cmd-L and the Transport menu both flipped the engine and
+        left a stale fill AND a stale caption behind until something unrelated
+        happened to open a project. What hid it is that the click handler wrote
+        both halves itself, so the only route anybody drove was the one route
+        that also updated the button.
+
+        Driven through the engine directly, which is exactly the route cmd-L
+        takes: DewApplication calls engine.setMode and nothing else.
+    */
+    const juce::ScopedJuceInitialiser_GUI juceInit;
+    BarHarness h;
+
+    h.engine.setMode (Transport::Mode::pattern);
+    h.bar.refreshEngineState();
+
+    const auto patternText = h.mode().getButtonText();
+    CHECK_FALSE (h.mode().getToggleState());
+
+    h.engine.setMode (Transport::Mode::song);
+    h.bar.refreshEngineState();
+
+    CHECK (h.mode().getToggleState());
+
+    // The CAPTION as well as the fill. Both were written by the click handler,
+    // so both went stale together, and a test that checked only the toggle
+    // would have passed on a button still reading "Pattern".
+    CHECK (h.mode().getButtonText() != patternText);
+
+    h.engine.setMode (Transport::Mode::pattern);
+    h.bar.refreshEngineState();
+
+    CHECK_FALSE (h.mode().getToggleState());
+    CHECK (h.mode().getButtonText() == patternText);
 }

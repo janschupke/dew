@@ -38,13 +38,27 @@ public:
     /** Called when the document is replaced wholesale. */
     void refresh();
 
-    /** Brings the play button's glyph up to date with the engine.
+    /** Brings every control the ENGINE owns up to date with the engine.
 
-        Polled rather than pushed, for the reason at its definition, and PUBLIC
-        because timerCallback is not: this is what the timer calls, and a test
-        that wanted to prove the icon follows a transport moved from somewhere
-        else had no other way in.
+        One place where "what the engine says" becomes "what the buttons show",
+        and the answer to a whole class of defect rather than to one button.
+        AudioEngine is not a ChangeBroadcaster and its mode and its transport
+        live in atomics, not in the ValueTree - so no listener fires when
+        something else moves them, and something else routinely does: the
+        Transport menu, a hotkey, an MCP client, the device going away.
+
+        Polled rather than pushed, for that reason, and PUBLIC because
+        timerCallback is not: a test proving a button follows a transport moved
+        from somewhere else has no other way in.
+
+        Each control latches against what it last drew, because this runs at
+        motion::uiRefreshHz and setIcon, setToggleState and setButtonText all
+        repaint.
     */
+    void refreshEngineState();
+
+    /** Just the play glyph. Kept as its own name because the tests that pin
+        "the icon follows the transport" say so by calling it. */
     void refreshPlayIcon();
 
     /** Points the editor, the engine and the dropdown at `wantedId`, or at the
@@ -140,6 +154,13 @@ private:
     /** Which glyph the play button is currently showing, so the poll below
         repaints on a change rather than sixty times a second. */
     bool showingPause = false;
+
+    /** What the mode button last DREW, so the poll below repaints only on a
+        change. -1 is "nothing yet", which is what makes the first tick paint. */
+    int showingSongMode = -1;
+
+    /** The same, for the record button. */
+    int showingRecording = -1;
 
     ProjectDocument& document;
     AudioEngine& engine;

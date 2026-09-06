@@ -192,3 +192,60 @@ TEST_CASE ("one rule between the editor and the panel, and nothing between them"
     INFO ("bright columns in the panel's left gutter: " << rules);
     CHECK (rules == 1);
 }
+
+TEST_CASE ("the tab strip's rule reaches the edge, under the sidebar toggle", "[ui][shell]")
+{
+    // EditorTabs::resized takes 32 pixels OUT of the TabbedButtonBar to reserve
+    // a slot for the sidebar toggle, and DewLookAndFeel draws the strip's
+    // hairline across the bar - so the rule stopped 32 pixels short and the
+    // strip had a bite out of it under the button.
+    //
+    // Drawn from paintOverChildren rather than paint, and that is the whole
+    // reason this test exists: JUCE clips a parent's paint() to the region its
+    // opaque children do not cover, and the bar and the content component
+    // between them leave nothing, so an override of paint() was never reached
+    // at all. Filling the entire component magenta from paint() produced not
+    // one magenta pixel.
+    const juce::ScopedJuceInitialiser_GUI juceInit;
+
+    MainComponent component (false);
+    component.setSize (1400, 900);
+
+    auto* tabs = dynamic_cast<juce::TabbedComponent*> (component.findChildWithID ("editorTabs"));
+    REQUIRE (tabs != nullptr);
+
+    auto& bar = tabs->getTabbedButtonBar();
+
+    // The slot really is reserved, or there is nothing here to test.
+    const auto strip = component.getLocalArea (tabs, tabs->getLocalBounds());
+    const auto barArea = component.getLocalArea (&bar, bar.getLocalBounds());
+
+    INFO ("bar right " << barArea.getRight() << ", strip right " << strip.getRight());
+    REQUIRE (barArea.getRight() < strip.getRight());
+
+    const auto image = render (component);
+    const auto y = barArea.getBottom() - 1;
+
+    // Every column of the reserved slot carries the rule, except where the
+    // toggle's own body is drawn over it - so this asks that the slot is not
+    // BLANK rather than that every pixel of it matches.
+    auto onTheRule = 0;
+
+    for (auto x = barArea.getRight(); x < strip.getRight(); ++x)
+        if (image.getPixelAt (x, y) == tokens::colour::dividerStrong)
+            ++onTheRule;
+
+    INFO ("rule pixels across the reserved slot: " << onTheRule << " of "
+                                                   << (strip.getRight() - barArea.getRight()));
+    CHECK (onTheRule > 0);
+
+    // The control case: a row well below the strip is not the rule, so a test
+    // that matched everything would fail here.
+    auto below = 0;
+
+    for (auto x = barArea.getRight(); x < strip.getRight(); ++x)
+        if (image.getPixelAt (x, y + 6) == tokens::colour::dividerStrong)
+            ++below;
+
+    CHECK (below == 0);
+}

@@ -178,7 +178,7 @@ void PianoRollComponent::mouseDown (const juce::MouseEvent& event)
     if (keyboardArea().contains (event.getPosition()))
     {
         gesture = Gesture::auditioning;
-        startAudition (pitchAtY (event.y));
+        startAudition (pitchAtY (event.y), auditionVelocityForX (event.x));
         return;
     }
 
@@ -366,8 +366,9 @@ void PianoRollComponent::mouseDrag (const juce::MouseEvent& event)
 
     if (gesture == Gesture::auditioning)
     {
-        // Sliding down the keyboard plays what it passes over.
-        startAudition (pitchAtY (event.y));
+        // Sliding down the keyboard plays what it passes over, and sliding
+        // ACROSS it plays the same key harder.
+        startAudition (pitchAtY (event.y), auditionVelocityForX (event.x));
         return;
     }
 
@@ -545,11 +546,26 @@ void PianoRollComponent::mouseUp (const juce::MouseEvent& event)
     repaint();
 }
 
-void PianoRollComponent::startAudition (int pitch)
+float PianoRollComponent::auditionVelocityForX (int x) noexcept
+{
+    // Across the gutter, near edge quiet and far edge full.
+    //
+    // Floored at the same 0.05 EditorState::rememberNote clamps a drawn note
+    // to, so the leftmost pixel of a key still makes a sound - a keyboard with
+    // a silent edge reads as a keyboard with a dead spot.
+    const auto across = (double) x / (double) juce::jmax (1, (int) size::gutterKeyboard);
+
+    return (float) juce::jlimit (0.05, 1.0, across);
+}
+
+void PianoRollComponent::startAudition (int pitch, float velocity)
 {
     const auto wanted = juce::jlimit (lowestPitch, highestPitch, pitch);
 
-    if (wanted == auditionPitch)
+    // The PAIR, not the pitch alone. A slide along one key is how velocity is
+    // chosen on a keyboard this narrow, and a guard on pitch would have made
+    // every such slide a no-op.
+    if (wanted == auditionPitch && juce::approximatelyEqual (velocity, auditionVelocity))
         return;
 
     stopAudition();
@@ -561,7 +577,8 @@ void PianoRollComponent::startAudition (int pitch)
         return;
 
     auditionPitch = wanted;
-    engine.previewNoteOn (channelIndex, wanted, (float) editorState.getLastNoteVelocity());
+    auditionVelocity = velocity;
+    engine.previewNoteOn (channelIndex, wanted, velocity);
     repaint (keyboardArea());
 }
 
@@ -574,6 +591,7 @@ void PianoRollComponent::stopAudition()
     // change mid-drag, and a note left ringing is worse than an extra message.
     engine.previewAllOff();
     auditionPitch = -1;
+    auditionVelocity = 0.0f;
     repaint (keyboardArea());
 }
 

@@ -513,3 +513,65 @@ TEST_CASE ("a control that arms a popup press also disarms it", "[build][gate][g
     INFO ("controls that refuse only the press:\n" << found.joinIntoString ("\n"));
     CHECK (found.isEmpty());
 }
+
+TEST_CASE ("no transport control writes the state the engine owns", "[build][gate][transport]")
+{
+    // AudioEngine is not a ChangeBroadcaster, and its transport and its mode
+    // live in atomics rather than in the ValueTree - so nothing tells the
+    // toolbar when something else moves them, and something else routinely
+    // does: the Transport menu, a hotkey, an MCP client, the device going away.
+    //
+    // The answer is a single reader, TransportBar::refreshEngineState, polled
+    // at the rate a transport reads at. What breaks it is a control that ALSO
+    // writes its own appearance from its click handler: two writers, one of
+    // which every other route bypasses. The mode button did exactly that, and
+    // the only route anyone drove was the one route that also updated the
+    // button, so cmd-L left a stale fill and a stale caption behind it.
+    //
+    // Asked as a SHAPE - a click handler in this translation unit that paints
+    // itself - rather than as a list of buttons, so a sixth control added
+    // tomorrow is covered without anybody remembering to add it.
+    const juce::File file { juce::String (DEW_SOURCE_DIR) + "/ui/TransportBar.cpp" };
+    REQUIRE (file.existsAsFile());
+
+    const auto lines = codeLinesWithNumbersOf (file);
+
+    juce::StringArray found;
+    auto insideClickHandler = false;
+    auto handlers = 0;
+
+    for (const auto& line : lines)
+    {
+        const auto text = line.text.trim();
+
+        if (text.contains (".onClick = [") || text.contains (".onModifiedClick = ["))
+        {
+            insideClickHandler = true;
+            ++handlers;
+            continue;
+        }
+
+        if (insideClickHandler && text.startsWith ("};"))
+        {
+            insideClickHandler = false;
+            continue;
+        }
+
+        if (! insideClickHandler)
+            continue;
+
+        for (const auto* self : { "setToggleState (", "setButtonText (", "setIcon (" })
+            if (text.contains (self))
+                found.add (relativePathOf (file) + ":" + juce::String (line.number) + "  " + text);
+    }
+
+    // Control case: a gate that walked no handlers at all would pass in silence,
+    // and this file has had a click handler on every transport control since it
+    // was written.
+    INFO ("click handlers walked: " << handlers);
+    REQUIRE (handlers >= 4);
+
+    INFO ("transport controls painting themselves from their own click:\n"
+          << found.joinIntoString ("\n"));
+    CHECK (found.isEmpty());
+}

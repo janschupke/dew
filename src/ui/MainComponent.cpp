@@ -320,9 +320,10 @@ void MainComponent::PanelDivider::mouseDrag (const juce::MouseEvent& event)
     if (popupPressed)
         return;
 
-    // Dragging brings a folded panel back. Otherwise a collapse would strand
-    // the width being dragged behind a panel nothing can be seen of.
-    owner.setPanelCollapsed (false);
+    // No un-folding here any more: the seam is hidden while the panel is
+    // folded, so a drag cannot start on one. It was the other half of a handle
+    // that was always present - grab a seam with nothing behind it and the
+    // panel sprang open under the pointer.
     owner.setPanelWidth (widthAtDragStart - event.getDistanceFromDragStartX());
 }
 
@@ -602,8 +603,16 @@ void MainComponent::resized()
     const auto seamX = juce::jlimit (0, juce::jmax (0, getWidth() - seamWidth),
                                      area.getRight() - seamWidth / 2);
 
+    // Not shown at all while the panel is folded. There is nothing on the other
+    // side of the seam to resize, so it clamped against the window edge and sat
+    // there as a live resize-cursor drag target on top of the editor - a grab
+    // handle for a thing that is not on screen. The chevron is the way back,
+    // which is what the clamp above exists to keep reachable.
+    divider.setVisible (! panelCollapsed);
     divider.setBounds (seamX, area.getY(), seamWidth, area.getHeight());
-    divider.toFront (false);
+
+    if (! panelCollapsed)
+        divider.toFront (false);
 
     // Behind the divider, so the rule reads as continuous: the chevron is the
     // tab strip's child and the seam is drawn on top of everything.
