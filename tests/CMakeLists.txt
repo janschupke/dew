@@ -157,6 +157,21 @@ add_executable(dew_tests
   ParamNameTests.cpp
 )
 
+# See the note on dew_ui's in src/CMakeLists.txt. dew_tests is the biggest
+# target in the tree - 150 translation units - and the one the gate rebuilds
+# most, so it gains the most: a full rebuild with CCACHE_DISABLE=1 went from
+# 64.2 s wall / 462 CPU-s to 43.6 s / 318 CPU-s.
+#
+# dew_lang_tests deliberately does NOT get one. It links nothing, JUCE
+# included, and a fast JUCE-free inner loop is the whole point of it.
+target_precompile_headers(dew_tests
+  PRIVATE
+    <catch2/catch_test_macros.hpp>
+    <catch2/catch_approx.hpp>
+    <juce_gui_basics/juce_gui_basics.h>
+    <vector>
+    <optional>)
+
 target_link_libraries(dew_tests
   PRIVATE
     dew_ui   # and dew_lang with it: dew_model links it PUBLIC, and naming it

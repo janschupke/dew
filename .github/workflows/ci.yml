@@ -15,6 +15,19 @@ jobs:
     name: macOS · build · test
     runs-on: macos-15
 
+    # ccache's own defaults are 5 GB and no depend mode, which is not what this
+    # tree wants and not what a developer machine ends up configured with. In
+    # the environment rather than a config file so there is nothing to install,
+    # nothing untracked, and the same settings wherever the build runs.
+    #   depend_mode   skips the preprocessor on a hit, which is where the
+    #                 speed comes from once headers are stable.
+    #   time_macros   juce_core_CompilationTime.cpp embeds __DATE__/__TIME__
+    #                 and would otherwise miss on every single build.
+    env:
+      CCACHE_MAXSIZE: 10G
+      CCACHE_DEPEND: "true"
+      CCACHE_SLOPPINESS: include_file_mtime,include_file_ctime,time_macros,pch_defines
+
     steps:
       - uses: actions/checkout@v4
 
@@ -41,12 +54,18 @@ jobs:
           path: ~/.cache/CPM
           key: cpm-${{ runner.os }}-${{ hashFiles('cpm-package-lock.cmake', 'cmake/DependencyPins.cmake') }}
 
+      # Restore and save are split on purpose. actions/cache writes a new entry
+      # on every run, and each of these is around a gigabyte against a 10 GB
+      # per-repository budget that the CPM cache shares - so a busy day of pull
+      # requests used to evict everything including itself. Only master writes;
+      # a pull request reads master's entry and leaves it alone.
       - name: Restore compile cache
-        uses: actions/cache@v4
+        id: ccache
+        uses: actions/cache/restore@v4
         with:
           path: ~/Library/Caches/ccache
-          key: ccache-${{ runner.os }}-${{ github.sha }}
-          restore-keys: ccache-${{ runner.os }}-
+          key: ccache-${{ runner.os }}-ci-${{ github.sha }}
+          restore-keys: ccache-${{ runner.os }}-ci-
 
       - name: Install toolchain
         run: brew bundle
@@ -147,6 +166,15 @@ jobs:
           name: build-logs
           path: build/ci/CMakeFiles/*.log
           if-no-files-found: ignore
+
+      # master only - see the restore step. always(), so a run that failed in
+      # the tests still banks the compiling it did.
+      - name: Save compile cache
+        if: always() && github.ref == 'refs/heads/master'
+        uses: actions/cache/save@v4
+        with:
+          path: ~/Library/Caches/ccache
+          key: ccache-${{ runner.os }}-ci-${{ github.sha }}
 
   # ----------------------------------------------------------------------------
   # The score language against a second standard library.
@@ -374,6 +402,9 @@ jobs:
 
     env:
       TSAN_OPTIONS: suppressions=${{ github.workspace }}/tsan.supp
+      CCACHE_MAXSIZE: 10G
+      CCACHE_DEPEND: "true"
+      CCACHE_SLOPPINESS: include_file_mtime,include_file_ctime,time_macros,pch_defines
 
     steps:
       - uses: actions/checkout@v4
@@ -389,6 +420,18 @@ jobs:
           path: ~/.cache/CPM
           key: cpm-${{ runner.os }}-${{ hashFiles('cpm-package-lock.cmake', 'cmake/DependencyPins.cmake') }}
 
+      # These are the most expensive builds in the pipeline - a sanitizer tree
+      # compiles the same sources at three to four times the cost of the ci one
+      # - and until now they were the only preset jobs building entirely cold.
+      # A cache per preset: asan and tsan share no object, since the sanitizer
+      # flags are in CMAKE_CXX_FLAGS and hash into every compile.
+      - name: Restore compile cache
+        uses: actions/cache/restore@v4
+        with:
+          path: ~/Library/Caches/ccache
+          key: ccache-${{ runner.os }}-${{ matrix.preset }}-${{ github.sha }}
+          restore-keys: ccache-${{ runner.os }}-${{ matrix.preset }}-
+
       - name: Install toolchain
         run: brew bundle
 
@@ -400,3 +443,10 @@ jobs:
 
       - name: Test
         run: ctest --preset ${{ matrix.preset }} --parallel 2
+
+      - name: Save compile cache
+        if: always() && github.ref == 'refs/heads/master'
+        uses: actions/cache/save@v4
+        with:
+          path: ~/Library/Caches/ccache
+          key: ccache-${{ runner.os }}-${{ matrix.preset }}-${{ github.sha }}

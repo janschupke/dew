@@ -79,6 +79,13 @@ Full set in [`.ai/rules/`](.ai/rules/). The ones an agent trips over first:
 - **`THIRD_PARTY.md`, `examples/`, `presets/`, `.cursor/rules/main.mdc` and
   `website/src/generated/` are generated.** Never hand-edit one; regenerate it in the same
   commit.
+- **A layer links `dew_juce_<module>`, never `juce::juce_<module>`.** A JUCE module is an
+  INTERFACE library carrying its own .cpp/.mm files, so a target that links one compiles
+  the whole module again: before `cmake/JuceOnce.cmake` the tree held 346 JUCE object
+  files whose contents were 41 distinct objects, and a cold build compiled 25 files 265
+  times. `dew_juce_build_once()` wraps each module in a static library that absorbs those
+  sources; the link EDGES are unchanged, so layering is still a link error. Naming
+  `juce::` directly in a new library quietly puts the duplication back.
 - **`build/ci` is not the app.** The user opens
   `build/release/src/dew_artefacts/RelWithDebInfo/dew.app`, so after a UI change also run
   `cmake --build --preset release`, and verify it with `dew_shot` rather than by reasoning.
