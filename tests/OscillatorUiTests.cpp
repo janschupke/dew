@@ -170,13 +170,18 @@ TEST_CASE ("another channel's oscillators are not this section's business", "[ui
     REQUIRE (h.section.getWaveBox().getSelectedId() == firstWaveId);
 }
 
-TEST_CASE ("the selected slot never leaves the slots that exist", "[ui][oscillator]")
+TEST_CASE ("the selection never leaves the segments that exist", "[ui][oscillator]")
 {
     const juce::ScopedJuceInitialiser_GUI juceInit;
     OscHarness h;
 
+    // The top of the range is the last SEGMENT, not the last slot: the strip
+    // gained a fourth for the FM matrix, which is a face rather than an
+    // oscillator. Everything that reads this - the header, the height budget,
+    // the controls - asks the same clamped value, so widening it here is what
+    // widened it everywhere.
     h.section.selectSlot (99);
-    REQUIRE (h.section.getSelectedSlot() == kMaxOscillators - 1);
+    REQUIRE (h.section.getSelectedSlot() == OscillatorSection::fmTabIndex);
 
     h.section.selectSlot (-5);
     REQUIRE (h.section.getSelectedSlot() == 0);
