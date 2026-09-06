@@ -956,6 +956,24 @@ void emptyState (juce::Graphics&, juce::Rectangle<int>, const juce::String&,
 */
 juce::Rectangle<float> bodyRect (const juce::Component&);
 
+/** What an INPUT looks like: a rounded body with a hairline edge.
+
+    A number field, a search field, a dropdown and the text box inside a stepper
+    are one family, and they were drawn four ways. The field was rounded at
+    radius::sm in colour::outline; the search field square-cornered in
+    colour::divider; the dropdown rounded at radius::md, so a dropdown beside a
+    field on the same row was a different SHAPE; and a stepper's number was not
+    painted by dew at all - it fell through to LookAndFeel_V2::drawLabel, which
+    draws a square one-pixel drawRect, so the one input in the window sitting
+    directly against two dew buttons was the one that did not match them.
+
+    @param fill    the ground: surfaceRaised at rest, surfaceHover under the
+                   pointer - the same pair every other control uses.
+    @param border  outline at rest, and the control's function colour while it
+                   is being dragged or typed into.
+*/
+void inputBox (juce::Graphics&, const juce::Component&, juce::Colour fill, juce::Colour border);
+
 /** The ring that says a control has the keyboard.
 
     Drawn by the primitive itself rather than through

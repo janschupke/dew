@@ -45,7 +45,10 @@ void DewLookAndFeel::drawComboBox (juce::Graphics& g, int width, int height, boo
                  : isButtonDown    ? colour::surfaceHover
                  : over            ? colour::surfaceHover.withAlpha (emphasis::strong)
                                    : colour::surfaceRaised);
-    g.fillRoundedRectangle (bounds, radius::md);
+    // radius::sm, which is what every other input in dew is rounded to. It was
+    // radius::md, so a dropdown standing beside a number field on the same row
+    // was a different SHAPE rather than the same control with a list attached.
+    g.fillRoundedRectangle (bounds, radius::sm);
 
     // A dropdown says focus with its border where the hand-painted primitives
     // add a ring, and the two are the same statement - so the border answers
@@ -53,7 +56,7 @@ void DewLookAndFeel::drawComboBox (juce::Graphics& g, int width, int height, boo
     g.setColour (focus::ringVisibleFor (box.hasKeyboardFocus (false)) ? colour::accent
                  : over ? colour::outline.brighter (emphasis::controlLift)
                         : colour::outline);
-    g.drawRoundedRectangle (bounds, radius::md, stroke::hairline);
+    g.drawRoundedRectangle (bounds, radius::sm, stroke::hairline);
 
     // The app's own chevron rather than JUCE's triangle.
     const auto chevron = juce::Rectangle<float> (bounds.getRight() - 26.0f,

@@ -121,12 +121,12 @@ void DewSearchField::updateClearButton()
 
 void DewSearchField::paint (juce::Graphics& g)
 {
-    const auto body = paint::bodyRect (*this);
-
+    // The well stays: a search field is a place text goes INTO, which is what
+    // the deeper ground says. Only the edge joins the family - it was
+    // colour::divider, a rule colour, where every other input's edge is
+    // colour::outline.
     paint::wellBackground (g, getLocalBounds());
-
-    g.setColour (colour::divider);
-    g.drawRoundedRectangle (body, radius::sm, stroke::hairline);
+    paint::inputBox (g, *this, juce::Colours::transparentBlack, colour::outline);
 
     // The glyph is chrome rather than content: it says what the box is for and
     // must not compete with what has been typed into it.

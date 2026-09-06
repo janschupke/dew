@@ -56,6 +56,25 @@ public:
     */
     juce::Label* createSliderTextBox (juce::Slider&) override;
 
+    /** A slider's text box is an INPUT, and it was the one input in dew that
+        nothing here painted: V2 draws a square one-pixel drawRect, so the
+        number between a stepper's + and - was the only box in the window that
+        did not match the two buttons touching it. Every other Label falls
+        through to the base, because a label that is not inside a Slider is
+        text rather than a control.
+    */
+    void drawLabel (juce::Graphics&, juce::Label&) override;
+
+    /** And the editor a text box opens when it is typed into, for the same
+        reason: LookAndFeel_V4 draws that outline as a drawRect too, so a field
+        went square-cornered the moment it was being edited. One override
+        covers the slider's box and DewNumberField's typed edit, which is the
+        other place a juce::TextEditor sits inside a dew input.
+    */
+    void drawTextEditorOutline (juce::Graphics&, int width, int height, juce::TextEditor&) override;
+    void fillTextEditorBackground (juce::Graphics&, int width, int height,
+                                   juce::TextEditor&) override;
+
     /** The + and - a Slider makes for IncDecButtons.
 
         JUCE hands back a plain TextButton, and a plain juce::Button completes a

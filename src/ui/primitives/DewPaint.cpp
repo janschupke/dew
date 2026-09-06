@@ -193,6 +193,17 @@ juce::Rectangle<float> bodyRect (const juce::Component& c)
     return c.getLocalBounds().toFloat().reduced (stroke::whisper);
 }
 
+void inputBox (juce::Graphics& g, const juce::Component& c, juce::Colour fill, juce::Colour border)
+{
+    const auto body = bodyRect (c);
+
+    g.setColour (fill);
+    g.fillRoundedRectangle (body, radius::sm);
+
+    g.setColour (border);
+    g.drawRoundedRectangle (body, radius::sm, stroke::hairline);
+}
+
 void focusRing (juce::Graphics& g, const juce::Component& c, bool focused)
 {
     if (! focused)

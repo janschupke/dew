@@ -197,6 +197,83 @@ juce::Label* DewLookAndFeel::createSliderTextBox (juce::Slider& slider)
     return label;
 }
 
+namespace
+{
+
+/** Whether this Label is the text box a Slider made for itself.
+
+    By its PARENT rather than by a component id or a name: the Label is
+    LookAndFeel_V4's own private SliderLabelComp, which cannot be constructed or
+    subclassed from here, so what it is is where it lives.
+*/
+bool isSliderTextBox (const juce::Label& label)
+{
+    return dynamic_cast<const juce::Slider*> (label.getParentComponent()) != nullptr;
+}
+
+} // namespace
+
+void DewLookAndFeel::drawLabel (juce::Graphics& g, juce::Label& label)
+{
+    if (! isSliderTextBox (label))
+    {
+        LookAndFeel_V4::drawLabel (g, label);
+        return;
+    }
+
+    // The same recipe every other input takes, and the reason it is a shared
+    // painter: the fill and the edge are decided in one place for the field,
+    // the search field and this.
+    paint::inputBox (g, label,
+                     label.isEnabled() ? tokens::colour::surfaceRaised : tokens::colour::surface,
+                     tokens::colour::outline);
+
+    if (label.isBeingEdited())
+        return;
+
+    // Drawn here rather than by delegating, because the base would paint its
+    // own square background and edge underneath - and the two colour ids that
+    // decide those are the ones this override exists to stop using.
+    const auto alpha = label.isEnabled() ? 1.0f : tokens::emphasis::dimmed;
+
+    g.setColour (label.findColour (juce::Label::textColourId).withMultipliedAlpha (alpha));
+    g.setFont (getLabelFont (label));
+
+    const auto text = getLabelBorderSize (label).subtractedFrom (label.getLocalBounds());
+
+    g.drawFittedText (label.getText(), text, label.getJustificationType(), 1,
+                      label.getMinimumHorizontalScale());
+}
+
+void DewLookAndFeel::fillTextEditorBackground (juce::Graphics& g, int width, int height,
+                                               juce::TextEditor& editor)
+{
+    const auto bounds = juce::Rectangle<int> (0, 0, width, height)
+                            .toFloat()
+                            .reduced (tokens::stroke::whisper);
+
+    g.setColour (editor.findColour (juce::TextEditor::backgroundColourId));
+    g.fillRoundedRectangle (bounds, tokens::radius::sm);
+}
+
+void DewLookAndFeel::drawTextEditorOutline (juce::Graphics& g, int width, int height,
+                                            juce::TextEditor& editor)
+{
+    if (! editor.isEnabled())
+        return;
+
+    const auto bounds = juce::Rectangle<int> (0, 0, width, height)
+                            .toFloat()
+                            .reduced (tokens::stroke::whisper);
+
+    // Focused draws the thicker edge, which is what V4 does too - the shape is
+    // the only thing that changes here.
+    g.setColour (editor.findColour (juce::TextEditor::outlineColourId));
+    g.drawRoundedRectangle (bounds, tokens::radius::sm,
+                            editor.hasKeyboardFocus (true) ? tokens::stroke::regular
+                                                           : tokens::stroke::hairline);
+}
+
 void DewLookAndFeel::drawRotarySlider (juce::Graphics& g, int x, int y, int width, int height,
                                        float sliderPos, float, float, juce::Slider& slider)
 {

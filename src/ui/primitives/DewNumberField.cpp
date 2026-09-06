@@ -312,11 +312,8 @@ void DewNumberField::paint (juce::Graphics& g)
 
     auto bounds = paint::bodyRect (*this);
 
-    g.setColour (hovered || dragging ? colour::surfaceHover : colour::surfaceRaised);
-    g.fillRoundedRectangle (bounds, radius::sm);
-
-    g.setColour (dragging ? functionColour : colour::outline);
-    g.drawRoundedRectangle (bounds, radius::sm, stroke::hairline);
+    paint::inputBox (g, *this, hovered || dragging ? colour::surfaceHover : colour::surfaceRaised,
+                     dragging ? functionColour : colour::outline);
 
     auto text = bounds.toNearestInt();
 
