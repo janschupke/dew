@@ -88,9 +88,10 @@ private:
     DewIconButton selectButton { icons::pointer(), tr (StringId::playlist_toolSelect_help) };
     DewIconButton paintButton { icons::pencil(), tr (StringId::playlist_toolPaint_help) };
 
-    ZoomButtons zoomButtons { "Fit the song to the window (0)" };
-    VerticalZoomButtons heightButtons { "Shorter tracks (alt--)", "Taller tracks (alt-+)",
-                                        "Fit the tracks to the window" };
+    ZoomButtons zoomButtons { tr (StringId::playlist_zoomFit_help) };
+    VerticalZoomButtons heightButtons { tr (StringId::playlist_tracksShorter_help),
+                                        tr (StringId::playlist_tracksTaller_help),
+                                        tr (StringId::playlist_tracksFit_help) };
 
     /** Where a vertical rule goes between groups. Recorded during layout and
         painted afterwards, the way the piano roll's strip does it, so the two

@@ -65,6 +65,9 @@
     },
     "pitch": {
       "help": "What a step written on the grid is pitched at"
+    },
+    "zoomFit": {
+      "help": "Fit the pattern to the window (0)"
     }
   },
   "choice": {
@@ -1045,8 +1048,20 @@
     "toolPaint": {
       "help": "Paint tool - drag to lay a run of clips (2)"
     },
+    "tracksFit": {
+      "help": "Fit the tracks to the window"
+    },
+    "tracksShorter": {
+      "help": "Shorter tracks (alt--)"
+    },
+    "tracksTaller": {
+      "help": "Taller tracks (alt-+)"
+    },
     "volume": {
       "help": "How loud this track's clips play"
+    },
+    "zoomFit": {
+      "help": "Fit the song to the window (0)"
     }
   },
   "preferences": {
@@ -1142,10 +1157,12 @@
     },
     "hint": "Zero leaves a property untouched.",
     "step": {
+      "caption": "TIMING",
       "help": "How far a note can move in time, either way. Zero leaves timing alone"
     },
     "title": "Randomize",
     "velocity": {
+      "caption": "VELOCITY",
       "help": "How far a velocity can move, up or down. Zero leaves velocity alone"
     }
   },
@@ -1156,7 +1173,14 @@
       "float32": "32-bit float"
     },
     "dither": {
-      "help": "Adds inaudible noise so 16-bit truncation does not distort quiet passages"
+      "help": "Adds inaudible noise so 16-bit truncation does not distort quiet passages",
+      "label": "Dither"
+    },
+    "fade": {
+      "label": "Fade in and out"
+    },
+    "normalize": {
+      "label": "Normalize"
     },
     "peak": {
       "help": "Where normalizing puts the loudest sample"
@@ -1168,6 +1192,9 @@
     },
     "start": {
       "label": "Render"
+    },
+    "stems": {
+      "label": "One file per mixer track"
     },
     "tail": {
       "help": "Time rendered after the music ends, so release tails are not cut off"

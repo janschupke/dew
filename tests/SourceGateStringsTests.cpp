@@ -121,7 +121,7 @@ bool showsALiteral (const juce::String& raw)
     // transaction's. Translating a string nobody displays is paying a
     // translator for a key the orphan gate would then have to allow.
     for (const auto* sink : { "setTooltip (", "setButtonText (", "setText (", "setTitle (",
-                              "setSuffix (", "showMessage (", "notes.push_back (",
+                              "setSuffix (", "setCaption (", "showMessage (", "notes.push_back (",
                               "helps.push_back (", "warnings.add (", "addSectionHeader (" })
     {
         if (! line.contains (sink))
@@ -150,7 +150,13 @@ bool showsALiteral (const juce::String& raw)
     // takes a path then a sentence, DewLetterToggle a letter then a colour then
     // a sentence, and a LETTER is a literal that stays one. So the letter is
     // excluded by being one character rather than by counting arguments.
-    for (const auto* control : { "DewIconButton", "DewLetterToggle", "DewButton" })
+    // ZoomButtons covers VerticalZoomButtons by substring, and both take
+    // nothing BUT sentences. DewCheckbox's first argument is the label beside
+    // the box - a thing a person reads, unlike the others' tooltips, and four
+    // of the render panel's five were still English long after every other word
+    // in that panel had a key.
+    for (const auto* control :
+         { "DewIconButton", "DewLetterToggle", "DewButton", "DewCheckbox", "ZoomButtons" })
     {
         if (! line.contains (control))
             continue;
@@ -323,7 +329,13 @@ TEST_CASE ("no source shows a person a string literal", "[build][gate][i18n]")
     // Over STATEMENTS, not lines: see statementsWithNumbersOf. The formatter
     // wraps the longest arguments in the tree, and the longest arguments are
     // the sentences a person reads.
-    const auto found = offenders (showsALiteral, {}, statementsWithNumbersOf);
+    // DewGallery is not in the application. tools/shot_main.cpp is its only
+    // caller - it renders the design system to a PNG for a human to look at -
+    // so its captions are read by whoever is working on dew and by nobody else.
+    // Translating them would put words in the catalogue that no user can reach,
+    // which the orphan gate below would then have to be told to allow.
+    const auto found = offenders (showsALiteral, { "ui/design/DewGallery.cpp" },
+                                  statementsWithNumbersOf);
 
     INFO ("English written into the source:\n" << found.joinIntoString ("\n"));
     CHECK (found.isEmpty());

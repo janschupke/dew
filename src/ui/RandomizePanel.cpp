@@ -14,13 +14,13 @@ RandomizePanel::RandomizePanel (NoteTools::RandomizeOptions initial, juce::Strin
 
     velocityField.setRange (0.0, 1.0, 0.01);
     velocityField.setNumDecimalPlaces (2);
-    velocityField.setCaption ("VELOCITY");
+    velocityField.setCaption (tr (StringId::randomize_velocity_caption));
     velocityField.setTooltip (tr (StringId::randomize_velocity_help));
     addAndMakeVisible (velocityField);
 
     stepField.setRange (0.0, 8.0, 1.0);
     stepField.setNumDecimalPlaces (0);
-    stepField.setCaption ("TIMING");
+    stepField.setCaption (tr (StringId::randomize_step_caption));
     stepField.setSuffix (tr (StringId::unit_steps));
     stepField.setTooltip (tr (StringId::randomize_step_help));
     addAndMakeVisible (stepField);

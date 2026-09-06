@@ -158,10 +158,10 @@ private:
 
     DewDropdown scopeBox, formatBox, rateBox, depthBox, mp3QualityBox;
     DewNumberField tailField, peakField;
-    DewCheckbox normalizeToggle { "Normalize" };
-    DewCheckbox fadeToggle { "Fade in and out" };
-    DewCheckbox ditherToggle { "Dither" };
-    DewCheckbox stemsToggle { "One file per mixer track" };
+    DewCheckbox normalizeToggle { tr (StringId::render_normalize_label) };
+    DewCheckbox fadeToggle { tr (StringId::render_fade_label) };
+    DewCheckbox ditherToggle { tr (StringId::render_dither_label) };
+    DewCheckbox stemsToggle { tr (StringId::render_stems_label) };
 
     DewButton renderButton { tr (StringId::render_start_label), DewButton::Role::primary };
     DewButton cancelButton { tr (StringId::dialog_cancel), DewButton::Role::ghost };
