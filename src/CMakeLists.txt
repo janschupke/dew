@@ -1,29 +1,29 @@
-#== == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == ==
-#The layers, as libraries.
+# ==============================================================================
+# The layers, as libraries.
 #
-#dew_model the project : ValueTree, schema, edits, serialization.A leaf.
-#dew_engine the audio : snapshot, transport, sequencer, voices, effects, mix.
-#Opens no files and no devices - that is what makes the whole
-#test suite able to drive it with neither.
-#dew_io everything that touches the OS : audio and MIDI devices, the
-#sample cache, the offline renderer, the exporters.
-#dew_design the design system : tokens, icons, primitives, look and feel.
-#dew_app validated window / view / device state.A leaf that the UI reads.
-#dew_ui the editors.
+#   dew_model   the project: ValueTree, schema, edits, serialization. A leaf.
+#   dew_engine  the audio: snapshot, transport, sequencer, voices, effects, mix.
+#               Opens no files and no devices - that is what makes the whole
+#               test suite able to drive it with neither.
+#   dew_io      everything that touches the OS: audio and MIDI devices, the
+#               sample cache, the offline renderer, the exporters.
+#   dew_design  the design system: tokens, icons, primitives, look and feel.
+#   dew_app     validated window/view/device state. A leaf that the UI reads.
+#   dew_ui      the editors.
 #
-#They were one static library called dew_core, whose own header comment said
-#"model + engine" and which then listed thirty UI translation units.The
-#include graph was already acyclic and correctly directed; nothing enforced it,
-#and dew_render - which is headless and includes no UI at all - linked every
-#piece of the interface and all of juce_gui_extra.
+# They were one static library called dew_core, whose own header comment said
+# "model + engine" and which then listed thirty UI translation units. The
+# include graph was already acyclic and correctly directed; nothing enforced it,
+# and dew_render - which is headless and includes no UI at all - linked every
+# piece of the interface and all of juce_gui_extra.
 #
-#Split, the layering claims are link errors rather than good intentions.
-#== == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == ==
+# Split, the layering claims are link errors rather than good intentions.
+# ==============================================================================
 
-#-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
-#Shared JUCE configuration.INTERFACE, so every layer gets the same definitions
-#and the same include root without one of them owning the others' settings.
-#-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
+# ------------------------------------------------------------------------------
+# Shared JUCE configuration. INTERFACE, so every layer gets the same definitions
+# and the same include root without one of them owning the others' settings.
+# ------------------------------------------------------------------------------
 add_library(dew_juce_config INTERFACE)
 
 target_include_directories(dew_juce_config INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}")
@@ -32,44 +32,44 @@ target_compile_definitions(dew_juce_config
   INTERFACE
     JUCE_WEB_BROWSER=0
     JUCE_USE_CURL=0
-#MP3 ENCODING.JUCE can only decode MP3 on its own; encoding shells out to
-#an installed lame binary, so this ships no LAME code and adds no build
-#dependency.Without the binary the format simply reports itself
-#unavailable - see OfflineRenderer::isAvailable.
+    # MP3 ENCODING. JUCE can only decode MP3 on its own; encoding shells out to
+    # an installed lame binary, so this ships no LAME code and adds no build
+    # dependency. Without the binary the format simply reports itself
+    # unavailable - see OfflineRenderer::isAvailable.
     JUCE_USE_LAME_AUDIO_FORMAT=1
-#Set by juce_add_gui_app / juce_add_console_app on THOSE targets only.A
-#static library shared between them never sees it, and JUCE's headers
-#behave differently without it, so it has to be declared here by hand.
+    # Set by juce_add_gui_app / juce_add_console_app on THOSE targets only. A
+    # static library shared between them never sees it, and JUCE's headers
+    # behave differently without it, so it has to be declared here by hand.
 #
-#It is also exactly the definition a plugin build must NOT have, which is
-#why it lives on an interface target that a plugin could decline rather
-#than baked into every layer.
+    # It is also exactly the definition a plugin build must NOT have, which is
+    # why it lives on an interface target that a plugin could decline rather
+    # than baked into every layer.
     JUCE_STANDALONE_APPLICATION=1
     DEW_VERSION_STRING="${PROJECT_VERSION}${DEW_VERSION_SUFFIX}"
     DEW_JUCE_PIN="${DEW_PIN_JUCE}"
-#The product's name, so the one place that spells it is the project() call.
-#The About window and getApplicationName both read it through BuildInfo, which
-#is where the rest of this binary's provenance already lives.
+# The product's name, so the one place that spells it is the project() call.
+# The About window and getApplicationName both read it through BuildInfo, which
+# is where the rest of this binary's provenance already lives.
     DEW_PRODUCT_NAME="${PROJECT_NAME}"
 )
 
-#-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
-#JUCE itself, compiled once.
+# ------------------------------------------------------------------------------
+# JUCE itself, compiled once.
 #
-#A JUCE module is an INTERFACE library carrying its own .cpp / .mm files in
-#INTERFACE_SOURCES, so before this every layer, tool and test binary compiled
-#them again : 265 compiles of 25 files, and 1.4 GB of byte-identical objects in
-#a 3.1 GB tree.dew_<module> is that module built once.The link EDGES below are
-#unchanged - dew_model still gets data_structures and graphics and not
-#gui_basics - and so is every define reaching dew's own sources.
-#-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
+# A JUCE module is an INTERFACE library carrying its own .cpp/.mm files in
+# INTERFACE_SOURCES, so before this every layer, tool and test binary compiled
+# them again: 265 compiles of 25 files, and 1.4 GB of byte-identical objects in
+# a 3.1 GB tree. dew_<module> is that module built once. The link EDGES below are
+# unchanged - dew_model still gets data_structures and graphics and not
+# gui_basics - and so is every define reaching dew's own sources.
+# ------------------------------------------------------------------------------
 include(JuceOnce)
 dew_juce_build_once()
 
-#The demo library, embedded so the Demos menu works from a build with no
-#source tree beside it.The files under examples / are generated by
-# `dew_render -- write - demos examples` and committed, so what ships is exactly
-#what the tests and CI render.
+# The demo library, embedded so the Demos menu works from a build with no
+# source tree beside it. The files under examples/ are generated by
+# `dew_render --write-demos examples` and committed, so what ships is exactly
+# what the tests and CI render.
 juce_add_binary_data(dew_demo_data
   HEADER_NAME DemoData.h
   NAMESPACE   DemoData
@@ -83,28 +83,28 @@ juce_add_binary_data(dew_demo_data
     "${CMAKE_SOURCE_DIR}/examples/arrangement.dew"
     "${CMAKE_SOURCE_DIR}/examples/amber.dew"
 
-#The SOURCES of the compiled ones, because a demo that opens a score
-#compiled is a demo whose.dew must not drift from the text that made it.
-#drift.score comes first : the wavetable demo COMPILES it at build time, so
-#the bytes have to be in the binary before that demo can be built at all.
+    # The SOURCES of the compiled ones, because a demo that opens a score
+    # compiled is a demo whose .dew must not drift from the text that made it.
+    # drift.score comes first: the wavetable demo COMPILES it at build time, so
+    # the bytes have to be in the binary before that demo can be built at all.
     "${CMAKE_SOURCE_DIR}/examples/amber.score"
     "${CMAKE_SOURCE_DIR}/examples/drift.score"
     "${CMAKE_SOURCE_DIR}/examples/neon.score"
 )
 
-#The factory presets, embedded for the reason the demos are : what the picker
-#offers is then the file that was committed, not a table only the program can
-#see.Generated by `dew_render-- write - presets presets`.
+# The factory presets, embedded for the reason the demos are: what the picker
+# offers is then the file that was committed, not a table only the program can
+# see. Generated by `dew_render --write-presets presets`.
 #
-#A target of its own rather than more SOURCES on dew_demo_data : both libraries
-#look their files up by ORIGINAL FILENAME, so one namespace would let
-#DemoLibrary::jsonFor return a reverb preset to the Demos menu.
+# A target of its own rather than more SOURCES on dew_demo_data: both libraries
+# look their files up by ORIGINAL FILENAME, so one namespace would let
+# DemoLibrary::jsonFor return a reverb preset to the Demos menu.
 #
-#Listed rather than globbed, deliberately.A glob does not re - run when a file
-#is added, so a new preset would look missing on the machine that wrote it
-#while CI - which always configures fresh - stayed green.A test walks this
-#list against PresetFactory in both directions, so a file in one and not the
-#other fails by name.
+# Listed rather than globbed, deliberately. A glob does not re-run when a file
+# is added, so a new preset would look missing on the machine that wrote it
+# while CI - which always configures fresh - stayed green. A test walks this
+# list against PresetFactory in both directions, so a file in one and not the
+# other fails by name.
 juce_add_binary_data(dew_preset_data
   HEADER_NAME PresetData.h
   NAMESPACE   PresetData
@@ -151,19 +151,19 @@ juce_add_binary_data(dew_preset_data
     "${CMAKE_SOURCE_DIR}/presets/stepped.dewpreset"
 )
 
-#-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
-#dew_lang - the score language.Depends on nothing at all, JUCE included.
+# ------------------------------------------------------------------------------
+# dew_lang - the score language. Depends on nothing at all, JUCE included.
 #
-#A compiler that cannot reach into the document is one whose only output is its
-#IR, which is what keeps the boundary honest.It also makes the tests instant -
-#no ScopedJuceInitialiser, no message thread - lets diagnostics use plain UTF - 8
-#byte offsets rather than juce::String's character indices, and keeps parser
-#iteration off the DAW's build graph.
+# A compiler that cannot reach into the document is one whose only output is its
+# IR, which is what keeps the boundary honest. It also makes the tests instant -
+# no ScopedJuceInitialiser, no message thread - lets diagnostics use plain UTF-8
+# byte offsets rather than juce::String's character indices, and keeps parser
+# iteration off the DAW's build graph.
 #
-#The juce_recommended_* targets carry compile options only, no include
-#directories, so linking them adds no JUCE while keeping this library under the
-#same warnings - as - errors gate as everything else.That it stays JUCE - free is
-#checked by a source gate, because a header - only include would still compile.
+# The juce_recommended_* targets carry compile options only, no include
+# directories, so linking them adds no JUCE while keeping this library under the
+# same warnings-as-errors gate as everything else. That it stays JUCE-free is
+# checked by a source gate, because a header-only include would still compile.
 # ------------------------------------------------------------------------------
 # dew_i18n - the string catalogue. Depends on juce_core and nothing else.
 #
@@ -250,7 +250,7 @@ target_link_libraries(dew_i18n
     juce::juce_recommended_warning_flags
 )
 
-#-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
+# ------------------------------------------------------------------------------
 add_library(dew_lang STATIC
   lang/MessageArg.cpp
   lang/MessageFormat.cpp
@@ -300,9 +300,9 @@ target_link_libraries(dew_lang
     juce::juce_recommended_warning_flags
 )
 
-#-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
-#dew_model - the document.Depends on nothing of dew's.
-#-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
+# ------------------------------------------------------------------------------
+# dew_model - the document. Depends on nothing of dew's.
+# ------------------------------------------------------------------------------
 add_library(dew_model STATIC
   model/BuildInfo.cpp
 
@@ -360,11 +360,11 @@ target_link_libraries(dew_model
     juce::juce_recommended_warning_flags
 )
 
-#-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
-#dew_engine - the audio.NOT juce_audio_devices, NOT juce_audio_formats : an
-#engine that cannot open a device or a file is one a test can drive with
-#neither, and one a plugin could host later without lying to its host.
-#-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
+# ------------------------------------------------------------------------------
+# dew_engine - the audio. NOT juce_audio_devices, NOT juce_audio_formats: an
+# engine that cannot open a device or a file is one a test can drive with
+# neither, and one a plugin could host later without lying to its host.
+# ------------------------------------------------------------------------------
 add_library(dew_engine STATIC
   engine/Biquad.cpp
   engine/EffectModulePool.cpp
@@ -405,9 +405,9 @@ target_link_libraries(dew_engine
     juce::juce_recommended_warning_flags
 )
 
-#-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
-#dew_io - the OS.Devices, files, threads that write them.
-#-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
+# ------------------------------------------------------------------------------
+# dew_io - the OS. Devices, files, threads that write them.
+# ------------------------------------------------------------------------------
 add_library(dew_io STATIC
   io/SamplePool.cpp
     io/SoundFontFile.cpp
@@ -481,9 +481,9 @@ target_link_libraries(dew_control
     juce::juce_recommended_warning_flags
 )
 
-#-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
-#dew_design - the vocabulary.Knows nothing about a project.
-#-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
+# ------------------------------------------------------------------------------
+# dew_design - the vocabulary. Knows nothing about a project.
+# ------------------------------------------------------------------------------
 add_library(dew_design STATIC
   ui/design/Tokens.cpp
   ui/design/Animator.cpp
@@ -519,10 +519,10 @@ target_link_libraries(dew_design
     juce::juce_recommended_warning_flags
 )
 
-#-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
-#dew_app - stored settings.A leaf the UI reads, which is the opposite of where
-#an "app" layer usually sits; it is named for what it holds, not for a rank.
-#-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
+# ------------------------------------------------------------------------------
+# dew_app - stored settings. A leaf the UI reads, which is the opposite of where
+# an "app" layer usually sits; it is named for what it holds, not for a rank.
+# ------------------------------------------------------------------------------
 add_library(dew_app STATIC
   app/Settings.cpp
   app/Diagnostics.cpp
@@ -539,9 +539,9 @@ target_link_libraries(dew_app
     juce::juce_recommended_warning_flags
 )
 
-#-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
-#dew_ui - the editors.
-#-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
+# ------------------------------------------------------------------------------
+#   dew_ui      the editors.
+# ------------------------------------------------------------------------------
 add_library(dew_ui STATIC
   ui/DewDialog.cpp
   ui/ConfirmPanel.cpp
@@ -645,7 +645,7 @@ target_link_libraries(dew_ui
     juce::juce_recommended_warning_flags
 )
 
-#-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
+# ------------------------------------------------------------------------------
 
 juce_add_gui_app(dew
   PRODUCT_NAME              "dew"

@@ -40,6 +40,34 @@ find src tests tools \( -name '*.cpp' -o -name '*.h' \) -print0 \
   | xargs -0 "$CLANG_FORMAT" --dry-run -Werror
 echo "ok    $count files formatted as .clang-format says"
 
+# CMake files are OUTSIDE the sweep above, and that is how they came to be
+# damaged: clang-format was run over src/CMakeLists.txt once, read every `#` as
+# a preprocessor directive and reformatted the prose after it as C++. Seventy
+# four comment lines became "#dew_model the project : ValueTree, ... .A leaf.",
+# the banner rules became "#== == ==", and nothing in the tree could see it -
+# so the file's next author wrote MORE comments in the broken style.
+#
+# dew's CMake comment is always "# ", so the damage has a one-character
+# signature and the check is a grep. CPM.cmake is upstream's file, pinned by
+# sha256 in check-deps.sh, and dew does not get to judge its style.
+cmake_count=0
+cmake_bad=""
+
+while IFS= read -r f; do
+  cmake_count=$((cmake_count + 1))
+  hits=$(grep -nH '^#[A-Za-z]' "$f" || true)
+  [[ -n $hits ]] && cmake_bad="${cmake_bad}${hits}"$'\n'
+done < <(git ls-files '*.cmake' 'CMakeLists.txt' '*/CMakeLists.txt' \
+         | grep -Ev '^(cmake/CPM\.cmake|cpm-package-lock\.cmake)$')
+
+if [[ -n $cmake_bad ]]; then
+  echo "FAIL  a CMake comment is missing the space after '#' - clang-format has"
+  echo "      probably been run over it, which also mangles the prose:"
+  printf '%s' "$cmake_bad" | sed 's/^/      /'
+  exit 1
+fi
+echo "ok    $cmake_count cmake files carry '# ' comments"
+
 step "website"
 # Before the C++ build: it fails cheapest first, and it needs nothing the build
 # produces. That the JSON it reads is CURRENT is a separate question, answered
