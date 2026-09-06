@@ -111,14 +111,14 @@ TEST_CASE ("a tooltip is not drawn in JUCE's hard-coded bold", "[design][type]")
 TEST_CASE ("an empty state reads louder than a caption", "[design][type]")
 {
     PaintProbe emptyState { [] (juce::Graphics& g, juce::Rectangle<int> b)
-                            { paint::emptyState (g, b, "No effects yet - use + to add one"); } };
+                            { paint::emptyState (g, b, StringId::effect_chain_empty); } };
 
     // What the effect chain used to do: type::small in textDisabled.
     PaintProbe asItWas { [] (juce::Graphics& g, juce::Rectangle<int> b)
                          {
                              g.setColour (tokens::colour::textDisabled);
                              g.setFont (tokens::type::font (tokens::type::small));
-                             g.drawText ("No effects yet - use + to add one", b,
+                             g.drawText (tr (StringId::effect_chain_empty), b,
                                          juce::Justification::centred, false);
                          } };
 
@@ -128,10 +128,10 @@ TEST_CASE ("an empty state reads louder than a caption", "[design][type]")
 TEST_CASE ("a section heading is not the same size as a control caption", "[design][type]")
 {
     PaintProbe heading { [] (juce::Graphics& g, juce::Rectangle<int> b)
-                         { paint::sectionHeading (g, b, "EFFECTS"); } };
+                         { paint::sectionHeading (g, b, StringId::effect_chain_heading); } };
 
     PaintProbe caption { [] (juce::Graphics& g, juce::Rectangle<int> b)
-                         { paint::caption (g, b, "EFFECTS"); } };
+                         { paint::caption (g, b, StringId::effect_chain_heading); } };
 
     // "EFFECTS" is a heading and "CUTOFF" is a caption; drawing both at 10pt is
     // what made a panel's own title smaller than the things inside it.

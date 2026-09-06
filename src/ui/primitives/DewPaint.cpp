@@ -28,7 +28,7 @@ using namespace tokens;
 
 // --- shared painting ---------------------------------------------------------
 
-void styleCaption (DewLabel& label, const juce::String& text)
+void styleCaption (DewLabel& label, Translated text)
 {
     label.setText (text, juce::dontSendNotification);
     label.setFont (type::font (type::caption));
@@ -184,7 +184,7 @@ void beyondEnd (juce::Graphics& g, juce::Rectangle<int> bounds, float edgeX)
                                         (float) bounds.getHeight()));
 }
 
-void caption (juce::Graphics& g, juce::Rectangle<int> bounds, const juce::String& text,
+void caption (juce::Graphics& g, juce::Rectangle<int> bounds, Translated text,
               juce::Justification justification)
 {
     g.setColour (colour::textSecondary);
@@ -192,7 +192,7 @@ void caption (juce::Graphics& g, juce::Rectangle<int> bounds, const juce::String
     g.drawText (text, bounds, justification, false);
 }
 
-void sectionHeading (juce::Graphics& g, juce::Rectangle<int> bounds, const juce::String& text,
+void sectionHeading (juce::Graphics& g, juce::Rectangle<int> bounds, Translated text,
                      juce::Justification justification)
 {
     g.setColour (colour::textSecondary);
@@ -200,7 +200,7 @@ void sectionHeading (juce::Graphics& g, juce::Rectangle<int> bounds, const juce:
     g.drawText (text, bounds, justification, false);
 }
 
-void emptyState (juce::Graphics& g, juce::Rectangle<int> bounds, const juce::String& text,
+void emptyState (juce::Graphics& g, juce::Rectangle<int> bounds, Translated text,
                  juce::Justification justification)
 {
     // textSecondary, not textDisabled. An empty state is the one thing on an

@@ -421,7 +421,7 @@ void EffectChainComponent::paint (juce::Graphics& g)
     if (! chainOwner.isValid())
     {
         paint::emptyState (g, getLocalBounds().removeFromTop (size::rowHeight * 2),
-                           "Nothing selected");
+                           StringId::effect_chain_noSelection);
         return;
     }
 
@@ -433,7 +433,7 @@ void EffectChainComponent::paint (juce::Graphics& g)
 
         paint::inertArea (g, empty);
 
-        paint::emptyState (g, empty.reduced (space::md, 0), "No effects yet - use + to add one",
+        paint::emptyState (g, empty.reduced (space::md, 0), StringId::effect_chain_empty,
                            juce::Justification::centredLeft);
     }
 

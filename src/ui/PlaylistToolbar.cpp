@@ -41,7 +41,7 @@ PlaylistToolbar::PlaylistToolbar()
     };
     addAndMakeVisible (snapBox);
 
-    styleCaption (snapCaption, "SNAP");
+    styleCaption (snapCaption, StringId::playlist_snap_caption);
     addAndMakeVisible (snapCaption);
 
     zoomButtons.onZoom = [this] (double factor)

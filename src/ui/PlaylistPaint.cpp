@@ -472,7 +472,7 @@ void PlaylistComponent::paint (juce::Graphics& g)
 
     if (trackIndex == 0)
     {
-        paint::emptyState (g, getLocalBounds(), "This project has no playlist tracks");
+        paint::emptyState (g, getLocalBounds(), StringId::playlist_empty);
     }
     paint::cursorOutline (g, boundsForCell (cursor.getPosition().x, cursor.getPosition().y),
                           cursor.isPlaced());

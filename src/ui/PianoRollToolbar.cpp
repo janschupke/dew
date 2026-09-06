@@ -30,7 +30,7 @@ PianoRollToolbar::PianoRollToolbar()
     };
     addAndMakeVisible (snapBox);
 
-    styleCaption (snapCaption, "SNAP");
+    styleCaption (snapCaption, StringId::pianoRoll_snap_caption);
     addAndMakeVisible (snapCaption);
 
     channelBox.setTooltip (tr (StringId::pianoRoll_channel_help));
@@ -45,7 +45,7 @@ PianoRollToolbar::PianoRollToolbar()
     };
     addAndMakeVisible (channelBox);
 
-    styleCaption (channelCaption, "CHANNEL");
+    styleCaption (channelCaption, StringId::pianoRoll_channel_caption);
     addAndMakeVisible (channelCaption);
 
     // Zoom-to-fit used to be reachable only by double-clicking the piano keys,

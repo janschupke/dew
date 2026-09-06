@@ -38,7 +38,7 @@ void StepGridComponent::paintWaveformRow (juce::Graphics& g, const juce::ValueTr
 
     if (pool == nullptr || path.isEmpty())
     {
-        paint::emptyState (g, rowBounds, "No recording - arm this channel and press Record");
+        paint::emptyState (g, rowBounds, StringId::channelRack_recordingEmpty);
         return;
     }
 
@@ -46,7 +46,8 @@ void StepGridComponent::paintWaveformRow (juce::Graphics& g, const juce::ValueTr
 
     if (! entry.isValid())
     {
-        paint::emptyState (g, rowBounds, "Missing audio: " + path);
+        paint::emptyState (g, rowBounds,
+                           tr (StringId::channelRack_audioMissing, Args {}.with ("file", path)));
         return;
     }
 
@@ -234,7 +235,7 @@ void StepGridComponent::paint (juce::Graphics& g)
 
     if (rows == 0)
     {
-        paint::emptyState (g, getLocalBounds(), "No channels. Use + Channel to add one.");
+        paint::emptyState (g, getLocalBounds(), StringId::channelRack_empty);
     }
     paint::cursorOutline (g, getBoundsForCell (cursor.getPosition().y, cursor.getPosition().x),
                           cursor.isPlaced());

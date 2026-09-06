@@ -312,8 +312,8 @@ void PianoRollComponent::paintVelocityLane (juce::Graphics& g)
     g.drawHorizontalLine (area.getY(), 0.0f, (float) getWidth());
 
     // Label gutter, so the lane is identifiable rather than a mystery strip.
-    paint::sectionHeading (g, { 0, area.getY(), size::gutterKeyboard, area.getHeight() }, "VEL",
-                           juce::Justification::centred);
+    paint::sectionHeading (g, { 0, area.getY(), size::gutterKeyboard, area.getHeight() },
+                           StringId::pianoRoll_velocity_caption, juce::Justification::centred);
 
     const auto channelId = editorState.getSelectedChannelId();
     const auto colourForChannel = channelColour();
@@ -418,7 +418,7 @@ void PianoRollComponent::paint (juce::Graphics& g)
     if (! ProjectEdits::findChannel (document.getState(), editorState.getSelectedChannelId())
               .isValid())
     {
-        paint::emptyState (g, noteArea(), "Select a channel in the Channel Rack");
+        paint::emptyState (g, noteArea(), StringId::pianoRoll_empty);
     }
 }
 

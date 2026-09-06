@@ -328,8 +328,7 @@ void SampleSection::paint (juce::Graphics& g)
     if (found == nullptr)
     {
         paint::emptyState (g, getWaveformBounds(),
-                           sample.isValid() ? "No audio - arm this channel and record"
-                                            : "No channel selected");
+                           sample.isValid() ? StringId::sample_empty : StringId::sample_noChannel);
         return;
     }
 

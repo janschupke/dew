@@ -3,6 +3,7 @@
 #include <juce_gui_basics/juce_gui_basics.h>
 
 #include "engine/WaveformPeaks.h"
+#include "i18n/Translated.h"
 #include "ui/design/Tokens.h"
 #include "ui/primitives/DewButtons.h"
 
@@ -23,7 +24,7 @@ namespace dew
     file-local helper, and the two toolbars that wanted the same word next to
     the same kind of control would each have grown their own.
 */
-void styleCaption (DewLabel&, const juce::String& text);
+void styleCaption (DewLabel&, Translated text);
 
 namespace paint
 {
@@ -90,14 +91,14 @@ void beyondEnd (juce::Graphics&, juce::Rectangle<int>, float edgeX);
 /** A control's caption - the word under a knob or beside a number field.
     The smallest thing in the system, and deliberately so.
 */
-void caption (juce::Graphics&, juce::Rectangle<int>, const juce::String&,
+void caption (juce::Graphics&, juce::Rectangle<int>, Translated,
               juce::Justification = juce::Justification::centredLeft);
 
 /** A panel's heading. Distinct from caption(): "EFFECTS" is a heading and
     "CUTOFF" is a caption, and drawing both at the same size was why the
     effect chain's own title read as smaller than the things inside it.
 */
-void sectionHeading (juce::Graphics&, juce::Rectangle<int>, const juce::String&,
+void sectionHeading (juce::Graphics&, juce::Rectangle<int>, Translated,
                      juce::Justification = juce::Justification::centredLeft);
 
 /** Every "there is nothing here yet" message.
@@ -107,7 +108,7 @@ void sectionHeading (juce::Graphics&, juce::Rectangle<int>, const juce::String&,
     10, 11 and 13 point, in two different greys - and the 11pt textDisabled
     one was unreadable against the hatch behind it.
 */
-void emptyState (juce::Graphics&, juce::Rectangle<int>, const juce::String&,
+void emptyState (juce::Graphics&, juce::Rectangle<int>, Translated,
                  juce::Justification = juce::Justification::centred);
 
 /** A component's own rectangle, inset half a pixel.

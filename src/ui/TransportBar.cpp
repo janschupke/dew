@@ -45,7 +45,7 @@ TransportBar::TransportBar (ProjectDocument& d, AudioEngine& e, EditorState& s)
 
     // A pattern name says nothing about being a pattern - "Groove" beside a
     // tempo and a time signature reads as one more setting.
-    styleCaption (patternCaption, "PATTERN");
+    styleCaption (patternCaption, StringId::transport_pattern_caption);
     addAndMakeVisible (patternCaption);
 
     playButton.onClick = [this]

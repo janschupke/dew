@@ -68,7 +68,10 @@
     },
     "zoomFit": {
       "help": "Fit the pattern to the window (0)"
-    }
+    },
+    "empty": "No channels. Use + Channel to add one.",
+    "recordingEmpty": "No recording - arm this channel and press Record",
+    "audioMissing": "Missing audio: {file}"
   },
   "choice": {
     "distortionMode": {
@@ -412,7 +415,9 @@
     "chain": {
       "title": "Effect chain",
       "heading": "EFFECTS",
-      "headingFor": "EFFECTS - {name}"
+      "headingFor": "EFFECTS - {name}",
+      "empty": "No effects yet - use + to add one",
+      "noSelection": "Nothing selected"
     },
     "chorus": {
       "name": "Chorus"
@@ -572,6 +577,10 @@
   },
   "midi": {
     "channel": "Channel {number}",
+    "empty": "No MIDI inputs were found",
+    "inputs": {
+      "caption": "INPUTS"
+    },
     "notConnected": "not connected",
     "omni": "Omni (all channels)",
     "title": "MIDI settings"
@@ -972,6 +981,7 @@
   },
   "pianoRoll": {
     "channel": {
+      "caption": "CHANNEL",
       "help": "Channel being edited"
     },
     "octaveDown": {
@@ -981,6 +991,7 @@
       "help": "Up an octave (Shift+Up)"
     },
     "snap": {
+      "caption": "SNAP",
       "help": "Grid the editing gestures snap to"
     },
     "title": "Piano roll",
@@ -1016,10 +1027,15 @@
     },
     "rowsFit": {
       "help": "Fit the notes to the window (alt-0)"
-    }
+    },
+    "velocity": {
+      "caption": "VEL"
+    },
+    "empty": "Select a channel in the Channel Rack"
   },
   "playlist": {
     "snap": {
+      "caption": "SNAP",
       "help": "Grid a clip lands on - shift while dragging suspends it"
     },
     "addAutomation": {
@@ -1073,7 +1089,8 @@
     },
     "zoomFit": {
       "help": "Fit the song to the window (0)"
-    }
+    },
+    "empty": "This project has no playlist tracks"
   },
   "preferences": {
     "audio": {
@@ -1219,7 +1236,9 @@
     },
     "loop": {
       "help": "Loop the sample to fill the clip"
-    }
+    },
+    "empty": "No audio - arm this channel and record",
+    "noChannel": "No channel selected"
   },
   "score": {
     "compile": {
@@ -1283,6 +1302,7 @@
     },
     "newPattern": "New pattern",
     "pattern": {
+      "caption": "PATTERN",
       "help": "Which pattern the rack and the piano roll are editing"
     },
     "tempo": {

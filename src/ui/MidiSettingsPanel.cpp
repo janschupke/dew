@@ -274,12 +274,13 @@ void MidiSettingsPanel::paint (juce::Graphics& g)
 
     auto area = contentBounds();
 
-    paint::sectionHeading (g, area.removeFromTop (size::controlHeightSm), "INPUTS");
+    paint::sectionHeading (g, area.removeFromTop (size::controlHeightSm),
+                           StringId::midi_inputs_caption);
 
     paint::wellBackground (g, listViewport.getBounds());
 
     if (rows.isEmpty())
-        paint::emptyState (g, listViewport.getBounds(), "No MIDI inputs were found");
+        paint::emptyState (g, listViewport.getBounds(), StringId::midi_empty);
 
     g.setFont (type::font (type::caption));
     g.setColour (colour::textSecondary);
