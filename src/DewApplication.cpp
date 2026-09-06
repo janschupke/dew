@@ -462,10 +462,15 @@ bool DewApplication::perform (const InvocationInfo& info)
 
         case CommandIDs::transportPlayStop:
         {
+            // Play and PAUSE. Space used to call stop, which in this engine
+            // only cleared `playing` - so it left the playhead wherever the
+            // music happened to be when the key went down, and there was no way
+            // to leave off and come back to a chosen place. Pause returns to
+            // the start marker; the stop button is still the one that rewinds.
             auto& engine = main->getEngine();
 
             if (engine.isPlaying())
-                engine.stop();
+                engine.pause();
             else
                 engine.play();
 

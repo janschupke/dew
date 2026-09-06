@@ -64,7 +64,11 @@ ChannelRackComponent::ChannelRackComponent (ProjectDocument& d, AudioEngine& e, 
         return style;
     };
 
-    ruler.onSeek = [this] (double steps) { engine.setPlayheadSteps (steps); };
+    // The marker as well as the playhead, which is what makes a click on a
+    // ruler say where playback BEGINS rather than only where it is now: pause
+    // comes back here. setStartMarkerSteps moves both, so the two cannot
+    // disagree and the ruler has one thing to draw.
+    ruler.onSeek = [this] (double steps) { engine.setStartMarkerSteps (steps); };
 
     // The same span the piano roll writes, so the sequencer's ruler is no
     // longer the one place in the app where a loop can be seen but not chosen.

@@ -153,7 +153,7 @@ The piano roll, the playlist and the step grid each hold a `CanvasCursor`
 
 ## Why it is this way
 
-⌘N ⌘O ⌘S ⇧⌘S · ⌘E render · ⌘R compile score · ⌘Z ⇧⌘Z · Space play · R record · ⌘L
+⌘N ⌘O ⌘S ⇧⌘S · ⌘E render · ⌘R compile score · ⌘Z ⇧⌘Z · Space play/pause · R record · ⌘L
 pattern/song · ⌘K add channel · ⌘, preferences.
 
 ⌘, is the settings window on every platform, so it is the one stroke this table would be
@@ -291,6 +291,30 @@ right-click opens a menu instead — a clip is an object with properties and a s
 
 On any ruler: drag to scrub, shift-drag to select a span, ⌘-click to span from the
 playhead, shift-click or double-click to drop it. **The span is what plays.**
+
+**Where playback begins is the start marker**, and a plain click or scrub-drag on any
+ruler is what sets it. There are three positions and they are one number between them:
+
+| | |
+|---|---|
+| a ruler click or drag | the marker moves, and the playhead with it |
+| **Space** while playing | pause: stop, and back to the marker |
+| **Space** while stopped | play, from where the playhead is |
+| **Stop** (and `home`) | the beginning: the playhead AND the marker |
+
+`AudioEngine::pause` is the call that did not exist. `stop` only ever cleared `playing`,
+so pause and stop were the same thing and the only difference at the transport bar was
+that Stop also called `rewind`. Rewind clears the marker as well as the playhead,
+because a marker left standing at bar nine would show one place on the ruler while the
+next press of space started at another.
+
+**The moving line shows only while the transport is moving.** What stays is the head on
+the ruler, which is where playback will begin — a fact about a stopped transport rather
+than about a running one, and the thing a click on the ruler moves. It used to be drawn
+dimmed while stopped, on the argument that hiding it made "reset the position" look like
+"lose the position"; the head answers that instead. `timelinePaint::showsPlayheadLine`
+reads the eased brightness rather than `playing`, so the line fades out over the same
+70ms it fades in over.
 
 Right-click a rack row or a track header to rename, add or remove it. **+ Channel** and
 **+ Track** sit under the last one, where the next will appear.

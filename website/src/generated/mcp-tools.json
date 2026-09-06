@@ -1473,14 +1473,14 @@
     {
       "name": "transport_write",
       "scope": "write",
-      "summary": "Start or stop playback, choose song or pattern mode, and move the playhead.",
+      "summary": "Start or pause playback, choose song or pattern mode, and move the playhead or the start marker.",
       "doc": "Not an edit: nothing here touches the document or the undo history. It is what the transport bar does.\n\nAny pending change to the document is applied to the engine first, so playing immediately after writing notes plays the notes you just wrote.",
       "args": [
         {
           "name": "playing",
           "kind": "flag",
           "required": false,
-          "doc": "True plays, false stops.",
+          "doc": "True plays, false pauses - which returns to the start marker.",
           "holdsBareElements": false,
           "fields": []
         },
@@ -1501,10 +1501,18 @@
           "fields": []
         },
         {
+          "name": "startMarkerSteps",
+          "kind": "number",
+          "required": false,
+          "doc": "Where playback begins and where pausing returns to, in steps. Moves the playhead with it.",
+          "holdsBareElements": false,
+          "fields": []
+        },
+        {
           "name": "rewind",
           "kind": "flag",
           "required": false,
-          "doc": "Return to the start.",
+          "doc": "Return to the start: the playhead and the marker both.",
           "holdsBareElements": false,
           "fields": []
         }
@@ -1513,7 +1521,7 @@
     {
       "name": "transport_read",
       "scope": "read",
-      "summary": "Report whether dew is playing, and in which mode.",
+      "summary": "Report whether dew is playing, in which mode, and where it is.",
       "doc": "A read, so it is available to a read-only grant. Use it to tell whether something you started is still going.",
       "args": []
     },

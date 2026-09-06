@@ -289,8 +289,17 @@ TEST_CASE ("rewind zeroes the position even when nothing is processing", "[stepg
     REQUIRE (juce::exactlyEqual (engine.getPlayheadSteps(), 0.0));
 }
 
-TEST_CASE ("the indicator is drawn while stopped, and Stop puts it back", "[stepgrid][transport]")
+TEST_CASE ("the indicator shows while the transport moves, and not when it is still",
+           "[stepgrid][transport]")
 {
+    /*  The moving line is a fact about a MOVING transport.
+
+        It used to be drawn while stopped as well, dimmed, on the argument that
+        hiding it made "reset the position" look like "lose the position". That
+        argument is answered rather than abandoned: the head on the ruler stays
+        and says where playback will begin, and it is what a click there moves -
+        so the grid is free to say only what is actually happening in it.
+    */
     const juce::ScopedJuceInitialiser_GUI juceInit;
 
     GridHarness h;
@@ -329,13 +338,11 @@ TEST_CASE ("the indicator is drawn while stopped, and Stop puts it back", "[step
         return bestScore > (double) rowsHeight * 0.5 ? best : -1;
     };
 
-    // Stopped and at zero: there should still be an indicator, at the start.
-    // Before this it was gated on isPlaying() and there was none at all.
-    const auto atRest = indicatorX (h.render(), h.grid.getWidth());
-
-    INFO ("indicator column while stopped at zero: " << atRest);
-    REQUIRE (atRest >= 0);
-    REQUIRE (atRest < (int) h.grid.getTimeline().pixelsPerStep);
+    // Stopped: nothing. This is the control case for everything below - a
+    // probe that found the line in every frame would prove nothing about the
+    // one it is meant to be in.
+    INFO ("indicator column while stopped at zero: " << indicatorX (h.render(), h.grid.getWidth()));
+    REQUIRE (indicatorX (h.render(), h.grid.getWidth()) == -1);
 
     // Run the transport far enough to move it, then Stop.
     h.engine.prepare (44100.0, 512);
@@ -354,19 +361,18 @@ TEST_CASE ("the indicator is drawn while stopped, and Stop puts it back", "[step
     const auto whilePlaying = indicatorX (h.render(), h.grid.getWidth());
 
     INFO ("indicator column while playing: " << whilePlaying);
-    REQUIRE (whilePlaying > atRest + (int) h.grid.getTimeline().pixelsPerStep);
+    REQUIRE (whilePlaying > (int) h.grid.getTimeline().pixelsPerStep);
 
     // Stop and rewind, exactly as the transport bar's Stop button does. The
-    // indicator has to be back at the start in the very next frame, without
-    // another processBlock and without pressing Play again.
+    // line goes in the very next frame, without another processBlock and
+    // without pressing Play again - and the POSITION is back at the start,
+    // which is the half the pixels used to be standing in for.
     h.engine.stop();
     h.engine.rewind();
 
-    const auto afterStop = indicatorX (h.render(), h.grid.getWidth());
-
-    INFO ("indicator column after Stop: " << afterStop);
-    REQUIRE (afterStop >= 0);
-    REQUIRE (afterStop < (int) h.grid.getTimeline().pixelsPerStep);
+    INFO ("indicator column after Stop: " << indicatorX (h.render(), h.grid.getWidth()));
+    REQUIRE (indicatorX (h.render(), h.grid.getWidth()) == -1);
+    REQUIRE (h.engine.getPlayheadSteps() < 1.0);
 }
 
 TEST_CASE ("the sequencer zooms, and keeps the zoom it is given", "[ui][stepgrid][zoom]")

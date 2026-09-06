@@ -237,9 +237,9 @@ void PianoRollComponent::paintNotes (juce::Graphics& g)
     }
 
     // --- position indicator --------------------------------------------------
-    // Drawn while stopped as well, dimmed. Hiding it on stop made "reset the
-    // position" look identical to "lose the position", and left nothing for a
-    // click on the ruler to move.
+    // The moving line, and only while the transport is moving - see
+    // timelinePaint::showsPlayheadLine. Where playback will begin is said by
+    // the head on the ruler above, which is what a click there moves.
     if (engine.getMode() == Transport::Mode::pattern)
     {
         const auto playing = engine.isPlaying();
@@ -253,8 +253,9 @@ void PianoRollComponent::paintNotes (juce::Graphics& g)
                                            { x, (float) area.getY(), (float) timeline.pixelsPerStep,
                                              (float) area.getHeight() });
 
-        timelinePaint::playheadLine (g, x, { (float) area.getY(), (float) area.getBottom() },
-                                     playhead.brightness());
+        if (timelinePaint::showsPlayheadLine (playhead.brightness()))
+            timelinePaint::playheadLine (g, x, { (float) area.getY(), (float) area.getBottom() },
+                                         playhead.brightness());
     }
 
     // --- rubber band ---------------------------------------------------------

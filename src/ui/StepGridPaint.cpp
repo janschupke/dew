@@ -214,9 +214,9 @@ void StepGridComponent::paint (juce::Graphics& g)
         paint::beyondEnd (g, { (int) endX, 0, getWidth() - (int) endX, rowsHeight }, endX);
 
     // --- position indicator --------------------------------------------------
-    // Drawn while stopped too, dimmed. It used to vanish on stop, which made
-    // "reset the position" indistinguishable from "lose the position", and
-    // leaves nothing for a click on the ruler to move.
+    // The moving line, and only while the transport is moving - see
+    // timelinePaint::showsPlayheadLine. The rack's own RulerStrip carries the
+    // head that says where playback will begin.
     if (engine.getMode() == Transport::Mode::pattern && rows > 0)
     {
         const auto playing = engine.isPlaying();
@@ -228,7 +228,8 @@ void StepGridComponent::paint (juce::Graphics& g)
         if (playing)
             timelinePaint::playheadColumn (g, { x, 0.0f, width, (float) rowsHeight });
 
-        timelinePaint::playheadLine (g, x, { 0.0f, (float) rowsHeight }, playhead.brightness());
+        if (timelinePaint::showsPlayheadLine (playhead.brightness()))
+            timelinePaint::playheadLine (g, x, { 0.0f, (float) rowsHeight }, playhead.brightness());
     }
 
     if (rows == 0)

@@ -112,7 +112,45 @@ public:
     // --- transport, callable from any thread ---------------------------------
     void play();
     void stop();
+
+    /** Stop, and return to the start marker.
+
+        The distinction dew did not have. `stop` only ever cleared `playing`, so
+        pause and stop were the same call and the only thing that made the stop
+        BUTTON different was that it also called rewind. There was no way to
+        leave off and come back to a chosen place at all.
+
+        See setStartMarkerSteps for where "the start marker" comes from and why
+        rewind is the thing that clears it.
+    */
+    void pause();
+
+    /** Back to the beginning: the playhead AND the start marker.
+
+        Both, because the marker is where playback BEGINS and the beginning is
+        where rewind is taking it. A rewind that left a marker at bar nine
+        standing would leave the ruler showing one place and the next press of
+        space starting at another.
+    */
     void rewind();
+
+    /** Where playback returns to when it is paused.
+
+        Set by a click or a scrub-drag on any ruler, and 0 until one happens -
+        which is why "no marker" needs no separate state: no marker IS the
+        beginning. Whoever sets it moves the playhead to the same place, so a
+        stopped transport and its marker never disagree and the ruler has one
+        thing to draw rather than two.
+
+        An atomic, like every other cross-thread transport field here, though
+        only the message thread reads it today: pause() is callable from any
+        thread and the rule on this class is that its transport state is.
+    */
+    void setStartMarkerSteps (double steps);
+    double getStartMarkerSteps() const noexcept
+    {
+        return startMarkerSteps.load();
+    }
 
     /** Moves the transport to a position, in steps from the start.
 
@@ -530,6 +568,7 @@ private:
     int currentBlockSize = kDefaultBlockSize;
 
     std::atomic<bool> playing { false };
+    std::atomic<double> startMarkerSteps { 0.0 };
     std::atomic<bool> rewindRequested { false };
     std::atomic<bool> seekRequested { false };
     std::atomic<double> seekToSteps { 0.0 };

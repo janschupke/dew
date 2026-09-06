@@ -98,9 +98,10 @@ PianoRollComponent::PianoRollComponent (ProjectDocument& d, AudioEngine& e, Edit
         return ctx;
     };
 
+    // The marker as well as the playhead - see ChannelRackComponent's.
     rulerGesture.onSeek = [this] (double steps)
     {
-        engine.setPlayheadSteps (steps);
+        engine.setStartMarkerSteps (steps);
         repaint();
     };
 

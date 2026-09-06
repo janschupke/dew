@@ -29,6 +29,12 @@ ControlResult write (ControlHost& host, const juce::var& args)
     if (hasArg (args, "playheadSteps"))
         engine->setPlayheadSteps (numberArg (args, "playheadSteps"));
 
+    // Both, and in this order: setStartMarkerSteps moves the playhead too, so a
+    // call carrying only a marker leaves the two agreeing the way a click on a
+    // ruler does.
+    if (hasArg (args, "startMarkerSteps"))
+        engine->setStartMarkerSteps (numberArg (args, "startMarkerSteps"));
+
     if (flagArg (args, "rewind"))
         engine->rewind();
 
@@ -37,13 +43,14 @@ ControlResult write (ControlHost& host, const juce::var& args)
         if (flagArg (args, "playing"))
             engine->play();
         else
-            engine->stop();
+            engine->pause();
     }
 
     return ControlResult::success (
         Obj {}
             .set ("playing", engine->isPlaying())
             .set ("mode", engine->getMode() == Transport::Mode::pattern ? "pattern" : "song")
+            .set ("startMarkerSteps", engine->getStartMarkerSteps())
             .set (ids::tempoBpm, project.isValid() ? (double) project[ids::tempoBpm] : 0.0));
 }
 
@@ -57,7 +64,9 @@ ControlResult read (ControlHost& host, const juce::var&)
     return ControlResult::success (
         Obj {}
             .set ("playing", engine->isPlaying())
-            .set ("mode", engine->getMode() == Transport::Mode::pattern ? "pattern" : "song"));
+            .set ("mode", engine->getMode() == Transport::Mode::pattern ? "pattern" : "song")
+            .set ("playheadSteps", engine->getPlayheadSteps())
+            .set ("startMarkerSteps", engine->getStartMarkerSteps()));
 }
 
 } // namespace
@@ -67,21 +76,27 @@ void appendTransportOps (std::vector<OpSpec>& all)
     all.push_back (
         { "transport_write",
           OpScope::write,
-          "Start or stop playback, choose song or pattern mode, and move the playhead.",
+          "Start or pause playback, choose song or pattern mode, and move the playhead "
+          "or the start marker.",
           "Not an edit: nothing here touches the document or the undo history. It is "
           "what the transport bar does.\n\n"
           "Any pending change to the document is applied to the engine first, so playing "
           "immediately after writing notes plays the notes you just wrote.",
-          { { "playing", ValueKind::flag, false, "True plays, false stops." },
+          { { "playing", ValueKind::flag, false,
+              "True plays, false pauses - which returns to the start marker." },
             { "mode", ValueKind::text, false,
               "song plays the arrangement, pattern loops the current pattern." },
             { "playheadSteps", ValueKind::number, false, "Move the playhead, in steps." },
-            { "rewind", ValueKind::flag, false, "Return to the start." } },
+            { "startMarkerSteps", ValueKind::number, false,
+              "Where playback begins and where pausing returns to, in steps. Moves the "
+              "playhead with it." },
+            { "rewind", ValueKind::flag, false,
+              "Return to the start: the playhead and the marker both." } },
           write });
 
     all.push_back ({ "transport_read",
                      OpScope::read,
-                     "Report whether dew is playing, and in which mode.",
+                     "Report whether dew is playing, in which mode, and where it is.",
                      "A read, so it is available to a read-only grant. Use it to tell whether "
                      "something you started is still going.",
                      {},

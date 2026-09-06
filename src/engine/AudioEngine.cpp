@@ -261,8 +261,27 @@ void AudioEngine::stop()
     playing.store (false);
 }
 
+void AudioEngine::pause()
+{
+    playing.store (false);
+    setPlayheadSteps (startMarkerSteps.load());
+}
+
+void AudioEngine::setStartMarkerSteps (double steps)
+{
+    const auto clamped = juce::jmax (0.0, steps);
+
+    startMarkerSteps.store (clamped);
+    setPlayheadSteps (clamped);
+}
+
 void AudioEngine::rewind()
 {
+    // The marker goes with it - see the header. Stored before the request, so a
+    // processBlock that lands between the two cannot pause back to a marker
+    // that this call has already decided is gone.
+    startMarkerSteps.store (0.0);
+
     rewindRequested.store (true);
 
     // Also zeroed here, on the calling thread, so the reset is immediate and

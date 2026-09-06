@@ -99,11 +99,12 @@ PlaylistComponent::PlaylistComponent (ProjectDocument& d, AudioEngine& e, Editor
         return ctx;
     };
 
+    // The marker as well as the playhead - see ChannelRackComponent's.
     rulerGesture.onSeek = [this] (double bars)
     {
         const auto stepsPerBar = Meter::of (document.getState()).stepsPerBar();
 
-        engine.setPlayheadSteps (bars * (double) stepsPerBar);
+        engine.setStartMarkerSteps (bars * (double) stepsPerBar);
         repaint();
     };
 

@@ -411,10 +411,15 @@ void PlaylistComponent::paint (juce::Graphics& g)
         {
             playhead.set (engine.isPlaying());
 
-            timelinePaint::playheadLine (g, x, { (float) lanesTop(), (float) bottom },
-                                         playhead.brightness());
+            // The line only while the transport is moving - see
+            // timelinePaint::showsPlayheadLine.
+            if (timelinePaint::showsPlayheadLine (playhead.brightness()))
+                timelinePaint::playheadLine (g, x, { (float) lanesTop(), (float) bottom },
+                                             playhead.brightness());
 
-            // A head on the ruler, so the position is findable at a glance.
+            // The head stays either way: where playback will begin is a fact
+            // about a stopped transport, and it is what a click on the ruler
+            // moves.
             timelinePaint::playheadHead (g, x, (float) lanesTop(), playhead.brightness());
         }
     }

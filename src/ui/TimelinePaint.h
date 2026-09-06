@@ -61,6 +61,21 @@ void playheadHead (juce::Graphics&, float x, float baselineY, float brightness);
 inline constexpr float playheadStopped = 0.0f;
 inline constexpr float playheadPlaying = 1.0f;
 
+/** Whether the moving LINE is drawn at all.
+
+    A transport that is not running has no moving line: pause hides it, and so
+    does stop. What stays is the head on the ruler, which says where playback
+    will begin - a fact about a stopped transport rather than about a moving
+    one, and the thing a click on the ruler moves.
+
+    Read off the eased brightness rather than off `playing`, so the line fades
+    out over the same 70ms it fades in over and then goes, instead of being cut.
+*/
+inline bool showsPlayheadLine (float brightness) noexcept
+{
+    return brightness > playheadStopped;
+}
+
 /** The eased play/stop state, for a view that owns a playhead.
 
     Starting and stopping the transport is the most frequent state change in

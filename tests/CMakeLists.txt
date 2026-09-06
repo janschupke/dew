@@ -28,6 +28,7 @@ add_executable(dew_tests
   SelectionTests.cpp
   RowSilenceTests.cpp
   TransportBarTests.cpp
+  StartMarkerTests.cpp
   StatusBarTests.cpp
   ProjectEditsTests.cpp
   PresetTests.cpp
