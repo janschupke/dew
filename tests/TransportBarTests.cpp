@@ -16,11 +16,36 @@
 #include "i18n/Strings.h"
 #include "ui/design/Icons.h"
 #include "ui/primitives/DewControls.h"
+#include "ui/MenuSeam.h"
+#include "app/Settings.h"
+#include "TestSupport.h"
 
 using namespace dew;
 
 namespace
 {
+
+/** A row's id and its tick, which menuItems() deliberately does not carry -
+    it answers "what does this menu say", and these two tests ask "what does
+    choosing this row do". Bound to a NAMED menu by taking a const&, for the
+    reason MenuSeam.h gives: MenuItemIterator keeps a reference. */
+int idOfRow (const juce::PopupMenu& menu, const juce::String& text)
+{
+    for (juce::PopupMenu::MenuItemIterator it (menu); it.next();)
+        if (it.getItem().text == text)
+            return it.getItem().itemID;
+
+    return 0;
+}
+
+bool rowIsTicked (const juce::PopupMenu& menu, const juce::String& text)
+{
+    for (juce::PopupMenu::MenuItemIterator it (menu); it.next();)
+        if (it.getItem().text == text)
+            return it.getItem().isTicked;
+
+    return false;
+}
 
 struct BarHarness
 {
@@ -203,4 +228,126 @@ TEST_CASE ("the transport bar has a panic, and it is not where stop is", "[trans
     // what it cannot reach.
     CHECK_FALSE (h.engine.isPlaying());
     CHECK (fired == 1);
+}
+
+TEST_CASE ("the metronome button follows the engine, whatever moved it", "[transport][ui]")
+{
+    // The same defect the play icon and the mode button both had. Driven
+    // through the engine directly, which is the route the Transport menu takes:
+    // DewApplication calls setMetronomeEnabled and nothing else.
+    const juce::ScopedJuceInitialiser_GUI juceInit;
+    BarHarness h;
+
+    auto* metronome = h.buttonWithTooltip (tr (StringId::transport_metronome_help));
+    REQUIRE (metronome != nullptr);
+    CHECK_FALSE (metronome->getToggleState());
+
+    h.engine.setMetronomeEnabled (true);
+    h.bar.refreshEngineState();
+    CHECK (metronome->getToggleState());
+
+    h.engine.setMetronomeEnabled (false);
+    h.bar.refreshEngineState();
+    CHECK_FALSE (metronome->getToggleState());
+
+    // And the button reaches the engine, so the one source of truth is written
+    // from both directions.
+    metronome->setToggleState (true, juce::dontSendNotification);
+    metronome->onClick();
+    CHECK (h.engine.isMetronomeEnabled());
+}
+
+TEST_CASE ("the keyboard button follows the mode the window owns", "[transport][ui]")
+{
+    const juce::ScopedJuceInitialiser_GUI juceInit;
+    BarHarness h;
+
+    auto* keyboard = h.buttonWithTooltip (tr (StringId::transport_keyboardInput_help));
+    REQUIRE (keyboard != nullptr);
+
+    auto typing = false;
+    h.bar.isKeyboardInputEnabled = [&typing] { return typing; };
+
+    auto toggled = 0;
+    h.bar.onToggleKeyboardInput = [&toggled] { ++toggled; };
+
+    typing = true;
+    h.bar.refreshEngineState();
+    CHECK (keyboard->getToggleState());
+
+    typing = false;
+    h.bar.refreshEngineState();
+    CHECK_FALSE (keyboard->getToggleState());
+
+    keyboard->onClick();
+    CHECK (toggled == 1);
+}
+
+TEST_CASE ("the metronome's right-click offers the count-in", "[transport][ui]")
+{
+    const juce::ScopedJuceInitialiser_GUI juceInit;
+    BarHarness h;
+
+    CHECK_FALSE (h.bar.isCountInEnabled());
+
+    // Bound to a NAMED local: PopupMenu::MenuItemIterator keeps a reference,
+    // and iterating a temporary walks a menu that has already gone.
+    const auto menu = h.bar.buildMetronomeMenu();
+    const auto label = tr (StringId::transport_countIn_label);
+
+    REQUIRE (menuItems (menu) == juce::StringArray { label });
+    CHECK_FALSE (rowIsTicked (menu, label));
+
+    const auto countIn = idOfRow (menu, label);
+    REQUIRE (countIn != 0);
+
+    h.bar.applyMetronomeChoice (countIn);
+    CHECK (h.bar.isCountInEnabled());
+
+    const auto after = h.bar.buildMetronomeMenu();
+    CHECK (rowIsTicked (after, label));
+
+    h.bar.applyMetronomeChoice (countIn);
+    CHECK_FALSE (h.bar.isCountInEnabled());
+
+    // A choice nobody offered - the id a dismissed menu returns - must not
+    // flip it.
+    h.bar.applyMetronomeChoice (0);
+    CHECK_FALSE (h.bar.isCountInEnabled());
+}
+
+TEST_CASE ("the click and the count-in survive a restart", "[transport][ui]")
+{
+    const juce::ScopedJuceInitialiser_GUI juceInit;
+    BarHarness h;
+
+    // A settings file of its own, so a test can never touch the user's real
+    // one - the rule tests/SettingsTests.cpp already writes down.
+    testing::TempDir temp { "dew-transport-settings-" };
+    Settings settings { temp.dir };
+
+    h.engine.setMetronomeEnabled (true);
+
+    const auto menu = h.bar.buildMetronomeMenu();
+    h.bar.applyMetronomeChoice (idOfRow (menu, tr (StringId::transport_countIn_label)));
+    REQUIRE (h.bar.isCountInEnabled());
+
+    h.bar.captureMetronomeSettings (settings);
+
+    // A second bar over a second engine, the way a relaunch is.
+    AudioEngine restarted;
+    EditorState state;
+    TransportBar restoredBar { h.document, restarted, state };
+
+    restoredBar.applyMetronomeSettings (settings);
+
+    CHECK (restarted.isMetronomeEnabled());
+    CHECK (restoredBar.isCountInEnabled());
+
+    // Right in the FIRST frame rather than after the first poll: a restored
+    // session that flickers is one somebody notices.
+    for (auto* child : restoredBar.getChildren())
+        if (auto* button = dynamic_cast<DewIconButton*> (child))
+            if (button->getTooltip() == tr (StringId::transport_metronome_help))
+                CHECK (button->getToggleState());
 }

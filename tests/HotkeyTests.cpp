@@ -5,6 +5,7 @@
 #include "app/Settings.h"
 #include "ui/Hotkeys.h"
 #include "ui/MainComponent.h"
+#include "ui/TypingKeys.h"
 
 using namespace dew;
 using hotkeys::ViewCommand;
@@ -335,4 +336,63 @@ TEST_CASE ("a bare arrow means two things, and never in the same place", "[ui][h
 
     CHECK (hotkeys::viewCommandFor (pageUp) == ViewCommand::none);
     CHECK (keys::valueKeys::commandFor (pageUp) == keys::valueKeys::Command::coarseIncrease);
+}
+
+TEST_CASE ("the typing keyboard shadows the registry on purpose", "[ui][hotkeys][typing]")
+{
+    /*  typingKeys::table() is NOT a hotkeys:: table, and this is where that is
+        written down as a decision rather than left to be rediscovered.
+
+        It collides with the timeline map - `q` quantizes, `0` zooms to fit -
+        and with the application's bare `r`. That is the point: it is a MODAL
+        handler, the same argument that exempts ScoreEditorComponent's
+        completion popup, and while the mode is on it owns those keys and
+        nothing outside it can reach them. Putting it in the registry would put
+        it in the collision walk above, which would refuse it - correctly, for a
+        binding, and wrongly for a mode.
+
+        So the overlap is enumerated here. A key that leaves the note map, or a
+        binding that moves onto one, changes this list and says so.
+    */
+    juce::StringArray shadowed;
+
+    for (const auto& note : typingKeys::table())
+    {
+        const auto key = keys::keyPressFor ({ note.keyCode, 0 });
+
+        if (hotkeys::viewCommandFor (key) != ViewCommand::none)
+            shadowed.add (juce::String::charToString ((juce::juce_wchar) note.keyCode));
+
+        for (const auto& binding : hotkeys::application())
+            if (binding.stroke.keyCode != 0 && hotkeys::matches (binding.stroke, key)
+                && ! shadowed.contains (
+                    juce::String::charToString ((juce::juce_wchar) note.keyCode)))
+                shadowed.add (juce::String::charToString ((juce::juce_wchar) note.keyCode));
+    }
+
+    shadowed.sort (false);
+
+    INFO ("shadowed while keyboard input is on: " << shadowed.joinIntoString (" "));
+
+    // `0` is zoom-to-fit and `2` `3` are the paint and erase tools, all three
+    // from hotkeys::timeline(); `r` is Record, from the application table.
+    //
+    // `q` is NOT here and is shadowed all the same: the piano roll reads it
+    // straight off the KeyPress rather than through the registry, so a walk of
+    // the registry cannot see it. That is the argument for the mode owning its
+    // keys outright rather than trying to list what it displaces.
+    CHECK (shadowed == juce::StringArray { "0", "2", "3", "r" });
+
+    // The two octave keys shadow NOTHING, which is why they could be the two
+    // that move the map.
+    for (const auto code : { typingKeys::octaveDownKey, typingKeys::octaveUpKey })
+    {
+        const auto key = keys::keyPressFor ({ code, 0 });
+
+        INFO ("octave key " << juce::String::charToString ((juce::juce_wchar) code));
+        CHECK (hotkeys::viewCommandFor (key) == ViewCommand::none);
+
+        for (const auto& binding : hotkeys::application())
+            CHECK_FALSE ((binding.stroke.keyCode != 0 && hotkeys::matches (binding.stroke, key)));
+    }
 }

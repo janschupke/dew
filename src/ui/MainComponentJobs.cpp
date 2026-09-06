@@ -16,6 +16,7 @@
 #include "i18n/Strings.h"
 #include "ui/MainComponent.h"
 
+#include "engine/Metronome.h"
 #include "io/AudioRecorder.h"
 #include "io/RenderJob.h"
 #include "io/SamplePool.h"
@@ -72,18 +73,51 @@ juce::String MainComponent::toggleRecording()
 
     const auto numInputs = juce::jlimit (1, 2,
                                          device->getActiveInputChannels().countNumberOfSetBits());
-    const auto stepsPerBar = Meter::of (document.getState()).stepsPerBar();
+    const auto meter = Meter::of (document.getState());
+    const auto stepsPerBar = meter.stepsPerBar();
     const auto punchInBar = (int) (engine.getPlayheadSteps() / (double) stepsPerBar);
 
+    // ONE number, handed to both, so the recorder and the engine cannot
+    // disagree about which block the take starts on: each counts down by the
+    // same numSamples in the same device callback. Constant tempo, which is the
+    // assumption finishRecording already makes about a take's own length.
+    const auto bpm = juce::jmax (1.0, (double) document.getState()[ids::tempoBpm]);
+    const auto countIn = transportBar.isCountInEnabled()
+                             ? countInSamplesFor (1, meter, bpm, device->getCurrentSampleRate())
+                             : (juce::int64) 0;
+
+    // The recorder BEFORE the engine, and that order is load-bearing: a device
+    // callback landing between the two makes the recorder discard one block
+    // more than the engine counted in, so the take starts a hair after the
+    // music rather than before it.
     if (const auto error = recorder.start (file, device->getCurrentSampleRate(), numInputs,
-                                           punchInBar);
+                                           punchInBar, countIn);
         error.isNotEmpty())
         return error;
 
     // Rolling is what makes the take land where the playhead is, and what lets
     // it be played against the rest of the arrangement.
     engine.setMode (Transport::Mode::song);
-    engine.play();
+
+    if (countIn > 0)
+    {
+        // A count-in's last click IS the downbeat the take starts on, so the
+        // take has to start on one. The playhead is wherever it was left, which
+        // may be mid-bar, while the clip is placed at punchInBar - a gap that
+        // has always been there and was invisible until there was a click to
+        // compare it against.
+        //
+        // Only on this path. Recording without a count-in keeps the behaviour
+        // it has always had, because moving somebody's playhead is not
+        // something a Record button should do unasked.
+        engine.setPlayheadSteps ((double) punchInBar * (double) stepsPerBar);
+        engine.playWithCountIn (countIn);
+    }
+    else
+    {
+        engine.play();
+    }
+
     return {};
 }
 

@@ -16,7 +16,7 @@ AudioRecorder::~AudioRecorder()
 }
 
 juce::String AudioRecorder::start (const juce::File& file, double sampleRate, int numChannels,
-                                   int bar)
+                                   int bar, juce::int64 preRollSamples)
 {
     stop();
 
@@ -59,6 +59,7 @@ juce::String AudioRecorder::start (const juce::File& file, double sampleRate, in
     destination = file;
     punchInBar = juce::jmax (0, bar);
     samplesRecorded.store (0);
+    preRoll.store (juce::jmax ((juce::int64) 0, preRollSamples));
 
     {
         const juce::ScopedLock lock (writerLock);
@@ -86,6 +87,7 @@ juce::File AudioRecorder::stop()
     }
 
     recording.store (false);
+    preRoll.store (0);
 
     // Destroying the ThreadedWriter flushes the FIFO and closes the file. It
     // has to happen before the file is read back, which is why it is done here
@@ -112,6 +114,19 @@ void AudioRecorder::writeBlock (const float* const* inputChannelData, int numInp
     // Latest-wins maximum, like the mixer meters - and now literally the same
     // code as the mixer meters.
     atomicPeakMax (inputPeak, peak);
+
+    // AFTER the meter and BEFORE the writer, which is the whole point: a
+    // count-in is a bar somebody is listening through, and freezing the input
+    // level for it would blind them at the moment they most want to see it.
+    //
+    // A whole block at a time, like the engine's budget, so a pre-roll that is
+    // not a multiple of the block size costs one block more rather than half of
+    // one. The take then starts a hair AFTER the music, never before it.
+    if (const auto remaining = preRoll.load(); remaining > 0)
+    {
+        preRoll.store (juce::jmax ((juce::int64) 0, remaining - (juce::int64) numSamples));
+        return;
+    }
 
     // A try-lock, not a lock: the render path must never wait on the message
     // thread swapping a writer in or out.

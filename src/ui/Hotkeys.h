@@ -33,6 +33,16 @@ enum
     transportToggleMode,
     transportRecord,
     transportPanic,
+
+    /** The two switches beside the transport, rather than actions on it.
+
+        Placed in the transport run and well above every contiguous block below
+        - the scale, motion and theme ids are read as First + step - so nothing
+        that counts on an offset moves. `about` is still last, which is what
+        HotkeyTests walks the table to.
+    */
+    transportMetronome,
+    transportKeyboardInput,
     addChannel,
     addPattern,
     compileScore,

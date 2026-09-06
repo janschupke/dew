@@ -495,4 +495,46 @@ void Settings::setMidiTranspose (int semitones)
                      juce::jlimit (-maxMidiTranspose, maxMidiTranspose, semitones));
 }
 
+bool Settings::getMetronomeEnabled() const
+{
+    return file().getBoolValue ("metronomeEnabled", false);
+}
+
+void Settings::setMetronomeEnabled (bool shouldClick)
+{
+    file().setValue ("metronomeEnabled", shouldClick);
+}
+
+bool Settings::getCountInEnabled() const
+{
+    return file().getBoolValue ("countInEnabled", false);
+}
+
+void Settings::setCountInEnabled (bool shouldCountIn)
+{
+    file().setValue ("countInEnabled", shouldCountIn);
+}
+
+bool Settings::getKeyboardInputEnabled() const
+{
+    return file().getBoolValue ("keyboardInputEnabled", false);
+}
+
+void Settings::setKeyboardInputEnabled (bool shouldPlay)
+{
+    file().setValue ("keyboardInputEnabled", shouldPlay);
+}
+
+int Settings::getKeyboardInputOctave() const
+{
+    return juce::jlimit (minKeyboardOctave, maxKeyboardOctave,
+                         file().getIntValue ("keyboardInputOctave", defaultKeyboardOctave));
+}
+
+void Settings::setKeyboardInputOctave (int octave)
+{
+    file().setValue ("keyboardInputOctave",
+                     juce::jlimit (minKeyboardOctave, maxKeyboardOctave, octave));
+}
+
 } // namespace dew

@@ -7,6 +7,7 @@
 #include "engine/AudioEngine.h"
 #include "model/Meter.h"
 #include "app/ProjectDocument.h"
+#include "app/Settings.h"
 #include "ui/ConfirmPanel.h"
 #include "ui/EditorState.h"
 #include "ui/design/SignalScope.h"
@@ -102,6 +103,41 @@ public:
     /** Whether a take is running, for the button's lit state. */
     std::function<bool()> isRecording;
 
+    /** Turns the letter keys into a piano keyboard, and says whether they are.
+
+        A callback pair rather than a reference to the TypingKeyboard, exactly
+        as recording is: the mode belongs to the window - it follows the
+        keyboard focus across the whole editor - and a transport bar has no
+        business holding it.
+    */
+    std::function<void()> onToggleKeyboardInput;
+    std::function<bool()> isKeyboardInputEnabled;
+
+    /** Whether pressing Record counts a bar in first. Read by the window, which
+        is where a take is actually started. */
+    bool isCountInEnabled() const noexcept
+    {
+        return countInEnabled;
+    }
+
+    /** What the metronome's right-click offers, and what choosing a row does.
+
+        The seam every menu in dew is tested through: a PopupMenu cannot be
+        shown in a headless test, so the rows and the action are reachable
+        without one. See ui/MenuSeam.h.
+    */
+    juce::PopupMenu buildMetronomeMenu() const;
+    void applyMetronomeChoice (int choice);
+
+    /** The click and the count-in, restored and remembered.
+
+        A pair on the bar rather than four setters called from the window: the
+        controls that carry these live here, and MainComponent already has two
+        hundred lines about wiring.
+    */
+    void applyMetronomeSettings (const Settings&);
+    void captureMetronomeSettings (Settings&) const;
+
     /** Fired after the metre changed and the arrangement was rescaled with it.
         The flag is false when a clip had to round to a whole bar, so the host
         can say so - a rescale by 4/3 cannot land every clip exactly, and that
@@ -171,6 +207,16 @@ private:
 
     /** The same, for the record button. */
     int showingRecording = -1;
+    int showingMetronome = -1;
+    int showingKeyboardInput = -1;
+
+    /** The two toggles: built, polled, and the count-in menu on one of them.
+        All of it in TransportBarToggles.cpp. */
+    void createToggles();
+    void refreshToggles();
+    void showMetronomeMenu();
+
+    bool countInEnabled = false;
 
     ProjectDocument& document;
     AudioEngine& engine;
@@ -185,6 +231,8 @@ private:
     /** Role::danger, like the trash can, and for the same reason: it is the one
         button here that throws something away - every voice sounding and every
         tail still ringing. */
+    DewIconButton metronomeButton { icons::metronome(), tr (StringId::transport_metronome_help) };
+    DewIconButton keyboardButton { icons::keyboard(), tr (StringId::transport_keyboardInput_help) };
     DewIconButton panicButton { icons::panic(), tr (StringId::transport_panic_help),
                                 DewIconButton::Role::danger };
     const paramMenu::Host* paramMenuHost = nullptr;

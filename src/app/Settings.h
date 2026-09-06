@@ -256,6 +256,35 @@ public:
     int getMidiTranspose() const;
     void setMidiTranspose (int);
 
+    // --- the click, and the keyboard as an instrument ------------------------
+    /** Whether a click sounds on every beat.
+
+        Remembered, like every other switch here, so the bar looks the way it
+        was left. The ENGINE's atomic is the source of truth while dew runs -
+        the menu command, the button and this file all read and write that one
+        place, so they cannot drift.
+    */
+    bool getMetronomeEnabled() const;
+    void setMetronomeEnabled (bool);
+
+    /** Whether pressing Record counts a bar in before the take starts. */
+    bool getCountInEnabled() const;
+    void setCountInEnabled (bool);
+
+    /** Whether the letter keys play the selected channel.
+
+        Remembered even though it is a MODE that changes what every letter does,
+        for the same reason the tool selection in the piano roll is: the button
+        is lit while it is on, so the state is never a surprise, and somebody
+        who works this way should not have to switch it on every morning.
+    */
+    bool getKeyboardInputEnabled() const;
+    void setKeyboardInputEnabled (bool);
+
+    /** Which octave the bottom letter row starts on. 4 puts `z` at middle C. */
+    int getKeyboardInputOctave() const;
+    void setKeyboardInputOctave (int);
+
     // --- the MCP endpoint ----------------------------------------------------
     /** Whether dew listens for local clients at all.
 
@@ -312,6 +341,18 @@ public:
     */
     static constexpr int numTabs = 5;
     static constexpr int maxMidiTranspose = 24;
+
+    /** The octaves the typing keyboard may be moved to, and where it starts.
+
+        The bound is this class's own: the map spans more than two octaves, so
+        the top of it has to stay inside MIDI's 128 notes. Kept here rather than
+        beside the map because this is the value that is READ BACK from a file
+        somebody may have edited, and every other value here is clamped in the
+        same place for the same reason.
+    */
+    static constexpr int minKeyboardOctave = 0;
+    static constexpr int maxKeyboardOctave = 7;
+    static constexpr int defaultKeyboardOctave = 4;
 
     /** The range of the interface scale. 1.0 is the size dew was drawn at; the
         top is where a 46px transport strip stops fitting on a laptop display.

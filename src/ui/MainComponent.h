@@ -23,6 +23,7 @@
 #include "ui/HoverHelp.h"
 #include "ui/StatusBar.h"
 #include "ui/TransportBar.h"
+#include "ui/TypingKeyboard.h"
 #include "ui/design/Animator.h"
 
 namespace dew
@@ -102,6 +103,23 @@ public:
 
     /** Folds the instrument panel away, or brings it back. */
     void toggleInstrumentPanel();
+
+    // --- the letter keys as an instrument ------------------------------------
+    /** Turns keyboard input mode on or off, and says whether it is on.
+
+        Defined here rather than in the .cpp because MainComponent.cpp is at the
+        four hundred code lines the tree allows a file, and these are two lines
+        that would otherwise cost a fourth translation unit.
+    */
+    void setKeyboardInputEnabled (bool shouldPlay)
+    {
+        typingKeyboard.setEnabled (shouldPlay);
+    }
+
+    bool isKeyboardInputEnabled() const noexcept
+    {
+        return typingKeyboard.isEnabled();
+    }
 
     /** Rebuilds every view after the document is replaced by New or Open. */
     void documentWasReplaced();
@@ -290,6 +308,11 @@ private:
     */
     void updateMidiTargetChannel();
 
+    /** The letter keys as an instrument: the toggle, the focus following and
+        the octave message. In MainComponentSession.cpp, beside the two methods
+        that restore and remember the mode - see that file's head. */
+    void wireKeyboardInput();
+
     /** Keeps the selected channel if the document has one by that id, and takes
         the first channel there is otherwise.
 
@@ -359,6 +382,11 @@ private:
     EditorState editorState;
 
     TransportBar transportBar;
+
+    /** The letter keys as an instrument. Declared AFTER the engine, the
+        document and the editor state it holds by reference, and before nothing:
+        it listens to the desktop's focus and unhooks itself on the way down. */
+    TypingKeyboard typingKeyboard { document, engine, editorState };
     /** What every control's right-click menu needs and no panel knows: where
         the playhead is, and how to show the clip it makes.
 

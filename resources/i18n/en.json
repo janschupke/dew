@@ -242,7 +242,15 @@
       "description": "Make this view's rows, or its text, one size smaller",
       "name": "Shorter"
     },
-    "transportPlayStop": {
+    "transportKeyboardInput": {
+   "description": "Turn the letter keys into a piano keyboard for the selected channel",
+   "name": "Keyboard Input"
+  },
+  "transportMetronome": {
+   "description": "Click on every beat while the transport runs",
+   "name": "Metronome"
+  },
+  "transportPlayStop": {
       "description": "Start or stop playback",
       "name": "Play / Stop"
     },
@@ -1108,6 +1116,7 @@
     "languageChanged": "Language changed - it takes effect next time dew starts.",
     "loadWarnings": "{count, plural, one {# item} other {# items}} in this file were not understood: {first}",
     "mcpUnavailable": "MCP could not listen on any port, so nothing can connect.",
+    "keyboardOctave": "Keyboard input starts at {note}.",
     "meterChanged": "Time signature is now {meter}.",
     "meterChangedRounded": "Time signature is now {meter}. Some clips were rounded to the nearest bar.",
     "notes": "{count, plural, one {# note} other {# notes}}",
@@ -1146,6 +1155,15 @@
     },
     "record": {
       "help": "Record into the armed channel (R)"
+    },
+    "metronome": {
+      "help": "Click on every beat, with an accent on the bar - right-click for the count-in"
+    },
+    "countIn": {
+      "label": "Count in one bar before recording"
+    },
+    "keyboardInput": {
+      "help": "Play the selected channel from the letter keys (cmd-T)"
     },
     "addPattern": {
       "help": "Add a pattern"

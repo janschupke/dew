@@ -92,6 +92,54 @@ juce::Path loop()
     return p;
 }
 
+juce::Path metronome()
+{
+    // The case and the arm, and nothing else. A face line across the middle was
+    // tried and removed: at twenty-four pixels it meets the arm and the two
+    // strokes fill the triangle in, so the shape stops reading as a case with
+    // something inside it.
+    juce::Path case_;
+    case_.startNewSubPath (0.50f, 0.10f);
+    case_.lineTo (0.18f, 0.88f);
+    case_.lineTo (0.82f, 0.88f);
+    case_.closeSubPath();
+
+    auto p = strokeOf (case_, tokens::icon::regular);
+
+    // The pendulum, swung right. The LEAN is what says this thing ticks: an arm
+    // standing upright reads as a tower.
+    p.addPath (strokedLine (0.47f, 0.82f, 0.66f, 0.28f, tokens::icon::regular));
+
+    // The weight on it, which is the one solid in the shape - the same trick
+    // the keyboard's black keys play.
+    p.addRectangle (0.50f, 0.55f, 0.15f, 0.10f);
+
+    return p;
+}
+
+juce::Path keyboard()
+{
+    // A keybed with its black keys, and NOT instrumentSoundFont's keys: that
+    // one is three white keys standing for "somebody else's instrument", and
+    // two icons a person has to tell apart on the same bar cannot be the same
+    // drawing at different weights.
+    juce::Path bed;
+    bed.addRoundedRectangle (0.10f, 0.28f, 0.80f, 0.44f, 0.05f);
+
+    auto p = strokeOf (bed, tokens::icon::regular);
+
+    // Two dividers, so the bed reads as three white keys rather than a box.
+    p.addPath (strokedLine (0.37f, 0.28f, 0.37f, 0.72f, tokens::icon::hair));
+    p.addPath (strokedLine (0.63f, 0.28f, 0.63f, 0.72f, tokens::icon::hair));
+
+    // The black keys, filled: they are the only solid in the shape, which is
+    // what makes it a keyboard at a glance.
+    p.addRectangle (0.28f, 0.28f, 0.10f, 0.24f);
+    p.addRectangle (0.54f, 0.28f, 0.10f, 0.24f);
+
+    return p;
+}
+
 // --- editing -----------------------------------------------------------------
 
 juce::Path plus()

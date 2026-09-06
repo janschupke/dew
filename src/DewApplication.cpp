@@ -351,6 +351,19 @@ void DewApplication::getCommandInfo (juce::CommandID id, juce::ApplicationComman
         case CommandIDs::viewThemeFirst:
         case CommandIDs::viewThemeHighContrast: tickViewPreference (id, info); break;
 
+        // The two commands that carry a STATE rather than doing something, so
+        // the menu has to show which way they are set. Nothing else here is
+        // ticked except the view preferences above.
+        case CommandIDs::transportMetronome:
+            info.setActive (main != nullptr);
+            info.setTicked (main != nullptr && main->getEngine().isMetronomeEnabled());
+            break;
+
+        case CommandIDs::transportKeyboardInput:
+            info.setActive (main != nullptr);
+            info.setTicked (main != nullptr && main->isKeyboardInputEnabled());
+            break;
+
         default:
             // Everything else needs the editor, and nothing more.
             info.setActive (main != nullptr);
@@ -492,6 +505,22 @@ bool DewApplication::perform (const InvocationInfo& info)
         }
 
         case CommandIDs::transportPanic: main->panic(); return true;
+
+        case CommandIDs::transportMetronome:
+        {
+            auto& engine = main->getEngine();
+            engine.setMetronomeEnabled (! engine.isMetronomeEnabled());
+
+            // The tick is read on demand, so the manager has to be told the
+            // answer changed - nothing else asks.
+            commandManager.commandStatusChanged();
+            return true;
+        }
+
+        case CommandIDs::transportKeyboardInput:
+            main->setKeyboardInputEnabled (! main->isKeyboardInputEnabled());
+            commandManager.commandStatusChanged();
+            return true;
 
         case CommandIDs::transportRecord:
             if (const auto error = main->toggleRecording(); error.isNotEmpty())

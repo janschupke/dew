@@ -38,6 +38,8 @@ add_executable(dew_tests
   TempoMapTests.cpp
   TransportTests.cpp
   SequencerTests.cpp
+  MetronomeTests.cpp
+  TypingKeyboardTests.cpp
   LoopRegionTests.cpp
   StepGridTests.cpp
   StepGridGestureTests.cpp

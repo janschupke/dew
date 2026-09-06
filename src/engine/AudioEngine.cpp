@@ -38,6 +38,7 @@ void AudioEngine::prepare (double sampleRate, int maximumBlockSize)
 
     transport.prepare (currentSampleRate);
     signalTap.setSampleRate (currentSampleRate);
+    metronome.prepare (currentSampleRate);
 
     for (auto& channel : instruments)
     {
@@ -68,6 +69,7 @@ void AudioEngine::prepare (double sampleRate, int maximumBlockSize)
 void AudioEngine::releaseResources()
 {
     resetAllInstruments();
+    metronome.reset();
 
     channelBuffers.setSize (0, 0);
     mixerBuffers.setSize (0, 0);
@@ -253,18 +255,52 @@ float AudioEngine::readAndClearMasterPeak() noexcept
 
 void AudioEngine::play()
 {
+    // Cleared FIRST: pressing Space during a count-in means "play now", and a
+    // budget left standing would swallow the first bar of it.
+    countInRemaining.store (0);
     playing.store (true);
 }
 
 void AudioEngine::stop()
 {
     playing.store (false);
+    countInRemaining.store (0);
 }
 
 void AudioEngine::pause()
 {
     playing.store (false);
+    countInRemaining.store (0);
     setPlayheadSteps (startMarkerSteps.load());
+}
+
+void AudioEngine::setMetronomeEnabled (bool shouldClick) noexcept
+{
+    metronomeEnabled.store (shouldClick);
+}
+
+bool AudioEngine::isMetronomeEnabled() const noexcept
+{
+    return metronomeEnabled.load();
+}
+
+void AudioEngine::playWithCountIn (juce::int64 countInSamples) noexcept
+{
+    // The budget before the flag, for the reason rewind() gives about the start
+    // marker: a processBlock that lands between the two must not see a playing
+    // transport with no count-in and sequence the bar this call is counting in.
+    countInRemaining.store (juce::jmax ((juce::int64) 0, countInSamples));
+    playing.store (true);
+}
+
+bool AudioEngine::isCountingIn() const noexcept
+{
+    return countInRemaining.load() > 0;
+}
+
+juce::int64 AudioEngine::getCountInRemainingSamples() const noexcept
+{
+    return countInRemaining.load();
 }
 
 void AudioEngine::setStartMarkerSteps (double steps)
@@ -281,6 +317,7 @@ void AudioEngine::rewind()
     // processBlock that lands between the two cannot pause back to a marker
     // that this call has already decided is gone.
     startMarkerSteps.store (0.0);
+    countInRemaining.store (0);
 
     rewindRequested.store (true);
 

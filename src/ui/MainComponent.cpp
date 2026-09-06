@@ -128,6 +128,9 @@ MainComponent::MainComponent (bool openAudioDevice)
 
     transportBar.isRecording = [this] { return isRecording(); };
 
+    // The letter keys as an instrument - see MainComponentKeyboard.cpp.
+    wireKeyboardInput();
+
     // The button does the engine's half itself, so this is only what it cannot
     // reach - which is the same second half panic() does for the key and the
     // menu. reset(), never MidiRouter::panic(): see MainComponent::panic.
@@ -467,74 +470,15 @@ void MainComponent::useSettings (Settings& s)
     instrumentPanel.setSettings (&s);
 }
 
-void MainComponent::applySettings (const Settings& settings)
-{
-    panelWidth = settings.getPanelWidth();
-    panelCollapsed = settings.getPanelCollapsed();
-    updatePanelToggle();
-
-    Animator::shared().setReduceMotion (settings.getReduceMotion (systemPrefersReducedMotion()));
-
-    editorState.setSelectedChannelId (settings.getSelectedChannelId());
-    editorState.setSelectedMixerTrackId (settings.getSelectedMixerTrackId());
-
-    // Answered against the document, the way the pattern id below already is.
-    resolveSelectedChannel();
-
-    // Through the transport bar rather than straight into EditorState, because
-    // a remembered pattern id is a claim about a project the settings file has
-    // never seen: Settings::getCurrentPatternId only clamps it to one or more.
-    // The bar answers it against the document, falls back to the first pattern
-    // there is, and tells the engine - none of which the raw setter does.
-    transportBar.setCurrentPattern (settings.getCurrentPatternId());
-
-    tabs.setCurrentTabIndex (settings.getTabIndex(), false);
-    tabs.applyPianoRollView (settings.getPianoRollZoom(), settings.getPianoRollScroll(),
-                             settings.getPianoRollPitchScroll());
-    tabs.setPianoRollSnap (settings.getPianoRollSnap());
-    tabs.setPlaylistTrackHeight (settings.getPlaylistTrackHeight());
-    tabs.setPianoRollRowHeight (settings.getPianoRollRowHeight());
-    tabs.setPianoRollVelocityHeight (settings.getPianoRollVelocityHeight());
-    tabs.setMixerEffectBandHeight (settings.getMixerEffectBandHeight());
-    tabs.setScoreFontStep (settings.getScoreFontStep());
-
-    // Which devices are enabled rides the audio device XML, restored by the
-    // app; only these two are dew's own.
-    midiHost.getRouter().setChannelFilter (settings.getMidiChannelFilter());
-    midiHost.getRouter().setTranspose (settings.getMidiTranspose());
-
-    resized();
-}
-
-void MainComponent::captureSettings (Settings& settings) const
-{
-    settings.setPanelWidth (panelWidth);
-    settings.setPanelCollapsed (panelCollapsed);
-    settings.setTabIndex (tabs.getCurrentTabIndex());
-    settings.setSelectedChannelId (editorState.getSelectedChannelId());
-    settings.setSelectedMixerTrackId (editorState.getSelectedMixerTrackId());
-    settings.setCurrentPatternId (editorState.getCurrentPatternId());
-
-    double zoom = 0.0, scroll = 0.0, pitch = 0.0;
-    tabs.capturePianoRollView (zoom, scroll, pitch);
-
-    settings.setMidiChannelFilter (midiHost.getRouter().getChannelFilter());
-    settings.setMidiTranspose (midiHost.getRouter().getTranspose());
-
-    settings.setPianoRollZoom (zoom);
-    settings.setPianoRollScroll (scroll);
-    settings.setPianoRollPitchScroll (pitch);
-    settings.setPianoRollSnap (tabs.getPianoRollSnap());
-    settings.setPlaylistTrackHeight (tabs.getPlaylistTrackHeight());
-    settings.setPianoRollRowHeight (tabs.getPianoRollRowHeight());
-    settings.setPianoRollVelocityHeight (tabs.getPianoRollVelocityHeight());
-    settings.setMixerEffectBandHeight (tabs.getMixerEffectBandHeight());
-    settings.setScoreFontStep (tabs.getScoreFontStep());
-}
-
 void MainComponent::changeListenerCallback (juce::ChangeBroadcaster*)
 {
     updateMidiTargetChannel();
+
+    // A key held while the selection moves has already been sent to the old
+    // channel, and the note-off would go to the new one - so let go of
+    // everything here, the same way the MIDI target is re-pointed.
+    typingKeyboard.releaseAll();
+
     updateLoopRange();
 }
 

@@ -73,6 +73,9 @@ TransportBar::TransportBar (ProjectDocument& d, AudioEngine& e, EditorState& s)
     };
     addAndMakeVisible (recordButton);
 
+    // The click and the typing keyboard - see TransportBarToggles.cpp.
+    createToggles();
+
     // AFTER record in the child order, deliberately: TransportBarTests reads
     // the play button as the first DewIconButton in the bar, and a panic put in
     // front of it would silently make every one of those tests about the wrong
@@ -433,6 +436,8 @@ void TransportBar::refreshEngineState()
             recordButton.setToggleState (recording != 0, juce::dontSendNotification);
     }
 
+    refreshToggles();
+
     // The mode, which was the one engine-owned control nobody polled.
     //
     // refresh() set it, and refresh() runs when the document is REPLACED - so
@@ -523,6 +528,8 @@ void TransportBar::resized()
     place (playButton, 30);
     place (stopButton, 30);
     place (recordButton, 30);
+    place (metronomeButton, 30);
+    place (keyboardButton, 30);
 
     // A gap either side, rather than beside record with the others: it is not a
     // fourth transport button and a hand reaching for stop must not find it.

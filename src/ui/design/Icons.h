@@ -23,6 +23,13 @@ juce::Path rewind();
 juce::Path record();
 juce::Path loop();
 
+/** The two toggles beside them: the click, and playing the selected instrument
+    from the computer keyboard. Grouped here rather than with the instruments
+    because where they LIVE is the transport bar - they are things you switch on
+    while playing, not things a channel is. */
+juce::Path metronome();
+juce::Path keyboard();
+
 /** Stop everything, now: an octagon with a bar across it.
 
     An octagon rather than another square, because stop() is already a square

@@ -380,6 +380,7 @@ add_library(dew_engine STATIC
   engine/TempoMap.cpp
   engine/Transport.cpp
   engine/Sequencer.cpp
+  engine/Metronome.cpp
   engine/Wavetable.cpp
   engine/SynthVoice.cpp
   engine/SynthChannel.cpp
@@ -570,7 +571,9 @@ add_library(dew_ui STATIC
   ui/StatusBar.cpp
   ui/TransportBar.cpp
   ui/TransportBarMeter.cpp
+  ui/TransportBarToggles.cpp
   ui/Hotkeys.cpp
+  ui/TypingKeyboard.cpp
   ui/AutomationLane.cpp
   ui/ParamContextMenu.cpp
   ui/PresetMenu.cpp
@@ -606,6 +609,7 @@ add_library(dew_ui STATIC
   ui/EditorTabs.cpp
   ui/MainComponent.cpp
   ui/MainComponentJobs.cpp
+  ui/MainComponentSession.cpp
 )
 
 # A precompiled header, and the reason it is worth one when dew_tests measured

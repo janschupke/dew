@@ -30,8 +30,26 @@ public:
 
         `punchInBar` is remembered, not used: it is what the clip needs when the
         take is over, and the transport will have moved on by then.
+
+        `preRollSamples` is a count-in: that many input samples are METERED and
+        then discarded before anything is written, so the file begins at the
+        downbeat rather than a bar of clicks earlier. It is counted down here
+        rather than by skipping the call, because writeBlock's contract is that
+        the meter runs whether or not a take does - and the level display is
+        exactly what somebody is watching during a count-in.
+
+        The engine's own count-in budget counts down by the same numSamples in
+        the same device callback, so the two cannot disagree about which block
+        the take starts on. See AudioEngine::playWithCountIn.
     */
-    juce::String start (const juce::File& file, double sampleRate, int numChannels, int punchInBar);
+    juce::String start (const juce::File& file, double sampleRate, int numChannels, int punchInBar,
+                        juce::int64 preRollSamples = 0);
+
+    /** Whether the take is still discarding its count-in. */
+    bool isPreRolling() const noexcept
+    {
+        return preRoll.load() > 0;
+    }
 
     /** Message thread. Finishes the file and returns it, or an invalid File if
         nothing was recorded.
@@ -93,6 +111,7 @@ private:
     int punchInBar = 0;
 
     std::atomic<bool> recording { false };
+    std::atomic<juce::int64> preRoll { 0 };
     std::atomic<juce::int64> samplesRecorded { 0 };
     std::atomic<float> inputPeak { 0.0f };
 

@@ -146,6 +146,22 @@ const std::vector<Binding<juce::CommandID>>& application()
           StringId::command_transportPanic_name, StringId::command_transportPanic_description,
           StringId::command_category_transport },
 
+        // KEYLESS, and that is a decision rather than an omission. Every bare
+        // letter still free is a note in typingKeys::table() - `c` is E in the
+        // lower row - so a bare binding here would be shadowed by the other
+        // half of the same change, and would work or not depending on a mode.
+        { CommandIDs::transportMetronome, {},
+          StringId::command_transportMetronome_name,
+          StringId::command_transportMetronome_description,
+          StringId::command_category_transport },
+        // cmd-T, which is what this is in FL Studio. It has to carry a modifier
+        // for the obvious reason: the mode it turns off is the one that has
+        // taken every unmodified letter.
+        { CommandIDs::transportKeyboardInput, { 't', juce::ModifierKeys::commandModifier },
+          StringId::command_transportKeyboardInput_name,
+          StringId::command_transportKeyboardInput_description,
+          StringId::command_category_transport },
+
         { CommandIDs::transportToggleMode, { 'l', juce::ModifierKeys::commandModifier },
           StringId::command_transportToggleMode_name, StringId::command_transportToggleMode_description,
           StringId::command_category_transport },

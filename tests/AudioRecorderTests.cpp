@@ -154,6 +154,73 @@ TEST_CASE ("a second take does not append to the first", "[audio][record]")
     REQUIRE (readBack (second, rate).getNumSamples() < readBack (first, rate).getNumSamples());
 }
 
+TEST_CASE ("a count-in is heard and not kept", "[audio][record][countin]")
+{
+    TempDir temp { "dew-record-" };
+    const auto file = temp.dir.getChildFile ("take.wav");
+
+    constexpr auto blockSize = 256;
+
+    AudioRecorder recorder;
+    REQUIRE (recorder.start (file, 44100.0, 1, 0, 3 * blockSize).isEmpty());
+    REQUIRE (recorder.isPreRolling());
+
+    pushBlocks (recorder, 0.5f, 3, blockSize);
+    CHECK_FALSE (recorder.isPreRolling());
+
+    pushBlocks (recorder, 0.5f, 10, blockSize);
+
+    const auto written = recorder.stop();
+    REQUIRE (written.existsAsFile());
+
+    double rate = 0.0;
+    const auto buffer = readBack (written, rate);
+
+    // Ten blocks, not thirteen: the count-in is gone and nothing of the take
+    // went with it.
+    CHECK (buffer.getNumSamples() == 10 * blockSize);
+}
+
+TEST_CASE ("the input meter runs through a count-in", "[audio][record][countin]")
+{
+    TempDir temp { "dew-record-" };
+
+    AudioRecorder recorder;
+    REQUIRE (recorder.start (temp.dir.getChildFile ("take.wav"), 44100.0, 1, 0, 4096).isEmpty());
+
+    pushBlocks (recorder, 0.5f, 1);
+
+    // The half that the other implementation - skipping writeBlock entirely
+    // while counting in - would have broken: the level display is exactly what
+    // somebody is watching during a count-in.
+    CHECK (recorder.readAndClearInputPeak() == Catch::Approx (0.5f));
+
+    recorder.stop();
+}
+
+TEST_CASE ("a count-in shorter than a block still costs a whole one", "[audio][record][countin]")
+{
+    TempDir temp { "dew-record-" };
+    const auto file = temp.dir.getChildFile ("take.wav");
+
+    constexpr auto blockSize = 256;
+
+    AudioRecorder recorder;
+    REQUIRE (recorder.start (file, 44100.0, 1, 0, 1).isEmpty());
+
+    pushBlocks (recorder, 0.5f, 2, blockSize);
+
+    const auto written = recorder.stop();
+    REQUIRE (written.existsAsFile());
+
+    double rate = 0.0;
+
+    // The block quantisation, stated rather than discovered. The engine's own
+    // budget is spent the same way, which is what keeps the two in step - and
+    // it errs towards the take starting AFTER the music, never before it.
+    CHECK (readBack (written, rate).getNumSamples() == blockSize);
+}
+
 TEST_CASE ("a recorder refuses a file it cannot write", "[audio][record]")
 {
     AudioRecorder recorder;

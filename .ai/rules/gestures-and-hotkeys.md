@@ -33,6 +33,47 @@ Two files own this, and a gate holds each: `src/ui/Hotkeys.h` for the keyboard,
   0, and `HotkeyTests`' `sameStroke` treats two keyless rows as non-colliding. `viewNextTab`
   and `viewPreviousTab` are two of them since ⌃⇥ became the group ring's key.
 
+### The letter keys as an instrument
+
+**⌘T turns the two letter rows into a piano keyboard** playing the selected channel, FL
+Studio's layout: `z s x d c v g b h n j m , l . ; /` is the lower octave and
+`q 2 w 3 e r 5 t 6 y 7 u i 9 o 0 p` the one above it. `[` and `]` move the whole map an
+octave; the status bar says where it lands.
+
+- **The map is `src/ui/TypingKeys.h`, and it is deliberately NOT a `hotkeys::` table.**
+  Every row in `hotkeys::application()` and `hotkeys::timeline()` is walked by
+  `HotkeyTests` for collisions, and this map collides with both on purpose: `0` `2` `3` are
+  zoom-to-fit and the paint and erase tools, `r` is Record, and `q` is the piano roll's
+  quantize. It is a **modal handler** — the same argument that exempts
+  `ScoreEditorComponent`'s completion popup — so while the mode is on it owns those keys
+  and nothing outside it can reach them, and while the mode is off the map does not exist.
+  A binding cannot say that. "The typing keyboard shadows the registry on purpose" in
+  `tests/HotkeyTests.cpp` enumerates the overlap so it stays a decision.
+- **Only BARE keys.** `TypingKeyboard::handleKeyPress` refuses anything with a modifier —
+  shift included, which `keys::matches` ignores by design — so ⇧R still opens Randomize,
+  Space still plays and every ⌘ and ⌥ stroke means what it always did. `1`, `4` and `8` are
+  not in the map either, because a keyboard's black keys come in twos and threes.
+- **It follows the keyboard focus.** `ComponentPeer::handleKeyPress` calls a component's
+  key LISTENERS before its own `keyPressed`, so a listener on `MainComponent` beats the
+  command manager's mapping set on the window but not the piano roll. `TypingKeyboard`
+  listens to `MainComponent` for good and re-attaches to whatever holds the keyboard, via
+  `juce::Desktop::addFocusChangeListener`. No editor was edited for it.
+- **Note-off is a poll, not an event.** JUCE reports a release only through
+  `keyStateChanged`, which says "some key changed" and nothing about which, so
+  `refreshHeldKeys` re-reads every row with `KeyPress::isKeyCurrentlyDown` and sounds the
+  difference — JUCE's own answer in `MidiKeyboardComponent`. Being state-based makes it
+  idempotent, which it has to be: the same object is reached twice in one dispatch whenever
+  the focused component declines a key. `refreshHeldKeys` takes the key-state source as a
+  PARAMETER, for the reason `focusGroups::nextFocusFor` takes the focused component — there
+  is no `ComponentPeer` in a test, so nothing can press a key.
+- **Silent while a text field has the keyboard**, which covers the score tab, a number
+  field mid-edit and the preferences search with one rule.
+- **Playback only.** Notes go through `AudioEngine::previewNoteOn`/`previewNoteOff` — the
+  message-thread ring a piano-roll audition already uses, never the MIDI one, which has a
+  different single producer. Nothing is written to the document, nothing dirties a project
+  and nothing lands on the undo stack; a test plays every key in the map and compares the
+  tree.
+
 ### Changing a value from the keyboard
 
 `DewSlider` and `DewNumberField` answer these, and `juce::Slider`'s own handler is never
@@ -153,8 +194,17 @@ The piano roll, the playlist and the step grid each hold a `CanvasCursor`
 
 ## Why it is this way
 
-⌘N ⌘O ⌘S ⇧⌘S · ⌘E render · ⌘R compile score · ⌘Z ⇧⌘Z · Space play/pause · R record · ⌘L
-pattern/song · ⌘K add channel · ⌘, preferences.
+⌘N ⌘O ⌘S ⇧⌘S · ⌘E render · ⌘R compile score · ⌘Z ⇧⌘Z · Space play/pause · R record · ⌘T
+keyboard input · ⌘L pattern/song · ⌘K add channel · ⌘, preferences.
+
+**The metronome has no key**, and that is a decision rather than an omission: every bare
+letter still free is a note in `typingKeys::table()`, so a bare binding would work or not
+depending on a mode. It is a keyless row in the registry, a Transport menu item, and an icon
+toggle on the transport bar whose right-click carries the one-bar count-in. Both toggles are
+**polled** from the thing that owns the state — the engine's `metronomeEnabled` atomic and
+the window's `TypingKeyboard` — for the reason the play icon is: `AudioEngine` is not a
+`ChangeBroadcaster`, and the menu, a hotkey and an MCP client can all move them from
+somewhere else.
 
 ⌘, is the settings window on every platform, so it is the one stroke this table would be
 wrong to spell any other way. It used to open Audio Settings, which now has no key of its

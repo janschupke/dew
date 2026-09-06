@@ -318,7 +318,14 @@ TEST_CASE ("the render path allocates nothing", "[realtime][gate][allocation]")
     // Song mode, not pattern: collectAutomation only runs in song mode, and the
     // automation clips below are the whole point of the fixture.
     engine.setMode (Transport::Mode::song);
-    engine.play();
+
+    // The click ON, and a count-in armed for the first few blocks, so BOTH of
+    // renderMetronome's branches are inside the armed window below. A fixture
+    // that left the metronome off would report a clean count for a path it had
+    // not measured, which is the failure mode every gate in this file exists to
+    // avoid. Eight blocks of it, so the remaining 392 still exercise playing.
+    engine.setMetronomeEnabled (true);
+    engine.playWithCountIn (8 * blockSize);
 
     juce::AudioBuffer<float> block (2, blockSize);
 

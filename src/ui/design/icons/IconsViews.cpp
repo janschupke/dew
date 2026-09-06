@@ -160,6 +160,8 @@ std::vector<NamedIcon> all()
         { "record", record },
         { "loop", loop },
         { "panic", panic },
+        { "metronome", metronome },
+        { "keyboard", keyboard },
 
         { "plus", plus },
         { "minus", minus },

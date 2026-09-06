@@ -348,6 +348,97 @@ void AudioEngine::sumMixerTracks (const EngineSnapshot& snapshot, int numMixerTr
     }
 }
 
+void AudioEngine::renderMetronome (const EngineSnapshot& snapshot, int numSamples,
+                                   bool isPlayingNow, bool countingIn, int materialSteps,
+                                   float* outLeft, float* outRight) noexcept
+{
+    if (! metronomeEnabled.load (std::memory_order_relaxed) && ! countingIn)
+    {
+        // Not a fade: the click is either wanted or it is not, and a tail at
+        // this level is inaudible beside the discontinuity it would avoid.
+        metronome.reset();
+        return;
+    }
+
+    const auto stepsPerBeat = juce::jmax (1, transport.getStepsPerBeat());
+    const auto beatsPerBar = juce::jmax (1, snapshot.beatsPerBar);
+    const auto stepsPerBar = juce::jmax (stepsPerBeat, snapshot.stepsPerBar());
+
+    // The block is rendered in SEGMENTS around the strikes rather than through
+    // a queue of pending ones: at a long block size and a fast tempo several
+    // beats can land in one buffer, and this has no bound to exceed and no drop
+    // policy to get wrong.
+    auto cursor = 0;
+
+    const auto strikeAt = [&] (int offset, bool accent)
+    {
+        const auto at = juce::jlimit (cursor, numSamples, offset);
+
+        metronome.render (outLeft + cursor, outRight + cursor, at - cursor);
+        cursor = at;
+        metronome.strike (accent);
+    };
+
+    if (countingIn)
+    {
+        // Anchored to the DOWNBEAT, not to where the count-in started. The
+        // budget is spent a whole block at a time, so counting forwards would
+        // put the join between the last click and the first bar out by up to a
+        // block; counting back from zero puts that rounding in the lead-in,
+        // where there is nothing to be out of time with.
+        const auto samplesPerBeat = Transport::samplesPerStepFor (transport.getTempo(),
+                                                                  stepsPerBeat, currentSampleRate)
+                                    * (double) stepsPerBeat;
+
+        if (samplesPerBeat <= 0.0)
+            return;
+
+        const auto remaining = (double) countInRemaining.load (std::memory_order_relaxed);
+
+        // 0 <= remaining - k * samplesPerBeat < numSamples. Ascending offset is
+        // DESCENDING k, which is the order the segmented render needs. k == 0
+        // is the downbeat itself and belongs to the first PLAYING block.
+        const auto last = (int) std::floor (remaining / samplesPerBeat);
+        const auto first = (int) std::floor ((remaining - (double) numSamples) / samplesPerBeat)
+                           + 1;
+
+        for (auto k = last; k >= juce::jmax (1, first); --k)
+            strikeAt ((int) std::llround (remaining - (double) k * samplesPerBeat),
+                      k % beatsPerBar == 0);
+    }
+    else if (isPlayingNow && materialSteps > 0 && snapshot.tempoMap != nullptr)
+    {
+        // The same scan Sequencer::collect makes, over beats rather than steps,
+        // and through the MAP for the reason it gives: a scalar rate drifts
+        // against a ramp, and the drift accumulates against the sample counter.
+        const auto& map = *snapshot.tempoMap;
+        const auto blockStart = (double) transport.getPositionSamples();
+        const auto blockEnd = blockStart + (double) numSamples;
+
+        auto step = (juce::int64) std::ceil (map.stepsForSeconds (blockStart / currentSampleRate));
+        const auto lastStep = (juce::int64) std::ceil (
+                                  map.stepsForSeconds (blockEnd / currentSampleRate))
+                              - 1;
+
+        step = juce::jmax ((juce::int64) 0, step);
+
+        for (; step <= lastStep; ++step)
+        {
+            if (step % stepsPerBeat != 0)
+                continue;
+
+            const auto at = map.secondsForSteps ((double) step) * currentSampleRate;
+
+            if (at < blockStart || at >= blockEnd)
+                continue;
+
+            strikeAt ((int) std::llround (at - blockStart), step % stepsPerBar == 0);
+        }
+    }
+
+    metronome.render (outLeft + cursor, outRight + cursor, numSamples - cursor);
+}
+
 void AudioEngine::processBlock (juce::AudioBuffer<float>& buffer) noexcept
 {
     buffer.clear();
@@ -380,7 +471,13 @@ void AudioEngine::processBlock (juce::AudioBuffer<float>& buffer) noexcept
 
     applyTransportRequests (loopChanged);
 
-    const auto isPlayingNow = playing.load();
+    // ONE line is the whole count-in. isPlayingNow already gates the sequencer,
+    // the automation, transport.advance AND blockContext.transport.isPlaying -
+    // that last one matters most: a frozen transport that still says it is
+    // playing makes SamplePlayer re-render the same window of the same sample
+    // every block, which is a buzz for the length of the count-in.
+    const auto countingIn = countInRemaining.load() > 0;
+    const auto isPlayingNow = playing.load() && ! countingIn;
 
     collectBlockEvents (snapshot, mode, patternIndex, materialSteps, isPlayingNow, numSamples,
                         numChannels);
@@ -403,6 +500,20 @@ void AudioEngine::processBlock (juce::AudioBuffer<float>& buffer) noexcept
     // The same samples the master meter sees, and for the same reason: this is
     // the only point in the engine that is the finished output.
     signalTap.write (outLeft, outRight, numSamples);
+
+    // AFTER the fader, the meter and the tap, and BEFORE the advance so it
+    // reads the same position the sequencer did. See renderMetronome.
+    renderMetronome (snapshot, numSamples, isPlayingNow, countingIn, materialSteps, outLeft,
+                     outRight);
+
+    if (countingIn)
+    {
+        // A whole block at a time, and AudioRecorder's pre-roll counts down by
+        // the same numSamples in the same device callback - so the two cannot
+        // disagree about which block the take starts on.
+        countInRemaining.store (
+            juce::jmax ((juce::int64) 0, countInRemaining.load() - (juce::int64) numSamples));
+    }
 
     if (isPlayingNow && materialSteps > 0)
         transport.advance (numSamples);

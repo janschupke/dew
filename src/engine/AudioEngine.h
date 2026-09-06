@@ -6,6 +6,7 @@
 #include <type_traits>
 #include <vector>
 
+#include "engine/Metronome.h"
 #include "engine/MixerBus.h"
 #include "engine/SignalTap.h"
 #include "engine/EffectModulePool.h"
@@ -251,6 +252,33 @@ public:
     LoopRegion getLoopRegion (Transport::Mode) const noexcept;
     bool hasLoopRegion (Transport::Mode) const noexcept;
 
+    // --- the click ------------------------------------------------------------
+    /** Whether a click sounds on every beat, with an accent on the bar.
+
+        Callable from any thread, like every other transport fact here. Defaults
+        to OFF and an offline render builds its own AudioEngine, so a click can
+        never reach a file - see renderMetronome for where it is summed and why.
+    */
+    void setMetronomeEnabled (bool) noexcept;
+    bool isMetronomeEnabled() const noexcept;
+
+    /** Starts playing after `countInSamples` of clicks.
+
+        The transport does not move and nothing is sequenced until the budget is
+        spent, so a take starts where the playhead already is. The budget is
+        consumed in WHOLE BLOCKS - processBlock has no structure for a partial
+        one, and the same quantisation is what the loop wrap already has - which
+        is why the clicks are anchored to the END of the count-in rather than to
+        its start: the last one is then exactly one beat before the downbeat and
+        only the lead-in absorbs the rounding.
+
+        play(), stop(), pause() and rewind() all clear it, so Space cancels a
+        count-in and a stop cannot leave one standing for the next play.
+    */
+    void playWithCountIn (juce::int64 countInSamples) noexcept;
+    bool isCountingIn() const noexcept;
+    juce::int64 getCountInRemainingSamples() const noexcept;
+
     void setMode (Transport::Mode);
     Transport::Mode getMode() const noexcept
     {
@@ -485,6 +513,16 @@ private:
     void sumMixerTracks (const EngineSnapshot&, int numMixerTracks, int numSamples, float* outLeft,
                          float* outRight) noexcept;
 
+    /** The click, summed in AFTER the master fader, the meter and the tap.
+
+        That placement is the whole rule: a click is a monitoring aid, so it
+        must not colour the master meter, must not appear in the oscilloscope,
+        and must not be ridden by anything on the master. It reads the position
+        BEFORE transport.advance, the way the sequencer does.
+    */
+    void renderMetronome (const EngineSnapshot&, int numSamples, bool isPlayingNow, bool countingIn,
+                          int materialSteps, float* outLeft, float* outRight) noexcept;
+
     /** The only things automation may move on a channel, and nothing else.
 
         A distinct type rather than a copy of ChannelSnapshot, and that is the
@@ -599,6 +637,13 @@ private:
 
     double currentSampleRate = kDefaultSampleRate;
     int currentBlockSize = kDefaultBlockSize;
+
+    Metronome metronome;
+    std::atomic<bool> metronomeEnabled { false };
+
+    /** What is left of a count-in, in samples. Zero is "not counting in", so no
+        second flag can disagree with it. */
+    std::atomic<juce::int64> countInRemaining { 0 };
 
     std::atomic<bool> playing { false };
     std::atomic<double> startMarkerSteps { 0.0 };
