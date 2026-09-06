@@ -8,6 +8,7 @@
 #include <juce_gui_basics/juce_gui_basics.h>
 
 #include "engine/AudioEngine.h"
+#include "i18n/Strings.h"
 #include "app/ProjectDocument.h"
 #include "model/ProjectFactory.h"
 #include "ui/design/DewLookAndFeel.h"
@@ -375,6 +376,19 @@ struct BarHarness
         return nullptr;
     }
 
+    /** The other control laid out from the right end, and so the other one
+        whose x is a function of the window's width rather than of what
+        precedes it. */
+    juce::Component* findPanic()
+    {
+        for (auto* child : bar.getChildren())
+            if (auto* button = dynamic_cast<juce::Button*> (child);
+                button != nullptr && button->getTooltip() == tr (StringId::transport_panic_help))
+                return button;
+
+        return nullptr;
+    }
+
     DewLookAndFeel lookAndFeel;
     ProjectDocument document;
     AudioEngine engine;
@@ -414,10 +428,16 @@ TEST_CASE ("narrowing the bar hides the visualiser and damages nothing else",
     auto* scope = h.findScope();
     REQUIRE (scope != nullptr);
 
+    auto* panic = h.findPanic();
+    REQUIRE (panic != nullptr);
+
     juce::Array<juce::Rectangle<int>> before;
 
+    // Panic is excluded with the scope, and for the same reason: it is laid out
+    // from the RIGHT end, so its x is a function of the window's width. Every
+    // other control in the bar is anchored to the left and must not move.
     for (auto* child : h.bar.getChildren())
-        if (child != scope)
+        if (child != scope && child != panic)
             before.add (child->getBounds());
 
     h.bar.setSize (900, 46);
@@ -429,8 +449,15 @@ TEST_CASE ("narrowing the bar hides the visualiser and damages nothing else",
     int index = 0;
 
     for (auto* child : h.bar.getChildren())
-        if (child != scope)
+        if (child != scope && child != panic)
             REQUIRE (child->getBounds() == before[index++]);
+
+    // ...and the safety control survives the narrowing that took the scope. It
+    // is the one thing at the right end that never gives way, which is why the
+    // scope's room is measured with panic's already spoken for.
+    CHECK (panic->isVisible());
+    CHECK (h.bar.getLocalBounds().contains (panic->getBounds()));
+    CHECK (panic->getWidth() > 0);
 }
 
 TEST_CASE ("the visualiser never overlaps another control", "[signalscope][transport]")

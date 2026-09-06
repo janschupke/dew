@@ -526,17 +526,31 @@ void TransportBar::resized()
 
     const auto place = [&strip] (juce::Component& c, int width) { strip.place (c, width); };
 
+    // Panic's slot, taken off the right end BEFORE the chain below runs, and
+    // one gap wider than the button so the scope has something to sit against.
+    //
+    // Reserved rather than laid out in the leftovers because the window's own
+    // minimum width is 900 and at 900 the chain below fills the strip: a panic
+    // button placed last is a panic button that is not there when the window is
+    // small, which is exactly when somebody reaches for it. WHERE it is drawn
+    // is settled at the bottom, once the scope has said whether it is there.
+    const auto reserved = strip.placeFromRight (30 + space::sm);
+
     place (playButton, 30);
     place (stopButton, 30);
     place (recordButton, 30);
+
+    groupDividers.add (strip.divider());
+
+    // Their own category, behind a rule rather than butted onto the transport
+    // run. Neither is a transport control: one is a thing you hear and the
+    // other a thing you play, and both are modes that stay on rather than
+    // actions that happen once.
     place (metronomeButton, 30);
     place (keyboardButton, 30);
 
-    // A gap either side, rather than beside record with the others: it is not a
-    // fourth transport button and a hand reaching for stop must not find it.
-    strip.gap();
-    place (panicButton, 30);
-    strip.gap();
+    groupDividers.add (strip.divider());
+
     place (tempoField, 96);
     place (meterBox, 72);
     strip.gap();
@@ -555,19 +569,38 @@ void TransportBar::resized()
 
     place (positionLabel, 84);
 
-    // Taken from the right rather than as the next link in the chain above:
-    // everything before it is a control with a width it needs, and this is the
-    // only thing in the bar that should give way when the window does. Hidden
-    // rather than squeezed, because a sixty-pixel oscilloscope is not a smaller
-    // oscilloscope, it is noise.
+    // The scope is taken from the right rather than as the next link in the
+    // chain above: everything before it is a control with a width it needs, and
+    // this is the only thing in the bar that should give way when the window
+    // does. Hidden rather than squeezed, because a sixty-pixel oscilloscope is
+    // not a smaller oscilloscope, it is noise.
     const auto roomForScope = strip.getRemainingWidth() >= SignalScope::preferredWidth + space::lg;
     signalScope.setVisible (roomForScope);
 
-    if (roomForScope)
+    // Panic is away from the transport run for the reason it always was - it is
+    // not a fourth transport button and a hand reaching for stop must not find
+    // it - and now at the right end, where nothing sits beside it to be hit by
+    // accident.
+    const auto end = reserved.getRight();
+
+    if (! roomForScope)
     {
-        signalScope.setBounds (strip.placeFromRight (SignalScope::preferredWidth));
-        groupDividers.add (strip.dividerFromRight());
+        panicButton.setBounds (reserved.withWidth (30).withX (end - 30));
+        return;
     }
+
+    // The scope takes the very end and panic the slot immediately inside it:
+    // the order the two are wanted in, which is the reverse of the order a
+    // strip laid out from the right had to reserve them in. The two spans add
+    // up to exactly what was reserved plus what the scope has just asked for,
+    // so nothing here reaches back over the chain above.
+    const auto slot = strip.placeFromRight (SignalScope::preferredWidth);
+    const auto scopeX = end - SignalScope::preferredWidth;
+
+    signalScope.setBounds (slot.withX (scopeX));
+    panicButton.setBounds (reserved.withWidth (30).withX (scopeX - space::sm - 30));
+
+    groupDividers.add (strip.dividerFromRight());
 }
 
 } // namespace dew
