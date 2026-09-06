@@ -74,6 +74,26 @@ public:
 
     void refresh();
 
+    /** What a right-click on the title band offers, and what choosing item
+        `choice` does. Public because the test seam reads it - showMenuAsync
+        cannot run headlessly, so every menu in dew is a buildMenu /
+        applyMenuChoice pair. */
+    juce::PopupMenu buildMenu() const;
+    void applyMenuChoice (int choice);
+
+    /** The rows buildMenu offers.
+
+        Changing the instrument is the reason this menu exists. `source` was
+        written at exactly two sites, both inside add*Channel, so picking the
+        wrong kind meant deleting the channel and losing its notes, its colour
+        and its routing with it - and the panel that SHOWS the instrument had no
+        way to change it at all. */
+    enum class MenuItem
+    {
+        instrumentBase = 1, ///< + (int) InstrumentType
+        preset = 100
+    };
+
     /** What the preset button would offer, and what choosing item `choice`
         does. A menu cannot be driven headlessly - see MenuSeam.h. */
     std::vector<PresetMenuRow> presetMenuRowsFor() const;
@@ -173,8 +193,23 @@ private:
     int instrumentBandHeight() const;
 
     /** Where that band ended up, so paint() can draw its rule and its heading
-        without repeating the arithmetic. */
+        without repeating the arithmetic. Empty while the band is folded. */
     juce::Rectangle<int> instrumentBand;
+
+    /** Whether the instrument's controls are showing - EditorState's answer,
+        asked rather than mirrored, for the reason EffectCard::isExpanded asks
+        rather than keeping a flag. */
+    bool isInstrumentExpanded() const;
+
+    /** Opens buildMenu at the pointer. */
+    void showMenu (const juce::MouseEvent&);
+
+    void mouseDown (const juce::MouseEvent&) override;
+    void mouseDrag (const juce::MouseEvent&) override;
+    void mouseUp (const juce::MouseEvent&) override;
+
+    /** The right button, refused for the whole press - see PopupPress. */
+    PopupPress popupPress;
 
     /** The knobs this panel is showing, GROUPED: the envelope, then how loud
         and where in the field.
@@ -220,6 +255,15 @@ private:
         affordance, so a person learns it once.
     */
     DewIconButton presetButton { icons::preset(), tr (StringId::instrument_preset_help) };
+
+    /** Folds the instrument band, leaving the title and the chain below it.
+
+        The same affordance an effect card carries, in the same place - the
+        leading edge of its header - because this panel is a card too. It is the
+        tallest band in the sidebar and it was the only one there that could not
+        be got out of the way: to reach a long chain you scrolled past a
+        soundfont section you were not using. */
+    DewIconButton collapseButton { icons::chevronDown(), tr (StringId::instrument_collapse_help) };
 
     /** The channel's oscillator slots. Its own component: it carries its own
         selection, its own listener scoped to one instrument's nodes and its own

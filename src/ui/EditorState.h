@@ -1,5 +1,7 @@
 #pragma once
 
+#include <utility>
+
 #include <juce_gui_basics/juce_gui_basics.h>
 
 namespace dew
@@ -94,6 +96,32 @@ public:
             expandedEffects.add (effectId);
         else
             expandedEffects.removeAllInstancesOf (effectId);
+
+        sendChangeMessage();
+    }
+
+    // --- instrument ----------------------------------------------------------
+    /** Whether the instrument's own controls are showing.
+
+        The same kind of state an effect card's fold is, for the same reasons:
+        per-session, off the undo stack, and not a change to the project. The
+        instrument band is the tallest thing in the sidebar, and it was the one
+        band there that could not be got out of the way to see the chain below
+        it - the effect cards had folded since they were written.
+
+        A single flag rather than one per channel: the panel shows one channel
+        at a time, and "I am working on the effects" is a statement about what
+        the person is doing, not about which channel they last clicked.
+    */
+    bool isInstrumentExpanded() const noexcept
+    {
+        return instrumentExpanded;
+    }
+
+    void setInstrumentExpanded (bool shouldBeExpanded)
+    {
+        if (std::exchange (instrumentExpanded, shouldBeExpanded) == shouldBeExpanded)
+            return;
 
         sendChangeMessage();
     }
@@ -234,6 +262,9 @@ private:
     juce::Range<int> selectedSteps;
 
     juce::Array<int> expandedEffects;
+
+    /** Open, because that is what the panel has always been. */
+    bool instrumentExpanded = true;
 };
 
 } // namespace dew

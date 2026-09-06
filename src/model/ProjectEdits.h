@@ -146,6 +146,29 @@ struct ProjectEdits
         fallback, for the reason instrumentTypeFor returns one. */
     static std::optional<InstrumentType> instrumentTypeOf (const juce::ValueTree& channel);
 
+    /** Changes what a channel PLAYS, keeping everything else about it.
+
+        There was no way to do this at all: `source` was written at exactly two
+        sites, both inside add*Channel, so choosing wrong when you made a
+        channel meant deleting it and losing its notes, its colour, its mixer
+        routing and its place in the rack.
+
+        It is one property write because the schema already made it one: every
+        channel carries an `instrument`, a `sample` AND a `soundfont` node at
+        all times, whichever kind it is, and `source` only says which of them is
+        live. Nothing is created and nothing is destroyed.
+
+        Deliberately NON-DESTRUCTIVE, and that is the whole design. A synth
+        turned into an audio channel keeps its notes - they stop sounding
+        because playsNotes goes false - and an audio channel turned into a synth
+        keeps the clips that referred to it. Swapping back, or one undo, brings
+        the sound straight back; a version that "tidied up" what the new kind
+        cannot use would make the round trip lossy and the undo a lie.
+
+        Returns false when the channel is not one, or already plays that.
+    */
+    static bool setInstrumentType (juce::ValueTree channel, InstrumentType, juce::UndoManager*);
+
     /** Whether notes drive this channel - a step grid, a piano roll, a pattern.
 
         Named for the question rather than for the kind, because it was

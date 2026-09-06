@@ -239,3 +239,93 @@ TEST_CASE ("the instrument panel's knobs are one undo step too", "[ui][channelra
 
     REQUIRE ((double) channel[ids::volume] == Catch::Approx (before));
 }
+
+TEST_CASE ("a channel's instrument can be changed without losing the channel",
+           "[ui][channelrack][instrument]")
+{
+    // `source` was written at exactly two sites, both inside add*Channel, so
+    // picking the wrong kind meant deleting the channel and losing its notes,
+    // its colour, its mixer routing and its place in the rack with it. The
+    // panel that SHOWS the instrument could not change it at all.
+    const juce::ScopedJuceInitialiser_GUI juceInit;
+
+    ProjectDocument document;
+    EditorState editorState;
+
+    document.setState (dew::testing::fixtureProject(), true);
+    editorState.setSelectedChannelId (1);
+
+    auto channel = ProjectEdits::findChannel (document.getState(), 1);
+    REQUIRE (channel.isValid());
+    REQUIRE (ProjectEdits::instrumentTypeOf (channel) == InstrumentType::synth);
+
+    const auto name = channel[ids::name].toString();
+    const auto colour = channel[ids::colour].toString();
+    const auto routing = (int) channel[ids::mixerTrackId];
+
+    REQUIRE (ProjectEdits::setInstrumentType (channel, InstrumentType::soundfont,
+                                              &document.getUndoManager()));
+    CHECK (ProjectEdits::instrumentTypeOf (channel) == InstrumentType::soundfont);
+
+    // Everything that identifies the channel survives, because the swap is one
+    // property write: the schema gives every channel an instrument, a sample
+    // AND a soundfont node whichever kind it is, and `source` only says which
+    // is live.
+    CHECK (channel[ids::name].toString() == name);
+    CHECK (channel[ids::colour].toString() == colour);
+    CHECK ((int) channel[ids::mixerTrackId] == routing);
+    CHECK (channel.getChildWithName (ids::INSTRUMENT).isValid());
+    CHECK (channel.getChildWithName (ids::SOUNDFONT).isValid());
+
+    // Non-destructive, and that is the design rather than an oversight: a synth
+    // turned into something else keeps its notes, so swapping back - or one
+    // undo - brings the sound straight back.
+    document.getUndoManager().undo();
+    CHECK (ProjectEdits::instrumentTypeOf (channel) == InstrumentType::synth);
+
+    // Asking for the kind it already is changes nothing and starts no undo step.
+    CHECK_FALSE (ProjectEdits::setInstrumentType (channel, InstrumentType::synth,
+                                                  &document.getUndoManager()));
+}
+
+TEST_CASE ("the instrument band folds and the panel gets shorter", "[ui][channelrack][instrument]")
+{
+    // The tallest band in the sidebar, and the only one there that could not be
+    // got out of the way - the effect cards had folded since they were written,
+    // so reaching a long chain meant scrolling past a section you were not
+    // using.
+    const juce::ScopedJuceInitialiser_GUI juceInit;
+
+    ProjectDocument document;
+    EditorState editorState;
+
+    document.setState (dew::testing::fixtureProject(), true);
+    editorState.setSelectedChannelId (1);
+
+    InstrumentPanel panel { document, editorState };
+    panel.setSize (280, 900);
+    panel.setVisible (true);
+    panel.resized();
+
+    const auto open = panel.getRequiredHeight();
+
+    editorState.setInstrumentExpanded (false);
+    editorState.dispatchPendingMessages();
+    panel.resized();
+
+    const auto folded = panel.getRequiredHeight();
+
+    INFO ("open " << open << ", folded " << folded);
+    CHECK (folded < open);
+
+    // The control case: folding must not collapse the panel to nothing. The
+    // title and the effect chain below it stay, which is the whole point of
+    // folding this band rather than hiding the panel.
+    CHECK (folded > tokens::size::stripHeading);
+
+    editorState.setInstrumentExpanded (true);
+    editorState.dispatchPendingMessages();
+    panel.resized();
+
+    CHECK (panel.getRequiredHeight() == open);
+}

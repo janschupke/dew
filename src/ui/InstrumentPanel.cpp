@@ -65,6 +65,11 @@ InstrumentPanel::InstrumentPanel (ProjectDocument& d, EditorState& s, SamplePool
     presetButton.onClick = [this] { showPresetMenu(); };
     addAndMakeVisible (presetButton);
 
+    collapseButton.setComponentID ("instrumentCollapse");
+    collapseButton.onClick = [this]
+    { editorState.setInstrumentExpanded (! isInstrumentExpanded()); };
+    addAndMakeVisible (collapseButton);
+
     // The oscillator section's height depends on the mode of the slot it is
     // showing, and that mode lives on an OSC node this panel does not listen to
     // - by design, since a change to another channel's oscillator is none of
@@ -300,7 +305,7 @@ void InstrumentPanel::paint (juce::Graphics& g)
 
     paint::sectionHeading (
         g, instrumentBand.withHeight (tokens::size::stripHeading).withTrimmedLeft (space::md),
-        "INSTRUMENT");
+        tr (StringId::instrument_heading));
 
     // The envelope against the levels, where the two share a knob row. Groups
     // that landed on rows of their own are already separated by the row break -
@@ -418,6 +423,13 @@ int InstrumentPanel::instrumentBandHeight() const
     // The grid answers for its own depth rather than this counting knob rows:
     // six knobs are one row in a wide panel and two in a narrow one, and a
     // budget that assumed either would be wrong at the other.
+    // Folded, the band IS its heading. Nothing below it is laid out, so nothing
+    // below it may be budgeted for either - getRequiredHeight and resized read
+    // this same answer, which is what keeps the panel and the sidebar's
+    // scrollbar agreeing about how tall it is.
+    if (! isInstrumentExpanded())
+        return size::stripHeading;
+
     const auto rows = faceHeight + size::knob + KnobGrid::heightFor (knobPlan()) + 3 * space::sm;
 
     return size::stripHeading + rows;
@@ -446,11 +458,116 @@ int InstrumentPanel::getRequiredHeight() const
     return titleBandHeight + instrumentBandHeight() + chainHost.getPreferredHeight();
 }
 
+bool InstrumentPanel::isInstrumentExpanded() const
+{
+    return editorState.isInstrumentExpanded();
+}
+
+juce::PopupMenu InstrumentPanel::buildMenu() const
+{
+    juce::PopupMenu menu;
+
+    const auto channel = selectedChannel();
+
+    if (! channel.isValid())
+        return menu;
+
+    // What this channel PLAYS. Ticked rather than only offered, because the
+    // panel's own glyph is the other place the answer is shown and a menu that
+    // does not say which one you are on is a menu you have to guess in.
+    juce::PopupMenu kinds;
+
+    for (const auto& descriptor : instrumentDescriptors())
+    {
+        const auto isCurrent = ProjectEdits::instrumentTypeOf (channel) == descriptor.type;
+
+        addGlyphItem (kinds, (int) MenuItem::instrumentBase + (int) descriptor.type,
+                      tr (descriptor.displayName), glyph::forInstrument (descriptor.type), true,
+                      isCurrent);
+    }
+
+    addGlyphSubMenu (menu, tr (StringId::instrument_change_label), std::move (kinds),
+                     glyph::Action::open);
+
+    menu.addSeparator();
+    addGlyphItem (menu, (int) MenuItem::preset, tr (StringId::instrument_preset_help),
+                  glyph::Action::preset);
+
+    return menu;
+}
+
+void InstrumentPanel::applyMenuChoice (int choice)
+{
+    if (choice == (int) MenuItem::preset)
+    {
+        showPresetMenu();
+        return;
+    }
+
+    const auto kind = choice - (int) MenuItem::instrumentBase;
+
+    if (kind < 0 || kind >= kNumInstrumentTypes)
+        return;
+
+    ProjectEdits::setInstrumentType (selectedChannel(), (InstrumentType) kind,
+                                     &document.getUndoManager());
+}
+
+void InstrumentPanel::showMenu (const juce::MouseEvent& event)
+{
+    // The title band's menu, and only the title band's. The sections below it
+    // carry parameter menus of their own, and a press on one of those arrives
+    // here as well as there.
+    if (event.getEventRelativeTo (this).getPosition().y >= titleBandHeight)
+        return;
+
+    auto menu = buildMenu();
+
+    if (menu.getNumItems() == 0)
+        return;
+
+    menu.setLookAndFeel (&getLookAndFeel());
+    menu.showMenuAsync (juce::PopupMenu::Options().withTargetScreenArea (
+                            { event.getScreenX(), event.getScreenY(), 1, 1 }),
+                        [safe = juce::Component::SafePointer<InstrumentPanel> (this)] (int choice)
+                        {
+                            if (safe != nullptr && choice > 0)
+                                safe->applyMenuChoice (choice);
+                        });
+}
+
+void InstrumentPanel::mouseDown (const juce::MouseEvent& event)
+{
+    popupPress.down (event, [this, &event] { showMenu (event); });
+}
+
+void InstrumentPanel::mouseDrag (const juce::MouseEvent&)
+{
+    // Armed in mouseDown and disarmed in both other phases - a right press that
+    // travels one pixel completes a click otherwise. See PopupPress.
+    if (popupPress.dragging())
+        return;
+}
+
+void InstrumentPanel::mouseUp (const juce::MouseEvent&)
+{
+    if (popupPress.releasing())
+        return;
+}
+
 void InstrumentPanel::resized()
 {
     auto area = getLocalBounds();
 
     auto titleRow = area.removeFromTop (titleBandHeight).reduced (space::md);
+
+    // The disclosure chevron, on the LEADING edge - the same place and the same
+    // glyph an effect card puts it, because this band folds for the same reason
+    // and a person should not have to learn it twice.
+    collapseButton.setBounds (titleRow.removeFromLeft (size::iconButton)
+                                  .withSizeKeepingCentre (size::iconButton, size::iconButton));
+    titleRow.removeFromLeft (space::sm);
+    collapseButton.setIcon (isInstrumentExpanded() ? icons::chevronUp() : icons::chevronDown());
 
     // The button on the right of the title, at the icon button's own size - the
     // title takes whatever is left, which is what it did before there was
@@ -473,6 +590,27 @@ void InstrumentPanel::resized()
     // edges. The band itself is full-bleed - the rule above it and its ground
     // run edge to edge - so the inset is on the CONTENT, not on the region.
     instrumentBand = area.removeFromTop (instrumentBandHeight());
+
+    // Folded: nothing below the heading is laid out, and nothing below it is
+    // visible either. Hiding rather than leaving them at stale bounds is what
+    // keeps the walks that check "every control has real bounds inside its
+    // parent" honest about a band that is not on show.
+    const auto open = isInstrumentExpanded();
+
+    oscSection.setVisible (open && showing == InstrumentType::synth);
+    sampleSection.setVisible (open && showing == InstrumentType::audio);
+    soundFontSection.setVisible (open && showing == InstrumentType::soundfont);
+
+    for (const auto& group : knobGroups)
+        for (auto* knob : group)
+            knob->setVisible (open);
+
+    if (! open)
+    {
+        knobRules.clear();
+        chainHost.setBounds (area.withHeight (chainHost.getPreferredHeight()));
+        return;
+    }
 
     auto band = instrumentBand.reduced (space::md, 0).withTrimmedTop (size::stripHeading);
 

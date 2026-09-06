@@ -385,7 +385,9 @@
   "effect": {
     "bypassed": "OFF",
     "chain": {
-      "title": "Effect chain"
+      "title": "Effect chain",
+      "heading": "EFFECTS",
+      "headingFor": "EFFECTS - {name}"
     },
     "chorus": {
       "name": "Chorus"
@@ -490,7 +492,14 @@
     "synth": {
       "name": "Synth"
     },
-    "title": "Instrument"
+    "title": "Instrument",
+    "heading": "INSTRUMENT",
+    "collapse": {
+      "help": "Show or hide this instrument's controls"
+    },
+    "change": {
+      "label": "Instrument"
+    }
   },
   "mcp": {
     "connections": {

@@ -88,6 +88,21 @@ juce::ValueTree ProjectEdits::addSoundFontChannel (juce::ValueTree project,
     return channel;
 }
 
+bool ProjectEdits::setInstrumentType (juce::ValueTree channel, InstrumentType type,
+                                      juce::UndoManager* undo)
+{
+    if (! channel.hasType (ids::CHANNEL))
+        return false;
+
+    const auto wanted = instrumentTypeToString (type);
+
+    if (channel[ids::source].toString() == wanted)
+        return false;
+
+    setProperty (channel, ids::source, wanted, undo, "Change instrument");
+    return true;
+}
+
 std::optional<InstrumentType> ProjectEdits::instrumentTypeOf (const juce::ValueTree& channel)
 {
     return instrumentTypeFor (channel[ids::source].toString());

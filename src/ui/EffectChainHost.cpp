@@ -223,7 +223,9 @@ void EffectChainHost::paint (juce::Graphics& g)
 
     paint::sectionHeading (
         g, { space::md, 0, getWidth() - size::iconButton - space::md, tokens::size::stripHeading },
-        ownerName.isEmpty() ? "EFFECTS" : "EFFECTS - " + ownerName);
+        ownerName.isEmpty()
+            ? tr (StringId::effect_chain_heading)
+            : tr (StringId::effect_chain_headingFor, Args {}.with ("name", ownerName)));
 
     // Between the heading and the cards, the way every other heading in the
     // app is separated from what it names.
