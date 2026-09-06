@@ -73,19 +73,19 @@ juce::PopupMenu PlaylistTrackHeader::buildMenu() const
 {
     juce::PopupMenu menu;
     addGlyphItem (menu, (int) MenuItem::rename, tr (StringId::playlist_menu_rename),
-                  glyph::forAction (glyph::Action::rename));
+                  glyph::Action::rename);
     colourMenu::addTo (menu, track, colourBaseId);
     addGlyphItem (menu, (int) MenuItem::addTrack, tr (StringId::playlist_menu_addTrack),
-                  glyph::forAction (glyph::Action::add));
+                  glyph::Action::add);
     menu.addSeparator();
 
     // Here as well as on the toolbar and on alt-0, because this is the menu
     // you are already in when a drag on the edge above went too far.
     addGlyphItem (menu, (int) MenuItem::resetHeight, tr (StringId::playlist_menu_resetHeight),
-                  glyph::forAction (glyph::Action::reset));
+                  glyph::Action::reset);
     menu.addSeparator();
     addGlyphItem (menu, (int) MenuItem::removeTrack, tr (StringId::playlist_menu_removeTrack),
-                  glyph::forAction (glyph::Action::remove));
+                  glyph::Action::remove);
     return menu;
 }
 

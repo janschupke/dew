@@ -212,8 +212,14 @@ private:
         combo shows a CURRENT selection, and with no user save there is no
         honest "modified" state to show once a knob has been touched. A button
         promises only what it does - load one.
+
+        The SAME icon button an effect card carries, not a 76px word. Loading a
+        preset onto an instrument and loading one onto an effect are the same
+        act, and they were spelled two ways one inch apart in the sidebar - a
+        picture on the card, the word "Preset" on the panel above it. One
+        affordance, so a person learns it once.
     */
-    DewButton presetButton { tr (StringId::instrument_preset_label) };
+    DewIconButton presetButton { icons::preset(), tr (StringId::instrument_preset_help) };
 
     /** The channel's oscillator slots. Its own component: it carries its own
         selection, its own listener scoped to one instrument's nodes and its own

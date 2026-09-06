@@ -452,12 +452,11 @@ void InstrumentPanel::resized()
 
     auto titleRow = area.removeFromTop (titleBandHeight).reduced (space::md);
 
-    // The button on the right of the title, at the width the design system
-    // gives a labelled control - the title takes whatever is left, which is
-    // what it did before there was anything beside it.
-    presetButton.setBounds (
-        titleRow.removeFromRight (size::gutterLabel)
-            .withSizeKeepingCentre (size::gutterLabel, presetButton.preferredHeight()));
+    // The button on the right of the title, at the icon button's own size - the
+    // title takes whatever is left, which is what it did before there was
+    // anything beside it, and now gets back the 52px the word "Preset" cost.
+    presetButton.setBounds (titleRow.removeFromRight (size::iconButton)
+                                .withSizeKeepingCentre (size::iconButton, size::iconButton));
     titleRow.removeFromRight (space::sm);
 
     // The glyph column is taken only when there is a channel to describe, so an

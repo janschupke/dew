@@ -424,19 +424,21 @@
       "name": "Reverb"
     },
     "moveUp": {
-      "help": "Move earlier in the chain"
+      "label": "Move earlier"
     },
     "moveDown": {
-      "help": "Move later in the chain"
+      "label": "Move later"
     },
     "remove": {
-      "help": "Remove this effect"
+      "help": "Remove this effect",
+      "label": "Remove effect"
     },
     "add": {
       "help": "Add an effect"
     },
     "preset": {
-      "help": "Load a preset for this effect"
+      "help": "Load a preset for this effect",
+      "label": "Preset"
     }
   },
   "file": {
@@ -480,8 +482,7 @@
     },
     "empty": "No channel selected",
     "preset": {
-      "help": "Load a factory sound onto this channel",
-      "label": "Preset"
+      "help": "Load a factory sound onto this channel"
     },
     "soundfont": {
       "name": "SoundFont"

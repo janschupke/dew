@@ -106,8 +106,7 @@ juce::PopupMenu PlaylistComponent::buildClipMenu (const juce::ValueTree& track, 
     if (menuPoint.isValid())
     {
         addGlyphItem (menu, (int) ClipMenuItem::deletePoint,
-                      tr (StringId::playlist_clip_deletePoint),
-                      glyph::forAction (glyph::Action::remove));
+                      tr (StringId::playlist_clip_deletePoint), glyph::Action::remove);
         menu.addSeparator();
 
         // The shapes of the segment this point OWNS - the one to its right,
@@ -127,7 +126,7 @@ juce::PopupMenu PlaylistComponent::buildClipMenu (const juce::ValueTree& track, 
     if (! clip.isValid())
     {
         addGlyphItem (menu, (int) ClipMenuItem::addClip, tr (StringId::playlist_clip_addClip),
-                      glyph::forAction (glyph::Action::add));
+                      glyph::Action::add);
         return menu;
     }
 
@@ -137,23 +136,21 @@ juce::PopupMenu PlaylistComponent::buildClipMenu (const juce::ValueTree& track, 
     if (ProjectEdits::isMidiClip (clip))
     {
         addGlyphItem (menu, (int) ClipMenuItem::openPattern,
-                      tr (StringId::playlist_clip_openPattern),
-                      glyph::forAction (glyph::Action::open));
+                      tr (StringId::playlist_clip_openPattern), glyph::Action::open);
 
         // Gives THIS clip a pattern of its own. A pattern is shared by every
         // clip that names it, so the only way to vary one repeat of a phrase
         // was to make a pattern in the transport bar and re-point the clip by
         // hand.
         addGlyphItem (menu, (int) ClipMenuItem::duplicatePattern,
-                      tr (StringId::playlist_clip_duplicatePattern),
-                      glyph::forAction (glyph::Action::duplicate));
+                      tr (StringId::playlist_clip_duplicatePattern), glyph::Action::duplicate);
     }
 
     if (menu.getNumItems() > 0)
         menu.addSeparator();
 
     addGlyphItem (menu, (int) ClipMenuItem::deleteClip, tr (StringId::playlist_clip_deleteClip),
-                  glyph::forAction (glyph::Action::remove));
+                  glyph::Action::remove);
     return menu;
 }
 
@@ -377,8 +374,7 @@ void PlaylistComponent::showAutomationMenu()
         if (group != currentGroup)
         {
             if (currentGroup.isNotEmpty())
-                addGlyphSubMenu (menu, currentGroup, submenu,
-                                 glyph::forAction (glyph::Action::automate));
+                addGlyphSubMenu (menu, currentGroup, submenu, glyph::Action::automate);
 
             submenu.clear();
             currentGroup = group;
@@ -389,7 +385,7 @@ void PlaylistComponent::showAutomationMenu()
     }
 
     if (currentGroup.isNotEmpty())
-        addGlyphSubMenu (menu, currentGroup, submenu, glyph::forAction (glyph::Action::automate));
+        addGlyphSubMenu (menu, currentGroup, submenu, glyph::Action::automate);
 
     menu.showMenuAsync (juce::PopupMenu::Options().withTargetComponent (addAutomationButton),
                         [this, targets] (int choice)

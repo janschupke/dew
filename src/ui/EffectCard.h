@@ -43,8 +43,13 @@ class EffectCard : public juce::Component
 public:
     static constexpr int modeColumnWidth = 120; ///< fits "Low pass" and the chevron
 
-    /** What the header packs: grip, bypass, icon, name, preset, reorder,
-        remove and - vertically - the expand chevron. */
+    /** The drag grip: two columns of dots, and the one thing in the header that
+        is not on the icon-button rung because it is not a button. */
+    static constexpr int gripWidth = 14;
+
+    /** What the header packs: grip, the disclosure chevron, bypass, icon, name,
+        preset and remove. Reorder is the grip and the menu, not two more
+        buttons. */
     static constexpr int cardMinWidth = 276 + tokens::size::minTouchTarget;
 
     /** How tall a card in a ROW is, for a band this many knob rows deep.
@@ -71,6 +76,30 @@ public:
     bool isExpanded() const;
 
     void setSelected (bool shouldBeSelected);
+
+    /** What this card's menu offers. Public because the test seam reads it -
+        showMenuAsync cannot run headlessly, so every menu in dew is tested as
+        a buildMenu/applyMenuChoice pair and the menu is only how a person
+        reaches them. The same contract HeaderRow states for the rows.
+    */
+    juce::PopupMenu buildMenu() const;
+
+    /** Runs the choice the menu returned. Public for the same reason. */
+    void applyMenuChoice (int choice);
+
+    /** The rows buildMenu offers, and the ids they carry. Reorder lives here
+        rather than in the header because the header had THREE chevrons of two
+        shapes in 34 pixels - move-up, move-down, and a collapse caret that was
+        the same glyph as one of them whenever the card was open. A caret that
+        means two things is a caret that means nothing.
+    */
+    enum class MenuItem
+    {
+        moveUp = 1,
+        moveDown,
+        preset,
+        remove
+    };
 
     /** Header plus, when open, the parameters.
 
@@ -131,10 +160,17 @@ private:
     */
     std::vector<int> groupSizes() const;
 
-    /** The header is identical whichever way the chain runs - only the reorder
-        arrows change, because they point the way the chain goes.
+    /** The header is identical whichever way the chain runs. It used to differ:
+        the reorder arrows pointed along the chain's axis, which is what made
+        the vertical case a pile of three chevrons.
     */
     void layOutHeader (juce::Rectangle<int> bounds);
+
+    /** Opens buildMenu at the pointer. Guarded by isOwnPress: this card
+        forwards its children's mouse events to itself for hover, and a knob's
+        own parameter menu must not arrive with this one on top of it.
+    */
+    void showMenu (const juce::MouseEvent&);
 
     /** The parameter grid. Shared by both orientations: they differ only in how
         many columns there are and in the rectangle they hand it.
@@ -194,8 +230,6 @@ private:
 
     DewIconButton bypassButton { icons::power(), {} };
     DewIconButton expandButton { icons::chevronDown(), tr (StringId::effect_expand_help) };
-    DewIconButton upButton { icons::chevronUp(), tr (StringId::effect_moveUp_help) };
-    DewIconButton downButton { icons::chevronDown(), tr (StringId::effect_moveDown_help) };
     DewIconButton presetButton { icons::preset(), tr (StringId::effect_preset_help) };
     DewIconButton removeButton { icons::trash(), tr (StringId::effect_remove_help),
                                  DewIconButton::Role::danger };

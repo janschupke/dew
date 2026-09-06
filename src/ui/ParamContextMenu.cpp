@@ -35,10 +35,10 @@ juce::PopupMenu build (const juce::ValueTree& project, const juce::ValueTree& ow
     // item, rather than one that opens and then fails.
     if (automationTargetFor (project, owner, *spec.property).has_value())
         addGlyphItem (menu, (int) Item::createClip, tr (StringId::param_menu_createClip),
-                      glyph::forAction (glyph::Action::automate));
+                      glyph::Action::automate);
 
     addGlyphItem (menu, (int) Item::resetToDefault, tr (StringId::param_menu_resetToDefault),
-                  glyph::forAction (glyph::Action::reset));
+                  glyph::Action::reset);
     return menu;
 }
 

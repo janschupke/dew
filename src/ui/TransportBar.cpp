@@ -354,7 +354,7 @@ void TransportBar::rebuildPatternList()
     // only to someone already looking for it.
     patternBox.addSeparator();
     addGlyphItem (patternBox, newPatternItemId, tr (StringId::transport_newPattern),
-                  glyph::forAction (glyph::Action::add));
+                  glyph::Action::add);
 
     setCurrentPattern (editorState.getCurrentPatternId());
     patternBox.setSelectedId (editorState.getCurrentPatternId(), juce::dontSendNotification);

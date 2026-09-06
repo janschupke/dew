@@ -5,8 +5,9 @@
 namespace dew
 {
 
-MenuGlyph::MenuGlyph (juce::Path pathInUnitSquare)
+MenuGlyph::MenuGlyph (juce::Path pathInUnitSquare, std::optional<juce::Colour> semanticTint)
     : unitPath (std::move (pathInUnitSquare))
+    , semantic (semanticTint)
 {
     // The base class is given the path too. Nothing in dew draws a MenuGlyph
     // through the Drawable interface, but a Drawable that measured zero would
@@ -18,15 +19,15 @@ MenuGlyph::MenuGlyph (juce::Path pathInUnitSquare)
 
 std::unique_ptr<juce::Drawable> MenuGlyph::createCopy() const
 {
-    return std::make_unique<MenuGlyph> (unitPath);
+    return std::make_unique<MenuGlyph> (unitPath, semantic);
 }
 
 namespace
 {
 
-std::unique_ptr<juce::Drawable> carrierFor (juce::Path glyph)
+std::unique_ptr<juce::Drawable> carrierFor (juce::Path glyph, std::optional<juce::Colour> tint = {})
 {
-    return std::make_unique<MenuGlyph> (std::move (glyph));
+    return std::make_unique<MenuGlyph> (std::move (glyph), tint);
 }
 
 } // namespace
@@ -111,6 +112,36 @@ juce::Path selectedGlyph (const juce::ComboBox& box)
 bool hasGlyphs (const juce::ComboBox& box)
 {
     return ! glyphOf (box, 0).isEmpty();
+}
+
+void addGlyphItem (juce::PopupMenu& menu, int itemId, const juce::String& text,
+                   glyph::Action action, bool isEnabled, bool isTicked)
+{
+    menu.addItem (juce::PopupMenu::Item (text)
+                      .setID (itemId)
+                      .setEnabled (isEnabled)
+                      .setTicked (isTicked)
+                      .setImage (carrierFor (glyph::forAction (action), glyph::tintFor (action))));
+}
+
+void addGlyphSubMenu (juce::PopupMenu& menu, const juce::String& text, juce::PopupMenu subMenu,
+                      glyph::Action action, bool isEnabled)
+{
+    juce::PopupMenu::Item item (text);
+    item.subMenu = std::make_unique<juce::PopupMenu> (std::move (subMenu));
+    item.isEnabled = isEnabled;
+    item.image = carrierFor (glyph::forAction (action), glyph::tintFor (action));
+    menu.addItem (std::move (item));
+}
+
+void addGlyphItem (juce::ComboBox& box, int itemId, const juce::String& text, glyph::Action action)
+{
+    // The two things ComboBox::addItem checks before forwarding, for the reason
+    // the Path overload above repeats them.
+    jassert (text.isNotEmpty());
+    jassert (itemId != 0);
+
+    addGlyphItem (*box.getRootMenu(), itemId, text, action);
 }
 
 } // namespace dew

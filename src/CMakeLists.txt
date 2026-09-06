@@ -547,6 +547,7 @@ add_library(dew_ui STATIC
   ui/McpConnectionsPanel.cpp
   ui/MainComponentControl.cpp
   ui/EffectCard.cpp
+  ui/EffectCardMenu.cpp
   ui/EffectChainComponent.cpp
   ui/EffectChainReorder.cpp
   ui/OscillatorFaces.cpp

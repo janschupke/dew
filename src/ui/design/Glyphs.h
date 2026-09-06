@@ -1,8 +1,11 @@
 #pragma once
 
+#include <optional>
+
 #include "model/EffectType.h"
 #include "model/InstrumentType.h"
 #include "ui/design/Icons.h"
+#include "ui/design/Tokens.h"
 
 /** Where a CONCEPT becomes a glyph.
 
@@ -90,7 +93,15 @@ enum class Action
     reset,
     colour,
     automate,
-    preset
+    preset,
+
+    /** Reorder, as a menu row. The effect card carried these as two more
+        buttons in a 34px header, beside a collapse caret drawn with the same
+        two glyphs - so the header showed chevron-down twice, meaning "fold
+        this" in one place and "move it later" in the other. A chevron is a
+        direction; in a menu it has a WORD beside it saying which. */
+    moveUp,
+    moveDown
 };
 
 inline juce::Path forAction (Action action) noexcept
@@ -106,9 +117,48 @@ inline juce::Path forAction (Action action) noexcept
         case Action::colour: return icons::palette();
         case Action::automate: return icons::automation();
         case Action::preset: return icons::preset();
+        case Action::moveUp: return icons::chevronUp();
+        case Action::moveDown: return icons::chevronDown();
     }
 
     jassertfalse;
+    return {};
+}
+
+/** What an action MEANS, as a colour, for the actions that mean something.
+
+    The companion to forAction, and here for the same reason: a menu row's
+    trash can was drawn in the row's text colour, so every destructive item in
+    the application was white while every destructive BUTTON was already red
+    through DewIconButton::Role::danger. The two said different things about the
+    same act.
+
+    An optional rather than a colour per action, because most actions mean
+    nothing in particular and a vocabulary where everything is coloured is one
+    where nothing is - the same rule DewIconButton::Role states for buttons.
+
+    Returning it from HERE rather than passing a colour at each call site is
+    what stops the next menu adding an uncoloured remove: the tint travels with
+    the action, and a call site that names the action has already asked for it.
+*/
+inline std::optional<juce::Colour> tintFor (Action action) noexcept
+{
+    switch (action)
+    {
+        case Action::remove: return tokens::colour::danger;
+
+        case Action::rename:
+        case Action::add:
+        case Action::duplicate:
+        case Action::open:
+        case Action::reset:
+        case Action::colour:
+        case Action::automate:
+        case Action::preset:
+        case Action::moveUp:
+        case Action::moveDown: break;
+    }
+
     return {};
 }
 
@@ -117,8 +167,9 @@ inline juce::Path forAction (Action action) noexcept
     system quietly hiding one.
 */
 inline constexpr Action allActions[] {
-    Action::rename, Action::add,    Action::remove,   Action::duplicate, Action::open,
-    Action::reset,  Action::colour, Action::automate, Action::preset,
+    Action::rename, Action::add,    Action::remove,   Action::duplicate,
+    Action::open,   Action::reset,  Action::colour,   Action::automate,
+    Action::preset, Action::moveUp, Action::moveDown,
 };
 
 } // namespace dew::glyph

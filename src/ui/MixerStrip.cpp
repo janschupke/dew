@@ -264,14 +264,14 @@ juce::PopupMenu MixerStrip::buildMenu() const
     if (! isMaster)
     {
         addGlyphItem (menu, (int) MenuItem::rename, tr (StringId::mixer_menu_rename),
-                      glyph::forAction (glyph::Action::rename));
+                      glyph::Action::rename);
         colourMenu::addTo (menu, track, colourBaseId);
     }
 
     const auto inserts = ProjectEdits::countMixerTracks (document.getState());
 
     addGlyphItem (menu, (int) MenuItem::addInsert, tr (StringId::mixer_menu_addInsert),
-                  glyph::forAction (glyph::Action::add), inserts < kMaxMixerTracks);
+                  glyph::Action::add, inserts < kMaxMixerTracks);
 
     // Rename / Add / - / Remove, which is the shape the rack's and the
     // playlist's menus already have: the separator sits immediately above
@@ -280,7 +280,7 @@ juce::PopupMenu MixerStrip::buildMenu() const
     {
         menu.addSeparator();
         addGlyphItem (menu, (int) MenuItem::removeInsert, tr (StringId::mixer_menu_removeInsert),
-                      glyph::forAction (glyph::Action::remove), inserts > 1);
+                      glyph::Action::remove, inserts > 1);
     }
 
     return menu;

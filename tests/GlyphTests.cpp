@@ -15,6 +15,7 @@
 #include "model/InstrumentType.h"
 #include "model/ModuleCatalog.h"
 #include "ui/design/Glyphs.h"
+#include "ui/design/Tokens.h"
 
 using namespace dew;
 
@@ -88,7 +89,7 @@ TEST_CASE ("every action has its own glyph", "[design][glyphs]")
     // without a shape. It can, however, compile without reaching allActions -
     // which is the list the gallery and the test above walk. The count is what
     // notices.
-    CHECK (std::size (glyph::allActions) == 9);
+    CHECK (std::size (glyph::allActions) == 11);
 }
 
 TEST_CASE ("a waveform's glyph is the one its stored name means", "[design][glyphs]")
@@ -104,5 +105,31 @@ TEST_CASE ("a waveform's glyph is the one its stored name means", "[design][glyp
         INFO ("waveform: " << name);
         CHECK (waveformToString (wave) == juce::String (name));
         CHECK (! glyph::forWaveform (wave).isEmpty());
+    }
+}
+
+TEST_CASE ("only a destructive action carries a colour", "[design][glyphs]")
+{
+    // The other half of forAction. A menu glyph is painted in the row's TEXT
+    // colour unless the action says otherwise, which is how every trash can in
+    // every context menu came to be white while every trash BUTTON was already
+    // red through DewIconButton::Role::danger - the same act, said two ways.
+    //
+    // Asserted as "remove and nothing else", not "remove is danger", because
+    // the failure this guards against is the opposite one: a vocabulary where
+    // enough actions are coloured that none of them reads as a warning.
+    for (const auto action : glyph::allActions)
+    {
+        const auto tint = glyph::tintFor (action);
+
+        INFO ("action index: " << (int) action);
+
+        if (action == glyph::Action::remove)
+        {
+            REQUIRE (tint.has_value());
+            CHECK (*tint == tokens::colour::danger);
+        }
+        else
+            CHECK (! tint.has_value());
     }
 }

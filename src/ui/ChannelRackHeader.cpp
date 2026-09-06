@@ -188,7 +188,7 @@ juce::PopupMenu ChannelRackHeader::buildMenu() const
 {
     juce::PopupMenu menu;
     addGlyphItem (menu, (int) MenuItem::rename, tr (StringId::channelRack_menu_rename),
-                  glyph::forAction (glyph::Action::rename));
+                  glyph::Action::rename);
     colourMenu::addTo (menu, channel, colourBaseId);
 
     // Built from the catalog rather than from three written-out rows, so a new
@@ -202,12 +202,11 @@ juce::PopupMenu ChannelRackHeader::buildMenu() const
                       glyph::forInstrument (instrument.type));
 
     addGlyphSubMenu (menu, tr (StringId::channelRack_menu_addChannel), std::move (kinds),
-                     glyph::forAction (glyph::Action::add));
+                     glyph::Action::add);
 
     menu.addSeparator();
     addGlyphItem (menu, (int) MenuItem::removeChannel,
-                  tr (StringId::channelRack_menu_removeChannel),
-                  glyph::forAction (glyph::Action::remove));
+                  tr (StringId::channelRack_menu_removeChannel), glyph::Action::remove);
     return menu;
 }
 

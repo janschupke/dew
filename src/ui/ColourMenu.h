@@ -68,8 +68,7 @@ inline void addTo (juce::PopupMenu& menu, const juce::ValueTree& node, int baseI
     // menu glyph is painted in the row's text colour - a swatch drawn in the
     // colour of the word beside it would say nothing, and one drawn in its own
     // colour would be eight new pairs to prove against two palettes.
-    addGlyphSubMenu (menu, tr (StringId::colour_menu), std::move (colours),
-                     glyph::forAction (glyph::Action::colour));
+    addGlyphSubMenu (menu, tr (StringId::colour_menu), std::move (colours), glyph::Action::colour);
 }
 
 /** Applies a choice if it belongs to this submenu, and says whether it did.

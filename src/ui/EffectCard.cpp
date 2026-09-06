@@ -13,6 +13,7 @@
 #include "ui/design/Gestures.h"
 #include "ui/design/Glyphs.h"
 #include "ui/design/Icons.h"
+#include "ui/design/MenuGlyph.h"
 #include "ui/design/ParamPalette.h"
 
 namespace dew
@@ -56,12 +57,6 @@ EffectCard::EffectCard (EffectChainComponent& o, ProjectDocument& d, EditorState
     expandButton.setTooltip (tr (StringId::effect_expand_help));
     expandButton.onClick = [this] { owner.setSlotExpanded (index, ! isExpanded()); };
     addAndMakeVisible (expandButton);
-
-    upButton.onClick = [this] { owner.moveSlot (index, index - 1); };
-    addAndMakeVisible (upButton);
-
-    downButton.onClick = [this] { owner.moveSlot (index, index + 1); };
-    addAndMakeVisible (downButton);
 
     presetButton.onClick = [this] { owner.showPresetMenu (index, presetButton); };
     presetButton.setEnabled (! PresetLibrary::presetsFor (type).empty());
@@ -184,7 +179,7 @@ void EffectCard::mouseDown (const juce::MouseEvent& event)
     // release then expanded or collapsed the card.
     owner.selectSlot (index);
 
-    popupPress.down (event, nullptr);
+    popupPress.down (event, [this, &event] { showMenu (event); });
 
     if (popupPress.dragging())
     {
@@ -401,37 +396,41 @@ void EffectCard::layOutHeader (juce::Rectangle<int> bounds)
 {
     auto header = bounds.reduced (space::xs, space::xxs);
 
-    gripBounds = header.removeFromLeft (14);
+    gripBounds = header.removeFromLeft (gripWidth);
     header.removeFromLeft (space::xxs);
-    bypassButton.setBounds (header.removeFromLeft (size::iconButton));
-    header.removeFromLeft (space::xs);
-    iconBounds = header.removeFromLeft (16).withSizeKeepingCentre (16, 16);
-    header.removeFromLeft (space::xs);
 
-    // Right to left, all at the icon-button rung. Preset, up and down used
-    // to be four pixels narrower than bypass and remove beside them, which
-    // is not a difference anyone reads as deliberate - it reads as the
-    // preset button being somehow lesser than the ones it sits between.
-    removeButton.setBounds (header.removeFromRight (size::iconButton));
-    presetButton.setBounds (header.removeFromRight (size::iconButton));
-    downButton.setBounds (header.removeFromRight (size::iconButton));
-    upButton.setBounds (header.removeFromRight (size::iconButton));
-    header.removeFromRight (space::xs);
-
+    // The disclosure chevron, on the LEADING edge where a disclosure belongs
+    // and where it is the only chevron in the header. It used to sit at the
+    // trailing end between two reorder carets, so a collapsed card showed
+    // chevron-down twice within 48 pixels meaning two different things.
     expandButton.setVisible (! owner.isHorizontal());
 
     if (! owner.isHorizontal())
     {
-        expandButton.setBounds (header.removeFromRight (size::minTouchTarget + 4));
-        header.removeFromRight (space::sm);
+        expandButton.setBounds (header.removeFromLeft (size::iconButton));
+        header.removeFromLeft (space::xs);
     }
+
+    bypassButton.setBounds (header.removeFromLeft (size::iconButton));
+    header.removeFromLeft (space::xs);
+    // The glyph column and the mark inside it, exactly as a menu row spends
+    // them - the two were a bare 16 here and a token there, for the same
+    // picture at the same size.
+    iconBounds = header.removeFromLeft (size::glyphColumn)
+                     .withSizeKeepingCentre (size::glyphMark, size::glyphMark);
+    header.removeFromLeft (space::xs);
+
+    // Right to left, all at the icon-button rung. Two buttons now, not four:
+    // reorder is the grip and the menu. Preset used to be four pixels narrower
+    // than bypass and remove beside it, which is not a difference anyone reads
+    // as deliberate - it reads as the preset button being somehow lesser.
+    removeButton.setBounds (header.removeFromRight (size::iconButton));
+    presetButton.setBounds (header.removeFromRight (size::iconButton));
+    header.removeFromRight (space::xs);
 
     nameBounds = header;
 
     expandButton.setIcon (isExpanded() ? icons::chevronUp() : icons::chevronDown());
-
-    upButton.setIcon (owner.isHorizontal() ? icons::chevronLeft() : icons::chevronUp());
-    downButton.setIcon (owner.isHorizontal() ? icons::chevronRight() : icons::chevronDown());
 }
 
 void EffectCard::layOutParams (juce::Rectangle<int> area, bool visible)

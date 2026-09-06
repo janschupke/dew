@@ -210,13 +210,24 @@ void DewLookAndFeel::drawPopupMenuItem (juce::Graphics& g, const juce::Rectangle
         const auto glyphArea = content.removeFromLeft (size::glyphColumn);
         content.removeFromLeft (space::xs);
 
-        // Painted in the row's OWN colour rather than the drawable's. A
-        // DrawablePath bakes a fill in when it is built, which is before the
-        // theme and the highlight are known; taking the colour here is what
-        // makes a glyph legible on the accent fill and what keeps it inside the
-        // contrast already proven for this row's text.
+        // Painted HERE rather than in the drawable's own colour. A DrawablePath
+        // bakes a fill in when it is built, which is before the theme, the
+        // highlight and the enabled state are known.
+        //
+        // A carried tint is what the action MEANS - danger, for the trash can
+        // on every destructive row - and it wins only on a row that is both
+        // enabled and unhighlighted. A highlighted row is filled with the
+        // accent, and a semantic hue on that fill is the one pair the contrast
+        // tables do not cover; a disabled row has already given up its colour
+        // to say so. In both, the row's own colour is the honest one.
         if (const auto* carried = dynamic_cast<const MenuGlyph*> (icon))
-            icons::draw (g, carried->glyph(), glyphSquare (glyphArea), textColour);
+        {
+            const auto& tint = carried->tint();
+            const auto glyphColour = (isActive && ! isHighlighted && tint.has_value()) ? *tint
+                                                                                       : textColour;
+
+            icons::draw (g, carried->glyph(), glyphSquare (glyphArea), glyphColour);
+        }
         else
             icon->drawWithin (g, glyphSquare (glyphArea), juce::RectanglePlacement::centred, 1.0f);
     }
