@@ -54,9 +54,11 @@ void PianoRollComponent::paintKeyboard (juce::Graphics& g)
 
         auto colourValue = black ? colour::keyBlack : colour::keyWhite;
 
-        // The key under the pointer lights while it sounds, so a click on the
-        // keyboard is visibly doing something and not only audibly.
-        if (pitch == auditionPitch)
+        // Every key that is SOUNDING, whatever started it - a click on the
+        // strip, a letter key, MIDI in, or the pattern playing - plus the one
+        // under the pointer, which is lit from the moment it is pressed rather
+        // than from the block the engine gets to it.
+        if (pitch == auditionPitch || soundingKeys.test (pitch))
             colourValue = colour::accent;
 
         g.setColour (colourValue);

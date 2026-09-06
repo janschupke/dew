@@ -138,6 +138,16 @@ public:
     {
         return keyboardArea();
     }
+
+    /** Re-reads the engine's sounding keys and repaints the strip if they
+        moved.
+
+        Polled rather than pushed: the engine is not a broadcaster, and the one
+        thing that could push from it is the audio thread. Public for the reason
+        the areas above are - there is no message loop in a headless test, so
+        the timer this normally hangs off never fires.
+    */
+    void refreshSoundingKeys();
     juce::Rectangle<int> getVelocityArea() const
     {
         return velocityArea();
@@ -559,6 +569,16 @@ private:
     float lastPlayheadX = -1.0f;
     bool lastPlaying = false;
     bool didFitOnce = false;
+
+    /** Which keys the SELECTED CHANNEL is sounding, polled from the engine.
+
+        Every source at once, which is the point of asking the engine rather
+        than any of them: the sequencer while a pattern plays, the preview ring
+        a click on a key and the typing keyboard both go through, and MIDI in.
+        A display that watched only what this component itself started would
+        stay dark for two of the three.
+    */
+    NoteMask soundingKeys;
 
     /** The key currently sounding under the pointer, so it can be lit and
         released. -1 when nothing is being auditioned.

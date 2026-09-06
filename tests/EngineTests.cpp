@@ -284,3 +284,91 @@ TEST_CASE ("a render is the same audio at any block size", "[engine][render][tim
         }
     }
 }
+
+TEST_CASE ("the engine reports which pitches a channel is sounding", "[engine][sounding]")
+{
+    // "Bass": sustain 0.35, so a held note stays sounding for as long as the
+    // test wants to look at it. A channel whose sustain is zero would decay on
+    // its own and prove nothing.
+    constexpr int channelIndex = 2;
+
+    AudioEngine engine;
+    engine.prepare (44100.0, 512);
+    engine.setProject (ProjectFactory::createDefault());
+
+    juce::AudioBuffer<float> block (2, 512);
+
+    const auto render = [&]
+    {
+        block.clear();
+        engine.processBlock (block);
+    };
+
+    // One block to land the snapshot. Nothing is sounding yet, and the mask
+    // says so rather than being empty because nobody has written it.
+    render();
+    CHECK_FALSE (engine.readSoundingPitches (channelIndex).any());
+
+    engine.previewNoteOn (channelIndex, 69, 0.9f);
+    render();
+
+    // Through the PREVIEW ring, which is the path a click on a piano-roll key
+    // and a letter on the typing keyboard both take - so one reader covers
+    // both, and the sequencer besides.
+    const auto sounding = engine.readSoundingPitches (channelIndex);
+    CHECK (sounding.test (69));
+    CHECK_FALSE (sounding.test (70));
+
+    // A state rather than a maximum, unlike the peak meters beside it: reading
+    // it does not clear it, so two displays can watch the same channel.
+    CHECK (engine.readSoundingPitches (channelIndex).test (69));
+
+    // ...and it belongs to the channel that is playing it. A strip drawn for
+    // channel 0 must not light up because channel 2 is sounding.
+    CHECK_FALSE (engine.readSoundingPitches (0).any());
+
+    // Out of range answers empty rather than reading past the array - the roll
+    // asks with whatever channelIndexForId returned, which is -1 when the
+    // selected channel has been deleted.
+    CHECK_FALSE (engine.readSoundingPitches (-1).any());
+
+    engine.previewNoteOff (channelIndex, 69);
+
+    // Long enough for the release to finish. The mask follows the VOICES, so a
+    // key stays lit through its release tail and goes out when the voice does.
+    for (int i = 0; i < 200; ++i)
+        render();
+
+    CHECK_FALSE (engine.readSoundingPitches (channelIndex).any());
+}
+
+TEST_CASE ("a panic puts every lit key out", "[engine][sounding][panic]")
+{
+    constexpr int channelIndex = 2;
+
+    AudioEngine engine;
+    engine.prepare (44100.0, 512);
+    engine.setProject (ProjectFactory::createDefault());
+
+    juce::AudioBuffer<float> block (2, 512);
+
+    const auto render = [&]
+    {
+        block.clear();
+        engine.processBlock (block);
+    };
+
+    render();
+    engine.previewNoteOn (channelIndex, 69, 0.9f);
+    render();
+
+    REQUIRE (engine.readSoundingPitches (channelIndex).test (69));
+
+    engine.panic();
+
+    // The block that consumes the request kills the voices; the mask is
+    // published from those voices at the end of the same block, so it is out
+    // by the time anybody can poll it.
+    render();
+    CHECK_FALSE (engine.readSoundingPitches (channelIndex).any());
+}

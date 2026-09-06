@@ -3,6 +3,7 @@
 #include <span>
 
 #include "engine/EngineSnapshot.h"
+#include "engine/NoteMask.h"
 #include "engine/Module.h"
 
 namespace dew
@@ -121,6 +122,23 @@ public:
         each growing a second channel they have nothing to say about.
     */
     virtual void processAdd (const InstrumentContext&, StereoView out) noexcept = 0;
+
+    /** Which pitches this instrument has sounding right now.
+
+        Asked of the instrument rather than tracked from the note EVENTS,
+        because a note carries its own duration and releases itself: an engine
+        counting events would see the note-on and never a note-off, and would
+        hold a key lit for the rest of the session.
+
+        Const and allocation-free - it is read on the audio thread at the end of
+        each block and published for a display to poll. The default is nothing,
+        which is the honest answer for an instrument that plays clips rather
+        than notes.
+    */
+    virtual NoteMask soundingPitches() const noexcept
+    {
+        return {};
+    }
 };
 
 /** An instrument whose DSP is mono, widened to the ABI in one place.

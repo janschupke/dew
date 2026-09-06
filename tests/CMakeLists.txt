@@ -97,6 +97,7 @@ add_executable(dew_tests
   PianoRollVelocityTests.cpp
   PianoRollViewTests.cpp
   PianoRollEraseTests.cpp
+  PianoRollKeysTests.cpp
   PianoRollLoopTests.cpp
   PianoRollToolsTests.cpp
   PanicTests.cpp

@@ -240,6 +240,26 @@ void AudioEngine::recordPeak (std::atomic<float>& slot, const float* left, const
     atomicPeakMax (slot, peak);
 }
 
+void AudioEngine::publishSoundingPitches (int channelIndex, const NoteMask& mask) noexcept
+{
+    if (channelIndex < 0 || channelIndex >= kMaxChannels)
+        return;
+
+    soundingPitches[(size_t) (channelIndex * 2)].store (mask.low, std::memory_order_relaxed);
+    soundingPitches[(size_t) (channelIndex * 2 + 1)].store (mask.high, std::memory_order_relaxed);
+}
+
+NoteMask AudioEngine::readSoundingPitches (int channelIndex) const noexcept
+{
+    if (channelIndex < 0 || channelIndex >= kMaxChannels)
+        return {};
+
+    NoteMask mask;
+    mask.low = soundingPitches[(size_t) (channelIndex * 2)].load (std::memory_order_relaxed);
+    mask.high = soundingPitches[(size_t) (channelIndex * 2 + 1)].load (std::memory_order_relaxed);
+    return mask;
+}
+
 float AudioEngine::readAndClearTrackPeak (int trackIndex) noexcept
 {
     if (trackIndex < 0 || trackIndex >= kMaxMixerTracks)

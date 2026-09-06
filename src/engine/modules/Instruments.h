@@ -30,6 +30,11 @@ public:
     void prepare (double sampleRate, int maximumBlockSize) override;
     void reset() noexcept override;
 
+    NoteMask soundingPitches() const noexcept override
+    {
+        return channel.soundingPitches();
+    }
+
 private:
     void processAdd (const InstrumentContext&, StereoView out) noexcept override;
 
@@ -69,6 +74,11 @@ public:
     void prepare (double sampleRate, int maximumBlockSize) override;
     void reset() noexcept override;
     void processAdd (const InstrumentContext&, StereoView out) noexcept override;
+
+    NoteMask soundingPitches() const noexcept override
+    {
+        return channel.soundingPitches();
+    }
 
 private:
     SoundFontChannel channel;

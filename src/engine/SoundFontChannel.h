@@ -2,6 +2,7 @@
 
 #include <array>
 
+#include "engine/NoteMask.h"
 #include "engine/SoundFontVoice.h"
 
 namespace dew
@@ -47,6 +48,14 @@ public:
     void renderAdd (float* left, float* right, int numSamples) noexcept;
 
     int countActiveVoices() const noexcept;
+
+    /** Which pitches this channel has sounding, asked of the voices themselves.
+
+        The voices rather than a tally kept alongside them, because a note
+        carries its own duration and ends without anybody being told - a count
+        maintained at note-on and note-off would drift the first time one did.
+    */
+    NoteMask soundingPitches() const noexcept;
 
 private:
     SoundFontVoice& voiceToUse() noexcept;

@@ -350,6 +350,23 @@ public:
     float readAndClearTrackPeak (int trackIndex) noexcept;
     float readAndClearMasterPeak() noexcept;
 
+    /** Which pitches a channel is sounding right now.
+
+        NOT read-and-clear, unlike the peaks: it is a state rather than a
+        maximum, so any number of displays can watch it and none of them steals
+        from another. Published at the end of every block from the instrument's
+        own voices, which is what makes one reader cover all three sources at
+        once - the sequencer, the preview ring the piano roll and the typing
+        keyboard play through, and MIDI in.
+
+        Two atomics rather than one, because 128 bits is two words on every
+        machine this builds for. A reader can therefore catch a chord half
+        published; that is a fifth of a frame of one key, on a display that
+        repaints at the playhead's rate, and the alternative is a lock on the
+        audio thread.
+    */
+    NoteMask readSoundingPitches (int channelIndex) const noexcept;
+
     /** The finished master output, for drawing.
 
         Const on purpose: writing is the audio thread's job, and a const-only
@@ -434,6 +451,10 @@ private:
     void pushNoteEvent (int channelIndex, const NoteEvent&) noexcept;
 
     InstrumentModule* instrumentFor (int channelIndex, InstrumentType) noexcept;
+
+    /** Publishes one channel's sounding pitches for the message thread to
+        poll. Audio thread only. */
+    void publishSoundingPitches (int channelIndex, const NoteMask&) noexcept;
     void resetAllInstruments() noexcept;
 
     // Preallocated scratch: one stereo pair per channel, one per mixer track,
@@ -590,6 +611,11 @@ private:
     std::array<std::atomic<float>, kMaxChannels> channelModulation {};
 
     std::array<std::atomic<float>, kMaxMixerTracks> trackPeaks {};
+
+    /** Each channel's sounding pitches, low word then high. Written at the end
+        of every block, whether or not the channel has an instrument - a channel
+        that has just lost one has to stop reporting the keys it left lit. */
+    std::array<std::atomic<std::uint64_t>, kMaxChannels * 2> soundingPitches {};
     std::atomic<float> masterPeak { 0.0f };
 
     SignalTap signalTap;

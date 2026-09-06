@@ -428,8 +428,27 @@ bool PianoRollComponent::keyPressed (const juce::KeyPress& key)
 
 // --- mouse -------------------------------------------------------------------
 
+void PianoRollComponent::refreshSoundingKeys()
+{
+    const auto channelIndex = ProjectEdits::channelIndexForId (document.getState(),
+                                                               editorState.getSelectedChannelId());
+
+    const auto now = engine.readSoundingPitches (channelIndex);
+
+    if (now == soundingKeys)
+        return;
+
+    soundingKeys = now;
+    repaint (keyboardArea());
+}
+
 void PianoRollComponent::timerCallback()
 {
+    // Before the playhead's own early return, and repainting only the strip:
+    // a note played from the letter keys with the transport STOPPED still has
+    // to light a key, and the playhead has not moved.
+    refreshSoundingKeys();
+
     const auto playing = engine.isPlaying();
     const auto at = playheadInPattern();
     const auto x = at.has_value() ? timeline.xForStep (*at) : -1.0f;

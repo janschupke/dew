@@ -2,6 +2,7 @@
 
 #include <array>
 
+#include "engine/NoteMask.h"
 #include "engine/SynthVoice.h"
 
 namespace dew
@@ -64,6 +65,14 @@ public:
     bool hasPannedVoices() const noexcept;
 
     int countActiveVoices() const noexcept;
+
+    /** Which pitches this channel has sounding, asked of the voices themselves.
+
+        The voices rather than a tally kept alongside them, because a note
+        carries its own duration and ends without anybody being told - a count
+        maintained at note-on and note-off would drift the first time one did.
+    */
+    NoteMask soundingPitches() const noexcept;
 
 private:
     std::array<SynthVoice, kMaxVoicesPerChannel> voices;

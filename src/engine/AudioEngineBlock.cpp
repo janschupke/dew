@@ -241,7 +241,9 @@ void AudioEngine::renderChannels (const EngineSnapshot& snapshot, int numChannel
         // an enum, with the two arms taking different arguments and sharing
         // nothing - which is what made a third kind of instrument a fourth
         // place to edit rather than a new class.
-        if (auto* instrument = instrumentFor (i, channel.source))
+        auto* instrument = instrumentFor (i, channel.source);
+
+        if (instrument != nullptr)
         {
             // Filled in place, not copied. The block-wide half was set once
             // above the loop; only these change per channel. A copy here was
@@ -265,6 +267,13 @@ void AudioEngine::renderChannels (const EngineSnapshot& snapshot, int numChannel
 
             instrument->processAdd (blockContext, { sourceLeft, sourceRight, numSamples });
         }
+
+        // After the render, not before it: a note that starts in this block is
+        // sounding by the time anybody can hear it, and one that ended in it is
+        // not. Published for every channel whether or not it has an instrument,
+        // so a channel that has just lost one stops reporting lit keys.
+        publishSoundingPitches (i, instrument != nullptr ? instrument->soundingPitches()
+                                                         : NoteMask {});
 
         // The override, not the snapshot: a curve over mute has to silence the
         // channel this block, and `automated` is already in hand.

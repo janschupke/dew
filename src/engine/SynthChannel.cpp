@@ -109,4 +109,15 @@ int SynthChannel::countActiveVoices() const noexcept
     return count;
 }
 
+NoteMask SynthChannel::soundingPitches() const noexcept
+{
+    NoteMask mask;
+
+    for (const auto& voice : voices)
+        if (voice.isActive())
+            mask.set (voice.getPitch());
+
+    return mask;
+}
+
 } // namespace dew
