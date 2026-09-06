@@ -457,7 +457,7 @@ TEST_CASE ("the randomize panel reports what its controls show", "[ui][rolltools
 {
     const juce::ScopedJuceInitialiser_GUI juceInit;
 
-    RandomizePanel panel { { 0.4, 3 }, "Applies to 5 notes" };
+    RandomizePanel panel { { 0.4, 3 }, tr (StringId::randomize_scopeSelection, Args {}.count (5)) };
 
     CHECK (juce::exactlyEqual (panel.getOptions().velocityAmount, 0.4));
     CHECK (panel.getOptions().stepAmount == 3);
@@ -471,7 +471,7 @@ TEST_CASE ("cancelling the randomize panel applies nothing", "[ui][rolltools]")
 {
     const juce::ScopedJuceInitialiser_GUI juceInit;
 
-    RandomizePanel panel { { 0.4, 3 }, "Applies to 5 notes" };
+    RandomizePanel panel { { 0.4, 3 }, tr (StringId::randomize_scopeSelection, Args {}.count (5)) };
 
     bool applied = false;
     panel.onApply = [&applied] (const NoteTools::RandomizeOptions&) { applied = true; };

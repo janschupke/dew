@@ -90,10 +90,12 @@ void PianoRollComponent::openRandomizeDialog()
     if (scope.isEmpty())
         return;
 
-    const auto scopeText = selection.isEmpty() ? "Applies to all " + juce::String (scope.size())
-                                                     + " notes on this channel"
-                                               : "Applies to the " + juce::String (scope.size())
-                                                     + " selected notes";
+    // Two whole messages rather than one frame with a count spliced into it:
+    // "all N notes on this channel" and "the N selected notes" do not share a
+    // shape once either has to be said in another language.
+    const auto scopeText = tr (selection.isEmpty() ? StringId::randomize_scopeChannel
+                                                   : StringId::randomize_scopeSelection,
+                               Args {}.count (scope.size()));
 
     RandomizePanel::show (randomizeOptions, scopeText, this,
                           [this] (const NoteTools::RandomizeOptions& options)

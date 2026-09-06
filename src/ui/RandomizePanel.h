@@ -3,7 +3,7 @@
 #include <juce_gui_basics/juce_gui_basics.h>
 
 #include "i18n/Strings.h"
-
+#include "i18n/Translated.h"
 #include "model/NoteTools.h"
 #include "ui/DewDialog.h"
 #include "ui/primitives/DewButtons.h"
@@ -28,13 +28,13 @@ public:
     /** `scopeText` says what the edit will hit, so the dialog does not have to
         know anything about the document to describe its own effect.
     */
-    RandomizePanel (NoteTools::RandomizeOptions initial, juce::String scopeText);
+    RandomizePanel (NoteTools::RandomizeOptions initial, Translated scopeText);
 
     void paint (juce::Graphics&) override;
     void resized() override;
 
     /** Opens it in a dialog window owned by JUCE, as the audio settings do. */
-    static void show (NoteTools::RandomizeOptions initial, juce::String scopeText,
+    static void show (NoteTools::RandomizeOptions initial, Translated scopeText,
                       juce::Component* parent,
                       std::function<void (const NoteTools::RandomizeOptions&)> onApply);
 

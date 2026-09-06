@@ -1184,6 +1184,8 @@
       "label": "Randomize"
     },
     "hint": "Zero leaves a property untouched.",
+    "scopeChannel": "Applies to all {count, plural, one {# note} other {# notes}} on this channel",
+    "scopeSelection": "Applies to the {count, plural, one {# selected note} other {# selected notes}}",
     "step": {
       "caption": "TIMING",
       "help": "How far a note can move in time, either way. Zero leaves timing alone"

@@ -4,6 +4,7 @@
 #include "model/EntityColour.h"
 #include "model/Ids.h"
 #include "model/ModuleCatalog.h"
+#include "model/ParamNames.h"
 #include "model/ProjectEdits.h"
 #include "ui/ColourMenu.h"
 #include "ui/RowSilence.h"
@@ -81,8 +82,8 @@ ChannelRackHeader::ChannelRackHeader (ProjectDocument& d, EditorState& s, juce::
     // Same ranges as the panel's VOLUME and PAN, so the two read the same
     // number, and no caption fits on a 34px row - pan is told from volume by
     // filling out from the centre.
-    attachKnob (volumeKnob, ids::volume, "Change volume", "Volume");
-    attachKnob (panKnob, ids::pan, "Change pan", "Pan");
+    attachKnob (volumeKnob, ids::volume, "Change volume");
+    attachKnob (panKnob, ids::pan, "Change pan");
 
     // Base pitch and the mixer track, as numbers on the row. Both were in the
     // instrument panel and nowhere else, which meant routing a channel - or
@@ -243,11 +244,10 @@ void ChannelRackHeader::applyMenuChoice (int choice)
 // --- the controls ------------------------------------------------------------
 
 void ChannelRackHeader::attachKnob (DewKnob& knob, const juce::Identifier& property,
-                                    const juce::String& transactionName,
-                                    const juce::String& tooltip)
+                                    const juce::String& transactionName)
 {
     knob.setCompact (true);
-    knob.setTooltip (tooltip);
+    knob.setTooltip (tr (paramNameOf (property)));
     knob.setValue ((double) channel[property], juce::dontSendNotification);
 
     // The first value of a drag opens the transaction and the rest join it; a
@@ -271,8 +271,7 @@ void ChannelRackHeader::attachKnob (DewKnob& knob, const juce::Identifier& prope
 }
 
 void ChannelRackHeader::attachField (DewNumberField& field, const juce::Identifier& property,
-                                     const juce::String& transactionName,
-                                     const juce::String& tooltip)
+                                     const juce::String& transactionName, Translated tooltip)
 {
     field.setTooltip (tooltip);
 

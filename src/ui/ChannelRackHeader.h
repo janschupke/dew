@@ -3,6 +3,7 @@
 #include <juce_gui_basics/juce_gui_basics.h>
 
 #include "i18n/Strings.h"
+#include "i18n/Translated.h"
 
 #include "model/Ids.h"
 #include "model/ModuleCatalog.h"
@@ -109,9 +110,15 @@ private:
         `onEditStart` selects the row: a knob keeps its own clicks, so the row's
         mouseDown never sees them, and a control that cannot select its row is
         the bug this rack was already fixed for once.
+
+        The TOOLTIP is not a parameter. It is paramNameOf (property), the same
+        one declaration the automation picker and the instrument panel read -
+        and the two call sites here spelled it in English instead, which is the
+        drift a parameter invites. A field takes one because its two call sites
+        say different things about the same kind of control.
     */
     void attachKnob (DewKnob& knob, const juce::Identifier& property,
-                     const juce::String& transactionName, const juce::String& tooltip);
+                     const juce::String& transactionName);
 
     /** Wires one number field to one of the channel's integer properties.
 
@@ -122,7 +129,7 @@ private:
         upper bound is however many tracks the mixer has right now.
     */
     void attachField (DewNumberField& field, const juce::Identifier& property,
-                      const juce::String& transactionName, const juce::String& tooltip);
+                      const juce::String& transactionName, Translated tooltip);
 
     /** How many tracks the mixer has, which is the top of mixerField's range. */
     int mixerTrackCount() const;

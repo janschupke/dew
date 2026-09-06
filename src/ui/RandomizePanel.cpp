@@ -7,8 +7,8 @@
 namespace dew
 {
 
-RandomizePanel::RandomizePanel (NoteTools::RandomizeOptions initial, juce::String scope)
-    : scopeText (std::move (scope))
+RandomizePanel::RandomizePanel (NoteTools::RandomizeOptions initial, Translated scope)
+    : scopeText (scope.get())
 {
     setComponentID ("randomizePanel");
 
@@ -57,7 +57,7 @@ void RandomizePanel::setOptions (const NoteTools::RandomizeOptions& options)
     stepField.setValue ((double) options.stepAmount, juce::dontSendNotification);
 }
 
-void RandomizePanel::show (NoteTools::RandomizeOptions initial, juce::String scopeText,
+void RandomizePanel::show (NoteTools::RandomizeOptions initial, Translated scopeText,
                            juce::Component* parent,
                            std::function<void (const NoteTools::RandomizeOptions&)> onApply)
 {
