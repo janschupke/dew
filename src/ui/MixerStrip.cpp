@@ -85,24 +85,15 @@ MixerStrip::MixerStrip (ProjectDocument& d, juce::ValueTree t, bool isMasterStri
     gainSlider.setColour (juce::Slider::trackColourId, levelColour);
     gainSlider.setColour (juce::Slider::thumbColourId, levelColour);
     gainSlider.setValue ((double) track[ids::gain], juce::dontSendNotification);
-    gainSlider.onDragStart = [this]
-    {
-        select();
-        inDrag = true;
-        gestureActive = false;
-    };
-    gainSlider.onDragEnd = [this]
-    {
-        inDrag = false;
-        gestureActive = false;
-    };
-    gainSlider.onValueChange = [this]
-    {
-        ProjectEdits::setProperty (track, ids::gain, gainSlider.getValue(),
-                                   &document.getUndoManager(), "Change level", gestureActive);
-
-        gestureActive = inDrag;
-    };
+    gesture.attach (
+        gainSlider,
+        [this] (bool continuing)
+        {
+            ProjectEdits::setProperty (track, ids::gain, gainSlider.getValue(),
+                                       &document.getUndoManager(), "Change level", continuing);
+            return true;
+        },
+        [this] { select(); });
     addAndMakeVisible (gainSlider);
 
     if (! isMaster)
@@ -113,24 +104,15 @@ MixerStrip::MixerStrip (ProjectDocument& d, juce::ValueTree t, bool isMasterStri
         panKnob.setCompact (true);
         panKnob.setTooltip (tr (StringId::mixer_pan_name));
         panKnob.setValue ((double) track[ids::pan], juce::dontSendNotification);
-        panKnob.onEditStart = [this]
-        {
-            select();
-            inDrag = true;
-            gestureActive = false;
-        };
-        panKnob.onEditEnd = [this]
-        {
-            inDrag = false;
-            gestureActive = false;
-        };
-        panKnob.onValueChange = [this]
-        {
-            ProjectEdits::setProperty (track, ids::pan, panKnob.getValue(),
-                                       &document.getUndoManager(), "Change pan", gestureActive);
-
-            gestureActive = inDrag;
-        };
+        gesture.attach (
+            panKnob,
+            [this] (bool continuing)
+            {
+                ProjectEdits::setProperty (track, ids::pan, panKnob.getValue(),
+                                           &document.getUndoManager(), "Change pan", continuing);
+                return true;
+            },
+            [this] { select(); });
         addAndMakeVisible (panKnob);
 
         enabledButton.setComponentID ("stripEnabled");

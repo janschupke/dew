@@ -13,6 +13,7 @@
 #include "ui/design/Icons.h"
 #include "ui/primitives/DewControls.h"
 #include "ui/primitives/HoverTracker.h"
+#include "ui/primitives/RotaryGesture.h"
 #include "ui/design/Gestures.h"
 #include "ui/design/Tokens.h"
 
@@ -177,11 +178,9 @@ private:
     juce::Array<juce::Colour> routedColours;
     juce::Array<int> routedIds;
 
-    /** True between a fader's onDragStart and onDragEnd. One flag for the strip:
-        only one control can be under the pointer at a time.
-    */
-    bool inDrag = false;
-    bool gestureActive = false;
+    /** One gesture for the strip: only one control can be under the pointer at
+        a time, so the fader and the pan knob share it. */
+    RotaryGesture gesture;
 
     juce::Label nameLabel;
     /** DewSlider rather than juce::Slider: a right-drag on a fader used to
