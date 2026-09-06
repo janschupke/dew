@@ -2,6 +2,7 @@
 
 #include <cmath>
 
+#include "ui/GridDensity.h"
 #include "ui/TimelinePaint.h"
 #include "ui/design/Cursors.h"
 #include "ui/design/Tokens.h"
@@ -68,6 +69,22 @@ void paint (juce::Graphics& g, juce::Rectangle<int> bounds, const TimelineView& 
     // frequently read work in it.
     g.setFont (type::font (type::small));
 
+    const auto pixelsPerBar = timeline.pixelsPerStep * (double) stepsPerBar;
+
+    // Every bar, then every second, then every fourth. It was a cutoff - below
+    // 28px per bar every number in the window went at once - which is the one
+    // answer that never gives the reader the useful middle.
+    const auto barsPerLabel = gridDensity::strideFor (pixelsPerBar, gridDensity::labelSpacingPx);
+
+    // The same stride the grid under this uses, so a number never appears over
+    // a bar the grid drew no line for.
+    const auto barsPerLine = gridDensity::strideFor (pixelsPerBar, gridDensity::barSpacingPx);
+
+    // Clipped to the space before the next label rather than a fixed 40, which
+    // let "128" be drawn straight into its neighbour as soon as the bars got
+    // close - the overlap the cutoff was hiding rather than solving.
+    const auto labelWidth = juce::jmax (1, (int) (pixelsPerBar * (double) barsPerLabel) - 4);
+
     for (int step = range.getStart(); step <= range.getEnd(); ++step)
     {
         const auto x = (float) bounds.getX() + timeline.xForStep ((double) step);
@@ -77,23 +94,23 @@ void paint (juce::Graphics& g, juce::Rectangle<int> bounds, const TimelineView& 
 
         const auto beyond = step >= style.totalSteps;
 
-        if (step % stepsPerBar == 0)
+        if (step % (stepsPerBar * barsPerLine) == 0)
         {
             g.setColour (beyond ? colour::dividerStrong.withAlpha (emphasis::subdued)
                                 : colour::dividerStrong);
             g.drawVerticalLine ((int) x, (float) bounds.getY(), (float) bounds.getBottom());
 
-            // Bar numbers only where there is room for them to be readable.
-            if (timeline.pixelsPerStep * stepsPerBar >= 28.0)
+            if (step % (stepsPerBar * barsPerLabel) == 0)
             {
                 g.setColour (beyond ? colour::textDisabled : colour::textSecondary);
-                g.drawText (
-                    juce::String (step / stepsPerBar + 1),
-                    juce::Rectangle<int> ((int) x + 3, bounds.getY(), 40, bounds.getHeight()),
-                    juce::Justification::centredLeft, false);
+                g.drawText (juce::String (step / stepsPerBar + 1),
+                            juce::Rectangle<int> ((int) x + 3, bounds.getY(), labelWidth,
+                                                  bounds.getHeight()),
+                            juce::Justification::centredLeft, false);
             }
         }
-        else if (step % stepsPerBeat == 0 && timeline.pixelsPerStep * stepsPerBeat >= 10.0)
+        else if (step % stepsPerBar != 0 && step % stepsPerBeat == 0
+                 && timeline.pixelsPerStep * stepsPerBeat >= gridDensity::beatSpacingPx)
         {
             g.setColour (beyond ? colour::divider.withAlpha (emphasis::subdued) : colour::divider);
             g.drawVerticalLine ((int) x, (float) bounds.getBottom() - 6.0f,

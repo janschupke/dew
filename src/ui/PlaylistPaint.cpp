@@ -21,6 +21,7 @@
 #include "model/ModuleCatalog.h"
 
 #include "ui/AutomationLane.h"
+#include "ui/GridDensity.h"
 
 #include "io/SamplePool.h"
 
@@ -340,7 +341,14 @@ void PlaylistComponent::paint (juce::Graphics& g)
     // beat and the toolbar's own snap cell - see below - so the arrangement now
     // has a grid at all, which it could not have had while a coordinate here
     // was a bar and nothing finer existed.
-    const auto numberable = width >= 28.0;
+    //
+    // The strides are the ones TimelineRuler works out from the same two
+    // spacings, and they have to stay that way for the same reason the font
+    // above does: this ruler is a second implementation of that one, and
+    // gridDensity is what keeps the two agreeing about which bars survive.
+    const auto barsPerLabel = gridDensity::strideFor (width, gridDensity::labelSpacingPx);
+    const auto barsPerLine = gridDensity::strideFor (width, gridDensity::barSpacingPx);
+    const auto labelWidth = juce::jmax (1, (int) (width * (double) barsPerLabel) - 4);
 
     for (int step = painted.getStart() - painted.getStart() % perBar; step < painted.getEnd();
          step += perBar)
@@ -351,17 +359,21 @@ void PlaylistComponent::paint (juce::Graphics& g)
             break;
 
         const auto beyond = step >= totalSteps;
+        const auto bar = step / perBar;
 
-        if (numberable)
+        if (bar % barsPerLabel == 0)
         {
             g.setColour (beyond ? colour::textDisabled : colour::textSecondary);
-            g.drawText (juce::String (step / perBar + 1), (int) x + 3, rulerTop(), (int) width - 4,
+            g.drawText (juce::String (bar + 1), (int) x + 3, rulerTop(), labelWidth,
                         size::rulerHeight, juce::Justification::centredLeft, false);
         }
 
-        g.setColour (beyond ? colour::dividerStrong.withAlpha (emphasis::subdued)
-                            : colour::dividerStrong);
-        g.drawVerticalLine ((int) x, (float) rulerTop(), (float) bottom);
+        if (bar % barsPerLine == 0)
+        {
+            g.setColour (beyond ? colour::dividerStrong.withAlpha (emphasis::subdued)
+                                : colour::dividerStrong);
+            g.drawVerticalLine ((int) x, (float) rulerTop(), (float) bottom);
+        }
     }
 
     // Everything finer than a bar, over the lanes only: the ruler is a place to

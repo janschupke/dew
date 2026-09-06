@@ -1,5 +1,6 @@
 #include "ui/TimelinePaint.h"
 
+#include "ui/GridDensity.h"
 #include "ui/design/Tokens.h"
 
 namespace dew::timelinePaint
@@ -39,6 +40,13 @@ void verticalGrid (juce::Graphics& g, const TimelineView& timeline, juce::Range<
                           ? snapSteps
                           : 0;
 
+    // How many bars and beats apart the marks have to be. Both of these used
+    // to be 1 unconditionally - a line at every bar and every beat whatever
+    // the zoom - which is what turned the far end of the zoom range into fill.
+    const auto barsPerLine = gridDensity::strideFor (timeline.pixelsPerStep * (double) bar,
+                                                     gridDensity::barSpacingPx);
+    const auto beatsShow = timeline.pixelsPerStep * (double) beat >= gridDensity::beatSpacingPx;
+
     for (int step = steps.getStart(); step <= steps.getEnd(); ++step)
     {
         const auto x = originX + timeline.xForStep ((double) step);
@@ -46,9 +54,15 @@ void verticalGrid (juce::Graphics& g, const TimelineView& timeline, juce::Range<
         if (x > rightEdge)
             break;
 
-        if (step % bar == 0)
+        // Ordered by weight, and a strided-out bar is DROPPED rather than
+        // demoted to the tier below. Demoting it looks like the kinder answer
+        // and is not: the whole reason a stride was needed is that the bars are
+        // closer together than they can be read at, and drawing all of them a
+        // shade fainter leaves exactly as many lines on the canvas. What tells
+        // the reader the spacing is the ruler's numbers, which stride with it.
+        if (step % (bar * barsPerLine) == 0)
             g.setColour (colour::dividerStrong);
-        else if (step % beat == 0)
+        else if (step % beat == 0 && beatsShow)
             g.setColour (colour::divider);
         else if (snap > 0 && step % snap == 0)
             g.setColour (colour::divider.withAlpha (emphasis::dimmed));
