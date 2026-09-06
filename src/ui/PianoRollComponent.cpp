@@ -351,7 +351,9 @@ bool PianoRollComponent::keyPressed (const juce::KeyPress& key)
 
         case hotkeys::ViewCommand::zoomIn:
         case hotkeys::ViewCommand::zoomOut:
-            timeline.zoomAround (command == hotkeys::ViewCommand::zoomIn ? 1.5 : 1.0 / 1.5,
+            timeline.zoomAround (command == hotkeys::ViewCommand::zoomIn
+                                     ? ZoomButtons::zoomFactor
+                                     : 1.0 / ZoomButtons::zoomFactor,
                                  contentWidth() * 0.5f);
             updateScrollBars();
             repaint();

@@ -21,7 +21,16 @@ struct TimelineView
     double pixelsPerStep = 24.0;
     double scrollOffsetSteps = 0.0;
 
-    static constexpr double minPixelsPerStep = 3.0;
+    /** The zoom range, shared by all four canvases.
+
+        The floor was 3.0, which caps a 16-steps-per-bar view at 48 pixels to
+        the bar - not enough of an arrangement to navigate one, and the reason
+        the piano roll felt like it stopped zooming out early. It can be this
+        low now because ui/GridDensity.h thins the grid and the ruler's numbers
+        as the bars close up; before that, everything below about 3.0 was a
+        wall of divider colour with a number every few pixels.
+    */
+    static constexpr double minPixelsPerStep = 1.0;
     static constexpr double maxPixelsPerStep = 120.0;
 
     float xForStep (double step) const noexcept

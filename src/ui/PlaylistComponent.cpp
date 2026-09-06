@@ -201,9 +201,13 @@ bool PlaylistComponent::keyPressed (const juce::KeyPress& key)
     // anyone remembered to add them twice.
     switch (hotkeys::viewCommandFor (key))
     {
-        case hotkeys::ViewCommand::zoomIn: zoomBy (1.5, contentWidth() * 0.5f); return true;
+        case hotkeys::ViewCommand::zoomIn:
+            zoomBy (ZoomButtons::zoomFactor, contentWidth() * 0.5f);
+            return true;
 
-        case hotkeys::ViewCommand::zoomOut: zoomBy (1.0 / 1.5, contentWidth() * 0.5f); return true;
+        case hotkeys::ViewCommand::zoomOut:
+            zoomBy (1.0 / ZoomButtons::zoomFactor, contentWidth() * 0.5f);
+            return true;
 
         case hotkeys::ViewCommand::zoomToFit: zoomToFit(); return true;
 
