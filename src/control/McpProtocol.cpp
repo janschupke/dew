@@ -204,7 +204,7 @@ juce::var callTool (ControlHost& host, const juce::var& params, Grant grant)
     if (const auto fault = validateArgs (op->args, args); fault.isNotEmpty())
         return toolResult (juce::var (fault), true);
 
-    const auto result = op->handler (host, args);
+    const auto result = invoke (host, *op, args);
 
     return toolResult (result.ok ? result.value : juce::var (result.error), ! result.ok);
 }

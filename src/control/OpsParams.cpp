@@ -212,8 +212,6 @@ ControlResult write (ControlHost& host, const juce::var& args)
         pending.push_back ({ node, address.param, value });
     }
 
-    beginOneTransaction (host, "params_write");
-
     for (const auto& write : pending)
         ProjectEdits::setProperty (write.node, write.property, write.value, host.undoManager(),
                                    "Set parameter", true);
@@ -237,7 +235,7 @@ std::vector<ArgSpec> entryFields()
 
 void appendParamOps (std::vector<OpSpec>& all)
 {
-    all.push_back ({ "params_list", OpScope::read,
+    all.push_back ({ "params_list", OpScope::read, OpEdits::no,
                      "List every parameter at one address, with its range, its default, whether it "
                      "can be automated, and what it holds now.",
                      "How to find out what is writable before writing it. An address is a target "
@@ -252,6 +250,7 @@ void appendParamOps (std::vector<OpSpec>& all)
     all.push_back (
         { "params_read",
           OpScope::read,
+          OpEdits::no,
           "Read the current value of any number of parameters.",
           "Takes a list of addresses and answers with a value for each. An address "
           "that names nothing comes back with found=false rather than failing the "
@@ -262,6 +261,7 @@ void appendParamOps (std::vector<OpSpec>& all)
     all.push_back (
         { "params_write",
           OpScope::write,
+          OpEdits::yes,
           "Set any number of parameters anywhere in the project, as one undo step.",
           "The one tool for every value in the document: a channel's volume, an "
           "oscillator's detune, an envelope's release, a sample's fade, a soundfont's "

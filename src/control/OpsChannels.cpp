@@ -94,7 +94,6 @@ ControlResult write (ControlHost& host, const juce::var& args)
     }
 
     auto* undo = host.undoManager();
-    beginOneTransaction (host, "channels_write");
 
     juce::Array<juce::var> touched;
 
@@ -158,8 +157,6 @@ ControlResult remove (ControlHost& host, const juce::var& args)
         doomed.add (channel);
     }
 
-    beginOneTransaction (host, "channels_remove");
-
     for (const auto& channel : doomed)
         ProjectEdits::removeChannel (project, channel, host.undoManager());
 
@@ -196,7 +193,6 @@ ControlResult writeSource (ControlHost& host, const juce::var& args)
         return ControlResult::failure ("there is no file at " + path + ".");
 
     auto* undo = host.undoManager();
-    beginOneTransaction (host, "source_write");
 
     const auto source = channel[ids::source].toString();
 
@@ -243,6 +239,7 @@ void appendChannelOps (std::vector<OpSpec>& all)
     all.push_back (
         { "channels_write",
           OpScope::write,
+          OpEdits::yes,
           "Add channels, or change the name, colour, routing or mute of existing ones, as one undo "
           "step.",
           "An upsert: an entry with an `id` changes that channel, an entry without one "
@@ -257,6 +254,7 @@ void appendChannelOps (std::vector<OpSpec>& all)
 
     all.push_back ({ "channels_remove",
                      OpScope::write,
+                     OpEdits::yes,
                      "Remove channels and the notes that belong to them.",
                      "One undo step. A channel's notes live in patterns and become unreachable "
                      "once it is gone, so they go with it. Refuses the whole batch if any id "
@@ -271,6 +269,7 @@ void appendChannelOps (std::vector<OpSpec>& all)
     all.push_back (
         { "source_write",
           OpScope::write,
+          OpEdits::yes,
           "Point an audio channel at a sample file, or a soundfont channel at a file and a sound "
           "inside it.",
           "Only audio and soundfont channels have a source; a synth channel makes its "

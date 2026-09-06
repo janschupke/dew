@@ -27,7 +27,6 @@ ControlResult write (ControlHost& host, const juce::var& args)
     }
 
     auto* undo = host.undoManager();
-    beginOneTransaction (host, "patterns_write");
 
     juce::Array<juce::var> touched;
 
@@ -127,8 +126,6 @@ ControlResult remove (ControlHost& host, const juce::var& args)
         doomed.add (pattern);
     }
 
-    beginOneTransaction (host, "patterns_remove");
-
     auto removed = 0;
 
     for (const auto& pattern : doomed)
@@ -147,6 +144,7 @@ void appendPatternOps (std::vector<OpSpec>& all)
     all.push_back (
         { "patterns_write",
           OpScope::write,
+          OpEdits::yes,
           "Add, duplicate, rename or resize patterns, as one undo step.",
           "A pattern holds every channel's notes for its span, which is why a section of "
           "an arrangement is one pattern rather than one per instrument.\n\n"
@@ -172,6 +170,7 @@ void appendPatternOps (std::vector<OpSpec>& all)
     all.push_back (
         { "patterns_read",
           OpScope::read,
+          OpEdits::no,
           "Read one pattern's notes, optionally for one channel only.",
           "The piano roll's contents. Ask for one channel when you only mean one - a "
           "pattern holds every channel's notes, so the whole of a busy one is a lot of "
@@ -183,6 +182,7 @@ void appendPatternOps (std::vector<OpSpec>& all)
     all.push_back (
         { "patterns_remove",
           OpScope::write,
+          OpEdits::yes,
           "Remove patterns and every playlist clip that played them.",
           "One undo step. A clip pointing at a missing pattern would be dropped by the "
           "next engine rebuild anyway, so removing it here keeps the document "

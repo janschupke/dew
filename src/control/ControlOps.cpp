@@ -48,4 +48,13 @@ const OpSpec* findOp (juce::StringRef name)
     return nullptr;
 }
 
+ControlResult invoke (ControlHost& host, const OpSpec& op, const juce::var& args)
+{
+    if (op.edits == OpEdits::yes)
+        if (auto* undo = host.undoManager())
+            undo->beginNewTransaction (juce::String ("Agent: ") + op.name);
+
+    return op.handler (host, args);
+}
+
 } // namespace dew::control

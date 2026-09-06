@@ -27,6 +27,11 @@ struct OpSpec
 
     OpScope scope = OpScope::read;
 
+    /** Whether running it changes the document - see OpEdits. `invoke` opens
+        the call's one undo transaction when this says yes, and nothing else
+        opens one. */
+    OpEdits edits = OpEdits::no;
+
     /** One line. This is what a model reads when deciding whether to call it,
         so it says what the operation DOES, not what it is called. */
     const char* summary = "";
@@ -57,6 +62,29 @@ const std::vector<OpSpec>& ops();
 
 /** The operation of this name, or nullptr. */
 const OpSpec* findOp (juce::StringRef name);
+
+/** Runs an operation, opening the ONE undo transaction a call is allowed.
+
+    The single place a handler is entered from - the protocol layer and the
+    test harness both come through here - which is what makes the transaction
+    structural rather than something each handler has to remember.
+
+    Every operation is one undo step, however many entries its batch carried,
+    because that is the promise the consent dialog makes: the user's protection
+    against a client that does something surprising is Cmd-Z, and a batch that
+    arrives as two hundred steps is not undoable in any sense a person would
+    recognise. Twenty-four handlers used to open it themselves, each naming
+    itself in a literal beside the name it already had.
+
+    The transaction is named for the operation, in the same shape the
+    interface's own transactions use. Undo transaction names are deliberately
+    not translated - nothing but getUndoDescription reads one, and dew's Edit
+    menu shows the command's name.
+
+    Does NOT validate: the caller does that, because a client sending bad
+    arguments has to be told what was wrong with them.
+*/
+ControlResult invoke (ControlHost& host, const OpSpec& op, const juce::var& args);
 
 /** What notes_transform's `verb` may be, declared once.
 

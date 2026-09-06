@@ -110,7 +110,6 @@ ControlResult write (ControlHost& host, const juce::var& args)
     }
 
     auto* undo = host.undoManager();
-    beginOneTransaction (host, "effects_write");
 
     juce::Array<juce::var> touched;
 
@@ -169,8 +168,6 @@ ControlResult move (ControlHost& host, const juce::var& args)
         return ControlResult::failure ("there is no effect in slot "
                                        + juce::String (intArg (args, "slot")) + ".");
 
-    beginOneTransaction (host, "effects_move");
-
     // Position is counted among EFFECTS only, so the instrument child a channel
     // also carries cannot shift the result.
     ProjectEdits::moveEffect (owner, effect, intArg (args, "toSlot"), host.undoManager());
@@ -209,8 +206,6 @@ ControlResult remove (ControlHost& host, const juce::var& args)
 
         doomed.push_back ({ owner, effect });
     }
-
-    beginOneTransaction (host, "effects_remove");
 
     for (const auto& entry : doomed)
         ProjectEdits::removeEffect (entry.owner, entry.effect, host.undoManager());
@@ -255,6 +250,7 @@ void appendEffectOps (std::vector<OpSpec>& all)
     all.push_back (
         { "effects_write",
           OpScope::write,
+          OpEdits::yes,
           "Add effects to a channel, mixer insert or the master, or bypass and preset existing "
           "ones.",
           "An entry with a `slot` changes the effect already there; an entry without one "
@@ -280,6 +276,7 @@ void appendEffectOps (std::vector<OpSpec>& all)
 
     all.push_back ({ "effects_move",
                      OpScope::write,
+                     OpEdits::yes,
                      "Move one effect to another position in its chain.",
                      "Order is audible: a distortion before a reverb is not a distortion after "
                      "one. Positions count effects only, so the instrument a channel also carries "
@@ -296,6 +293,7 @@ void appendEffectOps (std::vector<OpSpec>& all)
     all.push_back (
         { "effects_remove",
           OpScope::write,
+          OpEdits::yes,
           "Remove effects from chains, as one undo step.",
           "Slots are resolved before anything is removed, so removing slots 0 and 1 in "
           "one call removes the two you meant rather than the first and whatever slid "
@@ -306,6 +304,7 @@ void appendEffectOps (std::vector<OpSpec>& all)
     all.push_back (
         { "presets_list",
           OpScope::read,
+          OpEdits::no,
           "List the factory presets, for instruments and for effects.",
           "Filter by `kind` ('instrument' or 'effect') and by `type` - the id of an "
           "effect or an instrument, as project_describe reports a channel's source. A "

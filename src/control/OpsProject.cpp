@@ -198,7 +198,6 @@ ControlResult writeStructure (ControlHost& host, const juce::var& args)
         return ControlResult::failure ("no project is open.");
 
     auto* undo = host.undoManager();
-    beginOneTransaction (host, "structure_write");
 
     auto changed = 0;
 
@@ -246,6 +245,7 @@ void appendProjectOps (std::vector<OpSpec>& all)
 {
     all.push_back ({ "project_describe",
                      OpScope::read,
+                     OpEdits::no,
                      "Summarise the open project: tempo, meter, and every channel, pattern, "
                      "playlist track, mixer insert and automation by name and id.",
                      "Start here. It is the cheap read - counts and names, and not one note, "
@@ -258,6 +258,7 @@ void appendProjectOps (std::vector<OpSpec>& all)
 
     all.push_back ({ "project_read",
                      OpScope::read,
+                     OpEdits::no,
                      "Read the whole project document, or one top-level member of it, exactly as a "
                      ".dew file stores it.",
                      "The document through the same schema that reads and writes the file, so "
@@ -272,6 +273,7 @@ void appendProjectOps (std::vector<OpSpec>& all)
 
     all.push_back ({ "project_command",
                      OpScope::write,
+                     OpEdits::no,
                      "Create, open or save the project, or step its undo history.",
                      "Verbs about the document rather than edits to it. 'new' and 'open' replace "
                      "what is open and may be refused when there are unsaved changes; 'save' "
@@ -287,6 +289,7 @@ void appendProjectOps (std::vector<OpSpec>& all)
     all.push_back (
         { "structure_write",
           OpScope::write,
+          OpEdits::yes,
           "Set the project's name, tempo, metre or length in bars.",
           "The metre is not a tempo. Changing beatsPerBar redefines what a bar IS, and "
           "a clip is stored in bars - so every clip's start and length is rescaled in "

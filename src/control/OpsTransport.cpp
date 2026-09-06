@@ -76,6 +76,7 @@ void appendTransportOps (std::vector<OpSpec>& all)
     all.push_back (
         { "transport_write",
           OpScope::write,
+          OpEdits::no,
           "Start or pause playback, choose song or pattern mode, and move the playhead "
           "or the start marker.",
           "Not an edit: nothing here touches the document or the undo history. It is "
@@ -96,6 +97,7 @@ void appendTransportOps (std::vector<OpSpec>& all)
 
     all.push_back ({ "transport_read",
                      OpScope::read,
+                     OpEdits::no,
                      "Report whether dew is playing, in which mode, and where it is.",
                      "A read, so it is available to a read-only grant. Use it to tell whether "
                      "something you started is still going.",

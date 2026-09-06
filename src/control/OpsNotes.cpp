@@ -77,7 +77,6 @@ ControlResult write (ControlHost& host, const juce::var& args)
     }
 
     auto* undo = host.undoManager();
-    beginOneTransaction (host, "notes_write");
 
     auto added = 0;
     auto changed = 0;
@@ -175,8 +174,6 @@ ControlResult remove (ControlHost& host, const juce::var& args)
         }
     }
 
-    beginOneTransaction (host, "notes_remove");
-
     for (const auto& note : doomed)
         ProjectEdits::removeNote (pattern, note, host.undoManager());
 
@@ -210,7 +207,6 @@ ControlResult transform (ControlHost& host, const juce::var& args)
         return applied (0);
 
     auto* undo = host.undoManager();
-    beginOneTransaction (host, "notes_transform");
 
     if (verb == kQuantize)
     {
@@ -262,6 +258,7 @@ void appendNoteOps (std::vector<OpSpec>& all)
     all.push_back (
         { "notes_write",
           OpScope::write,
+          OpEdits::yes,
           "Write notes into a pattern, as one undo step.",
           "An upsert on the three fields that identify a note - channel, step and pitch "
           "- so sending the same bar twice does not double it.\n\n"
@@ -280,6 +277,7 @@ void appendNoteOps (std::vector<OpSpec>& all)
     all.push_back (
         { "notes_remove",
           OpScope::write,
+          OpEdits::yes,
           "Remove notes from a pattern, by list or by range.",
           "Give `notes` to remove exactly those. Give none and it removes every note in "
           "the channel and step range you describe - with no channel and no range, that "
@@ -295,6 +293,7 @@ void appendNoteOps (std::vector<OpSpec>& all)
     all.push_back (
         { "notes_transform",
           OpScope::write,
+          OpEdits::yes,
           "Quantize or transpose every note on one channel of a pattern.",
           "Quantizing rounds each note's START to the grid and deliberately leaves "
           "lengths alone: quantizing length as well turns an eighth-note line into a "

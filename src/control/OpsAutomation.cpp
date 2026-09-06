@@ -78,7 +78,6 @@ ControlResult write (ControlHost& host, const juce::var& args)
               "params_list reports it per parameter.");
 
     auto* undo = host.undoManager();
-    beginOneTransaction (host, "automation_write");
 
     const auto withClip = flagArg (args, "placeClip", true);
 
@@ -133,8 +132,6 @@ ControlResult remove (ControlHost& host, const juce::var& args)
         doomed.add (automation);
     }
 
-    beginOneTransaction (host, "automation_remove");
-
     auto removed = 0;
 
     for (const auto& automation : doomed)
@@ -172,7 +169,6 @@ ControlResult writePoints (ControlHost& host, const juce::var& args)
     }
 
     auto* undo = host.undoManager();
-    beginOneTransaction (host, "automation_points_write");
 
     // The originals, taken BEFORE anything is written.
     //
@@ -277,6 +273,7 @@ void appendAutomationOps (std::vector<OpSpec>& all)
     all.push_back (
         { "automation_targets_list",
           OpScope::read,
+          OpEdits::no,
           "List every parameter in this project that a curve can be pointed at.",
           "Automation is a curated set, not every property: whether a parameter is worth "
           "a curve is declared beside the parameter itself. A relation between tracks "
@@ -291,6 +288,7 @@ void appendAutomationOps (std::vector<OpSpec>& all)
     all.push_back (
         { "automation_write",
           OpScope::write,
+          OpEdits::yes,
           "Create an automation curve for a parameter, and place a clip for it.",
           "Creating the curve and placing its clip is one call because it is one action: "
           "a curve with nowhere to play is a curve nothing hears. The clip lands on the "
@@ -313,6 +311,7 @@ void appendAutomationOps (std::vector<OpSpec>& all)
     all.push_back (
         { "automation_read",
           OpScope::read,
+          OpEdits::no,
           "Read one automation curve's points.",
           "Values are 0 to 1 and are mapped onto the parameter's own units when they are "
           "read - a discrete parameter is snapped, because half-on is not a state a "
@@ -326,6 +325,7 @@ void appendAutomationOps (std::vector<OpSpec>& all)
     all.push_back (
         { "automation_points_write",
           OpScope::write,
+          OpEdits::yes,
           "Add or move points on an automation curve, as one undo step.",
           "A point is a step and a value from 0 to 1. Two points on one step is a curve "
           "with no defined value there, so a point written where one already sits moves "
@@ -351,6 +351,7 @@ void appendAutomationOps (std::vector<OpSpec>& all)
 
     all.push_back ({ "automation_remove",
                      OpScope::write,
+                     OpEdits::yes,
                      "Remove automation curves and every clip that played them.",
                      "One undo step. A clip pointing at a removed automation would have nothing to "
                      "drive, so it goes too.",

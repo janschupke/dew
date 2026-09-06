@@ -141,7 +141,7 @@ void appendOutputOps (std::vector<OpSpec>& all)
                      { "path", ValueKind::text, true, "Where to write the file." });
 
     all.push_back (
-        { "render_audio", OpScope::write,
+        { "render_audio", OpScope::write, OpEdits::no,
           "Start rendering the project to an audio file, or to one file per channel.",
           "Answers as soon as the render STARTS, because a render is seconds to minutes "
           "of work. Poll render_status for progress, and do not start a second one while "
@@ -155,6 +155,7 @@ void appendOutputOps (std::vector<OpSpec>& all)
     all.push_back (
         { "render_status",
           OpScope::read,
+          OpEdits::no,
           "Report whether a render is going, and how far along it is.",
           "Progress runs 0 to 1 across the whole job, stems included. `stage` names which "
           "stem is being written.",
@@ -162,7 +163,7 @@ void appendOutputOps (std::vector<OpSpec>& all)
           renderStatus });
 
     all.push_back (
-        { "export_midi", OpScope::write, "Write the project's notes to a MIDI file.",
+        { "export_midi", OpScope::write, OpEdits::no, "Write the project's notes to a MIDI file.",
           "Synchronous, unlike an audio render: writing MIDI is arithmetic over the "
           "notes rather than a pass over every sample.\n\n"
           "The metre's beatUnit goes into the file's time signature. Audio channels have "

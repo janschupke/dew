@@ -46,7 +46,6 @@ ControlResult write (ControlHost& host, const juce::var& args)
                                        + " inserts, which is as many as the engine renders.");
 
     auto* undo = host.undoManager();
-    beginOneTransaction (host, "mixer_write");
 
     juce::Array<juce::var> touched;
 
@@ -96,8 +95,6 @@ ControlResult remove (ControlHost& host, const juce::var& args)
         doomed.add (track);
     }
 
-    beginOneTransaction (host, "mixer_remove");
-
     auto removed = 0;
 
     for (const auto& track : doomed)
@@ -116,6 +113,7 @@ void appendMixerOps (std::vector<OpSpec>& all)
     all.push_back (
         { "mixer_write",
           OpScope::write,
+          OpEdits::yes,
           "Add mixer inserts, or rename and recolour existing ones.",
           "An upsert, like channels_write: an entry with an `id` changes that insert, "
           "one without adds a new one.\n\n"
@@ -136,6 +134,7 @@ void appendMixerOps (std::vector<OpSpec>& all)
     all.push_back (
         { "mixer_remove",
           OpScope::write,
+          OpEdits::yes,
           "Remove mixer inserts, their effects and the routing they leave behind.",
           "Channels routed into a removed insert are re-pointed at the first remaining "
           "one in the same undo step, because a channel that has lost its insert is "

@@ -100,7 +100,10 @@ inline control::ControlResult call (control::ControlHost& host, const juce::Stri
     INFO ("arguments rejected: " << fault);
     REQUIRE (fault.isEmpty());
 
-    return op->handler (host, args);
+    // Through invoke, not the handler: opening the call's one undo transaction
+    // is the dispatcher's job now, and a test that skipped it would measure an
+    // undo depth no real client ever sees.
+    return control::invoke (host, *op, args);
 }
 
 /** A juce::var object, for building arguments in a test. Not `Args`, which is

@@ -86,8 +86,6 @@ ControlResult write (ControlHost& host, const juce::var& args)
 
     const auto source = textArg (args, "source");
 
-    beginOneTransaction (host, "score_write");
-
     // Storing the text COMPILES NOTHING, deliberately. The editor saves as you
     // type and compiles when asked, because a compile writes notes and nobody
     // wants a pause in their typing to become an undo step full of them.
@@ -124,7 +122,6 @@ ControlResult compileInto (ControlHost& host, const juce::var& args)
             + " error(s) and was not compiled. Call score_read for the diagnostics.");
 
     auto* undo = host.undoManager();
-    beginOneTransaction (host, "score_compile");
 
     // Store the source in the same undo step as the notes it produced, when the
     // caller supplied one. A project whose baked notes and whose stored text
@@ -165,6 +162,7 @@ void appendScoreOps (std::vector<OpSpec>& all)
 {
     all.push_back ({ "score_read",
                      OpScope::read,
+                     OpEdits::no,
                      "Read the project's score source, and whether it still compiles.",
                      "A dew project can carry the text of the arrangement language that produced "
                      "it. Checking is free and writes nothing, so this reports the diagnostics "
@@ -177,6 +175,7 @@ void appendScoreOps (std::vector<OpSpec>& all)
     all.push_back (
         { "score_write",
           OpScope::write,
+          OpEdits::yes,
           "Store score source in the project, without compiling it.",
           "Storing and compiling are separate on purpose: a compile writes notes, and "
           "text that is being worked on should not fill the undo stack with them.\n\n"
@@ -189,6 +188,7 @@ void appendScoreOps (std::vector<OpSpec>& all)
     all.push_back (
         { "score_compile",
           OpScope::write,
+          OpEdits::yes,
           "Compile the score into real patterns, notes and clips, as one undo step.",
           "This is the high-leverage way to arrange. The language says what the music IS "
           "- key, harmony, rhythm, voicing, counterpoint - and the compiler works out "

@@ -46,7 +46,6 @@ ControlResult writeTracks (ControlHost& host, const juce::var& args)
     }
 
     auto* undo = host.undoManager();
-    beginOneTransaction (host, "playlist_tracks_write");
 
     juce::Array<juce::var> touched;
 
@@ -103,8 +102,6 @@ ControlResult removeTracks (ControlHost& host, const juce::var& args)
 
         doomed.add (track);
     }
-
-    beginOneTransaction (host, "playlist_tracks_remove");
 
     for (const auto& track : doomed)
         ProjectEdits::removePlaylistTrack (project, track, host.undoManager());
@@ -168,7 +165,6 @@ ControlResult writeClips (ControlHost& host, const juce::var& args)
     }
 
     auto* undo = host.undoManager();
-    beginOneTransaction (host, "clips_write");
 
     auto placed = 0;
 
@@ -235,8 +231,6 @@ ControlResult removeClips (ControlHost& host, const juce::var& args)
             doomed.push_back ({ track, clip });
     }
 
-    beginOneTransaction (host, "clips_remove");
-
     for (const auto& entry : doomed)
         ProjectEdits::removeClip (entry.track, entry.clip, host.undoManager());
 
@@ -252,6 +246,7 @@ void appendPlaylistOps (std::vector<OpSpec>& all)
     all.push_back (
         { "playlist_tracks_write",
           OpScope::write,
+          OpEdits::yes,
           "Add arrangement lanes, or rename, mute, solo and recolour existing ones.",
           "A lane carries no id: lanes are positional, unlike channels and mixer "
           "inserts, so an index is the whole address. An entry with an `index` changes "
@@ -265,6 +260,7 @@ void appendPlaylistOps (std::vector<OpSpec>& all)
     all.push_back (
         { "playlist_tracks_remove",
           OpScope::write,
+          OpEdits::yes,
           "Remove arrangement lanes and the clips on them.",
           "One undo step. The clips go with the lane. Automations do NOT - an automation "
           "is a reusable definition that can be placed again, unlike the notes a removed "
@@ -281,6 +277,7 @@ void appendPlaylistOps (std::vector<OpSpec>& all)
     all.push_back (
         { "clips_write",
           OpScope::write,
+          OpEdits::yes,
           "Place clips on the arrangement: patterns, audio takes or automation curves.",
           "A clip is measured in BARS, and a bar is beatsPerBar steps - so a clip's "
           "length in time follows the metre. Placing two clips of one pattern is how a "
@@ -306,6 +303,7 @@ void appendPlaylistOps (std::vector<OpSpec>& all)
 
     all.push_back ({ "clips_remove",
                      OpScope::write,
+                     OpEdits::yes,
                      "Remove the clip covering a bar on a lane.",
                      "Addressed by where it is rather than by an id, because that is how a clip is "
                      "identified on screen: a lane and a bar. A bar with no clip on it is skipped "

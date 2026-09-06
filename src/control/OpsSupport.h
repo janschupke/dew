@@ -56,24 +56,6 @@ inline ControlResult applied (int count, int skipped = 0)
     return ControlResult::success (Obj {}.set ("applied", count).set ("skipped", skipped));
 }
 
-/** Opens the ONE undo transaction a call is allowed.
-
-    Every operation in this table is one undo step, however many entries its
-    batch carried, because that is the promise the consent dialog makes: the
-    user's protection against a client that does something surprising is Cmd-Z,
-    and a batch that arrives as two hundred steps is not undoable in any sense a
-    person would recognise.
-
-    Named for the operation, in the same shape the interface's own transactions
-    use. Undo transaction names are deliberately not translated - nothing but
-    getUndoDescription reads one, and dew's Edit menu shows the command's name.
-*/
-inline void beginOneTransaction (ControlHost& host, const char* opName)
-{
-    if (auto* undo = host.undoManager())
-        undo->beginNewTransaction (juce::String ("Agent: ") + opName);
-}
-
 // --- lookups that report ------------------------------------------------------
 // ProjectEdits' finders answer with an invalid tree, which is right for a view
 // that simply draws nothing. A protocol has to SAY which id was not found, so

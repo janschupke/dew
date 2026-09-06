@@ -9,6 +9,7 @@
 
 using namespace dew;
 using namespace dew::control;
+using namespace dew::testing;
 
 namespace
 {
@@ -90,31 +91,157 @@ TEST_CASE ("every operation documents itself and every argument it takes", "[con
     }
 }
 
-TEST_CASE ("a write operation is one that writes, and a read one does not", "[control][gate]")
+TEST_CASE ("a write operation is named like one", "[control][gate]")
 {
-    // OpScope is the ONLY permission gate, so a mis-scoped operation is a
-    // client writing under a read-only grant. Named rather than inferred:
-    // the point is that somebody has to say so per operation.
+    // A naming convention, and only that. It used to be the whole of the scope
+    // gate in both directions, and the read direction asked whether the name
+    // contained "_write" - so an operation called channels_remove, declared
+    // read, took the else branch and passed. A read-only grant could delete
+    // channels and this file said it was fine.
+    //
+    // What a read operation may DO is asserted below, by running it. This half
+    // stays because a write whose name reads like a query is a trap for the
+    // model choosing between them, which no behavioural test can see.
     for (const auto& op : ops())
     {
+        if (op.scope != OpScope::write)
+            continue;
+
         const juce::String name { op.name };
-        const auto looksLikeAWrite = name.contains ("_write") || name.contains ("_remove")
-                                     || name.contains ("_move") || name.contains ("_compile")
-                                     || name.contains ("_transform") || name.contains ("_command")
-                                     || name.startsWith ("render_") || name.startsWith ("export_");
 
         INFO ("operation: " << op.name);
-
-        if (op.scope == OpScope::write)
-            REQUIRE (looksLikeAWrite);
-        else
-            REQUIRE_FALSE (name.contains ("_write"));
+        REQUIRE ((name.contains ("_write") || name.contains ("_remove") || name.contains ("_move")
+                  || name.contains ("_compile") || name.contains ("_transform")
+                  || name.contains ("_command") || name.startsWith ("render_")
+                  || name.startsWith ("export_")));
     }
 
     // render_status is the exception the rule above has to allow: it starts
     // with render_ and only reads. Asserted rather than left implied, so the
     // predicate cannot quietly stop covering the rest.
     REQUIRE (findOp ("render_status")->scope == OpScope::read);
+}
+
+TEST_CASE ("only a write operation edits the document, and every other write says so",
+           "[control][gate]")
+{
+    // OpEdits decides whether a call opens an undo transaction, and it defaults
+    // to `no` - so the failure to guard against is a new editing operation that
+    // never states it and quietly stops being one undo step.
+    //
+    // The four below are the whole of "needs a write grant, does not touch the
+    // tree": two write a file, one moves the playhead, one replaces or rewinds
+    // the document rather than editing it. Named rather than inferred, so a
+    // fifth cannot join them by being forgotten.
+    const std::set<juce::String> writesNothing { "project_command", "transport_write",
+                                                 "render_audio", "export_midi" };
+
+    for (const auto& op : ops())
+    {
+        INFO ("operation: " << op.name);
+
+        if (op.edits == OpEdits::yes)
+            REQUIRE (op.scope == OpScope::write);
+
+        if (op.scope == OpScope::write)
+            REQUIRE ((op.edits == OpEdits::yes) == (writesNothing.count (op.name) == 0));
+    }
+
+    for (const auto& name : writesNothing)
+    {
+        INFO ("operation: " << name);
+        REQUIRE (findOp (name) != nullptr);
+    }
+}
+
+TEST_CASE ("a read operation leaves the document and the undo history alone",
+           "[control][gate][mcp]")
+{
+    // OpScope is the ONLY permission gate: a client approved for reading is
+    // allowed to call every operation declared read, and nothing else stands
+    // between it and the document. So this asks the question the way the grant
+    // does - by running each of them and looking at what moved.
+    //
+    // Arguments per operation rather than empty ones, because an operation that
+    // refuses its way out writes nothing whatever its handler would have done,
+    // and a gate every case fails is a gate measuring nothing. Each row reaches
+    // something real in the fixture.
+    FakeHost host;
+
+    // A curve to read, made through the operation that makes one, so
+    // automation_read answers rather than reporting a missing id.
+    const auto made = call (
+        host, "automation_write",
+        Fields {}.with ("target", "channel").with ("id", 1).with ("param", "volume"));
+    INFO (made.error);
+    REQUIRE (made.ok);
+
+    const auto automationId = (int) made.value[juce::Identifier ("id")];
+
+    const auto
+        address = Fields {}.with ("target", "channel").with ("id", 1).with ("param", "volume");
+
+    struct ReadCase
+    {
+        const char* name;
+        juce::var args;
+        bool answers; ///< False for the two that need a facility a headless host has not got.
+    };
+
+    const std::vector<ReadCase> cases {
+        { "project_describe", {}, true },
+        { "project_read", {}, true },
+        { "params_list", address, true },
+        { "params_read", Fields {}.with ("entries", list ({ address })), true },
+        { "presets_list", {}, true },
+        { "patterns_read", Fields {}.with ("id", 1), true },
+        { "automation_targets_list", {}, true },
+        { "automation_read", Fields {}.with ("id", automationId), true },
+        { "score_read", {}, true },
+        { "transport_read", {}, false },
+        { "render_status", {}, false },
+    };
+
+    // Covered both ways, so the gate prunes itself: a read operation added
+    // without a row here fails the first loop, and a row naming an operation
+    // that is gone - or that has since become a write - fails the second.
+    juce::StringArray covered;
+
+    for (const auto& c : cases)
+        covered.add (c.name);
+
+    for (const auto& op : ops())
+        if (op.scope == OpScope::read)
+        {
+            INFO ("no row drives read operation: " << op.name);
+            REQUIRE (covered.contains (op.name));
+        }
+
+    for (const auto& c : cases)
+    {
+        INFO ("row names no read operation: " << c.name);
+        REQUIRE (findOp (c.name) != nullptr);
+        REQUIRE (findOp (c.name)->scope == OpScope::read);
+    }
+
+    for (const auto& c : cases)
+    {
+        INFO ("operation: " << c.name);
+
+        const auto before = host.state.createCopy();
+        const auto depthBefore = host.undoDepth();
+
+        const auto result = call (host, c.name, c.args);
+
+        INFO ("said: " << result.error);
+        CHECK (result.ok == c.answers);
+
+        // isEquivalentTo compares properties and children, which is the whole
+        // of what a saved file holds - a read that touched anything at all
+        // moves one of them.
+        CHECK (host.state.isEquivalentTo (before));
+        CHECK (host.undoDepth() == depthBefore);
+    }
 }
 
 TEST_CASE ("every operation's schema is one a client can read", "[control][gate][mcp]")

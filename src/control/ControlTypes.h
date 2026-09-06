@@ -138,6 +138,25 @@ enum class OpScope
     write
 };
 
+/** Whether an operation's work lands in the DOCUMENT.
+
+    Not the same question as OpScope, and kept apart because four operations
+    answer them differently: transport_write, render_audio, export_midi and
+    project_command all need a write grant - they move the playhead, write a
+    file, or replace what is open - and none of them edits the tree.
+
+    It is what decides whether a call opens an undo transaction, which is why
+    it is declared here rather than left to each handler. Twenty-four handlers
+    used to open their own, each naming itself in a string literal beside the
+    name it already had; the four above did not, and a forgotten call looked
+    exactly like a deliberate omission.
+*/
+enum class OpEdits
+{
+    no,
+    yes
+};
+
 /** What an operation gives back.
 
     Deliberately not an exception and not a juce::Result: an operation that
