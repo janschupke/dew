@@ -8,6 +8,7 @@
 #include "model/EntityColour.h"
 #include "model/ProjectEdits.h"
 #include "ui/ColourMenu.h"
+#include "ui/RowSilence.h"
 #include "ui/design/Glyphs.h"
 #include "ui/design/MenuGlyph.h"
 #include "ui/design/Cursors.h"
@@ -133,7 +134,6 @@ MixerStrip::MixerStrip (ProjectDocument& d, juce::ValueTree t, bool isMasterStri
         enabledButton.setClickingTogglesState (true);
         enabledButton.setOnColour (tokens::colour::warning);
         enabledButton.setTooltip (tr (StringId::mixer_enabled_help));
-        enabledButton.setToggleState ((bool) track[ids::mute], juce::dontSendNotification);
         enabledButton.onModifiedClick = [this] (const juce::ModifierKeys& mods)
         {
             select();
@@ -156,6 +156,8 @@ MixerStrip::MixerStrip (ProjectDocument& d, juce::ValueTree t, bool isMasterStri
         };
         addAndMakeVisible (enabledButton);
     }
+
+    applyMuteState();
 
     forwardChildMouseEventsTo (*this);
     setMouseCursor (cursor::clickable);
@@ -391,6 +393,10 @@ void MixerStrip::paint (juce::Graphics& g)
         g.drawText (juce::String (effectCount), badge.toNearestInt(), juce::Justification::centred,
                     false);
     }
+
+    // Last, over the cap, the meter and the badge, the way a rack row and a
+    // playlist header now do it.
+    silence::paintOver (g, getLocalBounds(), (bool) track[ids::mute]);
 }
 
 void MixerStrip::resized()
@@ -466,6 +472,19 @@ void MixerStrip::attachParamMenus (const paramMenu::Host* host)
     paramMenu::attachTo (host, enabledButton, self, requireMixerTrackParamSpec (ids::mute));
 }
 
+void MixerStrip::applyMuteState()
+{
+    const auto muted = (bool) track[ids::mute];
+
+    enabledButton.setToggleState (muted, juce::dontSendNotification);
+
+    // A muted insert dimmed NOTHING before this - it was told apart from a live
+    // one by the colour of one 24px glyph. The master has no toggle and cannot
+    // be muted, so nothing here reaches it.
+    silence::applyTo (*this, muted, &enabledButton);
+    repaint();
+}
+
 void MixerStrip::valueTreePropertyChanged (juce::ValueTree&, const juce::Identifier& property)
 {
     if (property == ids::gain)
@@ -473,7 +492,7 @@ void MixerStrip::valueTreePropertyChanged (juce::ValueTree&, const juce::Identif
     else if (property == ids::pan)
         panKnob.setValue ((double) track[ids::pan], juce::dontSendNotification);
     else if (property == ids::mute)
-        enabledButton.setToggleState ((bool) track[ids::mute], juce::dontSendNotification);
+        applyMuteState();
     else if (property == ids::name)
     {
         nameLabel.setText (track[ids::name].toString(), juce::dontSendNotification);

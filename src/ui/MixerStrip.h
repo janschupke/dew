@@ -113,6 +113,12 @@ private:
     void showMenu (const juce::MouseEvent&);
     void valueTreePropertyChanged (juce::ValueTree&, const juce::Identifier& property) override;
 
+    /** The toggle's state and the strip's dimming, together, because they are
+        one fact and used to be set at two call sites that disagreed: the
+        constructor lit the toggle and the property change lit the toggle, and
+        neither of them dimmed anything. */
+    void applyMuteState();
+
     void paintMeter (juce::Graphics&);
     void paintRouting (juce::Graphics&);
 

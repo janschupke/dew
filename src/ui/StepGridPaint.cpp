@@ -178,14 +178,19 @@ void StepGridComponent::paint (juce::Graphics& g)
             const auto atBasePitch = (int) note[ids::pitch] == (int) channel[ids::basePitch];
             const auto velocity = (float) juce::jlimit (0.2, 1.0, (double) note[ids::velocity]);
 
-            auto fill = colourValue.withMultipliedAlpha (muted ? 0.35f : velocity);
+            // emphasis::subdued, which is the same number written as what it
+            // means. It was a bare 0.35f, and the design gate could not see it
+            // because it sits inside a ternary.
+            auto fill = colourValue.withMultipliedAlpha (muted ? emphasis::subdued : velocity);
 
             g.setColour (atBasePitch ? fill : emphasis::secondary (fill));
             g.fillRoundedRectangle (cell, radius::sm);
 
             if (! atBasePitch)
             {
-                g.setColour (colourValue.withMultipliedAlpha (muted ? 0.4f : 1.0f));
+                // The border of an off-pitch step, on the same rung as its fill:
+                // 0.4f was a fourth idea of "muted" and matched no token at all.
+                g.setColour (colourValue.withMultipliedAlpha (muted ? emphasis::subdued : 1.0f));
                 g.drawRoundedRectangle (cell, radius::sm, stroke::regular);
             }
         }

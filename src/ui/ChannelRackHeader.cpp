@@ -6,6 +6,7 @@
 #include "model/ModuleCatalog.h"
 #include "model/ProjectEdits.h"
 #include "ui/ColourMenu.h"
+#include "ui/RowSilence.h"
 #include "ui/design/Cursors.h"
 #include "ui/design/Glyphs.h"
 #include "ui/design/MenuGlyph.h"
@@ -152,6 +153,11 @@ void ChannelRackHeader::refresh()
     armButton.setVisible (audio);
     armButton.setToggleState (audio && editorState.getArmedChannelId() == getChannelId(),
                               juce::dontSendNotification);
+
+    // A muted channel's whole row recedes, controls included. It used to dim
+    // only its STEPS, so the header of a channel that was not playing looked
+    // exactly like the header of one that was.
+    silence::applyTo (*this, (bool) channel[ids::muted], &enabledButton);
 
     resized();
     repaint();
@@ -362,6 +368,8 @@ void ChannelRackHeader::paint (juce::Graphics& g)
         g.fillRect (0, 0, 4, getHeight());
         g.drawRect (getLocalBounds(), stroke::hairlinePx);
     }
+
+    silence::paintOver (g, getLocalBounds(), (bool) channel[ids::muted]);
 }
 
 void ChannelRackHeader::resized()

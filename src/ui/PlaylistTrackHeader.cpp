@@ -5,6 +5,7 @@
 #include "model/Ids.h"
 #include "model/ProjectEdits.h"
 #include "ui/ColourMenu.h"
+#include "ui/RowSilence.h"
 #include "ui/design/Glyphs.h"
 #include "ui/design/MenuGlyph.h"
 #include "ui/design/Cursors.h"
@@ -160,20 +161,17 @@ void PlaylistTrackHeader::refresh()
     nameLabel.setText (track[ids::name].toString(), juce::dontSendNotification);
     setTitle (nameLabel.getText());
     enabledButton.setToggleState ((bool) track[ids::mute], juce::dontSendNotification);
+
+    // The name and the power glyph are CHILDREN, and a child paints after its
+    // parent - so the scrim above never reached either of them.
+    silence::applyTo (*this, (bool) track[ids::mute], &enabledButton);
+
     repaint();
 }
 
 void PlaylistTrackHeader::paint (juce::Graphics& g)
 {
     g.fillAll (colour::surface);
-
-    // A muted track's whole header dims, so the state is readable from
-    // across the arrangement and not only from the letter.
-    if ((bool) track[ids::mute])
-    {
-        g.setColour (colour::wellDeep.withAlpha (emphasis::subdued));
-        g.fillAll();
-    }
 
     // A band down the whole left edge, not a tab beside the name.
     //
@@ -189,6 +187,11 @@ void PlaylistTrackHeader::paint (juce::Graphics& g)
 
     g.setColour (colour::divider);
     g.drawHorizontalLine (getHeight() - 1, 0.0f, (float) getWidth());
+
+    // Last, so the lane's colour band dims with everything else. The scrim was
+    // painted BEFORE the band, which left the brightest thing on the row the
+    // one belonging to the track that is not playing.
+    silence::paintOver (g, getLocalBounds(), (bool) track[ids::mute]);
 }
 
 juce::Colour PlaylistTrackHeader::laneColour() const
