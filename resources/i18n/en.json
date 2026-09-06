@@ -1021,12 +1021,14 @@
     },
     "clip": {
       "addClip": "Add clip here",
+      "channelFallback": "channel {id}",
       "curve": "Curve",
       "deleteClip": "Delete clip",
       "deletePoint": "Delete point",
       "duplicatePattern": "Duplicate pattern",
       "line": "Line",
       "openPattern": "Open pattern",
+      "patternFallback": "pattern {id}",
       "step": "Step"
     },
     "menu": {
@@ -1142,13 +1144,19 @@
     "step": {
       "help": "How far a note can move in time, either way. Zero leaves timing alone"
     },
-    "title": "Randomize"
+    "title": "Randomize",
+    "velocity": {
+      "help": "How far a velocity can move, up or down. Zero leaves velocity alone"
+    }
   },
   "render": {
     "depth": {
       "bits16": "16-bit",
       "bits24": "24-bit",
       "float32": "32-bit float"
+    },
+    "dither": {
+      "help": "Adds inaudible noise so 16-bit truncation does not distort quiet passages"
     },
     "peak": {
       "help": "Where normalizing puts the loudest sample"
@@ -1215,9 +1223,12 @@
     "meterChangedRounded": "Time signature is now {meter}. Some clips were rounded to the nearest bar.",
     "notes": "{count, plural, one {# note} other {# notes}}",
     "nothingRecorded": "Nothing was recorded - check the input in Audio Settings.",
+    "recorded": "Recorded {seconds} s into {channel}.",
     "recordingUnreadable": "The recording could not be read back.",
     "renderCancelled": "Render cancelled.",
     "renderInProgress": "A render is already going.",
+    "rendered": "Rendered {what}  ·  peak {peak} dB",
+    "renderedFiles": "{count, plural, one {# file} other {# files}}",
     "rendering": "Rendering {file}..."
   },
   "transport": {
@@ -1500,11 +1511,13 @@
     "midiHeldOverNotes": "Notes that began before the range are retriggered at its start. An audio render of the same range reproduces them mid-note instead.",
     "midiChannelsShared": "This project has more than fifteen channels, so some share a MIDI channel.",
     "couldNotRead": "Could not read {name}.",
+    "propertyWrongType": "{path}.{key}: expected {expected, select, boolean {a boolean} integer {an integer} number {a number} other {a string}}, got {value} - using default",
     "stemsDoNotSum": "The master chain processes each stem, so the stems will not sum exactly back to the mix.",
     "stateNotAnObject": "state: expected an object - using defaults",
     "notAProject": "not a project",
     "scoreGridMismatch": "the score needs a grid of {score, plural, one {# step} other {# steps}} per beat and the project has {project}; changing it would alter playback speed, so nothing was written",
-    "scoreMeterMismatch": "the score is in {score} and the project is in {project}; changing the meter would move every existing clip, so nothing was written"
+    "scoreMeterMismatch": "the score is in {score} and the project is in {project}; changing the meter would move every existing clip, so nothing was written",
+    "stemsNotRouted": "Nothing was routed to {names}, so no file was written for {count, plural, one {it} other {them}}."
   },
   "lang": {
     "generator": {

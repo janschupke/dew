@@ -172,6 +172,89 @@ inline juce::StringArray codeLinesOf (const juce::File& file)
     return text;
 }
 
+/** A file's CODE as logical STATEMENTS, each numbered by the line it starts on.
+
+    The gate on English written into a source used to read physical lines, and
+    `.clang-format` is what made that wrong. ColumnLimit is 100, so the longest
+    arguments in the tree - which are exactly the sentences a person reads - get
+    wrapped onto a line of their own:
+
+        ditherToggle.setTooltip (
+            "Adds inaudible noise so 16-bit truncation does not distort quiet passages");
+
+    A line-oriented predicate sees `setTooltip (` with nothing after it, and
+    passes. The formatter the repository REQUIRES was hiding offences from the
+    gate, and the five it was hiding were all of this shape: the longer the
+    sentence, the more likely it wrapped, so the gate was blindest to exactly
+    the strings that mattered most.
+
+    Joined on PAREN depth only, deliberately. Tracking braces too would swallow
+    a whole function body into one "statement", because a function's opening
+    brace is indistinguishable from a brace initialiser's here. So a constructor
+    argument split across lines is still invisible - the sinks that read braces
+    say so where they are written - and every call-shaped sink is covered.
+*/
+inline juce::Array<CodeLine> statementsWithNumbersOf (const juce::File& file)
+{
+    juce::Array<CodeLine> statements;
+
+    CodeLine building;
+    auto depth = 0;
+
+    for (const auto& line : codeLinesWithNumbersOf (file))
+    {
+        if (building.number == 0)
+            building.number = line.number;
+
+        building.text += (building.text.isEmpty() ? "" : " ") + line.text.trim();
+
+        // Quotes are still here - only comments were stripped - so a paren
+        // inside a string must not count. An escaped quote does not close one.
+        auto inString = false;
+
+        for (int i = 0; i < line.text.length(); ++i)
+        {
+            const auto c = line.text[i];
+
+            if (inString)
+            {
+                if (c == '\\')
+                    ++i;
+                else if (c == '"')
+                    inString = false;
+
+                continue;
+            }
+
+            if (c == '"')
+                inString = true;
+            else if (c == '(')
+                ++depth;
+            else if (c == ')')
+                depth = juce::jmax (0, depth - 1);
+        }
+
+        // A line ending in `{` opens a BLOCK - a lambda body passed as an
+        // argument is the common one - and a block is not a continuation of
+        // the call that carries it. Without this the join runs to the closing
+        // paren of the outermost call and swallows a whole resolver lambda,
+        // which then reports every literal inside it against whichever sink
+        // happened to appear first. A wrapped argument list never ends a line
+        // with a brace, so nothing this gate is for is lost.
+        if (depth > 0 && ! building.text.trimEnd().endsWith ("{"))
+            continue;
+
+        statements.add (building);
+        building = {};
+        depth = 0;
+    }
+
+    if (building.text.isNotEmpty())
+        statements.add (building);
+
+    return statements;
+}
+
 /** Where a file sits under src/, as "ui/design/Tokens.h".
 
     The path rather than the name, because a name is not unique and nothing
@@ -217,8 +300,17 @@ inline juce::String relativePathOf (const juce::File& file)
     that is the ratchet this is here to remove: when a file needs the exemption
     again, the commit that needs it puts it back.
 */
+/** How a file is cut up for a predicate: physical lines, or logical statements.
+
+    A parameter rather than a second copy of offenders(), because everything
+    below it - the exemption bookkeeping, and the rule that an exemption hiding
+    nothing is itself an offence - is the part worth having once.
+*/
+using LineReader = juce::Array<CodeLine> (*) (const juce::File&);
+
 inline juce::StringArray offenders (const std::function<bool (const juce::String&)>& matches,
-                                    std::initializer_list<const char*> exempt = {})
+                                    std::initializer_list<const char*> exempt = {},
+                                    LineReader read = codeLinesWithNumbersOf)
 {
     juce::StringArray found;
     juce::Array<int> suppressed;
@@ -242,7 +334,7 @@ inline juce::StringArray offenders (const std::function<bool (const juce::String
             ++index;
         }
 
-        for (const auto& line : codeLinesWithNumbersOf (file))
+        for (const auto& line : read (file))
         {
             if (! matches (line.text))
                 continue;

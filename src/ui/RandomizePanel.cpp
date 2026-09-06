@@ -15,8 +15,7 @@ RandomizePanel::RandomizePanel (NoteTools::RandomizeOptions initial, juce::Strin
     velocityField.setRange (0.0, 1.0, 0.01);
     velocityField.setNumDecimalPlaces (2);
     velocityField.setCaption ("VELOCITY");
-    velocityField.setTooltip (
-        "How far a velocity can move, up or down. Zero leaves velocity alone");
+    velocityField.setTooltip (tr (StringId::randomize_velocity_help));
     addAndMakeVisible (velocityField);
 
     stepField.setRange (0.0, 8.0, 1.0);

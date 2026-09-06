@@ -192,10 +192,12 @@ void MainComponent::finishRecording()
     }
 
     statusBar.showMessage (
-        "Recorded "
-            + juce::String (entry.audio->getNumSamples() / juce::jmax (1.0, entry.sourceSampleRate),
-                            1)
-            + " s into " + channel[ids::name].toString() + ".",
+        tr (StringId::status_recorded,
+            Args {}
+                .with ("seconds", juce::String (entry.audio->getNumSamples()
+                                                    / juce::jmax (1.0, entry.sourceSampleRate),
+                                                1))
+                .with ("channel", channel[ids::name].toString())),
         StatusBar::Severity::info);
 }
 
@@ -285,14 +287,21 @@ void MainComponent::startRender (const RenderPanel::Request& request, Settings* 
                         return;
                     }
 
+                    // A file NAME when there is one, and a count when there
+                    // are several - so the count is a plural of its own rather
+                    // than a number glued to an English word.
                     const auto what = report.files.size() == 1
                                           ? report.files[0].getFileName()
-                                          : juce::String (report.files.size()) + " files";
+                                          : tr (StringId::status_renderedFiles,
+                                                Args {}.with ("count", report.files.size()));
 
                     statusBar.showMessage (
-                        "Rendered " + what + "  ·  peak "
-                            + juce::String (juce::Decibels::gainToDecibels (report.peak), 1)
-                            + " dB",
+                        tr (StringId::status_rendered,
+                            Args {}
+                                .with ("what", what)
+                                .with ("peak",
+                                       juce::String (juce::Decibels::gainToDecibels (report.peak),
+                                                     1))),
                         StatusBar::Severity::success);
                 });
 

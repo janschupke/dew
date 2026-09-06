@@ -405,10 +405,9 @@ RenderReport OfflineRenderer::renderStems (const juce::ValueTree& project, const
     }
 
     if (! silent.isEmpty())
-        report.warnings.add (
-            "Nothing was routed to " + silent.joinIntoString (", ")
-            + ", so no file was written for "
-            + (silent.size() == 1 ? juce::String ("it.") : juce::String ("them.")));
+        report.warnings.add (tr (
+            StringId::warning_stemsNotRouted,
+            Args {}.with ("names", silent.joinIntoString (", ")).with ("count", silent.size())));
 
     if (report.files.isEmpty())
         report.result = juce::Result::fail ("Every stem was silent, so nothing was written.");

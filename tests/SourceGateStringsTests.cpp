@@ -202,7 +202,32 @@ bool showsALiteral (const juce::String& raw)
         if (! line.contains (sink))
             continue;
 
-        const auto rest = line.fromFirstOccurrenceOf (sink, false, false);
+        auto rest = line.fromFirstOccurrenceOf (sink, false, false);
+
+        // A FileChooser takes its title, then a folder, then a WILDCARD - and
+        // "*.sf2;*.SF2" is a pattern the filesystem reads, not a sentence a
+        // person does. Reading the whole call reported the wildcard of a
+        // chooser whose title was already translated, so only the title is
+        // asked about. It ends at the first comma outside any nesting.
+        if (juce::String (sink) == "FileChooser> (")
+        {
+            auto depth = 0;
+
+            for (int i = 0; i < rest.length(); ++i)
+            {
+                const auto c = rest[i];
+
+                if (c == '(' || c == '{')
+                    ++depth;
+                else if (c == ')' || c == '}')
+                    --depth;
+                else if (c == ',' && depth == 0)
+                {
+                    rest = rest.substring (0, i);
+                    break;
+                }
+            }
+        }
 
         if (rest.containsChar ('"') && ! rest.contains ("\"\""))
             return true;
@@ -212,6 +237,78 @@ bool showsALiteral (const juce::String& raw)
 }
 
 } // namespace
+
+TEST_CASE ("the scanner reads a wrapped call as one statement", "[build][gate][i18n]")
+{
+    // The gate above is only as honest as this. `.clang-format` wraps at column
+    // 100, so the longest arguments in the tree - which are exactly the
+    // sentences a person reads - end up on a line of their own, and a
+    // line-oriented predicate sees `setTooltip (` followed by nothing.
+    //
+    // Five strings were hiding in that shape when this was written, including
+    // two the status bar shows and one the render panel does.
+    const auto file = juce::File::createTempFile (".cpp");
+
+    file.replaceWithText ("void f()\n"
+                          "{\n"
+                          "    toggle.setTooltip (\n"
+                          "        \"Adds inaudible noise so truncation does not distort\");\n"
+                          "    other.setComponentID (\"dither\");\n"
+                          "}\n");
+
+    const auto statements = statementsWithNumbersOf (file);
+    file.deleteFile();
+
+    // The wrapped call is ONE statement, numbered by the line it starts on.
+    auto joined = juce::String();
+
+    for (const auto& s : statements)
+        if (s.text.contains ("setTooltip"))
+            joined = s.text;
+
+    INFO (joined);
+    CHECK (joined.contains ("setTooltip ("));
+    CHECK (joined.contains ("Adds inaudible noise"));
+    CHECK (showsALiteral (joined));
+
+    // And the statement AFTER it did not get swallowed into the same one: a
+    // join that ran on would report every later literal against this sink.
+    auto sawTheNextOne = false;
+
+    for (const auto& s : statements)
+        if (s.text.contains ("setComponentID") && ! s.text.contains ("setTooltip"))
+            sawTheNextOne = true;
+
+    CHECK (sawTheNextOne);
+}
+
+TEST_CASE ("a lambda argument does not become one enormous statement", "[build][gate][i18n]")
+{
+    // Joining on paren depth alone runs from `forEachStatement (` to the
+    // closing paren of the lambda passed to it, which in the score resolver is
+    // sixty lines - and every literal inside them is then reported against
+    // whichever sink appeared first. A line ending in `{` opens a block, and a
+    // wrapped argument list never does.
+    const auto file = juce::File::createTempFile (".cpp");
+
+    file.replaceWithText ("void f()\n"
+                          "{\n"
+                          "    forEach (spec, [&] (const Statement& s)\n"
+                          "    {\n"
+                          "        if (s.key == \"chords\")\n"
+                          "            report (\"E229\");\n"
+                          "    });\n"
+                          "}\n");
+
+    const auto statements = statementsWithNumbersOf (file);
+    file.deleteFile();
+
+    for (const auto& s : statements)
+    {
+        INFO (s.text);
+        CHECK_FALSE ((s.text.contains ("forEach (") && s.text.contains ("E229")));
+    }
+}
 
 TEST_CASE ("no source shows a person a string literal", "[build][gate][i18n]")
 {
@@ -223,7 +320,10 @@ TEST_CASE ("no source shows a person a string literal", "[build][gate][i18n]")
     // it keys on the ENGLISH TEXT, so correcting a typo silently orphans every
     // translation of it. dew's keys are structural, so a typo is a one-word
     // edit to en.json and nothing downstream notices.
-    const auto found = offenders (showsALiteral);
+    // Over STATEMENTS, not lines: see statementsWithNumbersOf. The formatter
+    // wraps the longest arguments in the tree, and the longest arguments are
+    // the sentences a person reads.
+    const auto found = offenders (showsALiteral, {}, statementsWithNumbersOf);
 
     INFO ("English written into the source:\n" << found.joinIntoString ("\n"));
     CHECK (found.isEmpty());

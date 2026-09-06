@@ -95,7 +95,8 @@ void PlaylistComponent::paintAudioClip (juce::Graphics& g, const juce::ValueTree
     // down. A channel's name is whatever the user typed, and this was the one
     // of the three that hard-clipped it.
     g.drawText (channel.isValid() ? channel[ids::name].toString()
-                                  : "channel " + clip[ids::channelId].toString(),
+                                  : tr (StringId::playlist_clip_channelFallback,
+                                        Args {}.with ("id", clip[ids::channelId].toString())),
                 bounds.reduced (6.0f, 2.0f).toNearestInt(), juce::Justification::topLeft, true);
 }
 
@@ -269,8 +270,10 @@ int PlaylistComponent::paintLanes (juce::Graphics& g, int bottom)
 
             g.setColour (colour::textOnAccent);
             g.setFont (type::font (type::small, true));
-            g.drawText (pattern.isValid() ? pattern[ids::name].toString()
-                                          : "pattern " + clip[ids::patternId].toString(),
+            g.drawText (pattern.isValid()
+                            ? pattern[ids::name].toString()
+                            : tr (StringId::playlist_clip_patternFallback,
+                                  Args {}.with ("id", clip[ids::patternId].toString())),
                         bounds.toNearestInt().reduced (space::xs, 0),
                         juce::Justification::centredLeft, true);
         }

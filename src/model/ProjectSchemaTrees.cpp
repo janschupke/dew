@@ -16,6 +16,7 @@
 
 #include "model/ProjectSchema.h"
 
+#include "i18n/Strings.h"
 #include "model/Ids.h"
 
 namespace dew
@@ -279,13 +280,21 @@ juce::ValueTree treeFromVar (const juce::var& value, const NodeSpec& spec,
         }
         else
         {
-            warnings.add (path + "." + key + ": expected "
-                          + (prop.defaultValue.isBool()     ? "a boolean"
-                             : prop.defaultValue.isInt()    ? "an integer"
-                             : prop.defaultValue.isDouble() ? "a number"
-                                                            : "a string")
-                          + ", got " + object->getProperty (prop.id).toString()
-                          + " - using default");
+            // A `select` rather than four sentence fragments joined with +:
+            // "expected a boolean" is one sentence in English and need not be
+            // two words in another, and an article is not detachable from its
+            // noun in most languages that have them.
+            const auto* expected = prop.defaultValue.isBool()     ? "boolean"
+                                   : prop.defaultValue.isInt()    ? "integer"
+                                   : prop.defaultValue.isDouble() ? "number"
+                                                                  : "string";
+
+            warnings.add (tr (StringId::warning_propertyWrongType,
+                              Args {}
+                                  .with ("path", path)
+                                  .with ("key", key)
+                                  .with ("expected", expected)
+                                  .with ("value", object->getProperty (prop.id).toString())));
             tree.setProperty (prop.id, prop.defaultValue, nullptr);
         }
     }

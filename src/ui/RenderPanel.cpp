@@ -62,8 +62,7 @@ RenderPanel::RenderPanel (ProjectDocument& d, EditorState& state, Settings* sett
     depthBox.setSelectedId (24, juce::dontSendNotification);
 
     ditherToggle.setToggleState (true, juce::dontSendNotification);
-    ditherToggle.setTooltip (
-        "Adds inaudible noise so 16-bit truncation does not distort quiet passages");
+    ditherToggle.setTooltip (tr (StringId::render_dither_help));
 
     rebuildFormats();
     rebuildScopes();
