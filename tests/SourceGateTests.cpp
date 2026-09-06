@@ -131,6 +131,48 @@ TEST_CASE ("the code-line reader knows a comment from a quoted one", "[build][ga
     CHECK (code[2].text.contains ("alsoKept"));
 }
 
+TEST_CASE ("the code-line reader keeps a raw string's own text", "[build][gate]")
+{
+    // A raw string is the one place a sentence a person reads is not written as
+    // a quoted literal, and the reader used to be blind to it in the direction
+    // that costs most: it tracked a string within a line, so the opening
+    // delimiter read as an unterminated literal and every line after it was
+    // read as ordinary code. The starter score's own `//` lines - the four
+    // sentences a person reads on opening the Score tab - were deleted as if
+    // they were C++ comments, and no gate in this file could see them.
+    //
+    // Requoted per physical line, so the line number still points at the
+    // sentence, and the delimiters themselves are consumed, so the statement
+    // joiner's parens stay balanced.
+    const auto file = juce::File::createTempFile (".cpp");
+
+    file.replaceWithText ("const char* const text =\n"
+                          "    R\"SCORE(// a sentence a person reads\n"
+                          "song {\n"
+                          "  title \"Untitled\"\n"
+                          "}\n"
+                          ")SCORE\";\n"
+                          "int kept = 1;\n");
+
+    const auto code = codeLinesWithNumbersOf (file);
+    file.deleteFile();
+
+    REQUIRE (code.size() == 7);
+
+    // The score's comment survives, as a literal, on its own line.
+    CHECK (code[1].number == 2);
+    CHECK (code[1].text.contains ("a sentence a person reads"));
+
+    // A quote inside the raw string is escaped rather than left to open one.
+    CHECK (code[3].number == 4);
+    CHECK (code[3].text.contains ("\\\"Untitled\\\""));
+
+    // The delimiters are gone, so nothing is left unbalanced behind them.
+    CHECK (! code[0].text.contains ("R\""));
+    CHECK (code[6].number == 7);
+    CHECK (code[6].text.contains ("int kept"));
+}
+
 TEST_CASE ("no source file is longer than the tree already is", "[build][gate]")
 {
     // 400 lines of CODE - comments and blanks removed by codeLinesOf.

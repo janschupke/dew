@@ -108,9 +108,33 @@ juce::String withoutDiagnosticCodes (const juce::String& line)
     return kept;
 }
 
+/** `line` with a literal's WRAPPER removed.
+
+    juce::String ("Score") is the same sentence as "Score", and wearing the
+    wrapper is how the score editor's own heading survived the whole first
+    extraction pass: the gate asked what setText's argument STARTED with, and
+    what it started with was `juce::String`. Two places in the tree - this
+    file's subject at src/ui/ScoreEditorComponent.cpp and i18n.md - said the
+    gate looked through it long before any code here did.
+
+    The closing paren is left where it is. Nothing downstream reads it, and
+    removing it would mean matching parens in a predicate that is deliberately
+    textual.
+*/
+juce::String withoutStringWrappers (const juce::String& line)
+{
+    auto kept = line;
+
+    for (const auto* wrapper : { "juce::String (\"", "juce::String(\"", "String (\"",
+                                 "juce::CharPointer_UTF8 (\"", "CharPointer_UTF8 (\"" })
+        kept = kept.replace (wrapper, "\"");
+
+    return kept;
+}
+
 bool showsALiteral (const juce::String& raw)
 {
-    const auto line = withoutDiagnosticCodes (withoutArgumentNames (raw));
+    const auto line = withoutStringWrappers (withoutDiagnosticCodes (withoutArgumentNames (raw)));
 
     // Sinks whose text is the FIRST argument.
     //
@@ -347,6 +371,12 @@ TEST_CASE ("no source shows a person a string literal", "[build][gate][i18n]")
     CHECK_FALSE (
         showsALiteral ("    tempoField.setTooltip (tr (StringId::transport_tempo_help));"));
     CHECK_FALSE (showsALiteral ("    icon.setTooltip (\"\");"));
+
+    // Worn inside a juce::String, which is how the score editor's own heading
+    // survived the first extraction pass.
+    CHECK (showsALiteral ("    heading.setText (juce::String (\"Score\"), dontSendNotification);"));
+    CHECK (showsALiteral ("    label.setText (juce::CharPointer_UTF8 (\"Score\"), n);"));
+    CHECK_FALSE (showsALiteral ("    heading.setText (juce::String (score.name), n);"));
 
     // The ternary shape, before and after.
     CHECK (showsALiteral ("    b.setButtonText (song ? \"Song\" : \"Pattern\");"));

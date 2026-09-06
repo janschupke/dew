@@ -80,6 +80,35 @@ struct CodeLine
     juce::String text; ///< that line with its comments removed
 };
 
+/** A raw string's content, requoted so the rest of the scanner reads it as an
+    ordinary literal.
+
+    A raw string is the one place where text a person reads is not written as a
+    quoted literal at all, and the scanner used to be blind to it in the worst
+    possible direction: it tracked a string WITHIN a line, so `R"SCORE(` read as
+    an unterminated one and every following line of the starter score was read
+    as ordinary code - which deleted the score's own `//` lines as if they were
+    C++ comments. The four sentences a person reads on opening the Score tab
+    were invisible to every gate in this file.
+
+    Requoting per PHYSICAL line rather than emitting one enormous literal is
+    what keeps a line number pointing at the sentence that offends, and it keeps
+    the statement joiner's parens balanced, because the delimiters themselves
+    are consumed rather than kept.
+*/
+inline juce::String quotedRawLine (const juce::String& text)
+{
+    // A blank line inside a raw string is a blank line, and this reader drops
+    // those - so it must not become an empty literal that reads as code.
+    if (text.isEmpty())
+        return {};
+
+    auto quoted = juce::String::charToString ('"');
+    quoted += text.replace ("\\", "\\\\").replace ("\"", "\\\"");
+    quoted += '"';
+    return quoted;
+}
+
 /** A file's lines with comments removed and blank ones dropped.
 
     Every gate here wants this, and for the same reason. The lang gate strips
@@ -102,6 +131,13 @@ struct CodeLine
     that way when it really held 667: the size gate was being blinded by the
     very predicates it was scanning, and the file it could not see was the one
     holding the gates.
+
+    RAW strings are tracked across lines as well, through quotedRawLine above.
+    They are the one shape where a sentence a person reads is not written as a
+    quoted literal, and reading them as code is worse than reading them as
+    nothing: a raw string holding `//` had those lines deleted as C++ comments,
+    and one holding slash-star would open a comment that swallowed the rest of
+    the file - the same failure the paragraph above records, one level down.
 */
 inline juce::Array<CodeLine> codeLinesWithNumbersOf (const juce::File& file)
 {
@@ -110,6 +146,7 @@ inline juce::Array<CodeLine> codeLinesWithNumbersOf (const juce::File& file)
 
     juce::Array<CodeLine> code;
     auto inBlockComment = false;
+    juce::String rawTerminator;
 
     for (int i = 0; i < lines.size(); ++i)
     {
@@ -118,6 +155,24 @@ inline juce::Array<CodeLine> codeLinesWithNumbersOf (const juce::File& file)
 
         for (int c = 0; c < line.length();)
         {
+            // Inside a raw string, everything up to its own delimiter is text.
+            if (rawTerminator.isNotEmpty())
+            {
+                const auto end = line.indexOf (c, rawTerminator);
+
+                if (end < 0)
+                {
+                    kept += quotedRawLine (line.substring (c));
+                    c = line.length();
+                    continue;
+                }
+
+                kept += quotedRawLine (line.substring (c, end));
+                c = end + rawTerminator.length();
+                rawTerminator.clear();
+                continue;
+            }
+
             if (inBlockComment)
             {
                 if (line[c] == '*' && c + 1 < line.length() && line[c + 1] == '/')
@@ -131,6 +186,22 @@ inline juce::Array<CodeLine> codeLinesWithNumbersOf (const juce::File& file)
                 }
 
                 continue;
+            }
+
+            // R"delim( ... )delim" - the opening, which has to be recognised
+            // BEFORE the quote handler below or the R is copied as code and the
+            // quote after it opens a literal that never closes.
+            if (line[c] == 'R' && c + 1 < line.length() && line[c + 1] == '"'
+                && (c == 0 || ! juce::CharacterFunctions::isLetterOrDigit (line[c - 1])))
+            {
+                if (const auto open = line.indexOfChar (c + 2, '('); open > 0)
+                {
+                    rawTerminator = juce::String::charToString (')');
+                    rawTerminator += line.substring (c + 2, open);
+                    rawTerminator += '"';
+                    c = open + 1;
+                    continue;
+                }
             }
 
             // A quoted literal is copied through whole, terminator included, so
