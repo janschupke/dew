@@ -10,6 +10,7 @@
 #include "ui/ParamContextMenu.h"
 #include "ui/design/Tokens.h"
 #include "ui/primitives/DewControls.h"
+#include "ui/primitives/RotaryGesture.h"
 
 namespace dew
 {
@@ -97,8 +98,8 @@ private:
 
     /** True between a knob's onEditStart and onEditEnd, so a whole drag is one
         undo step - the same latch every other panel in the tree keeps. */
-    bool inDrag = false;
-    bool gestureActive = false;
+    /** One gesture for the whole matrix: only one cell can be dragged. */
+    RotaryGesture gesture;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (FmMatrixPanel)
 };

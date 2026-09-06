@@ -126,22 +126,15 @@ OscillatorSection::OscillatorSection (ProjectDocument& d, EditorState& s)
     // are one control rather than three things that happen to be adjacent -
     // see OscillatorSection::octaveHeight.
     octaveSlider.setTextBoxStyle (juce::Slider::TextBoxLeft, false, 44, size::controlHeight);
-    octaveSlider.onDragStart = [this]
-    {
-        inDrag = true;
-        gestureActive = false;
-    };
-    octaveSlider.onDragEnd = [this]
-    {
-        inDrag = false;
-        gestureActive = false;
-    };
-    octaveSlider.onValueChange = [this]
-    {
-        // Integer-valued in the file: writing a double would change the JSON
-        // from `0` to `0.0` and hand the rounding to the schema's coercion.
-        write (ids::octave, (int) octaveSlider.getValue(), "Change octave");
-    };
+    gesture.attach (octaveSlider,
+                    [this] (bool continuing)
+                    {
+                        // Integer-valued in the file: writing a double would change the
+                        // JSON from `0` to `0.0` and hand the rounding to the schema's
+                        // coercion.
+                        return write (ids::octave, (int) octaveSlider.getValue(), "Change octave",
+                                      continuing);
+                    });
     addAndMakeVisible (octaveSlider);
 
     detuneKnob.setBipolar (true);
@@ -326,23 +319,13 @@ void OscillatorSection::setParamMenuHost (const paramMenu::Host* host)
 void OscillatorSection::attachKnob (DewKnob& knob, const juce::Identifier& property,
                                     const juce::String& transactionName, bool integral)
 {
-    knob.onEditStart = [this]
-    {
-        inDrag = true;
-        gestureActive = false;
-    };
-    knob.onEditEnd = [this]
-    {
-        inDrag = false;
-        gestureActive = false;
-    };
-    knob.onValueChange = [this, &knob, property, transactionName, integral]
-    {
-        if (integral)
-            write (property, (int) knob.getValue(), transactionName);
-        else
-            write (property, knob.getValue(), transactionName);
-    };
+    gesture.attach (
+        knob,
+        [this, &knob, property, transactionName, integral] (bool continuing)
+        {
+            return integral ? write (property, (int) knob.getValue(), transactionName, continuing)
+                            : write (property, knob.getValue(), transactionName, continuing);
+        });
 
     addAndMakeVisible (knob);
 }
@@ -425,11 +408,11 @@ juce::Button& OscillatorSection::getSlotButton (int index) const
     return *slotButtons[juce::jlimit (0, slotButtons.size() - 1, index)];
 }
 
-void OscillatorSection::write (const juce::Identifier& property, const juce::var& value,
-                               const juce::String& transactionName)
+bool OscillatorSection::write (const juce::Identifier& property, const juce::var& value,
+                               const juce::String& transactionName, bool continuing)
 {
     if (updating)
-        return;
+        return false;
 
     const auto slot = selectedSlotTree();
 
@@ -439,12 +422,14 @@ void OscillatorSection::write (const juce::Identifier& property, const juce::var
     const auto target = generatorNodeFor (slot, property);
 
     if (! target.isValid())
-        return;
+        return false;
 
     ProjectEdits::setProperty (target, property, value, &document.getUndoManager(), transactionName,
-                               gestureActive);
+                               continuing);
 
-    gestureActive = inDrag;
+    // Whether the gesture may advance. A write that did not happen must not
+    // open one, or the next value would join a transaction nothing started.
+    return true;
 }
 
 void OscillatorSection::changeListenerCallback (juce::ChangeBroadcaster*)

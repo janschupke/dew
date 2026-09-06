@@ -15,6 +15,7 @@
 #include "app/ProjectDocument.h"
 #include "ui/EditorState.h"
 #include "ui/primitives/DewControls.h"
+#include "ui/primitives/RotaryGesture.h"
 
 namespace dew
 {
@@ -304,8 +305,13 @@ private:
     }
 
     /** Writes to the selected slot, opening one undo transaction per gesture. */
-    void write (const juce::Identifier& property, const juce::var& value,
-                const juce::String& transactionName);
+    /** Writes one property of the selected slot, and reports whether it did.
+
+        The answer is what the gesture needs: a write refused because a refresh
+        is in progress, or because the slot is not there yet, must not open an
+        undo transaction for the next value to join. */
+    bool write (const juce::Identifier& property, const juce::var& value,
+                const juce::String& transactionName, bool continuing = false);
 
     /** Wires one wavetable knob to a property. Five knobs of identical shape,
         which is four more than is worth spelling out by hand.
@@ -397,8 +403,8 @@ private:
     bool showingSync = false;
 
     /** True between a knob's onEditStart and onEditEnd - see write(). */
-    bool inDrag = false;
-    bool gestureActive = false;
+    /** One gesture for the section: the octave stepper and every knob. */
+    RotaryGesture gesture;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (OscillatorSection)
 };

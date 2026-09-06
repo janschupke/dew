@@ -66,37 +66,28 @@ FmMatrixPanel::FmMatrixPanel (ProjectDocument& d)
                     : tr (StringId::oscillator_fm_route_help,
                           Args {}.with ("from", row + 1).with ("to", column + 1)));
 
-            knob->onEditStart = [this]
-            {
-                inDrag = true;
-                gestureActive = false;
-            };
-            knob->onEditEnd = [this]
-            {
-                inDrag = false;
-                gestureActive = false;
-            };
-
             auto* raw = knob.get();
 
-            knob->onValueChange = [this, raw, row, &property]
-            {
-                if (updating)
-                    return;
+            // One undo step per gesture: the first write of a drag opens a
+            // transaction and every write after it joins the same one. The two
+            // early returns below are why the write reports back - a cell whose
+            // slot is not there yet must not leave the gesture looking open.
+            gesture.attach (*raw,
+                            [this, raw, row, &property] (bool continuing)
+                            {
+                                if (updating)
+                                    return false;
 
-                const auto slot = slotAt (row);
+                                const auto slot = slotAt (row);
 
-                if (! slot.isValid())
-                    return;
+                                if (! slot.isValid())
+                                    return false;
 
-                ProjectEdits::setProperty (slot, property, raw->getValue(),
-                                           &document.getUndoManager(), "Change FM routing",
-                                           gestureActive);
-
-                // One undo step per gesture: the first write of a drag opens a
-                // transaction and every write after it joins the same one.
-                gestureActive = inDrag;
-            };
+                                ProjectEdits::setProperty (slot, property, raw->getValue(),
+                                                           &document.getUndoManager(),
+                                                           "Change FM routing", continuing);
+                                return true;
+                            });
 
             addAndMakeVisible (raw);
             cells.push_back (std::move (knob));
