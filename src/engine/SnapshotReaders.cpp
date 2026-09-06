@@ -444,12 +444,6 @@ EffectChainSnapshot readEffectChain (const juce::ValueTree& owner, const juce::S
     return chain;
 }
 
-/** Fills in an audio channel's sample settings, and fetches its audio.
-
-    Every value is clamped against the audio that was actually found rather than
-    against what the document claims, so a trim left over from a longer take
-    cannot make the render path read off the end of a shorter one.
-*/
 /** Fills in a soundfont channel's offsets, and fetches its font.
 
     The knobs are read as OFFSETS - the SF2 mechanism for colouring an
@@ -507,6 +501,12 @@ void readSoundFont (ChannelSnapshot& c, const juce::ValueTree& channel,
     c.soundFont = font;
 }
 
+/** Fills in an audio channel's sample settings, and fetches its audio.
+
+    Every value is clamped against the audio that was actually found rather than
+    against what the document claims, so a trim left over from a longer take
+    cannot make the render path read off the end of a shorter one.
+*/
 void readSample (ChannelSnapshot& c, const juce::ValueTree& channel, SampleProvider* samples,
                  const std::function<void (const juce::String&)>& warn)
 {

@@ -25,11 +25,13 @@ queue** — do not add one.
   cannot learn when the audio thread has finished with an old snapshot: anything a
   snapshot points at must outlive every snapshot. Freeing an "unused" module hands the
   audio thread a dangling pointer that no test catches reliably.
-- Pool slots key on each effect's **persistent id** by open addressing
-  (`src/engine/EffectModulePool.*`), not on position. Positional keying renumbers later
-  slots when an earlier chain changes and cuts the reverb tail they were in the middle of.
-  `EffectTests.cpp` guards this; verify a change to it by making the assignment positional
-  and confirming the test fails.
+- Pool slots key on each effect's **persistent id** by open addressing, not on position.
+  Positional keying renumbers later slots when an earlier chain changes and cuts the
+  reverb tail they were in the middle of. The assignment is `claimEffectUnit` in
+  `src/engine/SnapshotReaders.cpp` — on the MESSAGE thread, while the snapshot is being
+  built, which is the point: the pool itself (`src/engine/EffectModulePool.*`) holds the
+  units and is handed an index. `EffectTests.cpp` guards this; verify a change to it by
+  making the assignment positional and confirming the test fails.
 - Switching a slot's type is `reset()`, not a reallocation — the pool holds all effect
   types at max size, so topology travels in the snapshot like everything else.
 

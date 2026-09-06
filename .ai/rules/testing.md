@@ -63,9 +63,19 @@ Menus are built as `buildMenu()` + `applyMenuChoice (int)` pairs precisely becau
 ## The source gates
 
 `tests/SourceScan.h` + `SourceGate*Tests.cpp`. `offenders(predicate, exempt)` runs the
-predicate over every **code** line under `src/` — comments and strings are stripped, so a
-predicate says what it looks for and never how a comment is spelled — and reports
+predicate over every **code** line under `src/` — comments are stripped, so a predicate
+says what it looks for and never how a comment is spelled — and reports
 `ui/File.cpp:12  the line`.
+
+`offendersIn(files, root, predicate, exempt)` is the same over any tree; `offenders` is
+the `src/` wrapper and `testFiles()` is the `tests/` half of `allDewFiles()`. A gate over
+the SUITE is a different question from a gate over the application, and there is one:
+sixteen places built a `juce::MouseEvent` by hand under four different names while
+`TestSupport.h` held the same body.
+
+**A quoted literal is copied through whole**, deliberately, so that a marker a gate quotes
+cannot open or close a comment. That is why a gate scanning `tests/` can read its own
+needles and has to exempt itself.
 
 - **An exemption is a PATH relative to `src/`**, matching that file or anything under that
   directory: `"ui/design/Tokens.h"`, `"model/edits"`. Never a bare name. A name is not a
@@ -81,7 +91,14 @@ predicate says what it looks for and never how a comment is spelled — and repo
   matched nothing in the tree for as long as it existed — green because it could not see.
 - A gate that scans must assert it scanned something. `REQUIRE (files.size() > n)` — a
   gate over an empty walk passes silently, which is the failure mode all of these exist
-  to avoid.
+  to avoid. The same applies to a derived set: `AutomationOverrideTests` asserts its
+  catalog-derived list is non-empty before using it.
+- **Never assert a throughput.** Two stress tests did and both went red for the machine
+  rather than for the code: `SignalTapTests` on wall-clock, and `PreviewQueueTests` on
+  `accepted > 1000` of 400000 pushes into a bounded ring, which measures whether the
+  scheduler woke the consumer. Assert the INVARIANT — the queue's is that everything
+  accepted comes out exactly once, in order, which is a sequence comparison and not a
+  count.
 
 ## Looking at it
 

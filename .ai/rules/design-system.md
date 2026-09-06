@@ -7,7 +7,11 @@ first. A new component must take every dimension, colour, duration and gesture f
 
 The vocabulary is `dew::tokens`, split into `colour`, `emphasis`, `space`, `radius`,
 `stroke`, `icon`, `type`, `size` and `motion`. `src/ui/primitives/` holds the controls
-built on it. [Why it is this way](#why-it-is-this-way), below, argues why.
+built on it, in four headers rather than one grab-bag: `ButtonBehaviour.h` is how a
+control BEHAVES (the hover easing, the right-button refusal, the focus note),
+`DewButtons.h` is everything a person clicks that is not a knob, `DewKnob.h` is the rotary
+and the slider under it, and `DewPaint.h` is what the system draws. Include the one you
+use. [Why it is this way](#why-it-is-this-way), below, argues why.
 
 ## What a gate will refuse
 
@@ -124,7 +128,11 @@ function is a MEMBER rather than a lambda capture — a captured one is destroye
 `std::function` it is running inside, before it can be called.
 
 **A spec-built knob takes its tooltip from `ParamSpec::displayName`** — `DewKnob (const
-ParamSpec&)` applies it. Do not hand-write help for a knob built from the catalog. And a
+ParamSpec&)` applies it, along with the range, the interval, the decimals and the
+bipolarity. Do not hand-write any of those for a knob built from the catalog; a gate
+refuses `…Knob.setBipolar` and `…Knob.setNumDecimalPlaces`. Twenty-seven calls were
+restating a spec they were built from, and the reason to delete them is not that they had
+drifted — they had not — but that a restated number is only correct until it is not. And a
 knob is a `juce::SettableTooltipClient` itself: `setTooltip` must set both it and the
 slider inside it, because `juce::TooltipWindow` hit-tests the deepest component under the
 pointer.

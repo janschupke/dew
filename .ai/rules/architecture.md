@@ -119,6 +119,31 @@ of them and 20kHz in the engine, and a mixer fader offered 0–1.5 against an en
 of 2.0 and an automation range of 0–1, so automating a fader swept two thirds of it and
 stopped.
 
+**Declared once is not touched once.** A new parameter is one row, and then ten files that
+each have to be told the row exists. The spine, in the order the value travels:
+
+| # | File | What it adds |
+| --- | --- | --- |
+| 1 | `src/model/Ids.h` | the identifier, which everything below points at |
+| 2 | `src/model/ModuleCatalog.cpp` | the `ParamSpec` row: range, default, curve, control, automatable |
+| 3 | `src/model/ParamNames.cpp` | its name and its help, as `StringId`s |
+| 4 | `src/model/ParamRole.cpp` | what KIND of thing it is, for the automation picker |
+| 5 | `src/model/ProjectSchema*.cpp` | nothing, usually — the schema is generated from the tables |
+| 6 | `src/engine/EngineSnapshot.h` | a field on the settings struct, and an `AutomationParam` |
+| 7 | `src/engine/SnapshotReaders.cpp` | the read, through `clampBySpec` |
+| 8 | `src/engine/AutomationOverrides.cpp` | the line that applies a curve to it |
+| 9 | `src/engine/` — the voice or the module | what it actually DOES |
+| 10 | `src/ui/` — the panel | the control, built from the spec |
+
+Step 8 is the one that fails silently, so it is gated: `AutomationOverrideTests` drives
+every `AutomationParam` through `applyAutomation` and requires that something moved. A
+parameter with a catalog row, a picker entry and a drawn curve but no line in the override
+ladder moves a line on screen and nothing in the sound, and four oscillator parameters
+were in exactly that state until somebody tried one.
+
+The last two feature commits touched 32 and 24 files in `src/` over this spine. That is
+the cost the single declaration does not remove: it removes the DISAGREEMENT, not the work.
+
 ### The FM matrix
 
 A slot's three oscillators can modulate each other's phase. Each carries a row of a 3x4

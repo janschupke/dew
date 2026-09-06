@@ -290,6 +290,14 @@ inline juce::String relativePathOf (const juce::File& file)
     return relativePathOf (file, juce::File { DEW_SOURCE_DIR });
 }
 
+/** How a file is cut up for a predicate: physical lines, or logical statements.
+
+    A parameter rather than a second copy of offenders(), because everything
+    below it - the exemption bookkeeping, and the rule that an exemption hiding
+    nothing is itself an offence - is the part worth having once.
+*/
+using LineReader = juce::Array<CodeLine> (*) (const juce::File&);
+
 /** Every line of CODE for which `matches` is true, as "ui/File.cpp:123  the line".
 
     Comments never reach `matches`, so a predicate says what it is looking for
@@ -322,14 +330,6 @@ inline juce::String relativePathOf (const juce::File& file)
     that is the ratchet this is here to remove: when a file needs the exemption
     again, the commit that needs it puts it back.
 */
-/** How a file is cut up for a predicate: physical lines, or logical statements.
-
-    A parameter rather than a second copy of offenders(), because everything
-    below it - the exemption bookkeeping, and the rule that an exemption hiding
-    nothing is itself an offence - is the part worth having once.
-*/
-using LineReader = juce::Array<CodeLine> (*) (const juce::File&);
-
 inline juce::StringArray offendersIn (const juce::Array<juce::File>& files, const juce::File& root,
                                       const std::function<bool (const juce::String&)>& matches,
                                       std::initializer_list<const char*> exempt = {},

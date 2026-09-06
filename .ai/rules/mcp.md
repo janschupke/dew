@@ -43,6 +43,21 @@ fades and a soundfont's tuning unreachable.
 
 - **Every mutation goes through `ProjectEdits`**, and **one call is one undo step**,
   however many entries its batch carried. That is what the consent dialog promises.
+  `control::invoke` opens that transaction — the single place a handler is entered from,
+  by the protocol layer and by the test harness both — for any operation declaring
+  `OpEdits::yes`. Do not open one in a handler. Twenty-four of them used to, each naming
+  itself in a string literal beside the name it already had, and four write operations
+  never did, which looked exactly like a forgotten call.
+- **`OpEdits` is not `OpScope`.** The scope says whether a caller needs a write GRANT; the
+  edits flag says whether the DOCUMENT moves. `transport_write` moves the playhead,
+  `render_audio` and `export_midi` write a file, `project_command` replaces or rewinds what
+  is open — all four need a write grant and none of them edits the tree. `ControlTableTests`
+  holds the flag to those four by name, so a fifth cannot join them by being forgotten.
+- **`OpScope` is asked by RUNNING each operation, not by reading its name.** Every read
+  operation is driven against a `FakeHost` with arguments that reach something real, and
+  the document and the undo depth are compared around the call. The test used to ask
+  whether a name contained `_write`, which passed an operation called `channels_remove`
+  declared `OpScope::read`.
 - **A batch is checked before any of it is written.** Half a batch is the worst answer
   available: the caller is told it failed and the document has moved anyway.
 - **A wire argument backed by a property is NAMED by that property** — `ids::muted`, not

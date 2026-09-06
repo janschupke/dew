@@ -539,9 +539,4 @@ void AudioEngine::resolveModules (EngineSnapshot& snapshot)
     resolve (snapshot.masterEffects);
 }
 
-/** The window this block wraps in, applied to the transport.
-
-    Returns whether the user's loop changed since the last block, which
-    applyTransportRequests needs and nothing else does.
-*/
 } // namespace dew

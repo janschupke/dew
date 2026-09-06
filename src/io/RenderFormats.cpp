@@ -61,6 +61,8 @@ std::unique_ptr<juce::AudioFormat> audioFormatFor (const RenderOptions& options)
     return {};
 }
 
+} // namespace
+
 /** Checks the things the format cares about but its writer does not.
 
     LAMEEncoderAudioFormat publishes getPossibleSampleRates() and
@@ -68,8 +70,6 @@ std::unique_ptr<juce::AudioFormat> audioFormatFor (const RenderOptions& options)
     builds a writer, hands lame a file it cannot use, and fails silently in a
     destructor. So the checking happens here, where it can say something.
 */
-} // namespace
-
 juce::Result validateForFormat (const RenderOptions& options)
 {
     if (options.format == RenderFormat::mp3)
