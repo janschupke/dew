@@ -69,10 +69,17 @@ Consequences you will hit:
 - **A metre is not a tempo.** `src/model/Meter.h` is the only place that knows
   `beatsPerBar` is load-bearing (it is `stepsPerBar` for the whole app) and `beatUnit` is
   notational — it names the metre, labels the snap divisions and goes into the MIDI time
-  signature, and **must never reach `Transport::samplesPerStepFor`**. A clip is stored in
-  bars, so `ProjectEdits::setMeter` rescales `startBar` / `lengthBars` / `barsInSong` in
-  the same undo transaction; without that a 1-bar clip of a 16-step pattern spans 12 steps
-  in 3/4 and the pattern's last four steps stop sounding.
+  signature, and **must never reach `Transport::samplesPerStepFor`**. `setMeter` now
+  rescales only `barsInSong`: a clip is stored in STEPS (`startStep` / `lengthSteps`, as of
+  format v20), so a bar changing size moves nothing. It used to be stored in bars, and the
+  rescale that held each clip's position in steps across a metre change is what that
+  buys — without it a 1-bar clip of a 16-step pattern spanned 12 steps in 3/4 and the
+  pattern's last four steps stopped sounding.
+- **`stepsPerBeat` is the other half of the same rule, and moves in the opposite
+  direction.** It owns how long a step IS, so `ProjectEdits::setGridResolution` rescales
+  every note, every pattern length, every clip and every automation point in one undo
+  transaction. The guard is a render pinned sample-for-sample across two resolutions; the
+  metre has the twin of it.
 
 See also [realtime.md](realtime.md) for what the engine may do on the audio thread, and
 [automation.md](automation.md) for the parameter-to-curve path.
