@@ -1,5 +1,6 @@
 #include "model/DemoBuilders.h"
 
+#include "i18n/Strings.h"
 #include "model/EntityColour.h"
 #include "model/GeneratorCatalog.h"
 #include "model/ProjectEdits.h"
@@ -201,16 +202,28 @@ juce::ValueTree makeAutomation (int id, AutomationScope scope, int targetId, int
     return automation;
 }
 
+/** "Channel 3", from the catalogue, in the REFERENCE locale.
+
+    A demo is compared against a committed file, so its content names have to
+    be the same bytes on every machine whatever language dew is running in -
+    which is what trIn is for, and the reason ProjectFactory::createDefault
+    takes a locale rather than reading the active one.
+*/
+juce::String numbered (StringId id, int number)
+{
+    return trIn (referenceLocale(), id, Args {}.with ("number", number));
+}
+
 juce::ValueTree scaffold (int numChannels)
 {
     const auto count = juce::jmax (1, numChannels);
 
     auto project = defaultTreeFor (projectSpec());
-    project.setProperty (ids::name, "Untitled", nullptr);
+    project.setProperty (ids::name, trIn (referenceLocale(), StringId::project_untitled), nullptr);
     project.setProperty (ids::tempoBpm, 128.0, nullptr);
 
     for (int i = 1; i <= count; ++i)
-        project.appendChild (makeChannel (i, "Channel " + juce::String (i),
+        project.appendChild (makeChannel (i, numbered (StringId::project_channelN, i),
                                           entityColour::defaultHex (i - 1), 60, "saw", 0, 0.005,
                                           0.120, 0.700, 0.150),
                              nullptr);
@@ -222,8 +235,8 @@ juce::ValueTree scaffold (int numChannels)
 
     for (int i = 1; i <= count; ++i)
     {
-        playlist.appendChild (makePlaylistTrack ("Track " + juce::String (i)), nullptr);
-        mixer.appendChild (makeMixerTrack (i, "Insert " + juce::String (i)), nullptr);
+        playlist.appendChild (makePlaylistTrack (numbered (StringId::project_trackN, i)), nullptr);
+        mixer.appendChild (makeMixerTrack (i, numbered (StringId::project_insertN, i)), nullptr);
     }
 
     return canonicalTree (project, projectSpec());

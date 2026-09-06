@@ -11,6 +11,7 @@
 // changed - one by hand down a chain, one by a curve over time.
 // =============================================================================
 
+#include "i18n/Strings.h"
 #include "model/ProjectFactory.h"
 
 #include "model/ProjectEdits.h"
@@ -360,7 +361,9 @@ juce::ValueTree ProjectFactory::createAutomationDemo()
     // is what makes that readable rather than a stack of overlapping boxes.
     while (playlist.getNumChildren() < 6)
         playlist.appendChild (
-            makePlaylistTrack ("Track " + juce::String (playlist.getNumChildren() + 1)), nullptr);
+            makePlaylistTrack (trIn (referenceLocale(), StringId::project_trackN,
+                                     Args {}.with ("number", playlist.getNumChildren() + 1))),
+            nullptr);
 
     auto lane = [&playlist] (int index, const char* name)
     {

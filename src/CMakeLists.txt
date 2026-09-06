@@ -329,10 +329,10 @@ add_library(dew_model STATIC
   model/EntityColour.cpp
   model/DemoBuilders.cpp
   model/ProjectFactory.cpp
-  model/DemosArrangement.cpp
-  model/DemosCompiled.cpp
-  model/DemosEffects.cpp
-  model/DemosPatterns.cpp
+  model/demos/DemosArrangement.cpp
+  model/demos/DemosCompiled.cpp
+  model/demos/DemosEffects.cpp
+  model/demos/DemosPatterns.cpp
   model/edits/Arrangement.cpp
   model/edits/Automation.cpp
   model/edits/Channels.cpp
