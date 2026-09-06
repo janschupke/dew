@@ -167,8 +167,28 @@ struct NodeSpec
     every channel already has - it carries a SAMPLE and a SOUNDFONT whichever
     kind it is. What it buys is that a slot the factory writes no longer stores
     the seven wavetable properties a classic oscillator never reads.
+
+    v16 gave a playlist track a `volume`, which scales the triggers a lane
+    contributes rather than a bus - see PlaylistTrackHeader and Sequencer. It
+    is additive with a declared default of 1.0, which is what every lane did
+    when it could not carry one, so an earlier file loads as what it was. The
+    bump is for the other direction, as it has been since v7: an older build
+    would drop a lane's balance on the next save and say nothing.
+
+    v17 made the amplitude envelope, a soundfont channel's six offsets and an
+    oscillator slot's octave, detune and on/off automatable, which needed two
+    new automation scopes - `channelAmp` and `channelSoundFont`. No property was
+    added, moved or retyped, so there is nothing to migrate in either direction
+    and a v16 file loads as exactly what it was.
+
+    The bump is the same argument v14 makes about an effect type an older build
+    has no descriptor for. automationScopeFromString falls back to `channel` for
+    a spelling it does not know, and no channel parameter is called `attack` or
+    `filterOffset`, so a v16 build opening a v17 project would resolve every
+    envelope and soundfont curve to nothing and drop it on the next save without
+    a word. The version gate turns that into a refusal.
 */
-inline constexpr int kFormatVersion = 16;
+inline constexpr int kFormatVersion = 17;
 
 /** How many effects one channel or mixer track may carry. A document limit
     rather than an engine one: a chain longer than this cannot be saved, so it

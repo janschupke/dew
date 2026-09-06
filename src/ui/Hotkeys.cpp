@@ -139,6 +139,13 @@ const std::vector<Binding<juce::CommandID>>& application()
         { CommandIDs::transportRecord, { 'r', 0 },
           StringId::command_transportRecord_name, StringId::command_transportRecord_description,
           StringId::command_category_transport },
+        // Command-period, which is what "cancel this, now" has meant on every
+        // platform dew ships since long before dew did - and the only such
+        // stroke free in this table.
+        { CommandIDs::transportPanic, { '.', juce::ModifierKeys::commandModifier },
+          StringId::command_transportPanic_name, StringId::command_transportPanic_description,
+          StringId::command_category_transport },
+
         { CommandIDs::transportToggleMode, { 'l', juce::ModifierKeys::commandModifier },
           StringId::command_transportToggleMode_name, StringId::command_transportToggleMode_description,
           StringId::command_category_transport },

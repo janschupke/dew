@@ -297,6 +297,21 @@ void AudioEngine::rewind()
     playheadSamples.store (0);
 }
 
+void AudioEngine::panic() noexcept
+{
+    // Everything the calling thread can do itself, so a panic is heard even
+    // when no device is calling back - the same reason rewind() zeroes the
+    // playhead here rather than waiting for a block that may never come.
+    playing.store (false);
+    resetControllers();
+    rewind();
+
+    // And the rest, which is the audio thread's: voices to kill and effect
+    // modules to silence. Set LAST, so a block that runs between the lines
+    // above and this one still sees the request.
+    panicRequested.store (true);
+}
+
 void AudioEngine::setPlayheadSteps (double steps)
 {
     const auto clamped = juce::jmax (0.0, steps);

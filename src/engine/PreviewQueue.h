@@ -53,6 +53,22 @@ public:
     /** Audio thread. Returns false when the queue is empty. */
     bool pop (PreviewEvent& out) noexcept;
 
+    /** AUDIO THREAD. Throws away everything queued without applying it.
+
+        The CONSUMER's operation, and that is what makes it safe rather than a
+        convenience: it moves readIndex, which the reader owns, exactly as pop
+        does. A producer-side "clear" would be the data race this class's whole
+        single-producer/single-consumer split exists to avoid.
+
+        What it is for is a panic. A note-on already sitting in the ring would
+        otherwise be applied in the very block that was asked to silence
+        everything, and start a voice the user pressed a button to stop.
+    */
+    void discardPending() noexcept
+    {
+        readIndex.store (writeIndex.load (std::memory_order_acquire), std::memory_order_release);
+    }
+
     bool isEmpty() const noexcept
     {
         return readIndex.load (std::memory_order_acquire)

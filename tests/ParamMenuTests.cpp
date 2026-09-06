@@ -1,6 +1,8 @@
 #include <catch2/catch_test_macros.hpp>
 
 #include "model/Ids.h"
+#include "model/AutomationTargets.h"
+#include "model/GeneratorCatalog.h"
 #include "model/ModuleCatalog.h"
 #include "app/ProjectDocument.h"
 #include "model/ProjectEdits.h"
@@ -276,4 +278,84 @@ TEST_CASE ("a panel with no host has no menus at all", "[ui][paramMenu]")
 
     auto* knob = findDescendantWithID (chain, "nothing-in-particular");
     REQUIRE (knob == nullptr);
+}
+
+TEST_CASE ("every instrument face offers a curve from its own knobs", "[ui][paramMenu]")
+{
+    // build() was only ever exercised against a CHANNEL, which is why three
+    // whole faces of the instrument panel could offer nothing but a reset
+    // without a test noticing.
+    const juce::ScopedJuceInitialiser_GUI juceInit;
+    MenuHarness h;
+
+    const auto items = [&h] (const juce::ValueTree& node, const juce::Identifier& property)
+    {
+        return menuItems (
+            paramMenu::build (h.document.getState(), node, requireInstrumentParamSpec (property)));
+    };
+
+    auto channel = h.channel();
+    REQUIRE (channel.isValid());
+
+    // The amplitude envelope. Latched at note-on, so a curve moves the NEXT
+    // note - which is what every automatable parameter but a wavetable position
+    // already does, and is not a reason to withhold it.
+    const auto amp = channel.getChildWithName (ids::INSTRUMENT).getChildWithName (ids::AMP);
+    REQUIRE (amp.isValid());
+
+    INFO ("attack: " << items (amp, ids::attack).joinIntoString (", "));
+    CHECK (items (amp, ids::attack).contains ("Create automation clip"));
+    CHECK (items (amp, ids::release).contains ("Create automation clip"));
+
+    // A soundfont channel's offsets into the font it plays.
+    auto font = ProjectEdits::addSoundFontChannel (h.document.getState(), "Font", nullptr);
+    const auto soundFont = font.getChildWithName (ids::SOUNDFONT);
+    REQUIRE (soundFont.isValid());
+
+    INFO ("transpose: " << items (soundFont, ids::transpose).joinIntoString (", "));
+    CHECK (items (soundFont, ids::transpose).contains ("Create automation clip"));
+    CHECK (items (soundFont, ids::filterOffset).contains ("Create automation clip"));
+
+    // And a recording's, which stay a reset: a fade is set once for a take, and
+    // reversing a sample is a discontinuity in a read pointer.
+    const auto sample = channel.getChildWithName (ids::SAMPLE);
+    REQUIRE (sample.isValid());
+
+    CHECK_FALSE (items (sample, ids::fadeInMs).contains ("Create automation clip"));
+    CHECK (items (sample, ids::fadeInMs).contains ("Reset to default"));
+}
+
+TEST_CASE ("a wavetable knob reaches the same target the picker offers", "[ui][paramMenu]")
+{
+    // The defect: a knob for a generator-owned parameter is built from that
+    // generator's OWN node - generatorNodeFor returns the WAVETABLE child - and
+    // automationTargetFor knew only about OSC. So Position, Mod, Rate and
+    // Spread showed a reset and nothing else, while the "+ Automation" picker
+    // listed those very targets. Two directions of one answer, disagreeing.
+    const juce::ScopedJuceInitialiser_GUI juceInit;
+    MenuHarness h;
+
+    auto channel = h.channel();
+    auto slot = channel.getChildWithName (ids::INSTRUMENT).getChildWithName (ids::OSC);
+    REQUIRE (slot.isValid());
+
+    slot.setProperty (ids::mode, "wavetable", nullptr);
+
+    const auto wavetable = generatorNodeFor (slot, ids::wavePosition);
+    REQUIRE (wavetable.isValid());
+    REQUIRE (wavetable != slot);
+
+    const auto items = menuItems (paramMenu::build (
+        h.document.getState(), wavetable, requireInstrumentParamSpec (ids::wavePosition)));
+
+    INFO ("wavePosition: " << items.joinIntoString (", "));
+    CHECK (items.contains ("Create automation clip"));
+
+    // And it resolves to the SLOT's address, not to a node of its own, which is
+    // what keeps it the same target availableAutomationTargets offers.
+    const auto target = automationTargetFor (h.document.getState(), wavetable, ids::wavePosition);
+    REQUIRE (target.has_value());
+    CHECK (target->scope == AutomationScope::channelOsc);
+    CHECK (target->slot == 0);
+    CHECK (target->targetId == (int) channel[ids::id]);
 }

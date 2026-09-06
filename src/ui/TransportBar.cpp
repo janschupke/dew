@@ -73,6 +73,19 @@ TransportBar::TransportBar (ProjectDocument& d, AudioEngine& e, EditorState& s)
     };
     addAndMakeVisible (recordButton);
 
+    // AFTER record in the child order, deliberately: TransportBarTests reads
+    // the play button as the first DewIconButton in the bar, and a panic put in
+    // front of it would silently make every one of those tests about the wrong
+    // control.
+    panicButton.onClick = [this]
+    {
+        engine.panic();
+
+        if (onPanic != nullptr)
+            onPanic();
+    };
+    addAndMakeVisible (panicButton);
+
     // From the catalog, not by hand. This field stated 20..300 while the engine
     // clamped at 20..999 - a fourth disagreement of exactly the kind the spec
     // tables exist to end, and one that made the top two thirds of what dew can
@@ -510,6 +523,11 @@ void TransportBar::resized()
     place (playButton, 30);
     place (stopButton, 30);
     place (recordButton, 30);
+
+    // A gap either side, rather than beside record with the others: it is not a
+    // fourth transport button and a hand reaching for stop must not find it.
+    strip.gap();
+    place (panicButton, 30);
     strip.gap();
     place (tempoField, 96);
     place (meterBox, 72);

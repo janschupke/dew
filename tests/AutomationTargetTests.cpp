@@ -78,6 +78,11 @@ TEST_CASE ("every target the picker offers is one a control could ask for", "[au
             case AutomationScope::channelOsc:
                 return nth (owner.getChildWithName (ids::INSTRUMENT), ids::OSC, target.slot);
 
+            case AutomationScope::channelAmp:
+                return owner.getChildWithName (ids::INSTRUMENT).getChildWithName (ids::AMP);
+
+            case AutomationScope::channelSoundFont: return owner.getChildWithName (ids::SOUNDFONT);
+
             case AutomationScope::channelEffect:
             case AutomationScope::mixerEffect: return nth (owner, ids::EFFECT, target.slot);
 
@@ -120,10 +125,20 @@ TEST_CASE ("a node with nothing to automate resolves to nothing", "[automation]"
     REQUIRE_FALSE (automationTargetFor (project, channel, ids::basePitch).has_value());
     REQUIRE_FALSE (automationTargetFor (project, channel, ids::name).has_value());
 
-    // An envelope stage: not a quantity you move THROUGH a note.
-    const auto amp = channel.getChildWithName (ids::INSTRUMENT).getChildWithName (ids::AMP);
-    REQUIRE (amp.isValid());
-    REQUIRE_FALSE (automationTargetFor (project, amp, ids::attack).has_value());
+    // A recording's own settings. A fade and a transpose are set once for a
+    // take rather than moved through it, and reversing a sample is a
+    // discontinuity in a read pointer rather than a parameter change.
+    const auto sample = channel.getChildWithName (ids::SAMPLE);
+    REQUIRE (sample.isValid());
+    REQUIRE_FALSE (automationTargetFor (project, sample, ids::fadeInMs).has_value());
+    REQUIRE_FALSE (automationTargetFor (project, sample, ids::reverse).has_value());
+
+    // A soundfont node under a channel that plays no soundfont. The scope
+    // exists, but this channel's SOUNDFONT is one of the inert nodes every
+    // channel carries to keep the canonical tree one shape.
+    const auto soundFont = channel.getChildWithName (ids::SOUNDFONT);
+    REQUIRE (soundFont.isValid());
+    REQUIRE (automationTargetFor (project, soundFont, ids::tuneCents).has_value());
 
     // A pattern, and a playlist track - which carries no id to point at.
     REQUIRE_FALSE (
@@ -191,7 +206,8 @@ TEST_CASE ("every parameter a slot offers is one the engine applies", "[automati
     {
         for (const auto& spec : oscParams (generator))
         {
-            const auto param = snapshotRead::automationParamFromIdentifier (*spec.property);
+            const auto param = snapshotRead::automationParamFromIdentifier (
+                AutomationScope::channelOsc, *spec.property);
 
             INFO (generator << " > " << spec.property->toString());
             CHECK (param != AutomationParam::none);

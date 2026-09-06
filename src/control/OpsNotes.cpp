@@ -9,6 +9,20 @@ namespace dew::control
 namespace
 {
 
+// The vocabulary, spelled once. Everything else names these.
+const juce::String kQuantize { "quantize" };
+const juce::String kTranspose { "transpose" };
+
+} // namespace
+
+juce::StringArray noteTransformVerbs()
+{
+    return { kQuantize, kTranspose };
+}
+
+namespace
+{
+
 /** The pattern an operation names, or the invalid tree plus the sentence. */
 juce::ValueTree patternFor (const juce::ValueTree& project, const juce::var& args)
 {
@@ -198,7 +212,7 @@ ControlResult transform (ControlHost& host, const juce::var& args)
     auto* undo = host.undoManager();
     beginOneTransaction (host, "notes_transform");
 
-    if (verb == "quantize")
+    if (verb == kQuantize)
     {
         const auto stepsPerBeat = (int) project[ids::stepsPerBeat];
         const auto beatsPerBar = (int) project[ids::beatsPerBar];
@@ -215,7 +229,7 @@ ControlResult transform (ControlHost& host, const juce::var& args)
                 .set ("snap", NoteTools::nameForSnap (snap, (int) project[ids::beatUnit])));
     }
 
-    if (verb == "transpose")
+    if (verb == kTranspose)
     {
         // Clamped as a GROUP, so a chord against the top of the range keeps its
         // intervals instead of compressing into itself.
@@ -228,7 +242,8 @@ ControlResult transform (ControlHost& host, const juce::var& args)
             Obj {}.set ("applied", scope.size()).set ("semitonesApplied", moved));
     }
 
-    return ControlResult::failure ("'" + verb + "' is not a transform. Use quantize or transpose.");
+    return ControlResult::failure ("'" + verb + "' is not a transform. Use "
+                                   + noteTransformVerbs().joinIntoString (" or ") + ".");
 }
 
 std::vector<ArgSpec> noteFields()

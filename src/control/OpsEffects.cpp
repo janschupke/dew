@@ -125,8 +125,12 @@ ControlResult write (ControlHost& host, const juce::var& args)
         if (! effect.isValid())
             continue;
 
-        if (hasArg (entry, "enabled"))
-            ProjectEdits::setProperty (effect, ids::enabled, flagArg (entry, "enabled"), undo,
+        // Named by the property it writes, which is the rule for every wire
+        // argument backed by one - the same shape channels_write's `muted`
+        // already has. It was a literal beside ids::enabled on the very next
+        // line, which is two spellings of one fact.
+        if (hasArg (entry, ids::enabled))
+            ProjectEdits::setProperty (effect, ids::enabled, flagArg (entry, ids::enabled), undo,
                                        "Turn effect off", true);
 
         if (hasArg (entry, "preset"))
@@ -269,7 +273,7 @@ void appendEffectOps (std::vector<OpSpec>& all)
                 { "slot", ValueKind::integer, false,
                   "An existing slot to change. Omit to append a new effect." },
                 { "type", ValueKind::text, false, "What effect to add. Read only when adding." },
-                { "enabled", ValueKind::flag, false, "False bypasses the slot." },
+                { ids::enabled.toString(), ValueKind::flag, false, "False bypasses the slot." },
                 { "preset", ValueKind::text, false,
                   "A factory preset's name, applied to this slot." } } } },
           write });

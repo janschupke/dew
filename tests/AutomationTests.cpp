@@ -331,3 +331,72 @@ TEST_CASE ("the editor and the engine agree about every point of a curve", "[aut
                                  1e-5));
     }
 }
+
+TEST_CASE ("a soundfont channel's offsets reach the engine as their own scope", "[automation]")
+{
+    // The scope did not exist, so the six knobs on the soundfont face offered a
+    // reset and nothing else. What matters here is that a curve over one is
+    // RESOLVED rather than dropped: buildSnapshot drops an automation whose
+    // param is `none`, which is how a target nobody taught the reader about
+    // becomes a line drawn on screen and heard by nothing.
+    auto project = ProjectFactory::createDefault();
+    juce::UndoManager undo;
+
+    auto channel = ProjectEdits::addSoundFontChannel (project, "Font", &undo);
+    REQUIRE (channel.isValid());
+
+    const auto target = targetNamed (project, "Font > Soundfont > Pitch");
+    REQUIRE (target.scope == AutomationScope::channelSoundFont);
+    REQUIRE (target.targetId == (int) channel[ids::id]);
+
+    auto automation = ProjectEdits::addAutomation (project, target, &undo);
+    setCurve (automation, { { 0.0, 0.0 }, { 16.0, 1.0 } }, &undo);
+
+    juce::StringArray warnings;
+    const auto snapshot = buildSnapshot (project, &warnings);
+
+    INFO (warnings.joinIntoString ("\n"));
+    REQUIRE (snapshot.automations.size() == 1);
+
+    const auto& resolved = snapshot.automations.front();
+    CHECK (resolved.scope == AutomationScope::channelSoundFont);
+    CHECK (resolved.param == AutomationParam::sfTranspose);
+    CHECK (resolved.targetIndex >= 0);
+    REQUIRE (resolved.spec != nullptr);
+
+    // The catalog's range, not a second copy of it: -24..24 semitones.
+    CHECK (juce::exactlyEqual (resolved.spec->minimum, -24.0));
+    CHECK (juce::exactlyEqual (resolved.spec->maximum, 24.0));
+}
+
+TEST_CASE ("an envelope curve reaches the engine, and only on a synth channel", "[automation]")
+{
+    auto project = ProjectFactory::createDefault();
+    juce::UndoManager undo;
+
+    auto automation = ProjectEdits::addAutomation (
+        project, targetNamed (project, "Kick > Envelope > Attack"), &undo);
+    setCurve (automation, { { 0.0, 0.0 }, { 16.0, 1.0 } }, &undo);
+
+    juce::StringArray warnings;
+    REQUIRE (buildSnapshot (project, &warnings).automations.size() == 1);
+
+    // And the gate that makes the inert nodes safe. Every channel carries an
+    // AMP and a SOUNDFONT whichever kind it is, to keep the canonical tree one
+    // shape - so a curve saved against a channel that has since been switched
+    // to another source must be dropped rather than applied to settings the
+    // engine never reads.
+    auto channel = project.getChildWithName (ids::CHANNEL);
+    REQUIRE (channel.isValid());
+
+    REQUIRE (ProjectEdits::setInstrumentType (channel, InstrumentType::audio, &undo));
+
+    warnings.clear();
+    const auto after = buildSnapshot (project, &warnings);
+
+    // Dropped means an inert entry and a warning, not a missing one: a clip
+    // refers to an automation by INDEX, so the row has to stay where it was.
+    REQUIRE (after.automations.size() == 1);
+    CHECK (after.automations.front().param == AutomationParam::none);
+    CHECK_FALSE (warnings.isEmpty());
+}

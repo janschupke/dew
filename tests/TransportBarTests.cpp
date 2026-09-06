@@ -13,6 +13,7 @@
 #include "ui/EditorState.h"
 #include "ui/TransportBar.h"
 #include "ui/design/DewLookAndFeel.h"
+#include "i18n/Strings.h"
 #include "ui/design/Icons.h"
 #include "ui/primitives/DewControls.h"
 
@@ -56,6 +57,18 @@ struct BarHarness
 
         FAIL ("no mode button on the transport bar");
         return *dynamic_cast<DewButton*> (bar.getChildren().getFirst());
+    }
+
+    /** An icon button by the tooltip it carries, which is the one thing that
+        tells the four of them apart without depending on their order. */
+    DewIconButton* buttonWithTooltip (const juce::String& tooltip)
+    {
+        for (auto* child : bar.getChildren())
+            if (auto* button = dynamic_cast<DewIconButton*> (child))
+                if (button->getTooltip() == tooltip)
+                    return button;
+
+        return nullptr;
     }
 
     DewLookAndFeel lookAndFeel;
@@ -153,4 +166,41 @@ TEST_CASE ("the mode button follows the engine, whatever moved it", "[transport]
 
     CHECK_FALSE (h.mode().getToggleState());
     CHECK (h.mode().getButtonText() == patternText);
+}
+
+TEST_CASE ("the transport bar has a panic, and it is not where stop is", "[transport][ui]")
+{
+    const juce::ScopedJuceInitialiser_GUI juceInit;
+    // A safety control, so two things about it are asserted rather than left to
+    // reading: that it reaches the engine at all, and that it is not sitting
+    // where a hand goes for stop.
+    BarHarness h;
+
+    auto* panic = h.buttonWithTooltip (tr (StringId::transport_panic_help));
+    REQUIRE (panic != nullptr);
+
+    auto* stop = h.buttonWithTooltip (tr (StringId::transport_stop_help));
+    REQUIRE (stop != nullptr);
+
+    // Play is still the first icon button in the bar, which is what the two
+    // tests above find it by.
+    CHECK (&h.play() != panic);
+
+    // Separated from the transport group rather than butted against it.
+    CHECK (panic->getX() > stop->getRight() + tokens::space::sm);
+
+    auto fired = 0;
+    h.bar.onPanic = [&fired] { ++fired; };
+
+    h.engine.play();
+    REQUIRE (h.engine.isPlaying());
+
+    // onClick directly: triggerClick posts an async message, which a headless
+    // harness never pumps - the same call every other button test here makes.
+    panic->onClick();
+
+    // Both halves: the engine's, which the bar does itself, and the hook for
+    // what it cannot reach.
+    CHECK_FALSE (h.engine.isPlaying());
+    CHECK (fired == 1);
 }

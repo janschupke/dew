@@ -23,6 +23,14 @@ juce::Path rewind();
 juce::Path record();
 juce::Path loop();
 
+/** Stop everything, now: an octagon with a bar across it.
+
+    An octagon rather than another square, because stop() is already a square
+    and these two sit beside each other on the transport bar - a panic that
+    looked like a stop would be pressed by accident by anyone reading shapes
+    rather than tooltips. The bar is the "no" every road sign spends. */
+juce::Path panic();
+
 // --- editing -----------------------------------------------------------------
 juce::Path plus();
 juce::Path minus();

@@ -35,8 +35,27 @@ enum class AutomationScope
     */
     project,
 
-    channel,       ///< a channel's own volume or pan
-    channelOsc,    ///< a parameter of one oscillator slot on a channel
+    channel,    ///< a channel's own volume or pan
+    channelOsc, ///< a parameter of one oscillator slot on a channel
+
+    /** A channel's amplitude envelope: attack, decay, sustain, release.
+
+        Its own scope rather than part of `channel`, for the reason
+        channelSoundFont has one: a scope names a NODE, and folding a child's
+        parameters into its parent's table is how two nodes come to disagree
+        about which one a stored property meant.
+    */
+    channelAmp,
+
+    /** A soundfont channel's six offsets into the font it plays.
+
+        It cannot be folded into `channel` either, and here the collision is
+        already in the file: `transpose` is deliberately spelled the same on a
+        SAMPLE node and a SOUNDFONT one - see ModuleCatalog's own comment - so
+        one scope covering both could not say which node a curve addressed.
+    */
+    channelSoundFont,
+
     channelEffect, ///< a parameter of one slot in a channel's chain
     mixerTrack,    ///< a mixer track's gain or pan
     mixerEffect,   ///< a parameter of one slot in a mixer track's chain
@@ -62,6 +81,22 @@ const std::vector<ParamSpec>& projectParams();
 
 /** Parameters automatable on a channel itself. */
 const std::vector<ParamSpec>& channelParams();
+
+/** Parameters automatable on a channel's amplitude envelope.
+
+    A voice latches its envelope at note-on, so a curve here moves the NEXT
+    note rather than bending the one already sounding. That is the rule for
+    every automatable parameter in dew except a wavetable position, and it is
+    worth saying beside a table of envelope stages because an envelope is the
+    place a reader most expects the other answer.
+*/
+const std::vector<ParamSpec>& ampParams();
+
+/** Parameters automatable on a soundfont channel's SOUNDFONT node.
+
+    Latched at note-on, for the reason ampParams gives.
+*/
+const std::vector<ParamSpec>& soundFontParams();
 
 /** Parameters automatable on a mixer track itself. */
 const std::vector<ParamSpec>& mixerTrackParams();

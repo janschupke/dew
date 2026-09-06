@@ -134,6 +134,28 @@ public:
     */
     void rewind();
 
+    /** Stop everything, now: the transport, every voice, every effect tail and
+        anything already queued.
+
+        Stop on its own deliberately kills nothing - a note released at the
+        moment of stopping finishes its tail instead of clicking off, which is
+        the right answer for a stop and the wrong one for a stuck note, a
+        feedback loop or a MIDI stream that has run away. This is the other
+        answer, and it is destructive on purpose.
+
+        Callable from any thread, like the rest of the transport. What can be
+        done here is done here - the transport flag, the position and the
+        controllers are all plain atomics - and what belongs to the audio thread
+        travels as a request flag consumed at the top of the next block, in the
+        same shape rewind() has used since it existed. There is no command
+        queue, and this deliberately does not add one.
+
+        It does NOT reset the MIDI router's own bookkeeping: that is the message
+        thread's to ask for, through MidiRouter::reset, and whoever calls this
+        from the interface calls that too.
+    */
+    void panic() noexcept;
+
     /** Where playback returns to when it is paused.
 
         Set by a click or a scrub-drag on any ruler, and 0 until one happens -
@@ -501,6 +523,17 @@ private:
         bool muted = false;
 
         OscBankSnapshot osc;
+
+        /** The amplitude envelope and a soundfont channel's offsets.
+
+            Both are read at note-on rather than per sample, so a curve over one
+            moves the NEXT note - the same thing an automated oscillator gain
+            has always done, and the reason this is a plain struct copy here
+            rather than anything the voices have to learn about.
+        */
+        AmpSettings amp;
+        SoundFontSettings soundFontSettings;
+
         EffectChainSnapshot effects;
     };
 
@@ -570,6 +603,13 @@ private:
     std::atomic<bool> playing { false };
     std::atomic<double> startMarkerSteps { 0.0 };
     std::atomic<bool> rewindRequested { false };
+
+    /** Set by panic(), consumed once by the audio thread. The same shape
+        rewindRequested has, and for the same reason: killing voices and
+        resetting effect modules is the audio thread's work, and this is the
+        only way to ask for it without adding the command queue the realtime
+        rules refuse. */
+    std::atomic<bool> panicRequested { false };
     std::atomic<bool> seekRequested { false };
     std::atomic<double> seekToSteps { 0.0 };
     std::atomic<Transport::Mode> requestedMode { Transport::Mode::pattern };

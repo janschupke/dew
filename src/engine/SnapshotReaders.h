@@ -37,7 +37,18 @@ AmpSettings readAmp (const juce::ValueTree& amp);
     so the caller decides when a generation starts. */
 int claimEffectUnit (int effectId, std::array<int, kMaxEffectUnits>& owners);
 
-AutomationParam automationParamFromIdentifier (const juce::Identifier& property);
+/** Which engine parameter a stored `param` names, within a scope.
+
+    The SCOPE is taken because one spelling names two different parameters:
+    `enabled` is an effect slot's bypass and an oscillator slot's on/off, on
+    different nodes with different meanings. Every other repeated spelling in
+    the catalog - `transpose` on a SAMPLE and a SOUNDFONT, `attack` on an AMP
+    against the compressor's `attackMs` - is either between an automatable
+    parameter and an unautomatable one or is two distinct identifiers, so the
+    table answers those on its own.
+*/
+AutomationParam automationParamFromIdentifier (AutomationScope scope,
+                                               const juce::Identifier& property);
 
 EffectParamBlock readEffectParams (const juce::ValueTree& effect, EffectType type);
 

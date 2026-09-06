@@ -58,6 +58,19 @@ const std::vector<OpSpec>& ops();
 /** The operation of this name, or nullptr. */
 const OpSpec* findOp (juce::StringRef name);
 
+/** What notes_transform's `verb` may be, declared once.
+
+    Three places said it by hand: the two comparisons, the failure sentence and
+    the argument's own documentation. It is also what lets the source gate that
+    refuses an automatable parameter written as a string literal tell a verb
+    from a property - "transpose" is a note transform AND a soundfont channel's
+    pitch offset, and only one of the two is a property being resolved. The gate
+    strips these the way it already strips an effect's id, and for the same
+    reason: a value that happens to share a spelling is not the defect it exists
+    to catch.
+*/
+juce::StringArray noteTransformVerbs();
+
 // --- the appenders ------------------------------------------------------------
 // One per domain, because the table is far past what one file may hold and a
 // 400-line limit with no exemption list is not negotiable.

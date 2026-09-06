@@ -94,4 +94,13 @@ bool isForeignGeneratorParam (juce::StringRef id, const juce::Identifier& proper
 */
 juce::ValueTree generatorNodeFor (const juce::ValueTree& slot, const juce::Identifier& property);
 
+/** Whether `node` is a generator's own node - a CLASSIC or a WAVETABLE.
+
+    The inverse of generatorNodeFor, and named here rather than spelled as a
+    pair of hasType calls wherever it is wanted: the set of generator nodes is
+    this table's fact, so a third generator must not need a caller elsewhere to
+    remember to widen an `||`.
+*/
+bool isGeneratorNode (const juce::ValueTree& node);
+
 } // namespace dew

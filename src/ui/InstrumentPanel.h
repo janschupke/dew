@@ -40,6 +40,14 @@ public:
         Null means no menus. */
     void setParamMenuHost (const paramMenu::Host*);
 
+    /** Passes the application's Settings to the one face that keeps something
+        in them: the soundfont chooser's last folder. Null is a panel that
+        browses the way it always did, which is what a test gets. */
+    void setSettings (Settings* settings)
+    {
+        soundFontSection.setSettings (settings);
+    }
+
     /** @param pool  audio for the waveform display. Null is allowed - the
                       section draws its empty state - which is what lets a test
                       or dew_shot build the panel without a sample pool.

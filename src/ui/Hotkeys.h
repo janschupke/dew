@@ -32,6 +32,7 @@ enum
     transportRewind,
     transportToggleMode,
     transportRecord,
+    transportPanic,
     addChannel,
     addPattern,
     compileScore,

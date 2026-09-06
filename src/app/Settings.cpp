@@ -149,6 +149,25 @@ void Settings::setLastRenderDirectory (const juce::File& directory)
         file().setValue ("lastRenderDir", directory.getFullPathName());
 }
 
+// --- assets ------------------------------------------------------------------
+
+juce::File Settings::getLastSoundFontDirectory() const
+{
+    const juce::File stored (file().getValue ("lastSoundFontDir", {}));
+
+    // An INVALID file rather than the browse folder, which is the one place
+    // this differs from getLastRenderDirectory: "never chosen one" and "chose
+    // one that has since gone" are the same answer here, and the caller has a
+    // better fallback than the system's music folder - the project's own.
+    return stored.isDirectory() ? stored : juce::File();
+}
+
+void Settings::setLastSoundFontDirectory (const juce::File& directory)
+{
+    if (directory.isDirectory())
+        file().setValue ("lastSoundFontDir", directory.getFullPathName());
+}
+
 int Settings::getRenderFormat() const
 {
     return juce::jlimit (0, 3, file().getIntValue ("renderFormat", 0));

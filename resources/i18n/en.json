@@ -24,11 +24,13 @@
     }
   },
   "automation": {
+    "envelope": "Envelope",
     "master": "Master",
     "oscillator": "{channel} > Osc {slot}",
     "parameter": "{owner} > {param}",
     "separator": " > ",
-    "song": "Song"
+    "song": "Song",
+    "soundFont": "Soundfont"
   },
   "channelRack": {
     "addAudio": {
@@ -243,6 +245,10 @@
     "transportPlayStop": {
       "description": "Start or stop playback",
       "name": "Play / Stop"
+    },
+    "transportPanic": {
+      "description": "Stop playback and silence every voice and effect tail",
+      "name": "Panic"
     },
     "transportRecord": {
       "description": "Record audio into the armed channel",
@@ -1083,9 +1089,13 @@
     "load": {
       "help": "Choose a SoundFont file for this channel to play"
     },
+    "missing": "Not on this machine - {file}",
+    "none": "No soundfont",
     "preset": {
       "caption": "Sound",
-      "help": "Which sound inside the soundfont this channel plays"
+      "empty": "Load a soundfont first",
+      "help": "Which sound inside the soundfont this channel plays",
+      "missing": "The font this channel names is not here"
     },
     "title": "SoundFont"
   },
@@ -1130,6 +1140,9 @@
     },
     "stop": {
       "help": "Stop and rewind"
+    },
+    "panic": {
+      "help": "Panic - stop, and silence every voice and effect tail (cmd-.)"
     },
     "record": {
       "help": "Record into the armed channel (R)"

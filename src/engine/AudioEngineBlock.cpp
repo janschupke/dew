@@ -93,6 +93,24 @@ void AudioEngine::applyTransportRequests (bool loopChanged) noexcept
         resetAllInstruments();
     }
 
+    // AFTER the seek and the rewind, because panic() asks for a rewind too and
+    // this has to be the last word on what is sounding. Everything else here
+    // resets the instruments; this also silences the effect modules, which is
+    // the difference between "no new sound" and "no sound" - a two second
+    // reverb outlives every voice that fed it.
+    if (panicRequested.exchange (false))
+    {
+        // The queues first, or a note-on already sitting in a ring would be
+        // applied further down this very block and start a voice the panic was
+        // meant to stop. Dropped rather than applied: what was queued is what
+        // the panic is cancelling.
+        previewQueue.discardPending();
+        midiQueue.discardPending();
+
+        resetAllInstruments();
+        modulePool.resetAll();
+    }
+
     // A loop drawn BEHIND the playhead is the one case where folding is wrong:
     // the modulo would drop the playhead at an arbitrary point inside a region
     // the user has only just drawn. Snapping to its start is what they meant.
@@ -214,6 +232,9 @@ void AudioEngine::renderChannels (const EngineSnapshot& snapshot, int numChannel
         const auto volume = automated != nullptr ? automated->volume : channel.volume;
         const auto pan = automated != nullptr ? automated->pan : channel.pan;
         const auto& osc = automated != nullptr ? automated->osc : channel.osc;
+        const auto& amp = automated != nullptr ? automated->amp : channel.amp;
+        const auto& soundFontSettings = automated != nullptr ? automated->soundFontSettings
+                                                             : channel.soundFontSettings;
         const auto& chain = automated != nullptr ? automated->effects : channel.effects;
 
         // One dispatch, not a branch on the kind of channel. It was an `if` on
@@ -235,11 +256,11 @@ void AudioEngine::renderChannels (const EngineSnapshot& snapshot, int numChannel
                 std::memory_order_relaxed);
 
             blockContext.osc = &osc;
-            blockContext.amp = &channel.amp;
+            blockContext.amp = &amp;
             blockContext.sample = &channel.sample;
             blockContext.audio = channel.audio.get();
             blockContext.soundFont = channel.soundFont.get();
-            blockContext.soundFontSettings = &channel.soundFontSettings;
+            blockContext.soundFontSettings = &soundFontSettings;
             blockContext.channelIndex = i;
 
             instrument->processAdd (blockContext, { sourceLeft, sourceRight, numSamples });

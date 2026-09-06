@@ -299,6 +299,28 @@ enum class AutomationParam
     positionRate,
     unisonDetune,
 
+    /** An oscillator slot's own pitch. Latched at note-on like everything but
+        the wavetable position, so a curve here moves the NEXT note. */
+    oscOctave,
+    oscDetuneCents,
+
+    /** The amplitude envelope. Spelled apart from the compressor's attackMs and
+        releaseMs because they are different parameters in different units on
+        different nodes, and one enumerator for two would be exactly the
+        drift automationParamFromIdentifier's own comment warns about. */
+    ampAttack,
+    ampDecay,
+    ampSustain,
+    ampRelease,
+
+    /** A soundfont channel's six offsets into the font it plays. */
+    sfTranspose,
+    sfTuneCents,
+    sfFilterOffset,
+    sfAttackScale,
+    sfReleaseScale,
+    sfVelocitySens,
+
     enabled,    ///< an effect slot's bypass
     oscEnabled, ///< an oscillator slot's on/off
     muted,      ///< a channel's or a mixer track's mute

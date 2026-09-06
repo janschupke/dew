@@ -323,7 +323,7 @@ EngineSnapshot buildSnapshot (const juce::ValueTree& project, juce::StringArray*
         a.slotIndex = (int) automation[ids::slot];
 
         const juce::Identifier property (automation[ids::param].toString());
-        a.param = snapshotRead::automationParamFromIdentifier (property);
+        a.param = snapshotRead::automationParamFromIdentifier (a.scope, property);
 
         const auto targetId = (int) automation[ids::targetId];
         juce::String effectType;
@@ -363,6 +363,8 @@ EngineSnapshot buildSnapshot (const juce::ValueTree& project, juce::StringArray*
 
             case AutomationScope::channel:
             case AutomationScope::channelOsc:
+            case AutomationScope::channelAmp:
+            case AutomationScope::channelSoundFont:
             case AutomationScope::channelEffect:
                 for (size_t i = 0; i < snapshot.channels.size(); ++i)
                     if (snapshot.channels[i].id == targetId)
@@ -389,6 +391,20 @@ EngineSnapshot buildSnapshot (const juce::ValueTree& project, juce::StringArray*
                                    oscModeToString (slots.slots[(size_t) a.slotIndex].mode),
                                    property);
                 }
+
+                // Both are gated on the channel actually being that kind of
+                // instrument. Every channel carries an AMP and a SOUNDFONT node
+                // inert to keep the canonical tree one shape, so without this a
+                // curve saved against a channel that has since been switched to
+                // another source would be applied to settings nothing reads -
+                // the same rule the oscillator check above states for a slot.
+                if (resolved && a.scope == AutomationScope::channelAmp)
+                    resolved = snapshot.channels[(size_t) a.targetIndex].source
+                               == InstrumentType::synth;
+
+                if (resolved && a.scope == AutomationScope::channelSoundFont)
+                    resolved = snapshot.channels[(size_t) a.targetIndex].source
+                               == InstrumentType::soundfont;
 
                 if (resolved && a.scope == AutomationScope::channelEffect)
                 {

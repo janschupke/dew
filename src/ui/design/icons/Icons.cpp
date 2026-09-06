@@ -6,6 +6,8 @@
 // Play through record, the tools that write and erase, and the letters and
 // glyphs that say what something IS - muted, soloed, off, locked, ticked.
 
+#include <cmath>
+
 #include "ui/design/Icons.h"
 
 #include "ui/design/icons/IconStroke.h"
@@ -35,6 +37,32 @@ juce::Path stop()
 {
     juce::Path p;
     p.addRoundedRectangle (0.2f, 0.2f, 0.6f, 0.6f, 0.06f);
+    return p;
+}
+
+juce::Path panic()
+{
+    // An octagon, built from the eight points of a circle rather than by hand,
+    // so the shape is regular at any size and there is no table of corners to
+    // get wrong.
+    juce::Path octagon;
+
+    for (int i = 0; i < 8; ++i)
+    {
+        const auto angle = juce::MathConstants<float>::twoPi * ((float) i + 0.5f) / 8.0f;
+        const auto x = 0.5f + 0.38f * std::sin (angle);
+        const auto y = 0.5f - 0.38f * std::cos (angle);
+
+        if (i == 0)
+            octagon.startNewSubPath (x, y);
+        else
+            octagon.lineTo (x, y);
+    }
+
+    octagon.closeSubPath();
+
+    auto p = strokeOf (octagon, tokens::icon::regular);
+    p.addPath (strokedLine (0.32f, 0.5f, 0.68f, 0.5f, tokens::icon::regular));
     return p;
 }
 

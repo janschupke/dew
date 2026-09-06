@@ -49,6 +49,20 @@ public:
         pool's lifetime, making and preparing the module on first use. */
     EffectModule* acquire (int poolIndex, EffectType);
 
+    /** AUDIO THREAD. Silences every module that exists.
+
+        A reset is what a slot reused as a different effect already gets, for
+        the reason at runChain: a reverb tail read out through a delay line is
+        noise. This is the same call over the whole pool, and it is what makes a
+        panic silence the tails rather than only the voices - a two second
+        reverb outlives every note that fed it.
+
+        Allocation-free by construction: it walks what is already there and
+        never makes one. Nothing is destroyed, which is the invariant this whole
+        class exists to hold - a snapshot may still point at any of them.
+    */
+    void resetAll() noexcept;
+
     /** How many modules exist. For the test that pins the laziness. */
     int materialisedCount() const noexcept
     {

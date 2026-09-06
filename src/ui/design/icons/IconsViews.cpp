@@ -159,6 +159,7 @@ std::vector<NamedIcon> all()
         { "rewind", rewind },
         { "record", record },
         { "loop", loop },
+        { "panic", panic },
 
         { "plus", plus },
         { "minus", minus },

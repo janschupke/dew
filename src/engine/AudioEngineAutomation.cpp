@@ -104,6 +104,8 @@ const AudioEngine::ChannelOverrides* AudioEngine::overridesFor (const ChannelSna
         if (active.targetIndex == channelIndex
             && (active.scope == AutomationScope::channel
                 || active.scope == AutomationScope::channelOsc
+                || active.scope == AutomationScope::channelAmp
+                || active.scope == AutomationScope::channelSoundFont
                 || active.scope == AutomationScope::channelEffect))
         {
             automated = true;
@@ -119,6 +121,8 @@ const AudioEngine::ChannelOverrides* AudioEngine::overridesFor (const ChannelSna
     overrides.pan = channel.pan;
     overrides.muted = channel.muted;
     overrides.osc = channel.osc;
+    overrides.amp = channel.amp;
+    overrides.soundFontSettings = channel.soundFontSettings;
     overrides.effects = channel.effects;
 
     for (const auto& active : activeAutomation)
@@ -157,6 +161,47 @@ const AudioEngine::ChannelOverrides* AudioEngine::overridesFor (const ChannelSna
                 slot.unisonDetune = active.value;
             else if (active.param == AutomationParam::gain)
                 slot.gain = active.value;
+            else if (active.param == AutomationParam::oscOctave)
+                // The octave is an int in the snapshot and the curve is a
+                // float, but automationValueFor has already snapped a discrete
+                // parameter onto a whole value, so this truncates nothing a
+                // curve meant.
+                slot.octave = (int) active.value;
+            else if (active.param == AutomationParam::oscDetuneCents)
+                slot.detuneCents = active.value;
+            else if (active.param == AutomationParam::oscEnabled)
+                slot.enabled = active.value > 0.5f;
+        }
+        else if (active.scope == AutomationScope::channelAmp)
+        {
+            // A voice latches its envelope at note-on, so writing these into
+            // the bank the next note-on reads is the whole of the work - the
+            // same shape an automated oscillator gain has always had.
+            if (active.param == AutomationParam::ampAttack)
+                overrides.amp.attack = active.value;
+            else if (active.param == AutomationParam::ampDecay)
+                overrides.amp.decay = active.value;
+            else if (active.param == AutomationParam::ampSustain)
+                overrides.amp.sustain = active.value;
+            else if (active.param == AutomationParam::ampRelease)
+                overrides.amp.release = active.value;
+        }
+        else if (active.scope == AutomationScope::channelSoundFont)
+        {
+            auto& sf = overrides.soundFontSettings;
+
+            if (active.param == AutomationParam::sfTranspose)
+                sf.transposeSemitones = active.value;
+            else if (active.param == AutomationParam::sfTuneCents)
+                sf.tuneCents = active.value;
+            else if (active.param == AutomationParam::sfFilterOffset)
+                sf.filterOffsetCents = active.value;
+            else if (active.param == AutomationParam::sfAttackScale)
+                sf.attackScale = active.value;
+            else if (active.param == AutomationParam::sfReleaseScale)
+                sf.releaseScale = active.value;
+            else if (active.param == AutomationParam::sfVelocitySens)
+                sf.velocitySensitivity = active.value;
         }
         else if (active.scope == AutomationScope::channelEffect && active.slotIndex >= 0
                  && active.slotIndex < overrides.effects.numSlots)

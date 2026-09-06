@@ -207,6 +207,8 @@ juce::PopupMenu DewApplication::getMenuForIndex (int topLevelMenuIndex, const ju
         menu.addCommandItem (&commandManager, CommandIDs::transportRecord);
         menu.addSeparator();
         menu.addCommandItem (&commandManager, CommandIDs::transportToggleMode);
+        menu.addSeparator();
+        menu.addCommandItem (&commandManager, CommandIDs::transportPanic);
     }
     else if (which == MenuBarItem::project)
     {

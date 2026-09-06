@@ -1,5 +1,7 @@
 #pragma once
 
+#include <functional>
+#include <memory>
 #include <utility>
 #include <vector>
 
@@ -263,6 +265,16 @@ private:
     DewKnob rateKnob { requireInstrumentParamSpec (ids::wavePositionRate) };
     DewKnob unisonKnob { requireInstrumentParamSpec (ids::unisonVoices) };
     DewKnob spreadKnob { requireInstrumentParamSpec (ids::unisonDetune) };
+
+    /** The menus for the controls that carry no onContextMenu of their own.
+
+        A DewSlider consumes a popup press and offers nothing, and a DewDropdown
+        is a juce::ComboBox with no hook at all, so the octave stepper and the
+        four choice boxes are reached by a MouseListener - the same answer
+        MixerStrip's fader takes, and for the same reason. Held here because a
+        Trigger must outlive the control it watches.
+    */
+    std::vector<std::unique_ptr<paramMenu::Trigger>> paramMenuTriggers;
 
     juce::Rectangle<int> offCaptionBounds, shapeBounds;
 

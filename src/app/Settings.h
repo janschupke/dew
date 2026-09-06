@@ -203,6 +203,24 @@ public:
     juce::File getLastRenderDirectory() const;
     void setLastRenderDirectory (const juce::File&);
 
+    // --- assets --------------------------------------------------------------
+    /** Where the last soundfont was loaded from, so the next chooser opens
+        there.
+
+        A soundfont library is a folder somebody keeps, nowhere near the project
+        that refers to it - a font is REFERENCED and never copied in, which is
+        the whole reason the chooser cannot just open beside the document. So
+        the chooser opened at the project's folder or at the system's idea of
+        somewhere, every time, however deep the library was.
+
+        Empty - not the browse folder - when nothing has been chosen yet, so the
+        caller can still prefer the project's own folder for a first load. The
+        same validate-on-read rule getLastRenderDirectory follows: a directory
+        that has gone away is not restored.
+    */
+    juce::File getLastSoundFontDirectory() const;
+    void setLastSoundFontDirectory (const juce::File&);
+
     /** RenderFormat as an int, so this header need not include the engine. */
     int getRenderFormat() const;
     void setRenderFormat (int);

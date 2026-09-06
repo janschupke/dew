@@ -69,6 +69,13 @@ void SampleSection::setParamMenuHost (const paramMenu::Host* host)
     paramMenu::attachTo (host, fadeInKnob, self, requireInstrumentParamSpec (ids::fadeInMs));
     paramMenu::attachTo (host, fadeOutKnob, self, requireInstrumentParamSpec (ids::fadeOutMs));
     paramMenu::attachTo (host, transposeKnob, self, requireInstrumentParamSpec (ids::transpose));
+
+    // Neither is automatable - reversing a sample is a discontinuity in a read
+    // pointer, not a value - so what the menu offers them is a reset. That is
+    // the other half of why a control has one, and these two were the only
+    // spec-built controls in the section without it.
+    paramMenu::attachTo (host, reverseButton, self, requireInstrumentParamSpec (ids::reverse));
+    paramMenu::attachTo (host, loopButton, self, requireInstrumentParamSpec (ids::loop));
 }
 
 void SampleSection::attachKnob (DewKnob& knob, const juce::Identifier& property,

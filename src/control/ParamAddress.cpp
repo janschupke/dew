@@ -12,6 +12,12 @@ namespace
 
 constexpr const char* kEffects = "effects";
 
+// The two groups automation reaches that are neither the channel itself nor a
+// slot. Spelled as constants beside kEffects because each has to agree exactly
+// with the ParamGroup jsonKey the catalog declares, in two directions.
+constexpr const char* kAmp = "amp";
+constexpr const char* kSoundFont = "soundfont";
+
 /** The instrument descriptor a channel's stored `source` names, or nullptr.
 
     instrumentTypeOf returns an optional for the reason instrumentTypeFor does:
@@ -123,9 +129,9 @@ ParamAddress addressFrom (const juce::var& args)
 std::optional<AutomationScope> automationScopeOf (const ParamAddress& address)
 {
     // The whole of how the two address spaces line up. Every case that is
-    // absent is absent because automation genuinely has no scope for it - an
-    // envelope, a sample, a soundfont and an effect on the master - and
-    // AutomationScope's own comment argues each of those.
+    // absent is absent because automation genuinely has no scope for it - a
+    // sample and an effect on the master - and AutomationScope's own comment
+    // argues each of those.
     if (address.target == "project" && address.group.isEmpty())
         return AutomationScope::project;
 
@@ -136,6 +142,12 @@ std::optional<AutomationScope> automationScopeOf (const ParamAddress& address)
 
         if (address.group == "oscillators")
             return AutomationScope::channelOsc;
+
+        if (address.group == kAmp)
+            return AutomationScope::channelAmp;
+
+        if (address.group == kSoundFont)
+            return AutomationScope::channelSoundFont;
 
         if (address.group == kEffects)
             return AutomationScope::channelEffect;
@@ -176,6 +188,16 @@ ParamAddress addressOfTarget (const AutomationTarget& target)
         case AutomationScope::channelOsc:
             address.target = "channel";
             address.group = "oscillators";
+            break;
+
+        case AutomationScope::channelAmp:
+            address.target = "channel";
+            address.group = kAmp;
+            break;
+
+        case AutomationScope::channelSoundFont:
+            address.target = "channel";
+            address.group = kSoundFont;
             break;
 
         case AutomationScope::channelEffect:

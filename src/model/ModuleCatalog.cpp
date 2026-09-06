@@ -133,6 +133,15 @@ const ParamSpec channelSpecs[] {
     toggleSpec (&ids::muted, /*automatable*/ true),
 };
 
+/** The amplitude envelope, which only an oscillator channel has.
+
+    Every one of them is automatable, and that flag was dead until there was a
+    channelAmp scope for a curve to be addressed to. What a curve MEANS here is
+    the same thing it means for an oscillator's gain: a voice latches its
+    envelope at note-on, so a curve moves the NEXT note rather than bending the
+    one already sounding. See SynthVoice's own comment for why that is the rule
+    and wavetable position is the single exception to it.
+*/
 const ParamSpec ampSpecs[] {
     // Ten seconds, which is what the engine renders. The knobs stopped at two
     // and four, so the top of the envelope was simply unreachable.
@@ -163,12 +172,19 @@ const ParamSpec oscSpecs[] {
     // that is the opposite of an EFFECT's `enabled`: a slot being on is part of
     // the PATCH - a pad is three oscillators and a sub bass is one - where an
     // effect's is a bypass somebody flicks while mixing.
-    toggleSpec (&ids::enabled, /*automatable*/ false, /*defaultOn*/ true),
+    // Automatable, like the rest of a slot: switching an oscillator in and out
+    // over a section is a patch change somebody wants to write down, and it is
+    // the slot's own parameter rather than an effect's bypass - which is why
+    // the engine spells it oscEnabled and not enabled.
+    toggleSpec (&ids::enabled, /*automatable*/ true, /*defaultOn*/ true),
 
     // Four octaves either way, which is what the engine renders; the stepper
     // offered three.
+    //
+    // Automatable, and discrete: automationValueFor snaps it, so a curve lands
+    // on a whole octave rather than between two of them.
     { &ids::octave, "", -4.0, 4.0, 0.0, 1.0, 0, ParamCurve::linear, ParamControl::stepper, true,
-      /*automatable*/ false,
+      /*automatable*/ true,
       /*integral*/ true },
 
     // One semitone either way, and here the KNOB is the one that wins. The
@@ -182,7 +198,7 @@ const ParamSpec oscSpecs[] {
     // would also make numDiscreteValues report two hundred and one steps for a
     // parameter that is continuous.
     { &ids::detuneCents, " c", -100.0, 100.0, 0.0, 1.0, 0, ParamCurve::linear, ParamControl::knob,
-      /*bipolar*/ true, /*automatable*/ false },
+      /*bipolar*/ true, /*automatable*/ true },
 
     { &ids::gain, "", 0.0, 1.0, 0.8, 0.01, 2 },
 
@@ -293,39 +309,43 @@ const ParamSpec sampleSpecs[] {
     means the same thing, in the same units, over the same range - two spellings
     of one idea is exactly what the rest of this file exists to stop.
 
-    None of them automatable yet: a curve needs a scope to point at, and a
-    SOUNDFONT node has none. The times could not have one anyway - an envelope's
-    stages are latched when a note starts, so a curve moving them halfway through
-    a note that is already sounding has nothing to mean.
+    All six are automatable, through the channelSoundFont scope. What a curve
+    means here is what it means everywhere else in dew except a wavetable
+    position: a voice latches its settings at note-on, so a curve moves the NEXT
+    note rather than bending the one already sounding. That is the honest
+    reading of an offset into a font - a preset's envelope stages and its
+    filter are decided when the region starts - and it is why these are offered
+    rather than withheld: sweeping a filter offset across a section is exactly
+    the thing somebody wants to draw.
 */
 const ParamSpec soundFontSpecs[] {
     // A double in the schema, so not integral here - see detuneCents.
     { &ids::transpose, "", -24.0, 24.0, 0.0, 1.0, 0, ParamCurve::linear, ParamControl::knob,
-      /*bipolar*/ true, /*automatable*/ false },
+      /*bipolar*/ true, /*automatable*/ true },
 
     { &ids::tuneCents, " c", -100.0, 100.0, 0.0, 1.0, 0, ParamCurve::linear, ParamControl::knob,
-      /*bipolar*/ true, /*automatable*/ false },
+      /*bipolar*/ true, /*automatable*/ true },
 
     // Linear, and that is not an oversight: a cent IS a logarithmic unit, so
     // this offset is already in the domain ParamCurve::logarithmic exists to
     // reach. That curve could not be used here anyway - it maps min*(max/min)^v,
     // which needs a positive minimum, and half of this range is below zero.
     { &ids::filterOffset, " c", -2400.0, 2400.0, 0.0, 10.0, 0, ParamCurve::linear,
-      ParamControl::knob, /*bipolar*/ true, /*automatable*/ false },
+      ParamControl::knob, /*bipolar*/ true, /*automatable*/ true },
 
     // Multipliers rather than times, because that is what an offset in timecents
     // IS: the format stores envelope stages logarithmically, so adding to one
     // scales it. A quarter to four times, with 1 in the middle of the travel.
     { &ids::attackScale, "x", 0.25, 4.0, 1.0, 0.01, 2, ParamCurve::logarithmic, ParamControl::knob,
-      /*bipolar*/ false, /*automatable*/ false },
+      /*bipolar*/ false, /*automatable*/ true },
     { &ids::releaseScale, "x", 0.25, 4.0, 1.0, 0.01, 2, ParamCurve::logarithmic, ParamControl::knob,
-      /*bipolar*/ false, /*automatable*/ false },
+      /*bipolar*/ false, /*automatable*/ true },
 
     // How much of the format's velocity-to-attenuation curve is applied. 1 is
     // what the SF2 specification says; 0 plays every note at full level, which
     // is what a stepped pattern usually wants.
     { &ids::velocitySens, "", 0.0, 1.0, 1.0, 0.01, 2, ParamCurve::linear, ParamControl::knob,
-      /*bipolar*/ false, /*automatable*/ false },
+      /*bipolar*/ false, /*automatable*/ true },
 };
 
 /** The arrangement's own parameters. One: the tempo.

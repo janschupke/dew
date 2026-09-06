@@ -201,6 +201,30 @@ void OscillatorSection::setParamMenuHost (const paramMenu::Host* host)
                          requireInstrumentParamSpec (ids::unisonVoices));
     paramMenu::attachTo (host, spreadKnob, owner (ids::unisonDetune),
                          requireInstrumentParamSpec (ids::unisonDetune));
+
+    // The rest of the slot, which had no menu at all - so the octave stepper,
+    // the on/off and the four choice boxes were the only spec-built controls in
+    // the panel with no "reset to default", and three of them are automatable.
+    paramMenu::attachTo (host, enableButton, slot, requireInstrumentParamSpec (ids::enabled));
+
+    paramMenuTriggers.clear();
+
+    if (host == nullptr || host->document == nullptr)
+        return;
+
+    const auto trigger = [this, host] (juce::Component& control,
+                                       std::function<juce::ValueTree()> node,
+                                       const juce::Identifier& property)
+    {
+        paramMenuTriggers.push_back (std::make_unique<paramMenu::Trigger> (
+            control, host->contextFor (std::move (node), requireInstrumentParamSpec (property))));
+    };
+
+    trigger (octaveSlider, slot, ids::octave);
+    trigger (modeBox, slot, ids::mode);
+    trigger (waveBox, owner (ids::wave), ids::wave);
+    trigger (tableBox, owner (ids::wavetable), ids::wavetable);
+    trigger (sourceBox, owner (ids::wavePositionSource), ids::wavePositionSource);
 }
 
 void OscillatorSection::attachKnob (DewKnob& knob, const juce::Identifier& property,

@@ -308,6 +308,7 @@ add_library(dew_model STATIC
 
   model/AutomationCurve.cpp
   model/AutomationTargets.cpp
+  model/AutomationTargetsResolve.cpp
   model/ParamSpec.cpp
   model/ParamRole.cpp
   model/ParamNames.cpp

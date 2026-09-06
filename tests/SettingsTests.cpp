@@ -556,3 +556,33 @@ TEST_CASE ("the piano roll's row height and the score's text size are remembered
         CHECK (settings->getScoreFontStep() == 0);
     }
 }
+
+TEST_CASE ("the soundfont chooser remembers where it was", "[settings]")
+{
+    // A font is REFERENCED and never copied into the project's folder, so the
+    // library it comes from is somewhere else entirely - and the chooser opened
+    // beside the document every time, however deep the library was.
+    TempSettings temp;
+
+    const auto library = temp.directory.getChildFile ("soundfonts");
+    library.createDirectory();
+
+    {
+        auto settings = temp.open();
+
+        // Nothing chosen yet is an INVALID file, not the browse folder: the
+        // caller has a better fallback than the system's music folder - the
+        // project's own - and can only reach for it if this says nothing.
+        REQUIRE (settings->getLastSoundFontDirectory() == juce::File());
+
+        settings->setLastSoundFontDirectory (library);
+        settings->flush();
+    }
+
+    REQUIRE (temp.open()->getLastSoundFontDirectory() == library);
+
+    // And a folder that has gone away is not restored - an unplugged drive is
+    // exactly the "something unrecoverable" this class refuses to hand back.
+    library.deleteRecursively();
+    REQUIRE (temp.open()->getLastSoundFontDirectory() == juce::File());
+}

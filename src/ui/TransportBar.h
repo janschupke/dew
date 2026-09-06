@@ -86,6 +86,16 @@ public:
     */
     std::function<void()> onToggleRecord;
 
+    /** What a panic has to reach that a transport bar cannot.
+
+        The engine half is done here, unconditionally: this component holds the
+        engine and a safety control that quietly does nothing because nobody
+        wired it up would be worse than no button. What is left is the MIDI
+        input's own bookkeeping, which lives above this and must be asked
+        through MidiRouter::reset rather than its MIDI-thread twin.
+    */
+    std::function<void()> onPanic;
+
     /** What deleting a pattern asks first. See ConfirmHook. */
     ConfirmHook confirmDestructive;
 
@@ -171,6 +181,12 @@ private:
     DewIconButton stopButton { icons::stop(), tr (StringId::transport_stop_help) };
     DewIconButton recordButton { icons::record(), tr (StringId::transport_record_help),
                                  DewIconButton::Role::record };
+
+    /** Role::danger, like the trash can, and for the same reason: it is the one
+        button here that throws something away - every voice sounding and every
+        tail still ringing. */
+    DewIconButton panicButton { icons::panic(), tr (StringId::transport_panic_help),
+                                DewIconButton::Role::danger };
     const paramMenu::Host* paramMenuHost = nullptr;
 
     DewNumberField tempoField;

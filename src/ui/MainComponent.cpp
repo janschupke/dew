@@ -128,6 +128,11 @@ MainComponent::MainComponent (bool openAudioDevice)
 
     transportBar.isRecording = [this] { return isRecording(); };
 
+    // The button does the engine's half itself, so this is only what it cannot
+    // reach - which is the same second half panic() does for the key and the
+    // menu. reset(), never MidiRouter::panic(): see MainComponent::panic.
+    transportBar.onPanic = [this] { midiHost.getRouter().reset(); };
+
     transportBar.onMeterChanged = [this] (bool wasExact)
     {
         const auto meter = Meter::of (document.getState());
@@ -190,12 +195,18 @@ void MainComponent::handleAsyncUpdate()
     projectChanged();
 }
 
-void MainComponent::projectChanged()
+void MainComponent::pointPoolsAtDocument()
 {
-    // Before the snapshot: a relative audio path can only be resolved against
-    // where the document lives, and Save As moves that out from under it.
+    // A relative audio or soundfont path can only be resolved against where the
+    // document lives, and Save As moves that out from under it.
     samplePool.setProjectFile (document.getFile());
     soundFontPool.setProjectFile (document.getFile());
+}
+
+void MainComponent::projectChanged()
+{
+    // Before the snapshot, for the reason above.
+    pointPoolsAtDocument();
 
     juce::StringArray warnings;
     engine.setProject (document.getState(), &warnings);
@@ -240,6 +251,15 @@ void MainComponent::documentWasReplaced()
     // refreshed against a channel that is not there disables itself and stays
     // disabled until something else touches it.
     resolveSelectedChannel();
+
+    // And before them too, which is the fix rather than a tidy-up. The pools
+    // used to be pointed at the document inside projectChanged, three lines
+    // BELOW this - so the instrument panel resolved a relative soundfont path
+    // against the file the last project lived in, found nothing, and drew a
+    // channel whose font was "not on this machine" with an empty preset list.
+    // Nothing refreshed it afterwards, so opening a project was enough to lose
+    // a soundfont that was sitting right there.
+    pointPoolsAtDocument();
 
     transportBar.refresh();
     tabs.refresh();
@@ -426,6 +446,25 @@ int MainComponent::getNumEditorTabs() const
 void MainComponent::toggleInstrumentPanel()
 {
     setPanelCollapsed (! panelCollapsed);
+}
+
+void MainComponent::panic()
+{
+    engine.panic();
+
+    // reset(), never MidiRouter::panic(): the latter writes the MIDI ring and
+    // the note bookkeeping directly and belongs to the MIDI thread alone - see
+    // its header. This asks the MIDI thread to clear its own next time it
+    // wakes, which is why it is the one that is public.
+    midiHost.getRouter().reset();
+}
+
+void MainComponent::useSettings (Settings& s)
+{
+    // The one thing in the window that writes back: the soundfont chooser,
+    // which remembers the folder somebody browsed to. Handed straight down
+    // rather than held here as well, so there is one owner of the pointer.
+    instrumentPanel.setSettings (&s);
 }
 
 void MainComponent::applySettings (const Settings& settings)

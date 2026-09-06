@@ -3,6 +3,7 @@
 #include <algorithm>
 
 #include "SourceScan.h"
+#include "control/ControlOps.h"
 #include "model/AutomationTargets.h"
 #include "model/ModuleCatalog.h"
 
@@ -227,6 +228,12 @@ TEST_CASE ("no source spells an automatable parameter as a string literal", "[bu
     // "drive" is both - and the id is a value a file legitimately contains.
     for (const auto& descriptor : dew::effectDescriptors())
         names.removeString (descriptor.id);
+
+    // And the same for a note transform's verb: "transpose" is one of those and
+    // is also a soundfont channel's pitch offset. Taken from the vocabulary
+    // rather than typed here, so a verb added beside it is stripped too.
+    for (const auto& verb : dew::control::noteTransformVerbs())
+        names.removeString (verb);
 
     // Control case: a gate over an empty list is not a gate.
     REQUIRE (names.size() > 15);

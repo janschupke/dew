@@ -5,6 +5,7 @@
 #include "i18n/Strings.h"
 
 #include "io/SoundFontPool.h"
+#include "app/Settings.h"
 #include "model/Ids.h"
 #include "model/ModuleCatalog.h"
 #include "app/ProjectDocument.h"
@@ -44,6 +45,16 @@ public:
 
     void setOwner (juce::ValueTree soundFontNode);
 
+    /** Where the file chooser opens, and what it writes back.
+
+        Null is a section that browses the way it always did - which is what a
+        test harness and dew_shot get, neither of which has a settings file.
+    */
+    void setSettings (Settings* s) noexcept
+    {
+        settings = s;
+    }
+
     /** Height this section needs, as a constant for the reason
         SampleSection::requiredHeight is: the host budgets for it before
         anything has been laid out. */
@@ -78,6 +89,10 @@ public:
     {
         return loadButton;
     }
+    const DewDropdown& getPresetBox() const noexcept
+    {
+        return presetBox;
+    }
     DewDropdown& getPresetBox() noexcept
     {
         return presetBox;
@@ -89,6 +104,19 @@ public:
 
 private:
     void valueTreePropertyChanged (juce::ValueTree&, const juce::Identifier&) override;
+
+    /** A press on the preset box while it has nothing to offer.
+
+        The box is disabled when there is no font, so juce::ComboBox itself does
+        nothing with the press - but a MouseListener is delivered it anyway,
+        which is the same seam ParamContextMenu::Trigger uses to reach a control
+        with no hook of its own. Clicking the thing that says "load a soundfont
+        first" is what a hand does next, and it used to do nothing at all.
+
+        A juce::Component IS a juce::MouseListener already, which is why this
+        is an override and not a second base class.
+    */
+    void mouseDown (const juce::MouseEvent&) override;
 
     void write (const juce::Identifier& property, const juce::var& value,
                 const juce::String& transactionName);
@@ -102,6 +130,7 @@ private:
 
     ProjectDocument& document;
     SoundFontPool* pool;
+    Settings* settings = nullptr;
 
     juce::ValueTree soundFont;
 

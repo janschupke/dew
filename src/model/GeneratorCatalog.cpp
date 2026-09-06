@@ -56,6 +56,15 @@ bool isForeignGeneratorParam (juce::StringRef id, const juce::Identifier& proper
     return false;
 }
 
+bool isGeneratorNode (const juce::ValueTree& node)
+{
+    for (const auto& generator : generatorDescriptors())
+        if (node.hasType (*generator.node))
+            return true;
+
+    return false;
+}
+
 juce::ValueTree generatorNodeFor (const juce::ValueTree& slot, const juce::Identifier& property)
 {
     for (const auto& generator : generatorDescriptors())

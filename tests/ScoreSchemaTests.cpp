@@ -202,5 +202,5 @@ TEST_CASE ("a project from before the score loads as one nobody compiled",
     // gave a playlist track a gain - so update the number when the rest of this
     // test still passes, and do not delete it.
     REQUIRE ((int) loaded.tree[ids::formatVersion] == kFormatVersion);
-    REQUIRE (kFormatVersion == 16);
+    REQUIRE (kFormatVersion == 17);
 }

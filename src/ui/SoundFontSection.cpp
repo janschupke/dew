@@ -35,6 +35,7 @@ SoundFontSection::SoundFontSection (ProjectDocument& d, SoundFontPool* p)
 
     presetBox.setComponentID ("soundFontPreset");
     presetBox.setTooltip (tr (StringId::soundFont_preset_help));
+    presetBox.addMouseListener (this, false);
     presetBox.onChange = [this]
     {
         if (! updating)
@@ -61,7 +62,20 @@ SoundFontSection::SoundFontSection (ProjectDocument& d, SoundFontPool* p)
 
 SoundFontSection::~SoundFontSection()
 {
+    presetBox.removeMouseListener (this);
     document.getState().removeListener (this);
+}
+
+void SoundFontSection::mouseDown (const juce::MouseEvent& event)
+{
+    // Only the press that means "I want to choose one", and only while there is
+    // nothing to choose: with a font loaded the box is a dropdown and opening a
+    // file chooser instead would be a control that does two things.
+    if (event.eventComponent != &presetBox || event.mods.isPopupMenu()
+        || presetBox.getNumItems() > 0)
+        return;
+
+    chooseFile();
 }
 
 void SoundFontSection::setParamMenuHost (const paramMenu::Host* host)
@@ -207,7 +221,16 @@ void SoundFontSection::chooseFile()
     if (! soundFont.isValid())
         return;
 
-    const auto startIn = pool != nullptr && pool->getProjectFile() != juce::File()
+    // Where you were last, first. A soundfont is REFERENCED and never copied
+    // into the project's folder, so the library it comes from is somewhere else
+    // entirely - and opening beside the document every time meant walking back
+    // into it on every load. The project's folder is still the answer for a
+    // first load, which is the one time there is nowhere better to start.
+    const auto remembered = settings != nullptr ? settings->getLastSoundFontDirectory()
+                                                : juce::File();
+
+    const auto startIn = remembered != juce::File() ? remembered
+                         : pool != nullptr && pool->getProjectFile() != juce::File()
                              ? pool->getProjectFile().getParentDirectory()
                              : AssetPaths::defaultBrowseFolder();
 
@@ -222,8 +245,13 @@ void SoundFontSection::chooseFile()
                           {
                               const auto file = result.getResult();
 
-                              if (file != juce::File())
-                                  loadFile (file);
+                              if (file == juce::File())
+                                  return;
+
+                              if (settings != nullptr)
+                                  settings->setLastSoundFontDirectory (file.getParentDirectory());
+
+                              loadFile (file);
                           });
 }
 
@@ -235,14 +263,15 @@ juce::String SoundFontSection::getFileDescription() const
     const auto path = soundFont[ids::file].toString();
 
     if (path.isEmpty())
-        return "No soundfont";
+        return tr (StringId::soundFont_none);
 
     const auto name = juce::File::createFileWithoutCheckingPath (path).getFileName();
 
     // A font that is not on this machine is an ordinary situation - a project
     // can arrive before the library it refers to - so it says which file is
     // missing rather than showing nothing.
-    return entry() != nullptr ? name : name + " (missing)";
+    return entry() != nullptr ? name
+                              : tr (StringId::soundFont_missing, Args {}.with ("file", name));
 }
 
 void SoundFontSection::valueTreePropertyChanged (juce::ValueTree& tree, const juce::Identifier&)
@@ -271,6 +300,17 @@ void SoundFontSection::refresh()
 
     presetBox.setEnabled (valid && ! items.isEmpty());
     presetLabel.setText (tr (StringId::soundFont_preset_caption), juce::dontSendNotification);
+
+    // An empty box used to paint as a blank well and say nothing. JUCE draws
+    // its own "(no choices)" only INSIDE the popup, which a disabled box never
+    // opens, so the one state this control spends most of its life in was the
+    // one state it could not explain. Two answers, because they are two
+    // different situations: nothing has been chosen, or what was chosen is not
+    // on this machine.
+    presetBox.setTextWhenNoChoicesAvailable (soundFont[ids::file].toString().isEmpty()
+                                                 ? tr (StringId::soundFont_preset_empty)
+                                                 : tr (StringId::soundFont_preset_missing));
+    presetBox.setTextWhenNothingSelected (presetBox.getTextWhenNoChoicesAvailable());
 
     if (valid)
     {

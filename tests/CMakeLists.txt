@@ -92,6 +92,7 @@ add_executable(dew_tests
   PianoRollEraseTests.cpp
   PianoRollLoopTests.cpp
   PianoRollToolsTests.cpp
+  PanicTests.cpp
   ParamMenuTests.cpp
   PlaylistTests.cpp
   PlaylistAutomationTests.cpp

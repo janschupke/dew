@@ -171,6 +171,9 @@ void DewApplication::restoreSession()
     if (main == nullptr || settings == nullptr)
         return;
 
+    // By reference and KEPT, before the restore that only reads: the soundfont
+    // chooser writes back where it was browsing, minutes after this runs.
+    main->useSettings (*settings);
     main->applySettings (*settings);
 
     // The device before anything is heard, so the first sound already comes out
@@ -487,6 +490,8 @@ bool DewApplication::perform (const InvocationInfo& info)
             engine.rewind();
             return true;
         }
+
+        case CommandIDs::transportPanic: main->panic(); return true;
 
         case CommandIDs::transportRecord:
             if (const auto error = main->toggleRecording(); error.isNotEmpty())

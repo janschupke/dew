@@ -160,14 +160,24 @@ int claimEffectUnit (int effectId, std::array<int, kMaxEffectUnits>& owners)
     Now there is nothing to keep in step - a rename moves the identifier this
     table already points at.
 */
-AutomationParam automationParamFromIdentifier (const juce::Identifier& property)
+AutomationParam automationParamFromIdentifier (AutomationScope scope,
+                                               const juce::Identifier& property)
 {
+    // The one spelling that names two parameters. An oscillator slot's on/off
+    // and an effect slot's bypass are different things on different nodes, and
+    // only the scope can say which was addressed - see the header.
+    if (property == ids::enabled)
+        return scope == AutomationScope::channelOsc ? AutomationParam::oscEnabled
+                                                    : AutomationParam::enabled;
+
     static const std::pair<const juce::Identifier*, AutomationParam> table[] {
         { &ids::volume, AutomationParam::volume },
         { &ids::pan, AutomationParam::pan },
         { &ids::gain, AutomationParam::gain },
         { &ids::cutoff, AutomationParam::cutoff },
         { &ids::wavePosition, AutomationParam::position },
+        { &ids::octave, AutomationParam::oscOctave },
+        { &ids::detuneCents, AutomationParam::oscDetuneCents },
         { &ids::wavePositionMod, AutomationParam::positionMod },
         { &ids::wavePositionRate, AutomationParam::positionRate },
         { &ids::unisonDetune, AutomationParam::unisonDetune },
@@ -198,9 +208,23 @@ AutomationParam automationParamFromIdentifier (const juce::Identifier& property)
         // The discrete ones. `mute` and `muted` are two spellings of one idea -
         // a mixer track says mute and a channel says muted - and both resolve
         // here, because the scope already says which node is being addressed.
+        // The amplitude envelope, and a soundfont channel's offsets into the
+        // font it plays. Both are latched at note-on, so a curve over one moves
+        // the next note rather than bending the one already sounding.
+        { &ids::attack, AutomationParam::ampAttack },
+        { &ids::decay, AutomationParam::ampDecay },
+        { &ids::sustain, AutomationParam::ampSustain },
+        { &ids::release, AutomationParam::ampRelease },
+
+        { &ids::transpose, AutomationParam::sfTranspose },
+        { &ids::tuneCents, AutomationParam::sfTuneCents },
+        { &ids::filterOffset, AutomationParam::sfFilterOffset },
+        { &ids::attackScale, AutomationParam::sfAttackScale },
+        { &ids::releaseScale, AutomationParam::sfReleaseScale },
+        { &ids::velocitySens, AutomationParam::sfVelocitySens },
+
         { &ids::filterMode, AutomationParam::filterMode },
         { &ids::distortionMode, AutomationParam::distortionMode },
-        { &ids::enabled, AutomationParam::enabled },
         { &ids::mute, AutomationParam::muted },
         { &ids::muted, AutomationParam::muted },
         { &ids::tempoBpm, AutomationParam::tempoBpm },

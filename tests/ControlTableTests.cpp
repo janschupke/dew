@@ -207,12 +207,18 @@ TEST_CASE ("the parameter address space reaches what automation deliberately can
     REQUIRE (reaches ("amp", "attack"));
     REQUIRE (reaches ("amp", "release"));
 
-    // And each of those has no automation scope at all, which is the half of
-    // the claim that makes the other half worth asserting.
-    ParamAddress amp;
-    amp.target = "channel";
-    amp.group = "amp";
-    REQUIRE_FALSE (automationScopeOf (amp).has_value());
+    // And what has no automation scope at all, which is the half of the claim
+    // that makes the other half worth asserting.
+    //
+    // The envelope used to be the example here and is not any more: it has a
+    // channelAmp scope now, so the two address spaces line up over it. What is
+    // left is an insert on the MASTER, which the picker has never offered
+    // either - there is no masterEffect scope and no third override struct in
+    // the engine to write one into.
+    ParamAddress masterInsert;
+    masterInsert.target = "master";
+    masterInsert.group = "effects";
+    REQUIRE_FALSE (automationScopeOf (masterInsert).has_value());
 }
 
 TEST_CASE ("the guide routes to itself and to nothing missing", "[control][gate][mcp]")

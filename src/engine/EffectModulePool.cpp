@@ -17,6 +17,13 @@ void EffectModulePool::prepare (double newSampleRate, int maximumBlockSize)
         module->prepare (sampleRate, blockSize);
 }
 
+void EffectModulePool::resetAll() noexcept
+{
+    for (auto& module : owned)
+        if (module != nullptr)
+            module->reset();
+}
+
 void EffectModulePool::releaseResources()
 {
     for (auto& module : owned)

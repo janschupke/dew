@@ -9,7 +9,9 @@
 #include "model/ProjectFactory.h"
 #include "model/ProjectSerializer.h"
 #include "ui/EditorState.h"
+#include "PlaylistHarness.h"
 #include "ui/InstrumentPanel.h"
+#include "ui/MainComponent.h"
 #include "ui/SoundFontSection.h"
 
 using namespace dew;
@@ -101,7 +103,10 @@ TEST_CASE ("a soundfont that is not on this machine says which one is missing", 
     SoundFontSection section (harness.document, &harness.pool);
     section.setOwner (channel.getChildWithName (ids::SOUNDFONT));
 
-    CHECK (section.getFileDescription() == "Gone.sf2 (missing)");
+    // The file it names, and that it is not here. Asserted as two facts rather
+    // than as one sentence, so translating the wording is not a test change.
+    CHECK (section.getFileDescription().contains ("Gone.sf2"));
+    CHECK (section.getFileDescription() != "Gone.sf2");
     CHECK (section.presetMenuItems().isEmpty());
 }
 
@@ -248,4 +253,130 @@ TEST_CASE ("a project written before soundfonts existed gains an inert node", "[
     CHECK (juce::exactlyEqual ((double) node[ids::velocitySens], 1.0));
     CHECK (ProjectEdits::playsNotes (channel));
     CHECK_FALSE (ProjectEdits::playsClips (channel));
+}
+
+TEST_CASE ("an empty preset box says why it is empty", "[soundfont][ui]")
+{
+    // It used to paint as a blank well and say nothing at all. JUCE draws its
+    // own "(no choices)" only INSIDE the popup, and a disabled box never opens
+    // one - so the state this control spends most of its life in was the one
+    // state it could not explain.
+    Harness harness;
+    auto channel = harness.addChannel();
+
+    SoundFontSection section (harness.document, &harness.pool);
+    section.setOwner (channel.getChildWithName (ids::SOUNDFONT));
+
+    REQUIRE (section.presetMenuItems().isEmpty());
+    CHECK (section.getPresetBox().getTextWhenNoChoicesAvailable().isNotEmpty());
+
+    // And it says something DIFFERENT when a font was chosen and is not here,
+    // because "you have not picked one" and "the one you picked is missing" are
+    // two different things to do next.
+    const auto nothingChosen = section.getPresetBox().getTextWhenNoChoicesAvailable();
+
+    ProjectEdits::setSoundFontSource (channel, "Gone.sf2", 0, 0, "Ramp", nullptr);
+    section.refresh();
+
+    REQUIRE (section.presetMenuItems().isEmpty());
+    CHECK (section.getPresetBox().getTextWhenNoChoicesAvailable() != nothingChosen);
+}
+
+TEST_CASE ("opening a project finds the soundfont sitting beside it", "[soundfont][ui]")
+{
+    // The bug this is here for: documentWasReplaced refreshed the panels BEFORE
+    // pointing the pools at the new document, so a relative font path was
+    // resolved against wherever the LAST project lived. It found nothing, the
+    // channel read as "not on this machine", and the preset list was empty -
+    // for a font sitting in the same folder as the file just opened.
+    testing::TempDir directory { "dew-soundfont-open-" };
+
+    const auto font = directory.dir.getChildFile ("Fixture.sf2");
+    const auto bytes = SoundFontBuilder::minimal().build();
+    font.replaceWithData (bytes.getData(), bytes.getSize());
+
+    const auto projectFile = directory.dir.getChildFile ("Song.dew");
+
+    // A project holding a soundfont channel pointed at that font, RELATIVELY -
+    // which is the whole point: an absolute path would have resolved either way.
+    auto project = ProjectFactory::createDefault();
+    auto channel = ProjectEdits::addSoundFontChannel (project, "Font", nullptr);
+    ProjectEdits::setSoundFontSource (channel, AssetPaths::relativise (font, projectFile), 0, 0,
+                                      "Ramp", nullptr);
+
+    REQUIRE (ProjectSerializer::writeToFile (project, projectFile).wasOk());
+
+    const juce::ScopedJuceInitialiser_GUI juceInit;
+
+    MainComponent component (false);
+    component.setSize (1400, 900);
+
+    // The selection BEFORE the load, which is what a restored session is: the
+    // channel exists in the file, so resolveSelectedChannel keeps it and
+    // nothing touches the selection afterwards. That is what makes this a test
+    // of the order documentWasReplaced works in - a selection changed AFTER it
+    // refreshes the panel a second time, with the pools by then pointed, and
+    // hides the defect entirely.
+    component.getEditorState().setSelectedChannelId ((int) channel[ids::id]);
+
+    // Exactly what File > Open does: loadFrom, then documentWasReplaced. JUCE
+    // does not call the second itself - DewApplication does, after the load.
+    REQUIRE (component.getDocument().loadFrom (projectFile, false).wasOk());
+    component.documentWasReplaced();
+
+    auto* found = testing::findDescendantWithID (component, "soundFontSection");
+    REQUIRE (found != nullptr);
+
+    auto* section = dynamic_cast<SoundFontSection*> (found);
+    REQUIRE (section != nullptr);
+
+    // The BOX, not presetMenuItems(). The latter asks the pool afresh every
+    // time it is called, so it answers correctly the moment the pool is pointed
+    // however late that was - it cannot witness this defect. What the panel
+    // actually shows was written once, during the refresh, and is what a person
+    // is looking at.
+    INFO ("file description: " << section->getFileDescription());
+    CHECK (section->getPresetBox().getNumItems() > 0);
+    CHECK (section->getPresetBox().isEnabled());
+}
+
+TEST_CASE ("the soundfont face follows a document that has been replaced", "[soundfont][ui]")
+{
+    // Worth pinning even though it comes free. Every panel in dew adds its
+    // ValueTree listener once, in its constructor, and ProjectDocument::setState
+    // then REPLACES the root object - which looks like it must leave the panel
+    // watching the tree the last project used.
+    //
+    // It does not, and the reason is a JUCE detail worth writing down: a
+    // ValueTree keeps its listener list on the INSTANCE, not on the shared
+    // object, and assignment re-registers that instance with the new one. So
+    // getState().addListener(this) survives, because getState() hands back the
+    // same member every time. Four panels re-add in refresh() anyway, and this
+    // is what says that is belt-and-braces rather than the thing holding them
+    // up.
+    Harness harness;
+    auto channel = harness.addChannel();
+
+    SoundFontSection section (harness.document, &harness.pool);
+    section.setOwner (channel.getChildWithName (ids::SOUNDFONT));
+
+    auto replacement = ProjectFactory::createDefault();
+    auto replaced = ProjectEdits::addSoundFontChannel (replacement, "Font", nullptr);
+    harness.document.setState (replacement, true);
+
+    auto node = harness.document.getState()
+                    .getChildWithProperty (ids::id, replaced[ids::id])
+                    .getChildWithName (ids::SOUNDFONT);
+    REQUIRE (node.isValid());
+
+    section.setOwner (node);
+    REQUIRE (section.getPresetBox().getNumItems() == 0);
+
+    // A write through the DOCUMENT, which is what choosing a preset does. It
+    // has to reach the section without anything re-pointing it first.
+    ProjectEdits::setSoundFontSource (node.getParent(), harness.font.getFullPathName(), 0, 0,
+                                      "Ramp", nullptr);
+
+    INFO ("file description: " << section.getFileDescription());
+    CHECK (section.getPresetBox().getNumItems() > 0);
 }

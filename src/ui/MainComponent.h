@@ -164,6 +164,26 @@ public:
     /** Restores what was saved last time, and captures it again on exit. The
         app owns the store; this only knows how to read and write itself.
     */
+    /** Hands the Settings the application owns to the things that write BACK
+        into them minutes later - the soundfont chooser remembering the folder
+        somebody browsed to.
+
+        Separate from applySettings, which deliberately keeps nothing: it
+        restores a value and is done with it. This is the same distinction
+        applyMcpSettings already draws, and for the same reason.
+    */
+    void useSettings (Settings&);
+
+    /** Stop everything and silence it: the engine's panic, plus the MIDI
+        input's own bookkeeping, which the engine knows nothing about.
+
+        One function because there are three ways to ask for it - the transport
+        bar's button, cmd-period and the Transport menu - and a panic that meant
+        two different things depending on which was pressed would be worse than
+        one that meant a slightly smaller thing everywhere.
+    */
+    void panic();
+
     void applySettings (const Settings&);
     void captureSettings (Settings&) const;
 
@@ -254,6 +274,15 @@ private:
     void handleAsyncUpdate() override;
     void changeListenerCallback (juce::ChangeBroadcaster*) override;
     void projectChanged();
+
+    /** Tells both asset pools where the document lives.
+
+        Its own function because it has two callers that must not drift: every
+        project change, and documentWasReplaced BEFORE it refreshes the panels -
+        a panel that resolves a relative path against the last project's folder
+        finds nothing and says the asset is missing.
+    */
+    void pointPoolsAtDocument();
 
     /** Points MIDI input at whatever channel is selected, resolved to the index
         the engine uses. The MIDI thread must never read EditorState, so the
