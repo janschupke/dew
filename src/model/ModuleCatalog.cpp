@@ -225,6 +225,36 @@ const ParamSpec oscSpecs[] {
 
     choiceSpec (&ids::mode, oscModes, (int) std::size (oscModes), "classic", 0.0),
 
+    // --- the slot's row of the FM matrix, from here --------------------------
+    //
+    // Three destinations and an output, which is one row of a 3x4 matrix: how
+    // far this slot bends each slot's phase, and how much of it is heard.
+    //
+    // The DEFAULTS are the feature. Every amount is zero and every output is
+    // one, which is three oscillators summed in parallel by their own gains -
+    // exactly what this synth was before the matrix existed - so no committed
+    // project, preset or pinned render moves. SnapshotReaders turns that into a
+    // bank-wide `anyFm` flag and the voice keeps its old render path whenever
+    // it is false, the way `lfoActive` already works.
+    //
+    // A slot CAN address itself: the diagonal is feedback, and it costs nothing
+    // to allow because the modulator is read one sample late whichever cell it
+    // came from - see SynthVoiceFm.cpp.
+    //
+    // Automatable, and the only oscillator parameters besides the wavetable
+    // position that reach a note already sounding. An FM index that could only
+    // change between notes is an FM index that never moves, which is the same
+    // argument setWavetablePosition makes for itself.
+    { &ids::fmTo1, "", 0.0, 1.0, 0.0, 0.01, 2 },
+    { &ids::fmTo2, "", 0.0, 1.0, 0.0, 0.01, 2 },
+    { &ids::fmTo3, "", 0.0, 1.0, 0.0, 0.01, 2 },
+
+    // Multiplies `gain` rather than replacing it. A level says how loud this
+    // oscillator IS - it is what it sends as a modulator too - and the output
+    // column says how much of it goes to the speakers, which is the distinction
+    // that lets a slot be a modulator and nothing else.
+    { &ids::fmOut, "", 0.0, 1.0, 1.0, 0.01, 2 },
+
     // --- the CLASSIC generator's own, from here -----------------------------
     choiceSpec (&ids::wave, waveforms, (int) std::size (waveforms), "saw", 1.0),
 
@@ -300,7 +330,13 @@ const ParamSpec oscSpecs[] {
     which parameters are whose. A generator that had its own array would be a
     second place the order lives.
 */
-constexpr int kNumSlotParams = 5;      ///< enabled, octave, detuneCents, gain, mode
+constexpr int kNumSlotParams = 9; ///< enabled, octave, detuneCents, gain, mode, the FM row
+
+/** The FM row addresses one destination per slot BY NAME, so the table above
+    stops describing the instrument the moment there is a fourth oscillator. */
+static_assert (kMaxOscillators == 3,
+               "the FM matrix declares one destination per oscillator slot by name");
+
 constexpr int kNumClassicParams = 1;   ///< wave
 constexpr int kNumWavetableParams = 7; ///< the table, its position and the unison stack
 constexpr int kNumLfoParams = 8;       ///< the slot's LFO: its shape, its rate, its three depths

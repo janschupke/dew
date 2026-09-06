@@ -58,6 +58,11 @@ const RoleRow roleRows[] {
     // the one ADSR value that is an amplitude.
     { &ids::volume, ParamRole::level },
     { &ids::gain, ParamRole::level },
+
+    // The matrix's output column. A level and not modulation: it is how much of
+    // an oscillator is HEARD, which is the one cell in a row that is not a
+    // route to somewhere else.
+    { &ids::fmOut, ParamRole::level },
     { &ids::outputGain, ParamRole::level },
     { &ids::sustain, ParamRole::level },
     { &ids::velocitySens, ParamRole::level },
@@ -116,6 +121,12 @@ const RoleRow roleRows[] {
     { &ids::wavePositionRate, ParamRole::modulation },
     { &ids::unisonVoices, ParamRole::modulation },
     { &ids::unisonDetune, ParamRole::modulation },
+
+    // The FM matrix's three amounts. Modulation for the reason the LFO's
+    // destinations are: what they carry is how far one thing moves another.
+    { &ids::fmTo1, ParamRole::modulation },
+    { &ids::fmTo2, ParamRole::modulation },
+    { &ids::fmTo3, ParamRole::modulation },
 
     // The slot's LFO. Every destination is here, `lfoToPitch` included: the
     // boundary this table draws is between a fixed offset and a MOVEMENT, and

@@ -20,6 +20,7 @@
 #include <cmath>
 
 #include "engine/ModuleFactory.h"
+#include "engine/SnapshotReaders.h"
 
 namespace dew
 {
@@ -184,6 +185,15 @@ const AudioEngine::ChannelOverrides* AudioEngine::overridesFor (const ChannelSna
                 // still be what the panel showed.
                 slot.lfoHz = active.value;
 
+            else if (active.param == AutomationParam::fmTo1)
+                slot.fmTo[0] = active.value;
+            else if (active.param == AutomationParam::fmTo2)
+                slot.fmTo[1] = active.value;
+            else if (active.param == AutomationParam::fmTo3)
+                slot.fmTo[2] = active.value;
+            else if (active.param == AutomationParam::fmOut)
+                slot.fmOut = active.value;
+
             // Whether the LFO is MOVING follows from the depths, and three of
             // them can have just changed - so it is recomputed here rather than
             // left as what the reader decided. Without this a curve that lifts
@@ -193,6 +203,17 @@ const AudioEngine::ChannelOverrides* AudioEngine::overridesFor (const ChannelSna
                              && ! (juce::exactlyEqual (slot.lfoToPitch, 0.0f)
                                    && juce::exactlyEqual (slot.lfoToVolume, 0.0f)
                                    && juce::exactlyEqual (slot.lfoToPan, 0.0f));
+
+            // Whether the MATRIX is asking for anything follows from the four
+            // cells above in the same way, and for the same reason: a voice
+            // that latched an empty matrix runs the plain path, so a curve
+            // lifting an amount off zero would move a line and nothing else.
+            //
+            // Recomputed over the whole bank rather than for this slot alone,
+            // because the flag is the BANK's - one slot routing into another is
+            // a fact about the pair. It is a nine-cell scan on a block that
+            // actually carries an FM curve, and nothing at all otherwise.
+            overrides.osc.anyFm = snapshotRead::anyFmIn (overrides.osc);
         }
         else if (active.scope == AutomationScope::channelAmp)
         {

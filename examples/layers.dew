@@ -1,5 +1,5 @@
 {
-    "formatVersion": 18,
+    "formatVersion": 19,
     "name": "Neon",
     "tempoBpm": 108.0,
     "stepsPerBeat": 4,
@@ -26,6 +26,10 @@
               "detuneCents": 0,
               "gain": 0.9,
               "mode": "classic",
+              "fmTo1": 0.0,
+              "fmTo2": 0.0,
+              "fmTo3": 0.0,
+              "fmOut": 1.0,
               "classic": {
                 "wave": "sine"
               }
@@ -35,7 +39,11 @@
               "octave": 0,
               "detuneCents": 0,
               "gain": 0.55,
-              "mode": "classic"
+              "mode": "classic",
+              "fmTo1": 0.0,
+              "fmTo2": 0.0,
+              "fmTo3": 0.0,
+              "fmOut": 1.0
             },
             {
               "enabled": true,
@@ -43,6 +51,10 @@
               "detuneCents": 5,
               "gain": 0.25,
               "mode": "classic",
+              "fmTo1": 0.0,
+              "fmTo2": 0.0,
+              "fmTo3": 0.0,
+              "fmOut": 1.0,
               "classic": {
                 "wave": "square"
               }
@@ -99,14 +111,22 @@
               "octave": 0,
               "detuneCents": 0,
               "gain": 0.75,
-              "mode": "classic"
+              "mode": "classic",
+              "fmTo1": 0.0,
+              "fmTo2": 0.0,
+              "fmTo3": 0.0,
+              "fmOut": 1.0
             },
             {
               "enabled": true,
               "octave": 0,
               "detuneCents": 9,
               "gain": 0.65,
-              "mode": "classic"
+              "mode": "classic",
+              "fmTo1": 0.0,
+              "fmTo2": 0.0,
+              "fmTo3": 0.0,
+              "fmOut": 1.0
             },
             {
               "enabled": true,
@@ -114,6 +134,10 @@
               "detuneCents": -4,
               "gain": 0.28,
               "mode": "classic",
+              "fmTo1": 0.0,
+              "fmTo2": 0.0,
+              "fmTo3": 0.0,
+              "fmOut": 1.0,
               "classic": {
                 "wave": "square"
               }
@@ -203,6 +227,10 @@
               "detuneCents": 0,
               "gain": 0.6,
               "mode": "classic",
+              "fmTo1": 0.0,
+              "fmTo2": 0.0,
+              "fmTo3": 0.0,
+              "fmOut": 1.0,
               "classic": {
                 "wave": "triangle"
               }
@@ -212,7 +240,11 @@
               "octave": 0,
               "detuneCents": -7,
               "gain": 0.45,
-              "mode": "classic"
+              "mode": "classic",
+              "fmTo1": 0.0,
+              "fmTo2": 0.0,
+              "fmTo3": 0.0,
+              "fmOut": 1.0
             },
             {
               "enabled": true,
@@ -220,6 +252,10 @@
               "detuneCents": 0.0,
               "gain": 0.35,
               "mode": "wavetable",
+              "fmTo1": 0.0,
+              "fmTo2": 0.0,
+              "fmTo3": 0.0,
+              "fmOut": 1.0,
               "wavetable": {
                 "wavetable": "harmonics",
                 "wavePosition": 0.3,
@@ -315,6 +351,10 @@
               "detuneCents": 0,
               "gain": 0.6,
               "mode": "classic",
+              "fmTo1": 0.0,
+              "fmTo2": 0.0,
+              "fmTo3": 0.0,
+              "fmOut": 1.0,
               "classic": {
                 "wave": "square"
               }
@@ -325,6 +365,10 @@
               "detuneCents": -12,
               "gain": 0.3,
               "mode": "classic",
+              "fmTo1": 0.0,
+              "fmTo2": 0.0,
+              "fmTo3": 0.0,
+              "fmOut": 1.0,
               "classic": {
                 "wave": "square"
               }
@@ -335,6 +379,10 @@
               "detuneCents": 0,
               "gain": 0.4,
               "mode": "classic",
+              "fmTo1": 0.0,
+              "fmTo2": 0.0,
+              "fmTo3": 0.0,
+              "fmOut": 1.0,
               "classic": {
                 "wave": "triangle"
               }

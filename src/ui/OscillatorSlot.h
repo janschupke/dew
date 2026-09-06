@@ -98,6 +98,21 @@ public:
         setTooltip (tr (StringId::oscillator_slot_help, Args {}.with ("index", i + 1)));
     }
 
+    /** The segment that is not a slot: the FM matrix.
+
+        The same button, so the strip stays one loop and one shape, with its
+        text and its help handed in - and `isSlot` false, because a matrix has
+        no sounding/silent state and a dot claiming it did would be a lie in
+        the one place that dot is meant to be read at a glance.
+    */
+    SlotButton (int i, const juce::String& text, const juce::String& help)
+        : PopupSafeButton<juce::Button> (text)
+        , index (i)
+        , isSlot (false)
+    {
+        setTooltip (help);
+    }
+
     void setSelected (bool s)
     {
         if (std::exchange (selected, s) != s)
@@ -128,20 +143,27 @@ public:
         // which is the one thing a dot this small must not do - green against
         // grey is the axis most colour blindness runs along, and there is no
         // room here for the word that would otherwise carry it.
-        const auto dot = body.removeFromLeft (12.0f).withSizeKeepingCentre (5.0f, 5.0f);
-        g.setColour (slotEnabled ? colour::success : colour::textDisabled);
+        if (isSlot)
+        {
+            const auto dot = body.removeFromLeft (12.0f).withSizeKeepingCentre (5.0f, 5.0f);
+            g.setColour (slotEnabled ? colour::success : colour::textDisabled);
 
-        if (slotEnabled)
-            g.fillEllipse (dot);
-        else
-            g.drawEllipse (dot, stroke::hairline);
+            if (slotEnabled)
+                g.fillEllipse (dot);
+            else
+                g.drawEllipse (dot, stroke::hairline);
+        }
 
-        g.setColour (slotEnabled ? colour::textPrimary : colour::textDisabled);
+        g.setColour (isSlot && ! slotEnabled ? colour::textDisabled : colour::textPrimary);
         g.setFont (type::font (type::caption, selected));
         g.drawText (getButtonText(), body.toNearestInt(), juce::Justification::centred, false);
     }
 
     const int index;
+
+    /** Whether this segment stands for an oscillator slot at all. False on the
+        FM segment, which is a face rather than a slot. */
+    const bool isSlot = true;
 
 private:
     bool selected = false;

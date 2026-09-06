@@ -202,8 +202,27 @@ struct NodeSpec
     The bump is for the other direction, as it has been since v7: a v17 build
     would report the `lfo` node as not part of the schema, drop it on the next
     save, and hand back a project whose movement had gone.
+
+    v19 gave every oscillator slot a row of an FM matrix, on the slot itself
+    beside its gain: how far it bends each slot's phase, and how much of it is
+    heard. Three amounts and an output, so a slot can be a modulator, a carrier,
+    both, or - on the diagonal - its own.
+
+    Additive, and the defaults are the old behaviour exactly: every amount is
+    zero and every output is one, which is three oscillators summed in parallel.
+    A v18 file has none of the four keys, takes those defaults, and renders the
+    same samples it always did. There is nothing to migrate.
+
+    Unlike the LFO's, these are NOT omitWhenDefault - they are properties of the
+    OSC node rather than a node of their own, and the schema omits nodes and not
+    keys - so every committed example and preset gains four keys per slot and
+    was rewritten in the same commit.
+
+    The bump is for the other direction, as ever: a v18 build would report all
+    four as not part of the schema and drop them on the next save, handing back
+    a project whose routing had silently become parallel again.
 */
-inline constexpr int kFormatVersion = 18;
+inline constexpr int kFormatVersion = 19;
 
 /** How many effects one channel or mixer track may carry. A document limit
     rather than an engine one: a chain longer than this cannot be saved, so it

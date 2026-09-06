@@ -23,6 +23,7 @@ using namespace oscillatorChoices;
 OscillatorSection::OscillatorSection (ProjectDocument& d, EditorState& s)
     : document (d)
     , editorState (s)
+    , fmMatrix (d)
 {
     setComponentID ("oscillatorSection");
     // A name and a PLACE in the tree a screen reader is given. focusContainer,
@@ -38,6 +39,18 @@ OscillatorSection::OscillatorSection (ProjectDocument& d, EditorState& s)
         button->onClick = [this, i] { selectSlot (i); };
         addAndMakeVisible (button);
     }
+
+    // The fourth segment. Built by the same class and laid out by the same
+    // loop, so it cannot drift from the three beside it - it simply has no
+    // sounding/silent dot to show, because it is not a slot.
+    {
+        auto* button = slotButtons.add (new SlotButton (
+            fmTabIndex, tr (StringId::oscillator_fm_label), tr (StringId::oscillator_fm_help)));
+        button->onClick = [this] { selectSlot (fmTabIndex); };
+        addAndMakeVisible (button);
+    }
+
+    addChildComponent (fmMatrix);
 
     enableButton.setClickingTogglesState (true);
     enableButton.setOnColour (colour::success);
@@ -229,7 +242,7 @@ OscillatorSection::OscillatorSection (ProjectDocument& d, EditorState& s)
     lfoPanKnob.setTooltip (tr (StringId::oscillator_lfoToPan_help));
     attachKnob (lfoPanKnob, ids::lfoToPan, "Change LFO pan depth");
 
-    selectedSlot = juce::jlimit (0, kMaxOscillators - 1, editorState.getSelectedOscillator());
+    selectedSlot = juce::jlimit (0, fmTabIndex, editorState.getSelectedOscillator());
 
     editorState.addChangeListener (this);
     document.getState().addListener (this);
@@ -304,6 +317,10 @@ void OscillatorSection::setParamMenuHost (const paramMenu::Host* host)
     trigger (waveBox, owner (ids::wave), ids::wave);
     trigger (tableBox, owner (ids::wavetable), ids::wavetable);
     trigger (sourceBox, owner (ids::wavePositionSource), ids::wavePositionSource);
+
+    // Twelve more spec-built knobs, each pinned to a fixed slot rather than to
+    // the selected one - so the matrix wires its own.
+    fmMatrix.setParamMenuHost (host);
 }
 
 void OscillatorSection::attachKnob (DewKnob& knob, const juce::Identifier& property,
@@ -336,6 +353,7 @@ void OscillatorSection::setOwner (juce::ValueTree newInstrument)
         return;
 
     instrument = std::move (newInstrument);
+    fmMatrix.setOwner (instrument);
     refresh();
 }
 
@@ -373,7 +391,7 @@ juce::ValueTree OscillatorSection::slotAt (int index) const
 
 void OscillatorSection::selectSlot (int index)
 {
-    const auto clamped = juce::jlimit (0, kMaxOscillators - 1, index);
+    const auto clamped = juce::jlimit (0, fmTabIndex, index);
 
     if (clamped == selectedSlot)
         return;
@@ -431,7 +449,7 @@ void OscillatorSection::write (const juce::Identifier& property, const juce::var
 
 void OscillatorSection::changeListenerCallback (juce::ChangeBroadcaster*)
 {
-    selectedSlot = juce::jlimit (0, kMaxOscillators - 1, editorState.getSelectedOscillator());
+    selectedSlot = juce::jlimit (0, fmTabIndex, editorState.getSelectedOscillator());
     refresh();
 }
 

@@ -10,6 +10,7 @@
 #include "engine/EngineSnapshot.h"
 #include "model/Ids.h"
 #include "model/ModuleCatalog.h"
+#include "ui/FmMatrixPanel.h"
 #include "ui/ParamContextMenu.h"
 #include "app/ProjectDocument.h"
 #include "ui/EditorState.h"
@@ -69,6 +70,15 @@ public:
         below. EffectChainComponent::Card already varies its height with its
         mode for the same reason.
     */
+    /** The selector's fourth segment: the FM matrix rather than a slot.
+
+        A value of the SAME view state the three slots use, not a boolean
+        beside it. Two pieces of state saying which face is on screen is two
+        pieces of state that can disagree, and this one already survives a
+        channel change and stays out of the document.
+    */
+    static constexpr int fmTabIndex = kMaxOscillators;
+
     static constexpr int heightFor (bool wavetableMode, bool lfoOpen) noexcept
     {
         return (wavetableMode ? classicHeight + wavetableExtra : classicHeight) + lfoHeaderExtra
@@ -85,6 +95,14 @@ public:
     */
     std::vector<std::pair<const juce::Identifier*, juce::Component*>> generatorControls();
 
+    /** Every control the SLOT owns, as against a generator's or the LFO's.
+
+        Public so a test can hold the FM face against it - the matrix is the one
+        face where none of these belongs on screen, and "hidden" is the kind of
+        claim that is true until somebody adds a tenth control.
+    */
+    std::vector<juce::Component*> slotControls();
+
     /** The same pairing for the LFO's controls.
 
         Separate from generatorControls() and not merged into it: that list is
@@ -100,6 +118,11 @@ public:
     */
     int getRequiredHeight() const noexcept
     {
+        // The matrix is its own face and its own height: it shows the slots
+        // TOGETHER, so none of the three answers above describes it.
+        if (selectedSlot == fmTabIndex)
+            return selectorHeight + rowGap + FmMatrixPanel::preferredHeight;
+
         return heightFor (showingWavetable, showingLfo);
     }
 
@@ -143,6 +166,13 @@ public:
     void setSlotEnabled (int index, bool shouldBeEnabled);
 
     juce::Button& getSlotButton (int index) const;
+
+    /** The FM face, so a test drives the twelve cells rather than the widget
+        tree they happen to sit in. */
+    FmMatrixPanel& getFmMatrix() noexcept
+    {
+        return fmMatrix;
+    }
     juce::Button& getEnableButton() noexcept
     {
         return enableButton;
@@ -294,6 +324,16 @@ private:
     juce::ValueTree instrument;
 
     juce::OwnedArray<SlotButton> slotButtons;
+
+    /** The fourth face, behind the fourth segment. Its own component because
+        it is the one thing here that is about every slot at once - see
+        FmMatrixPanel. */
+    FmMatrixPanel fmMatrix;
+
+    bool showingFm() const noexcept
+    {
+        return selectedSlot == fmTabIndex;
+    }
 
     DewIconButton enableButton { icons::power(), {} };
 

@@ -124,6 +124,25 @@ struct OscSettings
     float lfoToVolume = 0.0f; ///< -1..1
     float lfoToPan = 0.0f;    ///< -1..1
 
+    // --- the slot's row of the FM matrix -------------------------------------
+    //
+    // How far this oscillator bends each slot's phase, and how much of it is
+    // heard. Plain values in a fixed array, so the struct stays trivially
+    // copyable the way the LFO's do.
+    //
+    // `fmTo[i]` is indexed by the DESTINATION slot, including this slot itself -
+    // the diagonal is feedback, and the voice reads a modulator one sample late
+    // whichever cell it came from, so it needs no special case.
+    std::array<float, kMaxOscillators> fmTo {};
+
+    /** How much of this oscillator reaches the output, multiplying `gain`.
+
+        One rather than zero, and that is the whole compatibility story: three
+        oscillators at full output with every amount at zero is three
+        oscillators summed in parallel, which is what this synth was.
+    */
+    float fmOut = 1.0f;
+
     /** On AND actually asking for something. Precomputed, and load-bearing: a
         voice puts only its active slots in the LFO pass, so a slot switched on
         with all three depths at zero stays in the plain pass and renders the
@@ -143,6 +162,16 @@ struct OscBankSnapshot
     std::array<OscSettings, kMaxOscillators> slots;
     int numSlots = 0;
     bool anyEnabled = false; ///< precomputed, so nothing downstream has to scan
+
+    /** Whether the FM matrix is asking for anything at all: an enabled slot
+        routing into an enabled slot, or one whose output is not exactly full.
+
+        Precomputed and load-bearing, exactly as OscSettings::lfoActive is. A
+        voice takes its old render path whenever this is false, so every project
+        that predates the matrix - which is every project, since the defaults
+        ARE the old behaviour - renders the same floats in the same order.
+    */
+    bool anyFm = false;
 };
 
 struct AmpSettings
@@ -350,6 +379,15 @@ enum class AutomationParam
     lfoToPitch,
     lfoToVolume,
     lfoToPan,
+
+    /** The slot's row of the FM matrix. Unlike everything else on a slot but
+        the wavetable position, these reach a note ALREADY SOUNDING - see
+        SynthVoice::setFmMatrix. An FM index that could only change between
+        notes is an FM index that never moves. */
+    fmTo1,
+    fmTo2,
+    fmTo3,
+    fmOut,
 
     /** The amplitude envelope. Spelled apart from the compressor's attackMs and
         releaseMs because they are different parameters in different units on

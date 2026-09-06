@@ -109,6 +109,20 @@ DEW_DECLARE_ID (gain)
 // holds the rest - so a classic slot no longer stores seven wavetable
 // properties it never reads. See GeneratorCatalog.h.
 DEW_DECLARE_ID (mode)
+
+// One row of the FM matrix: how much this slot bends each slot's phase, and
+// how much of it reaches the output. On the SLOT and not on a generator, for
+// the reason the LFO is not one either - what a slot sends and what it is worth
+// at the output are true of it whichever generator it runs.
+//
+// A destination per slot, named rather than indexed, because the schema
+// generates a node from a table of properties and there is nothing in it that
+// could carry an array. A static_assert in ModuleCatalog holds the count.
+DEW_DECLARE_ID (fmTo1)
+DEW_DECLARE_ID (fmTo2)
+DEW_DECLARE_ID (fmTo3)
+DEW_DECLARE_ID (fmOut)
+
 DEW_DECLARE_ID (wavetable)
 DEW_DECLARE_ID (wavePosition)
 DEW_DECLARE_ID (wavePositionMod)

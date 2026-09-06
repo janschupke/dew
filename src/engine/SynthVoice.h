@@ -76,6 +76,24 @@ public:
     */
     void setWavetablePosition (const OscBankSnapshot&) noexcept;
 
+    /** Pushes the CURRENT FM matrix from a channel's bank into the voices
+        already sounding.
+
+        The second setting that is not latched at note-on, and for the reason
+        the wavetable position is not: an FM index that can only change between
+        notes is an FM index that never moves, and a swept index is most of what
+        anybody wants a matrix for.
+
+        Does nothing to a voice that started with an empty matrix. Such a voice
+        is running the plain render path, which has no phase offsets and no
+        output column to apply, and half-converting it mid-note would be a click
+        rather than a sweep - so a matrix switched on reaches the NEXT note.
+
+        Costs nothing when nothing is automated: the bank still holds what
+        note-on read, so each cell is assigned its own value back.
+    */
+    void setFmMatrix (const OscBankSnapshot&) noexcept;
+
     /** Bends this voice, in semitones, and applies vibrato of `modulation`
         depth (0..1). Called once per block rather than per sample: at a 256
         sample block that is a 172 Hz update, some thirty steps per cycle of the
@@ -121,6 +139,16 @@ public:
     static constexpr float maxVibratoSemitones = 0.5f;
     static constexpr float vibratoHz = 5.5f;
 
+    /** How far a full-amplitude modulator at a full amount displaces its
+        target's phase, in whole CYCLES - dew's phase is 0..1 rather than
+        radians, so two cycles is a modulation index of about 12.6.
+
+        Chosen to be the top of the useful range rather than the top of the
+        possible one: past this the sidebands are dense enough that turning the
+        knob further changes which noise you get rather than how bright it is.
+    */
+    static constexpr double maxFmPhaseOffset = 2.0;
+
 private:
     /** One band-limited oscillator's state.
 
@@ -145,7 +173,22 @@ private:
         Waveform wave = Waveform::saw;
         float gain = 0.8f;
 
-        float nextSample() noexcept;
+        /** Which bank slot this came from. The wavetable form has carried one
+            since live positions were pushed back into sounding voices; this one
+            needs it for the same shape of reason - note-on PARTITIONS the run,
+            so an index into this array says nothing about which row of the FM
+            matrix an oscillator is.
+        */
+        int slot = -1;
+
+        /** @param phaseOffset  in cycles, added to the phase this sample READS
+                                without disturbing the one it accumulates.
+
+            Zero is not merely equal to no offset, it is untouched: the guard
+            inside skips the arithmetic entirely, so the plain render path is
+            the same expressions in the same order it has always been.
+        */
+        float nextSample (double phaseOffset = 0.0) noexcept;
     };
 
     /** One wavetable oscillator, with its unison stack inside it.
@@ -194,7 +237,7 @@ private:
             doubles as the modulation source when the slot asks for it - so an
             envelope-driven position needs no second envelope's parameters.
         */
-        float nextSample (float envelope) noexcept;
+        float nextSample (float envelope, double phaseOffset = 0.0) noexcept;
 
         void updateMip() noexcept;
     };
@@ -265,6 +308,87 @@ private:
     /** Records the LFO for the oscillator just built, at whichever index it
         landed. Exactly one of the two indices is real; the other is -1. */
     void startLfo (const OscSettings& settings, int classicIndex, int wavetableIndex) noexcept;
+
+    /** The FM matrix this note latched, indexed [source slot][destination
+        slot], and how much of each slot is heard.
+
+        By SLOT rather than by position in either run, because note-on skips the
+        disabled slots and partitions what is left - so nothing about an index
+        into `oscillators` says which row of the matrix it is.
+
+        A slot addresses itself on the diagonal, which is feedback and needs no
+        special case: every modulator is read one sample late.
+    */
+    std::array<std::array<float, kMaxOscillators>, kMaxOscillators> fmAmount {};
+    std::array<float, kMaxOscillators> fmOut {};
+
+    /** What each slot put out LAST sample, envelope included - the modulator
+        signal every cell of the matrix reads.
+
+        One sample late, deliberately and unavoidably: a matrix with a diagonal
+        has no evaluation order that could read this sample's value, and a unit
+        delay is what every FM synth with feedback has always used. At audio
+        rates it is a phase error of a fraction of a degree.
+
+        It carries the amplitude ENVELOPE and the slot's own gain, so an FM
+        patch gets brighter as it is struck and duller as it decays - which is
+        the only timbral movement available with one envelope per voice. It does
+        NOT carry velocity or an LFO's volume swing: those shape what is heard,
+        and folding them in would make a knob marked VOL change the timbre.
+    */
+    std::array<float, kMaxOscillators> slotOut {};
+
+    /** Whether this note is running the matrix at all - `OscBankSnapshot::anyFm`
+        as it stood at note-on. False takes the render path that predates the
+        matrix, expression for expression. */
+    bool fmActive = false;
+
+    /** renderAdd's other half, in SynthVoiceFm.cpp: the same three passes with
+        a phase offset threaded through them and the output column applied.
+
+        A whole second loop rather than a branch inside the first, because the
+        plain one must stay the arithmetic the pinned renders are pinned to -
+        and its own translation unit because this file is already near the
+        length gate. The lifecycle both share is beginSample/endSample below.
+    */
+    void renderAddFm (float* mono, int numSamples, float* panLeft, float* panRight) noexcept;
+
+    /** One sample of the voice's own lifecycle, before anything is rendered.
+
+        False when this sample contributes nothing - the note has not begun, so
+        neither has its attack, and the envelope must not advance.
+
+        Inline and shared rather than copied into the FM loop: it is where the
+        release countdown, the envelope and the note's own end live, and two
+        copies of that is two places a voice can learn to outlive its note.
+    */
+    bool beginSample (float& envelope) noexcept
+    {
+        if (samplesUntilStart > 0)
+        {
+            --samplesUntilStart;
+            return false;
+        }
+
+        if (samplesUntilRelease > 0 && --samplesUntilRelease == 0)
+            adsr.noteOff();
+
+        envelope = adsr.getNextSample();
+        return true;
+    }
+
+    /** The other half: ages the voice and answers whether it is still sounding.
+        False means the caller breaks out of its loop. */
+    bool endSample() noexcept
+    {
+        ++samplesSinceStart;
+
+        if (adsr.isActive())
+            return true;
+
+        active = false;
+        return false;
+    }
 
     float level = 1.0f;
 

@@ -162,6 +162,12 @@ OscBankSnapshot readOscBank (const juce::ValueTree& instrument, const juce::Stri
                             && juce::exactlyEqual (s.lfoToVolume, 0.0f)
                             && juce::exactlyEqual (s.lfoToPan, 0.0f));
 
+        // The slot's row of the FM matrix, on the slot itself beside `gain`.
+        s.fmTo[0] = clampBySpec (ids::fmTo1, osc);
+        s.fmTo[1] = clampBySpec (ids::fmTo2, osc);
+        s.fmTo[2] = clampBySpec (ids::fmTo3, osc);
+        s.fmOut = clampBySpec (ids::fmOut, osc);
+
         bank.anyEnabled = bank.anyEnabled || s.enabled;
     }
 
@@ -176,7 +182,33 @@ OscBankSnapshot readOscBank (const juce::ValueTree& instrument, const juce::Stri
         bank.anyEnabled = true;
     }
 
+    // Decided ONCE here rather than by the audio thread every block.
+    bank.anyFm = anyFmIn (bank);
+
     return bank;
+}
+
+bool anyFmIn (const OscBankSnapshot& bank) noexcept
+{
+    for (int src = 0; src < bank.numSlots; ++src)
+    {
+        const auto& row = bank.slots[(size_t) src];
+
+        if (! row.enabled)
+            continue;
+
+        // An output that is not exactly full needs the FM path too: that is the
+        // path which applies the output column at all.
+        if (! juce::exactlyEqual (row.fmOut, 1.0f))
+            return true;
+
+        for (int dst = 0; dst < bank.numSlots; ++dst)
+            if (bank.slots[(size_t) dst].enabled
+                && ! juce::exactlyEqual (row.fmTo[(size_t) dst], 0.0f))
+                return true;
+    }
+
+    return false;
 }
 
 AmpSettings readAmp (const juce::ValueTree& amp)
@@ -257,6 +289,10 @@ AutomationParam automationParamFromIdentifier (AutomationScope scope,
         { &ids::lfoToPitch, AutomationParam::lfoToPitch },
         { &ids::lfoToVolume, AutomationParam::lfoToVolume },
         { &ids::lfoToPan, AutomationParam::lfoToPan },
+        { &ids::fmTo1, AutomationParam::fmTo1 },
+        { &ids::fmTo2, AutomationParam::fmTo2 },
+        { &ids::fmTo3, AutomationParam::fmTo3 },
+        { &ids::fmOut, AutomationParam::fmOut },
         { &ids::resonance, AutomationParam::resonance },
         { &ids::mix, AutomationParam::mix },
         { &ids::roomSize, AutomationParam::roomSize },

@@ -2,7 +2,8 @@
 
 A desktop digital synth DAW in the FL Studio shape: a channel rack with a step grid, a
 piano roll, a playlist of clips and a mixer, driven by a three-oscillator synth per
-channel — or, on an audio channel, by a recording.
+channel — three that can also route into each other, through an FM matrix — or, on an
+audio channel, by a recording.
 
 Status: **working prototype**. New, open, edit, save and playback work end to end, with
 effects and automation on top. It is not a product, but every layer is real and wired to

@@ -41,9 +41,14 @@ void OscillatorSection::refreshHeader()
     for (int i = 0; i < slotButtons.size(); ++i)
     {
         auto* button = slotButtons[i];
-        button->setVisible (i < slots);
+
+        // The FM segment is not one of the slots, so it is neither hidden when
+        // a channel carries fewer of them nor asked whether it is sounding.
+        button->setVisible (! button->isSlot || i < slots);
         button->setSelected (i == selectedSlot);
-        button->setSlotEnabled (isSlotEnabled (i));
+
+        if (button->isSlot)
+            button->setSlotEnabled (isSlotEnabled (i));
     }
 }
 
@@ -67,6 +72,19 @@ OscillatorSection::generatorControls()
              { &ids::unisonDetune, &spreadKnob } };
 }
 
+/** Every control the SLOT owns, whichever generator it runs and whether or not
+    its LFO is open.
+
+    A list rather than nine lines repeated, because it is asked twice - once to
+    hide them behind the matrix and once so a test can prove they went. The
+    generator's own and the LFO's have their own lists for the same reason.
+*/
+std::vector<juce::Component*> OscillatorSection::slotControls()
+{
+    return { &enableButton, &modeBox,   &octaveLabel, &octaveSlider, &detuneKnob,
+             &gainKnob,     &lfoButton, &lfoLabel,    &lfoWaveBox,   &lfoSyncButton };
+}
+
 std::vector<std::pair<const juce::Identifier*, juce::Component*>> OscillatorSection::lfoControls()
 {
     // The switch, the shape and the sync are NOT here: those three are the
@@ -83,8 +101,25 @@ void OscillatorSection::refreshControls()
 {
     const juce::ScopedValueSetter<bool> quiet (updating, true);
 
+    // The matrix is a face of its own: every control below belongs to ONE slot,
+    // and the matrix is the view of all three at once. Showing it means showing
+    // nothing else, and `slot` is not a question it has an answer to.
+    const auto wasFm = fmMatrix.isVisible();
+    const auto fm = showingFm();
+
+    fmMatrix.setVisible (fm);
+
+    if (fm)
+        fmMatrix.refresh();
+
+    // The rows that are on screen whichever generator a slot runs. Hidden
+    // rather than merely disabled: a disabled control still paints, and on this
+    // face there is a matrix where it would be.
+    for (auto* control : slotControls())
+        control->setVisible (! fm);
+
     const auto slot = selectedSlotTree();
-    const auto valid = slot.isValid();
+    const auto valid = slot.isValid() && ! fm;
 
     const auto wasWavetable = showingWavetable;
     const auto generator = valid ? generatorFor (slot[ids::mode].toString()).id : "";
@@ -129,7 +164,8 @@ void OscillatorSection::refreshControls()
     // failure mode: switching it on would lay its row out below the section's
     // own bottom edge, where nothing paints it, and the controls would simply
     // not appear.
-    if (wasWavetable != showingWavetable || wasLfo != showingLfo || wasSync != showingSync)
+    if (wasFm != fm || wasWavetable != showingWavetable || wasLfo != showingLfo
+        || wasSync != showingSync)
     {
         resized();
 
@@ -270,6 +306,17 @@ void OscillatorSection::resized()
     }
 
     area.removeFromTop (space::sm);
+
+    // The matrix takes everything below the selector and nothing else is laid
+    // out at all: the rows below belong to one slot, and this face is the view
+    // of all three.
+    if (showingFm())
+    {
+        fmMatrix.setBounds (area.removeFromTop (FmMatrixPanel::preferredHeight));
+        offCaptionBounds = {};
+        shapeBounds = {};
+        return;
+    }
 
     auto modeRow = area.removeFromTop (formRowHeight);
     enableButton.setBounds (modeRow.removeFromLeft (size::controlHeight));

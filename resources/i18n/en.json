@@ -594,6 +594,17 @@
     "enabled": {
       "help": "Turn oscillator {index} on or off"
     },
+    "fm": {
+      "help": "Route the oscillators into each other",
+      "label": "FM",
+      "output": {
+        "help": "How much of oscillator {from} is heard. Full at one"
+      },
+      "route": {
+        "help": "How far oscillator {from} bends oscillator {to}. Nothing at zero"
+      },
+      "title": "FM matrix"
+    },
     "lfoDivision": {
       "help": "How often the movement comes round, as a note value. It follows the project tempo rather than a tempo curve"
     },
@@ -734,6 +745,22 @@
     "filterOffset": {
       "caption": "FILTER",
       "name": "Filter"
+    },
+    "fmOut": {
+      "caption": "OUT",
+      "name": "Output"
+    },
+    "fmTo1": {
+      "caption": "TO 1",
+      "name": "FM to oscillator 1"
+    },
+    "fmTo2": {
+      "caption": "TO 2",
+      "name": "FM to oscillator 2"
+    },
+    "fmTo3": {
+      "caption": "TO 3",
+      "name": "FM to oscillator 3"
     },
     "gain": {
       "caption": "GAIN",

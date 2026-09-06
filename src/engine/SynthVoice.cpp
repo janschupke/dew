@@ -68,6 +68,12 @@ void SynthVoice::reset() noexcept
     numLfoWavetables = 0;
     numLfos = 0;
     panned = false;
+
+    fmAmount = {};
+    fmOut = {};
+    slotOut = {};
+    fmActive = false;
+
     vibratoPhase = 0.0;
     bendFactor = 1.0;
     modulated = false;
@@ -113,6 +119,24 @@ void SynthVoice::start (int pitch, float velocity, const OscBankSnapshot& bank,
     numLfoWavetables = 0;
     numLfos = 0;
     panned = false;
+
+    // The matrix, latched whole. Every slot's row is copied whether or not the
+    // slot is enabled: a disabled slot renders nothing, so its row multiplies a
+    // `slotOut` that stays at zero and its column is never read - which is
+    // cheaper than deciding that here and re-deciding it every sample.
+    slotOut = {};
+    fmActive = bank.anyFm;
+
+    for (int src = 0; src < kMaxOscillators; ++src)
+    {
+        const auto& row = bank.slots[(size_t) src];
+
+        for (int dst = 0; dst < kMaxOscillators; ++dst)
+            fmAmount[(size_t) src][(size_t) dst] = juce::jlimit (0.0f, 1.0f,
+                                                                 row.fmTo[(size_t) dst]);
+
+        fmOut[(size_t) src] = juce::jlimit (0.0f, 1.0f, row.fmOut);
+    }
 
     // Two passes over the bank, the slots with no LFO first, so each array ends
     // up partitioned: the plain pass, then the LFO pass.
@@ -197,6 +221,7 @@ void SynthVoice::start (int pitch, float velocity, const OscBankSnapshot& bank,
 
             osc.wave = settings.wave;
             osc.gain = settings.gain;
+            osc.slot = i;
 
             // Every oscillator starts at zero phase, as the single one did. Two
             // slots set the same way therefore sum coherently, which is what makes
@@ -340,6 +365,27 @@ void SynthVoice::setWavetablePosition (const OscBankSnapshot& bank) noexcept
     }
 }
 
+void SynthVoice::setFmMatrix (const OscBankSnapshot& bank) noexcept
+{
+    // Guarded on fmActive, not just on active: a voice that latched an empty
+    // matrix is running the plain path, which has no phase offsets to apply and
+    // no output column to honour. Converting it half way through a note would
+    // be a click. A matrix switched on reaches the next note - see the header.
+    if (! active || ! fmActive)
+        return;
+
+    for (int src = 0; src < bank.numSlots; ++src)
+    {
+        const auto& row = bank.slots[(size_t) src];
+
+        for (int dst = 0; dst < kMaxOscillators; ++dst)
+            fmAmount[(size_t) src][(size_t) dst] = juce::jlimit (0.0f, 1.0f,
+                                                                 row.fmTo[(size_t) dst]);
+
+        fmOut[(size_t) src] = juce::jlimit (0.0f, 1.0f, row.fmOut);
+    }
+}
+
 void SynthVoice::WavetableOscillator::updateMip() noexcept
 {
     // The most demanding unison copy decides for all of them: the widest
@@ -353,7 +399,7 @@ void SynthVoice::WavetableOscillator::updateMip() noexcept
     mip = wavetableMipFor (highest);
 }
 
-float SynthVoice::WavetableOscillator::nextSample (float envelope) noexcept
+float SynthVoice::WavetableOscillator::nextSample (float envelope, double phaseOffset) noexcept
 {
     if (table == nullptr)
         return 0.0f;
@@ -377,9 +423,23 @@ float SynthVoice::WavetableOscillator::nextSample (float envelope) noexcept
 
     float sum = 0.0f;
 
+    // The offset moves what every unison copy READS, and none of what they
+    // accumulate - the stack keeps its own spread and its own detune. Tested
+    // for rather than added, so a voice with no offset does the arithmetic it
+    // has always done rather than arithmetic that happens to come out the same.
+    const auto offset = juce::exactlyEqual (phaseOffset, 0.0);
+
     for (int u = 0; u < numUnison; ++u)
     {
-        sum += table->at (position, mip, phase[(size_t) u]);
+        auto t = phase[(size_t) u];
+
+        if (! offset)
+        {
+            t += phaseOffset;
+            t -= std::floor (t);
+        }
+
+        sum += table->at (position, mip, t);
 
         phase[(size_t) u] += phaseIncrement[(size_t) u];
 
@@ -392,10 +452,26 @@ float SynthVoice::WavetableOscillator::nextSample (float envelope) noexcept
     return sum * gain;
 }
 
-float SynthVoice::Oscillator::nextSample() noexcept
+float SynthVoice::Oscillator::nextSample (double phaseOffset) noexcept
 {
-    const auto t = phase;
+    auto t = phase;
     const auto dt = phaseIncrement;
+
+    // Phase MODULATION, not frequency modulation: the offset moves the point
+    // this sample is read from and leaves the accumulator alone, so an index
+    // that returns to zero returns the oscillator to the pitch it was playing
+    // rather than to wherever integrating an offset had carried it.
+    //
+    // The band limiting is computed for the UNMODULATED increment, so a
+    // modulated saw or square aliases. That is the honest trade and not a
+    // defect to fix: correcting it means a new PolyBLEP per sample against a
+    // discontinuity whose position the modulator has just moved. Sine is the
+    // waveform FM is for, and the other three are still there.
+    if (! juce::exactlyEqual (phaseOffset, 0.0))
+    {
+        t += phaseOffset;
+        t -= std::floor (t);
+    }
 
     double value = 0.0;
 
@@ -473,20 +549,25 @@ void SynthVoice::renderAdd (float* mono, int numSamples, float* panLeft, float* 
 
     applyLfoPitch();
 
+    // The matrix is a whole second loop, in SynthVoiceFm.cpp. Everything below
+    // has to stay the expressions it is, in the order it is - float addition is
+    // not associative and four test files pin this engine sample for sample -
+    // so the two paths are separated here, once per block, rather than by a
+    // branch somewhere inside them.
+    if (fmActive)
+    {
+        renderAddFm (mono, numSamples, panLeft, panRight);
+        return;
+    }
+
     for (int i = 0; i < numSamples; ++i)
     {
+        float envelope = 0.0f;
+
         // Not yet. Contributing nothing rather than silence through the
         // envelope: the note has not begun, so neither has its attack.
-        if (samplesUntilStart > 0)
-        {
-            --samplesUntilStart;
+        if (! beginSample (envelope))
             continue;
-        }
-
-        if (samplesUntilRelease > 0 && --samplesUntilRelease == 0)
-            adsr.noteOff();
-
-        const auto envelope = adsr.getNextSample();
 
         // Summed plainly, each by its own gain. Dividing by the number of
         // enabled oscillators would make switching one on quieten the ones
@@ -550,13 +631,8 @@ void SynthVoice::renderAdd (float* mono, int numSamples, float* panLeft, float* 
             panRight[i] += value * rightGain;
         }
 
-        ++samplesSinceStart;
-
-        if (! adsr.isActive())
-        {
-            active = false;
+        if (! endSample())
             break;
-        }
     }
 }
 

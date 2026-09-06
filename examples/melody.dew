@@ -1,5 +1,5 @@
 {
-    "formatVersion": 18,
+    "formatVersion": 19,
     "name": "Piano Roll",
     "tempoBpm": 96.0,
     "stepsPerBeat": 4,
@@ -25,21 +25,33 @@
               "octave": 0,
               "detuneCents": 0,
               "gain": 0.8,
-              "mode": "classic"
+              "mode": "classic",
+              "fmTo1": 0.0,
+              "fmTo2": 0.0,
+              "fmTo3": 0.0,
+              "fmOut": 1.0
             },
             {
               "enabled": false,
               "octave": 0,
               "detuneCents": 0.0,
               "gain": 0.8,
-              "mode": "classic"
+              "mode": "classic",
+              "fmTo1": 0.0,
+              "fmTo2": 0.0,
+              "fmTo3": 0.0,
+              "fmOut": 1.0
             },
             {
               "enabled": false,
               "octave": 0,
               "detuneCents": 0.0,
               "gain": 0.8,
-              "mode": "classic"
+              "mode": "classic",
+              "fmTo1": 0.0,
+              "fmTo2": 0.0,
+              "fmTo3": 0.0,
+              "fmOut": 1.0
             }
           ],
           "amp": {
@@ -94,6 +106,10 @@
               "detuneCents": 0,
               "gain": 0.8,
               "mode": "classic",
+              "fmTo1": 0.0,
+              "fmTo2": 0.0,
+              "fmTo3": 0.0,
+              "fmOut": 1.0,
               "classic": {
                 "wave": "triangle"
               }
@@ -103,14 +119,22 @@
               "octave": 0,
               "detuneCents": 0.0,
               "gain": 0.8,
-              "mode": "classic"
+              "mode": "classic",
+              "fmTo1": 0.0,
+              "fmTo2": 0.0,
+              "fmTo3": 0.0,
+              "fmOut": 1.0
             },
             {
               "enabled": false,
               "octave": 0,
               "detuneCents": 0.0,
               "gain": 0.8,
-              "mode": "classic"
+              "mode": "classic",
+              "fmTo1": 0.0,
+              "fmTo2": 0.0,
+              "fmTo3": 0.0,
+              "fmOut": 1.0
             }
           ],
           "amp": {
@@ -164,21 +188,33 @@
               "octave": 0,
               "detuneCents": 0.0,
               "gain": 0.8,
-              "mode": "classic"
+              "mode": "classic",
+              "fmTo1": 0.0,
+              "fmTo2": 0.0,
+              "fmTo3": 0.0,
+              "fmOut": 1.0
             },
             {
               "enabled": false,
               "octave": 0,
               "detuneCents": 0.0,
               "gain": 0.8,
-              "mode": "classic"
+              "mode": "classic",
+              "fmTo1": 0.0,
+              "fmTo2": 0.0,
+              "fmTo3": 0.0,
+              "fmOut": 1.0
             },
             {
               "enabled": false,
               "octave": 0,
               "detuneCents": 0.0,
               "gain": 0.8,
-              "mode": "classic"
+              "mode": "classic",
+              "fmTo1": 0.0,
+              "fmTo2": 0.0,
+              "fmTo3": 0.0,
+              "fmOut": 1.0
             }
           ],
           "amp": {
@@ -233,6 +269,10 @@
               "detuneCents": 0,
               "gain": 0.8,
               "mode": "classic",
+              "fmTo1": 0.0,
+              "fmTo2": 0.0,
+              "fmTo3": 0.0,
+              "fmOut": 1.0,
               "classic": {
                 "wave": "sine"
               }
@@ -242,14 +282,22 @@
               "octave": 0,
               "detuneCents": 0.0,
               "gain": 0.8,
-              "mode": "classic"
+              "mode": "classic",
+              "fmTo1": 0.0,
+              "fmTo2": 0.0,
+              "fmTo3": 0.0,
+              "fmOut": 1.0
             },
             {
               "enabled": false,
               "octave": 0,
               "detuneCents": 0.0,
               "gain": 0.8,
-              "mode": "classic"
+              "mode": "classic",
+              "fmTo1": 0.0,
+              "fmTo2": 0.0,
+              "fmTo3": 0.0,
+              "fmOut": 1.0
             }
           ],
           "amp": {

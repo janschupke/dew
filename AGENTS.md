@@ -1,8 +1,9 @@
 # dew
 
 A desktop synth DAW in the FL Studio shape: a channel rack with a step grid, a
-piano roll, a playlist of clips and a mixer, driven by a three-oscillator synth per channel
-— or by a recording, or by a song written as text and compiled to notes. It can also be
+piano roll, a playlist of clips and a mixer, driven by a three-oscillator synth per
+channel — three that can also route into each other, through an FM matrix — or by a
+recording, or by a song written as text and compiled to notes. It can also be
 driven by an agent, over an MCP endpoint it runs itself. C++20, JUCE 9, CMake, Catch2.
 Nine static libraries rather than nine directories, so a layering mistake is a link error.
 

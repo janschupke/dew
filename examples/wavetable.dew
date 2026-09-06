@@ -1,5 +1,5 @@
 {
-    "formatVersion": 18,
+    "formatVersion": 19,
     "name": "Drift",
     "tempoBpm": 84.0,
     "stepsPerBeat": 4,
@@ -26,6 +26,10 @@
               "detuneCents": 0.0,
               "gain": 0.8,
               "mode": "wavetable",
+              "fmTo1": 0.0,
+              "fmTo2": 0.0,
+              "fmTo3": 0.0,
+              "fmOut": 1.0,
               "wavetable": {
                 "wavetable": "formant",
                 "wavePosition": 0.15,
@@ -42,6 +46,10 @@
               "detuneCents": 0.0,
               "gain": 0.45,
               "mode": "wavetable",
+              "fmTo1": 0.0,
+              "fmTo2": 0.0,
+              "fmTo3": 0.0,
+              "fmOut": 1.0,
               "wavetable": {
                 "wavetable": "harmonics",
                 "wavePosition": 0.35,
@@ -57,7 +65,11 @@
               "octave": 0,
               "detuneCents": 0.0,
               "gain": 0.8,
-              "mode": "classic"
+              "mode": "classic",
+              "fmTo1": 0.0,
+              "fmTo2": 0.0,
+              "fmTo3": 0.0,
+              "fmOut": 1.0
             }
           ],
           "amp": {
@@ -175,6 +187,10 @@
               "detuneCents": 0.0,
               "gain": 0.8,
               "mode": "wavetable",
+              "fmTo1": 0.0,
+              "fmTo2": 0.0,
+              "fmTo3": 0.0,
+              "fmOut": 1.0,
               "wavetable": {
                 "wavetable": "harmonics",
                 "wavePosition": 0.05,
@@ -190,14 +206,22 @@
               "octave": 0,
               "detuneCents": 0.0,
               "gain": 0.8,
-              "mode": "classic"
+              "mode": "classic",
+              "fmTo1": 0.0,
+              "fmTo2": 0.0,
+              "fmTo3": 0.0,
+              "fmOut": 1.0
             },
             {
               "enabled": false,
               "octave": 0,
               "detuneCents": 0.0,
               "gain": 0.8,
-              "mode": "classic"
+              "mode": "classic",
+              "fmTo1": 0.0,
+              "fmTo2": 0.0,
+              "fmTo3": 0.0,
+              "fmOut": 1.0
             }
           ],
           "amp": {
@@ -252,6 +276,10 @@
               "detuneCents": 0.0,
               "gain": 0.9,
               "mode": "wavetable",
+              "fmTo1": 0.0,
+              "fmTo2": 0.0,
+              "fmTo3": 0.0,
+              "fmOut": 1.0,
               "wavetable": {
                 "wavetable": "fold",
                 "wavePosition": 0.1,
@@ -267,14 +295,22 @@
               "octave": 0,
               "detuneCents": 0.0,
               "gain": 0.8,
-              "mode": "classic"
+              "mode": "classic",
+              "fmTo1": 0.0,
+              "fmTo2": 0.0,
+              "fmTo3": 0.0,
+              "fmOut": 1.0
             },
             {
               "enabled": false,
               "octave": 0,
               "detuneCents": 0.0,
               "gain": 0.8,
-              "mode": "classic"
+              "mode": "classic",
+              "fmTo1": 0.0,
+              "fmTo2": 0.0,
+              "fmTo3": 0.0,
+              "fmOut": 1.0
             }
           ],
           "amp": {
@@ -329,6 +365,10 @@
               "detuneCents": 0.0,
               "gain": 0.75,
               "mode": "wavetable",
+              "fmTo1": 0.0,
+              "fmTo2": 0.0,
+              "fmTo3": 0.0,
+              "fmOut": 1.0,
               "wavetable": {
                 "wavetable": "pulse",
                 "wavePosition": 0.8,
@@ -344,14 +384,22 @@
               "octave": 0,
               "detuneCents": 0.0,
               "gain": 0.8,
-              "mode": "classic"
+              "mode": "classic",
+              "fmTo1": 0.0,
+              "fmTo2": 0.0,
+              "fmTo3": 0.0,
+              "fmOut": 1.0
             },
             {
               "enabled": false,
               "octave": 0,
               "detuneCents": 0.0,
               "gain": 0.8,
-              "mode": "classic"
+              "mode": "classic",
+              "fmTo1": 0.0,
+              "fmTo2": 0.0,
+              "fmTo3": 0.0,
+              "fmOut": 1.0
             }
           ],
           "amp": {
@@ -406,6 +454,10 @@
               "detuneCents": 0.0,
               "gain": 0.7,
               "mode": "wavetable",
+              "fmTo1": 0.0,
+              "fmTo2": 0.0,
+              "fmTo3": 0.0,
+              "fmOut": 1.0,
               "wavetable": {
                 "wavetable": "basic",
                 "wavePosition": 0.25,
@@ -421,14 +473,22 @@
               "octave": 0,
               "detuneCents": 0.0,
               "gain": 0.8,
-              "mode": "classic"
+              "mode": "classic",
+              "fmTo1": 0.0,
+              "fmTo2": 0.0,
+              "fmTo3": 0.0,
+              "fmOut": 1.0
             },
             {
               "enabled": false,
               "octave": 0,
               "detuneCents": 0.0,
               "gain": 0.8,
-              "mode": "classic"
+              "mode": "classic",
+              "fmTo1": 0.0,
+              "fmTo2": 0.0,
+              "fmTo3": 0.0,
+              "fmOut": 1.0
             }
           ],
           "amp": {

@@ -5,6 +5,7 @@
 #include "model/ProjectSerializer.h"
 #include "ui/RenderPanel.h"
 #include "ui/MainComponent.h"
+#include "ui/OscillatorSection.h"
 #include "ui/ScoreEditorComponent.h"
 #include "ui/design/DewLookAndFeel.h"
 #include "ui/design/Theme.h"
@@ -45,6 +46,8 @@ Options:
   --project <file.dew>   Project to load (default: the built-in demo)
   --tab <name>           channel-rack | piano-roll | playlist | mixer | score
   --completions          open the score tab's completion popup before shooting
+  --osc <n|fm>           which face the instrument panel's oscillator section shows:
+                         a slot number, or the FM matrix
   --size <WxH>           Default 1440x900
   --scale <n>            Render at n times the size, 1..4. Default 1
   --px <n>               icon only: edge length in pixels, 16..2048. Default 1024
@@ -378,6 +381,22 @@ int main (int argc, char* argv[])
             args.positional[1]);
 
         const auto tabIndex = tabIndexFor (args.value ("--tab", "channel-rack"));
+
+        // Which face the sidebar's oscillator section is on. It is view state
+        // rather than a tab, so --tab cannot reach it - and the FM matrix is a
+        // grid of twelve knobs in the narrowest panel in the application, which
+        // is exactly the kind of layout a picture settles and code does not.
+        if (const auto osc = args.value ("--osc"); osc.isNotEmpty())
+        {
+            component.getEditorState().setSelectedOscillator (
+                osc.equalsIgnoreCase ("fm") ? dew::OscillatorSection::fmTabIndex
+                                            : juce::jmax (0, osc.getIntValue() - 1));
+
+            // A ChangeBroadcaster, and this tool runs no message loop - so the
+            // section would still be showing whatever it was built with.
+            component.getEditorState().dispatchPendingMessages();
+            component.resized();
+        }
 
         if (args.has ("--completions"))
         {

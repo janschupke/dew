@@ -40,6 +40,20 @@ OscBankSnapshot readOscBank (const juce::ValueTree& instrument, const juce::Stri
 
 AmpSettings readAmp (const juce::ValueTree& amp);
 
+/** Whether a bank's FM matrix is asking for anything: an ENABLED slot routing
+    into an enabled slot, or one whose output is not exactly full.
+
+    A function rather than a line inside readOscBank because two callers need
+    the same answer - the reader, once per snapshot, and the automation pass,
+    whenever a curve has just moved one of the twelve cells. The engine takes
+    the plain render path whenever it is false, so two spellings of this
+    predicate would be two different ideas of when a project sounds as it did.
+
+    Only enabled slots count either way: an amount dialled into a slot that is
+    switched off has nothing to send and nothing to send it to.
+*/
+bool anyFmIn (const OscBankSnapshot&) noexcept;
+
 /** Which fixed effect unit an effect id owns this snapshot, or -1 when they are
     all spoken for. The `owners` array is the state, passed in rather than held,
     so the caller decides when a generation starts. */

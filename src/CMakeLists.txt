@@ -383,6 +383,7 @@ add_library(dew_engine STATIC
   engine/Metronome.cpp
   engine/Wavetable.cpp
   engine/SynthVoice.cpp
+  engine/SynthVoiceFm.cpp
   engine/SynthChannel.cpp
   engine/SamplePlayer.cpp
     engine/SoundFontChannel.cpp
@@ -567,6 +568,7 @@ add_library(dew_ui STATIC
   ui/PreferencesRendering.cpp
   ui/PreferencesPanel.cpp
   ui/PreferencesSearch.cpp
+  ui/FmMatrixPanel.cpp
   ui/HoverHelp.cpp
   ui/StatusBar.cpp
   ui/TransportBar.cpp

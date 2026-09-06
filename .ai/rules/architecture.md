@@ -119,6 +119,45 @@ of them and 20kHz in the engine, and a mixer fader offered 0–1.5 against an en
 of 2.0 and an automation range of 0–1, so automating a fader swept two thirds of it and
 stopped.
 
+### The FM matrix
+
+A slot's three oscillators can modulate each other's phase. Each carries a row of a 3x4
+matrix — how far it bends each slot, and an output column saying how much of it is heard
+— edited on a fourth segment of the same selector the slots use, because it is the one
+view in that panel that is about all three at once.
+
+**The defaults are the identity, and everything rests on that.** Every amount is zero and
+every output is one, which is three oscillators summed in parallel: the synth as it was.
+`snapshotRead::anyFmIn` turns the twelve cells into one flag on the bank, and a voice that
+latched a false one runs the render loop that predates the matrix, expression for
+expression — the same mechanism `OscSettings::lfoActive` already uses, and for the same
+reason, which is that four test files pin this engine sample for sample. The two loops
+agree to one rounding and not to the bit: the plain one fuses its multiply-add, and the FM
+one cannot, because it needs the product on its own to feed the modulator. That is why the
+guarantee is "an untouched matrix never reaches the second loop" rather than "the two
+loops agree".
+
+Three things about the DSP that are not obvious from reading it:
+
+- **A modulator is read one sample late.** A matrix with a diagonal has no evaluation
+  order that could read the current sample, and the diagonal is what makes feedback free.
+  It is what every FM synth with feedback has always done, and at audio rates it is a
+  phase error of a fraction of a degree.
+- **What a slot sends carries its own gain and the amplitude envelope**, so a patch
+  brightens as it is struck and dulls as it decays — the only timbral movement available
+  with one envelope per voice. It carries neither velocity nor an LFO's volume swing:
+  those say how loud the result is, and folding them in would make a knob marked VOL
+  change the timbre of everything downstream of it.
+- **The output column is its own parameter, not the level knob.** A level says how loud an
+  oscillator IS, which is also what it sends as a modulator; the output column says how
+  much of it reaches the speakers. Keeping them apart is what lets a slot be a modulator
+  and nothing else.
+
+The band limiting is computed for the unmodulated increment, so a modulated saw or square
+aliases. That is the trade rather than a defect: correcting it means a new PolyBLEP per
+sample against a discontinuity the modulator has just moved. Sine is the waveform FM is
+for, and the other three are still there.
+
 ### Soundfonts
 
 A channel plays its oscillators, a recording, or a **soundfont**. The third is a keyed
@@ -170,11 +209,12 @@ drift out of step with a hand-written parser.
 - A property absent from the file takes its default, so older files load.
 - A property of the wrong type takes its default and warns, rather than failing.
 - A key the schema does not know is dropped and reported.
-- A newer `formatVersion` is refused outright instead of half-read. v18 is current: it
-  gave every oscillator slot an `lfo` node, additively, with every depth defaulting to
-  zero so an earlier file loads sounding exactly as it did. The node is declared
-  `omitWhenDefault`, so a slot nobody has dialled an LFO into still writes no key for it
-  and every committed example is byte for byte what it was.
+- A newer `formatVersion` is refused outright instead of half-read. v19 is current: it
+  gave every oscillator slot its row of the FM matrix, additively, with amounts
+  defaulting to zero and the output to one so an earlier file loads sounding exactly as
+  it did. Unlike v18's `lfo`, these are PROPERTIES of the OSC node rather than a node of
+  their own, and the schema omits nodes and not keys - so every committed example and
+  preset gained four keys per slot and was regenerated in the same commit.
 
 Saving writes to a temporary and swaps, so an interrupted save cannot destroy the project
 it was overwriting.
