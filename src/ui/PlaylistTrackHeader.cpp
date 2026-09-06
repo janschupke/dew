@@ -84,31 +84,21 @@ PlaylistTrackHeader::PlaylistTrackHeader (ProjectDocument& d, juce::ValueTree t)
     volumeKnob.setTooltip (tr (StringId::playlist_volume_help));
     volumeKnob.setValue ((double) track[ids::gain], juce::dontSendNotification);
 
-    volumeKnob.onEditStart = [this]
-    {
-        inDrag = true;
-        gestureActive = false;
-    };
-    volumeKnob.onEditEnd = [this]
-    {
-        inDrag = false;
-        gestureActive = false;
-    };
+    // The first value of a drag opens the transaction and the rest join it; a
+    // wheel or a keypress is not part of a drag and opens its own. A rack row
+    // says this the same way, for the same reason - and now through the same
+    // object.
+    gesture.attach (volumeKnob,
+                    [this] (bool continuing)
+                    {
+                        if (updating)
+                            return false;
 
-    volumeKnob.onValueChange = [this]
-    {
-        if (updating)
-            return;
-
-        // The first value of a drag opens the transaction and the rest join it;
-        // a wheel or a keypress is not part of a drag and opens its own. A rack
-        // row says this the same way, for the same reason.
-        ProjectEdits::setProperty (track, ids::gain, volumeKnob.getValue(),
-                                   &document.getUndoManager(), "Change track volume",
-                                   gestureActive);
-
-        gestureActive = inDrag;
-    };
+                        ProjectEdits::setProperty (track, ids::gain, volumeKnob.getValue(),
+                                                   &document.getUndoManager(),
+                                                   "Change track volume", continuing);
+                        return true;
+                    });
 
     addAndMakeVisible (volumeKnob);
 }

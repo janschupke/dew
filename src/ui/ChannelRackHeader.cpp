@@ -251,32 +251,22 @@ void ChannelRackHeader::attachKnob (DewKnob& knob, const juce::Identifier& prope
     knob.setTooltip (tooltip);
     knob.setValue ((double) channel[property], juce::dontSendNotification);
 
-    knob.onEditStart = [this]
-    {
-        select();
-        inDrag = true;
-        gestureActive = false;
-    };
-    knob.onEditEnd = [this]
-    {
-        inDrag = false;
-        gestureActive = false;
-    };
+    // The first value of a drag opens the transaction and the rest join it; a
+    // wheel or keyboard change is not part of a drag and opens its own.
+    // beginNewTransaction ARMS a new one rather than being a no-op when one is
+    // open, which is why the distinction has to be made.
+    gesture.attach (
+        knob,
+        [this, &knob, property, transactionName] (bool continuing)
+        {
+            if (updating)
+                return false;
 
-    knob.onValueChange = [this, &knob, property, transactionName]
-    {
-        if (updating)
-            return;
-
-        // The first value of a drag opens the transaction and the rest join
-        // it; a wheel or keyboard change is not part of a drag and opens its
-        // own. beginNewTransaction ARMS a new one rather than being a no-op
-        // when one is open, which is why the distinction has to be made.
-        ProjectEdits::setProperty (channel, property, knob.getValue(), &document.getUndoManager(),
-                                   transactionName, gestureActive);
-
-        gestureActive = inDrag;
-    };
+            ProjectEdits::setProperty (channel, property, knob.getValue(),
+                                       &document.getUndoManager(), transactionName, continuing);
+            return true;
+        },
+        [this] { select(); });
 
     addAndMakeVisible (knob);
 }
@@ -290,7 +280,7 @@ void ChannelRackHeader::attachField (DewNumberField& field, const juce::Identifi
     field.onEditStart = [this]
     {
         select();
-        gestureActive = false;
+        fieldEditing = false;
     };
 
     field.onValueChange = [this, &field, property, transactionName]
@@ -302,9 +292,9 @@ void ChannelRackHeader::attachField (DewNumberField& field, const juce::Identifi
         // id. Writing the double a field carries would put 60.0 in the file
         // where every other writer of these two puts 60.
         ProjectEdits::setProperty (channel, property, juce::roundToInt (field.getValue()),
-                                   &document.getUndoManager(), transactionName, gestureActive);
+                                   &document.getUndoManager(), transactionName, fieldEditing);
 
-        gestureActive = true;
+        fieldEditing = true;
     };
 
     addAndMakeVisible (field);

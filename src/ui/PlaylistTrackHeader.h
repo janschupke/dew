@@ -9,6 +9,7 @@
 #include "ui/HeaderRow.h"
 #include "ui/design/Icons.h"
 #include "ui/primitives/DewControls.h"
+#include "ui/primitives/RotaryGesture.h"
 #include "ui/design/Tokens.h"
 
 namespace dew
@@ -152,8 +153,7 @@ private:
     /** True between a knob's onEditStart and onEditEnd, and whether a
         transaction is already open for that drag - see the volume knob's
         onValueChange. The rack's rows carry the same pair for the same reason. */
-    bool inDrag = false;
-    bool gestureActive = false;
+    RotaryGesture gesture;
 
     bool resizing = false;
     int resizeOriginY = 0;

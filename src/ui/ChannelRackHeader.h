@@ -13,6 +13,7 @@
 #include "ui/ParamContextMenu.h"
 #include "ui/design/Icons.h"
 #include "ui/primitives/DewControls.h"
+#include "ui/primitives/RotaryGesture.h"
 #include "ui/primitives/DewNumberField.h"
 #include "ui/design/Tokens.h"
 
@@ -136,8 +137,15 @@ private:
         own, so the row's shape does not change with the kind of channel. */
     juce::Rectangle<int> pitchSlot;
     bool updating = false;
-    bool inDrag = false;
-    bool gestureActive = false;
+    /** The row's knobs. Only one can be under the pointer at a time. */
+    RotaryGesture gesture;
+
+    /** The row's number fields, which are NOT the same gesture and used to
+        share its flag. A field has an onEditStart and no onEditEnd - it holds
+        one transaction open from its first change until the next time it is
+        entered - so a field left `gestureActive` true and the next wheel notch
+        on a knob joined the field's undo step. */
+    bool fieldEditing = false;
     /** Whether the channel plays. One state, the same control the playlist and
         the mixer now carry, and the same shift-click. See
         PlaylistTrackHeader::enabledButton for why there is one and not two. */
