@@ -72,10 +72,19 @@ public:
 
     /** The most rows whose band would still fit in `height`, never fewer than
         one. Whoever owns the height asks this rather than inverting
-        getPreferredHeight by hand - the band is a whole number of knob rows and
-        a height between two of them is ground no knob can use.
+        bandHeightForRows by hand.
     */
     int knobRowsFitting (int height) const;
+
+    /** What a band this many knob rows deep costs, heading and scrollbar
+        included.
+
+        Public because whoever owns the band's height needs both directions of
+        the same formula: this to find the ends of the range it may be dragged
+        through, and knobRowsFitting to find how many rows the height it has
+        landed on can hold. getPreferredHeight is this at the budget in force.
+    */
+    int bandHeightForRows (int rows) const;
 
     /** The band's top edge, which is also the rule it paints there.
 
@@ -85,9 +94,8 @@ public:
         The delta is in SCREEN pixels and measured from the press, because this
         band's own frame moves under the pointer while the drag reads it.
 
-        There is no release hook, unlike the playlist's. Its lane height is a
-        pixel and its scrollbar has to be told; a band is a whole number of knob
-        rows, so letting go changes nothing that was not already true.
+        There is no release hook, unlike the playlist's, whose scrollbar has to
+        be told: nothing here is deferred to the end of a drag.
     */
     std::function<void()> onResizeBegin;
     std::function<void (int deltaY)> onResizeDrag;
@@ -128,11 +136,6 @@ private:
     static constexpr int resizeBandHeight = tokens::space::xs;
 
     bool isResizable() const noexcept;
-
-    /** What a band this many knob rows deep costs, heading and scrollbar
-        included. getPreferredHeight is this at the budget in force, and
-        knobRowsFitting walks it - one formula rather than one and its inverse. */
-    int bandHeightForRows (int rows) const;
 
     bool resizing = false;
     bool hoveringEdge = false;

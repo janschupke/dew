@@ -455,7 +455,7 @@ void MainComponent::applySettings (const Settings& settings)
     tabs.setPlaylistTrackHeight (settings.getPlaylistTrackHeight());
     tabs.setPianoRollRowHeight (settings.getPianoRollRowHeight());
     tabs.setPianoRollVelocityHeight (settings.getPianoRollVelocityHeight());
-    tabs.setMixerEffectBandRows (settings.getMixerEffectBandRows());
+    tabs.setMixerEffectBandHeight (settings.getMixerEffectBandHeight());
     tabs.setScoreFontStep (settings.getScoreFontStep());
 
     // Which devices are enabled rides the audio device XML, restored by the
@@ -488,7 +488,7 @@ void MainComponent::captureSettings (Settings& settings) const
     settings.setPlaylistTrackHeight (tabs.getPlaylistTrackHeight());
     settings.setPianoRollRowHeight (tabs.getPianoRollRowHeight());
     settings.setPianoRollVelocityHeight (tabs.getPianoRollVelocityHeight());
-    settings.setMixerEffectBandRows (tabs.getMixerEffectBandRows());
+    settings.setMixerEffectBandHeight (tabs.getMixerEffectBandHeight());
     settings.setScoreFontStep (tabs.getScoreFontStep());
 }
 

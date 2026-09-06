@@ -76,9 +76,9 @@ public:
     int getPianoRollVelocityHeight() const;
     void setPianoRollVelocityHeight (int height);
 
-    /** The mixer's effect band, in knob rows, on the same contract. */
-    int getMixerEffectBandRows() const;
-    void setMixerEffectBandRows (int rows);
+    /** The mixer's effect band, in PIXELS, on the same contract. */
+    int getMixerEffectBandHeight() const;
+    void setMixerEffectBandHeight (int pixels);
 
     /** The score tab's text size, as a rung index. */
     int getScoreFontStep() const;

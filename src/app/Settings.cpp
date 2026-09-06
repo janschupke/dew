@@ -247,17 +247,23 @@ void Settings::setPlaylistTrackHeight (int height)
     file().setValue ("playlistTrackHeight", height);
 }
 
-int Settings::getMixerEffectBandRows() const
+int Settings::getMixerEffectBandHeight() const
 {
     // 0 means "never set", the same as a lane's height above, and clamped in
-    // the same place - the mixer, which can see the row range the design system
+    // the same place - the mixer, which can see the range the design system
     // declares where this cannot.
-    return juce::jmax (0, file().getIntValue ("mixerEffectBandRows", 0));
+    //
+    // A new key rather than the old "mixerEffectBandRows", which held a number
+    // between one and four: reading a rows value as a pixel count would open
+    // the band at four pixels for anyone upgrading, and the two cannot be told
+    // apart by their value alone. The stale key is left in the file and
+    // ignored, which costs a line of settings and no explanation.
+    return juce::jmax (0, file().getIntValue ("mixerEffectBandHeight", 0));
 }
 
-void Settings::setMixerEffectBandRows (int rows)
+void Settings::setMixerEffectBandHeight (int pixels)
 {
-    file().setValue ("mixerEffectBandRows", rows);
+    file().setValue ("mixerEffectBandHeight", pixels);
 }
 
 int Settings::getPianoRollSnap() const

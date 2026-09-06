@@ -170,15 +170,15 @@ void EditorTabs::setPianoRollRowHeight (int height)
         pianoRoll.setRowHeight (height);
 }
 
-int EditorTabs::getMixerEffectBandRows() const
+int EditorTabs::getMixerEffectBandHeight() const
 {
-    return mixer.getEffectBandRows();
+    return mixer.getEffectBandHeight();
 }
 
-void EditorTabs::setMixerEffectBandRows (int rows)
+void EditorTabs::setMixerEffectBandHeight (int pixels)
 {
-    if (rows > 0)
-        mixer.setEffectBandRows (rows);
+    if (pixels > 0)
+        mixer.setEffectBandHeight (pixels);
 }
 
 int EditorTabs::getPianoRollVelocityHeight() const

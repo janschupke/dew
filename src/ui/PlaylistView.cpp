@@ -89,7 +89,11 @@ void PlaylistComponent::dragRowHeightBy (int laneIndex, int deltaY)
     // that follows it, whichever lane it belongs to.
     const auto lanes = juce::jmax (1, laneIndex + 1);
 
-    setTrackHeight (heightAtDragStart + deltaY / lanes);
+    // In DOUBLE, because setTrackHeight and RowView::exactHeight both take one:
+    // as int / int this quantised the drag by the number of lanes above the
+    // grabbed edge, so the fourth lane's edge moved in 4px steps and the tenth
+    // in 10px ones - a resize that got coarser the further down you grabbed it.
+    setTrackHeight (heightAtDragStart + (double) deltaY / lanes);
 }
 
 void PlaylistComponent::endRowHeightDrag()

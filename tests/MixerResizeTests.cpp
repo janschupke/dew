@@ -113,17 +113,60 @@ TEST_CASE ("dragging the grip up makes the band deeper", "[mixer][ui][resize]")
     const auto before = h.mixer.getEffectBandRows();
     const auto grabbedAt = band.getScreenPosition().y;
 
+    // What two more rows actually COST, asked of the thing that knows. A row is
+    // not size::knobRow deep: a card spends space::sm between rows as well, so
+    // the old drag - which divided the travel by knobRow and rounded - fell six
+    // pixels behind the pointer for every rung it climbed, on top of only
+    // moving in rungs at all.
+    const auto twoMoreRows = band.bandHeightForRows (before + 2) - band.bandHeightForRows (before);
+
     band.mouseDown (atScreenY (band, grabbedAt, false));
-    band.mouseDrag (atScreenY (band, grabbedAt - 2 * tokens::size::knobRow, true));
-    band.mouseUp (atScreenY (band, grabbedAt - 2 * tokens::size::knobRow, true));
+    band.mouseDrag (atScreenY (band, grabbedAt - twoMoreRows, true));
+    band.mouseUp (atScreenY (h.band(), grabbedAt - twoMoreRows, true));
 
     INFO ("was " << before << " rows, now " << h.mixer.getEffectBandRows());
     CHECK (h.mixer.getEffectBandRows() == before + 2);
 
-    // And the band is exactly the rows it is showing - never a height between
-    // two of them, which would be ground no card could put a knob on.
+    // The cards still stand on whole rows: the band may be any height, but the
+    // budget it hands them is one a card can actually lay knobs out on.
     CHECK (h.band().getHeight() >= h.band().getPreferredHeight());
     CHECK (h.band().getKnobRows() == before + 2);
+}
+
+TEST_CASE ("the band follows the pointer between two knob rows", "[mixer][ui][resize]")
+{
+    /*  The defect this ends. The drag used to divide the pointer's travel by
+        size::knobRow and round, so the one resizable thing in the application
+        had four reachable positions 68px apart: half a rung of travel changed
+        nothing at all, and then it jumped a whole one. Every other drag area in
+        dew - the playlist's lane edge, the roll's velocity lane, the panel
+        divider - follows the pointer.
+
+        Asserted as a PAIR, because either half alone passes for the wrong
+        reason: a band that moved by the whole travel would fail the second, and
+        the old rounding drag passes the second while failing the first.
+    */
+    const juce::ScopedJuceInitialiser_GUI juceInit;
+    MixerHarness h;
+
+    auto& band = h.band();
+    const auto grabbedAt = band.getScreenPosition().y;
+    const auto before = h.band().getHeight();
+
+    // A third of a row, which the old drag rounded away to nothing.
+    const auto nudge = tokens::size::knobRow / 3;
+
+    band.mouseDown (atScreenY (band, grabbedAt, false));
+    band.mouseDrag (atScreenY (h.band(), grabbedAt - nudge, true));
+
+    const auto nudged = h.band().getHeight();
+
+    INFO ("a " << nudge << "px drag moved the band from " << before << " to " << nudged);
+    CHECK (nudged == before + nudge);
+
+    // And the cards have not gained a row for it: a third of a row of ground is
+    // band ground, not a knob standing on part of a row.
+    CHECK (h.band().getKnobRows() == tokens::size::effectBandRowsDefault);
 }
 
 TEST_CASE ("a resize drag is path-independent", "[mixer][ui][resize]")
@@ -163,11 +206,17 @@ TEST_CASE ("the band clamps at both ends of its range", "[mixer][ui][resize]")
     const juce::ScopedJuceInitialiser_GUI juceInit;
     MixerHarness h;
 
+    // On the HEIGHT, which is what is clamped. How many rows that height then
+    // shows is a second question with a second answer - the band never takes
+    // more than half the mixer, so a short window shows fewer rows than the
+    // height it is holding would otherwise buy.
     h.mixer.setEffectBandRows (1000);
-    CHECK (h.mixer.getEffectBandRows() == tokens::size::effectBandRowsMax);
+    CHECK (h.mixer.getEffectBandHeight()
+           == h.band().bandHeightForRows (tokens::size::effectBandRowsMax));
 
     h.mixer.setEffectBandRows (0);
-    CHECK (h.mixer.getEffectBandRows() == tokens::size::effectBandRowsMin);
+    CHECK (h.mixer.getEffectBandHeight()
+           == h.band().bandHeightForRows (tokens::size::effectBandRowsMin));
 }
 
 TEST_CASE ("the strips keep half the mixer however deep the band is asked to be",

@@ -93,23 +93,42 @@ public:
         return strips.size();
     }
 
-    /** How many rows of knobs the effect band shows, and the one place that is
-        clamped.
+    /** How deep the effect band is, in PIXELS, and the one place it is clamped.
 
         View geometry lives on the view: not the document, because a band height
         is not music and must neither dirty a project nor land on the undo
         stack, and not EditorState, whose other listeners have no interest in it.
         The precedent is PlaylistComponent's lane height.
 
-        In ROWS rather than pixels because that is the only unit the band means
-        anything in - a card's parameters reflow a whole row at a time, so a
-        height between two of them is a strip of ground no knob can use.
+        It used to be a number of knob ROWS, on the argument that a height
+        between two of them is ground no knob can use. That is true of the
+        CARDS and was not true of the drag: rounding the pointer's travel to the
+        nearest 68px rung gave the one resizable thing in the application four
+        reachable positions, so half a rung of travel did nothing and then it
+        jumped a whole one. Every other drag area in dew follows the pointer.
+
+        So the band follows the pointer and the cards keep their whole rows: the
+        height is a pixel count, the row budget is knobRowsFitting of it, and
+        the few pixels between one rung and the next are band ground rather than
+        a knob standing on half a row.
+
+        0 means "never set", which is how the height reaches Settings - the same
+        convention a lane height uses, and clamped here for the same reason:
+        dew_app cannot see the ladder.
     */
-    void setEffectBandRows (int rows);
-    int getEffectBandRows() const noexcept
+    void setEffectBandHeight (int pixels);
+    int getEffectBandHeight() const noexcept
     {
-        return effectBandRows;
+        return effectBandHeight;
     }
+
+    /** The height that shows this many rows. For a caller that thinks in rows -
+        a test, and the keyboard nothing has yet - rather than in pixels. */
+    void setEffectBandRows (int rows);
+
+    /** How many rows the band is actually showing, which is the budget the
+        cards were given rather than a number stored beside it. */
+    int getEffectBandRows() const noexcept;
 
 private:
     void valueTreeChildAdded (juce::ValueTree&, juce::ValueTree&) override;
@@ -124,6 +143,9 @@ private:
     /** The strip answering to an id, or null. masterTrackId finds the master,
         which carries no id property and so reads as 0. */
     MixerStrip* stripFor (int mixerTrackId) const;
+
+    /** The band's depth, resolving "never set" to the depth it opens at. */
+    int bandHeight() const;
 
     const paramMenu::Host* paramMenuHost = nullptr;
 
@@ -140,12 +162,19 @@ private:
 
     EffectChainHost chainHost;
 
-    int effectBandRows = tokens::size::effectBandRowsDefault;
+    /** In pixels, and 0 until somebody drags it - see setEffectBandHeight. */
+    int effectBandHeight = 0;
 
     /** What the band was when the grip was pressed, so the drag is computed
         from where it started rather than summed sample by sample: two routes to
-        the same pointer position have to give the same band. */
-    int rowsAtDragStart = tokens::size::effectBandRowsDefault;
+        the same pointer position have to give the same band.
+
+        An int, and no fractional companion: this delta arrives already in whole
+        screen pixels and is measured from the press, so there is nothing here
+        for a trackpad's fragments to be lost in - unlike a zoom FACTOR, which
+        is why RowView carries an exact height and this does not.
+    */
+    int heightAtDragStart = 0;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (MixerComponent)
 };

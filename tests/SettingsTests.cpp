@@ -102,7 +102,7 @@ TEST_CASE ("a fresh install gets sensible defaults", "[settings]")
     // 0 means "never set", which the playlist reads as "keep your default" -
     // so an install that predates the control opens at the height it always had.
     REQUIRE (settings->getPlaylistTrackHeight() == 0);
-    REQUIRE (settings->getMixerEffectBandRows() == 0);
+    REQUIRE (settings->getMixerEffectBandHeight() == 0);
     REQUIRE (settings->getWindowState().isEmpty());
     REQUIRE (settings->getAudioState() == nullptr);
 }
@@ -217,7 +217,6 @@ TEST_CASE ("a session is restored into the editor and captured back out", "[sett
         settings->setPianoRollPitchScroll (420.0);
         settings->setPanelWidth (380);
         settings->setPlaylistTrackHeight (96);
-        settings->setMixerEffectBandRows (tokens::size::effectBandRowsMax);
 
         dew::MainComponent component (false);
         component.setSize (1400, 800);
@@ -250,17 +249,16 @@ TEST_CASE ("a session is restored into the editor and captured back out", "[sett
         // PropertiesFile write is what covers the CLAMP as well, which lives in
         // the playlist because dew_app cannot see the size ladder.
         REQUIRE (roundTripped->getPlaylistTrackHeight() == 96);
-
-        // The effect band makes the same trip, through the mixer, and is
-        // clamped in the same place and for the same reason.
-        REQUIRE (roundTripped->getMixerEffectBandRows() == tokens::size::effectBandRowsMax);
     }
 
-    // And an absurd band comes back inside the range, which is the other half
-    // of "stored raw, clamped by the view".
+    // The effect band makes the same trip, through the mixer, and is clamped in
+    // the same place and for the same reason. In PIXELS now, and the ends of
+    // the legal range are the mixer's to know - a band this many knob rows deep
+    // costs a height only EffectChainHost can work out - so the range is found
+    // by handing it an absurd value and reading back what it kept.
     {
         auto settings = temp.open();
-        settings->setMixerEffectBandRows (1000);
+        settings->setMixerEffectBandHeight (1000);
 
         dew::MainComponent component (false);
         component.setSize (1400, 800);
@@ -269,8 +267,24 @@ TEST_CASE ("a session is restored into the editor and captured back out", "[sett
         auto roundTripped = temp.open();
         component.captureSettings (*roundTripped);
 
-        REQUIRE (roundTripped->getMixerEffectBandRows() <= tokens::size::effectBandRowsMax);
-        REQUIRE (roundTripped->getMixerEffectBandRows() >= tokens::size::effectBandRowsMin);
+        const auto clamped = roundTripped->getMixerEffectBandHeight();
+
+        INFO ("an absurd band came back as " << clamped);
+        REQUIRE (clamped > 0);
+        REQUIRE (clamped < 1000);
+
+        // And the other half: a height the mixer has already accepted survives
+        // the trip unchanged, which is what makes the clamp above a clamp
+        // rather than a value the round trip quietly replaces every time.
+        auto again = temp.open();
+        again->setMixerEffectBandHeight (clamped);
+
+        dew::MainComponent second (false);
+        second.setSize (1400, 800);
+        second.applySettings (*again);
+        second.captureSettings (*again);
+
+        REQUIRE (again->getMixerEffectBandHeight() == clamped);
     }
 
     // Out of range on the way in comes back inside it, because the playlist
