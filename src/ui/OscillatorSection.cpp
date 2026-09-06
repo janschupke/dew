@@ -109,7 +109,10 @@ OscillatorSection::OscillatorSection (ProjectDocument& d, EditorState& s)
     }
 
     octaveSlider.setMouseCursor (cursor::clickable);
-    octaveSlider.setTextBoxStyle (juce::Slider::TextBoxLeft, false, 44, size::controlHeightSm);
+    // The FULL height of the row, so the number and the two buttons beside it
+    // are one control rather than three things that happen to be adjacent -
+    // see OscillatorSection::octaveHeight.
+    octaveSlider.setTextBoxStyle (juce::Slider::TextBoxLeft, false, 44, size::controlHeight);
     octaveSlider.onDragStart = [this]
     {
         inDrag = true;

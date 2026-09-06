@@ -65,8 +65,11 @@ MixerStrip::MixerStrip (ProjectDocument& d, juce::ValueTree t, bool isMasterStri
     gainSlider.setSliderSnapsToMousePosition (false);
     gainSlider.setMouseDragSensitivity (gesture::dragPixelsForFullRange);
     gainSlider.addMouseListener (&fineDrag, false);
-    gainSlider.setTextBoxStyle (juce::Slider::TextBoxBelow, false, 60,
-                                tokens::size::controlHeightSm);
+    // A control's height, which is what every other input in dew is drawn at.
+    // The fader gives up the six pixels; a readout that is typed into is an
+    // input, and one 20 tall under a strip of 26s reads as a different kind of
+    // thing rather than as the same thing lower down.
+    gainSlider.setTextBoxStyle (juce::Slider::TextBoxBelow, false, 60, tokens::size::controlHeight);
     const auto& gainSpec = requireMixerTrackParamSpec (ids::gain);
     gainSlider.setRange (gainSpec.minimum, gainSpec.maximum, gainSpec.interval);
 

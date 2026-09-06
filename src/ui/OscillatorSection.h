@@ -182,7 +182,17 @@ private:
         told you none of that.
     */
     static constexpr int selectorHeight = tokens::size::iconButton;
-    static constexpr int octaveHeight = tokens::size::rulerHeight;
+
+    /** A CONTROL's height, not a ruler's.
+
+        This was rulerHeight, which is 22, and an IncDecButtons slider takes its
+        two halves from two different places: LookAndFeel_V2::getSliderLayout
+        centres the text box at the height setTextBoxStyle was given, while
+        Slider::Pimpl::resizeIncDecButtons hands the buttons the whole
+        component. So the number sat 20 tall between two 22 tall buttons, in a
+        panel where every other input is 26.
+    */
+    static constexpr int octaveHeight = tokens::size::controlHeight;
     static constexpr int shapeHeight = tokens::size::knob;
 
     static constexpr int rowGap = tokens::space::sm;
