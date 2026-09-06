@@ -38,6 +38,15 @@ public:
     /** Called when the document is replaced wholesale. */
     void refresh();
 
+    /** Brings the play button's glyph up to date with the engine.
+
+        Polled rather than pushed, for the reason at its definition, and PUBLIC
+        because timerCallback is not: this is what the timer calls, and a test
+        that wanted to prove the icon follows a transport moved from somewhere
+        else had no other way in.
+    */
+    void refreshPlayIcon();
+
     /** Points the editor, the engine and the dropdown at `wantedId`, or at the
         project's FIRST pattern when it has no such pattern.
 
@@ -127,6 +136,10 @@ private:
     /** Asks, then deletes. Separate from the button so the question and the
         edit can be read in one place. */
     void requestDeletePattern();
+
+    /** Which glyph the play button is currently showing, so the poll below
+        repaints on a change rather than sixty times a second. */
+    bool showingPause = false;
 
     ProjectDocument& document;
     AudioEngine& engine;

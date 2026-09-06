@@ -411,6 +411,18 @@ public:
 
     void setIcon (juce::Path);
 
+    /** Which glyph it is showing.
+
+        A read-only accessor, and it exists for one reason: the transport bar's
+        play button carries the transport's STATE in its glyph, and the only
+        way to hold "the icon follows the engine, whatever moved it" is to be
+        able to read the icon back.
+    */
+    const juce::Path& getIcon() const noexcept
+    {
+        return icon;
+    }
+
     /** Sets the tooltip AND the accessible name, which are the same sentence.
 
         An override rather than a convention, because the convention had already

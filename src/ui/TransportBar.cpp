@@ -1,6 +1,7 @@
 #include "ui/TransportBar.h"
 
 #include <memory>
+#include <utility>
 
 #include "i18n/Strings.h"
 #include "model/ModuleCatalog.h"
@@ -50,8 +51,6 @@ TransportBar::TransportBar (ProjectDocument& d, AudioEngine& e, EditorState& s)
             engine.stop();
         else
             engine.play();
-
-        playButton.setIcon (engine.isPlaying() ? icons::pause() : icons::play());
     };
     addAndMakeVisible (playButton);
 
@@ -59,9 +58,10 @@ TransportBar::TransportBar (ProjectDocument& d, AudioEngine& e, EditorState& s)
     {
         engine.stop();
         engine.rewind();
-        playButton.setIcon (icons::play());
     };
     addAndMakeVisible (stopButton);
+
+    // Neither of those writes the icon. It is POLLED - see timerCallback.
 
     // The icon and the colour have existed in the design system since before
     // anything could record; this is their first call site.
@@ -226,9 +226,9 @@ void TransportBar::refresh()
     modeButton.setToggleState (song, juce::dontSendNotification);
     modeButton.setButtonText (
         tr (song ? StringId::transport_modeSong_label : StringId::transport_modePattern_label));
-    playButton.setIcon (engine.isPlaying() ? icons::pause() : icons::play());
-
-    // Otherwise the readout is blank until the first timer tick.
+    // Otherwise the readout and the icon are blank and stale until the first
+    // timer tick.
+    refreshPlayIcon();
     updatePositionLabel();
 }
 
@@ -403,12 +403,34 @@ void TransportBar::valueTreeChildRemoved (juce::ValueTree&, juce::ValueTree& chi
 void TransportBar::timerCallback()
 {
     updatePositionLabel();
+    refreshPlayIcon();
 
     // Polled with the playhead rather than pushed: a take can also end from the
     // menu, from the keyboard, or because the device went away, and this is
     // already the thing running at the rate a transport reads at.
     if (isRecording != nullptr)
         recordButton.setToggleState (isRecording(), juce::dontSendNotification);
+}
+
+void TransportBar::refreshPlayIcon()
+{
+    /*  Polled, for exactly the reason the record button above it is.
+
+        The icon used to be written by the three things that could change it
+        from HERE - its own click, the stop button's, and refresh() - and
+        AudioEngine is not a ChangeBroadcaster, so nothing told this bar when
+        the transport moved any other way. Space, the Transport menu and an MCP
+        client all left a playing transport showing a play triangle, until
+        something unrelated happened to call refresh().
+
+        Latched, because this runs at motion::uiRefreshHz and setIcon repaints.
+    */
+    const auto playing = engine.isPlaying();
+
+    if (std::exchange (showingPause, playing) == playing)
+        return;
+
+    playButton.setIcon (playing ? icons::pause() : icons::play());
 }
 
 juce::String TransportBar::positionText (double steps, const Meter& meter)
