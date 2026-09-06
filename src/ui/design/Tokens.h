@@ -418,6 +418,25 @@ inline constexpr int glyphColumn = 16;
 inline constexpr int glyphMark = 14;
 
 static_assert (glyphMark <= glyphColumn, "a glyph has to fit the column it is given");
+
+/** The gutter the FM matrix identifies a row in.
+
+    Wider than a glyphColumn because it holds two things stacked - the slot's
+    waveform, and the word "Osc" with its number - where the matrix used to
+    put a bare digit. A digit alone said which ROW you were on and nothing
+    about which oscillator that was or what it sounded like, and the matrix is
+    the one face in the section that shows all three slots at once, so it is
+    the one place that could say.
+
+    Stacked rather than laid out along a row: the four knob columns come out
+    of whatever this leaves, they have a floor of knobColumnMin, and the
+    sidebar is the narrowest panel in the application. Two short lines cost a
+    third of what "[icon] Osc 1" on one line would.
+*/
+inline constexpr int fmRowLabel = 30;
+
+static_assert (fmRowLabel >= glyphColumn, "the FM gutter has to hold a glyph column");
+
 inline constexpr int knob = 44;
 inline constexpr int knobSm = 26;    ///< a knob on a row, drawn without its caption
 inline constexpr int rowHeight = 34; ///< channel rack and playlist rows

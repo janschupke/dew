@@ -16,8 +16,12 @@
 #include "ui/EditorState.h"
 #include "ui/OscillatorSection.h"
 
+#include "model/GeneratorCatalog.h"
+#include "ui/design/Tokens.h"
+
 #include "FixtureProject.h"
 #include "OscillatorHarness.h"
+#include "PaintProbe.h"
 
 using namespace dew;
 using namespace dew::testing;
@@ -230,4 +234,62 @@ TEST_CASE ("every cell says what it is, and says which row it is on", "[ui][fm][
     // taking the catalog's own name would leave three of them saying the same
     // thing - and that sentence is the accessible name as well as the tooltip.
     REQUIRE (seen.size() == kMaxOscillators * FmMatrixPanel::numColumns);
+}
+
+TEST_CASE ("each matrix row shows the waveform of the oscillator it is", "[ui][fm]")
+{
+    /*  The gutter used to hold a bare digit, which said which ROW you were on
+        and nothing about which oscillator that was or what it sounded like.
+        The matrix is the one face in the section showing all three slots at
+        once, so it is the one place that can show three waveforms side by side.
+
+        Measured as ink in the gutter rather than by naming a glyph: which path
+        a waveform maps to is GlyphTests' subject, and asserting it again here
+        would only pin this test to that mapping.
+    */
+    const juce::ScopedJuceInitialiser_GUI juceInit;
+
+    FmHarness h;
+    h.showMatrix();
+
+    auto& matrix = h.section.getFmMatrix();
+
+    // The gutter, which is what resized() takes off the left before planning
+    // the knob columns.
+    const juce::Rectangle<int> gutter (0, 0, tokens::size::fmRowLabel, matrix.getHeight());
+
+    const auto inkIn = [&matrix, gutter]
+    {
+        const auto image = render (matrix);
+        auto marked = 0;
+
+        for (int y = gutter.getY(); y < juce::jmin (gutter.getBottom(), image.getHeight()); ++y)
+            for (int x = gutter.getX(); x < juce::jmin (gutter.getRight(), image.getWidth()); ++x)
+                if (image.getPixelAt (x, y).getBrightness() > 0.4f)
+                    ++marked;
+
+        return marked;
+    };
+
+    const auto sine = inkIn();
+
+    // Three rows, each with a mark and a word, is a lot more than three digits
+    // were - but the number that matters is that something is there at all.
+    REQUIRE (sine > 0);
+
+    // Change what the first slot plays and the gutter has to follow. `wave`
+    // lives on the CLASSIC node UNDER the slot, which is the reason the panel's
+    // listener cannot gate on the slot's own type.
+    //
+    // This covers the PAINTING and not the listener: render() paints on demand,
+    // so it would draw the new waveform even if nothing had asked it to. What
+    // the listener adds is that the screen follows without a render being
+    // asked for, and a headless component has no repaint to observe.
+    auto classic = generatorNodeFor (h.slot (0), ids::wave);
+    REQUIRE (classic.isValid());
+
+    ProjectEdits::setProperty (classic, ids::wave, "square", nullptr, "wave");
+
+    INFO ("gutter ink as sine: " << sine << ", as square: " << inkIn());
+    CHECK (inkIn() != sine);
 }

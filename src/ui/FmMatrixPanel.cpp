@@ -14,10 +14,14 @@
 
 #include "i18n/Strings.h"
 
+#include "model/GeneratorCatalog.h"
 #include "model/Ids.h"
+#include "model/InstrumentType.h"
 #include "model/ProjectEdits.h"
 #include "model/ProjectSchema.h"
 #include "ui/KnobGrid.h"
+#include "ui/design/Glyphs.h"
+#include "ui/design/Icons.h"
 
 namespace dew
 {
@@ -154,6 +158,15 @@ void FmMatrixPanel::setOwner (juce::ValueTree newInstrument)
 void FmMatrixPanel::valueTreePropertyChanged (juce::ValueTree& tree,
                                               const juce::Identifier& property)
 {
+    // The row labels carry each slot's waveform, and `wave` lives on the
+    // CLASSIC node UNDER the slot rather than on the slot - so this has to be
+    // asked before the hasType gate below, which that node does not pass.
+    if (property == ids::wave || property == ids::mode)
+    {
+        repaint();
+        return;
+    }
+
     if (! tree.hasType (ids::OSC))
         return;
 
@@ -197,10 +210,9 @@ void FmMatrixPanel::resized()
 
     auto area = getLocalBounds();
 
-    // A gutter for the row numbers, off the size ladder rather than a width of
-    // its own: the digit is the same size as everything else that identifies a
-    // control by a single glyph.
-    const auto gutter = size::glyphColumn;
+    // A gutter wide enough for the two stacked lines that identify a row - the
+    // slot's waveform over its name. It was a glyphColumn holding one digit.
+    const auto gutter = size::fmRowLabel;
 
     // Three groups of four, planned ONCE for all three rows, so every row gets
     // the same cell width and the columns line up. Three separate one-row plans
@@ -226,17 +238,49 @@ void FmMatrixPanel::resized()
 
 void FmMatrixPanel::paint (juce::Graphics& g)
 {
-    // The row number alone, and no row of column headings at all: every knob
-    // carries the catalog's own caption - TO 1, TO 2, TO 3, OUT - on every row,
-    // so a heading strip said each column's name a second time and spent a row
-    // of the narrowest panel in the application doing it. A word here would be
-    // "OSC" three times down a gutter too narrow to read it in.
+    // Each row says which oscillator it is and what that oscillator sounds
+    // like, and there is still no row of column headings: every knob carries
+    // the catalog's own caption - TO 1, TO 2, TO 3, OUT - on every row, so a
+    // heading strip would say each column's name a second time and spend a row
+    // of the narrowest panel in the application doing it.
+    //
+    // The gutter used to hold a bare digit, on the argument that "OSC" three
+    // times would not fit across it. Stacking is what makes it fit: the word
+    // goes under the mark rather than beside it, and the matrix is the one
+    // face in the section showing all three slots at once - so it is the one
+    // place that can show three waveforms side by side.
     g.setFont (type::font (type::caption));
-    g.setColour (colour::textPrimary);
 
     for (int row = 0; row < (int) rowLabelBounds.size(); ++row)
-        g.drawText (juce::String (row + 1), rowLabelBounds[(size_t) row],
+    {
+        auto cell = rowLabelBounds[(size_t) row].withSizeKeepingCentre (
+            size::fmRowLabel, size::glyphMark + space::xs + size::captionBand);
+
+        const auto slot = slotAt (row);
+
+        // Asked of the catalog rather than by comparing the stored mode to the
+        // literal "wavetable" - the same reason OscillatorSection stopped doing
+        // that. Both generator nodes are always present and one is inert, so a
+        // wavetable slot still carries a `wave` this would otherwise draw.
+        const auto& generator = generatorFor (slot[ids::mode].toString());
+        const auto classic = generator.node != nullptr && *generator.node == ids::CLASSIC;
+
+        auto mark = cell.removeFromTop (size::glyphMark);
+
+        if (classic)
+        {
+            const auto wave = waveformFromString (
+                generatorNodeFor (slot, ids::wave)[ids::wave].toString());
+
+            icons::draw (g, glyph::forWaveform (wave), mark.toFloat(), colour::textSecondary);
+        }
+
+        cell.removeFromTop (space::xs);
+
+        g.setColour (colour::textPrimary);
+        g.drawText (tr (StringId::oscillator_fm_row_label, Args {}.with ("index", row + 1)), cell,
                     juce::Justification::centred, false);
+    }
 }
 
 } // namespace dew

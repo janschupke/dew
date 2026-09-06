@@ -592,7 +592,7 @@
       "name": "Pan"
     },
     "routing": {
-      "help": "Routed here: {channels} \u2013 click the dots to go to one"
+      "help": "Routed here: {channels} – click the dots to go to one"
     },
     "title": "Mixer"
   },
@@ -608,6 +608,9 @@
       },
       "route": {
         "help": "How far oscillator {from} bends oscillator {to}. Nothing at zero"
+      },
+      "row": {
+        "label": "Osc {index}"
       },
       "title": "FM matrix"
     },
