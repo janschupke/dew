@@ -354,9 +354,11 @@ bool PianoRollComponent::keyPressed (const juce::KeyPress& key)
 
         case hotkeys::ViewCommand::zoomToFit: zoomToFit(); return true;
 
-        case hotkeys::ViewCommand::selectTool: setTool (RollTool::select); return true;
-        case hotkeys::ViewCommand::paintTool: setTool (RollTool::paint); return true;
-        case hotkeys::ViewCommand::eraseTool: setTool (RollTool::slice); return true;
+        // Through the register rather than named here, so which key means
+        // which tool is stated once for every view - see ToolStrip.
+        case hotkeys::ViewCommand::selectTool:
+        case hotkeys::ViewCommand::paintTool:
+        case hotkeys::ViewCommand::eraseTool: return toolbar.applyToolCommand (command);
 
         // The other axis: here a row is a semitone.
         case hotkeys::ViewCommand::sizeBigger: zoomRowsBy (ZoomButtons::zoomFactor); return true;

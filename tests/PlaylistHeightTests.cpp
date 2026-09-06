@@ -507,11 +507,11 @@ TEST_CASE ("the pointer says what a clip will do", "[ui][playlist][cursor]")
 
     // A tool outranks what is under the pointer: with the paint tool a clip is
     // somewhere to put one, not something to pick up.
-    h.playlist.getToolbar().setTool (PlaylistTool::paint);
+    h.playlist.getToolbar().setTool (EditorTool::paint);
     CHECK (
         cursorAt ({ (int) (bounds.getX() + bounds.getWidth() * 0.3f), (int) bounds.getCentreY() })
         == cursor::nib);
-    h.playlist.getToolbar().setTool (PlaylistTool::select);
+    h.playlist.getToolbar().setTool (EditorTool::select);
 
     // And it is given back when the pointer leaves, or a window edge keeps a
     // resize arrow that means nothing there.

@@ -74,7 +74,7 @@ juce::MouseCursor PianoRollComponent::cursorFor (juce::Point<int> position) cons
 
     // A tool outranks what is under the pointer: with the eraser or the slice
     // tool a note is not something to pick up, it is something to act on.
-    if (getTool() != RollTool::select)
+    if (getTool() != EditorTool::select)
         return cursor::nib;
 
     const auto note = noteAt (position);
@@ -250,7 +250,7 @@ void PianoRollComponent::mouseDown (const juce::MouseEvent& event)
     // included - it cannot cut a dense passage if landing on a note starts a
     // move instead. Every modifier gesture above still wins, so erasing and
     // rubber-banding mean the same thing here as in any other tool.
-    if (toolbar.getTool() == RollTool::slice && ! event.mods.isCommandDown()
+    if (toolbar.getTool() == EditorTool::slice && ! event.mods.isCommandDown()
         && ! event.mods.isCtrlDown())
     {
         gesture = Gesture::slicing;
@@ -313,7 +313,7 @@ void PianoRollComponent::mouseDown (const juce::MouseEvent& event)
     // The paint tool writes a note per grid cell the pointer crosses, rather
     // than one note whose length the drag then sets. Drawing-and-sizing is the
     // select tool's gesture and is not duplicated here.
-    if (toolbar.getTool() == RollTool::paint)
+    if (toolbar.getTool() == EditorTool::paint)
     {
         gesture = Gesture::painting;
         lastPaintedCell = { -1, -1 };

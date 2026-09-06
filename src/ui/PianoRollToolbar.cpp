@@ -12,24 +12,11 @@ PianoRollToolbar::PianoRollToolbar()
 {
     setComponentID ("pianoRollToolbar");
 
-    const auto addTool = [this] (DewIconButton& button, RollTool which)
+    tools.onToolChanged = [this]
     {
-        button.setClickingTogglesState (true);
-        button.setRadioGroupId (1);
-        button.onClick = [this, which] { setTool (which); };
-
-        // A CLICK must not move focus off the roll, or the shortcuts it owns -
-        // the arrows, the digits - stop working until the grid is clicked
-        // again. That is this call, and only this call: refusing focus
-        // outright also took every toolbar button out of the tab order, which
-        // is the one way a keyboard reaches them at all.
-        button.setMouseClickGrabsKeyboardFocus (false);
-        addAndMakeVisible (button);
+        if (onToolChanged)
+            onToolChanged();
     };
-
-    addTool (selectButton, RollTool::select);
-    addTool (paintButton, RollTool::paint);
-    addTool (sliceButton, RollTool::slice);
 
     rebuildSnapBox();
     snapBox.setTooltip (tr (StringId::pianoRoll_snap_help));
@@ -123,26 +110,6 @@ PianoRollToolbar::PianoRollToolbar()
                             [this] (int choice) { applyOverflowChoice (choice); });
     };
     addChildComponent (overflowButton);
-
-    updateToolButtons();
-}
-
-void PianoRollToolbar::setTool (RollTool newTool, juce::NotificationType notification)
-{
-    if (tool == newTool)
-    {
-        // The radio group can clear the button of the tool that is already
-        // current when it is clicked again; put it back rather than leaving the
-        // strip showing no tool at all.
-        updateToolButtons();
-        return;
-    }
-
-    tool = newTool;
-    updateToolButtons();
-
-    if (notification != juce::dontSendNotification && onToolChanged)
-        onToolChanged();
 }
 
 void PianoRollToolbar::setSnap (SnapDivision newSnap, juce::NotificationType notification)
@@ -190,13 +157,6 @@ void PianoRollToolbar::setSelectedChannel (int channelId)
 int PianoRollToolbar::getSelectedChannel() const noexcept
 {
     return channelBox.getSelectedId();
-}
-
-void PianoRollToolbar::updateToolButtons()
-{
-    selectButton.setToggleState (tool == RollTool::select, juce::dontSendNotification);
-    paintButton.setToggleState (tool == RollTool::paint, juce::dontSendNotification);
-    sliceButton.setToggleState (tool == RollTool::slice, juce::dontSendNotification);
 }
 
 void PianoRollToolbar::rebuildSnapBox()
@@ -257,11 +217,13 @@ int PianoRollToolbar::preferredWidth() const
     // the six group rules. Written as a sum rather than measured after the fact
     // because resized() has to know BEFORE it starts whether to reserve the
     // overflow button's slot.
-    constexpr auto controls = size::iconButton * 7 + captionWidth * 2 + channelBoxWidth
-                              + snapBoxWidth + 34 * 2 + ZoomButtons::preferredWidth
-                              + VerticalZoomButtons::preferredWidth;
+    // The tools ask for their own width - see ToolStrip::preferredWidth - so
+    // adding one to the register is not also a number to remember here.
+    const auto controls = tools.preferredWidth() + size::iconButton * 4 + captionWidth * 2
+                          + channelBoxWidth + snapBoxWidth + 34 * 2 + ZoomButtons::preferredWidth
+                          + VerticalZoomButtons::preferredWidth;
 
-    constexpr auto steps = space::xxs * 15;
+    constexpr auto steps = space::xxs * 13;
     constexpr auto dividers = (space::sm * 2 + space::xs) * 6;
 
     return controls + steps + dividers + space::md * 2;
@@ -319,9 +281,7 @@ void PianoRollToolbar::resized()
             groupDividers.add (strip.divider());
     };
 
-    place (selectButton, size::iconButton);
-    place (paintButton, size::iconButton);
-    place (sliceButton, size::iconButton);
+    tools.placeAll (place);
 
     divider();
 

@@ -551,6 +551,7 @@ add_library(dew_ui STATIC
   ui/McpGrants.cpp
   ui/McpConnectionsPanel.cpp
   ui/MainComponentControl.cpp
+  ui/EditorTools.cpp
   ui/EffectCard.cpp
   ui/EffectCardMenu.cpp
   ui/EffectChainComponent.cpp

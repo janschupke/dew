@@ -248,11 +248,11 @@ public:
         toolbar.setSnap (snap);
     }
 
-    RollTool getTool() const noexcept
+    EditorTool getTool() const noexcept
     {
         return toolbar.getTool();
     }
-    void setTool (RollTool tool)
+    void setTool (EditorTool tool)
     {
         toolbar.setTool (tool);
     }

@@ -161,7 +161,7 @@ TEST_CASE ("the paint tool writes a note in every cell a stroke crosses", "[ui][
     const juce::ScopedJuceInitialiser_GUI juceInit;
     RollHarness h;
 
-    h.roll.setTool (RollTool::paint);
+    h.roll.setTool (EditorTool::paint);
 
     dragBetween (h.roll, pointFor (h, 0, 66), pointFor (h, 5, 66), 24);
 
@@ -183,7 +183,7 @@ TEST_CASE ("painting back over a cell does not stack a second note in it", "[ui]
     const juce::ScopedJuceInitialiser_GUI juceInit;
     RollHarness h;
 
-    h.roll.setTool (RollTool::paint);
+    h.roll.setTool (EditorTool::paint);
 
     const auto from = pointFor (h, 0, 66);
     const auto to = pointFor (h, 4, 66);
@@ -220,7 +220,7 @@ TEST_CASE ("a whole paint stroke is one undo step", "[ui][rolltools]")
     const juce::ScopedJuceInitialiser_GUI juceInit;
     RollHarness h;
 
-    h.roll.setTool (RollTool::paint);
+    h.roll.setTool (EditorTool::paint);
     dragBetween (h.roll, pointFor (h, 0, 66), pointFor (h, 5, 66), 24);
 
     REQUIRE (h.countNotes() == 6);
@@ -236,7 +236,7 @@ TEST_CASE ("the paint tool still moves a note you press on", "[ui][rolltools]")
     auto& undo = h.document.getUndoManager();
     auto note = ProjectEdits::addNote (h.pattern(), 1, 2, 1, 66, 1.0f, &undo);
 
-    h.roll.setTool (RollTool::paint);
+    h.roll.setTool (EditorTool::paint);
 
     dragBetween (h.roll, pointFor (h, 2, 66), pointFor (h, 6, 66));
 
@@ -259,7 +259,7 @@ TEST_CASE ("the slice tool cuts every note the line crosses, once", "[ui][rollto
 
     REQUIRE (h.countNotes() == 3);
 
-    h.roll.setTool (RollTool::slice);
+    h.roll.setTool (EditorTool::slice);
 
     // A vertical sweep at step 4, from above the top note to below the bottom.
     const auto top = pointFor (h, 4, 72);
@@ -284,7 +284,7 @@ TEST_CASE ("a slice is one undo step and leaves the fragments selected", "[ui][r
     auto& undo = h.document.getUndoManager();
     auto note = ProjectEdits::addNote (h.pattern(), 1, 0, 8, 66, 1.0f, &undo);
 
-    h.roll.setTool (RollTool::slice);
+    h.roll.setTool (EditorTool::slice);
     dragBetween (h.roll, pointFor (h, 4, 68), pointFor (h, 4, 64));
 
     REQUIRE (h.countNotes() == 2);
@@ -303,7 +303,7 @@ TEST_CASE ("a slice that crosses nothing changes nothing", "[ui][rolltools]")
     auto& undo = h.document.getUndoManager();
     ProjectEdits::addNote (h.pattern(), 1, 0, 8, 66, 1.0f, &undo);
 
-    h.roll.setTool (RollTool::slice);
+    h.roll.setTool (EditorTool::slice);
 
     // Well above the note, and horizontal - which crosses no row's centre.
     dragBetween (h.roll, pointFor (h, 0, 76), pointFor (h, 8, 76));
@@ -425,7 +425,7 @@ TEST_CASE ("changing tool or grid does not disturb the selection", "[ui][rolltoo
     h.roll.setSnap (SnapDivision::bar);
     CHECK (h.roll.getNumSelectedNotes() == 1);
 
-    h.roll.setTool (RollTool::slice);
+    h.roll.setTool (EditorTool::slice);
     CHECK (h.roll.getNumSelectedNotes() == 1);
 }
 

@@ -203,7 +203,7 @@ void PlaylistComponent::mouseDown (const juce::MouseEvent& event)
     // The paint tool lays a clip per cell the pointer crosses. Placing one and
     // sizing it with the same drag is the select tool's gesture and is not
     // duplicated here.
-    if (toolbar.getTool() == PlaylistTool::paint)
+    if (toolbar.getTool() == EditorTool::paint)
     {
         gesture = Gesture::painting;
         lastPaintedCell = { -1, -1 };

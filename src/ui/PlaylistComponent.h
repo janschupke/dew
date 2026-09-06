@@ -110,11 +110,11 @@ public:
         return toolbar;
     }
 
-    PlaylistTool getTool() const noexcept
+    EditorTool getTool() const noexcept
     {
         return toolbar.getTool();
     }
-    void setTool (PlaylistTool tool)
+    void setTool (EditorTool tool)
     {
         toolbar.setTool (tool);
     }

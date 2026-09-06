@@ -347,7 +347,7 @@ TEST_CASE ("painting repeats the selected note's shape", "[ui][pianoroll]")
 
     REQUIRE (h.roll.getNumSelectedNotes() == 1);
 
-    h.roll.setTool (RollTool::paint);
+    h.roll.setTool (EditorTool::paint);
     dragBetween (h.roll, pointFor (h, 8, 66), pointFor (h, 12, 66));
 
     int painted = 0;

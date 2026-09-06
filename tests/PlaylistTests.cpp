@@ -192,7 +192,7 @@ TEST_CASE ("the paint tool lays a clip in every bar it crosses", "[ui][playlist]
 
     REQUIRE (h.countClips (0) == 0);
 
-    h.playlist.setTool (PlaylistTool::paint);
+    h.playlist.setTool (EditorTool::paint);
 
     const auto from = pointFor (h, 1, 0);
     const auto to = pointFor (h, 4, 0);
@@ -261,7 +261,7 @@ TEST_CASE ("the paint tool does not stack a clip on one already there", "[ui][pl
     juce::UndoManager setup;
     ProjectEdits::addClip (h.track (0), 1, 2, 1, &setup);
 
-    h.playlist.setTool (PlaylistTool::paint);
+    h.playlist.setTool (EditorTool::paint);
 
     h.playlist.mouseDown (eventAt (h.playlist, pointFor (h, 1, 0)));
     h.playlist.mouseDrag (eventAt (h.playlist, pointFor (h, 2, 0), 1, {}, true));

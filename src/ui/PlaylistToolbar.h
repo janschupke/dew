@@ -4,6 +4,7 @@
 
 #include "i18n/Strings.h"
 
+#include "ui/EditorTools.h"
 #include "ui/VerticalZoomButtons.h"
 #include "ui/ToolbarOverflow.h"
 #include "ui/ZoomButtons.h"
@@ -11,18 +12,6 @@
 
 namespace dew
 {
-
-/** Which gesture a plain press on an empty cell of the arrangement means.
-
-    A persistent mode, the way RollTool is. Modifier gestures - alt to delete,
-    mod to copy, right-click for the menu - mean the same thing in either tool,
-    so the tool only ever decides what an unmodified press on empty space does.
-*/
-enum class PlaylistTool
-{
-    select,
-    paint
-};
 
 /** The playlist's tool strip: tools and zoom.
 
@@ -43,11 +32,21 @@ public:
     void paint (juce::Graphics&) override;
     void resized() override;
 
-    PlaylistTool getTool() const noexcept
+    EditorTool getTool() const noexcept
     {
-        return tool;
+        return tools.getTool();
     }
-    void setTool (PlaylistTool, juce::NotificationType = juce::sendNotification);
+    void setTool (EditorTool wanted, juce::NotificationType notification = juce::sendNotification)
+    {
+        tools.setTool (wanted, notification);
+    }
+
+    /** Selects the tool a view command names, and answers whether it was one
+        this strip has - see ToolStrip::applyCommand. */
+    bool applyToolCommand (hotkeys::ViewCommand command)
+    {
+        return tools.applyCommand (command);
+    }
 
     std::function<void()> onToolChanged;
 
@@ -77,16 +76,19 @@ public:
     }
 
 private:
-    void updateToolButtons();
-
-    PlaylistTool tool = PlaylistTool::select;
-
     /** Shown only when the strip has run out of room - see ToolbarOverflow. */
     DewIconButton overflowButton { icons::more(), tr (StringId::toolbar_overflow_help) };
     ToolbarOverflow overflow;
 
-    DewIconButton selectButton { icons::pointer(), tr (StringId::playlist_toolSelect_help) };
-    DewIconButton paintButton { icons::pencil(), tr (StringId::playlist_toolPaint_help) };
+    /** Select and paint, and deliberately not slice: a clip is not cut by
+        dragging across it in this tree, and a tool that did nothing would be
+        worse than an absent one. ToolStrip::offers is what lets the key say so.
+    */
+    ToolStrip tools {
+        *this,
+        { { EditorTool::select, icons::pointer(), tr (StringId::playlist_toolSelect_help) },
+          { EditorTool::paint, icons::pencil(), tr (StringId::playlist_toolPaint_help) } }
+    };
 
     ZoomButtons zoomButtons { tr (StringId::playlist_zoomFit_help) };
     VerticalZoomButtons heightButtons { tr (StringId::playlist_tracksShorter_help),

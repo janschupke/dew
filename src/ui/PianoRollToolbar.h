@@ -5,6 +5,7 @@
 #include "i18n/Strings.h"
 
 #include "model/NoteTools.h"
+#include "ui/EditorTools.h"
 #include "ui/VerticalZoomButtons.h"
 #include "ui/ToolbarOverflow.h"
 #include "ui/ZoomButtons.h"
@@ -12,20 +13,6 @@
 
 namespace dew
 {
-
-/** Which gesture a plain press on the note area means.
-
-    A persistent mode, unlike PianoRollComponent's Gesture, which is the drag
-    currently in progress. Modifier gestures - erase, rubber-band, shift-select -
-    mean the same thing in every tool, so the tool only ever decides what an
-    unmodified press on empty space does.
-*/
-enum class RollTool
-{
-    select,
-    paint,
-    slice
-};
 
 /** The piano roll's tool strip: tools, the snap grid, and the edits that act on
     a selection.
@@ -45,11 +32,21 @@ public:
     void paint (juce::Graphics&) override;
     void resized() override;
 
-    RollTool getTool() const noexcept
+    EditorTool getTool() const noexcept
     {
-        return tool;
+        return tools.getTool();
     }
-    void setTool (RollTool, juce::NotificationType = juce::sendNotification);
+    void setTool (EditorTool wanted, juce::NotificationType notification = juce::sendNotification)
+    {
+        tools.setTool (wanted, notification);
+    }
+
+    /** Selects the tool a view command names, and answers whether it was one
+        this strip has - see ToolStrip::applyCommand. */
+    bool applyToolCommand (hotkeys::ViewCommand command)
+    {
+        return tools.applyCommand (command);
+    }
 
     SnapDivision getSnap() const noexcept
     {
@@ -115,17 +112,17 @@ public:
     }
 
 private:
-    void updateToolButtons();
-
     void rebuildSnapBox();
 
-    RollTool tool = RollTool::select;
     SnapDivision snap = SnapDivision::sixteenth;
     int beatUnit = 4;
 
-    DewIconButton selectButton { icons::pointer(), tr (StringId::pianoRoll_toolSelect_help) };
-    DewIconButton paintButton { icons::pencil(), tr (StringId::pianoRoll_toolPaint_help) };
-    DewIconButton sliceButton { icons::scissors(), tr (StringId::pianoRoll_toolSlice_help) };
+    ToolStrip tools {
+        *this,
+        { { EditorTool::select, icons::pointer(), tr (StringId::pianoRoll_toolSelect_help) },
+          { EditorTool::paint, icons::pencil(), tr (StringId::pianoRoll_toolPaint_help) },
+          { EditorTool::slice, icons::scissors(), tr (StringId::pianoRoll_toolSlice_help) } }
+    };
 
     /** The two dropdowns in this strip said nothing about what they were: one
         showed a channel name and the other a fraction, and neither is

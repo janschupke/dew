@@ -188,9 +188,14 @@ bool PlaylistComponent::keyPressed (const juce::KeyPress& key)
 
         case hotkeys::ViewCommand::zoomToFit: zoomToFit(); return true;
 
-        case hotkeys::ViewCommand::selectTool: toolbar.setTool (PlaylistTool::select); return true;
-
-        case hotkeys::ViewCommand::paintTool: toolbar.setTool (PlaylistTool::paint); return true;
+        // All three through the register, including the slice key this view has
+        // no tool for: applyToolCommand answers false for a tool that is not on
+        // this strip, so the key does nothing rather than being a case nobody
+        // wrote and nobody could see was missing.
+        case hotkeys::ViewCommand::selectTool:
+        case hotkeys::ViewCommand::paintTool:
+        case hotkeys::ViewCommand::eraseTool:
+            return toolbar.applyToolCommand (hotkeys::viewCommandFor (key));
 
         case hotkeys::ViewCommand::clearSelection:
             editorState.clearBarSelection();
@@ -223,11 +228,10 @@ bool PlaylistComponent::keyPressed (const juce::KeyPress& key)
             activateCursor();
             return true;
 
-        // The playlist has no erase tool, no note selection to delete and no
-        // select-all: a clip is deleted through its own menu. Listed rather
-        // than defaulted so adding a command to the map is a compile error
-        // here until this view says what it does about it.
-        case hotkeys::ViewCommand::eraseTool:
+        // No note selection to delete and no select-all: a clip is deleted
+        // through its own menu. Listed rather than defaulted so adding a
+        // command to the map is a compile error here until this view says what
+        // it does about it.
         case hotkeys::ViewCommand::deleteSelection:
         case hotkeys::ViewCommand::selectAll:
         case hotkeys::ViewCommand::none: break;
@@ -364,7 +368,7 @@ void PlaylistComponent::mouseMove (const juce::MouseEvent& event)
 
     // A tool outranks what is under the pointer: with the paint tool a clip is
     // not something to pick up, it is somewhere to put one.
-    if (getTool() != PlaylistTool::select)
+    if (getTool() != EditorTool::select)
     {
         setMouseCursor (cursor::nib);
         return;

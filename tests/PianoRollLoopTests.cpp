@@ -433,11 +433,11 @@ TEST_CASE ("the pointer says what a note will do", "[ui][pianoroll][cursor]")
     CHECK (cursorAt ({ lane.getCentreX(), lane.getY() + 1 }) == cursor::resizeY);
 
     // A tool outranks what is under the pointer.
-    h.roll.getToolbar().setTool (RollTool::slice);
+    h.roll.getToolbar().setTool (EditorTool::slice);
     CHECK (
         cursorAt ({ (int) (bounds.getX() + bounds.getWidth() * 0.3f), (int) bounds.getCentreY() })
         == cursor::nib);
-    h.roll.getToolbar().setTool (RollTool::select);
+    h.roll.getToolbar().setTool (EditorTool::select);
 
     h.roll.mouseMove (eventAt (h.roll, { (int) bounds.getRight() - 2, (int) bounds.getCentreY() }));
     REQUIRE (h.roll.getMouseCursor() == cursor::resizeX);

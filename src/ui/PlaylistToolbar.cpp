@@ -11,20 +11,11 @@ PlaylistToolbar::PlaylistToolbar()
 {
     setComponentID ("playlistToolbar");
 
-    const auto addTool = [this] (DewIconButton& button, PlaylistTool which)
+    tools.onToolChanged = [this]
     {
-        button.setClickingTogglesState (true);
-        button.setRadioGroupId (1);
-        button.onClick = [this, which] { setTool (which); };
-
-        // Without this a click on a tool moves focus off the arrangement, and
-        // the shortcuts it owns stop working until a lane is clicked again.
-        button.setMouseClickGrabsKeyboardFocus (false);
-        addAndMakeVisible (button);
+        if (onToolChanged)
+            onToolChanged();
     };
-
-    addTool (selectButton, PlaylistTool::select);
-    addTool (paintButton, PlaylistTool::paint);
 
     zoomButtons.onZoom = [this] (double factor)
     {
@@ -52,32 +43,6 @@ PlaylistToolbar::PlaylistToolbar()
                             [this] (int choice) { applyOverflowChoice (choice); });
     };
     addChildComponent (overflowButton);
-
-    updateToolButtons();
-}
-
-void PlaylistToolbar::setTool (PlaylistTool newTool, juce::NotificationType notification)
-{
-    if (tool == newTool)
-    {
-        // The radio group can clear the button of the tool that is already
-        // current when it is clicked again; put it back rather than leaving the
-        // strip showing no tool at all.
-        updateToolButtons();
-        return;
-    }
-
-    tool = newTool;
-    updateToolButtons();
-
-    if (notification != juce::dontSendNotification && onToolChanged)
-        onToolChanged();
-}
-
-void PlaylistToolbar::updateToolButtons()
-{
-    selectButton.setToggleState (tool == PlaylistTool::select, juce::dontSendNotification);
-    paintButton.setToggleState (tool == PlaylistTool::paint, juce::dontSendNotification);
 }
 
 void PlaylistToolbar::paint (juce::Graphics& g)
@@ -89,10 +54,14 @@ int PlaylistToolbar::preferredWidth() const
 {
     using namespace tokens;
 
-    constexpr auto controls = size::iconButton * 2 + ZoomButtons::preferredWidth
-                              + VerticalZoomButtons::preferredWidth;
+    // The tools ask for their own width, so adding one to the register is not
+    // also a number to remember here - which is what went quietly wrong before,
+    // since a strip that under-reports its width never shows its overflow
+    // button and simply drops the controls that did not fit.
+    const auto controls = tools.preferredWidth() + ZoomButtons::preferredWidth
+                          + VerticalZoomButtons::preferredWidth;
 
-    constexpr auto steps = space::xxs * 4;
+    constexpr auto steps = space::xxs * 2;
     constexpr auto dividers = (space::sm * 2 + space::xs) * 2;
 
     return controls + steps + dividers + space::md * 2;
@@ -128,8 +97,7 @@ void PlaylistToolbar::resized()
             groupDividers.add (strip.divider());
     };
 
-    place (selectButton, size::iconButton);
-    place (paintButton, size::iconButton);
+    tools.placeAll (place);
 
     divider();
 
