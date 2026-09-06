@@ -83,10 +83,10 @@
   --radius-md: 5px;
   --radius-lg: 8px;
 
-  --text-caption: 0.6875rem;
-  --text-small: 0.75rem;
-  --text-body: 0.8125rem;
-  --text-title: 0.9375rem;
+  --text-caption: 0.75rem;
+  --text-small: 0.8125rem;
+  --text-body: 0.875rem;
+  --text-title: 1rem;
   --text-display: 1.25rem;
   --text-code-small: 0.75rem;
   --text-code-body: 0.875rem;

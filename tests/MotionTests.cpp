@@ -10,7 +10,11 @@
 #include "ui/design/Tokens.h"
 #include "ui/primitives/DewButtons.h"
 #include "ui/primitives/DewKnob.h"
+#include "ui/InstrumentPanel.h"
 #include "ui/ZoomButtons.h"
+
+#include "EffectChainHarness.h"
+#include "FixtureProject.h"
 
 #include "PlaylistHarness.h"
 
@@ -510,4 +514,103 @@ TEST_CASE ("a zoom button eases where a wheel cuts", "[motion][zoom]")
     INFO ("wheel took the zoom from " << beforeWheel << " to " << zoomNow());
     CHECK (zoomNow() != Approx (beforeWheel));
     CHECK_FALSE (Animator::shared().isAnimating());
+}
+
+TEST_CASE ("the sidebar's two collapses fold rather than cutting", "[motion][panel]")
+{
+    /*  Both things that collapse in the instrument panel snapped, and the
+        second of them snapped HALFWAY: an effect card's siblings already slid
+        to their new positions while the card's own box changed height in one
+        frame, which reads worse than no animation at all.
+    */
+    const juce::ScopedJuceInitialiser_GUI juceInit;
+    ScopedAnimation animating;
+
+    ProjectDocument document;
+    EditorState editorState;
+    document.setState (dew::testing::fixtureProject(), true);
+    editorState.setSelectedChannelId (1);
+
+    SECTION ("the instrument band")
+    {
+        InstrumentPanel panel { document, editorState };
+        panel.setSize (280, 900);
+        panel.setVisible (true);
+        panel.resized();
+
+        const auto open = panel.getRequiredHeight();
+        REQUIRE (open > tokens::size::stripHeading);
+
+        editorState.setInstrumentExpanded (false);
+        editorState.dispatchPendingMessages();
+
+        // Sampled across the whole fold: a band that stayed put for 179ms and
+        // then vanished would pass a check on the ends alone.
+        auto previous = panel.getRequiredHeight();
+        auto sawMiddle = false;
+
+        for (int step = 0; step < 10; ++step)
+        {
+            Animator::shared().advance (motion::panelMs / 10);
+
+            const auto now = panel.getRequiredHeight();
+            CHECK (now <= previous);
+
+            if (now < open && now > tokens::size::stripHeading)
+                sawMiddle = true;
+
+            previous = now;
+        }
+
+        Animator::shared().advance (motion::panelMs);
+
+        INFO ("open " << open << ", folded " << panel.getRequiredHeight());
+        CHECK (sawMiddle);
+        CHECK (panel.getRequiredHeight() < open);
+
+        // And back, so the fold is a state rather than a one-way door.
+        editorState.setInstrumentExpanded (true);
+        editorState.dispatchPendingMessages();
+        Animator::shared().advance (motion::panelMs * 2);
+
+        CHECK (panel.getRequiredHeight() == open);
+    }
+
+    SECTION ("an effect card")
+    {
+        testing::ChainHarness h;
+
+        h.chain.addEffectOfType ("filter");
+        h.chain.addEffectOfType ("delay");
+        h.layOutLikeAHost();
+
+        REQUIRE (h.chain.isSlotExpanded (1));
+
+        const auto open = h.chain.getSlotBounds (1).getHeight();
+
+        h.chain.setSlotExpanded (1, false);
+        h.editorState.dispatchPendingMessages();
+
+        auto previous = h.chain.getSlotBounds (1).getHeight();
+        auto sawMiddle = false;
+
+        for (int step = 0; step < 10; ++step)
+        {
+            Animator::shared().advance (motion::quickMs / 10);
+
+            const auto now = h.chain.getSlotBounds (1).getHeight();
+            CHECK (now <= previous);
+
+            if (now < open && now > tokens::size::rowHeight)
+                sawMiddle = true;
+
+            previous = now;
+        }
+
+        Animator::shared().advance (motion::quickMs);
+
+        INFO ("open " << open << ", closed " << h.chain.getSlotBounds (1).getHeight());
+        CHECK (sawMiddle);
+        CHECK (h.chain.getSlotBounds (1).getHeight() == tokens::size::rowHeight);
+    }
 }

@@ -613,6 +613,7 @@ add_library(dew_ui STATIC
   ui/ScoreEditorCompletions.cpp
   ui/ScoreEditorPaint.cpp
   ui/InstrumentPanel.cpp
+  ui/InstrumentPanelLayout.cpp
   ui/EditorTabs.cpp
   ui/MainComponent.cpp
   ui/MainComponentJobs.cpp

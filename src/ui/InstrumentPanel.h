@@ -209,6 +209,24 @@ private:
         rather than keeping a flag. */
     bool isInstrumentExpanded() const;
 
+    /** How far folded the band is: 0 showing, 1 collapsed to its heading.
+
+        A LAYOUT value, so onChanged is resized() rather than a repaint - and
+        it tells MainComponent as well, because the panel's height is what
+        decides whether the sidebar scrolls. The same shape MainComponent's own
+        panel fold uses; before this the band went from full height to its
+        heading in one frame while that fold eased beside it.
+    */
+    ComponentMotion fold { *this };
+
+    /** Points the fold at where the document says it should be. The FIRST
+        answer snaps: a panel built from a document must not fold itself open
+        on the frame it appears, which is the rule every primitive built from a
+        value follows. */
+    void updateFold();
+
+    bool foldStated = false;
+
     /** Opens buildMenu at the pointer. */
     void showMenu (const juce::MouseEvent&);
 

@@ -294,6 +294,46 @@ private:
     */
     juce::OwnedArray<ComponentMotion> slide;
 
+    /** And how TALL each one is. Positions already eased while heights cut, so
+        a card being collapsed snapped its own box in one frame while every
+        card below it glided - a half-animation, which reads worse than no
+        animation at all.
+
+        Safe to ease alongside `slide` because the two stay consistent by
+        construction: a position's target is the sum of the height targets
+        before it, both are stepped by the same eased scalar, so the position
+        at any frame is exactly the sum of the heights at that frame. Cards can
+        neither overlap nor gap while the two are running. */
+    juce::OwnedArray<ComponentMotion> grow;
+
+    /** Set by the one event that means a person opened or closed a card, and
+        consumed by the layout that follows it.
+
+        What tells a real EXPANSION apart from every other reason a card's
+        height moves, and the two must not animate the same way. A card is also
+        re-measured when the panel is resized - its knob grid reflows, so the
+        same card is two rows at one width and one at another - and when the
+        chain is rebuilt, where the card that was just added is opened for you.
+        Easing either would leave the chain still drifting after a window drag,
+        or sweep a chain open on the frame it was built.
+
+        A flag on the EVENT rather than a remembered per-card state, which is
+        what the first attempt used and could not get right: the expansion a
+        rebuild applies arrives after the rebuild has recorded what it thinks
+        the cards look like, so the next layout saw a phantom transition.
+    */
+    bool easeNextLayout = false;
+
+    /** layOutCards is not re-entrant, and it is reached re-entrantly.
+
+        Aiming a card's height motion NOTIFIES - ComponentMotion does that on
+        snapTo as well as on a frame - and that notification tells the host its
+        required size moved, which lays the panel out again, which arrives back
+        here in the middle of the loop that was aiming the motions. The inner
+        pass then aims the rest of them against a half-updated `expandedLast`.
+    */
+    bool layingOut = false;
+
     /** Whether the next layout arrives rather than sweeps. True after a
         rebuild, because a card being given its position for the first time has
         nowhere to have come from. */
@@ -307,6 +347,12 @@ private:
 
     void rebuild();
     void notifyRequiredSizeChanged();
+
+    /** How tall card `i` is being drawn right now: its eased height while a
+        card is opening or closing, and its own answer otherwise. Every reader
+        of a card's vertical extent goes through here, so the layout, the
+        chain's own height and the host's scrollbar cannot disagree mid-fold. */
+    int heightOfCard (int index) const;
 
     juce::ValueTree effectAt (int index) const;
 

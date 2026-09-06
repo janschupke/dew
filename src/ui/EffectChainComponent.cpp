@@ -247,6 +247,7 @@ void EffectChainComponent::rebuild()
 
     cards.clear();
     slide.clear();
+    grow.clear();
 
     int index = 0;
 
@@ -262,6 +263,27 @@ void EffectChainComponent::rebuild()
         // because repainting a component does not move it.
         auto* motion = slide.add (new ComponentMotion (*this));
         motion->onChanged = [this] { applyCardPositions(); };
+
+        // The height the same way, and applyCardPositions rather than
+        // layOutCards for a reason that costs a stack if you get it wrong:
+        // layOutCards is what AIMS these, so a frame callback re-entering it
+        // re-aims the motion that is calling it - ComponentMotion notifies on
+        // every animateTo, including one that changes nothing at all.
+        //
+        // It does not need to re-run anyway. A position's target is the sum of
+        // the height targets before it and both are stepped by the same eased
+        // scalar, so the positions layOutCards already set stay exactly
+        // consistent with the heights on every frame between.
+        //
+        // The host is told too: a chain that is growing is one the sidebar may
+        // have to scroll, and it cannot see a frame of this otherwise.
+        auto* height = grow.add (
+            new ComponentMotion (*this, (float) cards[i]->getRequiredHeight()));
+        height->onChanged = [this]
+        {
+            applyCardPositions();
+            notifyRequiredSizeChanged();
+        };
     }
 
     snapNextLayout = true;
@@ -281,6 +303,11 @@ void EffectChainComponent::rebuild()
 
     for (int i = 0; i < cards.size(); ++i)
         cards[i]->setSelected (i == selectedSlot);
+
+    // A rebuild ARRIVES. Whatever the default expansion above just did, and
+    // whatever a listener does with it next, none of it is a person opening a
+    // card - so nothing here eases.
+    easeNextLayout = false;
 
     resized();
     repaint();
@@ -325,8 +352,10 @@ int EffectChainComponent::getRequiredHeight() const
 
     // The gap goes BETWEEN cards, not after the last one - the band's own
     // bottom margin is the host's, stated once in bandHeightForRows.
-    for (auto* card : cards)
-        height += card->getRequiredHeight() + space::xs;
+    // The ANIMATED heights, so the sidebar's scrollbar agrees with what is on
+    // screen on every frame rather than only at the two ends.
+    for (int i = 0; i < cards.size(); ++i)
+        height += heightOfCard (i) + space::xs;
 
     if (! cards.isEmpty())
         height -= space::xs;
@@ -455,6 +484,11 @@ void EffectChainComponent::valueTreePropertyChanged (juce::ValueTree& tree, cons
 
 void EffectChainComponent::changeListenerCallback (juce::ChangeBroadcaster*)
 {
+    // THE event that means a person opened or closed a card, and so the one
+    // place a height change is allowed to ease. Everything else that moves a
+    // card's height - a rebuild, a reflow at a new width - arrives.
+    easeNextLayout = true;
+
     // A card opening or closing changes every card's position and the chain's
     // height, so the host that scrolls it has to be told.
     for (auto* card : cards)

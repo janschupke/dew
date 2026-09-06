@@ -70,8 +70,40 @@ int EffectChainComponent::insertionFor (juce::Point<int> position) const
     return before;
 }
 
+int EffectChainComponent::heightOfCard (int index) const
+{
+    auto* card = cards[index];
+
+    if (card == nullptr)
+        return 0;
+
+    auto* motion = grow[index];
+
+    // The card's own answer unless there is an animation actually running.
+    //
+    // Not merely an optimisation. These motions are aimed by layOutCards,
+    // which runs from resized(), while a card's expansion is EditorState's and
+    // reaches the chain through a ChangeBroadcaster - so between the two there
+    // is a window in which the motion holds the previous height. Reading it
+    // unconditionally made getRequiredHeight answer with a height the chain had
+    // already stopped wanting, and froze a reorder drag's geometry at it.
+    //
+    // It is also what keeps every existing test meaning what it meant: motion
+    // is off outside the running application, so isMoving is never true there
+    // and this is exactly the sum it always was.
+    if (motion == nullptr || ! motion->isMoving())
+        return card->getRequiredHeight();
+
+    return juce::roundToInt (motion->get());
+}
+
 void EffectChainComponent::layOutCards()
 {
+    if (layingOut)
+        return;
+
+    const juce::ScopedValueSetter<bool> busy (layingOut, true);
+
     dropArea = {};
 
     if (cards.isEmpty())
@@ -95,7 +127,26 @@ void EffectChainComponent::layOutCards()
     for (const auto i : order)
     {
         auto* card = cards[i];
-        const auto extent = horizontal ? card->getRequiredWidth() : card->getRequiredHeight();
+
+        // Aimed before it is read, so a card that has just been opened or
+        // closed starts moving on this very layout rather than on the next one.
+        //
+        // Only the TRANSITION eases. A card's required height also moves when
+        // the panel is resized - its knob grid reflows, so the same card is two
+        // rows at one width and one at another - and easing that would leave
+        // the chain still drifting after a window drag had finished.
+        if (! horizontal)
+        {
+            if (auto* height = grow[i])
+            {
+                if (snapNextLayout || ! easeNextLayout)
+                    height->snapTo ((float) card->getRequiredHeight());
+                else
+                    height->animateTo ((float) card->getRequiredHeight(), motion::quickMs);
+            }
+        }
+
+        const auto extent = horizontal ? card->getRequiredWidth() : heightOfCard (i);
 
         if (i == reorder.source && reorder.active)
             dropArea = horizontal ? juce::Rectangle<int> (along, 0, extent,
@@ -113,6 +164,11 @@ void EffectChainComponent::layOutCards()
     // this a chain built from a document would slide every card down from the
     // top of the panel the moment the application turned motion on.
     snapNextLayout = false;
+
+    // And one layout's worth of easing per toggle. A second layout for the same
+    // toggle - the host answering the size change, say - must not re-aim a
+    // motion that is already on its way.
+    easeNextLayout = false;
 
     applyCardPositions();
 }
@@ -134,7 +190,7 @@ void EffectChainComponent::applyCardPositions()
             card->setBounds (along, 0, card->getRequiredWidth(),
                              EffectCard::heightForRows (knobRowBudget));
         else
-            card->setBounds (0, along, getWidth(), card->getRequiredHeight());
+            card->setBounds (0, along, getWidth(), heightOfCard (i));
     }
 
     if (! reorder.active)
