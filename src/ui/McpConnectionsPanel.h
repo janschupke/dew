@@ -8,6 +8,7 @@
 #include "ui/DewDialog.h"
 #include "ui/McpGrants.h"
 #include "ui/primitives/DewButtons.h"
+#include "ui/primitives/DewReadOnlyField.h"
 
 namespace dew
 {
@@ -75,6 +76,17 @@ public:
         return enableButton;
     }
 
+    /** The two fields whose whole purpose is to end up somewhere else, so a
+        test can select from and copy what a person selects from and copies. */
+    DewReadOnlyField& getAddressField() noexcept
+    {
+        return addressField;
+    }
+    DewReadOnlyField& getCommandField() noexcept
+    {
+        return commandField;
+    }
+
     static constexpr int preferredWidth = 520;
     static constexpr int preferredHeight = 340;
 
@@ -88,6 +100,29 @@ private:
 
     void rebuildRows();
 
+    /** Where every part of the header goes.
+
+        Computed once and read by BOTH paint() and resized(), which each used to
+        replay the other's vertical arithmetic - including the same
+        "is there a command" conditional, spelled twice in one and twice in the
+        other. Two walks down one column is a layout that drifts the first time
+        a line is added to either.
+    */
+    struct Layout
+    {
+        juce::Rectangle<int> enable, enableHelp;
+        juce::Rectangle<int> addressCaption, address, addressHelp;
+        juce::Rectangle<int> commandCaption, command;
+        juce::Rectangle<int> grantedCaption, list;
+    };
+
+    Layout layOut() const;
+
+    /** Puts the current address and command into the fields, and hides the
+        command block when there is nothing listening - "Give this to an MCP
+        client" under the words "Not running" is an instruction about nothing. */
+    void updateFields();
+
     /** The grants right now, or nullptr. One place asks, so the "is there a
         function, and did it answer" pair is written once. */
     McpGrants* grantsNow() const;
@@ -98,6 +133,8 @@ private:
     std::function<void()> onEnabledChanged;
 
     DewCheckbox enableButton { tr (StringId::mcp_connections_enable) };
+
+    DewReadOnlyField addressField, commandField;
 
     juce::Viewport viewport;
     juce::Component list;

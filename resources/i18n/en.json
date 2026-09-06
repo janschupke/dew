@@ -534,6 +534,8 @@
       "address": "Address",
       "addressHelp": "Give this to an MCP client. It is on this machine only.",
       "command": "Command to add it to Claude Code",
+      "copyAddress": "Copy the address",
+      "copyCommand": "Copy the command",
       "empty": "No client has been allowed yet. One that connects will ask.",
       "enable": "Let programs on this machine control dew",
       "enableHelp": "dew listens on this machine only, and asks before it lets anything in.",

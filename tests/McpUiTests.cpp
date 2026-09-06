@@ -3,6 +3,8 @@
 #include "PaintProbe.h"
 #include "ui/McpConnectionsPanel.h"
 #include "ui/McpConsentPanel.h"
+#include "ui/design/Tokens.h"
+#include "ui/primitives/DewReadOnlyField.h"
 
 using namespace dew;
 
@@ -334,4 +336,64 @@ TEST_CASE ("the panel shows a command that names the live address", "[ui][mcp]")
     REQUIRE (panel.getAddressText() == server.getUrl());
     REQUIRE (panel.getCommandText().contains (server.getUrl()));
     REQUIRE (panel.getCommandText().startsWith ("claude mcp add"));
+
+    /*  And both of them are in something a person can take them out of. They
+        were drawn with drawFittedText, which produces a string that cannot be
+        selected and cannot be copied - from a dialog covering the very window
+        you would have retyped it into.
+    */
+    panel.setSize (McpConnectionsPanel::preferredWidth, McpConnectionsPanel::preferredHeight);
+    panel.resized();
+
+    auto& address = panel.getAddressField();
+    auto& command = panel.getCommandField();
+
+    CHECK (address.getText() == panel.getAddressText());
+    CHECK (command.getText() == panel.getCommandText());
+
+    // Read-only, and that is NOT the same as disabled: a disabled editor
+    // cannot be selected from either, which would leave this exactly as
+    // useful as the text it replaces.
+    CHECK (address.getEditor().isReadOnly());
+    CHECK (address.getEditor().isEnabled());
+
+    address.getEditor().selectAll();
+    CHECK (address.getEditor().getHighlightedRegion().getLength()
+           == panel.getAddressText().length());
+
+    // Both fields are on screen and inside the panel, the command one only
+    // because there is a server running to name.
+    CHECK (address.isVisible());
+    CHECK (command.isVisible());
+    CHECK (panel.getLocalBounds().contains (address.getBounds()));
+    CHECK (panel.getLocalBounds().contains (command.getBounds()));
+    CHECK (! address.getBounds().intersects (command.getBounds()));
+}
+
+TEST_CASE ("the copy button puts the command on the clipboard", "[ui][mcp]")
+{
+    /*  The other half of "make it takeable": selecting a command by hand from
+        a dialog is possible but not the point, and a button is what makes it
+        one gesture.
+    */
+    const juce::ScopedJuceInitialiser_GUI juceInit;
+
+    DewReadOnlyField field;
+    field.setSize (300, tokens::size::controlHeight);
+    field.setText ("claude mcp add --transport http dew http://127.0.0.1:7654/mcp");
+
+    juce::SystemClipboard::copyTextToClipboard ("something else entirely");
+    REQUIRE (juce::SystemClipboard::getTextFromClipboard() != field.getText());
+
+    // Invoked directly rather than through triggerClick, which posts a message
+    // that nothing pumps in a headless test - this is the same callback the
+    // button holds, just called without a message loop in the way.
+    REQUIRE (field.getCopyButton().onClick != nullptr);
+    field.getCopyButton().onClick();
+
+    CHECK (juce::SystemClipboard::getTextFromClipboard() == field.getText());
+
+    // Selected as well as copied. A clipboard write is otherwise the one
+    // action in the application with no visible result at all.
+    CHECK (field.getEditor().getHighlightedRegion().getLength() == field.getText().length());
 }

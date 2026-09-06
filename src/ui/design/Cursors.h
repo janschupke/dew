@@ -60,4 +60,15 @@ inline const juce::MouseCursor resizeY { juce::MouseCursor::UpDownResizeCursor }
     slice tools, where the pointer is a nib and not a hand. */
 inline const juce::MouseCursor nib { juce::MouseCursor::CrosshairCursor };
 
+/** A drag SELECTS the characters under it, to be taken somewhere else: an
+    address, a command line.
+
+    Distinct from `clickable`, which promises that a press does something, and
+    from `value`, which the search field uses because a search field is a
+    control you operate. This one promises the opposite - that nothing here
+    will happen to the document - and it is the only signal a read-only field
+    has to say that its text is still yours to take.
+*/
+inline const juce::MouseCursor text { juce::MouseCursor::IBeamCursor };
+
 } // namespace dew::cursor

@@ -65,10 +65,23 @@ McpConnectionsPanel::McpConnectionsPanel (std::function<control::McpServer*()> s
 
     addAndMakeVisible (enableButton);
 
+    // Both of these exist to be TAKEN somewhere else - pasted into a client's
+    // config, or run in a terminal - and both were drawn text until now, which
+    // a person could read off the screen and retype and nothing more.
+    addressField.setTooltip (tr (StringId::mcp_connections_address));
+    addressField.setCopyTooltip (tr (StringId::mcp_connections_copyAddress));
+    addAndMakeVisible (addressField);
+
+    commandField.setFont (tokens::type::monospaced (tokens::type::caption));
+    commandField.setTooltip (tr (StringId::mcp_connections_command));
+    commandField.setCopyTooltip (tr (StringId::mcp_connections_copyCommand));
+    addChildComponent (commandField);
+
     viewport.setViewedComponent (&list, false);
     viewport.setScrollBarsShown (true, false);
     addAndMakeVisible (viewport);
 
+    updateFields();
     rebuildRows();
 
     setSize (preferredWidth, preferredHeight);
@@ -128,6 +141,9 @@ void McpConnectionsPanel::revokeRow (int index)
 
 void McpConnectionsPanel::refresh()
 {
+    // Before the layout, not after: whether there is a command decides whether
+    // the command block is on screen at all, and layOut asks.
+    updateFields();
     rebuildRows();
     resized();
     repaint();
@@ -177,74 +193,88 @@ void McpConnectionsPanel::rebuildRows()
     }
 }
 
+McpConnectionsPanel::Layout McpConnectionsPanel::layOut() const
+{
+    using namespace tokens;
+
+    Layout out;
+    auto area = contentBounds();
+
+    const auto running = getCommandText().isNotEmpty();
+
+    out.enable = area.removeFromTop (size::controlHeight);
+    out.enableHelp = area.removeFromTop (size::controlHeightSm);
+    area.removeFromTop (space::md);
+
+    out.addressCaption = area.removeFromTop (size::controlHeightSm);
+    out.address = area.removeFromTop (size::controlHeight);
+
+    // Only when there IS an address. "Give this to an MCP client" under the
+    // words "Not running" is an instruction about nothing.
+    if (running)
+        out.addressHelp = area.removeFromTop (size::controlHeightSm);
+
+    area.removeFromTop (space::md);
+
+    if (running)
+    {
+        out.commandCaption = area.removeFromTop (size::controlHeightSm);
+        out.command = area.removeFromTop (size::controlHeight);
+        area.removeFromTop (space::md);
+    }
+
+    out.grantedCaption = area.removeFromTop (size::controlHeightSm);
+    out.list = area;
+
+    return out;
+}
+
+void McpConnectionsPanel::updateFields()
+{
+    const auto command = getCommandText();
+
+    addressField.setText (getAddressText());
+
+    // The address field shows "Not running" when there is no endpoint, which
+    // is a state rather than an address - so there is nothing to take.
+    addressField.setCopyable (command.isNotEmpty());
+
+    commandField.setText (command);
+    commandField.setVisible (command.isNotEmpty());
+}
+
 void McpConnectionsPanel::paint (juce::Graphics& g)
 {
     using namespace tokens;
 
     paintBackground (g);
 
-    auto area = contentBounds();
+    const auto layout = layOut();
 
-    area.removeFromTop (size::controlHeight);
-
+    // The captions only. What they caption is a component now - a field you can
+    // select from and copy out of - rather than a string drawn into the gap
+    // underneath, which could be read and nothing else.
     g.setColour (colour::textSecondary);
     g.setFont (type::font (type::caption));
-    g.drawFittedText (tr (StringId::mcp_connections_enableHelp),
-                      area.removeFromTop (size::controlHeightSm), juce::Justification::centredLeft,
-                      1);
 
-    area.removeFromTop (space::md);
-
-    g.drawFittedText (tr (StringId::mcp_connections_address),
-                      area.removeFromTop (size::controlHeightSm), juce::Justification::centredLeft,
-                      1);
-
-    g.setColour (colour::textPrimary);
-    g.setFont (type::font (type::body));
-    g.drawFittedText (getAddressText(), area.removeFromTop (size::controlHeight),
-                      juce::Justification::centredLeft, 1);
-
-    // Only when there IS an address. "Give this to an MCP client" under the
-    // words "Not running" is an instruction about nothing.
-    if (getCommandText().isNotEmpty())
+    const auto caption = [&g] (const juce::String& text, juce::Rectangle<int> bounds)
     {
-        g.setColour (colour::textSecondary);
-        g.setFont (type::font (type::caption));
-        g.drawFittedText (tr (StringId::mcp_connections_addressHelp),
-                          area.removeFromTop (size::controlHeightSm),
-                          juce::Justification::centredLeft, 1);
-    }
+        if (! bounds.isEmpty())
+            g.drawFittedText (text, bounds, juce::Justification::centredLeft, 1);
+    };
 
-    area.removeFromTop (space::md);
-
-    if (const auto command = getCommandText(); command.isNotEmpty())
-    {
-        g.setColour (colour::textSecondary);
-        g.setFont (type::font (type::caption));
-        g.drawFittedText (tr (StringId::mcp_connections_command),
-                          area.removeFromTop (size::controlHeightSm),
-                          juce::Justification::centredLeft, 1);
-
-        g.setColour (colour::textPrimary);
-        g.setFont (type::monospaced (type::caption));
-        g.drawFittedText (command, area.removeFromTop (size::controlHeight),
-                          juce::Justification::centredLeft, 1);
-
-        area.removeFromTop (space::md);
-    }
-
-    g.setColour (colour::textSecondary);
-    g.setFont (type::font (type::caption));
-    g.drawFittedText (tr (StringId::mcp_connections_granted),
-                      area.removeFromTop (size::controlHeightSm), juce::Justification::centredLeft,
-                      1);
+    caption (tr (StringId::mcp_connections_enableHelp), layout.enableHelp);
+    caption (tr (StringId::mcp_connections_address), layout.addressCaption);
+    caption (tr (StringId::mcp_connections_addressHelp), layout.addressHelp);
+    caption (tr (StringId::mcp_connections_command), layout.commandCaption);
+    caption (tr (StringId::mcp_connections_granted), layout.grantedCaption);
 
     if (rows.empty())
     {
         g.setColour (colour::textSecondary);
         g.setFont (type::font (type::body));
-        g.drawFittedText (tr (StringId::mcp_connections_empty), area, juce::Justification::topLeft,
-                          2);
+        g.drawFittedText (tr (StringId::mcp_connections_empty), layout.list,
+                          juce::Justification::topLeft, 2);
     }
 }
 
@@ -252,26 +282,15 @@ void McpConnectionsPanel::resized()
 {
     using namespace tokens;
 
-    auto area = contentBounds();
+    const auto layout = layOut();
 
-    enableButton.setBounds (area.removeFromTop (size::controlHeight));
+    enableButton.setBounds (layout.enable);
+    addressField.setBounds (layout.address);
 
-    // The header block the painter draws, skipped in the same order it draws
-    // it: the switch's explanation, the address and its help, then the command
-    // block when there is one and the "allowed" caption below.
-    area.removeFromTop (size::controlHeightSm + space::md);
-    area.removeFromTop (size::controlHeightSm + size::controlHeight + space::md);
+    if (! layout.command.isEmpty())
+        commandField.setBounds (layout.command);
 
-    // The address's help line is drawn only when there is an address, so the
-    // layout skips exactly what the painter drew.
-    if (getCommandText().isNotEmpty())
-        area.removeFromTop (size::controlHeightSm);
-
-    if (getCommandText().isNotEmpty())
-        area.removeFromTop (size::controlHeightSm + size::controlHeight + space::md);
-
-    area.removeFromTop (size::controlHeightSm);
-
+    const auto area = layout.list;
     viewport.setBounds (area);
 
     const auto rowHeight = size::controlHeight + space::xs;

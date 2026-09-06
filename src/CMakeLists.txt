@@ -500,6 +500,7 @@ add_library(dew_design STATIC
   ui/design/DewGallery.cpp
   ui/design/DewGalleryPalette.cpp
   ui/primitives/DewControls.cpp
+  ui/primitives/DewReadOnlyField.cpp
   ui/primitives/DewSearchField.cpp
   ui/primitives/DewKnob.cpp
   ui/primitives/DewPaint.cpp
