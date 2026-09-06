@@ -83,26 +83,26 @@ std::optional<AutomationTarget> automationTargetFor (const juce::ValueTree& proj
     {
         target.scope = AutomationScope::project;
         target.targetId = 0;
-        target.displayName = tr (StringId::automation_song);
+        target.ownerName = tr (StringId::automation_song);
     }
     else if (node.hasType (ids::CHANNEL))
     {
         target.scope = AutomationScope::channel;
         target.targetId = (int) node[ids::id];
         ownerName = node[ids::name].toString();
-        target.displayName = ownerName;
+        target.ownerName = ownerName;
     }
     else if (node.hasType (ids::MIXER_TRACK))
     {
         target.scope = AutomationScope::mixerTrack;
         target.targetId = (int) node[ids::id];
-        target.displayName = node[ids::name].toString();
+        target.ownerName = node[ids::name].toString();
     }
     else if (node.hasType (ids::MASTER))
     {
         target.scope = AutomationScope::master;
         target.targetId = 0;
-        target.displayName = tr (StringId::automation_master);
+        target.ownerName = tr (StringId::automation_master);
     }
     else if (node.hasType (ids::AMP))
     {
@@ -115,10 +115,10 @@ std::optional<AutomationTarget> automationTargetFor (const juce::ValueTree& proj
 
         target.scope = AutomationScope::channelAmp;
         target.targetId = (int) channel[ids::id];
-        target.displayName = tr (StringId::automation_parameter,
-                                 Args {}
-                                     .with ("owner", channel[ids::name].toString())
-                                     .with ("param", tr (StringId::automation_envelope)));
+        target.ownerName = tr (StringId::automation_parameter,
+                               Args {}
+                                   .with ("owner", channel[ids::name].toString())
+                                   .with ("param", tr (StringId::automation_envelope)));
     }
     else if (node.hasType (ids::SOUNDFONT))
     {
@@ -129,10 +129,10 @@ std::optional<AutomationTarget> automationTargetFor (const juce::ValueTree& proj
 
         target.scope = AutomationScope::channelSoundFont;
         target.targetId = (int) channel[ids::id];
-        target.displayName = tr (StringId::automation_parameter,
-                                 Args {}
-                                     .with ("owner", channel[ids::name].toString())
-                                     .with ("param", tr (StringId::automation_soundFont)));
+        target.ownerName = tr (StringId::automation_parameter,
+                               Args {}
+                                   .with ("owner", channel[ids::name].toString())
+                                   .with ("param", tr (StringId::automation_soundFont)));
     }
     else if (node.hasType (ids::OSC) || isOscChildNode (node))
     {
@@ -169,7 +169,7 @@ std::optional<AutomationTarget> automationTargetFor (const juce::ValueTree& proj
         target.scope = AutomationScope::channelOsc;
         target.targetId = (int) channel[ids::id];
         target.slot = slotOf (bank, slot, ids::OSC);
-        target.displayName = tr (
+        target.ownerName = tr (
             StringId::automation_oscillator,
             Args {}.with ("channel", channel[ids::name].toString()).with ("slot", target.slot + 1));
     }
@@ -182,19 +182,19 @@ std::optional<AutomationTarget> automationTargetFor (const juce::ValueTree& proj
         {
             target.scope = AutomationScope::channelEffect;
             target.targetId = (int) parent[ids::id];
-            target.displayName = tr (StringId::automation_parameter,
-                                     Args {}
-                                         .with ("owner", parent[ids::name].toString())
-                                         .with ("param", effectLabel (node)));
+            target.ownerName = tr (StringId::automation_parameter,
+                                   Args {}
+                                       .with ("owner", parent[ids::name].toString())
+                                       .with ("param", effectLabel (node)));
         }
         else if (parent.hasType (ids::MIXER_TRACK))
         {
             target.scope = AutomationScope::mixerEffect;
             target.targetId = (int) parent[ids::id];
-            target.displayName = tr (StringId::automation_parameter,
-                                     Args {}
-                                         .with ("owner", parent[ids::name].toString())
-                                         .with ("param", effectLabel (node)));
+            target.ownerName = tr (StringId::automation_parameter,
+                                   Args {}
+                                       .with ("owner", parent[ids::name].toString())
+                                       .with ("param", effectLabel (node)));
         }
         else
         {
@@ -220,8 +220,14 @@ std::optional<AutomationTarget> automationTargetFor (const juce::ValueTree& proj
     if (target.spec == nullptr)
         return {};
 
-    target.displayName += tr (StringId::automation_separator)
-                          + tr (paramNameOf (*target.spec->property));
+    // Composed ONCE, through the message that says what a target is called,
+    // rather than assembled from an owner, a separator key and a parameter -
+    // which is a sentence built with +, and which PlaylistMenus then had to
+    // split back apart on the same separator to group its submenu.
+    target.paramName = tr (paramNameOf (*target.spec->property));
+    target.displayName = tr (
+        StringId::automation_parameter,
+        Args {}.with ("owner", target.ownerName).with ("param", target.paramName));
     return target;
 }
 
@@ -317,6 +323,23 @@ const ParamSpec* specForAutomation (const juce::ValueTree& project,
     }
 
     return findParamSpec (scope, effectType, property);
+}
+
+juce::String automationDisplayName (const juce::ValueTree& project,
+                                    const juce::ValueTree& automation)
+{
+    if (! automation.isValid())
+        return {};
+
+    const auto scope = automationScopeFromString (automation[ids::scope].toString());
+    const auto node = automationNodeFor (project, scope, (int) automation[ids::targetId],
+                                         (int) automation[ids::slot]);
+    const juce::Identifier property { automation[ids::param].toString() };
+
+    if (const auto target = automationTargetFor (project, node, property))
+        return target->displayName;
+
+    return tr (StringId::playlist_missingAutomation);
 }
 
 std::vector<AutomationTarget> availableAutomationTargets (const juce::ValueTree& project)

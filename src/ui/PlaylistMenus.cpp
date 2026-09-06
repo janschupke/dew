@@ -370,22 +370,23 @@ void PlaylistComponent::showAutomationMenu()
 
     // Grouped by what they belong to: a flat list of every parameter of every
     // effect on every channel is unreadable by the third channel.
+    //
+    // From the target's own two halves. This used to take the composed name
+    // apart again on the separator key - so the grouping held only while every
+    // owner name was free of a character the catalogue had chosen, and a locale
+    // that spelled the separator differently regrouped the menu.
     for (const auto& target : targets)
     {
-        const auto group = target.displayName.upToFirstOccurrenceOf (
-            tr (StringId::automation_separator), false, false);
-
-        if (group != currentGroup)
+        if (target.ownerName != currentGroup)
         {
             if (currentGroup.isNotEmpty())
                 addGlyphSubMenu (menu, currentGroup, submenu, glyph::Action::automate);
 
             submenu.clear();
-            currentGroup = group;
+            currentGroup = target.ownerName;
         }
 
-        submenu.addItem (itemId++, target.displayName.fromFirstOccurrenceOf (
-                                       tr (StringId::automation_separator), false, false));
+        submenu.addItem (itemId++, target.paramName);
     }
 
     if (currentGroup.isNotEmpty())

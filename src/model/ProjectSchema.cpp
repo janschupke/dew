@@ -423,9 +423,14 @@ const NodeSpec& pointSpec()
 
 const NodeSpec& automationSpec()
 {
+    // No `name`. It used to hold a display string - "Kick > Filter > Cutoff" -
+    // written in whatever language the clip was created in and read only for
+    // display; automationDisplayName recomputes it from the four properties
+    // below, which are what the clip actually points at. The property is
+    // RETIRED rather than unknown, so every project already saved loads without
+    // a warning about a change it had no part in.
     static const NodeSpec spec { ids::AUTOMATION,
                                  { { ids::id, 1 },
-                                   { ids::name, "Automation" },
                                    { ids::scope, "channel" },
                                    { ids::targetId, 1 },
                                    { ids::slot, -1 },

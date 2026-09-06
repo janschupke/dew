@@ -313,23 +313,20 @@ juce::ValueTree ProjectFactory::createAutomationDemo()
     // which is what makes a filter opening sound like it accelerates - a
     // straight line through the same two points arrives too early and sits.
     project.appendChild (
-        makeAutomation (1, "Arp > Filter > Cutoff", AutomationScope::channelEffect, 1, 0,
-                        ids::cutoff,
+        makeAutomation (1, AutomationScope::channelEffect, 1, 0, ids::cutoff,
                         { { 0.0, 0.35, 0.55 }, { 96.0, 0.62, 0.30 }, { 192.0, 1.00 } }),
         nullptr);
 
     // 0.6, not 0.9: a point's value is normalised into the target's range, and
     // the master fader spans 0..1.5.
-    project.appendChild (makeAutomation (2, "Master > Gain", AutomationScope::master, 0, -1,
-                                         ids::gain,
+    project.appendChild (makeAutomation (2, AutomationScope::master, 0, -1, ids::gain,
                                          { { 0.0, 0.60 }, { 32.0, 0.60 }, { 64.0, 0.0 } }),
                          nullptr);
 
     // The pump. Ducked on the beat and recovering across it, four bars of it,
     // and the DUCK is a step while the recovery is a curve - because the duck
     // is an event and the recovery is a motion.
-    project.appendChild (makeAutomation (3, "Bass > Volume", AutomationScope::channel, 3, -1,
-                                         ids::volume,
+    project.appendChild (makeAutomation (3, AutomationScope::channel, 3, -1, ids::volume,
                                          { { 0.0, 0.32, 0.0, "step" },
                                            { 4.0, 0.90, -0.45 },
                                            { 16.0, 0.32, 0.0, "step" },
@@ -342,15 +339,14 @@ juce::ValueTree ProjectFactory::createAutomationDemo()
                          nullptr);
 
     project.appendChild (
-        makeAutomation (4, "Insert 4 > Delay > Feedback", AutomationScope::mixerEffect, 4, 0,
-                        ids::feedback,
+        makeAutomation (4, AutomationScope::mixerEffect, 4, 0, ids::feedback,
                         { { 0.0, 0.20 }, { 48.0, 0.85, 0.40 }, { 64.0, 0.25, 0.0, "step" } }),
         nullptr);
 
     // The tempo itself, which is a scope of its own because it belongs to the
     // arrangement rather than to anything in it. Logarithmic, like cutoff: the
     // values below are 126, 120 and 132 bpm through that mapping.
-    project.appendChild (makeAutomation (5, "Tempo", AutomationScope::project, 0, -1, ids::tempoBpm,
+    project.appendChild (makeAutomation (5, AutomationScope::project, 0, -1, ids::tempoBpm,
                                          { { 0.0, 0.4706 },
                                            { 192.0, 0.4706 },
                                            { 256.0, 0.4581, 0.0, "step" },

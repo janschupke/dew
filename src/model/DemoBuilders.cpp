@@ -178,13 +178,11 @@ juce::ValueTree makeEffect (int id, const juce::String& type, Params params)
     return effect;
 }
 
-juce::ValueTree makeAutomation (int id, const juce::String& name, AutomationScope scope,
-                                int targetId, int slot, const juce::Identifier& param,
-                                std::initializer_list<Point> points)
+juce::ValueTree makeAutomation (int id, AutomationScope scope, int targetId, int slot,
+                                const juce::Identifier& param, std::initializer_list<Point> points)
 {
     auto automation = defaultTreeFor (automationSpec());
     automation.setProperty (ids::id, id, nullptr);
-    automation.setProperty (ids::name, name, nullptr);
     automation.setProperty (ids::scope, automationScopeToString (scope), nullptr);
     automation.setProperty (ids::targetId, targetId, nullptr);
     automation.setProperty (ids::slot, slot, nullptr);

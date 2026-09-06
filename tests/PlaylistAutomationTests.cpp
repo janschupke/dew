@@ -80,7 +80,11 @@ TEST_CASE ("choosing a target creates an automation and a clip for it",
     const auto automation = ProjectEdits::findAutomation (h.document.getState(),
                                                           (int) clip[ids::automationId]);
     REQUIRE (automation.isValid());
-    REQUIRE (automation[ids::name].toString() == firstChannelVolumeTarget (h.document.getState()));
+    // The name is not STORED any more - it is recomputed from what the clip
+    // points at, which is what stops a project saved in one language carrying
+    // another's labels.
+    REQUIRE (automationDisplayName (h.document.getState(), automation)
+             == firstChannelVolumeTarget (h.document.getState()));
 
     // On a free lane, not stacked invisibly under the clip that is already there.
     REQUIRE (h.countClips (0) == 1);

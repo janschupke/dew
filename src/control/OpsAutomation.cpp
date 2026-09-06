@@ -116,7 +116,7 @@ ControlResult write (ControlHost& host, const juce::var& args)
 
     return ControlResult::success (Obj {}
                                        .set ("id", (int) automation[ids::id])
-                                       .set ("name", automation[ids::name].toString())
+                                       .set ("name", automationDisplayName (project, automation))
                                        .set ("displayName", target->displayName));
 }
 
@@ -267,7 +267,7 @@ ControlResult readCurve (ControlHost& host, const juce::var& args)
 
     return ControlResult::success (Obj {}
                                        .set ("id", (int) automation[ids::id])
-                                       .set ("name", automation[ids::name].toString())
+                                       .set ("name", automationDisplayName (project, automation))
                                        .set ("scope", automation[ids::scope].toString())
                                        .set ("param", automation[ids::param].toString())
                                        .set ("stale", spec == nullptr)

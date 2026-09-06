@@ -3776,7 +3776,6 @@
     "automations": [
       {
         "id": 1,
-        "name": "Pad > Osc 3 > Position",
         "scope": "channelOsc",
         "targetId": 5,
         "slot": 2,

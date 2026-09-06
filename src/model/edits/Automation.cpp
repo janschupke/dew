@@ -62,7 +62,6 @@ juce::ValueTree ProjectEdits::addAutomation (juce::ValueTree project,
     auto automation = defaultTreeFor (automationSpecFor());
 
     automation.setProperty (ids::id, nextFreeId (project, ids::AUTOMATION), nullptr);
-    automation.setProperty (ids::name, target.displayName, nullptr);
     automation.setProperty (ids::scope, automationScopeToString (target.scope), nullptr);
     automation.setProperty (ids::targetId, target.targetId, nullptr);
     automation.setProperty (ids::slot, target.slot, nullptr);

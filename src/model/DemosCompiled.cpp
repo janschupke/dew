@@ -162,8 +162,7 @@ juce::ValueTree ProjectFactory::createWavetableDemo()
     // Sixteen steps to a bar, so the arrangement's 32 bars are 512 steps.
     project.appendChild (
         makeAutomation (
-            1, "Pad > Osc 1 > Position", AutomationScope::channelOsc, (int) pad[ids::id], 0,
-            ids::wavePosition,
+            1, AutomationScope::channelOsc, (int) pad[ids::id], 0, ids::wavePosition,
             { { 0.0, 0.10 }, { 160.0, 0.45, 0.35 }, { 320.0, 0.85 }, { 512.0, 0.20, -0.30 } }),
         nullptr);
 
@@ -172,8 +171,7 @@ juce::ValueTree ProjectFactory::createWavetableDemo()
     // that a slow sweep across it would read as drift rather than as a change.
     project.appendChild (
         makeAutomation (
-            2, "Bell > Osc 1 > Position", AutomationScope::channelOsc, (int) bell[ids::id], 0,
-            ids::wavePosition,
+            2, AutomationScope::channelOsc, (int) bell[ids::id], 0, ids::wavePosition,
             { { 0.0, 0.90, 0.0, "step" }, { 128.0, 0.35, 0.0, "step" }, { 256.0, 0.70 } }),
         nullptr);
 
@@ -272,8 +270,8 @@ juce::ValueTree ProjectFactory::createLayersDemo()
     // The one curve here, and it is pointed at the wavetable slot inside the
     // classic stack: the pad's timbre opens over the arrangement while the two
     // oscillators beside it hold still.
-    project.appendChild (makeAutomation (1, "Pad > Osc 3 > Position", AutomationScope::channelOsc,
-                                         (int) pad[ids::id], 2, ids::wavePosition,
+    project.appendChild (makeAutomation (1, AutomationScope::channelOsc, (int) pad[ids::id], 2,
+                                         ids::wavePosition,
                                          { { 0.0, 0.12 }, { 256.0, 0.55, 0.40 }, { 512.0, 0.90 } }),
                          nullptr);
 

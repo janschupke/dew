@@ -149,7 +149,7 @@ void PlaylistComponent::paintAutomationClip (juce::Graphics& g, const juce::Valu
     // well only made it unreadable.
     g.setColour (clipColour.withAlpha (emphasis::strong));
     g.setFont (type::font (type::caption));
-    g.drawText (automation[ids::name].toString(),
+    g.drawText (automationDisplayName (document.getState(), automation),
                 bounds.toNearestInt().reduced (space::xs, space::xxs), juce::Justification::topLeft,
                 true);
 

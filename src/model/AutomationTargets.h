@@ -146,6 +146,16 @@ struct AutomationTarget
     int targetId = 0; ///< channel id or mixer track id; 0 for master
     int slot = -1;    ///< effect or oscillator slot index, -1 when the scope has none
     juce::Identifier property;
+
+    /** The two halves of the name, and the name itself.
+
+        The halves are kept because the picker groups by the first of them: it
+        used to build `displayName` with +, then split it apart again on the
+        separator key to find the group, so the grouping depended on a sentence
+        containing exactly one of a character the catalogue chose.
+    */
+    juce::String ownerName;   ///< "Kick > Filter"
+    juce::String paramName;   ///< "Cutoff"
     juce::String displayName; ///< "Kick > Filter > Cutoff"
 
     /** What the parameter IS, rather than four fields copied out of it.
@@ -199,6 +209,23 @@ std::vector<AutomationTarget> availableAutomationTargets (const juce::ValueTree&
     hold.
 */
 const ParamSpec* specForAutomation (const juce::ValueTree& project,
+                                    const juce::ValueTree& automation);
+
+/** What an AUTOMATION node is CALLED, resolved the way specForAutomation
+    resolves what it drives.
+
+    The name used to be a property on the node, written once by ProjectEdits
+    when the clip was created and read for display ever after - a cache of an
+    English display string in a file that outlives the language it was saved
+    in. A project made in one language carried another's labels, and the
+    Known debt section of .ai/rules/i18n.md said so.
+
+    Recomputed here instead, from the four properties that already say what the
+    clip drives, and answering playlist.missingAutomation when they no longer
+    name anything - the same inert-rather-than-wrong answer specForAutomation
+    gives.
+*/
+juce::String automationDisplayName (const juce::ValueTree& project,
                                     const juce::ValueTree& automation);
 
 /** The node an address names, or an invalid tree.

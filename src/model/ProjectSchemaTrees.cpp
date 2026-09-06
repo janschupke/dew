@@ -54,6 +54,13 @@ bool wasRetired (const NodeSpec& spec, const juce::Identifier& key)
         { ids::CHANNEL, ids::solo },
         { ids::PLAYLIST_TRACK, ids::solo },
         { ids::MIXER_TRACK, ids::solo },
+
+        // An automation's name was a cache of an English display string,
+        // written once when the clip was created and never revisited - so a
+        // project saved in one language carried another's labels. It is
+        // recomputed at paint time now, by automationDisplayName, from the
+        // four properties that already say what the clip drives.
+        { ids::AUTOMATION, ids::name },
     };
 
     for (const auto& entry : retired)

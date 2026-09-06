@@ -3487,7 +3487,6 @@
     "automations": [
       {
         "id": 1,
-        "name": "Pad > Osc 1 > Position",
         "scope": "channelOsc",
         "targetId": 5,
         "slot": 0,
@@ -3521,7 +3520,6 @@
       },
       {
         "id": 2,
-        "name": "Bell > Osc 1 > Position",
         "scope": "channelOsc",
         "targetId": 8,
         "slot": 0,

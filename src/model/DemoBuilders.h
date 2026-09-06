@@ -63,9 +63,8 @@ juce::ValueTree makeAutomationClip (int automationId, int startBar, int lengthBa
 
 juce::ValueTree makeEffect (int id, const juce::String& type, Params params);
 
-juce::ValueTree makeAutomation (int id, const juce::String& name, AutomationScope scope,
-                                int targetId, int slot, const juce::Identifier& param,
-                                std::initializer_list<Point> points);
+juce::ValueTree makeAutomation (int id, AutomationScope scope, int targetId, int slot,
+                                const juce::Identifier& param, std::initializer_list<Point> points);
 
 /** A project with `numChannels` channels, inserts and playlist lanes.
 

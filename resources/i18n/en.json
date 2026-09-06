@@ -28,7 +28,6 @@
     "master": "Master",
     "oscillator": "{channel} > Osc {slot}",
     "parameter": "{owner} > {param}",
-    "separator": " > ",
     "song": "Song",
     "soundFont": "Soundfont"
   },
