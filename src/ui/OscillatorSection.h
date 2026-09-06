@@ -402,7 +402,6 @@ private:
     bool showingLfo = false;
     bool showingSync = false;
 
-    /** True between a knob's onEditStart and onEditEnd - see write(). */
     /** One gesture for the section: the octave stepper and every knob. */
     RotaryGesture gesture;
 

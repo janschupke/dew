@@ -343,6 +343,44 @@ TEST_CASE ("no editor writes an undoable property by hand", "[build][gate][undo]
     CHECK (found.isEmpty());
 }
 
+TEST_CASE ("no editor writes the rotary gesture by hand", "[build][gate][undo]")
+{
+    // Nine panels wrote out the same three callbacks and kept the same two
+    // flags beside them - the oscillator section, the two sampled sections, the
+    // rack row, the playlist track header, the mixer strip, the effect card,
+    // the FM matrix and the instrument panel. Two of the copies were
+    // byte-identical. It is the mechanism that makes dragging a knob ONE undo
+    // step rather than four hundred, and the copies had drifted in exactly the
+    // way a copy does: three of them left a refused write advancing the
+    // gesture, and two shared their flag with a control that has a DIFFERENT
+    // protocol - a waveform trim, and a number field with no edit-end - so
+    // typing a value and then nudging a knob landed in one undo step.
+    //
+    // The question is the SHAPE that only a rotary has: a control with both a
+    // start and an END. A DewNumberField has an onEditStart and no onEditEnd,
+    // and that is a real difference rather than an oversight - a field holds
+    // one transaction from its first change until it is next entered - so
+    // asking about onEditStart would refuse the transport bar, which does that
+    // correctly and with a flag named for the field it belongs to.
+    //
+    // DewKnob is the one exemption: it is what RAISES onEditEnd, from the
+    // juce::Slider it owns.
+    const auto found = offenders (
+        [] (const juce::String& line)
+        {
+            const auto trimmed = line.trim();
+
+            return trimmed.startsWith ("onEditEnd =") || trimmed.contains (".onEditEnd =")
+                   || trimmed.contains ("->onEditEnd =") || trimmed.contains (".onDragEnd =")
+                   || trimmed.contains ("->onDragEnd =");
+        },
+        { "ui/primitives/RotaryGesture.h", "ui/primitives/DewKnob.cpp" });
+
+    INFO ("the rotary gesture, written somewhere other than RotaryGesture:\n"
+          << found.joinIntoString ("\n"));
+    CHECK (found.isEmpty());
+}
+
 TEST_CASE ("no source binds a key outside the hotkey registry", "[build][gate][hotkeys]")
 {
     // There used to be two key tables that could not see each other: fifteen

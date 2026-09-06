@@ -225,10 +225,10 @@ bool DewNumberField::keyPressed (const juce::KeyPress& key)
         return false;
 
     // Per step, exactly as mouseWheelMove does, and for a reason that is not
-    // cosmetic: EffectCard arms `inDrag` from this callback and a field has no
-    // onEditEnd, so EffectCard::write leaves gestureActive set. Re-arming on
-    // every press is what makes each press its own undo step; without it every
-    // later edit on that card coalesces into one transaction for ever.
+    // cosmetic: a field has no onEditEnd, so the flag its owner keeps for it
+    // stays set once the first value has been written. Re-arming on every press
+    // is what makes each press its own undo step; without it every later edit
+    // in that field coalesces into one transaction for ever.
     if (onEditStart != nullptr)
         onEditStart();
 

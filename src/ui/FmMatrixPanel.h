@@ -96,8 +96,6 @@ private:
 
     bool updating = false;
 
-    /** True between a knob's onEditStart and onEditEnd, so a whole drag is one
-        undo step - the same latch every other panel in the tree keeps. */
     /** One gesture for the whole matrix: only one cell can be dragged. */
     RotaryGesture gesture;
 

@@ -150,9 +150,8 @@ private:
         callback does not write them straight back into the document. */
     bool updating = false;
 
-    /** True between a knob's onEditStart and onEditEnd, and whether a
-        transaction is already open for that drag - see the volume knob's
-        onValueChange. The rack's rows carry the same pair for the same reason. */
+    /** One gesture for the row's volume knob. The rack's rows carry the same
+        object for the same reason. */
     RotaryGesture gesture;
 
     bool resizing = false;
