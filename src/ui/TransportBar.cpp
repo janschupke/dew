@@ -1,6 +1,8 @@
 #include "ui/primitives/DewPaint.h"
 #include "ui/TransportBar.h"
 
+#include "ui/TimeText.h"
+
 #include <memory>
 #include <utility>
 
@@ -201,6 +203,12 @@ TransportBar::TransportBar (ProjectDocument& d, AudioEngine& e, EditorState& s)
     positionLabel.setTextColourToken (tokens::colour::playhead);
     positionLabel.setJustificationType (juce::Justification::centredLeft);
     addAndMakeVisible (positionLabel);
+
+    elapsedLabel.setComponentID ("transportElapsed");
+    elapsedLabel.setFont (tokens::type::monospaced (tokens::type::small));
+    elapsedLabel.setTextColourToken (tokens::colour::textSecondary);
+    elapsedLabel.setJustificationType (juce::Justification::centredLeft);
+    addAndMakeVisible (elapsedLabel);
 
     addAndMakeVisible (signalScope);
 
@@ -491,6 +499,12 @@ void TransportBar::updatePositionLabel()
     positionLabel.setText (
         positionText (engine.getPlayheadSteps(), Meter::of (document.getState())),
         juce::dontSendNotification);
+
+    // Off the engine's own seconds rather than off the steps above: dividing a
+    // step count by a tempo is right only while that tempo is the whole song,
+    // and this would be quietly wrong on every project with a tempo curve.
+    elapsedLabel.setText (timeText::clock (engine.getPlayheadSeconds()),
+                          juce::dontSendNotification);
 }
 
 void TransportBar::paint (juce::Graphics& g)
@@ -566,6 +580,7 @@ void TransportBar::resized()
     groupDividers.add (strip.divider());
 
     place (positionLabel, 84);
+    place (elapsedLabel, 56);
 
     // The scope is taken from the right rather than as the next link in the
     // chain above: everything before it is a control with a width it needs, and

@@ -4,28 +4,13 @@
 #include "engine/Sequencer.h"
 #include "model/Ids.h"
 #include "ui/RenderChoices.h"
+#include "ui/TimeText.h"
 #include "ui/design/Tokens.h"
 
 namespace dew
 {
 
 using namespace tokens;
-
-namespace
-{
-
-juce::String describeSeconds (double seconds)
-{
-    if (seconds <= 0.0)
-        return "-";
-
-    const auto minutes = (int) (seconds / 60.0);
-    const auto remainder = seconds - (double) minutes * 60.0;
-
-    return juce::String (minutes) + ":" + juce::String (remainder, 1).paddedLeft ('0', 4);
-}
-
-} // namespace
 
 RenderPanel::RenderPanel (ProjectDocument& d, EditorState& state, Settings* settingsToUpdate)
     : document (d)
@@ -354,11 +339,11 @@ void RenderPanel::updateSummary()
 
     if (request.options.format == RenderFormat::midi)
     {
-        summaryText = describeSeconds (seconds) + " of notes, as one MIDI file";
+        summaryText = timeText::duration (seconds) + " of notes, as one MIDI file";
         return;
     }
 
-    summaryText = describeSeconds (seconds) + "  ·  "
+    summaryText = timeText::duration (seconds) + "  ·  "
                   + OfflineRenderer::nameFor (request.options.format) + "  ·  "
                   + juce::String (request.options.sampleRate, 0) + " Hz";
 

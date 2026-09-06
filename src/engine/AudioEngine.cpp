@@ -450,6 +450,11 @@ void AudioEngine::setMode (Transport::Mode mode)
     requestedMode.store (mode);
 }
 
+double AudioEngine::getPlayheadSeconds() const noexcept
+{
+    return (double) playheadSamples.load() / juce::jmax (1.0, currentSampleRate);
+}
+
 double AudioEngine::getPlayheadSteps() const noexcept
 {
     // Through the MESSAGE thread's own copy of the map, not the transport's:
@@ -458,8 +463,7 @@ double AudioEngine::getPlayheadSteps() const noexcept
     const auto map = uiTempoMap;
 
     if (map != nullptr && ! map->isConstant())
-        return map->stepsForSeconds ((double) playheadSamples.load()
-                                     / juce::jmax (1.0, currentSampleRate));
+        return map->stepsForSeconds (getPlayheadSeconds());
 
     const auto sps = Transport::samplesPerStepFor (transport.getTempo(),
                                                    transport.getStepsPerBeat(), currentSampleRate);

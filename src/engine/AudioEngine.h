@@ -392,6 +392,16 @@ public:
     /** Playhead in steps, for drawing. Written by the audio thread. */
     double getPlayheadSteps() const noexcept;
 
+    /** The same playhead as wall-clock seconds.
+
+        A sibling rather than something a caller derives, because the step
+        count is the one thing a tempo MAP makes non-linear: dividing steps by
+        a tempo is right only while that tempo is the whole song, and the
+        transport bar would have been quietly wrong on every project with a
+        tempo curve in it. Here the seconds are what the samples already are.
+    */
+    double getPlayheadSeconds() const noexcept;
+
     /** Audio thread: renders one block. `buffer` must be stereo. */
     void processBlock (juce::AudioBuffer<float>& buffer) noexcept;
 

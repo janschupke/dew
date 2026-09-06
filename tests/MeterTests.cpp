@@ -3,6 +3,8 @@
 #include <cmath>
 #include <catch2/catch_test_macros.hpp>
 
+#include "ui/TimeText.h"
+
 #include "model/Ids.h"
 #include "model/Meter.h"
 #include "model/ProjectEdits.h"
@@ -284,6 +286,36 @@ TEST_CASE ("the position readout counts to the numerator", "[meter][transport]")
 
     // A negative position is a clamp, not a bar zero.
     CHECK (TransportBar::positionText (-4.0, fourFour) == "001:1:1");
+}
+
+TEST_CASE ("the elapsed readout is a clock, not a duration", "[transport]")
+{
+    /*  The second readout on the strip. Bars say where you are in the music
+        and seconds say how long it has been, which is the one a render length
+        or a cue sheet is measured in - and the one the bar count cannot answer
+        while the tempo moves.
+    */
+    CHECK (timeText::clock (0.0) == "0:00");
+    CHECK (timeText::clock (9.0) == "0:09");
+    CHECK (timeText::clock (59.0) == "0:59");
+    CHECK (timeText::clock (60.0) == "1:00");
+    CHECK (timeText::clock (61.5) == "1:01");
+    CHECK (timeText::clock (3599.0) == "59:59");
+    CHECK (timeText::clock (3600.0) == "60:00");
+
+    // Truncated rather than rounded, so the readout never shows a second the
+    // transport has not reached.
+    CHECK (timeText::clock (1.99) == "0:01");
+
+    // Never negative and never blank: it sits beside the bar readout, and a
+    // field that empties itself makes the strip jump.
+    CHECK (timeText::clock (-5.0) == "0:00");
+
+    // A DURATION is the other question and keeps its tenth of a second, which
+    // is information about a file you are producing rather than noise on a
+    // strip that is being watched.
+    CHECK (timeText::duration (127.5) == "2:07.5");
+    CHECK (timeText::duration (0.0) == "-");
 }
 
 TEST_CASE ("a pattern renders identically whatever the meter says", "[meter][render]")

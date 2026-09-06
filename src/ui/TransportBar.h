@@ -273,6 +273,17 @@ private:
 
     DewLabel positionLabel;
 
+    /** Wall-clock time, beside the bar count rather than instead of it.
+
+        Two readouts because they answer different questions and a musician
+        wants both: bars say where you are IN THE MUSIC, and seconds say how
+        long it has been - which is the one a render length, a sync point or a
+        cue sheet is measured in, and the bar count cannot answer while the
+        tempo moves. Quieter than the position, so the strip still has one
+        primary readout.
+    */
+    DewLabel elapsedLabel;
+
     /** The right-hand end of the bar, and the only thing in it that gives way
         when the window narrows.
     */
