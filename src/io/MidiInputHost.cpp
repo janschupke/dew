@@ -1,5 +1,7 @@
 #include "io/MidiInputHost.h"
 
+#include "i18n/Strings.h"
+
 namespace dew
 {
 
@@ -159,9 +161,10 @@ juce::String MidiInputHost::describeInputs() const
             names.add (device.name);
 
     if (names.isEmpty())
-        return wanted.isEmpty() ? "no MIDI input" : "MIDI input not connected";
+        return tr (wanted.isEmpty() ? StringId::status_noMidiInput
+                                    : StringId::status_midiNotConnected);
 
-    return names.joinIntoString (", ");
+    return names.joinIntoString (tr (StringId::shared_listSeparator));
 }
 
 } // namespace dew

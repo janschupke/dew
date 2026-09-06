@@ -1,5 +1,7 @@
 #include "io/LiveAudioHost.h"
 
+#include "i18n/Strings.h"
+
 namespace dew
 {
 
@@ -29,7 +31,7 @@ juce::String LiveAudioHost::start()
     auto* device = deviceManager.getCurrentAudioDevice();
 
     if (device == nullptr)
-        return "No audio output device is available.";
+        return tr (StringId::error_noOutputDevice);
 
     // The default buffer can be as small as 16 samples, which is 0.4 ms and
     // will glitch under any load. Ask for something a software synth can
@@ -64,7 +66,7 @@ juce::String LiveAudioHost::restoreState (const juce::XmlElement& state)
         return error;
 
     if (deviceManager.getCurrentAudioDevice() == nullptr)
-        return "No audio output device is available.";
+        return tr (StringId::error_noOutputDevice);
 
     deviceManager.addAudioCallback (this);
     started = true;
@@ -74,7 +76,7 @@ juce::String LiveAudioHost::restoreState (const juce::XmlElement& state)
 juce::String LiveAudioHost::setInputEnabled (bool shouldHaveInput)
 {
     if (! started)
-        return "The audio device is not running.";
+        return tr (StringId::error_deviceNotRunning);
 
     if (inputEnabled == shouldHaveInput)
         return {};
@@ -107,8 +109,7 @@ juce::String LiveAudioHost::setInputEnabled (bool shouldHaveInput)
     if (shouldHaveInput && (device == nullptr || device->getActiveInputChannels().isZero()))
     {
         inputEnabled = false;
-        return "No audio input is available. Check the input device, and that dew is "
-               "allowed to use the microphone in System Settings > Privacy & Security.";
+        return tr (StringId::error_noInputDevice);
     }
 
     inputEnabled = shouldHaveInput;
@@ -130,11 +131,13 @@ void LiveAudioHost::stop()
 juce::String LiveAudioHost::describeDevice() const
 {
     if (auto* device = deviceManager.getCurrentAudioDevice())
-        return device->getName() + "  ·  " + juce::String (device->getCurrentSampleRate(), 0)
-               + " Hz" + "  ·  " + juce::String (device->getCurrentBufferSizeSamples())
-               + " samples";
+        return tr (StringId::status_audioDevice,
+                   Args {}
+                       .with ("device", device->getName())
+                       .with ("rate", juce::String (device->getCurrentSampleRate(), 0))
+                       .with ("samples", device->getCurrentBufferSizeSamples()));
 
-    return "no audio device";
+    return tr (StringId::status_noAudioDevice);
 }
 
 void LiveAudioHost::audioDeviceAboutToStart (juce::AudioIODevice* device)

@@ -322,7 +322,8 @@ juce::MidiFile MidiExporter::build (const juce::ValueTree& project,
 
             const auto name = juce::isPositiveAndBelow (channelIndex, names.size())
                                   ? names[channelIndex]
-                                  : "Channel " + juce::String (channelIndex + 1);
+                                  : tr (StringId::project_channelN,
+                                        Args {}.with ("number", channelIndex + 1));
 
             juce::MidiMessageSequence named;
             named.addEvent (juce::MidiMessage::textMetaEvent (3, name), 0.0);
@@ -360,7 +361,7 @@ RenderReport MidiExporter::writeToFile (const juce::ValueTree& project,
 
     if (numNotes == 0)
     {
-        report.result = juce::Result::fail ("There are no notes in what you asked to export.");
+        report.result = juce::Result::fail (tr (StringId::error_midiNoNotes));
         return report;
     }
 
@@ -375,15 +376,17 @@ RenderReport MidiExporter::writeToFile (const juce::ValueTree& project,
 
         if (! stream.openedOk())
         {
-            report.result = juce::Result::fail ("Could not create "
-                                                + destination.getFullPathName());
+            report.result = juce::Result::fail (
+                tr (StringId::error_couldNotCreate,
+                    Args {}.with ("file", destination.getFullPathName())));
             return report;
         }
 
         if (! file.writeTo (stream, options.oneTrackPerChannel ? 1 : 0))
         {
-            report.result = juce::Result::fail ("Could not write MIDI to "
-                                                + destination.getFullPathName());
+            report.result = juce::Result::fail (
+                tr (StringId::error_couldNotWriteMidiTo,
+                    Args {}.with ("file", destination.getFullPathName())));
             return report;
         }
 
@@ -392,7 +395,8 @@ RenderReport MidiExporter::writeToFile (const juce::ValueTree& project,
 
     if (! temp.overwriteTargetFileWithTemporary())
     {
-        report.result = juce::Result::fail ("Could not replace " + destination.getFullPathName());
+        report.result = juce::Result::fail (tr (
+            StringId::error_couldNotReplace, Args {}.with ("file", destination.getFullPathName())));
         return report;
     }
 

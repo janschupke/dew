@@ -15,6 +15,7 @@
 
 #include <memory>
 
+#include "i18n/Strings.h"
 #include "io/OfflineRenderer.h"
 #include "engine/RenderPost.h"
 
@@ -75,23 +76,22 @@ juce::Result validateForFormat (const RenderOptions& options)
     if (options.format == RenderFormat::mp3)
     {
         if (! OfflineRenderer::isAvailable (RenderFormat::mp3))
-            return juce::Result::fail ("MP3 export needs the lame encoder, which was not found. "
-                                       "Install it with `brew install lame`.");
+            return juce::Result::fail (tr (StringId::error_mp3NoEncoder));
 
         const auto rate = (int) std::llround (options.sampleRate);
 
         if (rate != 32000 && rate != 44100 && rate != 48000)
-            return juce::Result::fail ("MP3 supports 32000, 44100 or 48000 Hz. This render is at "
-                                       + juce::String (rate) + " Hz.");
+            return juce::Result::fail (
+                tr (StringId::error_mp3SampleRate, Args {}.with ("rate", rate)));
     }
 
     if (options.format == RenderFormat::wav || options.format == RenderFormat::flac)
     {
         if (options.floatingPoint && options.bitDepth != 32)
-            return juce::Result::fail ("A floating point file has to be 32-bit.");
+            return juce::Result::fail (tr (StringId::error_floatMustBe32Bit));
 
         if (options.format == RenderFormat::flac && options.floatingPoint)
-            return juce::Result::fail ("FLAC is an integer format; it cannot hold floats.");
+            return juce::Result::fail (tr (StringId::error_flacIsInteger));
     }
 
     return juce::Result::ok();
@@ -152,26 +152,31 @@ juce::Result writeAudio (juce::AudioBuffer<float>& buffer, const juce::File& des
             temp.getFile().createOutputStream());
 
         if (fileStream == nullptr || ! fileStream->openedOk())
-            return juce::Result::fail ("Could not create " + destination.getFullPathName());
+            return juce::Result::fail (tr (StringId::error_couldNotCreate,
+                                           Args {}.with ("file", destination.getFullPathName())));
 
         std::unique_ptr<juce::OutputStream> outputStream (std::move (fileStream));
 
         auto format = audioFormatFor (options);
 
         if (format == nullptr)
-            return juce::Result::fail ("Cannot write " + OfflineRenderer::nameFor (options.format)
-                                       + " on this machine.");
+            return juce::Result::fail (
+                tr (StringId::error_formatUnavailable,
+                    Args {}.with ("format", OfflineRenderer::nameFor (options.format))));
 
         auto writer = format->createWriterFor (outputStream, writerOptionsFor (options));
 
         if (writer == nullptr)
-            return juce::Result::fail ("Could not create a "
-                                       + OfflineRenderer::nameFor (options.format) + " writer at "
-                                       + juce::String (options.bitDepth) + "-bit / "
-                                       + juce::String (options.sampleRate, 0) + " Hz.");
+            return juce::Result::fail (
+                tr (StringId::error_couldNotCreateWriter,
+                    Args {}
+                        .with ("format", OfflineRenderer::nameFor (options.format))
+                        .with ("depth", options.bitDepth)
+                        .with ("rate", juce::String (options.sampleRate, 0))));
 
         if (! writer->writeFromAudioSampleBuffer (buffer, 0, buffer.getNumSamples()))
-            return juce::Result::fail ("Could not write audio to " + destination.getFullPathName());
+            return juce::Result::fail (tr (StringId::error_couldNotWriteAudioTo,
+                                           Args {}.with ("file", destination.getFullPathName())));
     }
     // The writer is destroyed HERE, and that brace is load-bearing. The MP3
     // writer streams to a temporary WAV and only runs lame when it is destroyed,
@@ -180,11 +185,13 @@ juce::Result writeAudio (juce::AudioBuffer<float>& buffer, const juce::File& des
     // size check below is required rather than defensive.
 
     if (temp.getFile().getSize() <= 0)
-        return juce::Result::fail (OfflineRenderer::nameFor (options.format)
-                                   + " encoding produced no output.");
+        return juce::Result::fail (
+            tr (StringId::error_encoderWroteNothing,
+                Args {}.with ("format", OfflineRenderer::nameFor (options.format))));
 
     if (! temp.overwriteTargetFileWithTemporary())
-        return juce::Result::fail ("Could not replace " + destination.getFullPathName());
+        return juce::Result::fail (tr (StringId::error_couldNotReplace,
+                                       Args {}.with ("file", destination.getFullPathName())));
 
     return juce::Result::ok();
 }

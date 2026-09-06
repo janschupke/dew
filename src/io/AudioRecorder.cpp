@@ -1,4 +1,6 @@
 #include "io/AudioRecorder.h"
+
+#include "i18n/Strings.h"
 #include "engine/AtomicPeak.h"
 
 namespace dew
@@ -21,10 +23,10 @@ juce::String AudioRecorder::start (const juce::File& file, double sampleRate, in
     stop();
 
     if (file == juce::File())
-        return "No file to record into.";
+        return tr (StringId::error_recordNoFile);
 
     if (sampleRate <= 0.0)
-        return "The audio device is not running.";
+        return tr (StringId::error_deviceNotRunning);
 
     file.getParentDirectory().createDirectory();
     file.deleteFile();
@@ -32,7 +34,7 @@ juce::String AudioRecorder::start (const juce::File& file, double sampleRate, in
     auto fileStream = std::make_unique<juce::FileOutputStream> (file);
 
     if (! fileStream->openedOk())
-        return "Could not write to " + file.getFullPathName() + ".";
+        return tr (StringId::error_couldNotWriteTo, Args {}.with ("file", file.getFullPathName()));
 
     // The non-deprecated createWriterFor takes ownership through a base-typed
     // unique_ptr, and only on success - a failure leaves the stream with us.
@@ -50,7 +52,8 @@ juce::String AudioRecorder::start (const juce::File& file, double sampleRate, in
     auto writer = format.createWriterFor (stream, writerOptions);
 
     if (writer == nullptr)
-        return "Could not create a WAV writer for " + file.getFullPathName() + ".";
+        return tr (StringId::error_couldNotCreateWavWriter,
+                   Args {}.with ("file", file.getFullPathName()));
 
     // ThreadedWriter takes the raw pointer and owns it from here.
     auto threaded = std::make_unique<juce::AudioFormatWriter::ThreadedWriter> (

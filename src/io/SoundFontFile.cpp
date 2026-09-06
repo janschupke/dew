@@ -58,7 +58,7 @@ SoundFontFile::Result SoundFontFile::parse (const void* data, size_t sizeInBytes
     if (reader.chunks.phdr.data == nullptr || reader.chunks.shdr.data == nullptr
         || reader.chunks.igen.data == nullptr)
     {
-        reader.warn ("This font has no preset data; there is nothing to play.");
+        reader.warn (tr (StringId::warning_soundFontNoPresetData));
         return result;
     }
 
@@ -81,7 +81,7 @@ SoundFontFile::Result SoundFontFile::parse (const void* data, size_t sizeInBytes
     // "EOS" - which exists so the one before it has somewhere to say it ends.
     if (presets.size() < 2 || instruments.size() < 2 || samples.size() < 2)
     {
-        reader.warn ("This font's preset, instrument or sample list is empty.");
+        reader.warn (tr (StringId::warning_soundFontListEmpty));
         return result;
     }
 
@@ -94,7 +94,7 @@ SoundFontFile::Result SoundFontFile::parse (const void* data, size_t sizeInBytes
 
         if (sampleIndex + 1 >= samples.size())
         {
-            reader.warn ("A zone names a sample this font does not contain.");
+            reader.warn (tr (StringId::warning_soundFontZoneSampleMissing));
             return false;
         }
 
@@ -103,7 +103,7 @@ SoundFontFile::Result SoundFontFile::parse (const void* data, size_t sizeInBytes
         // ROM samples live in hardware this program does not have.
         if ((header.type & 0x8000) != 0)
         {
-            reader.warn ("A zone plays a ROM sample, which cannot be read from the file.");
+            reader.warn (tr (StringId::warning_soundFontRomSample));
             return false;
         }
 
@@ -122,7 +122,7 @@ SoundFontFile::Result SoundFontFile::parse (const void* data, size_t sizeInBytes
 
         if (end <= start)
         {
-            reader.warn ("A zone's sample is empty once its offsets are applied.");
+            reader.warn (tr (StringId::warning_soundFontZoneEmpty));
             return false;
         }
 
@@ -146,7 +146,7 @@ SoundFontFile::Result SoundFontFile::parse (const void* data, size_t sizeInBytes
         if (region.loop != SoundFontLoop::none
             && (loopEnd <= loopStart || loopStart < start || loopEnd > end))
         {
-            reader.warn ("A zone's loop points lie outside its sample; it will not loop.");
+            reader.warn (tr (StringId::warning_soundFontLoopOutside));
             region.loop = SoundFontLoop::none;
             loopStart = start;
             loopEnd = end;
@@ -270,7 +270,7 @@ SoundFontFile::Result SoundFontFile::parse (const void* data, size_t sizeInBytes
 
             if ((size_t) instrumentIndex + 1 >= instruments.size())
             {
-                reader.warn ("A preset names an instrument this font does not contain.");
+                reader.warn (tr (StringId::warning_soundFontInstrumentMissing));
                 continue;
             }
 
@@ -370,10 +370,11 @@ SoundFontFile::Result SoundFontFile::parse (const void* data, size_t sizeInBytes
 
     for (const auto& cut : cutGenerators)
         if (cutSeen[(size_t) cut.oper])
-            reader.warn (juce::String ("This font uses ") + cut.name + ", which is not applied.");
+            reader.warn (
+                tr (StringId::warning_soundFontFeatureIgnored, Args {}.with ("feature", cut.name)));
 
     if (result.font.presets.empty())
-        reader.warn ("No preset in this font resolved to anything playable.");
+        reader.warn (tr (StringId::warning_soundFontNothingPlayable));
 
     return result;
 }

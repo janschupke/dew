@@ -1223,6 +1223,7 @@
     "start": {
       "label": "Render"
     },
+    "stemProgress": "Stem {index} of {count}",
     "stems": {
       "label": "One file per mixer track"
     },
@@ -1289,7 +1290,11 @@
     "renderInProgress": "A render is already going.",
     "rendered": "Rendered {what}  ·  peak {peak} dB",
     "renderedFiles": "{count, plural, one {# file} other {# files}}",
-    "rendering": "Rendering {file}..."
+    "rendering": "Rendering {file}...",
+    "audioDevice": "{device}  ·  {rate} Hz  ·  {samples} samples",
+    "noAudioDevice": "no audio device",
+    "noMidiInput": "no MIDI input",
+    "midiNotConnected": "MIDI input not connected"
   },
   "transport": {
     "grid": {
@@ -1601,7 +1606,22 @@
     "clipAutomationMissing": "A clip refers to automation {id}, which does not exist; it will do nothing.",
     "clipChannelMissing": "A clip refers to channel {id}, which does not exist; it will not play.",
     "clipPatternMissing": "A clip refers to pattern {id}, which does not exist; it will not play.",
-    "tempoCurveTooLong": "This arrangement is too long for a tempo curve; it plays at {tempo} throughout."
+    "tempoCurveTooLong": "This arrangement is too long for a tempo curve; it plays at {tempo} throughout.",
+    "soundFontNoPresetData": "This font has no preset data; there is nothing to play.",
+    "soundFontListEmpty": "This font's preset, instrument or sample list is empty.",
+    "soundFontZoneSampleMissing": "A zone names a sample this font does not contain.",
+    "soundFontRomSample": "A zone plays a ROM sample, which cannot be read from the file.",
+    "soundFontZoneEmpty": "A zone's sample is empty once its offsets are applied.",
+    "soundFontLoopOutside": "A zone's loop points lie outside its sample; it will not loop.",
+    "soundFontInstrumentMissing": "A preset names an instrument this font does not contain.",
+    "soundFontFeatureIgnored": "This font uses {feature}, which is not applied.",
+    "soundFontNothingPlayable": "No preset in this font resolved to anything playable.",
+    "soundFontNotSoundFont": "Not a SoundFont file: no RIFF/sfbk header.",
+    "soundFontShortFile": "The file is shorter than its own RIFF header says; reading what is there.",
+    "soundFontChunkPastEnd": "A chunk runs past the end of the file; stopping there.",
+    "soundFontChunkPastList": "A chunk inside a LIST runs past its end; stopping there.",
+    "soundFont24Bit": "This font carries 24-bit sample data; the low bytes are ignored.",
+    "soundFontModulators": "This font uses modulators, which are not applied."
   },
   "lang": {
     "generator": {
@@ -2371,5 +2391,33 @@
     "showPanel": {
       "help": "Show the instrument panel"
     }
+  },
+  "error": {
+    "couldNotCreate": "Could not create {file}",
+    "couldNotCreateWavWriter": "Could not create a WAV writer for {file}.",
+    "couldNotCreateWriter": "Could not create a {format} writer at {depth}-bit / {rate} Hz.",
+    "couldNotReplace": "Could not replace {file}",
+    "couldNotWriteAudioTo": "Could not write audio to {file}",
+    "couldNotWriteMidiTo": "Could not write MIDI to {file}",
+    "couldNotWriteTo": "Could not write to {file}.",
+    "deviceNotRunning": "The audio device is not running.",
+    "encoderWroteNothing": "{format} encoding produced no output.",
+    "flacIsInteger": "FLAC is an integer format; it cannot hold floats.",
+    "floatMustBe32Bit": "A floating point file has to be 32-bit.",
+    "formatUnavailable": "Cannot write {format} on this machine.",
+    "midiNoNotes": "There are no notes in what you asked to export.",
+    "mp3NoEncoder": "MP3 export needs the lame encoder, which was not found. Install it with `brew install lame`.",
+    "mp3SampleRate": "MP3 supports 32000, 44100 or 48000 Hz. This render is at {rate} Hz.",
+    "noInputDevice": "No audio input is available. Check the input device, and that dew is allowed to use the microphone in System Settings > Privacy & Security.",
+    "noOutputDevice": "No audio output device is available.",
+    "recordNoFile": "No file to record into.",
+    "renderNoMixerTracks": "This project has no mixer tracks to render.",
+    "renderNothingInPlaylist": "This project has nothing in its playlist to render.",
+    "renderPatternEmpty": "Pattern {id} is empty or does not exist.",
+    "stemsAllSilent": "Every stem was silent, so nothing was written.",
+    "stemsAreAudio": "Stems are audio; MIDI is one file."
+  },
+  "shared": {
+    "listSeparator": ", "
   }
 }

@@ -42,10 +42,10 @@ juce::Result planSpan (const EngineSnapshot& snapshot, const RenderOptions& opti
                                                                patternIndex);
 
     if (materialSteps <= 0)
-        return juce::Result::fail (options.mode == Transport::Mode::song
-                                       ? "This project has nothing in its playlist to render."
-                                       : "Pattern " + juce::String (options.patternId)
-                                             + " is empty or does not exist.");
+        return juce::Result::fail (
+            options.mode == Transport::Mode::song
+                ? tr (StringId::error_renderNothingInPlaylist)
+                : tr (StringId::error_renderPatternEmpty, Args {}.with ("id", options.patternId)));
 
     // Through the snapshot's own map, which is why the map lives there: this
     // function builds no snapshot of its own and needs no RenderOptions field to
@@ -285,7 +285,7 @@ RenderReport OfflineRenderer::renderStems (const juce::ValueTree& project, const
 
     if (options.format == RenderFormat::midi)
     {
-        report.result = juce::Result::fail ("Stems are audio; MIDI is one file.");
+        report.result = juce::Result::fail (tr (StringId::error_stemsAreAudio));
         return report;
     }
 
@@ -303,13 +303,14 @@ RenderReport OfflineRenderer::renderStems (const juce::ValueTree& project, const
 
     if (numTracks <= 0)
     {
-        report.result = juce::Result::fail ("This project has no mixer tracks to render.");
+        report.result = juce::Result::fail (tr (StringId::error_renderNoMixerTracks));
         return report;
     }
 
     if (! folder.createDirectory())
     {
-        report.result = juce::Result::fail ("Could not create " + folder.getFullPathName());
+        report.result = juce::Result::fail (
+            tr (StringId::error_couldNotCreate, Args {}.with ("file", folder.getFullPathName())));
         return report;
     }
 
@@ -336,8 +337,8 @@ RenderReport OfflineRenderer::renderStems (const juce::ValueTree& project, const
                 return report;
             }
 
-            progress->setStage ("Stem " + juce::String (track + 1) + " of "
-                                + juce::String (numTracks));
+            progress->setStage (tr (StringId::render_stemProgress,
+                                    Args {}.with ("index", track + 1).with ("count", numTracks)));
         }
 
         auto stem = base;
@@ -371,7 +372,7 @@ RenderReport OfflineRenderer::renderStems (const juce::ValueTree& project, const
         const auto name = juce::isPositiveAndBelow (track, names.size())
                                   && names[track].isNotEmpty()
                               ? names[track]
-                              : "Track " + juce::String (track + 1);
+                              : tr (StringId::project_trackN, Args {}.with ("number", track + 1));
 
         if (options.skipSilentStems && pass.peak <= 0.0f)
         {
@@ -405,12 +406,14 @@ RenderReport OfflineRenderer::renderStems (const juce::ValueTree& project, const
     }
 
     if (! silent.isEmpty())
-        report.warnings.add (tr (
-            StringId::warning_stemsNotRouted,
-            Args {}.with ("names", silent.joinIntoString (", ")).with ("count", silent.size())));
+        report.warnings.add (
+            tr (StringId::warning_stemsNotRouted,
+                Args {}
+                    .with ("names", silent.joinIntoString (tr (StringId::shared_listSeparator)))
+                    .with ("count", silent.size())));
 
     if (report.files.isEmpty())
-        report.result = juce::Result::fail ("Every stem was silent, so nothing was written.");
+        report.result = juce::Result::fail (tr (StringId::error_stemsAllSilent));
 
     return report;
 }

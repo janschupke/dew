@@ -355,7 +355,7 @@ struct SoundFontReader
         if (! file.has (0, 12) || memcmp (file.data, "RIFF", 4) != 0
             || memcmp (file.data + 8, "sfbk", 4) != 0)
         {
-            warn ("Not a SoundFont file: no RIFF/sfbk header.");
+            warn (tr (StringId::warning_soundFontNotSoundFont));
             return false;
         }
 
@@ -363,7 +363,7 @@ struct SoundFontReader
         const auto end = juce::jmin (file.size, declared + 8);
 
         if (declared + 8 > file.size)
-            warn ("The file is shorter than its own RIFF header says; reading what is there.");
+            warn (tr (StringId::warning_soundFontShortFile));
 
         size_t pos = 12;
 
@@ -375,7 +375,7 @@ struct SoundFontReader
 
             if (body + size > end)
             {
-                warn ("A chunk runs past the end of the file; stopping there.");
+                warn (tr (StringId::warning_soundFontChunkPastEnd));
                 break;
             }
 
@@ -406,7 +406,7 @@ struct SoundFontReader
 
             if (pos + 8 + size > body.size)
             {
-                warn ("A chunk inside a LIST runs past its end; stopping there.");
+                warn (tr (StringId::warning_soundFontChunkPastList));
                 break;
             }
 
@@ -415,7 +415,7 @@ struct SoundFontReader
             if (memcmp (header, "smpl", 4) == 0)
                 chunks.smpl = span;
             else if (memcmp (header, "sm24", 4) == 0)
-                warn ("This font carries 24-bit sample data; the low bytes are ignored.");
+                warn (tr (StringId::warning_soundFont24Bit));
             else if (memcmp (header, "phdr", 4) == 0)
                 chunks.phdr = span;
             else if (memcmp (header, "pbag", 4) == 0)
@@ -435,7 +435,7 @@ struct SoundFontReader
                 // 10 bytes per record and a terminal one, so anything above a
                 // single record means the font actually uses modulators.
                 if (size > 10)
-                    warn ("This font uses modulators, which are not applied.");
+                    warn (tr (StringId::warning_soundFontModulators));
             }
 
             pos += 8 + size + (size & 1);
