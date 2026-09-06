@@ -361,6 +361,20 @@ private:
     */
     int stepsPerBeat() const;
 
+    /** Steps in one bar, which is the unit a pattern's own length is measured
+        in - see ProjectEdits::fitPatternToNotes.
+    */
+    int stepsPerBar() const;
+
+    /** Sets the pattern's length to what its notes need, in whole bars.
+
+        Every gesture that adds, moves, resizes or removes a note ends here, so
+        the roll never shows a bar the arrangement will not play and never stops
+        short of one it will. Inside the caller's transaction, so the length and
+        the edit that changed it undo together.
+    */
+    void fitPatternLength (juce::UndoManager&);
+
     /** Steps in one cell of the current snap grid. Always at least one, so
         every snapped expression is the identity at the finest division and the
         gestures behave exactly as they did before there was a grid.

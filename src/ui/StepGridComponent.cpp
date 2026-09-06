@@ -456,6 +456,10 @@ void StepGridComponent::applyPaint (const juce::MouseEvent& event)
         }
     }
 
+    // The pattern is as long as its notes need, in whole bars - so clearing the
+    // last bar of a run shortens it here exactly as it does in the roll.
+    ProjectEdits::fitPatternToNotes (pattern, Meter::of (document.getState()).stepsPerBar(), &undo);
+
     repaint (0, 0, getWidth(), getRowsHeight());
 }
 

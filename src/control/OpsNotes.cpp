@@ -1,6 +1,7 @@
 #include <climits>
 
 #include "control/OpsSupport.h"
+#include "model/Meter.h"
 #include "model/NoteTools.h"
 
 namespace dew::control
@@ -109,16 +110,18 @@ ControlResult write (ControlHost& host, const juce::var& args)
         }
     }
 
-    // Never shrinks. A pattern deliberately longer than its notes is a rest at
-    // the end, and trimming it here would destroy that silently.
-    const auto grew = ProjectEdits::growPatternToFitNotes (pattern, undo);
+    // Both ways: a pattern's length is derived from the notes in it, in whole
+    // bars, so writing past the end lengthens it and clearing the last bar
+    // shortens it. See ProjectEdits::fitPatternToNotes.
+    const auto refitted = ProjectEdits::fitPatternToNotes (pattern,
+                                                           Meter::of (project).stepsPerBar(), undo);
 
     host.flushEngine();
 
     return ControlResult::success (Obj {}
                                        .set ("added", added)
                                        .set ("changed", changed)
-                                       .set ("patternGrew", grew)
+                                       .set ("patternRefitted", refitted)
                                        .set ("lengthSteps", (int) pattern[ids::lengthSteps]));
 }
 
@@ -177,6 +180,9 @@ ControlResult remove (ControlHost& host, const juce::var& args)
     for (const auto& note : doomed)
         ProjectEdits::removeNote (pattern, note, host.undoManager());
 
+    ProjectEdits::fitPatternToNotes (pattern, Meter::of (project).stepsPerBar(),
+                                     host.undoManager());
+
     host.flushEngine();
 
     return applied (doomed.size());
@@ -215,7 +221,8 @@ ControlResult transform (ControlHost& host, const juce::var& args)
         const auto snap = NoteTools::snapFromIndex (intArg (args, "snap"));
         const auto snapSteps = NoteTools::stepsForSnap (snap, stepsPerBeat, beatsPerBar);
 
-        const auto collapsed = NoteTools::quantize (pattern, scope, snapSteps, undo);
+        const auto collapsed = NoteTools::quantize (pattern, scope, snapSteps,
+                                                    Meter::of (project).stepsPerBar(), undo);
         host.flushEngine();
 
         return ControlResult::success (

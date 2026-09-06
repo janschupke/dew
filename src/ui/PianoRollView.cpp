@@ -113,10 +113,10 @@ float PianoRollComponent::contentWidth() const
 int PianoRollComponent::stepAtX (int x) const
 {
     // Deliberately not clamped to the pattern length. Writing past the end is
-    // how a pattern gets longer - the region beyond is painted as inert so it
-    // is clearly outside the pattern, but it is still writable, and doing so
-    // grows the pattern to fit. Clamping here made growPatternToFitNotes
-    // unreachable from the mouse.
+    // the ONLY way a pattern gets longer - the region beyond is painted as
+    // inert so it is clearly outside the pattern, but it is still writable, and
+    // doing so refits the pattern around it. Clamping here made
+    // fitPatternToNotes unreachable from the mouse.
     return juce::jmax (0, timeline.stepAtX ((float) (x - size::gutterKeyboard)));
 }
 

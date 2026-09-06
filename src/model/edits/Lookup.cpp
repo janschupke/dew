@@ -180,14 +180,15 @@ void ProjectEdits::setNoteVelocity (juce::ValueTree note, double velocity, juce:
     note.setProperty (ids::velocity, juce::jlimit (kMinNoteVelocity, 1.0, velocity), undo);
 }
 
-bool ProjectEdits::growPatternToFitNotes (juce::ValueTree pattern, juce::UndoManager* undo)
+bool ProjectEdits::fitPatternToNotes (juce::ValueTree pattern, int stepsPerBar,
+                                      juce::UndoManager* undo)
 {
     if (! pattern.isValid())
         return false;
 
-    const auto needed = lengthNeededForNotes (pattern);
+    const auto needed = lengthNeededForNotes (pattern, stepsPerBar);
 
-    if (needed <= (int) pattern[ids::lengthSteps])
+    if (needed == (int) pattern[ids::lengthSteps])
         return false;
 
     pattern.setProperty (ids::lengthSteps, needed, undo);

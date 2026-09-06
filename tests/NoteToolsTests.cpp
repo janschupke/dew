@@ -52,6 +52,11 @@ juce::Array<juce::ValueTree> listOf (std::initializer_list<juce::ValueTree> note
     return array;
 }
 
+/** The default project's metre, which is what every fixture here uses. The two
+    operations that can change a pattern's extent take it, because a pattern's
+    length is measured in whole bars - see ProjectEdits::fitPatternToNotes. */
+constexpr int stepsPerBar = 16;
+
 } // namespace
 
 // --- snapping ----------------------------------------------------------------
@@ -226,7 +231,8 @@ TEST_CASE ("quantize rounds starts to the nearest line and leaves lengths alone"
     auto c = f.add (5, 2, 64);
     auto d = f.add (7, 1, 65);
 
-    CHECK (NoteTools::quantize (f.pattern, NoteTools::scopeFor (f.pattern, 1, {}), 4, &f.undo)
+    CHECK (NoteTools::quantize (f.pattern, NoteTools::scopeFor (f.pattern, 1, {}), 4, stepsPerBar,
+                                &f.undo)
            == 0);
 
     CHECK ((int) a[ids::step] == 0);
@@ -249,8 +255,8 @@ TEST_CASE ("quantizing an already-quantized pattern changes nothing", "[model][n
 
     const auto scope = NoteTools::scopeFor (f.pattern, 1, {});
 
-    CHECK (NoteTools::quantize (f.pattern, scope, 4, &f.undo) == 0);
-    CHECK (NoteTools::quantize (f.pattern, scope, 4, &f.undo) == 0);
+    CHECK (NoteTools::quantize (f.pattern, scope, 4, stepsPerBar, &f.undo) == 0);
+    CHECK (NoteTools::quantize (f.pattern, scope, 4, stepsPerBar, &f.undo) == 0);
     CHECK (f.countNotes() == 3);
 }
 
@@ -261,7 +267,8 @@ TEST_CASE ("quantize collapses notes landing on one step and pitch, keeping the 
     auto shorter = f.add (3, 1, 60);
     auto longer = f.add (5, 4, 60);
 
-    CHECK (NoteTools::quantize (f.pattern, NoteTools::scopeFor (f.pattern, 1, {}), 4, &f.undo)
+    CHECK (NoteTools::quantize (f.pattern, NoteTools::scopeFor (f.pattern, 1, {}), 4, stepsPerBar,
+                                &f.undo)
            == 1);
 
     CHECK (f.countNotes() == 1);
@@ -282,7 +289,7 @@ TEST_CASE ("quantize does not collapse across pitches or channels", "[model][not
     auto scope = NoteTools::notesOnChannel (f.pattern, 1);
     scope.addArray (NoteTools::notesOnChannel (f.pattern, 2));
 
-    CHECK (NoteTools::quantize (f.pattern, scope, 4, &f.undo) == 0);
+    CHECK (NoteTools::quantize (f.pattern, scope, 4, stepsPerBar, &f.undo) == 0);
     CHECK (f.countNotes() == 3);
 }
 
@@ -293,7 +300,8 @@ TEST_CASE ("quantize grows the pattern when it pushes a note past the end", "[mo
 
     f.add (originalLength - 1, 1, 60);
 
-    NoteTools::quantize (f.pattern, NoteTools::scopeFor (f.pattern, 1, {}), 16, &f.undo);
+    NoteTools::quantize (f.pattern, NoteTools::scopeFor (f.pattern, 1, {}), 16, stepsPerBar,
+                         &f.undo);
 
     CHECK ((int) f.pattern[ids::lengthSteps] > originalLength);
 }
@@ -305,7 +313,8 @@ TEST_CASE ("a quantize is one undo step", "[model][notetools]")
     auto b = f.add (7, 1, 62);
 
     f.undo.beginNewTransaction ("Quantize");
-    NoteTools::quantize (f.pattern, NoteTools::scopeFor (f.pattern, 1, {}), 4, &f.undo);
+    NoteTools::quantize (f.pattern, NoteTools::scopeFor (f.pattern, 1, {}), 4, stepsPerBar,
+                         &f.undo);
 
     REQUIRE (f.undo.undo());
 
@@ -373,7 +382,7 @@ TEST_CASE ("randomize with a fixed seed is reproducible and stays in range", "[m
 
         juce::Random random (1234);
         NoteTools::randomize (f.pattern, NoteTools::scopeFor (f.pattern, 1, {}), options, random,
-                              &f.undo);
+                              stepsPerBar, &f.undo);
 
         for (const auto& note : NoteTools::notesOnChannel (f.pattern, 1))
         {
@@ -412,7 +421,7 @@ TEST_CASE ("randomize touches only the properties it was asked to", "[model][not
 
     juce::Random random (7);
     NoteTools::randomize (f.pattern, NoteTools::scopeFor (f.pattern, 1, {}), { 0.4, 0 }, random,
-                          &f.undo);
+                          stepsPerBar, &f.undo);
 
     CHECK ((int) note[ids::step] == 8);
     CHECK ((int) note[ids::lengthSteps] == 3);
@@ -421,7 +430,7 @@ TEST_CASE ("randomize touches only the properties it was asked to", "[model][not
     const auto velocityAfter = (double) note[ids::velocity];
 
     NoteTools::randomize (f.pattern, NoteTools::scopeFor (f.pattern, 1, {}), { 0.0, 2 }, random,
-                          &f.undo);
+                          stepsPerBar, &f.undo);
 
     CHECK (juce::exactlyEqual ((double) note[ids::velocity], velocityAfter));
     CHECK ((int) note[ids::pitch] == 60);
@@ -437,7 +446,7 @@ TEST_CASE ("randomize with both amounts at zero writes nothing at all", "[model]
 
     juce::Random random (1);
     NoteTools::randomize (f.pattern, NoteTools::scopeFor (f.pattern, 1, {}), { 0.0, 0 }, random,
-                          &f.undo);
+                          stepsPerBar, &f.undo);
 
     CHECK ((int) note[ids::step] == 4);
 
@@ -461,7 +470,7 @@ TEST_CASE ("randomize clamps a note pushed before the start rather than losing i
 
     for (int pass = 0; pass < 10; ++pass)
         NoteTools::randomize (f.pattern, NoteTools::scopeFor (f.pattern, 1, {}), { 0.0, 4 }, random,
-                              &f.undo);
+                              stepsPerBar, &f.undo);
 
     CHECK (f.countNotes() == 20);
 

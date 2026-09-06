@@ -146,40 +146,88 @@ TEST_CASE ("dragging a note's right edge past its own start stops at one divisio
     CHECK ((int) h.pattern().getChild (0)[ids::lengthSteps] == division);
 }
 
+namespace
+{
+
+/** Frames the roll on TWO bars while leaving the pattern one bar long.
+
+    The state the beyond-the-end region exists for: the bars past the pattern
+    are on screen, painted as inert, and still writable. Reached by making the
+    pattern two bars, framing it, and then taking the far note away again -
+    which is a real edit rather than a length written by hand, because a
+    pattern's length is no longer something anything can write.
+*/
+void frameTwoBarsOverOneBarPattern (dew::testing::RollHarness& h)
+{
+    juce::UndoManager scratch;
+
+    auto far = ProjectEdits::addNote (h.pattern(), 1, 20, 1, 72, 1.0f, &scratch);
+    ProjectEdits::fitPatternToNotes (h.pattern(), 16, &scratch);
+    REQUIRE ((int) h.pattern()[ids::lengthSteps] == 32);
+
+    h.roll.zoomToFit();
+    h.roll.resized();
+
+    ProjectEdits::removeNote (h.pattern(), far, &scratch);
+    ProjectEdits::fitPatternToNotes (h.pattern(), 16, &scratch);
+    REQUIRE ((int) h.pattern()[ids::lengthSteps] == 16);
+}
+
+} // namespace
+
 TEST_CASE ("a note drawn past the end grows the pattern to hold it", "[ui][pianoroll]")
 {
     const juce::ScopedJuceInitialiser_GUI juceInit;
     RollHarness h;
 
-    REQUIRE ((int) h.pattern()[ids::lengthSteps] == 16);
+    constexpr auto perBar = 16;
+    frameTwoBarsOverOneBarPattern (h);
 
-    // Shorten the pattern without refitting the view, which is what happens when
-    // you trim a pattern you are already looking at: the bars past the end stay
-    // on screen, painted as inert but still writable.
-    juce::UndoManager& undo = h.document.getUndoManager();
-    h.pattern().setProperty (ids::lengthSteps, 8, &undo);
-
-    h.roll.mouseDown (eventAt (h.roll, pointFor (h, 11, 72)));
-    h.roll.mouseDrag (eventAt (h.roll, pointFor (h, 14, 72)));
-    h.roll.mouseUp (eventAt (h.roll, pointFor (h, 14, 72)));
+    h.roll.mouseDown (eventAt (h.roll, pointFor (h, 19, 72)));
+    h.roll.mouseDrag (eventAt (h.roll, pointFor (h, 22, 72)));
+    h.roll.mouseUp (eventAt (h.roll, pointFor (h, 22, 72)));
 
     REQUIRE (h.countNotes() == 1);
 
     const auto note = h.pattern().getChild (0);
-    REQUIRE ((int) note[ids::step] == 11);
+    REQUIRE ((int) note[ids::step] == 19);
     REQUIRE ((int) note[ids::lengthSteps] == 4);
 
-    // The note runs to step 15, so the pattern must reach it - it grew rather
-    // than clipping the note or refusing the click.
-    REQUIRE ((int) h.pattern()[ids::lengthSteps] == 15);
-    REQUIRE (ProjectEdits::lengthNeededForNotes (h.pattern())
-             <= (int) h.pattern()[ids::lengthSteps]);
+    // The note runs to step 23, so the pattern reaches it - and reaches the end
+    // of the BAR it is in rather than stopping at step 23, where no bar line
+    // is. Writing past the end is the only way a pattern is made longer.
+    REQUIRE ((int) h.pattern()[ids::lengthSteps] == 2 * perBar);
+    REQUIRE (ProjectEdits::lengthNeededForNotes (h.pattern(), perBar)
+             == (int) h.pattern()[ids::lengthSteps]);
+}
 
-    // Growing is one-way: a pattern left longer than its notes is a rest at the
-    // end, and must not be silently trimmed.
-    h.pattern().setProperty (ids::lengthSteps, 64, &undo);
-    REQUIRE (! ProjectEdits::growPatternToFitNotes (h.pattern(), &undo));
-    REQUIRE ((int) h.pattern()[ids::lengthSteps] == 64);
+TEST_CASE ("deleting the last bar's notes shortens the pattern again", "[ui][pianoroll]")
+{
+    const juce::ScopedJuceInitialiser_GUI juceInit;
+    RollHarness h;
+
+    constexpr auto perBar = 16;
+    frameTwoBarsOverOneBarPattern (h);
+
+    // One note in each bar, drawn in that order so the second is the one the
+    // drawing gesture leaves selected.
+    h.roll.mouseDown (eventAt (h.roll, pointFor (h, 2, 72)));
+    h.roll.mouseUp (eventAt (h.roll, pointFor (h, 2, 72)));
+
+    h.roll.mouseDown (eventAt (h.roll, pointFor (h, 19, 72)));
+    h.roll.mouseUp (eventAt (h.roll, pointFor (h, 19, 72)));
+
+    REQUIRE (h.countNotes() == 2);
+    REQUIRE ((int) h.pattern()[ids::lengthSteps] == 2 * perBar);
+
+    h.roll.keyPressed (juce::KeyPress (juce::KeyPress::deleteKey));
+
+    REQUIRE (h.countNotes() == 1);
+
+    // What the whole change is for. The old rule grew only, so a pattern that
+    // had once reached the second bar went on looping two bars - one of them
+    // silent - long after the note that put it there was gone.
+    CHECK ((int) h.pattern()[ids::lengthSteps] == perBar);
 }
 
 TEST_CASE ("a rubber band selects the notes it covers, and delete removes them", "[ui][pianoroll]")

@@ -53,7 +53,7 @@ void PianoRollComponent::quantizeScope()
 
     auto& undo = document.getUndoManager();
     undo.beginNewTransaction ("Quantize");
-    NoteTools::quantize (pattern, scope, snapSteps(), &undo);
+    NoteTools::quantize (pattern, scope, snapSteps(), stepsPerBar(), &undo);
     repaint();
 }
 
@@ -105,7 +105,8 @@ void PianoRollComponent::openRandomizeDialog()
 
                               auto& undo = document.getUndoManager();
                               undo.beginNewTransaction ("Randomize");
-                              NoteTools::randomize (pattern, notes, options, random, &undo);
+                              NoteTools::randomize (pattern, notes, options, random, stepsPerBar(),
+                                                    &undo);
                               repaint();
                           });
 }
@@ -142,7 +143,7 @@ bool PianoRollComponent::paintNoteAt (juce::Point<int> position)
     auto note = ProjectEdits::addNote (pattern, channelId, step, length, pitch,
                                        (float) editorState.getLastNoteVelocity(), &undo);
     selection.add (note);
-    ProjectEdits::growPatternToFitNotes (pattern, &undo);
+    fitPatternLength (undo);
     return true;
 }
 
@@ -265,6 +266,7 @@ void PianoRollComponent::deleteSelection()
     for (const auto& note : doomed)
         ProjectEdits::removeNote (pattern, note, &undo);
 
+    fitPatternLength (undo);
     repaint();
 }
 

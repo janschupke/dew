@@ -653,25 +653,29 @@ TEST_CASE ("no transport control writes the state the engine owns", "[build][gat
     {
         const auto text = line.text.trim();
 
-        if (text.contains (".onClick = [") || text.contains (".onModifiedClick = ["))
-        {
-            insideClickHandler = true;
+        const auto opens = text.contains (".onClick = [") || text.contains (".onModifiedClick = [");
+
+        if (opens)
             ++handlers;
-            continue;
-        }
 
-        if (insideClickHandler && text.startsWith ("};"))
-        {
+        // A handler written on ONE line opens and closes on that line. Treating
+        // it as open leaked this state machine into whatever followed, and the
+        // gate then read the next function instead - in silence, because the
+        // next line starting `};` anywhere in the file closed it again. The
+        // leak surfaced the day the block that had been supplying that `};`
+        // was deleted for an unrelated reason.
+        const auto closes = opens ? text.endsWith ("};") : text.startsWith ("};");
+
+        if (opens || insideClickHandler)
+            for (const auto* self : { "setToggleState (", "setButtonText (", "setIcon (" })
+                if (text.contains (self))
+                    found.add (relativePathOf (file) + ":" + juce::String (line.number) + "  "
+                               + text);
+
+        if (opens)
+            insideClickHandler = ! closes;
+        else if (insideClickHandler && closes)
             insideClickHandler = false;
-            continue;
-        }
-
-        if (! insideClickHandler)
-            continue;
-
-        for (const auto* self : { "setToggleState (", "setButtonText (", "setIcon (" })
-            if (text.contains (self))
-                found.add (relativePathOf (file) + ":" + juce::String (line.number) + "  " + text);
     }
 
     // Control case: a gate that walked no handlers at all would pass in silence,

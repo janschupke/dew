@@ -184,24 +184,6 @@ TransportBar::TransportBar (ProjectDocument& d, AudioEngine& e, EditorState& s)
     deletePatternButton.onClick = [this] { requestDeletePattern(); };
     addAndMakeVisible (deletePatternButton);
 
-    patternLengthField.setRange (1.0, 256.0, 1.0);
-    patternLengthField.setNumDecimalPlaces (0);
-    // A suffix rather than a caption, matching the tempo field beside it: a
-    // caption reserves 12px above the value, which made this the only control
-    // in the bar that could not share the common height.
-    patternLengthField.setSuffix (tr (StringId::unit_steps));
-    patternLengthField.setTooltip (tr (StringId::transport_patternLength_help));
-    patternLengthField.onEditStart = [this] { lengthGestureActive = false; };
-    patternLengthField.onValueChange = [this]
-    {
-        ProjectEdits::setProperty (currentPattern(), ids::lengthSteps,
-                                   (int) patternLengthField.getValue(), &document.getUndoManager(),
-                                   "Change pattern length", lengthGestureActive);
-
-        lengthGestureActive = true;
-    };
-    addAndMakeVisible (patternLengthField);
-
     positionLabel.setComponentID ("transportPosition");
     positionLabel.setFont (tokens::type::monospaced (tokens::type::body));
     positionLabel.setTextColourToken (tokens::colour::playhead);
@@ -239,7 +221,7 @@ void TransportBar::refresh()
     tempoField.setValue ((double) document.getState()[ids::tempoBpm], juce::dontSendNotification);
     refreshMeter();
     rebuildPatternList();
-    refreshPatternLength();
+    refreshPatternControls();
 
     // Otherwise the readout, the icon and the mode are blank and stale until
     // the first timer tick. The same call the timer makes, so a document
@@ -290,16 +272,8 @@ void TransportBar::requestDeletePattern()
                         });
 }
 
-void TransportBar::refreshPatternLength()
+void TransportBar::refreshPatternControls()
 {
-    const auto pattern = currentPattern();
-
-    patternLengthField.setEnabled (pattern.isValid());
-
-    if (pattern.isValid())
-        patternLengthField.setValue ((double) (int) pattern[ids::lengthSteps],
-                                     juce::dontSendNotification);
-
     // Deleting the only pattern would leave nothing to edit or play.
     // Counted from the DOCUMENT, not from the box. The box carries a "New
     // pattern" row below a separator, so with one pattern getNumItems() came
@@ -381,7 +355,7 @@ void TransportBar::changeListenerCallback (juce::ChangeBroadcaster*)
     if (patternBox.getSelectedId() != editorState.getCurrentPatternId())
         patternBox.setSelectedId (editorState.getCurrentPatternId(), juce::dontSendNotification);
 
-    refreshPatternLength();
+    refreshPatternControls();
 }
 
 void TransportBar::valueTreePropertyChanged (juce::ValueTree& tree,
@@ -394,8 +368,6 @@ void TransportBar::valueTreePropertyChanged (juce::ValueTree& tree,
         refreshMeter();
     else if (property == ids::name && tree.hasType (ids::PATTERN))
         rebuildPatternList();
-    else if (property == ids::lengthSteps && tree.hasType (ids::PATTERN))
-        refreshPatternLength();
 }
 
 void TransportBar::valueTreeChildAdded (juce::ValueTree&, juce::ValueTree& child)
@@ -403,7 +375,7 @@ void TransportBar::valueTreeChildAdded (juce::ValueTree&, juce::ValueTree& child
     if (child.hasType (ids::PATTERN))
     {
         rebuildPatternList();
-        refreshPatternLength();
+        refreshPatternControls();
     }
 }
 
@@ -412,7 +384,7 @@ void TransportBar::valueTreeChildRemoved (juce::ValueTree&, juce::ValueTree& chi
     if (child.hasType (ids::PATTERN))
     {
         rebuildPatternList();
-        refreshPatternLength();
+        refreshPatternControls();
     }
 }
 
@@ -563,7 +535,6 @@ void TransportBar::resized()
     place (addPatternButton, size::knobSm);
     place (clonePatternButton, size::knobSm);
     place (deletePatternButton, size::knobSm);
-    place (patternLengthField, 84);
 
     groupDividers.add (strip.divider());
 

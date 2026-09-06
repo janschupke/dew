@@ -135,7 +135,7 @@ struct NoteTools
         every time the pattern is quantized again.
     */
     static int quantize (juce::ValueTree pattern, const juce::Array<juce::ValueTree>& notes,
-                         int snapSteps, juce::UndoManager*);
+                         int snapSteps, int stepsPerBar, juce::UndoManager*);
 
     /** Shifts every note by the same interval, clamped as a group so a chord
         keeps its intervals against the pitch limits instead of compressing.
@@ -168,7 +168,8 @@ struct NoteTools
         that deleted notes near the start would be a surprise.
     */
     static void randomize (juce::ValueTree pattern, const juce::Array<juce::ValueTree>& notes,
-                           const RandomizeOptions&, juce::Random& random, juce::UndoManager*);
+                           const RandomizeOptions&, juce::Random& random, int stepsPerBar,
+                           juce::UndoManager*);
 };
 
 } // namespace dew

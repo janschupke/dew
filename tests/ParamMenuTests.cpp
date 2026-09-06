@@ -214,16 +214,14 @@ TEST_CASE ("every spec-built control in the window has a right-click", "[ui][par
     INFO ("without one:\n" << missing.joinIntoString ("\n"));
     REQUIRE (knobs > 0);
 
-    // Two exceptions, and NAMED ones so they cannot quietly grow back.
+    // ONE exception now, and a NAMED one so it cannot quietly grow back.
     //
-    // The transport bar's pattern-length field is not a parameter of anything:
-    // it is how long the pattern in front of you is, which is a property of the
-    // material rather than a quantity that could be swept - there is nothing for
-    // a curve over it to mean, and nothing to reset it TO.
-    //
-    // The tempo field beside it WAS the other exception, until tempo became a
-    // target; this count is exact so that migrating it had to come back here,
-    // which is exactly what happened.
+    // The transport bar's pattern-length field WAS the other, and is gone: a
+    // pattern's length stopped being something anything could set when it
+    // became a value derived from the notes in the pattern. The tempo field
+    // beside it was one before that, until tempo became an automation target.
+    // This count is exact so that both had to come back here, which is exactly
+    // what happened.
     //
     // A channel row's mixer field is the second, for the reason mute has no
     // solo beside it: which track a channel plays through is a RELATION between
@@ -234,7 +232,7 @@ TEST_CASE ("every spec-built control in the window has a right-click", "[ui][par
     // control sits in is the LAST segment rather than the first - which is why
     // the rack's row is matched by "> channelHeader @" and not by a prefix.
     const auto expected = [] (const juce::String& path)
-    { return path.startsWith ("transportBar") || path.contains ("> channelHeader @"); };
+    { return path.contains ("> channelHeader @"); };
 
     for (const auto& one : missing)
     {
@@ -242,9 +240,9 @@ TEST_CASE ("every spec-built control in the window has a right-click", "[ui][par
         REQUIRE (expected (one));
     }
 
-    // One per channel row plus the transport bar's, and the demo project the
-    // window opens with has four channels.
-    REQUIRE (missing.size() == 5);
+    // One per channel row, and the demo project the window opens with has four
+    // channels.
+    REQUIRE (missing.size() == 4);
     REQUIRE (withMenu == knobs - missing.size());
 }
 

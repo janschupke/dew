@@ -306,15 +306,22 @@ bool ProjectEdits::removePattern (juce::ValueTree project, juce::ValueTree patte
     return true;
 }
 
-int ProjectEdits::lengthNeededForNotes (const juce::ValueTree& pattern)
+int ProjectEdits::lengthNeededForNotes (const juce::ValueTree& pattern, int stepsPerBar)
 {
-    int needed = 1;
+    const auto perBar = juce::jmax (1, stepsPerBar);
+
+    int needed = 0;
 
     for (const auto& note : pattern)
         if (note.hasType (ids::NOTE))
             needed = juce::jmax (needed, (int) note[ids::step] + (int) note[ids::lengthSteps]);
 
-    return needed;
+    // Rounded UP to a whole bar, and never fewer than one. A pattern is a
+    // bar-shaped thing - it is placed in the playlist in bars and its ruler
+    // counts them - so a length that ended part way through a bar would wrap
+    // the arrangement somewhere no bar line is. An empty pattern is one bar
+    // rather than one step, because it still needs somewhere to put a note.
+    return juce::jmax (1, (needed + perBar - 1) / perBar) * perBar;
 }
 
 } // namespace dew

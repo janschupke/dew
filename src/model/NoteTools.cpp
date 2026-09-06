@@ -146,7 +146,7 @@ juce::ValueTree NoteTools::sliceNote (juce::ValueTree pattern, juce::ValueTree n
 }
 
 int NoteTools::quantize (juce::ValueTree pattern, const juce::Array<juce::ValueTree>& notes,
-                         int snapSteps, juce::UndoManager* undo)
+                         int snapSteps, int stepsPerBar, juce::UndoManager* undo)
 {
     if (! pattern.isValid())
         return 0;
@@ -191,8 +191,9 @@ int NoteTools::quantize (juce::ValueTree pattern, const juce::Array<juce::ValueT
     for (auto duplicate : duplicates)
         ProjectEdits::removeNote (pattern, duplicate, undo);
 
-    // A note rounded up past the end is still a note: grow rather than lose it.
-    ProjectEdits::growPatternToFitNotes (pattern, undo);
+    // A note rounded up past the end is still a note, and a last bar emptied by
+    // rounding down is a bar the pattern no longer needs.
+    ProjectEdits::fitPatternToNotes (pattern, stepsPerBar, undo);
 
     return duplicates.size();
 }
@@ -224,7 +225,7 @@ int NoteTools::transpose (const juce::Array<juce::ValueTree>& notes, int semiton
 }
 
 void NoteTools::randomize (juce::ValueTree pattern, const juce::Array<juce::ValueTree>& notes,
-                           const RandomizeOptions& options, juce::Random& random,
+                           const RandomizeOptions& options, juce::Random& random, int stepsPerBar,
                            juce::UndoManager* undo)
 {
     const auto movesVelocity = options.velocityAmount > 0.0;
@@ -254,7 +255,7 @@ void NoteTools::randomize (juce::ValueTree pattern, const juce::Array<juce::Valu
     }
 
     if (movesStep)
-        ProjectEdits::growPatternToFitNotes (pattern, undo);
+        ProjectEdits::fitPatternToNotes (pattern, stepsPerBar, undo);
 }
 
 } // namespace dew

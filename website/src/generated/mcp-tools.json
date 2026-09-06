@@ -719,8 +719,8 @@
     {
       "name": "patterns_write",
       "scope": "write",
-      "summary": "Add, duplicate, rename or resize patterns, as one undo step.",
-      "doc": "A pattern holds every channel's notes for its span, which is why a section of an arrangement is one pattern rather than one per instrument.\n\n`duplicateOf` deep-copies a pattern, notes and all, under a new id - which is what a repeat that will be varied wants. A repeat that is identical wants one pattern and two clips instead.\n\nA pattern deliberately longer than its notes is a rest at the end, so nothing here shrinks one implicitly. `fitToNotes` asks for it explicitly.",
+      "summary": "Add, duplicate or rename patterns, as one undo step.",
+      "doc": "A pattern holds every channel's notes for its span, which is why a section of an arrangement is one pattern rather than one per instrument.\n\n`duplicateOf` deep-copies a pattern, notes and all, under a new id - which is what a repeat that will be varied wants. A repeat that is identical wants one pattern and two clips instead.\n\nA pattern's LENGTH is not settable, here or anywhere. It is derived from the notes the pattern holds, rounded up to a whole bar and never less than one - so writing a note further in is what makes a pattern longer, and removing the notes at the end is what makes it shorter. `lengthSteps` is reported back for reference and is not an argument.",
       "args": [
         {
           "name": "entries",
@@ -750,22 +750,6 @@
               "kind": "text",
               "required": false,
               "doc": "What the pattern is called.",
-              "holdsBareElements": false,
-              "fields": []
-            },
-            {
-              "name": "lengthSteps",
-              "kind": "integer",
-              "required": false,
-              "doc": "How long the pattern is, in steps.",
-              "holdsBareElements": false,
-              "fields": []
-            },
-            {
-              "name": "fitToNotes",
-              "kind": "flag",
-              "required": false,
-              "doc": "Set the length to exactly what the notes need.",
               "holdsBareElements": false,
               "fields": []
             }

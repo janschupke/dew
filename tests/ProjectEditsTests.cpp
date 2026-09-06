@@ -337,17 +337,61 @@ TEST_CASE ("a pattern length that fits its notes covers the last one entirely", 
     auto pattern = ProjectEdits::findPattern (project, 1);
     juce::UndoManager undo;
 
-    // Empty patterns still need somewhere to put a note.
-    REQUIRE (ProjectEdits::lengthNeededForNotes (pattern) == 1);
+    constexpr auto perBar = 16;
+
+    // Empty patterns still need somewhere to put a note, and the smallest thing
+    // a pattern can be is one bar.
+    REQUIRE (ProjectEdits::lengthNeededForNotes (pattern, perBar) == perBar);
 
     ProjectEdits::addNote (pattern, 1, 4, 1, 60, 1.0f, &undo);
-    REQUIRE (ProjectEdits::lengthNeededForNotes (pattern) == 5);
+    REQUIRE (ProjectEdits::lengthNeededForNotes (pattern, perBar) == perBar);
 
     // The length of the last note counts, not just where it starts, and an
-    // earlier long note can outreach a later short one.
+    // earlier long note can outreach a later short one - so this reaches step
+    // 20 and takes a second bar with it.
     ProjectEdits::addNote (pattern, 1, 8, 12, 62, 1.0f, &undo);
     ProjectEdits::addNote (pattern, 1, 15, 1, 64, 1.0f, &undo);
-    REQUIRE (ProjectEdits::lengthNeededForNotes (pattern) == 20);
+    REQUIRE (ProjectEdits::lengthNeededForNotes (pattern, perBar) == 2 * perBar);
+
+    // Whole bars, and only whole bars. A note ending one step into a bar takes
+    // the whole of it, because a pattern that ended part way through one would
+    // wrap the arrangement where no bar line is.
+    ProjectEdits::addNote (pattern, 1, 32, 1, 66, 1.0f, &undo);
+    REQUIRE (ProjectEdits::lengthNeededForNotes (pattern, perBar) == 3 * perBar);
+}
+
+TEST_CASE ("a pattern's length follows the notes in BOTH directions", "[edits][patterns]")
+{
+    auto project = ProjectFactory::createDefault();
+    auto pattern = ProjectEdits::findPattern (project, 1);
+    juce::UndoManager undo;
+
+    constexpr auto perBar = 16;
+
+    auto far = ProjectEdits::addNote (pattern, 1, 40, 4, 60, 1.0f, &undo);
+    ProjectEdits::addNote (pattern, 1, 2, 1, 62, 1.0f, &undo);
+
+    REQUIRE (ProjectEdits::fitPatternToNotes (pattern, perBar, &undo));
+    REQUIRE ((int) pattern[ids::lengthSteps] == 3 * perBar);
+
+    // The whole point of the change: taking the last bar's notes away takes the
+    // bar away too, so what loops is what is there rather than what was ever
+    // there. The old rule grew only, and a pattern that had once reached bar
+    // three went on looping three bars of silence after two of them were
+    // emptied.
+    ProjectEdits::removeNote (pattern, far, &undo);
+
+    REQUIRE (ProjectEdits::fitPatternToNotes (pattern, perBar, &undo));
+    REQUIRE ((int) pattern[ids::lengthSteps] == perBar);
+
+    // Idempotent: a second fit over the same notes changes nothing and says so,
+    // which is what keeps it out of the undo stack.
+    REQUIRE (! ProjectEdits::fitPatternToNotes (pattern, perBar, &undo));
+
+    // An empty pattern is one bar, not one step.
+    ProjectEdits::removeNote (pattern, pattern.getChild (0), &undo);
+    ProjectEdits::fitPatternToNotes (pattern, perBar, &undo);
+    REQUIRE ((int) pattern[ids::lengthSteps] == perBar);
 }
 
 TEST_CASE ("a clip can be moved to another track", "[edits][playlist]")

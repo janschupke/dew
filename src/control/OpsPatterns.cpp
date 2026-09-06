@@ -1,4 +1,5 @@
 #include "control/OpsSupport.h"
+#include "model/Meter.h"
 
 namespace dew::control
 {
@@ -49,15 +50,12 @@ ControlResult write (ControlHost& host, const juce::var& args)
             ProjectEdits::setProperty (pattern, ids::name, textArg (entry, "name"), undo,
                                        "Rename pattern", true);
 
-        if (hasArg (entry, "lengthSteps"))
-            ProjectEdits::setProperty (pattern, ids::lengthSteps,
-                                       juce::jmax (1, intArg (entry, "lengthSteps")), undo,
-                                       "Resize pattern", true);
-
-        if (flagArg (entry, "fitToNotes"))
-            ProjectEdits::setProperty (pattern, ids::lengthSteps,
-                                       ProjectEdits::lengthNeededForNotes (pattern), undo,
-                                       "Fit pattern to notes", true);
+        // No length argument, and none to add. A pattern's length is derived
+        // from the notes in it - see ProjectEdits::fitPatternToNotes - so the
+        // way to make a pattern longer is to write a note further into it, and
+        // the way to make it shorter is to remove the notes at the end. A
+        // setter here would be a value the next note edit silently overwrote.
+        ProjectEdits::fitPatternToNotes (pattern, Meter::of (project).stepsPerBar(), undo);
 
         touched.add (Obj {}
                          .set ("id", (int) pattern[ids::id])
@@ -145,14 +143,17 @@ void appendPatternOps (std::vector<OpSpec>& all)
         { "patterns_write",
           OpScope::write,
           OpEdits::yes,
-          "Add, duplicate, rename or resize patterns, as one undo step.",
+          "Add, duplicate or rename patterns, as one undo step.",
           "A pattern holds every channel's notes for its span, which is why a section of "
           "an arrangement is one pattern rather than one per instrument.\n\n"
           "`duplicateOf` deep-copies a pattern, notes and all, under a new id - which is "
           "what a repeat that will be varied wants. A repeat that is identical wants one "
           "pattern and two clips instead.\n\n"
-          "A pattern deliberately longer than its notes is a rest at the end, so nothing "
-          "here shrinks one implicitly. `fitToNotes` asks for it explicitly.",
+          "A pattern's LENGTH is not settable, here or anywhere. It is derived from the "
+          "notes the pattern holds, rounded up to a whole bar and never less than one - so "
+          "writing a note further in is what makes a pattern longer, and removing the "
+          "notes at the end is what makes it shorter. `lengthSteps` is reported back for "
+          "reference and is not an argument.",
           { { "entries",
               ValueKind::array,
               true,
@@ -161,10 +162,7 @@ void appendPatternOps (std::vector<OpSpec>& all)
                   "An existing pattern to change. Omit to make a new one." },
                 { "duplicateOf", ValueKind::integer, false,
                   "Copy this pattern, notes and all, instead of making an empty one." },
-                { "name", ValueKind::text, false, "What the pattern is called." },
-                { "lengthSteps", ValueKind::integer, false, "How long the pattern is, in steps." },
-                { "fitToNotes", ValueKind::flag, false,
-                  "Set the length to exactly what the notes need." } } } },
+                { "name", ValueKind::text, false, "What the pattern is called." } } } },
           write });
 
     all.push_back (

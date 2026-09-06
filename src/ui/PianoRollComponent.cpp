@@ -223,6 +223,16 @@ int PianoRollComponent::stepsPerBeat() const
     return juce::jmax (1, (int) document.getState()[ids::stepsPerBeat]);
 }
 
+int PianoRollComponent::stepsPerBar() const
+{
+    return juce::jmax (1, Meter::of (document.getState()).stepsPerBar());
+}
+
+void PianoRollComponent::fitPatternLength (juce::UndoManager& undo)
+{
+    ProjectEdits::fitPatternToNotes (currentPattern(), stepsPerBar(), &undo);
+}
+
 juce::Colour PianoRollComponent::channelColour() const
 {
     const auto channel = ProjectEdits::findChannel (document.getState(),
@@ -286,8 +296,9 @@ void PianoRollComponent::activateCursor()
         ProjectEdits::addNote (pattern, channelId, at.x,
                                juce::jmax (1, editorState.getLastNoteLengthSteps()), at.y,
                                (float) editorState.getLastNoteVelocity(), &undo);
-        ProjectEdits::growPatternToFitNotes (pattern, &undo);
     }
+
+    fitPatternLength (undo);
 
     announceCursor();
     repaint();

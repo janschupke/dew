@@ -1270,9 +1270,6 @@
     "pattern": {
       "help": "Which pattern the rack and the piano roll are editing"
     },
-    "patternLength": {
-      "help": "Pattern length - drag up and down, or double-click to type"
-    },
     "tempo": {
       "help": "Tempo - drag up and down, or double-click to type"
     },

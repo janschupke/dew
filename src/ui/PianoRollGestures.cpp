@@ -159,6 +159,7 @@ void PianoRollComponent::eraseAlong (juce::Point<int> from, juce::Point<int> to)
     if (erasedAny)
     {
         erasedDuringGesture = true;
+        fitPatternLength (undo);
         repaint();
     }
 }
@@ -344,7 +345,7 @@ void PianoRollComponent::mouseDown (const juce::MouseEvent& event)
         juce::jmax (snap, NoteTools::snapCeil (editorState.getLastNoteLengthSteps(), snap)),
         pitchAtY (event.y), (float) editorState.getLastNoteVelocity(), &undo);
     selectOnly (draggedNote);
-    ProjectEdits::growPatternToFitNotes (pattern, &undo);
+    fitPatternLength (undo);
 
     gesture = Gesture::drawing;
     repaint();
@@ -498,7 +499,7 @@ void PianoRollComponent::mouseDrag (const juce::MouseEvent& event)
                                     (int) note[ids::pitch] + allowedPitch, &undo);
     }
 
-    ProjectEdits::growPatternToFitNotes (currentPattern(), &undo);
+    fitPatternLength (undo);
     repaint();
 }
 

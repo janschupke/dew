@@ -169,7 +169,6 @@ private:
     /** True for every value after the first in one number-field drag, so a
         whole drag is one undo step rather than one per frame. */
     bool tempoGestureActive = false;
-    bool lengthGestureActive = false;
 
     /** Adds a pattern and makes it current. The + button and the dropdown's own
         "New pattern" item both go through here.
@@ -184,7 +183,7 @@ private:
 
     void rebuildPatternList();
     void updatePositionLabel();
-    void refreshPatternLength();
+    void refreshPatternControls();
     void rebuildMeterList();
     void refreshMeter();
     void applyMeterChoice (int itemId);
@@ -259,7 +258,6 @@ private:
                                        tr (StringId::transport_clonePattern_help) };
     DewIconButton deletePatternButton { icons::trash(), tr (StringId::transport_deletePattern_help),
                                         DewIconButton::Role::danger };
-    DewNumberField patternLengthField;
 
     DewLabel positionLabel;
 

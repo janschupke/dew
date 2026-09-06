@@ -119,12 +119,27 @@ struct ProjectEdits
                                     const juce::Identifier& property, const juce::var& value,
                                     juce::UndoManager*, const juce::String& transactionName);
 
-    /** Grows a pattern so every note fits, and returns true if it had to.
+    /** Sets a pattern's length to what the notes in it need RIGHT NOW, and
+        returns true if that changed it.
 
-        Never shrinks: a pattern deliberately left longer than its notes is a
-        rest at the end, and silently trimming it would destroy that.
+        Both ways. A pattern's length is a DERIVED value rather than a setting:
+        painting past the end lengthens it and clearing the last bar shortens it
+        again, so what loops is always what is there. That is why there is no
+        length field on the transport bar - placing a note outside the pattern
+        is how a pattern is resized, and it is the only way.
+
+        Whole bars, so the arrangement never wraps somewhere no bar line is.
+        Callers pass `stepsPerBar` rather than this reading the meter off the
+        pattern's ancestors, for the reason NoteTools::stepsForSnap takes it: a
+        pattern does not know the metre, and a function that guessed one for a
+        tree that had been detached would be wrong quietly.
+
+        Called once after a BATCH rather than inside addNote, which is what
+        keeps writing a thousand notes from being a thousand walks of the
+        pattern. Every path that adds, moves, resizes or removes a note ends in
+        one of these calls.
     */
-    static bool growPatternToFitNotes (juce::ValueTree pattern, juce::UndoManager*);
+    static bool fitPatternToNotes (juce::ValueTree pattern, int stepsPerBar, juce::UndoManager*);
 
     // --- channels ------------------------------------------------------------
     static juce::ValueTree addChannel (juce::ValueTree project, const juce::String& name,
@@ -238,7 +253,7 @@ struct ProjectEdits
     /** Steps needed to contain every note in this pattern, for "fit to notes".
         At least one step, so an empty pattern does not collapse to nothing.
     */
-    static int lengthNeededForNotes (const juce::ValueTree& pattern);
+    static int lengthNeededForNotes (const juce::ValueTree& pattern, int stepsPerBar);
 
     // --- oscillators ---------------------------------------------------------
     /** A channel's nth oscillator slot, or an invalid tree.
