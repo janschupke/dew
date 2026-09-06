@@ -5,6 +5,7 @@
 #include "app/Settings.h"
 #include "model/ProjectFactory.h"
 #include "ui/DewDialog.h"
+#include "ui/EffectCard.h"
 #include "ui/EffectChainHost.h"
 #include "ui/InstrumentPanel.h"
 #include "ui/MainComponent.h"
@@ -524,4 +525,70 @@ TEST_CASE ("a toolbar too narrow for its controls offers them instead of hiding 
 
     CHECK (controlsIn().size() == wide.size());
     CHECK_FALSE (overflowButton->isVisible());
+}
+
+TEST_CASE ("the sidebar is never narrower than the widest thing in it", "[ui][reflow]")
+{
+    /*  An effect card DECLARES the width it needs, and the sidebar never asked.
+
+        EffectCard::cardMinWidth is "what the header packs: grip, bypass, icon,
+        name, preset, reorder, remove and - vertically - the expand chevron",
+        and Settings::minPanelWidth was a number chosen beside it rather than
+        from it. At the old floor the header was about a dozen pixels over
+        budget, and a rectangle emptied by removeFromLeft returns an empty one
+        rather than complaining: what happened is that the NAME - laid out last,
+        and the only thing on that header which is not a button - shrank to
+        nothing, so a narrow sidebar showed a row of identical glyphs with no
+        word saying which effect they belonged to.
+
+        The two numbers live in libraries that cannot see each other: dew_app
+        holds the panel's floor and dew_ui declares the card's. This is what
+        keeps them agreeing, the way the cross-layer case over channelRamp keeps
+        dew_model's copy of the colour ramp honest.
+    */
+    const juce::ScopedJuceInitialiser_GUI juceInit;
+
+    ProjectDocument document;
+    EditorState editorState;
+    document.setState (ProjectFactory::createDefault(), true);
+
+    auto project = document.getState();
+    auto channel = ProjectEdits::findChannel (project, 1);
+    REQUIRE (channel.isValid());
+
+    // A card to measure. The default project's channels carry no effects, and a
+    // chain with nothing in it would pass this for the wrong reason.
+    ProjectEdits::addEffect (project, channel, "filter", &document.getUndoManager());
+
+    InstrumentPanel panel { document, editorState };
+
+    // The narrowest the divider can be dragged to, less the scrollbar the panel
+    // gives up when its content is taller than the window - which a sidebar
+    // with an effect chain in it always is.
+    panel.setSize (Settings::minPanelWidth - tokens::size::scrollThickness,
+                   panel.getRequiredHeight());
+    panel.resized();
+
+    const std::function<EffectCard*(juce::Component&)> firstCard =
+        [&] (juce::Component& root) -> EffectCard*
+    {
+        for (auto* child : root.getChildren())
+        {
+            if (auto* card = dynamic_cast<EffectCard*> (child))
+                return card;
+
+            if (auto* found = firstCard (*child))
+                return found;
+        }
+
+        return nullptr;
+    };
+
+    auto* card = firstCard (panel);
+    REQUIRE (card != nullptr);
+
+    INFO ("a " << Settings::minPanelWidth << "px sidebar gives an effect card " << card->getWidth()
+               << "px, and the card asks for " << EffectCard::cardMinWidth);
+
+    CHECK (card->getWidth() >= EffectCard::cardMinWidth);
 }

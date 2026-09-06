@@ -267,9 +267,25 @@ public:
     /** Writes to disk. Called on exit; safe to call more often. */
     void flush();
 
-    static constexpr int minPanelWidth = 220;
+    /** How narrow the instrument panel may be dragged.
+
+        Derived rather than chosen: it is what an effect card needs plus what
+        the panel spends around one, and dew_app cannot see either number -
+        EffectCard::cardMinWidth is dew_ui's, the same way this class stores a
+        lane height raw and lets the playlist decide what is showable. It was
+        220, which is 106 short, and the card's header answered the shortfall by
+        letting its NAME shrink to nothing: at the old floor a sidebar full of
+        effects was a column of identical glyph rows.
+
+        "The sidebar is never narrower than the widest thing in it", in
+        tests/ReflowTests.cpp, is the cross-layer case that holds the two.
+    */
+    static constexpr int minPanelWidth = 326;
     static constexpr int maxPanelWidth = 640;
-    static constexpr int defaultPanelWidth = 300;
+
+    /** Wider than the floor rather than equal to it, so the sidebar a first
+        launch opens has room around its content rather than exactly enough. */
+    static constexpr int defaultPanelWidth = 360;
     /** Channel rack, piano roll, playlist, mixer, score.
 
         The persisted tab is a raw index, so this and EditorTabs' addTab calls
