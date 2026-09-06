@@ -62,6 +62,7 @@ bool ScoreEditorComponent::isCompletionVisible() const
 void ScoreEditorComponent::hideCompletions()
 {
     completions.setVisible (false);
+    completionReplacing = {};
 }
 
 void ScoreEditorComponent::showCompletions()
@@ -78,6 +79,7 @@ void ScoreEditorComponent::showCompletions()
     }
 
     completions.setItems (result.items);
+    completionReplacing = result.replacing;
 
     // Under the caret, and shoved back on screen rather than off the bottom or
     // the right - a popup you cannot see is worse than none.
@@ -109,15 +111,16 @@ void ScoreEditorComponent::acceptCompletion()
     }
 
     const auto text = source.getAllContent().toStdString();
-    const auto offset = byteIndexForCharacter (text, editor.getCaretPos().getPosition());
-    const auto result = lang::completionsAt (text, (std::uint32_t) offset, scoreLocale());
 
     // The partial word is REPLACED, not appended to, or accepting `channel`
-    // after `cha` spells `chachannel`.
-    const juce::CodeDocument::Position from {
-        source, result.replacing.isEmpty() ? editor.getCaretPos().getPosition()
-                                           : characterIndexForByte (text, result.replacing.begin)
-    };
+    // after `cha` spells `chachannel`. The range is the one showCompletions
+    // already resolved - asking completionsAt again tokenized the document a
+    // second time, parsed it a second time and resolved it a second time, to
+    // recover two numbers.
+    const juce::CodeDocument::Position from { source, completionReplacing.isEmpty()
+                                                          ? editor.getCaretPos().getPosition()
+                                                          : characterIndexForByte (
+                                                                text, completionReplacing.begin) };
 
     const juce::CodeDocument::Position to { source, editor.getCaretPos().getPosition() };
 

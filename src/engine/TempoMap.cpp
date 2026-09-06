@@ -1,5 +1,7 @@
 #include "engine/TempoMap.h"
 
+#include <vector>
+
 #include <algorithm>
 #include <cmath>
 
@@ -38,18 +40,41 @@ TempoMap TempoMap::build (const EngineSnapshot& snapshot, juce::StringArray* war
     // Which clips drive the tempo. An audible automation clip whose automation
     // is scoped to the project and points at tempoBpm - nothing else can make
     // time itself move.
-    const auto tempoAt = [&snapshot] (double step, double& bpm)
+    //
+    // COLLECTED, not counted. This pass already existed and threw its answer
+    // away, and the per-step lookup below then re-asked the same question of
+    // every clip in the arrangement - so building the map was O(steps x clips),
+    // with steps bounded only by maxSteps. It runs on every coalesced document
+    // change, which means once per message-loop turn while a knob is being
+    // dragged: 400 clips over 400 bars took 2.4ms a turn, all of it spent
+    // skipping the 399 clips that are not tempo curves.
+    //
+    // In clip order, so the FIRST match still wins where two overlap.
+    std::vector<int> tempoClips;
+
+    for (int i = 0; i < (int) snapshot.clips.size(); ++i)
     {
-        for (const auto& clip : snapshot.clips)
+        const auto& clip = snapshot.clips[(size_t) i];
+
+        if (clip.automationIndex < 0 || ! clip.trackAudible)
+            continue;
+
+        const auto& automation = snapshot.automations[(size_t) clip.automationIndex];
+
+        if (automation.scope == AutomationScope::project
+            && automation.param == AutomationParam::tempoBpm)
+            tempoClips.push_back (i);
+    }
+
+    if (tempoClips.empty())
+        return fallback();
+
+    const auto tempoAt = [&snapshot, &tempoClips] (double step, double& bpm)
+    {
+        for (const auto index : tempoClips)
         {
-            if (clip.automationIndex < 0 || ! clip.trackAudible)
-                continue;
-
+            const auto& clip = snapshot.clips[(size_t) index];
             const auto& automation = snapshot.automations[(size_t) clip.automationIndex];
-
-            if (automation.scope != AutomationScope::project
-                || automation.param != AutomationParam::tempoBpm)
-                continue;
 
             const auto start = (double) (clip.startBar * snapshot.stepsPerBar());
             const auto end = start + (double) (clip.lengthBars * snapshot.stepsPerBar());
@@ -63,18 +88,6 @@ TempoMap TempoMap::build (const EngineSnapshot& snapshot, juce::StringArray* war
 
         return false;
     };
-
-    auto anyTempoClip = false;
-
-    for (const auto& clip : snapshot.clips)
-        if (clip.automationIndex >= 0 && clip.trackAudible
-            && snapshot.automations[(size_t) clip.automationIndex].scope == AutomationScope::project
-            && snapshot.automations[(size_t) clip.automationIndex].param
-                   == AutomationParam::tempoBpm)
-            anyTempoClip = true;
-
-    if (! anyTempoClip)
-        return fallback();
 
     const auto steps = snapshot.songLengthSteps();
 

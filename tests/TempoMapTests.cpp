@@ -6,6 +6,7 @@
 #include "engine/Transport.h"
 #include "io/MidiExporter.h"
 #include "model/DemoLibrary.h"
+#include "model/ModuleCatalog.h"
 #include "model/Ids.h"
 #include "model/ProjectEdits.h"
 #include "model/ProjectFactory.h"
@@ -330,4 +331,57 @@ TEST_CASE ("an exported ramp moves no note", "[tempo][midi]")
         INFO ("note " << i);
         REQUIRE_THAT (after[i], WithinAbs (before[i], 1e-9));
     }
+}
+
+TEST_CASE ("a tempo curve is found among clips that are not one", "[tempo]")
+{
+    // The arrangement this was O(steps x clips) for. Building the map scanned
+    // every clip once per STEP looking for the one that drives the tempo, and
+    // the pass that had already found it threw the answer away - so 400 clips
+    // over 400 bars cost 2.4ms on every coalesced document change, which is
+    // once per message-loop turn while a knob is being dragged. Collecting them
+    // in that first pass took it to 0.03ms.
+    //
+    // Here as a correctness test rather than a timing one, because a timing
+    // assertion measures the machine: what has to hold is that a curve buried
+    // among four hundred clips is still found, and still drives the map.
+    EngineSnapshot snapshot;
+    snapshot.tempoBpm = 120.0;
+    snapshot.stepsPerBeat = 4;
+    snapshot.beatsPerBar = 4;
+    snapshot.beatUnit = 4;
+
+    AutomationSnapshot tempo;
+    tempo.scope = AutomationScope::project;
+    tempo.param = AutomationParam::tempoBpm;
+    tempo.spec = &requireProjectParamSpec (ids::tempoBpm);
+    tempo.points.push_back ({ 0.0, 0.2, 0.0, SegmentShape::curve });
+    tempo.points.push_back ({ 8192.0, 0.9, 0.0, SegmentShape::curve });
+    snapshot.automations.push_back (tempo);
+
+    for (int i = 0; i < 400; ++i)
+    {
+        ClipSnapshot clip;
+        clip.startBar = i;
+        clip.lengthBars = 1;
+        clip.trackAudible = true;
+
+        // The LAST clip is the tempo curve. Last on purpose: a collector that
+        // stopped at the first clip it looked at would still pass with it first.
+        clip.automationIndex = (i == 399 ? 0 : -1);
+        clip.patternIndex = (i == 399 ? -1 : 0);
+        snapshot.clips.push_back (clip);
+    }
+
+    const auto map = TempoMap::build (snapshot, nullptr);
+
+    REQUIRE_FALSE (map.isConstant());
+
+    // The curve covers the last bar only, so time runs at the project tempo up
+    // to it and at the curve's own after - which is what says the clip was both
+    // found and placed, rather than found and applied everywhere.
+    const auto plain = TempoMap::constant (120.0, 4);
+
+    CHECK_THAT (map.secondsForSteps (6383.0), WithinAbs (plain.secondsForSteps (6383.0), 1.0e-9));
+    CHECK (map.secondsForSteps (6400.0) > plain.secondsForSteps (6400.0));
 }

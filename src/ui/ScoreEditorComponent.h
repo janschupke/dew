@@ -5,6 +5,7 @@
 #include <string>
 #include <vector>
 
+#include "lang/SourceRange.h"
 #include "lang/Compile.h"
 #include "app/ProjectDocument.h"
 #include "ui/ScoreCompletionList.h"
@@ -270,6 +271,20 @@ private:
     juce::ListBox list { "scoreDiagnostics", this };
 
     ScoreCompletionList completions;
+
+    /** What the offered list is replacing: the partial word under the caret at
+        the moment it was offered.
+
+        Held, because acceptCompletion needs it and the only other way to get it
+        is to ask completionsAt again - which tokenizes the whole document,
+        parses it and resolves it, for one range the first call already had. An
+        accepted completion did that work twice.
+
+        Set beside setItems and cleared with the list, so it can never describe
+        a document that has moved on: nothing edits the score between offering a
+        completion and accepting one, because the popup has the keys.
+    */
+    lang::SourceRange completionReplacing;
     DewButton compileButton { tr (StringId::score_compile_label), DewButton::Role::primary };
     juce::Label heading;
 
