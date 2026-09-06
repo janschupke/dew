@@ -1227,15 +1227,16 @@
       "label": "Compile"
     },
     "compiled": "Score compiled: {patterns, plural, one {# pattern} other {# patterns}}, {clips, plural, one {# clip} other {# clips}}, {notes, plural, one {# note} other {# notes}}",
+    "compiledWithKept": "Score compiled: {patterns, plural, one {# pattern} other {# patterns}}, {clips, plural, one {# clip} other {# clips}}, {notes, plural, one {# note} other {# notes}} - {kept, plural, one {# pattern was} other {# patterns were}} edited by hand and left alone",
     "errors": "Score has {count, plural, one {# error} other {# errors}} - nothing was written",
-    "keptByHand": " - {count, plural, one {# pattern was} other {# patterns were}} edited by hand and left alone",
     "position": "{line}:{column}",
     "heading": "Score   ⌃Space completes",
     "title": "Score"
   },
   "soundFont": {
     "load": {
-      "help": "Choose a SoundFont file for this channel to play"
+      "help": "Choose a SoundFont file for this channel to play",
+      "label": "Load..."
     },
     "missing": "Not on this machine - {file}",
     "none": "No soundfont",
@@ -2324,11 +2325,6 @@
     },
     "showPanel": {
       "help": "Show the instrument panel"
-    }
-  },
-  "soundfont": {
-    "load": {
-      "label": "Load..."
     }
   }
 }

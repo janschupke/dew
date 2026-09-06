@@ -139,7 +139,7 @@ private:
     const paramMenu::Host* paramMenuHost = nullptr;
 
     juce::Label fileLabel;
-    DewButton loadButton { tr (StringId::soundfont_load_label) };
+    DewButton loadButton { tr (StringId::soundFont_load_label) };
     DewDropdown presetBox;
     juce::Label presetLabel;
 

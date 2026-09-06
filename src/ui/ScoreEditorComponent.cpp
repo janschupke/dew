@@ -389,16 +389,22 @@ void ScoreEditorComponent::compileIntoProject()
         return;
     }
 
-    juce::String message = tr (StringId::score_compiled,
-                               Args {}
-                                   .with ("patterns", report.patternsWritten)
-                                   .with ("clips", report.clipsWritten)
-                                   .with ("notes", report.notesWritten));
+    // TWO whole messages rather than one with a clause appended. The clause
+    // used to be its own key beginning " - ", which made the joiner and the
+    // order of the two halves facts about English that no translator could
+    // move - the shape i18n.md means by "never assemble a sentence with +".
+    const auto kept = report.patternsKept > 0;
 
-    if (report.patternsKept > 0)
-        message << tr (StringId::score_keptByHand, Args {}.count (report.patternsKept));
+    auto arguments = Args {}
+                         .with ("patterns", report.patternsWritten)
+                         .with ("clips", report.clipsWritten)
+                         .with ("notes", report.notesWritten);
 
-    say (message, StatusBar::Severity::success);
+    if (kept)
+        arguments.with ("kept", report.patternsKept);
+
+    say (tr (kept ? StringId::score_compiledWithKept : StringId::score_compiled, arguments),
+         StatusBar::Severity::success);
 }
 
 void ScoreEditorComponent::showDiagnostic (int index)

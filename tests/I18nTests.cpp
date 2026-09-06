@@ -316,10 +316,17 @@ TEST_CASE ("the extracted plurals still read as they did", "[i18n]")
                Args {}.with ("patterns", 3).with ("clips", 5).with ("notes", 128))
            == "Score compiled: 3 patterns, 5 clips, 128 notes");
 
-    CHECK (tr (StringId::score_keptByHand, Args {}.count (1))
-           == " - 1 pattern was edited by hand and left alone");
-    CHECK (tr (StringId::score_keptByHand, Args {}.count (2))
-           == " - 2 patterns were edited by hand and left alone");
+    // The kept-by-hand clause is a WHOLE message, not a fragment appended to
+    // the one above: the joiner and the order of the two halves are facts about
+    // English, and a key beginning " - " puts both beyond a translator's reach.
+    CHECK (tr (StringId::score_compiledWithKept,
+               Args {}.with ("patterns", 3).with ("clips", 5).with ("notes", 128).with ("kept", 1))
+           == "Score compiled: 3 patterns, 5 clips, 128 notes - 1 pattern was edited by hand and "
+              "left alone");
+    CHECK (tr (StringId::score_compiledWithKept,
+               Args {}.with ("patterns", 1).with ("clips", 1).with ("notes", 1).with ("kept", 2))
+           == "Score compiled: 1 pattern, 1 clip, 1 note - 2 patterns were edited by hand and left "
+              "alone");
 }
 
 TEST_CASE ("a confirmation names what it is about to destroy", "[i18n]")
