@@ -1,4 +1,5 @@
 #include "control/OpsSupport.h"
+#include "model/Meter.h"
 #include "control/ParamAddress.h"
 #include "model/AutomationCurve.h"
 
@@ -81,13 +82,20 @@ ControlResult write (ControlHost& host, const juce::var& args)
 
     const auto withClip = flagArg (args, "placeClip", true);
 
+    // The op's arguments stay in BARS - a curve is placed where a section is,
+    // and a section is a bar - and the model stores steps, so the conversion
+    // happens once, here.
+    const auto stepsPerBar = juce::jmax (1, Meter::of (project).stepsPerBar());
+
     // Creating the definition AND placing a clip is one call in the model
     // precisely so it is one undo step: a curve with nowhere to play is a
     // curve nothing hears.
-    const auto created = withClip ? ProjectEdits::addAutomationWithClip (
-                                        project, *target, intArg (args, "startBar"),
-                                        juce::jmax (1, intArg (args, "lengthBars", 1)), undo)
-                                  : ProjectEdits::addAutomation (project, *target, undo);
+    const auto created = withClip
+                             ? ProjectEdits::addAutomationWithClip (
+                                   project, *target, intArg (args, "startBar") * stepsPerBar,
+                                   juce::jmax (1, intArg (args, "lengthBars", 1)) * stepsPerBar,
+                                   undo)
+                             : ProjectEdits::addAutomation (project, *target, undo);
 
     if (! created.isValid())
         return ControlResult::failure ("the automation could not be created.");

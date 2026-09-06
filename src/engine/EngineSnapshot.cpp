@@ -53,7 +53,7 @@ int EngineSnapshot::songLengthSteps() const
     // same problem in a starker form - it would have no length at all.
     for (const auto& clip : clips)
         if (clip.patternIndex >= 0 || clip.automationIndex >= 0 || clip.channelIndex >= 0)
-            end = juce::jmax (end, (clip.startBar + clip.lengthBars) * stepsPerBar());
+            end = juce::jmax (end, clip.startStep + clip.lengthSteps);
 
     return end;
 }
@@ -498,8 +498,8 @@ EngineSnapshot buildSnapshot (const juce::ValueTree& project, juce::StringArray*
                 continue;
 
             ClipSnapshot c;
-            c.startBar = juce::jmax (0, (int) clip[ids::startBar]);
-            c.lengthBars = juce::jmax (1, (int) clip[ids::lengthBars]);
+            c.startStep = juce::jmax (0, (int) clip[ids::startStep]);
+            c.lengthSteps = juce::jmax (1, (int) clip[ids::lengthSteps]);
             c.trackAudible = trackAudible;
             c.trackGain = trackGain;
 

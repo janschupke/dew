@@ -333,14 +333,15 @@ struct ProjectEdits
         In the model rather than in the playlist, because eleven controls can ask
         for this now and the arrangement is not on screen for most of them.
 
-        The clip lands on the first lane with room at `startBar`, so a new curve
+        The clip lands on the first lane with room at `startStep`, so a new curve
         is visible rather than stacked invisibly under a pattern clip. If every
         lane is occupied there it ADDS a track rather than giving up: that was
         rare from one button and is routine once every knob offers it, and a
         menu item that silently does nothing is worse than one more lane.
     */
     static juce::ValueTree addAutomationWithClip (juce::ValueTree project, const AutomationTarget&,
-                                                  int startBar, int lengthBars, juce::UndoManager*);
+                                                  int startStep, int lengthSteps,
+                                                  juce::UndoManager*);
 
     /** Removes an automation and every clip that referred to it. */
     static bool removeAutomation (juce::ValueTree project, juce::ValueTree automation,
@@ -498,16 +499,16 @@ struct ProjectEdits
     static void removePlaylistTrack (juce::ValueTree project, juce::ValueTree track,
                                      juce::UndoManager*);
 
-    static juce::ValueTree addClip (juce::ValueTree playlistTrack, int patternId, int startBar,
-                                    int lengthBars, juce::UndoManager*);
+    static juce::ValueTree addClip (juce::ValueTree playlistTrack, int patternId, int startStep,
+                                    int lengthSteps, juce::UndoManager*);
 
     /** A clip that drives an automation curve rather than playing a pattern. */
     static juce::ValueTree addAutomationClip (juce::ValueTree playlistTrack, int automationId,
-                                              int startBar, int lengthBars, juce::UndoManager*);
+                                              int startStep, int lengthSteps, juce::UndoManager*);
 
     /** A clip that plays an audio channel's sample. */
-    static juce::ValueTree addAudioClip (juce::ValueTree playlistTrack, int channelId, int startBar,
-                                         int lengthBars, juce::UndoManager*);
+    static juce::ValueTree addAudioClip (juce::ValueTree playlistTrack, int channelId,
+                                         int startStep, int lengthSteps, juce::UndoManager*);
 
     static bool isAutomationClip (const juce::ValueTree& clip);
 
@@ -521,9 +522,9 @@ struct ProjectEdits
     static void removeClip (juce::ValueTree playlistTrack, juce::ValueTree clip,
                             juce::UndoManager*);
 
-    static void moveClip (juce::ValueTree clip, int newStartBar, juce::UndoManager*);
+    static void moveClip (juce::ValueTree clip, int newStartStep, juce::UndoManager*);
 
-    /** Moves a clip to another track, and to a new bar, as one undo step.
+    /** Moves a clip to another track, and to a new step, as one undo step.
 
         Returns the clip that ends up on the target track. A ValueTree cannot be
         in two parents at once, so this removes and re-adds rather than
@@ -538,16 +539,16 @@ struct ProjectEdits
         removal, which is precisely what a copy-drag wants.
     */
     static juce::ValueTree copyClip (juce::ValueTree targetTrack, const juce::ValueTree& clip,
-                                     int startBar, juce::UndoManager*);
+                                     int startStep, juce::UndoManager*);
 
     static juce::ValueTree moveClipToTrack (juce::ValueTree fromTrack, juce::ValueTree clip,
-                                            juce::ValueTree toTrack, int newStartBar,
+                                            juce::ValueTree toTrack, int newStartStep,
                                             juce::UndoManager*);
 
-    static void resizeClip (juce::ValueTree clip, int newLengthBars, juce::UndoManager*);
+    static void resizeClip (juce::ValueTree clip, int newLengthSteps, juce::UndoManager*);
 
-    /** Bars needed to contain every clip on every track. */
-    static int barsNeededForClips (const juce::ValueTree& project);
+    /** Steps needed to contain every clip on every track. */
+    static int stepsNeededForClips (const juce::ValueTree& project);
 
     /** Grows the song so every clip fits, and returns true if it had to.
         Never shrinks, for the same reason a pattern never shrinks: trailing
@@ -555,24 +556,26 @@ struct ProjectEdits
     */
     static bool growSongToFitClips (juce::ValueTree project, juce::UndoManager*);
 
-    /** The clip covering this bar on this track, or an invalid tree. */
-    static juce::ValueTree findClipAtBar (const juce::ValueTree& playlistTrack, int bar);
+    /** The clip covering this step on this track, or an invalid tree. */
+    static juce::ValueTree findClipAtStep (const juce::ValueTree& playlistTrack, int step);
 
     /** Sets the project's meter, rescaling the arrangement so it keeps sounding
         the same.
 
-        A clip is stored in BARS, and the sequencer windows it as
-        `startBar * stepsPerBar` to `+ lengthBars * stepsPerBar`. So redefining
-        a bar moves every clip boundary: left alone, a one-bar clip of a
-        sixteen-step pattern would span twelve steps in 3/4 and the pattern's
-        last four steps would simply stop sounding. Every clip is therefore
-        rescaled by `oldStepsPerBar / newStepsPerBar`, which holds its absolute
-        position in steps, and `barsInSong` with them.
+        Clips do NOT move any more, and that is the whole reason they are
+        stored in steps. They used to be stored in BARS, so redefining a bar
+        moved every clip boundary - a one-bar clip of a sixteen-step pattern
+        spanned twelve steps in 3/4 and the pattern's last four steps simply
+        stopped sounding - and setMeter carried a rescale whose only job was to
+        hold each clip's absolute position IN STEPS. A clip that is already in
+        steps holds it by construction, so the rescale is gone and with it the
+        rounding it could not avoid.
 
-        The rescale is exact only when the ratio divides evenly - 16 to 12 is
-        4/3, so a clip at bar 4 wants bar 5.33 and has to round. `wasExact`, if
-        given, reports whether every clip landed on a whole bar, so the caller
-        can say so rather than let it be discovered.
+        `barsInSong` still moves: it is a count of bars, and a bar is now worth
+        a different number of steps.
+
+        `wasExact` is therefore always true and is kept only so the callers that
+        report it do not all have to change at once.
 
         Does nothing at all when the meter is unchanged, so this is safe to call
         from a combo box that re-selects the value it already had.
@@ -587,9 +590,10 @@ struct ProjectEdits
         each note's start and length, each pattern's length, and each automation
         point's position, which is a double.
 
-        Clips do NOT move. They are stored in bars, and a bar is a bar whatever
-        it is divided into - which is the same reason setMeter has to rescale
-        them and this does not.
+        Clips move too, now that they are stored in steps: a clip at step 16 on
+        a grid of four steps to a beat is at step 32 on a grid of eight, and it
+        is the same instant. This is the mirror image of setMeter, which used to
+        rescale them and no longer does.
 
         The guard is a render: the same project at four steps to a beat and at
         eight must be sample-identical. Verify a change to this by skipping one

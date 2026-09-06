@@ -1114,7 +1114,7 @@
             {
               "name": "startBar",
               "kind": "integer",
-              "required": true,
+              "required": false,
               "doc": "Where it begins, counting from 0.",
               "holdsBareElements": false,
               "fields": []
@@ -1124,6 +1124,22 @@
               "kind": "integer",
               "required": false,
               "doc": "How many bars it spans.",
+              "holdsBareElements": false,
+              "fields": []
+            },
+            {
+              "name": "startStep",
+              "kind": "integer",
+              "required": false,
+              "doc": "Where it begins, in steps. Overrides startBar, and is the only way to start a clip off a bar line.",
+              "holdsBareElements": false,
+              "fields": []
+            },
+            {
+              "name": "lengthSteps",
+              "kind": "integer",
+              "required": false,
+              "doc": "How many steps it spans. Overrides lengthBars.",
               "holdsBareElements": false,
               "fields": []
             },
@@ -1179,8 +1195,16 @@
             {
               "name": "atBar",
               "kind": "integer",
-              "required": true,
+              "required": false,
               "doc": "Any bar the clip covers.",
+              "holdsBareElements": false,
+              "fields": []
+            },
+            {
+              "name": "atStep",
+              "kind": "integer",
+              "required": false,
+              "doc": "Any step the clip covers. Overrides atBar, and is how to reach a clip that does not begin on a bar line.",
               "holdsBareElements": false,
               "fields": []
             }

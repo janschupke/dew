@@ -374,10 +374,10 @@ juce::ValueTree maximalProject()
     // stay green.
     {
         auto notes = ProjectEdits::addPlaylistTrack (project, "Notes", nullptr);
-        ProjectEdits::addClip (notes, (int) pattern[ids::id], 0, 4, nullptr);
+        ProjectEdits::addClip (notes, (int) pattern[ids::id], 0 * 16, 4 * 16, nullptr);
 
         auto take = ProjectEdits::addPlaylistTrack (project, "Take", nullptr);
-        ProjectEdits::addAudioClip (take, (int) audioChannel[ids::id], 0, 4, nullptr);
+        ProjectEdits::addAudioClip (take, (int) audioChannel[ids::id], 0 * 16, 4 * 16, nullptr);
     }
 
     // More automation CLIPS than the active-automation vector is reserved for,
@@ -404,8 +404,8 @@ juce::ValueTree maximalProject()
     {
         auto track = ProjectEdits::addPlaylistTrack (project, "A" + juce::String (i), nullptr);
 
-        ProjectEdits::addAutomationClip (track, automationIds[(size_t) i % automationIds.size()], 0,
-                                         4, nullptr);
+        ProjectEdits::addAutomationClip (track, automationIds[(size_t) i % automationIds.size()],
+                                         0 * 16, 4 * 16, nullptr);
     }
 
     return project;

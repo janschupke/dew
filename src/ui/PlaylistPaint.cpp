@@ -27,6 +27,7 @@
 #include "model/EntityColour.h"
 #include "model/Ids.h"
 #include "model/Meter.h"
+#include "model/NoteTools.h"
 #include "model/ProjectEdits.h"
 #include "ui/TimelineRuler.h"
 #include "ui/design/Gestures.h"
@@ -286,8 +287,9 @@ int PlaylistComponent::paintLanes (juce::Graphics& g, int bottom)
 
 void PlaylistComponent::paint (juce::Graphics& g)
 {
-    const auto bars = numBars();
-    const auto width = (float) timeline.pixelsPerStep;
+    const auto totalSteps = numSteps();
+    const auto perBar = juce::jmax (1, stepsPerBar());
+    const auto width = (double) perBar * timeline.pixelsPerStep;
     // Where the grid, the selection band and the playhead stop. lanesBottom
     // rather than tracksBottom, so a scrolled arrangement does not draw its
     // furniture over the strip below the view.
@@ -312,10 +314,12 @@ void PlaylistComponent::paint (juce::Graphics& g)
     {
         const auto selection = editorState.getSelectedBarRange();
 
+        // The selection is kept in BARS - a render range is a section of an
+        // arrangement - so it is the one thing left in here that converts.
         const auto fromX = (float) size::gutterTrack
-                           + timeline.xForStep ((double) selection.getStart());
+                           + timeline.xForStep ((double) (selection.getStart() * perBar));
         const auto toX = (float) size::gutterTrack
-                         + timeline.xForStep ((double) selection.getEnd());
+                         + timeline.xForStep ((double) (selection.getEnd() * perBar));
 
         g.setColour (colour::accent.withAlpha (emphasis::dimmed));
         g.fillRect (juce::Rectangle<float> (fromX, (float) rulerTop(),
@@ -331,22 +335,47 @@ void PlaylistComponent::paint (juce::Graphics& g)
     // these two lines are the whole of what keeps the two agreeing.
     g.setFont (type::font (type::small));
 
-    for (int bar = painted.getStart(); bar < painted.getEnd(); ++bar)
+    // The BAR lines and their numbers, which is what the ruler counts and what
+    // a lane is read against. Between them the shared grid painter draws the
+    // beat and the toolbar's own snap cell - see below - so the arrangement now
+    // has a grid at all, which it could not have had while a coordinate here
+    // was a bar and nothing finer existed.
+    const auto numberable = width >= 28.0;
+
+    for (int step = painted.getStart() - painted.getStart() % perBar; step < painted.getEnd();
+         step += perBar)
     {
-        const auto x = (float) size::gutterTrack + timeline.xForStep ((double) bar);
+        const auto x = (float) size::gutterTrack + timeline.xForStep ((double) step);
 
         if (x > (float) getWidth())
             break;
 
-        const auto beyond = bar >= bars;
+        const auto beyond = step >= totalSteps;
 
-        g.setColour (beyond ? colour::textDisabled : colour::textSecondary);
-        g.drawText (juce::String (bar + 1), (int) x + 3, rulerTop(), (int) width - 4,
-                    size::rulerHeight, juce::Justification::centredLeft, false);
+        if (numberable)
+        {
+            g.setColour (beyond ? colour::textDisabled : colour::textSecondary);
+            g.drawText (juce::String (step / perBar + 1), (int) x + 3, rulerTop(), (int) width - 4,
+                        size::rulerHeight, juce::Justification::centredLeft, false);
+        }
 
         g.setColour (beyond ? colour::dividerStrong.withAlpha (emphasis::subdued)
                             : colour::dividerStrong);
         g.drawVerticalLine ((int) x, (float) rulerTop(), (float) bottom);
+    }
+
+    // Everything finer than a bar, over the lanes only: the ruler is a place to
+    // read a number and a grid drawn up into it would make that harder.
+    {
+        const juce::Graphics::ScopedSaveState grid (g);
+        g.reduceClipRegion (getLaneArea());
+
+        const auto meter = Meter::of (document.getState());
+
+        timelinePaint::verticalGrid (g, timeline, painted, perBar, meter.stepsPerBeat,
+                                     (float) size::gutterTrack,
+                                     { (float) lanesTop(), (float) bottom }, (float) getWidth(),
+                                     NoteTools::snaps (toolbar.getSnap()) ? snapSteps() : 0);
     }
 
     // --- the selected span ----------------------------------------------------
@@ -357,10 +386,12 @@ void PlaylistComponent::paint (juce::Graphics& g)
     {
         const auto selection = editorState.getSelectedBarRange();
 
+        // The selection is kept in BARS - a render range is a section of an
+        // arrangement - so it is the one thing left in here that converts.
         const auto fromX = (float) size::gutterTrack
-                           + timeline.xForStep ((double) selection.getStart());
+                           + timeline.xForStep ((double) (selection.getStart() * perBar));
         const auto toX = (float) size::gutterTrack
-                         + timeline.xForStep ((double) selection.getEnd());
+                         + timeline.xForStep ((double) (selection.getEnd() * perBar));
 
         const juce::Rectangle<float> content ((float) size::gutterTrack, (float) rulerTop(),
                                               (float) getWidth() - (float) size::gutterTrack,
@@ -393,7 +424,7 @@ void PlaylistComponent::paint (juce::Graphics& g)
     const auto trackIndex = paintLanes (g, bottom);
 
     // Past the end of the song.
-    const auto endX = (float) size::gutterTrack + timeline.xForStep ((double) bars);
+    const auto endX = (float) size::gutterTrack + timeline.xForStep ((double) totalSteps);
 
     if (endX < (float) getWidth())
         paint::beyondEnd (g,

@@ -194,10 +194,10 @@ TEST_CASE ("clips are found by the bar they cover, not just where they start", "
 
     ProjectEdits::addClip (track, 1, 2, 3, &undo); // bars 2, 3, 4
 
-    REQUIRE (! ProjectEdits::findClipAtBar (track, 1).isValid());
-    REQUIRE (ProjectEdits::findClipAtBar (track, 2).isValid());
-    REQUIRE (ProjectEdits::findClipAtBar (track, 4).isValid());
-    REQUIRE (! ProjectEdits::findClipAtBar (track, 5).isValid());
+    REQUIRE (! ProjectEdits::findClipAtStep (track, 1).isValid());
+    REQUIRE (ProjectEdits::findClipAtStep (track, 2).isValid());
+    REQUIRE (ProjectEdits::findClipAtStep (track, 4).isValid());
+    REQUIRE (! ProjectEdits::findClipAtStep (track, 5).isValid());
 }
 
 TEST_CASE ("edits refuse to produce nonsense values", "[edits]")
@@ -231,8 +231,8 @@ TEST_CASE ("edits refuse to produce nonsense values", "[edits]")
     REQUIRE ((int) note[ids::pitch] == 0);
 
     const auto clip = ProjectEdits::addClip (track, 1, -2, 0, &undo);
-    REQUIRE ((int) clip[ids::startBar] == 0);
-    REQUIRE ((int) clip[ids::lengthBars] == 1);
+    REQUIRE ((int) clip[ids::startStep] == 0);
+    REQUIRE ((int) clip[ids::lengthSteps] == 1);
 }
 
 TEST_CASE ("duplicating a pattern copies its notes under a new identity", "[edits][patterns]")
@@ -417,8 +417,8 @@ TEST_CASE ("a clip can be moved to another track", "[edits][playlist]")
 
     // It kept everything except where it is.
     REQUIRE ((int) moved[ids::patternId] == 1);
-    REQUIRE ((int) moved[ids::lengthBars] == 2);
-    REQUIRE ((int) moved[ids::startBar] == 5);
+    REQUIRE ((int) moved[ids::lengthSteps] == 2);
+    REQUIRE ((int) moved[ids::startStep] == 5);
 
     // And crossing tracks is a single undo step, not two.
     REQUIRE (undo.undo());
@@ -437,7 +437,7 @@ TEST_CASE ("moving a clip onto its own track is an ordinary move", "[edits][play
     const auto same = ProjectEdits::moveClipToTrack (track, clip, track, 3, &undo);
 
     REQUIRE (same == clip);
-    REQUIRE ((int) clip[ids::startBar] == 3);
+    REQUIRE ((int) clip[ids::startStep] == 3);
     REQUIRE (countChildren (track, ids::CLIP) == 1);
 }
 

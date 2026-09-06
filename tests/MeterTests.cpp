@@ -144,48 +144,49 @@ TEST_CASE ("changing the meter does not change how long a step is", "[meter][tim
 
 TEST_CASE ("changing the meter holds the arrangement's position in steps", "[meter][edits]")
 {
-    // A clip is stored in BARS, so redefining a bar would move every clip
-    // boundary and silence whatever fell outside the new window. setMeter
-    // rescales instead, and 16 -> 8 divides evenly so nothing has to round.
+    // What setMeter's clip rescale used to do by arithmetic, a clip stored in
+    // STEPS does by construction: a bar changing size moves no clip, because a
+    // clip was never measured in bars. This is the same promise the test made
+    // before, asserted the other way round - by the numbers NOT moving.
     auto project = dew::testing::fixtureProject();
 
     auto clip = clipAt (project, 0);
     REQUIRE (clip.isValid());
 
-    clip.setProperty (ids::startBar, 4, nullptr);
-    clip.setProperty (ids::lengthBars, 2, nullptr);
-
-    const auto oldStepsPerBar = Meter::of (project).stepsPerBar();
-    const auto startSteps = 4 * oldStepsPerBar;
-    const auto lengthSteps = 2 * oldStepsPerBar;
+    clip.setProperty (ids::startStep, 64, nullptr);
+    clip.setProperty (ids::lengthSteps, 32, nullptr);
 
     auto exact = false;
     ProjectEdits::setMeter (project, 2, 4, nullptr, &exact);
 
-    const auto newStepsPerBar = Meter::of (project).stepsPerBar();
-    REQUIRE (newStepsPerBar == 8);
+    REQUIRE (Meter::of (project).stepsPerBar() == 8);
 
     CHECK (exact);
-    CHECK ((int) clip[ids::startBar] * newStepsPerBar == startSteps);
-    CHECK ((int) clip[ids::lengthBars] * newStepsPerBar == lengthSteps);
+    CHECK ((int) clip[ids::startStep] == 64);
+    CHECK ((int) clip[ids::lengthSteps] == 32);
 }
 
-TEST_CASE ("a meter that cannot divide evenly rounds, and says so", "[meter][edits]")
+TEST_CASE ("a meter that cannot divide evenly no longer has anything to round", "[meter][edits]")
 {
     auto project = dew::testing::fixtureProject();
 
     auto clip = clipAt (project, 0);
     REQUIRE (clip.isValid());
 
-    clip.setProperty (ids::startBar, 1, nullptr);
-    clip.setProperty (ids::lengthBars, 1, nullptr);
+    // A position no number of bars can name: one step in, one step long.
+    clip.setProperty (ids::startStep, 1, nullptr);
+    clip.setProperty (ids::lengthSteps, 1, nullptr);
 
-    // 16 steps to 12 is a ratio of 4/3, so a clip at bar 1 wants bar 1.33.
-    auto exact = true;
+    // 16 steps to 12 used to be a ratio of 4/3, so a clip at bar 1 wanted bar
+    // 1.33 and had to round - and setMeter reported, through `wasExact`, that
+    // it had. A clip stored in STEPS is where it was, exactly, because a bar
+    // changing size is nothing to do with it.
+    auto exact = false;
     ProjectEdits::setMeter (project, 3, 4, nullptr, &exact);
 
-    CHECK_FALSE (exact);
-    CHECK ((int) clip[ids::lengthBars] >= 1);
+    CHECK (exact);
+    CHECK ((int) clip[ids::startStep] == 1);
+    CHECK ((int) clip[ids::lengthSteps] == 1);
 }
 
 TEST_CASE ("the notational denominator moves no bar line", "[meter][edits]")
@@ -195,15 +196,15 @@ TEST_CASE ("the notational denominator moves no bar line", "[meter][edits]")
     auto clip = clipAt (project, 0);
     REQUIRE (clip.isValid());
 
-    clip.setProperty (ids::startBar, 3, nullptr);
-    clip.setProperty (ids::lengthBars, 2, nullptr);
+    clip.setProperty (ids::startStep, 3, nullptr);
+    clip.setProperty (ids::lengthSteps, 2, nullptr);
 
     auto exact = false;
     ProjectEdits::setMeter (project, 4, 8, nullptr, &exact);
 
     CHECK (exact);
-    CHECK ((int) clip[ids::startBar] == 3);
-    CHECK ((int) clip[ids::lengthBars] == 2);
+    CHECK ((int) clip[ids::startStep] == 3);
+    CHECK ((int) clip[ids::lengthSteps] == 2);
     CHECK (Meter::of (project).beatUnit == 8);
 }
 

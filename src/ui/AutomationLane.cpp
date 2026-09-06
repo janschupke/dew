@@ -53,15 +53,14 @@ double Geometry::valueAt (float y) const noexcept
     return juce::jlimit (0.0, 1.0, (double) ((bounds.getBottom() - y) / bounds.getHeight()));
 }
 
-Geometry geometryFor (juce::Rectangle<float> clipBounds, int lengthBars, int stepsPerBar) noexcept
+Geometry geometryFor (juce::Rectangle<float> clipBounds, int lengthSteps) noexcept
 {
     // The inset is stated HERE and nowhere else. It used to be written twice -
     // once in the position of a point and once in the inverse - and a change to
     // either broke the round trip silently.
     const auto bounds = clipBounds.reduced (2.0f, 3.0f);
-    const auto steps = (double) juce::jmax (1, lengthBars * juce::jmax (1, stepsPerBar));
 
-    return { bounds, { 0.0, steps } };
+    return { bounds, { 0.0, (double) juce::jmax (1, lengthSteps) } };
 }
 
 Hit hitTest (const Geometry& geometry, const juce::Array<juce::ValueTree>& points,

@@ -1014,6 +1014,9 @@
     }
   },
   "playlist": {
+    "snap": {
+      "help": "Grid a clip lands on - shift while dragging suspends it"
+    },
     "addAutomation": {
       "help": "Add an automation lane for a parameter",
       "label": "+ Automation"

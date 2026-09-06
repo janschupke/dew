@@ -1,11 +1,11 @@
 {
-    "formatVersion": 19,
+    "formatVersion": 20,
     "name": "Drift",
     "tempoBpm": 84.0,
     "stepsPerBeat": 4,
     "beatsPerBar": 4,
     "beatUnit": 4,
-    "barsInSong": 32,
+    "barsInSong": 16,
     "channels": [
       {
         "id": 5,
@@ -3562,8 +3562,8 @@
               "patternId": 1,
               "automationId": 1,
               "channelId": 1,
-              "startBar": 0,
-              "lengthBars": 32,
+              "startStep": 0,
+              "lengthSteps": 512,
               "genId": ""
             }
           ]
@@ -3580,8 +3580,8 @@
               "patternId": 1,
               "automationId": 2,
               "channelId": 1,
-              "startBar": 8,
-              "lengthBars": 16,
+              "startStep": 128,
+              "lengthSteps": 256,
               "genId": ""
             }
           ]
@@ -3614,8 +3614,8 @@
               "patternId": 2,
               "automationId": 1,
               "channelId": 1,
-              "startBar": 0,
-              "lengthBars": 4,
+              "startStep": 0,
+              "lengthSteps": 4,
               "genId": "haze#0/0"
             },
             {
@@ -3623,8 +3623,8 @@
               "patternId": 3,
               "automationId": 1,
               "channelId": 1,
-              "startBar": 4,
-              "lengthBars": 8,
+              "startStep": 4,
+              "lengthSteps": 8,
               "genId": "gather#0/0"
             },
             {
@@ -3632,8 +3632,8 @@
               "patternId": 4,
               "automationId": 1,
               "channelId": 1,
-              "startBar": 12,
-              "lengthBars": 8,
+              "startStep": 12,
+              "lengthSteps": 8,
               "genId": "bloom#0/0"
             },
             {
@@ -3641,8 +3641,8 @@
               "patternId": 5,
               "automationId": 1,
               "channelId": 1,
-              "startBar": 20,
-              "lengthBars": 8,
+              "startStep": 20,
+              "lengthSteps": 8,
               "genId": "ebb#0/0"
             },
             {
@@ -3650,8 +3650,8 @@
               "patternId": 6,
               "automationId": 1,
               "channelId": 1,
-              "startBar": 28,
-              "lengthBars": 4,
+              "startStep": 28,
+              "lengthSteps": 4,
               "genId": "fade#0/0"
             }
           ]

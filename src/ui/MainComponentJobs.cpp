@@ -183,10 +183,16 @@ void MainComponent::finishRecording()
         if (! track.hasType (ids::PLAYLIST_TRACK))
             continue;
 
-        if (ProjectEdits::findClipAtBar (track, punchInBar).isValid())
+        // A recording is placed and measured in BARS - it was punched in on a
+        // bar line and its length is rounded up to one - so the conversion to
+        // the steps a clip is stored in happens here, once.
+        const auto perBar = juce::jmax (1, Meter::of (document.getState()).stepsPerBar());
+
+        if (ProjectEdits::findClipAtStep (track, punchInBar * perBar).isValid())
             continue;
 
-        ProjectEdits::addAudioClip (track, (int) channel[ids::id], punchInBar, lengthBars, &undo);
+        ProjectEdits::addAudioClip (track, (int) channel[ids::id], punchInBar * perBar,
+                                    lengthBars * perBar, &undo);
         ProjectEdits::growSongToFitClips (document.getState(), &undo);
         break;
     }

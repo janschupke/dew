@@ -1,11 +1,11 @@
 {
-    "formatVersion": 19,
+    "formatVersion": 20,
     "name": "Neon",
     "tempoBpm": 108.0,
     "stepsPerBeat": 4,
     "beatsPerBar": 4,
     "beatUnit": 4,
-    "barsInSong": 32,
+    "barsInSong": 16,
     "channels": [
       {
         "id": 3,
@@ -3817,8 +3817,8 @@
               "patternId": 1,
               "automationId": 1,
               "channelId": 1,
-              "startBar": 0,
-              "lengthBars": 32,
+              "startStep": 0,
+              "lengthSteps": 512,
               "genId": ""
             }
           ]
@@ -3859,8 +3859,8 @@
               "patternId": 2,
               "automationId": 1,
               "channelId": 1,
-              "startBar": 0,
-              "lengthBars": 4,
+              "startStep": 0,
+              "lengthSteps": 4,
               "genId": "neon_intro#0/0"
             },
             {
@@ -3868,8 +3868,8 @@
               "patternId": 3,
               "automationId": 1,
               "channelId": 1,
-              "startBar": 4,
-              "lengthBars": 8,
+              "startStep": 4,
+              "lengthSteps": 8,
               "genId": "verse#0/0"
             },
             {
@@ -3877,8 +3877,8 @@
               "patternId": 4,
               "automationId": 1,
               "channelId": 1,
-              "startBar": 12,
-              "lengthBars": 8,
+              "startStep": 12,
+              "lengthSteps": 8,
               "genId": "chorus#0/0"
             },
             {
@@ -3886,8 +3886,8 @@
               "patternId": 5,
               "automationId": 1,
               "channelId": 1,
-              "startBar": 20,
-              "lengthBars": 8,
+              "startStep": 20,
+              "lengthSteps": 8,
               "genId": "verse@verse_b/0"
             },
             {
@@ -3895,8 +3895,8 @@
               "patternId": 6,
               "automationId": 1,
               "channelId": 1,
-              "startBar": 28,
-              "lengthBars": 4,
+              "startStep": 28,
+              "lengthSteps": 4,
               "genId": "outro#0/0"
             }
           ]

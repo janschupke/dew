@@ -251,7 +251,7 @@ TEST_CASE ("nested structure survives the round trip", "[schema]")
     const auto
         clip = loaded.getChildWithName (ids::PLAYLIST).getChild (0).getChildWithName (ids::CLIP);
     REQUIRE (clip.isValid());
-    REQUIRE ((int) clip[ids::lengthBars] == 4);
+    REQUIRE ((int) clip[ids::lengthSteps] == 4 * 16);
 
     REQUIRE (loaded.getChildWithName (ids::MIXER).getChildWithName (ids::MASTER).isValid());
 }
@@ -336,4 +336,56 @@ TEST_CASE ("loading a document replaces its contents and clears undo", "[documen
     REQUIRE (document.getDocumentTitle() == "dew fixture");
     REQUIRE (! document.hasChangedSinceSaved());
     REQUIRE (! undo.canUndo());
+}
+
+TEST_CASE ("a v19 file's clips arrive in steps", "[schema][migration]")
+{
+    // v20 moved a clip from bars into steps, which is a real migration and not
+    // a rename: the conversion needs the FILE's own metre, and a file written
+    // in 3/4 has a different bar from one written in 4/4.
+    const auto load = [] (const char* meter, int startBar, int lengthBars)
+    {
+        const auto json = juce::String (R"({
+              "format": "dew-project", "formatVersion": 19, "name": "Old",
+              "tempoBpm": 120.0, )")
+                          + meter + R"(, "barsInSong": 16,
+              "channels": [ { "id": 1, "name": "Bass" } ],
+              "patterns": [ { "id": 1, "name": "Pattern 1", "lengthSteps": 16 } ],
+              "playlist": { "tracks": [ { "name": "Track 1", "clips": [
+                { "kind": "pattern", "patternId": 1, "startBar": )"
+                          + juce::String (startBar) + R"(, "lengthBars": )"
+                          + juce::String (lengthBars) + R"( } ] } ] },
+              "mixer": { "master": {}, "tracks": [] }
+            })";
+
+        const auto loaded = ProjectSerializer::fromJsonString (json);
+        INFO ("warnings: " << loaded.warnings.joinIntoString ("; "));
+        REQUIRE (loaded.ok());
+
+        return loaded.tree.getChildWithName (ids::PLAYLIST)
+            .getChild (0)
+            .getChildWithName (ids::CLIP);
+    };
+
+    SECTION ("4/4")
+    {
+        const auto clip = load (R"("stepsPerBeat": 4, "beatsPerBar": 4, "beatUnit": 4)", 3, 2);
+
+        REQUIRE (clip.isValid());
+        CHECK ((int) clip[ids::startStep] == 3 * 16);
+        CHECK ((int) clip[ids::lengthSteps] == 2 * 16);
+
+        // The old keys are gone, so nothing reads them twice.
+        CHECK_FALSE (clip.hasProperty (juce::Identifier ("startBar")));
+        CHECK_FALSE (clip.hasProperty (juce::Identifier ("lengthBars")));
+    }
+
+    SECTION ("3/4 - a different bar, and the migration has to read it")
+    {
+        const auto clip = load (R"("stepsPerBeat": 4, "beatsPerBar": 3, "beatUnit": 4)", 3, 2);
+
+        REQUIRE (clip.isValid());
+        CHECK ((int) clip[ids::startStep] == 3 * 12);
+        CHECK ((int) clip[ids::lengthSteps] == 2 * 12);
+    }
 }

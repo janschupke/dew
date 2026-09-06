@@ -31,7 +31,7 @@ TEST_CASE ("an automation pointing at something deleted is dropped with a warnin
     auto automation = ProjectEdits::addAutomation (
         project, targetNamed (project, name + " > Volume"), &undo);
     auto track = project.getChildWithName (ids::PLAYLIST).getChild (0);
-    ProjectEdits::addAutomationClip (track, (int) automation[ids::id], 0, 2, &undo);
+    ProjectEdits::addAutomationClip (track, (int) automation[ids::id], 0 * 16, 2 * 16, &undo);
 
     juce::StringArray warnings;
     REQUIRE (buildSnapshot (project, &warnings).anyAutomation);
@@ -68,8 +68,8 @@ TEST_CASE ("removing an automation removes the clips that used it", "[automation
     };
 
     const auto before = countClips();
-    ProjectEdits::addAutomationClip (track, (int) automation[ids::id], 0, 2, &undo);
-    ProjectEdits::addAutomationClip (track, (int) automation[ids::id], 4, 2, &undo);
+    ProjectEdits::addAutomationClip (track, (int) automation[ids::id], 0 * 16, 2 * 16, &undo);
+    ProjectEdits::addAutomationClip (track, (int) automation[ids::id], 4 * 16, 2 * 16, &undo);
     REQUIRE (countClips() == before + 2);
 
     undo.beginNewTransaction ("Remove automation");
@@ -91,7 +91,7 @@ TEST_CASE ("automation survives save and load", "[automation][schema]")
     setCurve (automation, { { 0.0, 0.1 }, { 24.0, 0.9 } }, &undo);
 
     auto track = project.getChildWithName (ids::PLAYLIST).getChild (0);
-    ProjectEdits::addAutomationClip (track, (int) automation[ids::id], 1, 3, &undo);
+    ProjectEdits::addAutomationClip (track, (int) automation[ids::id], 1 * 16, 3 * 16, &undo);
 
     const auto loaded = ProjectSerializer::fromJsonString (
         ProjectSerializer::toJsonString (project));

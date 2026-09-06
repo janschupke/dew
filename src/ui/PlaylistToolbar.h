@@ -4,6 +4,7 @@
 
 #include "i18n/Strings.h"
 
+#include "model/NoteTools.h"
 #include "ui/EditorTools.h"
 #include "ui/VerticalZoomButtons.h"
 #include "ui/ToolbarOverflow.h"
@@ -50,6 +51,26 @@ public:
 
     std::function<void()> onToolChanged;
 
+    /** Which grid a clip lands on.
+
+        The playlist had none, and could not have had one: a clip was stored in
+        whole BARS, so the only grid it could ever land on was the bar. It reads
+        the same divisions the piano roll's does - one ladder, one meaning -
+        and defaults to the bar, which is where an arrangement mostly wants
+        things.
+    */
+    SnapDivision getSnap() const noexcept
+    {
+        return snap;
+    }
+    void setSnap (SnapDivision, juce::NotificationType = juce::sendNotification);
+
+    /** The project's grid, so the dropdown can say which divisions it can
+        express - see NoteTools::fitsGrid. */
+    void setGrid (int stepsPerBeat, int beatsPerBar, int beatUnit);
+
+    std::function<void()> onSnapChanged;
+
     /** A zoom factor, or 0 to fit the song to the window. The same shape the
         piano roll's strip reports, so the two mean one thing.
     */
@@ -76,6 +97,21 @@ public:
     }
 
 private:
+    void rebuildSnapBox();
+
+    SnapDivision snap = SnapDivision::bar;
+
+    int beatUnit = 0;
+    int stepsPerBeat = 0;
+    int beatsPerBar = 0;
+
+    bool updatingSnapBox = false;
+
+    /** A word beside it, as in the piano roll: a dropdown showing "1/4" says
+        nothing about what it is a quarter OF. */
+    DewLabel snapCaption;
+    DewDropdown snapBox;
+
     /** Shown only when the strip has run out of room - see ToolbarOverflow. */
     DewIconButton overflowButton { icons::more(), tr (StringId::toolbar_overflow_help) };
     ToolbarOverflow overflow;

@@ -15,6 +15,7 @@
 #include <limits>
 
 #include "model/Ids.h"
+#include "model/Meter.h"
 #include "model/ProjectSchema.h"
 
 namespace dew
@@ -149,8 +150,8 @@ void ProjectEdits::removePlaylistTrack (juce::ValueTree project, juce::ValueTree
         playlist.removeChild (index, undo);
 }
 
-juce::ValueTree ProjectEdits::addClip (juce::ValueTree playlistTrack, int patternId, int startBar,
-                                       int lengthBars, juce::UndoManager* undo)
+juce::ValueTree ProjectEdits::addClip (juce::ValueTree playlistTrack, int patternId, int startStep,
+                                       int lengthSteps, juce::UndoManager* undo)
 {
     // Built from the spec rather than by hand, so a property added to the
     // schema later is present here too. A hand-built node round-tripped into
@@ -159,35 +160,35 @@ juce::ValueTree ProjectEdits::addClip (juce::ValueTree playlistTrack, int patter
     auto clip = defaultTreeFor (clipSpecFor());
     clip.setProperty (ids::kind, "pattern", nullptr);
     clip.setProperty (ids::patternId, patternId, nullptr);
-    clip.setProperty (ids::startBar, juce::jmax (0, startBar), nullptr);
-    clip.setProperty (ids::lengthBars, juce::jmax (1, lengthBars), nullptr);
+    clip.setProperty (ids::startStep, juce::jmax (0, startStep), nullptr);
+    clip.setProperty (ids::lengthSteps, juce::jmax (1, lengthSteps), nullptr);
 
     playlistTrack.appendChild (clip, undo);
     return clip;
 }
 
 juce::ValueTree ProjectEdits::addAutomationClip (juce::ValueTree playlistTrack, int automationId,
-                                                 int startBar, int lengthBars,
+                                                 int startStep, int lengthSteps,
                                                  juce::UndoManager* undo)
 {
     auto clip = defaultTreeFor (clipSpecFor());
     clip.setProperty (ids::kind, "automation", nullptr);
     clip.setProperty (ids::automationId, automationId, nullptr);
-    clip.setProperty (ids::startBar, juce::jmax (0, startBar), nullptr);
-    clip.setProperty (ids::lengthBars, juce::jmax (1, lengthBars), nullptr);
+    clip.setProperty (ids::startStep, juce::jmax (0, startStep), nullptr);
+    clip.setProperty (ids::lengthSteps, juce::jmax (1, lengthSteps), nullptr);
 
     playlistTrack.appendChild (clip, undo);
     return clip;
 }
 
 juce::ValueTree ProjectEdits::addAudioClip (juce::ValueTree playlistTrack, int channelId,
-                                            int startBar, int lengthBars, juce::UndoManager* undo)
+                                            int startStep, int lengthSteps, juce::UndoManager* undo)
 {
     auto clip = defaultTreeFor (clipSpecFor());
     clip.setProperty (ids::kind, "audio", nullptr);
     clip.setProperty (ids::channelId, channelId, nullptr);
-    clip.setProperty (ids::startBar, juce::jmax (0, startBar), nullptr);
-    clip.setProperty (ids::lengthBars, juce::jmax (1, lengthBars), nullptr);
+    clip.setProperty (ids::startStep, juce::jmax (0, startStep), nullptr);
+    clip.setProperty (ids::lengthSteps, juce::jmax (1, lengthSteps), nullptr);
 
     playlistTrack.appendChild (clip, undo);
     return clip;
@@ -221,7 +222,7 @@ void ProjectEdits::removeClip (juce::ValueTree playlistTrack, juce::ValueTree cl
 }
 
 juce::ValueTree ProjectEdits::copyClip (juce::ValueTree targetTrack, const juce::ValueTree& clip,
-                                        int startBar, juce::UndoManager* undo)
+                                        int startStep, juce::UndoManager* undo)
 {
     if (! clip.isValid() || ! targetTrack.isValid())
         return {};
@@ -231,14 +232,14 @@ juce::ValueTree ProjectEdits::copyClip (juce::ValueTree targetTrack, const juce:
     // node carries all three without this having to learn the table. Clips have
     // no id of their own, so nothing has to be reassigned.
     auto copy = clip.createCopy();
-    copy.setProperty (ids::startBar, juce::jmax (0, startBar), nullptr);
+    copy.setProperty (ids::startStep, juce::jmax (0, startStep), nullptr);
 
     targetTrack.appendChild (copy, undo);
     return copy;
 }
 
 juce::ValueTree ProjectEdits::moveClipToTrack (juce::ValueTree fromTrack, juce::ValueTree clip,
-                                               juce::ValueTree toTrack, int newStartBar,
+                                               juce::ValueTree toTrack, int newStartStep,
                                                juce::UndoManager* undo)
 {
     if (! clip.isValid() || ! toTrack.isValid())
@@ -246,14 +247,14 @@ juce::ValueTree ProjectEdits::moveClipToTrack (juce::ValueTree fromTrack, juce::
 
     if (fromTrack == toTrack)
     {
-        moveClip (clip, newStartBar, undo);
+        moveClip (clip, newStartStep, undo);
         return clip;
     }
 
     // Copy first: removing the child drops the only reference the caller may
     // hold, and a detached tree carries its properties but no parent to undo to.
     auto moved = clip.createCopy();
-    moved.setProperty (ids::startBar, juce::jmax (0, newStartBar), nullptr);
+    moved.setProperty (ids::startStep, juce::jmax (0, newStartStep), nullptr);
 
     const auto index = fromTrack.indexOf (clip);
 
@@ -264,19 +265,19 @@ juce::ValueTree ProjectEdits::moveClipToTrack (juce::ValueTree fromTrack, juce::
     return moved;
 }
 
-void ProjectEdits::moveClip (juce::ValueTree clip, int newStartBar, juce::UndoManager* undo)
+void ProjectEdits::moveClip (juce::ValueTree clip, int newStartStep, juce::UndoManager* undo)
 {
-    clip.setProperty (ids::startBar, juce::jmax (0, newStartBar), undo);
+    clip.setProperty (ids::startStep, juce::jmax (0, newStartStep), undo);
 }
 
-void ProjectEdits::resizeClip (juce::ValueTree clip, int newLengthBars, juce::UndoManager* undo)
+void ProjectEdits::resizeClip (juce::ValueTree clip, int newLengthSteps, juce::UndoManager* undo)
 {
-    clip.setProperty (ids::lengthBars, juce::jmax (1, newLengthBars), undo);
+    clip.setProperty (ids::lengthSteps, juce::jmax (1, newLengthSteps), undo);
 }
 
-int ProjectEdits::barsNeededForClips (const juce::ValueTree& project)
+int ProjectEdits::stepsNeededForClips (const juce::ValueTree& project)
 {
-    int needed = 1;
+    int needed = 0;
 
     for (const auto& track : project.getChildWithName (ids::PLAYLIST))
     {
@@ -285,8 +286,8 @@ int ProjectEdits::barsNeededForClips (const juce::ValueTree& project)
 
         for (const auto& clip : track)
             if (clip.hasType (ids::CLIP))
-                needed = juce::jmax (needed, (int) clip[ids::startBar]
-                                                 + juce::jmax (1, (int) clip[ids::lengthBars]));
+                needed = juce::jmax (needed, (int) clip[ids::startStep]
+                                                 + juce::jmax (1, (int) clip[ids::lengthSteps]));
     }
 
     return needed;
@@ -294,7 +295,13 @@ int ProjectEdits::barsNeededForClips (const juce::ValueTree& project)
 
 bool ProjectEdits::growSongToFitClips (juce::ValueTree project, juce::UndoManager* undo)
 {
-    const auto needed = barsNeededForClips (project);
+    // The SONG is still counted in bars - it is a container, and the ruler over
+    // it numbers bars - so the clips' reach in steps is rounded UP to one.
+    // Ceiling rather than rounding: a clip ending one step into a bar needs
+    // that bar, and cropping the arrangement to hide it would be worse than an
+    // empty bar at the end.
+    const auto perBar = juce::jmax (1, Meter::of (project).stepsPerBar());
+    const auto needed = juce::jmax (1, (stepsNeededForClips (project) + perBar - 1) / perBar);
 
     if (needed <= (int) project[ids::barsInSong])
         return false;
@@ -303,17 +310,17 @@ bool ProjectEdits::growSongToFitClips (juce::ValueTree project, juce::UndoManage
     return true;
 }
 
-juce::ValueTree ProjectEdits::findClipAtBar (const juce::ValueTree& playlistTrack, int bar)
+juce::ValueTree ProjectEdits::findClipAtStep (const juce::ValueTree& playlistTrack, int step)
 {
     for (const auto& clip : playlistTrack)
     {
         if (! clip.hasType (ids::CLIP))
             continue;
 
-        const auto start = (int) clip[ids::startBar];
-        const auto end = start + juce::jmax (1, (int) clip[ids::lengthBars]);
+        const auto start = (int) clip[ids::startStep];
+        const auto end = start + juce::jmax (1, (int) clip[ids::lengthSteps]);
 
-        if (bar >= start && bar < end)
+        if (step >= start && step < end)
             return clip;
     }
 

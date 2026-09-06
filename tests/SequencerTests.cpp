@@ -163,12 +163,12 @@ TEST_CASE ("song mode plays clips at their bar positions", "[sequencer]")
 
     ClipSnapshot first;
     first.patternIndex = 0;
-    first.startBar = 0;
-    first.lengthBars = 1;
+    first.startStep = (0) * 16;
+    first.lengthSteps = (1) * 16;
     ClipSnapshot third;
     third.patternIndex = 0;
-    third.startBar = 2;
-    third.lengthBars = 1;
+    third.startStep = (2) * 16;
+    third.lengthSteps = (1) * 16;
     snapshot.clips = { first, third };
 
     std::vector<juce::int64> offsets;
@@ -186,8 +186,8 @@ TEST_CASE ("a clip longer than its pattern repeats the pattern to fill", "[seque
 
     ClipSnapshot clip;
     clip.patternIndex = 0;
-    clip.startBar = 0;
-    clip.lengthBars = 3; // three bars of a one-bar pattern
+    clip.startStep = (0) * 16;
+    clip.lengthSteps = (3) * 16; // three bars of a one-bar pattern
     snapshot.clips = { clip };
 
     std::vector<juce::int64> offsets;
@@ -209,8 +209,8 @@ TEST_CASE ("the material length matches the mode", "[sequencer]")
 
     ClipSnapshot clip;
     clip.patternIndex = 0;
-    clip.startBar = 1;
-    clip.lengthBars = 2;
+    clip.startStep = (1) * 16;
+    clip.lengthSteps = (2) * 16;
     snapshot.clips = { clip };
 
     // Ends at bar 3 -> 3 bars * 16 steps.
@@ -260,8 +260,8 @@ TEST_CASE ("a playlist lane's gain scales the notes it triggers", "[sequencer][p
 
     ClipSnapshot clip;
     clip.patternIndex = 0;
-    clip.startBar = 0;
-    clip.lengthBars = 1;
+    clip.startStep = (0) * 16;
+    clip.lengthSteps = (1) * 16;
     clip.trackGain = 0.5f;
     snapshot.clips.push_back (clip);
 

@@ -55,7 +55,7 @@ struct Curve
     tall track looks like. */
 Geometry laneOf (float width = 400.0f, float height = 120.0f)
 {
-    return geometryFor ({ 100.0f, 200.0f, width, height }, 1, 16);
+    return geometryFor ({ 100.0f, 200.0f, width, height }, 16);
 }
 
 } // namespace
@@ -162,7 +162,7 @@ TEST_CASE ("a lane too narrow to edit reports nothing", "[ui][automationLane]")
     // Three targets - a point, a segment and the clip's own right edge - inside a
     // few pixels are three targets fighting, not three targets.
     const Curve curve { { 0.0, 0.5 }, { 16.0, 0.5 } };
-    const auto lane = geometryFor ({ 100.0f, 200.0f, 8.0f, 120.0f }, 1, 16);
+    const auto lane = geometryFor ({ 100.0f, 200.0f, 8.0f, 120.0f }, 16);
 
     REQUIRE_FALSE (lane.isEditable());
     REQUIRE (hitTest (lane, curve.points(), lane.positionOf (0.0, 0.5)).kind == Hit::Kind::none);

@@ -19,6 +19,7 @@
 
 #include "model/Ids.h"
 #include "model/Meter.h"
+#include "model/NoteTools.h"
 #include "ui/design/Gestures.h"
 #include "ui/design/Tokens.h"
 
@@ -156,12 +157,39 @@ float PlaylistComponent::contentWidth() const
     return (float) juce::jmax (0, getWidth() - size::gutterTrack - size::scrollThickness);
 }
 
-int PlaylistComponent::barAtX (int x) const
+int PlaylistComponent::stepAtX (int x) const
 {
     // Not clamped to the song length: dropping a clip past the end is how an
     // arrangement gets longer. The bars beyond are painted inert but stay
     // writable, exactly as the piano roll treats the end of a pattern.
     return juce::jmax (0, timeline.stepAtX ((float) (x - size::gutterTrack)));
+}
+
+int PlaylistComponent::barAtX (int x) const
+{
+    return stepAtX (x) / juce::jmax (1, stepsPerBar());
+}
+
+void PlaylistComponent::setToolbarGrid()
+{
+    const auto meter = Meter::of (document.getState());
+    toolbar.setGrid (meter.stepsPerBeat, meter.beatsPerBar, meter.beatUnit);
+}
+
+int PlaylistComponent::snapSteps() const
+{
+    const auto meter = Meter::of (document.getState());
+    return NoteTools::stepsForSnap (toolbar.getSnap(), meter.stepsPerBeat, meter.beatsPerBar);
+}
+
+int PlaylistComponent::snappedStepAtX (int x, const juce::MouseEvent& event) const
+{
+    // Shift suspends the grid, which is the rule over the notes and over an
+    // automation point, and now over a clip too.
+    if (gesture::isFine (event.mods) || ! NoteTools::snaps (toolbar.getSnap()))
+        return stepAtX (x);
+
+    return NoteTools::snapFloor (stepAtX (x), snapSteps());
 }
 
 int PlaylistComponent::trackAtY (int y) const
@@ -173,18 +201,20 @@ int PlaylistComponent::trackAtY (int y) const
 
 juce::Rectangle<float> PlaylistComponent::boundsForCell (int bar, int trackIndex) const
 {
-    // One bar wide, which is what an empty lane cell is. The keyboard cursor
-    // sits on coordinates rather than on clips, so it needs a rectangle for a
-    // place that may hold nothing.
-    return { (float) size::gutterTrack + timeline.xForStep ((double) bar), laneY (trackIndex),
-             (float) timeline.pixelsPerStep, (float) rows.height };
+    // One BAR wide, still: the keyboard cursor walks the arrangement a bar at a
+    // time, which is the unit somebody navigating with the arrows is thinking
+    // in. Only the drawing is in steps.
+    const auto perBar = juce::jmax (1, stepsPerBar());
+
+    return { (float) size::gutterTrack + timeline.xForStep ((double) (bar * perBar)),
+             laneY (trackIndex), (float) (perBar * timeline.pixelsPerStep), (float) rows.height };
 }
 
 juce::Rectangle<float> PlaylistComponent::boundsForClip (const juce::ValueTree& clip,
                                                          int trackIndex) const
 {
-    const auto start = (int) clip[ids::startBar];
-    const auto length = juce::jmax (1, (int) clip[ids::lengthBars]);
+    const auto start = (int) clip[ids::startStep];
+    const auto length = juce::jmax (1, (int) clip[ids::lengthSteps]);
 
     return { (float) size::gutterTrack + timeline.xForStep ((double) start), laneY (trackIndex),
              (float) (length * timeline.pixelsPerStep), (float) rows.height };
@@ -200,10 +230,9 @@ bool PlaylistComponent::isOnRightEdge (const juce::ValueTree& clip, int trackInd
 
 float PlaylistComponent::playheadX() const
 {
-    const auto stepsPerBar = Meter::of (document.getState()).stepsPerBar();
-    const auto position = engine.getPlayheadSteps() / (double) stepsPerBar;
-
-    return (float) size::gutterTrack + timeline.xForStep (position);
+    // No conversion left to get wrong: the playhead is in steps and so is the
+    // timeline it is drawn against.
+    return (float) size::gutterTrack + timeline.xForStep (engine.getPlayheadSteps());
 }
 
 // --- layout ------------------------------------------------------------------
@@ -216,7 +245,7 @@ void PlaylistComponent::zoomToFit()
     // Framing on request still counts as taking the view: it is a zoom someone
     // asked for at a size they can see, not the default one.
     viewIsUsers = true;
-    timeline.fit (numBars(), contentWidth());
+    timeline.fit (numSteps(), contentWidth());
     updateScrollBar();
     repaint();
 }
@@ -239,14 +268,14 @@ void PlaylistComponent::updateScrollBar()
     // always done. Pinning it to the song's length is what made the empty
     // space beyond the last bar unreachable - there was nowhere to scroll to.
     const auto visible = timeline.visibleSteps (contentWidth());
-    const auto scrollable = visible < (double) numBars() - 1e-9;
+    const auto scrollable = visible < (double) numSteps() - 1e-9;
 
     horizontalScroll.setVisible (scrollable);
 
     if (! scrollable)
         timeline.scrollOffsetSteps = 0.0;
 
-    timeline.clampScroll (contentWidth(), numBars());
+    timeline.clampScroll (contentWidth(), numSteps());
 
     // The content is the tracks PLUS the add-track row: fitting or scrolling to
     // a bottom that hid the button that adds the next track would be the same
@@ -259,7 +288,7 @@ void PlaylistComponent::updateScrollBar()
     rows.clampScroll (laneView, getNumTracks() + 1);
 
     const juce::ScopedValueSetter<bool> quiet (updatingScrollBar, true);
-    horizontalScroll.setRangeLimits (0.0, (double) numBars(), juce::dontSendNotification);
+    horizontalScroll.setRangeLimits (0.0, (double) numSteps(), juce::dontSendNotification);
     horizontalScroll.setCurrentRange (timeline.scrollOffsetSteps, visible,
                                       juce::dontSendNotification);
     verticalScroll.setRangeLimits (0.0, contentHeight, juce::dontSendNotification);
@@ -332,7 +361,7 @@ void PlaylistComponent::resized()
     // size the component happened to be built at, which is not the size it ends
     // up; re-fitting always is what made the playlist unzoomable.
     if (! viewIsUsers && getWidth() > 0)
-        timeline.fit (numBars(), contentWidth());
+        timeline.fit (numSteps(), contentWidth());
 
     updateScrollBar();
 }

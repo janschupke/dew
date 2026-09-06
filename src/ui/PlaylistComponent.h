@@ -73,6 +73,9 @@ public:
         choosing a target produces something visible rather than an entry in a
         list nobody can see.
     */
+    /** BARS, still: a curve is asked for from a control somewhere else in the
+        window, and "four bars from the start" is what that request means. The
+        conversion to the steps a clip is stored in happens once, inside. */
     juce::ValueTree createAutomationClip (const AutomationTarget&, int startBar, int lengthBars);
 
     /** Called when a clip is double-clicked, after its pattern has been made
@@ -272,7 +275,36 @@ private:
 
     juce::ValueTree playlist() const;
     int numBars() const;
+
+    /** Steps in one bar, and in the whole song.
+
+        The timeline works in STEPS now. It used to work in bars - a "step" of
+        the shared TimelineView was a bar here and a step everywhere else - and
+        that is exactly what made a clip that did not start on a bar line
+        unrepresentable: there was no coordinate for one.
+    */
+    int stepsPerBar() const;
+    int numSteps() const;
+
+    /** The step under an x, unclamped. */
+    int stepAtX (int x) const;
+
+    /** The BAR under an x, for the things that are still bar-shaped: the
+        keyboard cursor, the clip menu's addressing, and a render range. */
     int barAtX (int x) const;
+
+    /** The step a clip laid down here should start on: `stepAtX` through the
+        toolbar's snap division, with shift suspending it the way it does over
+        the notes. */
+    int snappedStepAtX (int x, const juce::MouseEvent&) const;
+
+    /** Steps in one cell of the playlist's own snap grid, or one when the
+        division is off. */
+    int snapSteps() const;
+
+    /** Tells the toolbar the project's grid, so the snap dropdown can say which
+        divisions it can express. */
+    void setToolbarGrid();
     int trackAtY (int y) const;
     juce::ValueTree trackAt (int index) const;
 
@@ -505,12 +537,12 @@ private:
     int hoveredSegment = -1;
     juce::ValueTree hoveredSegmentClip;
     Gesture gesture = Gesture::none;
-    int dragBarOffset = 0;
+    int dragStepOffset = 0;
     int dropTrackIndex = -1;
 
     /** The bar the press that is drawing a clip landed in. The clip's own
         startBar cannot serve: it MOVES while the span grows leftwards. */
-    int drawAnchorBar = 0;
+    int drawAnchorStep = 0;
 
     /** A mod-drag copies rather than moves, and mod-shift gives the copy its
         own pattern. Latched at the press and cleared by the copy itself, so a

@@ -81,8 +81,6 @@ std::vector<PlacedNote> collectNotes (const EngineSnapshot& snapshot,
         return notes;
     }
 
-    const auto stepsPerBar = snapshot.stepsPerBar();
-
     for (const auto& clip : snapshot.clips)
     {
         if (clip.patternIndex < 0 || clip.patternIndex >= (int) snapshot.patterns.size())
@@ -97,8 +95,8 @@ std::vector<PlacedNote> collectNotes (const EngineSnapshot& snapshot,
         if (pattern.lengthSteps <= 0)
             continue;
 
-        const auto clipStart = (juce::int64) clip.startBar * stepsPerBar;
-        const auto clipEnd = clipStart + (juce::int64) clip.lengthBars * stepsPerBar;
+        const auto clipStart = (juce::int64) clip.startStep;
+        const auto clipEnd = clipStart + (juce::int64) clip.lengthSteps;
 
         for (auto step = clipStart; step < clipEnd; ++step)
         {

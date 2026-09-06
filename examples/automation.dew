@@ -1,5 +1,5 @@
 {
-    "formatVersion": 19,
+    "formatVersion": 20,
     "name": "Automation",
     "tempoBpm": 126.0,
     "stepsPerBeat": 4,
@@ -1770,8 +1770,8 @@
               "patternId": 1,
               "automationId": 1,
               "channelId": 1,
-              "startBar": 0,
-              "lengthBars": 12,
+              "startStep": 0,
+              "lengthSteps": 192,
               "genId": ""
             },
             {
@@ -1779,8 +1779,8 @@
               "patternId": 2,
               "automationId": 1,
               "channelId": 1,
-              "startBar": 12,
-              "lengthBars": 4,
+              "startStep": 192,
+              "lengthSteps": 64,
               "genId": ""
             },
             {
@@ -1788,8 +1788,8 @@
               "patternId": 1,
               "automationId": 1,
               "channelId": 1,
-              "startBar": 16,
-              "lengthBars": 12,
+              "startStep": 256,
+              "lengthSteps": 192,
               "genId": ""
             },
             {
@@ -1797,8 +1797,8 @@
               "patternId": 2,
               "automationId": 1,
               "channelId": 1,
-              "startBar": 28,
-              "lengthBars": 4,
+              "startStep": 448,
+              "lengthSteps": 64,
               "genId": ""
             }
           ]
@@ -1815,8 +1815,8 @@
               "patternId": 1,
               "automationId": 1,
               "channelId": 1,
-              "startBar": 0,
-              "lengthBars": 12,
+              "startStep": 0,
+              "lengthSteps": 192,
               "genId": ""
             },
             {
@@ -1824,8 +1824,8 @@
               "patternId": 1,
               "automationId": 1,
               "channelId": 1,
-              "startBar": 16,
-              "lengthBars": 12,
+              "startStep": 256,
+              "lengthSteps": 192,
               "genId": ""
             }
           ]
@@ -1842,8 +1842,8 @@
               "patternId": 1,
               "automationId": 3,
               "channelId": 1,
-              "startBar": 0,
-              "lengthBars": 4,
+              "startStep": 0,
+              "lengthSteps": 64,
               "genId": ""
             },
             {
@@ -1851,8 +1851,8 @@
               "patternId": 1,
               "automationId": 3,
               "channelId": 1,
-              "startBar": 4,
-              "lengthBars": 4,
+              "startStep": 64,
+              "lengthSteps": 64,
               "genId": ""
             },
             {
@@ -1860,8 +1860,8 @@
               "patternId": 1,
               "automationId": 3,
               "channelId": 1,
-              "startBar": 8,
-              "lengthBars": 4,
+              "startStep": 128,
+              "lengthSteps": 64,
               "genId": ""
             },
             {
@@ -1869,8 +1869,8 @@
               "patternId": 1,
               "automationId": 3,
               "channelId": 1,
-              "startBar": 16,
-              "lengthBars": 4,
+              "startStep": 256,
+              "lengthSteps": 64,
               "genId": ""
             },
             {
@@ -1878,8 +1878,8 @@
               "patternId": 1,
               "automationId": 3,
               "channelId": 1,
-              "startBar": 20,
-              "lengthBars": 4,
+              "startStep": 320,
+              "lengthSteps": 64,
               "genId": ""
             },
             {
@@ -1887,8 +1887,8 @@
               "patternId": 1,
               "automationId": 3,
               "channelId": 1,
-              "startBar": 24,
-              "lengthBars": 4,
+              "startStep": 384,
+              "lengthSteps": 64,
               "genId": ""
             }
           ]
@@ -1905,8 +1905,8 @@
               "patternId": 1,
               "automationId": 4,
               "channelId": 1,
-              "startBar": 12,
-              "lengthBars": 4,
+              "startStep": 192,
+              "lengthSteps": 64,
               "genId": ""
             },
             {
@@ -1914,8 +1914,8 @@
               "patternId": 1,
               "automationId": 4,
               "channelId": 1,
-              "startBar": 28,
-              "lengthBars": 4,
+              "startStep": 448,
+              "lengthSteps": 64,
               "genId": ""
             }
           ]
@@ -1932,8 +1932,8 @@
               "patternId": 1,
               "automationId": 2,
               "channelId": 1,
-              "startBar": 28,
-              "lengthBars": 4,
+              "startStep": 448,
+              "lengthSteps": 64,
               "genId": ""
             }
           ]
@@ -1950,8 +1950,8 @@
               "patternId": 1,
               "automationId": 5,
               "channelId": 1,
-              "startBar": 0,
-              "lengthBars": 32,
+              "startStep": 0,
+              "lengthSteps": 512,
               "genId": ""
             }
           ]

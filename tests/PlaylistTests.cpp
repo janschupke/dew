@@ -38,7 +38,7 @@ TEST_CASE ("clicking an empty bar places the current pattern there", "[ui][playl
     h.playlist.mouseUp (eventAt (h.playlist, at));
 
     REQUIRE (h.countClips (0) == 1);
-    REQUIRE ((int) h.track (0).getChild (0)[ids::startBar] == 1);
+    REQUIRE ((int) h.track (0).getChild (0)[ids::startStep] == h.stepFor (1));
 }
 
 TEST_CASE ("a clip can be dragged onto another track", "[ui][playlist]")
@@ -47,7 +47,7 @@ TEST_CASE ("a clip can be dragged onto another track", "[ui][playlist]")
     PlaylistHarness h;
 
     juce::UndoManager& undo = h.document.getUndoManager();
-    ProjectEdits::addClip (h.track (0), 1, 0, 2, &undo);
+    ProjectEdits::addClip (h.track (0), 1, h.stepFor (0), 2 * h.stepsPerBar(), &undo);
 
     REQUIRE (h.countClips (0) == 1);
     REQUIRE (h.countClips (2) == 0);
@@ -60,8 +60,8 @@ TEST_CASE ("a clip can be dragged onto another track", "[ui][playlist]")
     REQUIRE (h.countClips (2) == 1);
 
     const auto moved = h.track (2).getChild (0);
-    REQUIRE ((int) moved[ids::startBar] == 2);
-    REQUIRE ((int) moved[ids::lengthBars] == 2); // it kept its length
+    REQUIRE ((int) moved[ids::startStep] == h.stepFor (2));
+    REQUIRE ((int) moved[ids::lengthSteps] == 2 * h.stepsPerBar()); // it kept its length
 }
 
 TEST_CASE ("a drag across several tracks keeps following the clip", "[ui][playlist]")
@@ -72,7 +72,7 @@ TEST_CASE ("a drag across several tracks keeps following the clip", "[ui][playli
     PlaylistHarness h;
 
     juce::UndoManager& undo = h.document.getUndoManager();
-    ProjectEdits::addClip (h.track (0), 1, 0, 1, &undo);
+    ProjectEdits::addClip (h.track (0), 1, h.stepFor (0), 1 * h.stepsPerBar(), &undo);
 
     h.playlist.mouseDown (eventAt (h.playlist, pointFor (h, 0, 0)));
     h.playlist.mouseDrag (eventAt (h.playlist, pointFor (h, 0, 1)));
@@ -84,7 +84,7 @@ TEST_CASE ("a drag across several tracks keeps following the clip", "[ui][playli
     REQUIRE (h.countClips (1) == 0);
     REQUIRE (h.countClips (2) == 0);
     REQUIRE (h.countClips (3) == 1);
-    REQUIRE ((int) h.track (3).getChild (0)[ids::startBar] == 1);
+    REQUIRE ((int) h.track (3).getChild (0)[ids::startStep] == h.stepFor (1));
 }
 
 TEST_CASE ("double-clicking a clip opens its pattern", "[ui][playlist]")
@@ -96,7 +96,7 @@ TEST_CASE ("double-clicking a clip opens its pattern", "[ui][playlist]")
     const auto second = ProjectEdits::addPattern (h.document.getState(), &undo);
     const auto secondId = (int) second[ids::id];
 
-    ProjectEdits::addClip (h.track (1), secondId, 2, 1, &undo);
+    ProjectEdits::addClip (h.track (1), secondId, h.stepFor (2), 1 * h.stepsPerBar(), &undo);
 
     bool asked = false;
     h.playlist.onOpenPatternInPianoRoll = [&asked] { asked = true; };
@@ -137,7 +137,7 @@ TEST_CASE ("a clip dropped past the end of the song lengthens the song", "[ui][p
     h.playlist.mouseUp (eventAt (h.playlist, at));
 
     REQUIRE (h.countClips (0) == 1);
-    REQUIRE ((int) h.track (0).getChild (0)[ids::startBar] == barsBefore + 2);
+    REQUIRE ((int) h.track (0).getChild (0)[ids::startStep] == h.stepFor (barsBefore + 2));
     REQUIRE ((int) h.document.getState()[ids::barsInSong] == barsBefore + 3);
 
     // Growing is one-way, as it is for pattern length.
@@ -153,8 +153,8 @@ TEST_CASE ("a muted playlist track silences its clips in the engine", "[ui][play
     PlaylistHarness h;
 
     juce::UndoManager& undo = h.document.getUndoManager();
-    ProjectEdits::addClip (h.track (0), 1, 0, 1, &undo);
-    ProjectEdits::addClip (h.track (1), 1, 0, 1, &undo);
+    ProjectEdits::addClip (h.track (0), 1, h.stepFor (0), 1 * h.stepsPerBar(), &undo);
+    ProjectEdits::addClip (h.track (1), 1, h.stepFor (0), 1 * h.stepsPerBar(), &undo);
 
     const auto audibleClips = [&h]
     {
@@ -208,15 +208,15 @@ TEST_CASE ("the paint tool lays a clip in every bar it crosses", "[ui][playlist]
     CHECK (h.countClips (0) == 4);
 
     for (int bar = 1; bar <= 4; ++bar)
-        CHECK (ProjectEdits::findClipAtBar (h.track (0), bar).isValid());
+        CHECK (ProjectEdits::findClipAtStep (h.track (0), h.stepFor (bar)).isValid());
 }
 
 TEST_CASE ("a clip is the same clip whichever way it was drawn", "[ui][playlist]")
 {
     // The piano roll's defect, in the view that copied its gesture: placing a
     // clip and sizing it with one press shared the RESIZE branch, which
-    // measures from the clip's own startBar - fixed by the press - so dragging
-    // left gave a negative length and the jmax pinned it to one bar.
+    // measures from the clip's own startStep - fixed by the press - so dragging
+    // left gave a negative length and the jmax pinned it to one cell.
     const juce::ScopedJuceInitialiser_GUI juceInit;
 
     const auto spanDrawn = [] (int fromBar, int toBar, int& start, int& length)
@@ -234,10 +234,11 @@ TEST_CASE ("a clip is the same clip whichever way it was drawn", "[ui][playlist]
 
         REQUIRE (h.countClips (0) == 1);
 
-        const auto clip = ProjectEdits::findClipAtBar (h.track (0), juce::jmin (fromBar, toBar));
+        const auto clip = ProjectEdits::findClipAtStep (h.track (0),
+                                                        h.stepFor (juce::jmin (fromBar, toBar)));
         REQUIRE (clip.isValid());
-        start = (int) clip[ids::startBar];
-        length = (int) clip[ids::lengthBars];
+        start = (int) clip[ids::startStep];
+        length = (int) clip[ids::lengthSteps];
     };
 
     int rightStart = 0, rightLength = 0;
@@ -246,8 +247,12 @@ TEST_CASE ("a clip is the same clip whichever way it was drawn", "[ui][playlist]
     spanDrawn (1, 4, rightStart, rightLength);
     spanDrawn (4, 1, leftStart, leftLength);
 
-    CHECK (rightStart == 1);
-    CHECK (rightLength == 4);
+    // Bars, in steps: the drag ran from bar 1 to bar 4 and the clip covers all
+    // four of them, whichever way the hand went.
+    PlaylistHarness sizes;
+
+    CHECK (rightStart == sizes.stepFor (1));
+    CHECK (rightLength == 4 * sizes.stepsPerBar());
 
     CHECK (leftStart == rightStart);
     CHECK (leftLength == rightLength);
@@ -259,7 +264,7 @@ TEST_CASE ("the paint tool does not stack a clip on one already there", "[ui][pl
     PlaylistHarness h;
 
     juce::UndoManager setup;
-    ProjectEdits::addClip (h.track (0), 1, 2, 1, &setup);
+    ProjectEdits::addClip (h.track (0), 1, h.stepFor (2), 1 * h.stepsPerBar(), &setup);
 
     h.playlist.setTool (EditorTool::paint);
 
@@ -278,7 +283,8 @@ TEST_CASE ("a mod-drag copies a clip and leaves the original", "[ui][playlist]")
     PlaylistHarness h;
 
     juce::UndoManager setup;
-    auto original = ProjectEdits::addClip (h.track (0), 1, 1, 1, &setup);
+    auto original = ProjectEdits::addClip (h.track (0), 1, h.stepFor (1), 1 * h.stepsPerBar(),
+                                           &setup);
     const auto patternId = (int) original[ids::patternId];
 
     const juce::ModifierKeys mod { juce::ModifierKeys::commandModifier };
@@ -292,8 +298,8 @@ TEST_CASE ("a mod-drag copies a clip and leaves the original", "[ui][playlist]")
 
     // The original stays where it was, and both name the same pattern - a plain
     // copy is another instance of the same phrase.
-    auto stayed = ProjectEdits::findClipAtBar (h.track (0), 1);
-    auto copy = ProjectEdits::findClipAtBar (h.track (0), 5);
+    auto stayed = ProjectEdits::findClipAtStep (h.track (0), h.stepFor (1));
+    auto copy = ProjectEdits::findClipAtStep (h.track (0), h.stepFor (5));
 
     REQUIRE (stayed.isValid());
     REQUIRE (copy.isValid());
@@ -306,7 +312,7 @@ TEST_CASE ("a mod-drag that never moves makes no copy", "[ui][playlist]")
     PlaylistHarness h;
 
     juce::UndoManager setup;
-    ProjectEdits::addClip (h.track (0), 1, 1, 1, &setup);
+    ProjectEdits::addClip (h.track (0), 1, h.stepFor (1), 1 * h.stepsPerBar(), &setup);
 
     const juce::ModifierKeys mod { juce::ModifierKeys::commandModifier };
 
@@ -323,7 +329,8 @@ TEST_CASE ("a mod-shift-drag gives the copy a pattern of its own", "[ui][playlis
     PlaylistHarness h;
 
     juce::UndoManager setup;
-    auto original = ProjectEdits::addClip (h.track (0), 1, 1, 1, &setup);
+    auto original = ProjectEdits::addClip (h.track (0), 1, h.stepFor (1), 1 * h.stepsPerBar(),
+                                           &setup);
     const auto patternId = (int) original[ids::patternId];
 
     // Something in the pattern, so the copy can be shown to have carried it.
@@ -337,7 +344,7 @@ TEST_CASE ("a mod-shift-drag gives the copy a pattern of its own", "[ui][playlis
     h.playlist.mouseDrag (eventAt (h.playlist, pointFor (h, 5, 0), 1, modShift, true));
     h.playlist.mouseUp (eventAt (h.playlist, pointFor (h, 5, 0), 1, modShift, true));
 
-    auto copy = ProjectEdits::findClipAtBar (h.track (0), 5);
+    auto copy = ProjectEdits::findClipAtStep (h.track (0), h.stepFor (5));
     REQUIRE (copy.isValid());
 
     const auto freshId = (int) copy[ids::patternId];
@@ -364,8 +371,8 @@ TEST_CASE ("the clip menu duplicates a pattern, for that clip alone", "[ui][play
     PlaylistHarness h;
 
     juce::UndoManager setup;
-    ProjectEdits::addClip (h.track (0), 1, 2, 1, &setup);
-    auto other = ProjectEdits::addClip (h.track (1), 1, 2, 1, &setup);
+    ProjectEdits::addClip (h.track (0), 1, h.stepFor (2), 1 * h.stepsPerBar(), &setup);
+    auto other = ProjectEdits::addClip (h.track (1), 1, h.stepFor (2), 1 * h.stepsPerBar(), &setup);
 
     const auto items = h.playlist.clipMenuItems (0, 2);
     INFO ("items: " << items.joinIntoString (", "));
@@ -373,7 +380,7 @@ TEST_CASE ("the clip menu duplicates a pattern, for that clip alone", "[ui][play
 
     REQUIRE (h.playlist.applyClipMenuChoice (0, 2, 5));
 
-    auto changed = ProjectEdits::findClipAtBar (h.track (0), 2);
+    auto changed = ProjectEdits::findClipAtStep (h.track (0), h.stepFor (2));
     REQUIRE (changed.isValid());
 
     // Only the clip it was asked about. A pattern is shared by every clip that
@@ -465,12 +472,12 @@ TEST_CASE ("right-clicking a clip offers a menu rather than deleting it", "[ui][
     PlaylistHarness h;
 
     auto track = h.track (0);
-    ProjectEdits::addClip (track, 1, 0, 2, nullptr);
+    ProjectEdits::addClip (track, 1, h.stepFor (0), 2 * h.stepsPerBar(), nullptr);
     h.playlist.refresh();
 
     REQUIRE (h.countClips (0) == 1);
 
-    const auto clip = ProjectEdits::findClipAtBar (track, 0);
+    const auto clip = ProjectEdits::findClipAtStep (track, h.stepFor (0));
     const auto bounds = h.playlist.getBoundsForClip (clip, 0);
     const auto at = bounds.getCentre().toInt();
 
@@ -495,12 +502,12 @@ TEST_CASE ("alt-clicking a clip still deletes it outright", "[ui][playlist]")
     PlaylistHarness h;
 
     auto track = h.track (0);
-    ProjectEdits::addClip (track, 1, 0, 2, nullptr);
+    ProjectEdits::addClip (track, 1, h.stepFor (0), 2 * h.stepsPerBar(), nullptr);
     h.playlist.refresh();
 
     REQUIRE (h.countClips (0) == 1);
 
-    const auto clip = ProjectEdits::findClipAtBar (track, 0);
+    const auto clip = ProjectEdits::findClipAtStep (track, h.stepFor (0));
     const auto at = h.playlist.getBoundsForClip (clip, 0).getCentre().toInt();
     const juce::ModifierKeys alt { juce::ModifierKeys::altModifier };
 
@@ -517,8 +524,8 @@ TEST_CASE ("the clip menu deletes the clip it was opened on", "[ui][playlist]")
     PlaylistHarness h;
 
     auto track = h.track (0);
-    ProjectEdits::addClip (track, 1, 0, 2, nullptr);
-    ProjectEdits::addClip (track, 1, 4, 2, nullptr);
+    ProjectEdits::addClip (track, 1, h.stepFor (0), 2 * h.stepsPerBar(), nullptr);
+    ProjectEdits::addClip (track, 1, h.stepFor (4), 2 * h.stepsPerBar(), nullptr);
     h.playlist.refresh();
 
     REQUIRE (h.countClips (0) == 2);
@@ -526,8 +533,8 @@ TEST_CASE ("the clip menu deletes the clip it was opened on", "[ui][playlist]")
     REQUIRE (h.playlist.applyClipMenuChoice (0, 4, 2));
 
     REQUIRE (h.countClips (0) == 1);
-    REQUIRE (ProjectEdits::findClipAtBar (h.track (0), 0).isValid());
-    REQUIRE_FALSE (ProjectEdits::findClipAtBar (h.track (0), 4).isValid());
+    REQUIRE (ProjectEdits::findClipAtStep (h.track (0), h.stepFor (0)).isValid());
+    REQUIRE_FALSE (ProjectEdits::findClipAtStep (h.track (0), h.stepFor (4)).isValid());
 }
 
 TEST_CASE ("right-clicking empty lane space offers to add a clip there", "[ui][playlist]")
@@ -544,5 +551,5 @@ TEST_CASE ("right-clicking empty lane space offers to add a clip there", "[ui][p
 
     REQUIRE (h.playlist.applyClipMenuChoice (0, 2, 4));
     REQUIRE (h.countClips (0) == 1);
-    REQUIRE (ProjectEdits::findClipAtBar (h.track (0), 2).isValid());
+    REQUIRE (ProjectEdits::findClipAtStep (h.track (0), h.stepFor (2)).isValid());
 }

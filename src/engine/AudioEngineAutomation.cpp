@@ -41,16 +41,14 @@ void AudioEngine::collectAutomation (const EngineSnapshot& snapshot, double posi
     if (! snapshot.anyAutomation)
         return;
 
-    const auto stepsPerBar = (double) snapshot.stepsPerBar();
-
     for (const auto& clip : snapshot.clips)
     {
         if (clip.automationIndex < 0 || ! clip.trackAudible
             || clip.automationIndex >= (int) snapshot.automations.size())
             continue;
 
-        const auto start = (double) clip.startBar * stepsPerBar;
-        const auto end = start + (double) clip.lengthBars * stepsPerBar;
+        const auto start = (double) clip.startStep;
+        const auto end = start + (double) clip.lengthSteps;
 
         if (positionSteps < start || positionSteps >= end)
             continue;

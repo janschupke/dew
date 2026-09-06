@@ -42,8 +42,8 @@ EngineSnapshot snapshotWith (std::shared_ptr<juce::AudioBuffer<float>> audio, in
 
     ClipSnapshot clip;
     clip.channelIndex = 0;
-    clip.startBar = startBar;
-    clip.lengthBars = lengthBars;
+    clip.startStep = (startBar) * 16;
+    clip.lengthSteps = (lengthBars) * 16;
     snapshot.clips.push_back (clip);
 
     return snapshot;
@@ -105,10 +105,10 @@ void renderChannel (float* out, int numSamples, const EngineSnapshot& snapshot, 
     // The tests speak in steps and a samples-per-step; the player now speaks in
     // samples and a map. Converting here keeps every existing expectation about
     // where a clip starts and what it plays exactly where it was.
-    SamplePlayer::renderAdd (
-        out, numSamples, channel.sample, *channel.audio,
-        { snapshot.clips.data(), snapshot.clips.size() }, channelIndex, snapshot.stepsPerBar(),
-        (juce::int64) std::llround (positionSteps * sps), *snapshot.tempoMap, engineRate);
+    SamplePlayer::renderAdd (out, numSamples, channel.sample, *channel.audio,
+                             { snapshot.clips.data(), snapshot.clips.size() }, channelIndex,
+                             (juce::int64) std::llround (positionSteps * sps), *snapshot.tempoMap,
+                             engineRate);
 }
 
 } // namespace
@@ -303,8 +303,8 @@ TEST_CASE ("adding is not replacing: two clips of one channel sum", "[audio][sam
     // one silently winning.
     ClipSnapshot second;
     second.channelIndex = 0;
-    second.startBar = 0;
-    second.lengthBars = 1;
+    second.startStep = (0) * 16;
+    second.lengthSteps = (1) * 16;
     snapshot.clips.push_back (second);
 
     std::vector<float> block (256, 0.0f);

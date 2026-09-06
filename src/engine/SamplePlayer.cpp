@@ -82,8 +82,8 @@ double SamplePlayer::readOffsetFor (const SampleSettings& settings, double elaps
 void SamplePlayer::renderAdd (float* mono, int numSamples, const SampleSettings& settings,
                               const juce::AudioBuffer<float>& audio,
                               juce::Span<const ClipSnapshot> clips, int channelIndex,
-                              int stepsPerBarIn, juce::int64 positionSamples,
-                              const TempoMap& tempoMap, double engineSampleRate) noexcept
+                              juce::int64 positionSamples, const TempoMap& tempoMap,
+                              double engineSampleRate) noexcept
 {
     if (mono == nullptr || numSamples <= 0 || engineSampleRate <= 0.0)
         return;
@@ -93,11 +93,9 @@ void SamplePlayer::renderAdd (float* mono, int numSamples, const SampleSettings&
     if (region <= 0)
         return;
 
-    const auto stepsPerBar = (double) stepsPerBarIn;
-
     // Placement in the MAP's terms, playback rate in the engine's.
     //
-    // A clip sits where its bar sits, so finding it has to follow the tempo
+    // A clip sits where its step sits, so finding it has to follow the tempo
     // curve; but the audio inside it is a recording, and a recording does not
     // time-stretch because somebody drew a ramp. Keeping the two apart is the
     // whole reason this function now takes both a sample position and a map
@@ -116,8 +114,8 @@ void SamplePlayer::renderAdd (float* mono, int numSamples, const SampleSettings&
         if (clip.channelIndex != channelIndex || ! clip.trackAudible)
             continue;
 
-        const auto clipStartSteps = (double) clip.startBar * stepsPerBar;
-        const auto clipEndSteps = clipStartSteps + (double) clip.lengthBars * stepsPerBar;
+        const auto clipStartSteps = (double) clip.startStep;
+        const auto clipEndSteps = clipStartSteps + (double) clip.lengthSteps;
 
         const auto clipStart = samplesAtStep (clipStartSteps);
         const auto clipEnd = samplesAtStep (clipEndSteps);

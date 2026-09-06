@@ -120,7 +120,7 @@ TEST_CASE ("a selection survives an edit elsewhere in the arrangement", "[ui][pl
     h.editorState.setSelectedBarRange ({ 2, 5 });
 
     auto& undo = h.document.getUndoManager();
-    ProjectEdits::addClip (h.track (1), 1, 7, 1, &undo);
+    ProjectEdits::addClip (h.track (1), 1, h.stepFor (7), 1 * h.stepsPerBar(), &undo);
     h.playlist.refresh();
 
     REQUIRE (h.editorState.getSelectedBarRange() == juce::Range<int> (2, 5));
@@ -253,14 +253,18 @@ TEST_CASE ("zoomed out, the view reaches past the end of the song", "[ui][playli
     timeline.scrollOffsetSteps = 1e6;
     h.playlist.resized();
 
-    const auto bars = juce::jmax (4, (int) h.document.getState()[ids::barsInSong]);
+    // STEPS, like the timeline: the playlist's own unit stopped being the bar
+    // when a clip stopped being measured in them.
+    const auto steps = juce::jmax (4, (int) h.document.getState()[ids::barsInSong])
+                       * h.stepsPerBar();
+
     const auto offset = h.playlist.getTimeline().scrollOffsetSteps;
 
     // Clamped to a screen short of the end, so the last bar can be worked on
     // with empty space beside it rather than jammed against the window edge -
     // which is what the piano roll has always done and the playlist could not,
     // because the re-fit put the scroll back to zero every time.
-    INFO ("scrolled to " << offset << " of " << bars << " bars");
+    INFO ("scrolled to " << offset << " of " << steps << " steps");
     CHECK (offset > 0.0);
-    CHECK (offset < (double) bars);
+    CHECK (offset < (double) steps);
 }

@@ -311,13 +311,13 @@ TEST_CASE ("a clip longer than its pattern exports the repeats", "[midi][export]
 
     REQUIRE (clip.isValid());
 
-    const auto originalBars = (int) clip[ids::lengthBars];
+    const auto originalBars = (int) clip[ids::lengthSteps];
 
     juce::StringArray warnings;
     juce::int64 before = 0;
     MidiExporter::build (project, {}, warnings, before);
 
-    clip.setProperty (ids::lengthBars, originalBars * 2, nullptr);
+    clip.setProperty (ids::lengthSteps, originalBars * 2, nullptr);
 
     juce::int64 after = 0;
     MidiExporter::build (project, {}, warnings, after);

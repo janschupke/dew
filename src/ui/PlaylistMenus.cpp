@@ -76,7 +76,7 @@ void PlaylistComponent::latchMenuContext (const juce::ValueTree& clip, int track
 juce::PopupMenu PlaylistComponent::buildClipMenu (const juce::ValueTree& track, int bar) const
 {
     juce::PopupMenu menu;
-    const auto clip = ProjectEdits::findClipAtBar (track, bar);
+    const auto clip = ProjectEdits::findClipAtStep (track, bar * stepsPerBar());
 
     // The three shapes, flat and ticked - not a submenu. MenuSeam's reader uses
     // MenuItemIterator, which does NOT recurse, so a submenu's children never
@@ -156,7 +156,7 @@ juce::PopupMenu PlaylistComponent::buildClipMenu (const juce::ValueTree& track, 
 
 void PlaylistComponent::applyClipChoice (juce::ValueTree track, int bar, int choice)
 {
-    auto clip = ProjectEdits::findClipAtBar (track, bar);
+    auto clip = ProjectEdits::findClipAtStep (track, bar * stepsPerBar());
     auto& undo = document.getUndoManager();
 
     switch ((ClipMenuItem) choice)
@@ -221,7 +221,8 @@ void PlaylistComponent::applyClipChoice (juce::ValueTree track, int bar, int cho
 
         case ClipMenuItem::addClip:
             undo.beginNewTransaction ("Add clip");
-            ProjectEdits::addClip (track, editorState.getCurrentPatternId(), bar, 1, &undo);
+            ProjectEdits::addClip (track, editorState.getCurrentPatternId(), bar * stepsPerBar(),
+                                   stepsPerBar(), &undo);
             ProjectEdits::growSongToFitClips (document.getState(), &undo);
             updateScrollBar();
             break;
@@ -302,7 +303,7 @@ juce::StringArray PlaylistComponent::clipMenuItemsAt (juce::Point<int> position)
     const auto trackIndex = trackAtY (position.y);
     const auto track = trackAt (trackIndex);
     const auto bar = barAtX (position.x);
-    const auto clip = track.isValid() ? ProjectEdits::findClipAtBar (track, bar)
+    const auto clip = track.isValid() ? ProjectEdits::findClipAtStep (track, bar * stepsPerBar())
                                       : juce::ValueTree();
 
     latchMenuContext (clip, trackIndex, position);
@@ -318,7 +319,8 @@ juce::StringArray PlaylistComponent::clipMenuItems (int trackIndex, int bar) con
     // bar has no y, and which segment of a curve you are on IS a y. Aiming at
     // the middle of the row is what asking about a bar has always meant.
     juce::UndoManager scratch;
-    auto probe = ProjectEdits::addClip (trackAt (trackIndex), 1, bar, 1, &scratch);
+    auto probe = ProjectEdits::addClip (trackAt (trackIndex), 1, bar * stepsPerBar(), stepsPerBar(),
+                                        &scratch);
     const auto bounds = boundsForClip (probe, trackIndex);
     ProjectEdits::removeClip (trackAt (trackIndex), probe, &scratch);
 
@@ -335,7 +337,8 @@ bool PlaylistComponent::applyClipMenuChoiceAt (juce::Point<int> position, int ch
 
     const auto bar = barAtX (position.x);
 
-    latchMenuContext (ProjectEdits::findClipAtBar (track, bar), trackIndex, position);
+    latchMenuContext (ProjectEdits::findClipAtStep (track, bar * stepsPerBar()), trackIndex,
+                      position);
     applyClipChoice (track, bar, choice);
     return true;
 }
@@ -348,7 +351,7 @@ bool PlaylistComponent::applyClipMenuChoice (int trackIndex, int bar, int choice
         return false;
 
     juce::UndoManager scratch;
-    auto probe = ProjectEdits::addClip (track, 1, bar, 1, &scratch);
+    auto probe = ProjectEdits::addClip (track, 1, bar * stepsPerBar(), stepsPerBar(), &scratch);
     const auto bounds = boundsForClip (probe, trackIndex);
     ProjectEdits::removeClip (track, probe, &scratch);
 

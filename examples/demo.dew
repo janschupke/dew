@@ -1,5 +1,5 @@
 {
-    "formatVersion": 19,
+    "formatVersion": 20,
     "name": "dew demo",
     "tempoBpm": 124.0,
     "stepsPerBeat": 4,
@@ -670,8 +670,8 @@
               "patternId": 2,
               "automationId": 1,
               "channelId": 1,
-              "startBar": 0,
-              "lengthBars": 4,
+              "startStep": 0,
+              "lengthSteps": 64,
               "genId": ""
             },
             {
@@ -679,8 +679,8 @@
               "patternId": 1,
               "automationId": 1,
               "channelId": 1,
-              "startBar": 4,
-              "lengthBars": 4,
+              "startStep": 64,
+              "lengthSteps": 64,
               "genId": ""
             },
             {
@@ -688,8 +688,8 @@
               "patternId": 3,
               "automationId": 1,
               "channelId": 1,
-              "startBar": 8,
-              "lengthBars": 2,
+              "startStep": 128,
+              "lengthSteps": 32,
               "genId": ""
             },
             {
@@ -697,8 +697,8 @@
               "patternId": 1,
               "automationId": 1,
               "channelId": 1,
-              "startBar": 10,
-              "lengthBars": 5,
+              "startStep": 160,
+              "lengthSteps": 80,
               "genId": ""
             },
             {
@@ -706,8 +706,8 @@
               "patternId": 4,
               "automationId": 1,
               "channelId": 1,
-              "startBar": 15,
-              "lengthBars": 1,
+              "startStep": 240,
+              "lengthSteps": 16,
               "genId": ""
             }
           ]

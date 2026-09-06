@@ -87,8 +87,8 @@ void SampleInstrument::processAddMono (const InstrumentContext& ctx, float* out,
         return;
 
     SamplePlayer::renderAdd (out, numSamples, *ctx.sample, *ctx.audio, ctx.clips, ctx.channelIndex,
-                             ctx.stepsPerBar, ctx.transport.positionSamples,
-                             *ctx.transport.tempoMap, ctx.transport.sampleRate);
+                             ctx.transport.positionSamples, *ctx.transport.tempoMap,
+                             ctx.transport.sampleRate);
 }
 
 void SoundFontInstrument::prepare (double sampleRate, int)

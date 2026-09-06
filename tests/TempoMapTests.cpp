@@ -8,6 +8,7 @@
 #include "model/DemoLibrary.h"
 #include "model/ModuleCatalog.h"
 #include "model/Ids.h"
+#include "model/Meter.h"
 #include "model/ProjectEdits.h"
 #include "model/ProjectFactory.h"
 #include "model/ProjectSerializer.h"
@@ -258,9 +259,14 @@ TEST_CASE ("a tempo clip only affects the bars it covers", "[tempo]")
     for (auto point : ProjectEdits::sortedAutomationPoints (automation))
         point.setProperty (ids::value, 0.0, &undo);
 
-    // Bars four to eight, so the first four are untouched.
+    // Bars four to eight, so the first four are untouched. In STEPS, which is
+    // what a clip is placed in - the bars are the reader's, and the test says
+    // so rather than passing the numbers through and hoping.
+    const auto perBar = Meter::of (project).stepsPerBar();
+
     auto track = project.getChildWithName (ids::PLAYLIST).getChild (0);
-    ProjectEdits::addAutomationClip (track, (int) automation[ids::id], 4, 4, &undo);
+    ProjectEdits::addAutomationClip (track, (int) automation[ids::id], 4 * perBar, 4 * perBar,
+                                     &undo);
 
     const auto snapshot = buildSnapshot (project, nullptr);
     const auto& map = *snapshot.tempoMap;
@@ -362,8 +368,8 @@ TEST_CASE ("a tempo curve is found among clips that are not one", "[tempo]")
     for (int i = 0; i < 400; ++i)
     {
         ClipSnapshot clip;
-        clip.startBar = i;
-        clip.lengthBars = 1;
+        clip.startStep = (i) * 16;
+        clip.lengthSteps = (1) * 16;
         clip.trackAudible = true;
 
         // The LAST clip is the tempo curve. Last on purpose: a collector that

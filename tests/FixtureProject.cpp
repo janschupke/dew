@@ -35,8 +35,14 @@ juce::ValueTree makeClip (int patternId, int startBar, int lengthBars)
         childSpecFor (childSpecFor (childSpecFor (projectSpec(), "playlist"), "tracks"), "clips"));
     clip.setProperty (ids::kind, "pattern", nullptr);
     clip.setProperty (ids::patternId, patternId, nullptr);
-    clip.setProperty (ids::startBar, startBar, nullptr);
-    clip.setProperty (ids::lengthBars, lengthBars, nullptr);
+    // The fixture is WRITTEN in bars - "the drums arrive at bar 4" is what a
+    // reader of it is meant to see - and a clip is stored in steps, so the
+    // conversion happens here. The fixture never sets a metre, so the factory's
+    // 4/4 at four steps to a beat is what a bar is worth.
+    constexpr auto stepsPerBar = 16;
+
+    clip.setProperty (ids::startStep, startBar * stepsPerBar, nullptr);
+    clip.setProperty (ids::lengthSteps, lengthBars * stepsPerBar, nullptr);
     return clip;
 }
 

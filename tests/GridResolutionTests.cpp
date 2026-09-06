@@ -87,21 +87,23 @@ TEST_CASE ("raising the grid moves every step-valued thing in the document", "[g
     CHECK ((int) pattern[ids::lengthSteps] == lengthBefore);
 }
 
-TEST_CASE ("a clip does not move when the grid changes", "[grid][edits]")
+TEST_CASE ("a clip moves with the grid, and stays where it sounds", "[grid][edits]")
 {
-    // The asymmetry with setMeter, which HAS to rescale them. A clip is stored
-    // in bars, and a bar is a bar whatever it is divided into.
+    // The mirror image of setMeter, which does NOT rescale clips: a bar
+    // changing size moves no clip, because a clip is not measured in bars - and
+    // a STEP changing size moves every one, for exactly the same reason.
     auto project = ProjectFactory::createDefault();
     juce::UndoManager undo;
 
     auto track = project.getChildWithName (ids::PLAYLIST).getChild (0);
-    auto clip = ProjectEdits::addClip (track, 1, 3, 2, &undo);
+    auto clip = ProjectEdits::addClip (track, 1, 48, 32, &undo);
 
     ProjectEdits::setGridResolution (project, 12, &undo);
 
-    CHECK ((int) clip[ids::startBar] == 3);
-    CHECK ((int) clip[ids::lengthBars] == 2);
-    CHECK ((int) project[ids::barsInSong] >= 5);
+    // Four steps to a beat became twelve, so every step number is three times
+    // what it was and the clip is at the same instant it always was.
+    CHECK ((int) clip[ids::startStep] == 48 * 3);
+    CHECK ((int) clip[ids::lengthSteps] == 32 * 3);
 }
 
 TEST_CASE ("a division the grid cannot express says so", "[grid][snap]")
@@ -161,4 +163,33 @@ TEST_CASE ("the snap ladder runs finest to coarsest, with off at the top", "[gri
     for (int i = 2; i < NoteTools::numSnapDivisions; ++i)
         CHECK (NoteTools::stepsForSnap (NoteTools::allSnapDivisions[i], 24)
                > NoteTools::stepsForSnap (NoteTools::allSnapDivisions[i - 1], 24));
+}
+
+TEST_CASE ("a clip can start off a bar line", "[playlist][edits]")
+{
+    // The whole point of moving a clip from bars into steps. A fill that begins
+    // on the last beat of a bar was not expressible in this format at all -
+    // there was no number that meant it.
+    auto project = ProjectFactory::createDefault();
+    juce::UndoManager undo;
+
+    const auto perBar = Meter::of (project).stepsPerBar();
+    const auto lastBeat = 3 * perBar + perBar * 3 / 4;
+
+    auto track = project.getChildWithName (ids::PLAYLIST).getChild (0);
+    auto clip = ProjectEdits::addClip (track, 1, lastBeat, perBar, &undo);
+
+    CHECK ((int) clip[ids::startStep] == lastBeat);
+
+    // ...and it is found by any step it covers, including the ones inside the
+    // bar it does not begin on.
+    CHECK (ProjectEdits::findClipAtStep (track, lastBeat).isValid());
+    CHECK (ProjectEdits::findClipAtStep (track, lastBeat + perBar / 2).isValid());
+    CHECK_FALSE (ProjectEdits::findClipAtStep (track, lastBeat - 1).isValid());
+    CHECK_FALSE (ProjectEdits::findClipAtStep (track, lastBeat + perBar).isValid());
+
+    // The song grows to the BAR that contains its end, because the song is a
+    // container counted in bars.
+    ProjectEdits::growSongToFitClips (project, &undo);
+    CHECK ((int) project[ids::barsInSong] >= 5);
 }

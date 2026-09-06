@@ -475,8 +475,15 @@ struct ClipSnapshot
     int patternIndex = -1;    ///< resolved
     int automationIndex = -1; ///< resolved; >= 0 makes this an automation clip
     int channelIndex = -1;    ///< resolved; >= 0 makes this an audio clip
-    int startBar = 0;
-    int lengthBars = 1;
+    /** STEPS, like everything else the sequencer windows against.
+
+        Bars, until clips could start off a bar line. Every reader multiplied by
+        stepsPerBar the moment it had one - six of them, in five files - so the
+        conversion was already happening everywhere and only the document was
+        keeping it in the other unit.
+    */
+    int startStep = 0;
+    int lengthSteps = 16;
 
     /** Resolved audibility of the playlist track this clip sits on. Folded in
         here so the sequencer never has to look a track up.

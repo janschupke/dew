@@ -100,8 +100,8 @@ juce::ValueTree ProjectEdits::addAutomation (juce::ValueTree project,
 }
 
 juce::ValueTree ProjectEdits::addAutomationWithClip (juce::ValueTree project,
-                                                     const AutomationTarget& target, int startBar,
-                                                     int lengthBars, juce::UndoManager* undo)
+                                                     const AutomationTarget& target, int startStep,
+                                                     int lengthSteps, juce::UndoManager* undo)
 {
     auto automation = addAutomation (project, target, undo);
 
@@ -115,16 +115,16 @@ juce::ValueTree ProjectEdits::addAutomationWithClip (juce::ValueTree project,
         if (! track.hasType (ids::PLAYLIST_TRACK))
             continue;
 
-        if (findClipAtBar (track, startBar).isValid())
+        if (findClipAtStep (track, startStep).isValid())
             continue;
 
-        auto clip = addAutomationClip (track, (int) automation[ids::id], startBar, lengthBars,
+        auto clip = addAutomationClip (track, (int) automation[ids::id], startStep, lengthSteps,
                                        undo);
         growSongToFitClips (project, undo);
         return clip;
     }
 
-    // Every lane is taken at that bar, so make one. The alternative this used to
+    // Every lane is taken at that step, so make one. The alternative this used to
     // choose - undo the definition and return nothing - was a menu item that
     // did nothing at all, which is the worse of the two by a distance now that
     // every control offers it.
@@ -136,7 +136,7 @@ juce::ValueTree ProjectEdits::addAutomationWithClip (juce::ValueTree project,
     if (! track.isValid())
         return {};
 
-    auto clip = addAutomationClip (track, (int) automation[ids::id], startBar, lengthBars, undo);
+    auto clip = addAutomationClip (track, (int) automation[ids::id], startStep, lengthSteps, undo);
     growSongToFitClips (project, undo);
     return clip;
 }

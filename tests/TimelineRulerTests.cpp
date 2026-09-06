@@ -8,6 +8,7 @@
 #include "model/Ids.h"
 #include "app/ProjectDocument.h"
 #include "model/ProjectEdits.h"
+#include "model/Meter.h"
 #include "model/ProjectFactory.h"
 #include "ui/ChannelRackComponent.h"
 #include "ui/EditorState.h"
@@ -437,15 +438,21 @@ TEST_CASE ("the playlist ruler selects whole bars, and double-click clears", "[r
 
     const auto strip = playlist.getRulerArea();
     const auto y = strip.getCentreY();
+
+    // The playlist's timeline counts STEPS now, so a bar has to be spelled as
+    // one - which is also what makes "selects whole BARS" a claim worth
+    // testing rather than a restatement of the unit.
+    const auto perBar = Meter::of (document.getState()).stepsPerBar();
     const auto x = [&] (double bar)
-    { return strip.getX() + (int) playlist.getTimeline().xForStep (bar); };
+    { return strip.getX() + (int) playlist.getTimeline().xForStep (bar * (double) perBar); };
 
     playlist.mouseDown (eventAt (playlist, { x (1.5), y }, shift));
     playlist.mouseDrag (eventAt (playlist, { x (3.5), y }, shift, 1, true));
 
     const auto range = editorState.getSelectedBarRange();
 
-    // Bars, because this timeline counts bars - the gesture never converts.
+    // Bars: the gesture snaps to one, and the selection is kept in them
+    // because a render range is a section of an arrangement.
     INFO ("selected bars " << range.getStart() << ".." << range.getEnd());
     CHECK (range.getStart() == 1);
     CHECK (range.getEnd() == 4);

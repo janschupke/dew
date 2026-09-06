@@ -136,13 +136,23 @@ juce::ValueTree patternIn (juce::ValueTree project, int id, const juce::String& 
     return pattern;
 }
 
+/** Bars into steps, for the demos alone.
+
+    A clip is stored in steps now, but a demo is WRITTEN in bars - "the drums
+    arrive at bar 4" is the thing the call site is saying - so the conversion
+    happens here rather than turning every arrangement into arithmetic. The
+    constant is safe because no demo sets a metre: every one of them takes the
+    factory's 4/4 at four steps to a beat, which a test asserts.
+*/
+constexpr int demoStepsPerBar = 16;
+
 juce::ValueTree makeClip (int patternId, int startBar, int lengthBars)
 {
     auto clip = defaultTreeFor (clipsSpec());
     clip.setProperty (ids::kind, "pattern", nullptr);
     clip.setProperty (ids::patternId, patternId, nullptr);
-    clip.setProperty (ids::startBar, startBar, nullptr);
-    clip.setProperty (ids::lengthBars, lengthBars, nullptr);
+    clip.setProperty (ids::startStep, startBar * demoStepsPerBar, nullptr);
+    clip.setProperty (ids::lengthSteps, lengthBars * demoStepsPerBar, nullptr);
     return clip;
 }
 
@@ -151,8 +161,8 @@ juce::ValueTree makeAutomationClip (int automationId, int startBar, int lengthBa
     auto clip = defaultTreeFor (clipsSpec());
     clip.setProperty (ids::kind, "automation", nullptr);
     clip.setProperty (ids::automationId, automationId, nullptr);
-    clip.setProperty (ids::startBar, startBar, nullptr);
-    clip.setProperty (ids::lengthBars, lengthBars, nullptr);
+    clip.setProperty (ids::startStep, startBar * demoStepsPerBar, nullptr);
+    clip.setProperty (ids::lengthSteps, lengthBars * demoStepsPerBar, nullptr);
     return clip;
 }
 

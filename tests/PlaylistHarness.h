@@ -7,6 +7,7 @@
 #include "ControlWalkHarness.h"
 #include "engine/AudioEngine.h"
 #include "model/Ids.h"
+#include "model/Meter.h"
 #include "app/ProjectDocument.h"
 #include "model/ProjectEdits.h"
 #include "model/ProjectFactory.h"
@@ -59,6 +60,22 @@ struct PlaylistHarness
         return n;
     }
 
+    /** Steps in a bar, for the tests that state a clip's position.
+
+        The playlist works in STEPS now - a clip can start off a bar line - so
+        every case below that says "bar 3" means step 3 * stepsPerBar, and says
+        so through stepFor rather than by multiplying in forty places.
+    */
+    int stepsPerBar() const
+    {
+        return juce::jmax (1, Meter::of (document.getState()).stepsPerBar());
+    }
+
+    int stepFor (int bar) const
+    {
+        return bar * stepsPerBar();
+    }
+
     ProjectDocument document;
     AudioEngine engine;
     EditorState editorState;
@@ -78,7 +95,8 @@ inline juce::MouseEvent eventAt (juce::Component& target, juce::Point<int> local
 inline juce::Point<int> pointFor (PlaylistHarness& h, int bar, int trackIndex)
 {
     juce::UndoManager scratch;
-    auto probe = ProjectEdits::addClip (h.track (trackIndex), 1, bar, 1, &scratch);
+    auto probe = ProjectEdits::addClip (h.track (trackIndex), 1, h.stepFor (bar), h.stepsPerBar(),
+                                        &scratch);
     const auto bounds = h.playlist.getBoundsForClip (probe, trackIndex);
     ProjectEdits::removeClip (h.track (trackIndex), probe, &scratch);
 
@@ -96,7 +114,7 @@ inline juce::Point<int> pointFor (PlaylistHarness& h, int bar, int trackIndex)
 inline juce::Point<int> rulerPointFor (PlaylistHarness& h, int bar)
 {
     juce::UndoManager scratch;
-    auto probe = ProjectEdits::addClip (h.track (0), 1, bar, 1, &scratch);
+    auto probe = ProjectEdits::addClip (h.track (0), 1, h.stepFor (bar), h.stepsPerBar(), &scratch);
     const auto bounds = h.playlist.getBoundsForClip (probe, 0);
     ProjectEdits::removeClip (h.track (0), probe, &scratch);
 

@@ -51,7 +51,7 @@ void PlaylistComponent::mouseDoubleClick (const juce::MouseEvent& event)
     if (! track.isValid())
         return;
 
-    const auto clip = ProjectEdits::findClipAtBar (track, barAtX (event.x));
+    const auto clip = ProjectEdits::findClipAtStep (track, stepAtX (event.x));
 
     if (auto automation = automationOf (clip); automation.isValid())
     {
@@ -98,8 +98,13 @@ void PlaylistComponent::mouseDown (const juce::MouseEvent& event)
     if (! track.isValid())
         return;
 
-    const auto bar = barAtX (event.x);
-    auto clip = ProjectEdits::findClipAtBar (track, bar);
+    // The clip is found at the RAW step under the pointer and a new one is
+    // laid at the SNAPPED one. Snapping the hit test would make a clip
+    // unclickable in the half of its first cell before its own start.
+    const auto step = stepAtX (event.x);
+    const auto snapped = snappedStepAtX (event.x, event);
+
+    auto clip = ProjectEdits::findClipAtStep (track, step);
     auto& undo = document.getUndoManager();
 
     // Alt-click still removes outright: it is the sweep-to-clear gesture the
@@ -131,6 +136,8 @@ void PlaylistComponent::mouseDown (const juce::MouseEvent& event)
     if (event.mods.isPopupMenu())
     {
         latchMenuContext (clip, trackIndex, event.getPosition());
+
+        const auto bar = step / juce::jmax (1, stepsPerBar());
 
         auto menu = buildClipMenu (track, bar);
         showMenuAt<PlaylistComponent> (menu, *this, event,
@@ -193,7 +200,7 @@ void PlaylistComponent::mouseDown (const juce::MouseEvent& event)
             dragCopyIsUnique = dragCopies && event.mods.isShiftDown();
 
             gesture = Gesture::moving;
-            dragBarOffset = bar - (int) clip[ids::startBar];
+            dragStepOffset = step - (int) clip[ids::startStep];
             undo.beginNewTransaction (dragCopies ? "Copy clip" : "Move clip");
         }
 
@@ -216,10 +223,11 @@ void PlaylistComponent::mouseDown (const juce::MouseEvent& event)
     }
 
     undo.beginNewTransaction ("Add clip");
-    draggedClip = ProjectEdits::addClip (track, editorState.getCurrentPatternId(), bar, 1, &undo);
+    draggedClip = ProjectEdits::addClip (track, editorState.getCurrentPatternId(), snapped,
+                                         juce::jmax (1, snapSteps()), &undo);
     draggedClipTrack = track;
     dropTrackIndex = trackIndex;
-    drawAnchorBar = bar;
+    drawAnchorStep = snapped;
     gesture = Gesture::drawing;
     ProjectEdits::growSongToFitClips (document.getState(), &undo);
     updateScrollBar();
@@ -237,27 +245,33 @@ bool PlaylistComponent::paintClipAt (juce::Point<int> position)
     if (! track.isValid())
         return false;
 
-    const auto bar = barAtX (position.x);
+    const auto cell = juce::jmax (1, snapSteps());
+    const auto step = NoteTools::snapFloor (stepAtX (position.x), cell);
 
-    if (bar == lastPaintedCell.x && trackIndex == lastPaintedCell.y)
+    if (step == lastPaintedCell.x && trackIndex == lastPaintedCell.y)
         return false;
 
-    lastPaintedCell = { bar, trackIndex };
+    lastPaintedCell = { step, trackIndex };
 
-    // Anything already occupying this bar, whether it starts here or runs
+    // Anything already occupying this step, whether it starts here or runs
     // through it - painting over a clip should not stack a second one inside it.
-    if (ProjectEdits::findClipAtBar (track, bar).isValid())
+    if (ProjectEdits::findClipAtStep (track, step).isValid())
         return false;
 
     auto& undo = document.getUndoManager();
 
-    ProjectEdits::addClip (track, editorState.getCurrentPatternId(), bar,
-                           editorState.getLastClipLengthBars(), &undo);
+    // The last length laid down, rounded UP to a whole cell: a stroke on a
+    // coarser grid than the clip it is repeating would otherwise leave a gap in
+    // every cell.
+    const auto length = juce::jmax (
+        cell, NoteTools::snapCeil (editorState.getLastClipLengthSteps(), cell));
+
+    ProjectEdits::addClip (track, editorState.getCurrentPatternId(), step, length, &undo);
     ProjectEdits::growSongToFitClips (document.getState(), &undo);
     return true;
 }
 
-void PlaylistComponent::beginCopyDrag (int targetTrackIndex, int targetBar)
+void PlaylistComponent::beginCopyDrag (int targetTrackIndex, int targetStep)
 {
     auto targetTrack = trackAt (targetTrackIndex);
 
@@ -289,7 +303,7 @@ void PlaylistComponent::beginCopyDrag (int targetTrackIndex, int targetBar)
     // The gesture rebinds to the COPY and leaves the original where it was -
     // the same rebinding a cross-track move already forces, for the same reason:
     // the rest of the drag would otherwise edit a node nothing is looking at.
-    if (auto copy = ProjectEdits::copyClip (targetTrack, source, targetBar, &undo); copy.isValid())
+    if (auto copy = ProjectEdits::copyClip (targetTrack, source, targetStep, &undo); copy.isValid())
     {
         draggedClip = copy;
         draggedClipTrack = targetTrack;
@@ -376,33 +390,47 @@ void PlaylistComponent::mouseDrag (const juce::MouseEvent& event)
     {
         // A SPAN between the bar the press landed in and the bar under the
         // pointer, so a clip grows whichever way the hand goes. It shared the
-        // resize branch below, which measures from the clip's own startBar -
+        // resize branch below, which measures from the clip's own startStep -
         // fixed by the press - so a leftward drag gave a negative length and
-        // the jmax pinned it to one bar.
-        const auto here = barAtX (event.x);
-        const auto start = juce::jmax (0, juce::jmin (drawAnchorBar, here));
-        const auto end = juce::jmax (drawAnchorBar, here) + 1;
+        // the jmax pinned it to one cell.
+        const auto cell = juce::jmax (1, snapSteps());
+        const auto here = snappedStepAtX (event.x, event);
+        const auto start = juce::jmax (0, juce::jmin (drawAnchorStep, here));
+        const auto end = juce::jmax (drawAnchorStep, here) + cell;
 
         ProjectEdits::moveClip (draggedClip, start, &undo);
         ProjectEdits::resizeClip (draggedClip, end - start, &undo);
     }
     else if (gesture == Gesture::resizing)
     {
-        const auto length = barAtX (event.x) - (int) draggedClip[ids::startBar] + 1;
-        ProjectEdits::resizeClip (draggedClip, juce::jmax (1, length), &undo);
+        const auto cell = juce::jmax (1, snapSteps());
+        const auto length = snappedStepAtX (event.x, event) - (int) draggedClip[ids::startStep]
+                            + cell;
+
+        ProjectEdits::resizeClip (draggedClip, juce::jmax (cell, length), &undo);
     }
     else if (gesture == Gesture::moving)
     {
-        const auto targetBar = juce::jmax (0, barAtX (event.x) - dragBarOffset);
+        // The clip's own start moves through the grid, not the pointer: a clip
+        // grabbed in its middle must land where its START snaps, or dragging
+        // one across a bar line nudges it by wherever the hand happened to
+        // grab it.
+        const auto wanted = juce::jmax (0, stepAtX (event.x) - dragStepOffset);
+        const auto cell = juce::jmax (1, snapSteps());
+
+        const auto targetStep = gesture::isFine (event.mods)
+                                        || ! NoteTools::snaps (toolbar.getSnap())
+                                    ? wanted
+                                    : NoteTools::snapNearest (wanted, cell);
         const auto targetTrackIndex = juce::jlimit (0, juce::jmax (0, getNumTracks() - 1),
                                                     trackAtY (event.y));
 
         // On the first drag that actually goes somewhere, so a mod-press that
         // never moves does not litter a copy on top of its own original.
         if (dragCopies
-            && (targetBar != (int) draggedClip[ids::startBar]
+            && (targetStep != (int) draggedClip[ids::startStep]
                 || targetTrackIndex != dropTrackIndex))
-            beginCopyDrag (targetTrackIndex, targetBar);
+            beginCopyDrag (targetTrackIndex, targetStep);
 
         auto targetTrack = trackAt (targetTrackIndex);
 
@@ -412,13 +440,13 @@ void PlaylistComponent::mouseDrag (const juce::MouseEvent& event)
             // following the new one or the rest of the gesture edits a detached
             // node and nothing appears to happen.
             draggedClip = ProjectEdits::moveClipToTrack (draggedClipTrack, draggedClip, targetTrack,
-                                                         targetBar, &undo);
+                                                         targetStep, &undo);
             draggedClipTrack = targetTrack;
             dropTrackIndex = targetTrackIndex;
         }
         else
         {
-            ProjectEdits::moveClip (draggedClip, targetBar, &undo);
+            ProjectEdits::moveClip (draggedClip, targetStep, &undo);
         }
     }
 
@@ -438,7 +466,7 @@ void PlaylistComponent::mouseUp (const juce::MouseEvent& event)
     if (draggedClip.isValid()
         && (gesture == Gesture::drawing || gesture == Gesture::resizing
             || gesture == Gesture::moving))
-        editorState.rememberClip ((int) draggedClip[ids::lengthBars]);
+        editorState.rememberClip ((int) draggedClip[ids::lengthSteps]);
 
     draggedClip = {};
     draggedClipTrack = {};

@@ -199,9 +199,10 @@ TEST_CASE ("a project from before the score loads as one nobody compiled",
     // and a mixer strip a colour, v13 gave every channel a SOUNDFONT node, and
     // v14 added four effect types and the nine parameters they brought, v15
     // moved a slot's generator parameters onto that generator's node, and v16
-    // gave a playlist track a gain, v18 gave every oscillator slot an LFO and
-    // v19 gave each one a row of the FM matrix - so update the number when the
-    // rest of this test still passes, and do not delete it.
+    // gave a playlist track a gain, v18 gave every oscillator slot an LFO,
+    // v19 gave each one a row of the FM matrix and v20 moved a clip from bars
+    // into steps - so update the number when the rest of this test still
+    // passes, and do not delete it.
     REQUIRE ((int) loaded.tree[ids::formatVersion] == kFormatVersion);
-    REQUIRE (kFormatVersion == 19);
+    REQUIRE (kFormatVersion == 20);
 }

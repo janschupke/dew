@@ -76,8 +76,8 @@ TempoMap TempoMap::build (const EngineSnapshot& snapshot, juce::StringArray* war
             const auto& clip = snapshot.clips[(size_t) index];
             const auto& automation = snapshot.automations[(size_t) clip.automationIndex];
 
-            const auto start = (double) (clip.startBar * snapshot.stepsPerBar());
-            const auto end = start + (double) (clip.lengthBars * snapshot.stepsPerBar());
+            const auto start = (double) clip.startStep;
+            const auto end = start + (double) clip.lengthSteps;
 
             if (step < start || step >= end)
                 continue;

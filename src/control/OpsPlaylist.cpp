@@ -1,4 +1,5 @@
 #include "control/OpsSupport.h"
+#include "model/Meter.h"
 
 namespace dew::control
 {
@@ -129,8 +130,8 @@ ControlResult writeClips (ControlHost& host, const juce::var& args)
         if (! playlistTrackAt (project, intArg (entry, "track")).isValid())
             return ControlResult::failure (at + noSuchTrack (intArg (entry, "track")));
 
-        if (intArg (entry, "startBar") < 0)
-            return ControlResult::failure (at + "startBar cannot be negative.");
+        if (intArg (entry, "startBar") < 0 || intArg (entry, "startStep") < 0)
+            return ControlResult::failure (at + "a clip cannot start before the beginning.");
 
         if (kind == "pattern")
         {
@@ -172,20 +173,31 @@ ControlResult writeClips (ControlHost& host, const juce::var& args)
     {
         auto track = playlistTrackAt (project, intArg (entry, "track"));
         const auto kind = textArg (entry, "kind", "pattern");
-        const auto startBar = intArg (entry, "startBar");
-        const auto lengthBars = juce::jmax (1, intArg (entry, "lengthBars", 1));
+        // BARS by default, because arranging is thinking in bars and every
+        // caller of this op was written that way. `startStep` and `lengthSteps`
+        // are the way to say something a bar cannot - a fill that begins on the
+        // last beat - and they win where they are given, so nothing that
+        // already worked has to change.
+        const auto perBar = juce::jmax (1, Meter::of (project).stepsPerBar());
+
+        const auto startStep = hasArg (entry, "startStep") ? intArg (entry, "startStep")
+                                                           : intArg (entry, "startBar") * perBar;
+
+        const auto lengthSteps = hasArg (entry, "lengthSteps")
+                                     ? juce::jmax (1, intArg (entry, "lengthSteps"))
+                                     : juce::jmax (1, intArg (entry, "lengthBars", 1)) * perBar;
 
         auto clip = juce::ValueTree {};
 
         if (kind == "pattern")
-            clip = ProjectEdits::addClip (track, intArg (entry, "patternId"), startBar, lengthBars,
-                                          undo);
+            clip = ProjectEdits::addClip (track, intArg (entry, "patternId"), startStep,
+                                          lengthSteps, undo);
         else if (kind == "audio")
-            clip = ProjectEdits::addAudioClip (track, intArg (entry, "channelId"), startBar,
-                                               lengthBars, undo);
+            clip = ProjectEdits::addAudioClip (track, intArg (entry, "channelId"), startStep,
+                                               lengthSteps, undo);
         else
-            clip = ProjectEdits::addAutomationClip (track, intArg (entry, "automationId"), startBar,
-                                                    lengthBars, undo);
+            clip = ProjectEdits::addAutomationClip (track, intArg (entry, "automationId"),
+                                                    startStep, lengthSteps, undo);
 
         if (clip.isValid())
             ++placed;
@@ -225,7 +237,12 @@ ControlResult removeClips (ControlHost& host, const juce::var& args)
         if (! track.isValid())
             return ControlResult::failure (noSuchTrack (intArg (entry, "track")));
 
-        const auto clip = ProjectEdits::findClipAtBar (track, intArg (entry, "atBar"));
+        const auto perBar = juce::jmax (1, Meter::of (project).stepsPerBar());
+
+        const auto atStep = hasArg (entry, "atStep") ? intArg (entry, "atStep")
+                                                     : intArg (entry, "atBar") * perBar;
+
+        const auto clip = ProjectEdits::findClipAtStep (track, atStep);
 
         if (clip.isValid())
             doomed.push_back ({ track, clip });
@@ -294,8 +311,13 @@ void appendPlaylistOps (std::vector<OpSpec>& all)
               { { "track", ValueKind::integer, true, "Which lane, counting from 0." },
                 { "kind", ValueKind::text, false,
                   "pattern, audio or automation. Pattern if absent." },
-                { "startBar", ValueKind::integer, true, "Where it begins, counting from 0." },
+                { "startBar", ValueKind::integer, false, "Where it begins, counting from 0." },
                 { "lengthBars", ValueKind::integer, false, "How many bars it spans." },
+                { "startStep", ValueKind::integer, false,
+                  "Where it begins, in steps. Overrides startBar, and is the only way to "
+                  "start a clip off a bar line." },
+                { "lengthSteps", ValueKind::integer, false,
+                  "How many steps it spans. Overrides lengthBars." },
                 { "patternId", ValueKind::integer, false, "For a pattern clip." },
                 { "channelId", ValueKind::integer, false, "For an audio clip." },
                 { "automationId", ValueKind::integer, false, "For an automation clip." } } } },
@@ -313,7 +335,10 @@ void appendPlaylistOps (std::vector<OpSpec>& all)
                          true,
                          "Lane-and-bar pairs.",
                          { { "track", ValueKind::integer, true, "Which lane." },
-                           { "atBar", ValueKind::integer, true, "Any bar the clip covers." } } } },
+                           { "atBar", ValueKind::integer, false, "Any bar the clip covers." },
+                           { "atStep", ValueKind::integer, false,
+                             "Any step the clip covers. Overrides atBar, and is how to reach "
+                             "a clip that does not begin on a bar line." } } } },
                      removeClips });
 }
 

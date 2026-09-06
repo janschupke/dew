@@ -32,10 +32,14 @@ public:
 
         Adds rather than replaces, so two clips of the same channel that overlap
         sum instead of one silently winning. Never allocates, never locks.
+
+        No `stepsPerBar`: it went with the bars it converted. A clip is stored
+        and windowed in STEPS now, so nothing here has to know how they are
+        grouped.
     */
     static void renderAdd (float* mono, int numSamples, const SampleSettings& settings,
                            const juce::AudioBuffer<float>& audio,
-                           juce::Span<const ClipSnapshot> clips, int channelIndex, int stepsPerBar,
+                           juce::Span<const ClipSnapshot> clips, int channelIndex,
                            juce::int64 positionSamples, const TempoMap& tempoMap,
                            double engineSampleRate) noexcept;
 

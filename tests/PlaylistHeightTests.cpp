@@ -32,8 +32,8 @@ TEST_CASE ("one control sets the height of every track", "[ui][playlist][height]
     PlaylistHarness h;
 
     juce::UndoManager scratch;
-    auto a = ProjectEdits::addClip (h.track (0), 1, 0, 1, &scratch);
-    auto d = ProjectEdits::addClip (h.track (3), 1, 0, 1, &scratch);
+    auto a = ProjectEdits::addClip (h.track (0), 1, h.stepFor (0), 1 * h.stepsPerBar(), &scratch);
+    auto d = ProjectEdits::addClip (h.track (3), 1, h.stepFor (0), 1 * h.stepsPerBar(), &scratch);
 
     h.playlist.setTrackHeight (90);
     REQUIRE (h.playlist.getTrackHeight() == 90);
@@ -44,7 +44,7 @@ TEST_CASE ("one control sets the height of every track", "[ui][playlist][height]
 
     // And contiguous: lane 1 begins exactly where lane 0 ends. A gap or an
     // overlap here is a lane you can click into and reach the wrong track.
-    auto b = ProjectEdits::addClip (h.track (1), 1, 0, 1, &scratch);
+    auto b = ProjectEdits::addClip (h.track (1), 1, h.stepFor (0), 1 * h.stepsPerBar(), &scratch);
     REQUIRE_THAT ((double) h.playlist.getBoundsForClip (b, 1).getY(),
                   WithinAbs ((double) h.playlist.getBoundsForClip (a, 0).getBottom(), 1e-6));
 }
@@ -119,7 +119,8 @@ TEST_CASE ("the last track is reachable when the tracks overflow", "[ui][playlis
     REQUIRE (12 * h.playlist.getTrackHeight() > lanes.getHeight());
 
     juce::UndoManager scratch;
-    auto probe = ProjectEdits::addClip (h.track (11), 1, 0, 1, &scratch);
+    auto probe = ProjectEdits::addClip (h.track (11), 1, h.stepFor (0), 1 * h.stepsPerBar(),
+                                        &scratch);
 
     // Out of the view to begin with...
     REQUIRE_FALSE (h.playlist.getBoundsForClip (probe, 11).toNearestInt().intersects (lanes));
@@ -474,7 +475,7 @@ TEST_CASE ("the pointer says what a clip will do", "[ui][playlist][cursor]")
     PlaylistHarness h;
 
     juce::UndoManager undo;
-    ProjectEdits::addClip (h.track (0), 1, 1, 2, &undo);
+    ProjectEdits::addClip (h.track (0), 1, h.stepFor (1), 2 * h.stepsPerBar(), &undo);
     h.playlist.refresh();
     h.playlist.resized();
 
@@ -484,7 +485,7 @@ TEST_CASE ("the pointer says what a clip will do", "[ui][playlist][cursor]")
         return h.playlist.getMouseCursor();
     };
 
-    const auto clip = ProjectEdits::findClipAtBar (h.track (0), 1);
+    const auto clip = ProjectEdits::findClipAtStep (h.track (0), h.stepFor (1));
     REQUIRE (clip.isValid());
 
     const auto bounds = h.playlist.getBoundsForClip (clip, 0);

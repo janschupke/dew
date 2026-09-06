@@ -237,16 +237,20 @@ public:
 
     /** The same idea one level up: the length of the last clip sized, so the
         playlist's paint tool lays a run of clips at the length being worked in
-        rather than one bar at a time.
+        rather than one cell at a time.
+
+        STEPS, like the clip itself. It was bars, which is what a clip was
+        stored in; a clip that does not start on a bar line has no length in
+        bars to remember.
     */
-    int getLastClipLengthBars() const noexcept
+    int getLastClipLengthSteps() const noexcept
     {
-        return lastClipLengthBars;
+        return lastClipLengthSteps;
     }
 
-    void rememberClip (int lengthBars)
+    void rememberClip (int lengthSteps)
     {
-        lastClipLengthBars = juce::jmax (1, lengthBars);
+        lastClipLengthSteps = juce::jmax (1, lengthSteps);
     }
 
 private:
@@ -258,7 +262,7 @@ private:
 
     int lastNoteLengthSteps = 1;
     double lastNoteVelocity = 1.0;
-    int lastClipLengthBars = 1;
+    int lastClipLengthSteps = 16;
 
     juce::Range<int> selectedBars;
     juce::Range<int> selectedSteps;

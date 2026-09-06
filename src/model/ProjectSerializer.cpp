@@ -72,6 +72,73 @@ void migrateOscillatorsToArray (juce::var& project)
     saving a v14 file a way to lose them. What the new shape saves is space in
     files written from NOW on, where a slot the factory made carries defaults.
 */
+/** v19 -> v20: a clip's position and length, from bars into steps.
+
+    Read the METRE first, because a bar is worth stepsPerBeat * beatsPerBar
+    steps and both are properties of the file being loaded rather than of this
+    build. A file written before those existed takes the same defaults the
+    schema gives them, which is what its own clips were laid out against.
+
+    Both keys are removed after converting, so a v19 file that also happened to
+    carry a stray `startStep` from somewhere is not read twice.
+*/
+void migrateClipsToSteps (juce::var& project)
+{
+    auto* root = project.getDynamicObject();
+
+    if (root == nullptr)
+        return;
+
+    const auto readInt = [root] (const char* key, int fallback)
+    {
+        const auto value = root->getProperty (key);
+        return value.isVoid() ? fallback : (int) value;
+    };
+
+    const auto stepsPerBar = juce::jmax (1, readInt ("stepsPerBeat", 4))
+                             * juce::jmax (1, readInt ("beatsPerBar", 4));
+
+    auto* playlist = root->getProperty ("playlist").getDynamicObject();
+
+    if (playlist == nullptr)
+        return;
+
+    auto* tracks = playlist->getProperty ("tracks").getArray();
+
+    if (tracks == nullptr)
+        return;
+
+    for (const auto& trackValue : *tracks)
+    {
+        auto* track = trackValue.getDynamicObject();
+
+        if (track == nullptr)
+            continue;
+
+        auto* clips = track->getProperty ("clips").getArray();
+
+        if (clips == nullptr)
+            continue;
+
+        for (const auto& clipValue : *clips)
+        {
+            auto* clip = clipValue.getDynamicObject();
+
+            if (clip == nullptr)
+                continue;
+
+            const auto startBars = (int) clip->getProperty ("startBar");
+            const auto lengthBars = juce::jmax (1, (int) clip->getProperty ("lengthBars"));
+
+            clip->setProperty ("startStep", juce::jmax (0, startBars) * stepsPerBar);
+            clip->setProperty ("lengthSteps", lengthBars * stepsPerBar);
+
+            clip->removeProperty ("startBar");
+            clip->removeProperty ("lengthBars");
+        }
+    }
+}
+
 void migrateGeneratorParamsToNodes (juce::var& project)
 {
     auto* root = project.getDynamicObject();
@@ -226,6 +293,9 @@ ProjectSerializer::LoadResult ProjectSerializer::fromJsonString (const juce::Str
 
     if (version < 15)
         migrateGeneratorParamsToNodes (parsed);
+
+    if (version < 20)
+        migrateClipsToSteps (parsed);
 
     // v18's `lfo` node has no entry here on purpose. It was ADDED rather than
     // moved, every property in it has a declared default, and treeFromVar

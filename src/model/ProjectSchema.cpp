@@ -451,8 +451,14 @@ const NodeSpec& clipSpec()
           // Which channel an "audio" clip plays, alongside the pattern and
           // automation references. Only the one matching `kind` is meaningful.
           { ids::channelId, 1 },
-          { ids::startBar, 0 },
-          { ids::lengthBars, 1 },
+          // STEPS, not bars. A clip used to be placed and measured in whole
+          // bars, which put every clip in the arrangement on a bar line whether
+          // the music wanted one there or not - a fill that starts on the last
+          // beat of a bar was not expressible at all. Steps are also what makes
+          // a clip metre-INVARIANT: setMeter no longer rescales anything,
+          // because a step is a step whatever a bar is worth.
+          { ids::startStep, 0 },
+          { ids::lengthSteps, 16 },
           { ids::genId, "" } },
         {}
     };

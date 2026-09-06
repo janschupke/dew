@@ -197,7 +197,7 @@ TEST_CASE ("an automation point can be dragged, added and removed", "[ui][playli
 
     // The clip itself must not have moved: grabbing a point is not grabbing the
     // clip, or a curve could never be edited without dragging the whole thing.
-    REQUIRE ((int) clip[ids::startBar] == 0);
+    REQUIRE ((int) clip[ids::startStep] == 0);
 
     // Double-clicking inside adds a point.
     const auto middle = h.playlist.getBoundsForClip (clip, trackIndex).getCentre().toInt();
@@ -272,7 +272,7 @@ TEST_CASE ("dragging a segment bends it, and does not move the clip", "[ui][play
     PlaylistHarness h;
     CurveHarness c { h };
 
-    const auto startBar = (int) c.clip[ids::startBar];
+    const auto startBar = (int) c.clip[ids::startStep];
     const auto at = c.midSegment();
 
     h.playlist.mouseDown (eventAt (h.playlist, at));
@@ -284,7 +284,7 @@ TEST_CASE ("dragging a segment bends it, and does not move the clip", "[ui][play
 
     // The clip itself did not move: a bend is a press ON the curve, and only
     // within a few pixels of it.
-    REQUIRE ((int) c.clip[ids::startBar] == startBar);
+    REQUIRE ((int) c.clip[ids::startStep] == startBar);
 }
 
 TEST_CASE ("a press away from the curve still moves the clip", "[ui][playlist][automation]")
@@ -503,7 +503,7 @@ TEST_CASE ("an automation clip can still be moved and deleted like any other",
     h.playlist.mouseDrag (eventAt (h.playlist, { grab.x + 200, grab.y }));
     h.playlist.mouseUp (eventAt (h.playlist, { grab.x + 200, grab.y }));
 
-    REQUIRE ((int) clip[ids::startBar] > 0);
+    REQUIRE ((int) clip[ids::startStep] > 0);
 }
 
 TEST_CASE ("a taller track gives the automation curve the whole lane",

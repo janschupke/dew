@@ -63,6 +63,28 @@ void ProjectEdits::setGridResolution (juce::ValueTree project, int wanted, juce:
         }
     }
 
+    // Clips too, now that they are stored in steps. This is the mirror image of
+    // setMeter above, which used to rescale them and no longer does: a bar
+    // changing size moves no clip, and a STEP changing size moves every one.
+    for (auto track : project.getChildWithName (ids::PLAYLIST))
+    {
+        if (! track.hasType (ids::PLAYLIST_TRACK))
+            continue;
+
+        for (auto clip : track)
+        {
+            if (! clip.hasType (ids::CLIP))
+                continue;
+
+            clip.setProperty (
+                ids::startStep,
+                juce::jmax (0, juce::roundToInt (rescaled ((int) clip[ids::startStep]))), undo);
+            clip.setProperty (
+                ids::lengthSteps,
+                juce::jmax (1, juce::roundToInt (rescaled ((int) clip[ids::lengthSteps]))), undo);
+        }
+    }
+
     // A DOUBLE, unlike a note's step, so it is rescaled without rounding - a
     // curve point is wherever the pointer left it, and rounding one to a step
     // would move every automated sweep in the project a little every time the
@@ -107,44 +129,20 @@ void ProjectEdits::setMeter (juce::ValueTree project, int beatsPerBar, int beatU
     if (oldStepsPerBar == newStepsPerBar)
         return;
 
-    // Bars in, steps out, bars back: the rescale is expressed as "what step was
-    // this, and which bar is that now" rather than as a ratio, so there is one
-    // place to read the intent and no ratio to get upside down.
-    const auto barsForSteps = [newStepsPerBar] (int steps)
-    { return juce::roundToInt ((double) steps / (double) newStepsPerBar); };
-
-    auto exact = true;
-
-    for (auto track : project.getChildWithName (ids::PLAYLIST))
-    {
-        if (! track.hasType (ids::PLAYLIST_TRACK))
-            continue;
-
-        for (auto clip : track)
-        {
-            if (! clip.hasType (ids::CLIP))
-                continue;
-
-            const auto startSteps = juce::jmax (0, (int) clip[ids::startBar]) * oldStepsPerBar;
-            const auto lengthSteps = juce::jmax (1, (int) clip[ids::lengthBars]) * oldStepsPerBar;
-
-            exact = exact && startSteps % newStepsPerBar == 0 && lengthSteps % newStepsPerBar == 0;
-
-            clip.setProperty (ids::startBar, juce::jmax (0, barsForSteps (startSteps)), undo);
-            clip.setProperty (ids::lengthBars, juce::jmax (1, barsForSteps (lengthSteps)), undo);
-        }
-    }
+    // No clip rescale, and its absence is the point. A clip is stored in STEPS,
+    // so its position is already what the rescale here used to work to preserve
+    // - and it preserves it exactly, where a loop that converted bars to bars
+    // had to round whenever the ratio did not divide (16 to 12 is 4/3, and a
+    // clip at bar 4 wanted bar 5.33).
 
     // Ceiling rather than rounding, and then grown to fit: the song is a
-    // container, and rounding it down would crop the arrangement it holds.
+    // container counted in bars, and rounding it down would crop the
+    // arrangement it holds.
     const auto songSteps = juce::jmax (1, (int) project[ids::barsInSong]) * oldStepsPerBar;
     const auto songBars = (songSteps + newStepsPerBar - 1) / newStepsPerBar;
 
     project.setProperty (ids::barsInSong, juce::jmax (1, songBars), undo);
     growSongToFitClips (project, undo);
-
-    if (wasExact != nullptr)
-        *wasExact = exact;
 }
 
 // --- the score ---------------------------------------------------------------

@@ -190,7 +190,6 @@ std::optional<double> PianoRollComponent::playheadInPattern() const
     // this runs at motion::playheadHz, which is nothing beside what the same
     // timer already asks a repaint to do.
     const auto patternId = editorState.getCurrentPatternId();
-    const auto stepsPerBar = (double) Meter::of (document.getState()).stepsPerBar();
 
     for (const auto& track : document.getState().getChildWithName (ids::PLAYLIST))
     {
@@ -205,8 +204,8 @@ std::optional<double> PianoRollComponent::playheadInPattern() const
                 || (int) clip[ids::patternId] != patternId)
                 continue;
 
-            const auto start = (double) (int) clip[ids::startBar] * stepsPerBar;
-            const auto length = (double) juce::jmax (1, (int) clip[ids::lengthBars]) * stepsPerBar;
+            const auto start = (double) (int) clip[ids::startStep];
+            const auto length = (double) juce::jmax (1, (int) clip[ids::lengthSteps]);
 
             // Half-open, the way every other range in dew is: a clip's last
             // step belongs to it and the bar after it does not.

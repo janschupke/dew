@@ -109,8 +109,6 @@ void Sequencer::collect (const EngineSnapshot& snapshot, Transport::Mode mode,
         }
         else
         {
-            const auto stepsPerBar = snapshot.stepsPerBar();
-
             for (const auto& clip : snapshot.clips)
             {
                 if (clip.patternIndex < 0 || clip.patternIndex >= (int) snapshot.patterns.size())
@@ -120,8 +118,8 @@ void Sequencer::collect (const EngineSnapshot& snapshot, Transport::Mode mode,
                 if (! clip.trackAudible)
                     continue;
 
-                const auto clipStart = (juce::int64) clip.startBar * stepsPerBar;
-                const auto clipEnd = clipStart + (juce::int64) clip.lengthBars * stepsPerBar;
+                const auto clipStart = (juce::int64) clip.startStep;
+                const auto clipEnd = clipStart + (juce::int64) clip.lengthSteps;
 
                 if (step < clipStart || step >= clipEnd)
                     continue;

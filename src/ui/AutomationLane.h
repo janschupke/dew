@@ -88,7 +88,7 @@ struct Geometry
     the span is a Range rather than a length so that fixing it later is a changed
     constructor and not a changed call site.
 */
-Geometry geometryFor (juce::Rectangle<float> clipBounds, int lengthBars, int stepsPerBar) noexcept;
+Geometry geometryFor (juce::Rectangle<float> clipBounds, int lengthSteps) noexcept;
 
 /** What is under a position: a point, the segment to a point's right, or
     nothing. `point` is the point itself, or the segment's LEFT point.

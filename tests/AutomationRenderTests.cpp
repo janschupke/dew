@@ -35,7 +35,7 @@ TEST_CASE ("an automation sweep is audible as a rising envelope", "[automation][
     setCurve (automation, { { 0.0, 0.0 }, { 16.0, 1.0 }, { 64.0, 1.0 } }, &undo);
 
     auto track = project.getChildWithName (ids::PLAYLIST).getChild (0);
-    ProjectEdits::addAutomationClip (track, (int) automation[ids::id], 0, 4, &undo);
+    ProjectEdits::addAutomationClip (track, (int) automation[ids::id], 0 * 16, 4 * 16, &undo);
 
     RenderOptions options;
     options.mode = Transport::Mode::song;
@@ -72,7 +72,7 @@ TEST_CASE ("an automation clip only acts where it is placed", "[automation][rend
     auto track = project.getChildWithName (ids::PLAYLIST).getChild (0);
 
     // Placed on bars 3 and 4 only, so bars 1 and 2 keep the project's own gain.
-    ProjectEdits::addAutomationClip (track, (int) automation[ids::id], 2, 2, &undo);
+    ProjectEdits::addAutomationClip (track, (int) automation[ids::id], 2 * 16, 2 * 16, &undo);
     ProjectEdits::growSongToFitClips (project, &undo);
 
     RenderOptions options;
@@ -121,7 +121,7 @@ TEST_CASE ("automating an effect parameter changes what the effect does", "[auto
     setCurve (automation, { { 0.0, 1.0 }, { 16.0, 0.0 } }, &undo);
 
     auto track = project.getChildWithName (ids::PLAYLIST).getChild (0);
-    ProjectEdits::addAutomationClip (track, (int) automation[ids::id], 0, 4, &undo);
+    ProjectEdits::addAutomationClip (track, (int) automation[ids::id], 0 * 16, 4 * 16, &undo);
 
     RenderOptions options;
     options.mode = Transport::Mode::song;
@@ -179,7 +179,7 @@ TEST_CASE ("a mute curve silences a channel and lets it back in", "[automation][
     setCurve (automation, { { 0.0, 1.0 }, { 32.0, 0.0 } }, &undo);
 
     auto track = project.getChildWithName (ids::PLAYLIST).getChild (0);
-    ProjectEdits::addAutomationClip (track, (int) automation[ids::id], 0, 4, &undo);
+    ProjectEdits::addAutomationClip (track, (int) automation[ids::id], 0 * 16, 4 * 16, &undo);
 
     const auto with = render (project);
 
@@ -217,7 +217,8 @@ TEST_CASE ("a muted playlist track's automation does nothing", "[automation][ren
 
     auto playlist = project.getChildWithName (ids::PLAYLIST);
     auto automationTrack = playlist.getChild (1);
-    ProjectEdits::addAutomationClip (automationTrack, (int) automation[ids::id], 0, 4, &undo);
+    ProjectEdits::addAutomationClip (automationTrack, (int) automation[ids::id], 0 * 16, 4 * 16,
+                                     &undo);
 
     RenderOptions options;
     options.mode = Transport::Mode::song;

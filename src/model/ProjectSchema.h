@@ -221,8 +221,24 @@ struct NodeSpec
     The bump is for the other direction, as ever: a v18 build would report all
     four as not part of the schema and drop them on the next save, handing back
     a project whose routing had silently become parallel again.
+
+    v20 moved a clip from BARS to STEPS. `startBar` and `lengthBars` become
+    `startStep` and `lengthSteps`, multiplied by the file's own stepsPerBar -
+    which is why the migration has to read the metre before it converts
+    anything, and why it is a real migration rather than a rename.
+
+    A shape change with a purpose: a clip could only ever start on a bar line,
+    so a fill that begins on the last beat of a bar was not expressible in this
+    format at all. It also makes a clip metre-INVARIANT - setMeter's rescale of
+    every clip in the arrangement is gone with this, because a step is a step
+    whatever a bar is worth, which is exactly what that rescale existed to
+    emulate.
+
+    The bump is for the other direction as usual: a v19 build reads no
+    `startStep`, so every clip in the arrangement would take the default and
+    pile up at bar one.
 */
-inline constexpr int kFormatVersion = 19;
+inline constexpr int kFormatVersion = 20;
 
 /** How many effects one channel or mixer track may carry. A document limit
     rather than an engine one: a chain longer than this cannot be saved, so it

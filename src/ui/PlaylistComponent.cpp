@@ -63,6 +63,7 @@ PlaylistComponent::PlaylistComponent (ProjectDocument& d, AudioEngine& e, Editor
     headerHolder.addAndMakeVisible (addTrackButton);
 
     toolbar.onToolChanged = [this] { repaint(); };
+    toolbar.onSnapChanged = [this] { repaint(); };
     toolbar.onZoom = [this] (double factor)
     {
         // Zero means "fit the song", the same shape the piano roll's strip
@@ -78,39 +79,46 @@ PlaylistComponent::PlaylistComponent (ProjectDocument& d, AudioEngine& e, Editor
 
     setWantsKeyboardFocus (true);
 
-    // The ruler works in BARS here, so everything the gesture is handed is in
-    // bars and only the seek converts - one place, rather than a conversion in
-    // each of the three branches this used to have.
+    // The ruler works in STEPS here now, like the two pattern editors, so
+    // nothing this gesture is handed needs converting at all - which is one
+    // fewer place for the playlist and the transport to disagree about where
+    // the playhead is.
     rulerGesture.unitForX = [this] (int x)
     {
-        return juce::jlimit (0.0, (double) numBars(),
+        return juce::jlimit (0.0, (double) numSteps(),
                              timeline.stepForX ((float) (x - size::gutterTrack)));
     };
 
     rulerGesture.context = [this]
     {
-        const auto stepsPerBar = Meter::of (document.getState()).stepsPerBar();
-
         ruler::GestureContext ctx;
-        ctx.snapUnits = 1;
-        ctx.totalUnits = numBars();
-        ctx.playheadUnits = juce::jmax (0.0, engine.getPlayheadSteps() / (double) stepsPerBar);
+
+        // A BAR, still: a loop range and a render range are sections of an
+        // arrangement, and nobody selects three and a half bars to render.
+        ctx.snapUnits = stepsPerBar();
+        ctx.totalUnits = numSteps();
+        ctx.playheadUnits = juce::jmax (0.0, engine.getPlayheadSteps());
 
         return ctx;
     };
 
     // The marker as well as the playhead - see ChannelRackComponent's.
-    rulerGesture.onSeek = [this] (double bars)
+    rulerGesture.onSeek = [this] (double steps)
     {
-        const auto stepsPerBar = Meter::of (document.getState()).stepsPerBar();
-
-        engine.setStartMarkerSteps (bars * (double) stepsPerBar);
+        engine.setStartMarkerSteps (steps);
         repaint();
     };
 
-    rulerGesture.onRangeChanged = [this] (juce::Range<int> bars)
+    rulerGesture.onRangeChanged = [this] (juce::Range<int> steps)
     {
-        editorState.setSelectedBarRange (bars);
+        // Back into BARS, which is what a render range is and what the panel
+        // that consumes it shows. The gesture snapped to a bar to get here, so
+        // the division is exact.
+        const auto perBar = juce::jmax (1, stepsPerBar());
+
+        editorState.setSelectedBarRange (
+            { steps.getStart() / perBar, (steps.getEnd() + perBar - 1) / perBar });
+
         repaint();
     };
 
@@ -134,6 +142,7 @@ void PlaylistComponent::refresh()
 {
     document.getState().addListener (this);
     rebuildHeaders();
+    setToolbarGrid();
     updateScrollBar();
     repaint();
 }
@@ -148,6 +157,16 @@ juce::ValueTree PlaylistComponent::playlist() const
 int PlaylistComponent::numBars() const
 {
     return juce::jmax (4, (int) document.getState()[ids::barsInSong]);
+}
+
+int PlaylistComponent::stepsPerBar() const
+{
+    return juce::jmax (1, Meter::of (document.getState()).stepsPerBar());
+}
+
+int PlaylistComponent::numSteps() const
+{
+    return numBars() * stepsPerBar();
 }
 
 int PlaylistComponent::getNumTracks() const
@@ -296,7 +315,8 @@ void PlaylistComponent::activateCursor()
     // Opens what is there. A clip is created through the paint tool and deleted
     // through its own menu, so Return is the one thing left that a clip does
     // and that the keyboard could not reach: look inside it.
-    if (const auto clip = ProjectEdits::findClipAtBar (track, at.x); clip.isValid())
+    if (const auto clip = ProjectEdits::findClipAtStep (track, at.x * stepsPerBar());
+        clip.isValid())
         openPatternOf (clip);
 }
 
@@ -310,9 +330,10 @@ void PlaylistComponent::announceCursor()
 
     auto description = track[ids::name].toString() + ", bar " + juce::String (at.x + 1);
 
-    if (const auto clip = ProjectEdits::findClipAtBar (track, at.x); clip.isValid())
+    if (const auto clip = ProjectEdits::findClipAtStep (track, at.x * stepsPerBar());
+        clip.isValid())
         description += ", " + clipKindName (clip) + " clip of "
-                       + juce::String ((int) clip[ids::lengthBars]) + " bars";
+                       + juce::String ((int) clip[ids::lengthSteps]) + " steps";
     else
         description += ", empty";
 
@@ -327,7 +348,7 @@ void PlaylistComponent::mouseMove (const juce::MouseEvent& event)
 {
     const auto trackIndex = trackAtY (event.y);
     const auto track = trackAt (trackIndex);
-    const auto clip = track.isValid() ? ProjectEdits::findClipAtBar (track, barAtX (event.x))
+    const auto clip = track.isValid() ? ProjectEdits::findClipAtStep (track, stepAtX (event.x))
                                       : juce::ValueTree();
 
     // Driven by the SAME hit test the press uses. Two of them would let the
@@ -430,8 +451,7 @@ automationLane::Geometry PlaylistComponent::laneGeometry (const juce::ValueTree&
                                                           int trackIndex) const
 {
     return automationLane::geometryFor (boundsForClip (clip, trackIndex),
-                                        juce::jmax (1, (int) clip[ids::lengthBars]),
-                                        Meter::of (document.getState()).stepsPerBar());
+                                        juce::jmax (1, (int) clip[ids::lengthSteps]));
 }
 
 juce::Point<float> PlaylistComponent::pointPosition (const juce::ValueTree& clip, int trackIndex,
@@ -483,8 +503,10 @@ juce::ValueTree PlaylistComponent::createAutomationClip (const AutomationTarget&
     // The placing is ProjectEdits' now: every control in the application can ask
     // for a curve, and the arrangement is not on screen for most of them. What
     // is left here is the view catching up with what changed.
-    auto clip = ProjectEdits::addAutomationWithClip (document.getState(), target, startBar,
-                                                     lengthBars, &undo);
+    const auto perBar = stepsPerBar();
+
+    auto clip = ProjectEdits::addAutomationWithClip (document.getState(), target, startBar * perBar,
+                                                     lengthBars * perBar, &undo);
 
     updateScrollBar();
     repaint();
@@ -527,8 +549,15 @@ void PlaylistComponent::timerCallback()
 void PlaylistComponent::valueTreePropertyChanged (juce::ValueTree& tree,
                                                   const juce::Identifier& property)
 {
-    if (property == ids::barsInSong)
+    if (property == ids::barsInSong || property == ids::stepsPerBeat
+        || property == ids::beatsPerBar)
         updateScrollBar();
+
+    // Any of the three: the unit names the divisions, the resolution decides
+    // which of them fall on whole steps, and the beats per bar decide what
+    // "Bar" is worth.
+    if (property == ids::beatUnit || property == ids::stepsPerBeat || property == ids::beatsPerBar)
+        setToolbarGrid();
 
     if (tree.hasType (ids::PLAYLIST_TRACK))
         for (auto* header : headers)

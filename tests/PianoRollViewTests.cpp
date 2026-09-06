@@ -381,7 +381,7 @@ TEST_CASE ("the roll follows a song into the pattern it is showing", "[ui][piano
     REQUIRE (track.isValid());
 
     // The pattern the roll is showing, placed at bar 4 and two bars long.
-    ProjectEdits::addClip (track, (int) h.pattern()[ids::id], 4, 2, nullptr);
+    ProjectEdits::addClip (track, (int) h.pattern()[ids::id], 4 * 16, 2 * 16, nullptr);
 
     h.engine.setMode (Transport::Mode::song);
 

@@ -30,9 +30,9 @@ TEST_CASE ("the three clip kinds are exhaustive and mutually exclusive", "[schem
     auto track = firstPlaylistTrack (project);
     REQUIRE (track.isValid());
 
-    const auto midi = ProjectEdits::addClip (track, 1, 0, 1, nullptr);
-    const auto automation = ProjectEdits::addAutomationClip (track, 1, 1, 1, nullptr);
-    const auto audio = ProjectEdits::addAudioClip (track, 1, 2, 1, nullptr);
+    const auto midi = ProjectEdits::addClip (track, 1, 0 * 16, 1 * 16, nullptr);
+    const auto automation = ProjectEdits::addAutomationClip (track, 1, 1 * 16, 1 * 16, nullptr);
+    const auto audio = ProjectEdits::addAudioClip (track, 1, 2 * 16, 1 * 16, nullptr);
 
     REQUIRE (ProjectEdits::isMidiClip (midi));
     REQUIRE (! ProjectEdits::isAutomationClip (midi));
@@ -78,7 +78,7 @@ TEST_CASE ("an audio channel and its clip round-trip through JSON", "[schema][au
     sample.setProperty (ids::loop, true, nullptr);
 
     auto track = firstPlaylistTrack (project);
-    ProjectEdits::addAudioClip (track, (int) channel[ids::id], 4, 2, nullptr);
+    ProjectEdits::addAudioClip (track, (int) channel[ids::id], 4 * 16, 2 * 16, nullptr);
 
     const auto json = ProjectSerializer::toJsonString (project);
     const auto loaded = ProjectSerializer::fromJsonString (json);
@@ -100,7 +100,7 @@ TEST_CASE ("an audio channel and its clip round-trip through JSON", "[schema][au
     REQUIRE ((bool) reloadedSample[ids::loop]);
 
     auto reloadedTrack = firstPlaylistTrack (loaded.tree);
-    auto reloadedClip = ProjectEdits::findClipAtBar (reloadedTrack, 4);
+    auto reloadedClip = ProjectEdits::findClipAtStep (reloadedTrack, 4 * 16);
 
     REQUIRE (ProjectEdits::isAudioClip (reloadedClip));
     REQUIRE ((int) reloadedClip[ids::channelId] == (int) channel[ids::id]);
