@@ -16,6 +16,7 @@
 #include "ui/design/Tokens.h"
 
 #include "FixtureProject.h"
+#include "PaintProbe.h"
 #include "RollHarness.h"
 
 using namespace dew;
@@ -412,4 +413,69 @@ TEST_CASE ("the roll follows a song into the pattern it is showing", "[ui][piano
     h.engine.setPlayheadSteps (8.0 * stepsPerBar);
 
     CHECK (h.roll.playheadInPattern().has_value());
+}
+
+TEST_CASE ("the octave rule is drawn under its C, not above it", "[pianoroll][grid]")
+{
+    /*  The row painter walks rows top to bottom while PITCH decreases, so the
+        line it draws at a row's top is the boundary between `pitch + 1` above
+        and `pitch` below. Asking `pitch % 12 == 0` there - which is what this
+        used to do - selects the boundary between C# and C, and puts the strong
+        octave rule ABOVE every C. An octave starts at C, so the rule belongs
+        under it.
+
+        Measured on the two candidate pixel rows rather than on a colour,
+        because the bug is entirely about WHICH of two lines got the strong
+        one and both are drawn either way.
+    */
+    const juce::ScopedJuceInitialiser_GUI juceInit;
+
+    RollHarness h { 1200, 700 };
+
+    constexpr int middleC = 60;
+    h.roll.centreOnPitch (middleC);
+
+    // Where C4's row is, asked of the roll rather than recomputed - the same
+    // reason pointFor does it this way.
+    juce::UndoManager scratch;
+    auto probe = ProjectEdits::addNote (h.pattern(), 1, 0, 1, middleC, 1.0f, &scratch);
+    const auto row = h.roll.getBoundsForNote (probe);
+    ProjectEdits::removeNote (h.pattern(), probe, &scratch);
+
+    const auto aboveC = (int) row.getY();
+    const auto belowC = (int) row.getBottom();
+
+    // The rows either side really are the ones this is about.
+    REQUIRE (h.roll.getPitchAtY (aboveC + 2) == middleC);
+    REQUIRE (h.roll.getPitchAtY (belowC + 2) == middleC - 1);
+
+    // Nothing on top of the grid: a note painted across either candidate row
+    // would be measured as a line.
+    for (auto note = h.pattern().getNumChildren(); --note >= 0;)
+        if (const auto child = h.pattern().getChild (note); child.hasType (ids::NOTE))
+            ProjectEdits::removeNote (h.pattern(), child, &scratch);
+
+    h.roll.refresh();
+
+    const auto image = render (h.roll);
+    const auto notes = h.roll.getNoteArea();
+
+    // Started clear of the left edge, where the playhead has its own column.
+    const auto rowMean = [&image, notes] (int y)
+    {
+        double total = 0.0;
+        int counted = 0;
+
+        for (int x = notes.getX() + 20; x < notes.getRight() - 2; ++x, ++counted)
+            total += image.getPixelAt (x, y).getBrightness();
+
+        return total / juce::jmax (1, counted);
+    };
+
+    const auto above = rowMean (aboveC);
+    const auto below = rowMean (belowC);
+
+    INFO ("row mean above C4 (y " << aboveC << "): " << above << ", below C4 (y " << belowC
+                                  << "): " << below);
+    CHECK (below > above);
 }

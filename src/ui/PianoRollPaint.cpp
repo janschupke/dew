@@ -170,8 +170,16 @@ void PianoRollComponent::paintNotes (juce::Graphics& g)
             g.fillRect ((float) area.getX(), y, (float) area.getWidth(), (float) rows.height);
         }
 
-        g.setColour (pitch % 12 == 0 ? colour::dividerStrong
-                                     : colour::divider.withAlpha (emphasis::subdued));
+        // `y` is the TOP of this row, and pitch decreases downwards - so the
+        // line drawn here is the boundary between `pitch + 1` above it and
+        // `pitch` below it. An octave rule belongs UNDER its C, which makes
+        // the row above it the one to ask about: this used to test `pitch`
+        // and so drew the strong line above every C instead of below it.
+        const auto rowAbove = pitch + 1;
+
+        g.setColour (rowAbove % semitonesPerOctave == 0
+                         ? colour::dividerStrong
+                         : colour::divider.withAlpha (emphasis::subdued));
         g.drawHorizontalLine ((int) y, (float) area.getX(), (float) area.getRight());
     }
 
