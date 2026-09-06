@@ -70,6 +70,7 @@ add_executable(dew_tests
   FmEngineTests.cpp
   FmUiTests.cpp
   OscillatorEngineTests.cpp
+  OscillatorLfoLiveTests.cpp
   OscillatorLfoTests.cpp
   OscillatorUiTests.cpp
   WavetableTests.cpp

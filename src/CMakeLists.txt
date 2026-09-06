@@ -384,6 +384,7 @@ add_library(dew_engine STATIC
   engine/Wavetable.cpp
   engine/SynthVoice.cpp
   engine/SynthVoiceFm.cpp
+  engine/SynthVoiceLive.cpp
   engine/SynthChannel.cpp
   engine/SamplePlayer.cpp
     engine/SoundFontChannel.cpp

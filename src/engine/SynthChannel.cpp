@@ -78,10 +78,11 @@ void SynthChannel::renderAdd (float* mono, int numSamples, float bendSemitones, 
         {
             voice.setWavetablePosition (*live);
 
-            // The other setting a sounding note follows. Both are no-ops when
-            // nothing is automated - the bank still holds what note-on read, so
-            // each value is assigned its own self back.
+            // The other two settings a sounding note follows. All three are
+            // no-ops when nothing is automated - the bank still holds what
+            // note-on read, so each value is assigned its own self back.
             voice.setFmMatrix (*live);
+            voice.setLfo (*live);
         }
 
         voice.renderAdd (mono, numSamples, panLeft, panRight);

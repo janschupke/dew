@@ -64,11 +64,12 @@ public:
     /** Pushes the CURRENT wavetable positions from a channel's bank into the
         voices already sounding.
 
-        The one oscillator setting that is not latched at note-on, and
-        deliberately so: a wavetable whose position can only change between
+        The first of three oscillator settings that are not latched at note-on,
+        and deliberately so: a wavetable whose position can only change between
         notes is a wavetable that never moves, which is the whole reason to have
-        one. Everything else still latches - turning the detune knob changes the
-        next note, not this one.
+        one. The other two are the FM matrix and the LFO, below. Everything else
+        still latches - turning the detune knob changes the next note, not this
+        one.
 
         Costs nothing when nothing is automated: the bank still holds what
         note-on read, so each slot is assigned its own value back and the render
@@ -79,10 +80,10 @@ public:
     /** Pushes the CURRENT FM matrix from a channel's bank into the voices
         already sounding.
 
-        The second setting that is not latched at note-on, and for the reason
-        the wavetable position is not: an FM index that can only change between
-        notes is an FM index that never moves, and a swept index is most of what
-        anybody wants a matrix for.
+        The second of the three, and for the reason the wavetable position is
+        the first: an FM index that can only change between notes is an FM index
+        that never moves, and a swept index is most of what anybody wants a
+        matrix for.
 
         Does nothing to a voice that started with an empty matrix. Such a voice
         is running the plain render path, which has no phase offsets and no
@@ -93,6 +94,36 @@ public:
         note-on read, so each cell is assigned its own value back.
     */
     void setFmMatrix (const OscBankSnapshot&) noexcept;
+
+    /** Pushes the CURRENT LFO settings from a channel's bank into the voices
+        already sounding.
+
+        The third setting that is not latched at note-on. An LFO whose rate and
+        depth can only change between notes is an LFO nobody can dial in: every
+        adjustment is inaudible until the next note starts, which reads as the
+        control doing nothing at all.
+
+        The PHASE is not touched. Leaving it is what makes a rate change a sweep
+        rather than a retrigger, and a retrigger part-way through a note is a
+        click - which is also why startLfo zeroes it and this does not.
+
+        Does nothing to an oscillator that started with its LFO inactive. Such a
+        slot is in the plain half of the note-on partition, has no OscLfo paired
+        with it, and cannot join the other half without re-ordering a float sum
+        that the pinned renders depend on - so an LFO switched ON reaches the
+        NEXT note, exactly as a matrix switched on does. Depth, rate and wave
+        reach the one sounding.
+
+        May WIDEN `panned` but never narrows it: raising pan depth mid-note has
+        to reach the pan pair, and dropping a sounding voice back onto the mono
+        path would be a click. The pair is decided one block ahead of this, so a
+        depth raised from zero starts sweeping on the block after the one that
+        raised it.
+
+        Costs nothing when nothing is automated: the bank still holds what
+        note-on read, so each field is assigned its own value back.
+    */
+    void setLfo (const OscBankSnapshot&) noexcept;
 
     /** Bends this voice, in semitones, and applies vibrato of `modulation`
         depth (0..1). Called once per block rather than per sample: at a 256
@@ -152,8 +183,10 @@ public:
 private:
     /** One band-limited oscillator's state.
 
-        Latched at note-on like everything else about a voice: turning a knob
-        changes the next note, not the one already sounding.
+        Latched at note-on like almost everything else about a voice: turning a
+        knob changes the next note, not the one already sounding. The three
+        exceptions are named above - the wavetable position, the FM matrix and
+        the LFO.
     */
     struct Oscillator
     {

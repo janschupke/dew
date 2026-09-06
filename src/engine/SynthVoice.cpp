@@ -351,41 +351,6 @@ void SynthVoice::setPitchModulation (float bendSemitones, float modulation, int 
     modulated = true;
 }
 
-void SynthVoice::setWavetablePosition (const OscBankSnapshot& bank) noexcept
-{
-    if (! active || totalWavetables() == 0)
-        return;
-
-    for (int w = 0; w < totalWavetables(); ++w)
-    {
-        auto& osc = wavetables[(size_t) w];
-
-        if (osc.slot >= 0 && osc.slot < bank.numSlots)
-            osc.basePosition = juce::jlimit (0.0f, 1.0f, bank.slots[(size_t) osc.slot].position);
-    }
-}
-
-void SynthVoice::setFmMatrix (const OscBankSnapshot& bank) noexcept
-{
-    // Guarded on fmActive, not just on active: a voice that latched an empty
-    // matrix is running the plain path, which has no phase offsets to apply and
-    // no output column to honour. Converting it half way through a note would
-    // be a click. A matrix switched on reaches the next note - see the header.
-    if (! active || ! fmActive)
-        return;
-
-    for (int src = 0; src < bank.numSlots; ++src)
-    {
-        const auto& row = bank.slots[(size_t) src];
-
-        for (int dst = 0; dst < kMaxOscillators; ++dst)
-            fmAmount[(size_t) src][(size_t) dst] = juce::jlimit (0.0f, 1.0f,
-                                                                 row.fmTo[(size_t) dst]);
-
-        fmOut[(size_t) src] = juce::jlimit (0.0f, 1.0f, row.fmOut);
-    }
-}
-
 void SynthVoice::WavetableOscillator::updateMip() noexcept
 {
     // The most demanding unison copy decides for all of them: the widest

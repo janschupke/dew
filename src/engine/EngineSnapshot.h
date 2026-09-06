@@ -367,9 +367,14 @@ enum class AutomationParam
     oscOctave,
     oscDetuneCents,
 
-    /** The slot's LFO: how fast it runs and how far it reaches. Latched at
-        note-on for the same reason the two above are, so a curve moves the next
-        note rather than the one sounding.
+    /** The slot's LFO: how fast it runs and how far it reaches. Unlike the two
+        above, these reach a note ALREADY SOUNDING - see SynthVoice::setLfo. An
+        LFO whose rate and depth could only change between notes is one nobody
+        can dial in, because every adjustment is inaudible until the next note.
+
+        Switching an LFO ON is still a next-note change: the slot is in the
+        plain half of the note-on partition and cannot join the other half
+        without re-ordering a float sum the pinned renders depend on.
 
         A curve over `lfoRate` is applied only while the slot is NOT synced -
         see AudioEngineAutomation. Ignoring it is the honest answer; the
@@ -380,10 +385,10 @@ enum class AutomationParam
     lfoToVolume,
     lfoToPan,
 
-    /** The slot's row of the FM matrix. Unlike everything else on a slot but
-        the wavetable position, these reach a note ALREADY SOUNDING - see
-        SynthVoice::setFmMatrix. An FM index that could only change between
-        notes is an FM index that never moves. */
+    /** The slot's row of the FM matrix. Like the wavetable position and the
+        LFO, and unlike everything else on a slot, these reach a note ALREADY
+        SOUNDING - see SynthVoice::setFmMatrix. An FM index that could only
+        change between notes is an FM index that never moves. */
     fmTo1,
     fmTo2,
     fmTo3,
