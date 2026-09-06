@@ -118,6 +118,43 @@ void PlaylistComponent::zoomTracksBy (double factor)
     setTrackHeight (rows.zoomedHeight (factor));
 }
 
+void PlaylistComponent::zoomStep (double factor)
+{
+    // Zero means "fit the song", the same shape the piano roll's strip reports.
+    // Framing is not a step and does not ease: it is one answer computed from
+    // the material, and easing to it would crawl the whole way from wherever
+    // the view happened to be.
+    if (juce::exactlyEqual (factor, 0.0))
+    {
+        zoomToFit();
+        return;
+    }
+
+    // Held for the length of the animation rather than re-derived per frame -
+    // the step under the anchor is what each frame solves for, so a moving
+    // anchor walks the view.
+    zoomAnchorX = contentWidth() * 0.5f;
+
+    // Clamped here as well as in TimelineView: aiming past a stop would spend
+    // the rest of the animation's duration arriving at a value the view
+    // reached on the first frame.
+    zoomMotion.animateTo (juce::jlimit (TimelineView::minPixelsPerStep,
+                                        TimelineView::maxPixelsPerStep,
+                                        timeline.pixelsPerStep * factor));
+}
+
+void PlaylistComponent::heightStep (double factor)
+{
+    if (factor <= 0.0)
+    {
+        fitTracksToWindow();
+        return;
+    }
+
+    heightMotion.animateTo (juce::jlimit ((double) rows.minHeight, (double) rows.maxHeight,
+                                          rows.zoomedHeight (factor)));
+}
+
 void PlaylistComponent::fitTracksToWindow()
 {
     // The add-track row counts: fitting to the tracks alone would push the
@@ -250,10 +287,21 @@ void PlaylistComponent::zoomToFit()
     repaint();
 }
 
+void PlaylistComponent::applyZoom (double pixelsPerStep)
+{
+    if (juce::exactlyEqual (pixelsPerStep, timeline.pixelsPerStep))
+        return;
+
+    // Expressed as the factor that gets there, so the anchor arithmetic stays
+    // TimelineView's and this cannot drift from what a wheel does.
+    zoomBy (pixelsPerStep / timeline.pixelsPerStep, zoomAnchorX);
+}
+
 void PlaylistComponent::zoomBy (double factor, float anchorX)
 {
     viewIsUsers = true;
     timeline.zoomAround (factor, anchorX);
+
     updateScrollBar();
     repaint();
 }

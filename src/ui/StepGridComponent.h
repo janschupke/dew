@@ -5,6 +5,7 @@
 #include "engine/AudioEngine.h"
 #include "app/ProjectDocument.h"
 #include "ui/CanvasCursor.h"
+#include "ui/EasedZoom.h"
 #include "ui/EditorState.h"
 #include "ui/TimelinePaint.h"
 #include "ui/TimelineView.h"
@@ -60,6 +61,11 @@ public:
         @param anchorX  the step under here stays put
     */
     void zoomBy (double factor, float anchorX);
+
+    /** One press of a zoom button, or of its key: the DISCRETE path, and the
+        only one that eases. The wheel and the pinch keep going through zoomBy,
+        which writes straight through - see ui/EasedZoom.h. */
+    void zoomStep (double factor);
 
     /** Frames the whole pattern, and counts as taking the view. */
     void zoomToFit();
@@ -159,6 +165,13 @@ private:
     int lastPaintedRow = -1;
 
     TimelineView timeline;
+
+    /** The zoom buttons and keys, eased. */
+    EasedZoom zoomMotion { *this, [this] { return timeline.pixelsPerStep; },
+                           [this] (double px) { applyZoom (px); } };
+    float zoomAnchorX = 0.0f;
+
+    void applyZoom (double pixelsPerStep);
 
     /** Play and stop, eased. The most frequent state change in the
         application, and a hard cut in all four views before this. */

@@ -8,6 +8,7 @@
 #include "app/ProjectDocument.h"
 #include "ui/ConfirmPanel.h"
 #include "ui/CanvasCursor.h"
+#include "ui/EasedZoom.h"
 #include "ui/EditorState.h"
 #include "model/AutomationTargets.h"
 #include "ui/PlaylistToolbar.h"
@@ -210,6 +211,15 @@ public:
     void zoomTracksBy (double factor);
     void fitTracksToWindow();
 
+    /** One press of a zoom or height button, or of the key that does the same.
+
+        The DISCRETE paths, and the only ones that ease - a wheel, a pinch and
+        an edge drag go through zoomBy and setTrackHeight, which write straight
+        through. ui/EasedZoom.h says why the two differ.
+    */
+    void zoomStep (double factor);
+    void heightStep (double factor);
+
     // --- the resize grip -----------------------------------------------------
     /** A drag on a track header's bottom edge, which sets the height of EVERY
         lane - there is one height, and the edge you grabbed is just the one
@@ -382,6 +392,11 @@ private:
     */
     void updateScrollBar();
     void zoomBy (double factor, float anchorX);
+
+    /** Sets the zoom to an absolute pixels-per-step around the held anchor.
+        What the eased path applies on every frame; zoomBy is the immediate
+        one, and both end in the same place. */
+    void applyZoom (double pixelsPerStep);
     void rebuildHeaders();
     void openPatternOf (const juce::ValueTree& clip);
 
@@ -465,6 +480,19 @@ private:
     /** Play and stop, eased. The most frequent state change in the
         application, and a hard cut in all four views before this. */
     timelinePaint::PlayheadState playhead { *this };
+
+    /** The zoom buttons and the zoom keys, eased; the wheel, the pinch and the
+        header-edge drag still write straight through. See ui/EasedZoom.h for
+        why those two paths differ. */
+    EasedZoom zoomMotion { *this, [this] { return timeline.pixelsPerStep; },
+                           [this] (double px) { applyZoom (px); } };
+    EasedZoom heightMotion { *this, [this] { return (double) rows.height; },
+                             [this] (double px) { setTrackHeight (px); } };
+
+    /** Where the eased zoom is anchored, held for the length of the animation:
+        re-deriving it per frame would walk the view, since the step under the
+        anchor is what each frame is solving for. */
+    float zoomAnchorX = 0.0f;
 
     /** Scrub, span-select and clear. This timeline counts BARS, so the gesture
         works in bars here and in steps everywhere else - it never converts, so

@@ -89,13 +89,7 @@ ChannelRackComponent::ChannelRackComponent (ProjectDocument& d, AudioEngine& e, 
     ruler.setComponentID ("channelRackRuler");
     addAndMakeVisible (ruler);
 
-    zoomButtons.onZoom = [this] (double factor)
-    {
-        if (juce::exactlyEqual (factor, 0.0))
-            grid.zoomToFit();
-        else
-            grid.zoomBy (factor, (float) grid.getWidth() * 0.5f);
-    };
+    zoomButtons.onZoom = [this] (double factor) { grid.zoomStep (factor); };
 
     addAndMakeVisible (zoomButtons);
 

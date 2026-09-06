@@ -294,6 +294,58 @@ void PianoRollComponent::zoomToFit()
     repaint();
 }
 
+void PianoRollComponent::zoomAround (double factor, float anchorX)
+{
+    timeline.zoomAround (factor, anchorX);
+
+    updateScrollBars();
+    repaint();
+}
+
+void PianoRollComponent::applyZoom (double pixelsPerStep)
+{
+    if (juce::exactlyEqual (pixelsPerStep, timeline.pixelsPerStep))
+        return;
+
+    // As a factor, so the anchor arithmetic stays TimelineView's and this
+    // cannot drift from what a wheel does.
+    zoomAround (pixelsPerStep / timeline.pixelsPerStep, zoomAnchorX);
+}
+
+void PianoRollComponent::zoomStep (double factor)
+{
+    // Zero means "frame the pattern": one answer computed from the material
+    // rather than a step, so it arrives rather than eases.
+    if (juce::exactlyEqual (factor, 0.0))
+    {
+        zoomToFit();
+        return;
+    }
+
+    // Held for the animation rather than re-derived per frame - the step under
+    // the anchor is what each frame solves for, so a moving anchor walks the
+    // view out from under itself.
+    zoomAnchorX = contentWidth() * 0.5f;
+
+    // Clamped here too: aiming past a stop spends the rest of the duration
+    // arriving at a value the first frame already reached.
+    zoomMotion.animateTo (juce::jlimit (TimelineView::minPixelsPerStep,
+                                        TimelineView::maxPixelsPerStep,
+                                        timeline.pixelsPerStep * factor));
+}
+
+void PianoRollComponent::heightStep (double factor)
+{
+    if (factor <= 0.0)
+    {
+        fitRowsToWindow();
+        return;
+    }
+
+    heightMotion.animateTo (juce::jlimit ((double) rows.minHeight, (double) rows.maxHeight,
+                                          rows.zoomedHeight (factor)));
+}
+
 void PianoRollComponent::setRowHeight (double wanted)
 {
     // The anchor, the clamp and the "it already fits" case are RowView's, and
@@ -368,8 +420,8 @@ void PianoRollComponent::mouseWheelMove (const juce::MouseEvent& event,
             break;
 
         case gesture::WheelIntent::zoomTimeline:
-            timeline.zoomAround (std::pow (2.0, delta.y * gesture::wheelZoomExponent),
-                                 (float) (event.x - size::gutterKeyboard));
+            zoomAround (std::pow (2.0, delta.y * gesture::wheelZoomExponent),
+                        (float) (event.x - size::gutterKeyboard));
             break;
 
         case gesture::WheelIntent::scrollTimeline:
@@ -407,7 +459,7 @@ void PianoRollComponent::mouseMagnify (const juce::MouseEvent& event, float scal
         return;
     }
 
-    timeline.zoomAround ((double) scaleFactor, (float) (event.x - size::gutterKeyboard));
+    zoomAround ((double) scaleFactor, (float) (event.x - size::gutterKeyboard));
     updateScrollBars();
     repaint();
 }

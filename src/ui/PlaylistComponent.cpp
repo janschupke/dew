@@ -64,17 +64,8 @@ PlaylistComponent::PlaylistComponent (ProjectDocument& d, AudioEngine& e, Editor
 
     toolbar.onToolChanged = [this] { repaint(); };
     toolbar.onSnapChanged = [this] { repaint(); };
-    toolbar.onZoom = [this] (double factor)
-    {
-        // Zero means "fit the song", the same shape the piano roll's strip
-        // reports so the two mean one thing.
-        if (juce::exactlyEqual (factor, 0.0))
-            zoomToFit();
-        else
-            zoomBy (factor, contentWidth() * 0.5f);
-    };
-
-    toolbar.onTrackHeight = [this] (double factor) { zoomTracksBy (factor); };
+    toolbar.onZoom = [this] (double factor) { zoomStep (factor); };
+    toolbar.onTrackHeight = [this] (double factor) { heightStep (factor); };
     addAndMakeVisible (toolbar);
 
     setWantsKeyboardFocus (true);
@@ -201,13 +192,9 @@ bool PlaylistComponent::keyPressed (const juce::KeyPress& key)
     // anyone remembered to add them twice.
     switch (hotkeys::viewCommandFor (key))
     {
-        case hotkeys::ViewCommand::zoomIn:
-            zoomBy (ZoomButtons::zoomFactor, contentWidth() * 0.5f);
-            return true;
+        case hotkeys::ViewCommand::zoomIn: zoomStep (ZoomButtons::zoomFactor); return true;
 
-        case hotkeys::ViewCommand::zoomOut:
-            zoomBy (1.0 / ZoomButtons::zoomFactor, contentWidth() * 0.5f);
-            return true;
+        case hotkeys::ViewCommand::zoomOut: zoomStep (1.0 / ZoomButtons::zoomFactor); return true;
 
         case hotkeys::ViewCommand::zoomToFit: zoomToFit(); return true;
 
@@ -228,11 +215,11 @@ bool PlaylistComponent::keyPressed (const juce::KeyPress& key)
         // The other axis: here a row is a track. The same three keys the piano
         // roll uses for a pitch row, and the toolbar's own height buttons.
         case hotkeys::ViewCommand::sizeBigger:
-            zoomTracksBy (VerticalZoomButtons::heightFactor);
+            heightStep (VerticalZoomButtons::heightFactor);
             return true;
 
         case hotkeys::ViewCommand::sizeSmaller:
-            zoomTracksBy (1.0 / VerticalZoomButtons::heightFactor);
+            heightStep (1.0 / VerticalZoomButtons::heightFactor);
             return true;
 
         case hotkeys::ViewCommand::sizeDefault:

@@ -67,23 +67,12 @@ PianoRollComponent::PianoRollComponent (ProjectDocument& d, AudioEngine& e, Edit
     toolbar.onChannelChanged = [this] (int channelId)
     { editorState.setSelectedChannelId (channelId); };
 
-    toolbar.onRowHeight = [this] (double factor) { zoomRowsBy (factor); };
+    toolbar.onRowHeight = [this] (double factor) { heightStep (factor); };
 
-    toolbar.onZoom = [this] (double factor)
-    {
-        // Zero means "frame the pattern". It used to be reachable only by
-        // double-clicking the piano keys, where a double-click already means
-        // auditioning the same note twice.
-        if (juce::exactlyEqual (factor, 0.0))
-        {
-            zoomToFit();
-            return;
-        }
-
-        timeline.zoomAround (factor, contentWidth() * 0.5f);
-        updateScrollBars();
-        repaint();
-    };
+    // Zero means "frame the pattern". It used to be reachable only by
+    // double-clicking the piano keys, where a double-click already means
+    // auditioning the same note twice.
+    toolbar.onZoom = [this] (double factor) { zoomStep (factor); };
 
     addAndMakeVisible (toolbar);
 
@@ -351,12 +340,8 @@ bool PianoRollComponent::keyPressed (const juce::KeyPress& key)
 
         case hotkeys::ViewCommand::zoomIn:
         case hotkeys::ViewCommand::zoomOut:
-            timeline.zoomAround (command == hotkeys::ViewCommand::zoomIn
-                                     ? ZoomButtons::zoomFactor
-                                     : 1.0 / ZoomButtons::zoomFactor,
-                                 contentWidth() * 0.5f);
-            updateScrollBars();
-            repaint();
+            zoomStep (command == hotkeys::ViewCommand::zoomIn ? ZoomButtons::zoomFactor
+                                                              : 1.0 / ZoomButtons::zoomFactor);
             return true;
 
         case hotkeys::ViewCommand::zoomToFit: zoomToFit(); return true;
@@ -368,10 +353,10 @@ bool PianoRollComponent::keyPressed (const juce::KeyPress& key)
         case hotkeys::ViewCommand::eraseTool: return toolbar.applyToolCommand (command);
 
         // The other axis: here a row is a semitone.
-        case hotkeys::ViewCommand::sizeBigger: zoomRowsBy (ZoomButtons::zoomFactor); return true;
+        case hotkeys::ViewCommand::sizeBigger: heightStep (ZoomButtons::zoomFactor); return true;
 
         case hotkeys::ViewCommand::sizeSmaller:
-            zoomRowsBy (1.0 / ZoomButtons::zoomFactor);
+            heightStep (1.0 / ZoomButtons::zoomFactor);
             return true;
 
         case hotkeys::ViewCommand::sizeDefault: setRowHeight (size::pianoRowDefault); return true;

@@ -8,6 +8,7 @@
 #include "model/NoteTools.h"
 #include "app/ProjectDocument.h"
 #include "ui/CanvasCursor.h"
+#include "ui/EasedZoom.h"
 #include "ui/EditorState.h"
 #include "ui/PianoRollToolbar.h"
 #include "ui/TimelineRuler.h"
@@ -210,6 +211,17 @@ public:
         wheel notch asks for a fraction of a pixel and the fraction has to reach
         the next event. Every other caller hands it a whole one. */
     void setRowHeight (double);
+
+    /** Writes the zoom and keeps the eased target in step - every immediate
+        path goes through here, so a wheel cannot leave a later button press
+        animating away from a zoom the view is no longer at. */
+    void zoomAround (double factor, float anchorX);
+    void applyZoom (double pixelsPerStep);
+
+    /** One press of a zoom or row-height button, or of its key. The DISCRETE
+        paths, and the only ones that ease. */
+    void zoomStep (double factor);
+    void heightStep (double factor);
 
     /** Multiplies the row height, or fits every pitch that has a note in it
         when `factor` is 0 - the shape ZoomButtons reports. */
@@ -523,6 +535,16 @@ private:
     */
     RowView rows { tokens::size::pianoRowDefault, 0.0, tokens::size::pianoRowMin,
                    tokens::size::pianoRowMax };
+
+    /** The zoom and row-height buttons, and the keys that do the same, eased;
+        the wheel and the pinch still write straight through. See
+        ui/EasedZoom.h for why the two paths differ. */
+    EasedZoom zoomMotion { *this, [this] { return timeline.pixelsPerStep; },
+                           [this] (double px) { applyZoom (px); } };
+    EasedZoom heightMotion { *this, [this] { return (double) rows.height; },
+                             [this] (double px) { setRowHeight (px); } };
+
+    float zoomAnchorX = 0.0f;
 
     /** See getVelocityHeight. Was a static constexpr 62, which is why the lane
         could not be resized while its cursor said it could. */

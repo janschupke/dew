@@ -10,6 +10,9 @@
 #include "ui/design/Tokens.h"
 #include "ui/primitives/DewButtons.h"
 #include "ui/primitives/DewKnob.h"
+#include "ui/ZoomButtons.h"
+
+#include "PlaylistHarness.h"
 
 using namespace dew;
 using namespace dew::tokens;
@@ -441,4 +444,70 @@ TEST_CASE ("the instrument panel folds rather than vanishing", "[motion][panel]"
     main.setPanelCollapsedForTesting (false);
     Animator::shared().advance (motion::panelMs * 2);
     CHECK (main.getInstrumentPanelWidthForTesting() == openWidth);
+}
+
+TEST_CASE ("a zoom button eases where a wheel cuts", "[motion][zoom]")
+{
+    /*  The two paths that reach one value, and the reason EasedZoom exists.
+        A wheel and a pinch are continuous - the hand is already moving the
+        value, and easing puts the view behind the pointer - while a button is
+        one discrete jump of 1.5x with nothing on screen saying where the view
+        went. Every zoom in dew cut, while the instrument panel folded beside
+        them, and it is that mismatch that reads as the bug.
+    */
+    const juce::ScopedJuceInitialiser_GUI juceInit;
+    ScopedAnimation animating;
+
+    testing::PlaylistHarness h;
+
+    const auto zoomNow = [&h] { return h.playlist.getTimeline().pixelsPerStep; };
+    const auto before = zoomNow();
+
+    h.playlist.getToolbar().onZoom (ZoomButtons::zoomFactor);
+
+    const auto target = before * ZoomButtons::zoomFactor;
+
+    // Not there yet, which is the whole assertion: before this the value was
+    // already at its destination by the time the click returned.
+    CHECK (zoomNow() < target);
+
+    auto sawMiddle = false;
+    auto previous = zoomNow();
+
+    for (int step = 0; step < 10; ++step)
+    {
+        Animator::shared().advance (motion::quickMs / 10);
+
+        const auto now = zoomNow();
+        CHECK (now >= previous);
+
+        if (now > before && now < target)
+            sawMiddle = true;
+
+        previous = now;
+    }
+
+    Animator::shared().advance (motion::quickMs);
+
+    INFO ("from " << before << " to " << zoomNow() << ", aiming at " << target);
+    CHECK (sawMiddle);
+    CHECK (zoomNow() == Approx (target));
+
+    /*  The wheel, on the same view, arrives immediately. `isReversed` and the
+        deltas go through gesture::deltaOf, which is why this drives the real
+        event rather than calling zoomBy.
+    */
+    juce::MouseWheelDetails wheel {};
+    wheel.deltaY = 0.2f;
+    wheel.isSmooth = true;
+
+    const auto beforeWheel = zoomNow();
+
+    h.playlist.mouseWheelMove (
+        testing::mouseEventAt (h.playlist, { 400.0f, 200.0f }, juce::ModifierKeys::commandModifier),
+        wheel);
+
+    INFO ("wheel took the zoom from " << beforeWheel << " to " << zoomNow());
+    CHECK (zoomNow() != Approx (beforeWheel));
+    CHECK_FALSE (Animator::shared().isAnimating());
 }

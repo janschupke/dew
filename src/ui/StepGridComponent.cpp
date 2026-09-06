@@ -80,9 +80,11 @@ void StepGridComponent::updateZoom()
     // pattern-length change, so a zoom you chose was thrown away by the next
     // thing that happened. The playlist already worked this way.
     if (! viewIsUsers)
+    {
         timeline.pixelsPerStep = juce::jlimit (TimelineView::minPixelsPerStep,
                                                TimelineView::maxPixelsPerStep,
                                                (double) width / (double) steps);
+    }
 
     const auto scrollable = isScrollable();
     horizontalScroll.setVisible (scrollable);
@@ -156,8 +158,37 @@ void StepGridComponent::zoomBy (double factor, float anchorX)
     // than re-fitting itself on the next layout.
     viewIsUsers = true;
     timeline.zoomAround (factor, anchorX);
+
     updateZoom();
     repaint();
+}
+
+void StepGridComponent::applyZoom (double pixelsPerStep)
+{
+    if (juce::exactlyEqual (pixelsPerStep, timeline.pixelsPerStep))
+        return;
+
+    // As a factor, so the anchor arithmetic stays TimelineView's.
+    zoomBy (pixelsPerStep / timeline.pixelsPerStep, zoomAnchorX);
+}
+
+void StepGridComponent::zoomStep (double factor)
+{
+    // Framing is one answer computed from the material rather than a step, so
+    // it arrives rather than eases.
+    if (juce::exactlyEqual (factor, 0.0))
+    {
+        zoomToFit();
+        return;
+    }
+
+    // Held for the animation: the step under the anchor is what each frame
+    // solves for, so a moving anchor walks the view.
+    zoomAnchorX = (float) getWidth() * 0.5f;
+
+    zoomMotion.animateTo (juce::jlimit (TimelineView::minPixelsPerStep,
+                                        TimelineView::maxPixelsPerStep,
+                                        timeline.pixelsPerStep * factor));
 }
 
 void StepGridComponent::zoomToFit()
@@ -243,13 +274,9 @@ bool StepGridComponent::keyPressed (const juce::KeyPress& key)
 {
     switch (hotkeys::viewCommandFor (key))
     {
-        case hotkeys::ViewCommand::zoomIn:
-            zoomBy (ZoomButtons::zoomFactor, (float) getWidth() * 0.5f);
-            return true;
+        case hotkeys::ViewCommand::zoomIn: zoomStep (ZoomButtons::zoomFactor); return true;
 
-        case hotkeys::ViewCommand::zoomOut:
-            zoomBy (1.0 / ZoomButtons::zoomFactor, (float) getWidth() * 0.5f);
-            return true;
+        case hotkeys::ViewCommand::zoomOut: zoomStep (1.0 / ZoomButtons::zoomFactor); return true;
 
         case hotkeys::ViewCommand::zoomToFit: zoomToFit(); return true;
 
