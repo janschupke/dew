@@ -11,6 +11,7 @@
 
 #include "ui/design/Icons.h"
 #include "ui/design/Tokens.h"
+#include "ui/primitives/TypedEdit.h"
 
 namespace dew
 {
@@ -776,6 +777,19 @@ public:
     */
     void mouseDown (const juce::MouseEvent&) override;
 
+    /** Double-click to type an exact value, the way a number field already
+        could.
+
+        A knob's readout is DRAWN text rather than a control, so until this
+        there was no way to give a knob a number at all - the only route to
+        1400 Hz was to drag until it happened to say 1400. The box shows a
+        plain number with no unit: a readout carries its suffix, and a box
+        seeded with "0.140 s" is a box whose contents do not parse.
+
+        A compact knob has no readout to double-click and gets none of this.
+    */
+    void mouseDoubleClick (const juce::MouseEvent&) override;
+
     /** focusOfChildComponentChanged rather than focusGained, because a knob is a
         Component wrapping the juce::Slider that carries the range, the value and
         the keyboard. The ring is drawn around the wrapper and the focus is on
@@ -825,7 +839,13 @@ private:
         distance it made. That reads as a knob that is not listening, and it is
         the one thing a value control cannot be.
     */
+    /** Where the typed box goes: the readout, opened out to a control's height
+        so what is typed into it is legible. A knob's value band is sixteen
+        pixels, which is a number you can read and not a box you can type in. */
+    juce::Rectangle<int> typedEditBounds() const;
+
     DewSlider slider { juce::Slider::RotaryVerticalDrag, juce::Slider::NoTextBox };
+    TypedEdit typed { *this };
     ComponentMotion needle { *this };
     bool needleSeeded = false;
     bool dragging = false;

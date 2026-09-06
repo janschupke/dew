@@ -112,6 +112,17 @@ nobody notices: every spec-built knob has a right-click menu, and every control 
 tab has help text, an accessible name, and a way for the keyboard to reach it. All four
 walk the window through `tests/ControlWalkHarness.h` — see [testing.md](testing.md).
 
+**A knob can be typed into.** Double-click its readout and a box opens over it, seeded
+with the plain number the readout shows and no unit — a box holding `0.140 s` is a box
+whose contents do not parse. It is `src/ui/primitives/TypedEdit.h`, shared with
+`DewNumberField`, because the parts that go wrong when this is written twice are the
+three ways out of it: return keeps, escape does not, losing focus keeps. A compact knob
+draws no readout and gets none of it.
+
+`TypedEdit` destroys its editor from inside that editor's own callback, so its commit
+function is a MEMBER rather than a lambda capture — a captured one is destroyed with the
+`std::function` it is running inside, before it can be called.
+
 **A spec-built knob takes its tooltip from `ParamSpec::displayName`** — `DewKnob (const
 ParamSpec&)` applies it. Do not hand-write help for a knob built from the catalog. And a
 knob is a `juce::SettableTooltipClient` itself: `setTooltip` must set both it and the

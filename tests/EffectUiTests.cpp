@@ -6,6 +6,8 @@
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/matchers/catch_matchers_floating_point.hpp>
 
+#include <cmath>
+
 #include <juce_gui_basics/juce_gui_basics.h>
 
 #include "model/ModuleCatalog.h"
@@ -545,9 +547,33 @@ TEST_CASE ("a frequency field drags by ratio, not by hertz", "[effects][ui]")
 
     INFO ("linear " << linear.getValue() << " logarithmic " << logarithmic.getValue());
 
-    // Ten pixels up is a huge jump linearly and a musical interval on a log
+    // Ten pixels up is a big jump linearly and a musical interval on a log
     // taper - which is the whole point.
     REQUIRE (linear.getValue() > 1600.0);
-    REQUIRE (logarithmic.getValue() < 1400.0);
     REQUIRE (logarithmic.getValue() > 1000.0);
+    REQUIRE (logarithmic.getValue() < linear.getValue());
+
+    /*  And what "by ratio" actually says: the same drag from twice the
+        frequency multiplies by the same amount.
+
+        This used to be a pair of hertz thresholds either side of the value ten
+        pixels happened to give - which says the same thing only for as long as
+        a pixel is worth what it was worth the day they were written. Raising
+        gesture::dragPixelsForFullRange's sensitivity walked the logarithmic
+        drag from 1379 to 1405 and the upper threshold was 1400, so the case
+        went red without anything it was written to protect having changed.
+    */
+    DewNumberField higher;
+    higher.setRange (20.0, 18000.0, 1.0);
+    higher.setValue (2000.0, juce::dontSendNotification);
+    higher.setSize (90, 40);
+    higher.setLogarithmic (true);
+
+    dragBy (higher, 10);
+
+    const auto lowInterval = logarithmic.getValue() / 1000.0;
+    const auto highInterval = higher.getValue() / 2000.0;
+
+    INFO ("intervals " << lowInterval << " and " << highInterval);
+    REQUIRE (std::abs (lowInterval - highInterval) < 0.01);
 }

@@ -214,6 +214,35 @@ std::unique_ptr<juce::AccessibilityHandler> DewKnob::createAccessibilityHandler(
     return createIgnoredAccessibilityHandler (*this);
 }
 
+juce::Rectangle<int> DewKnob::typedEditBounds() const
+{
+    return getLocalBounds().removeFromBottom (size::controlHeight);
+}
+
+void DewKnob::mouseDoubleClick (const juce::MouseEvent& event)
+{
+    // A compact knob draws no readout, so there is nothing here to double-click
+    // and nowhere to put the box. The right button never opens it either: that
+    // press belongs to the parameter menu.
+    if (compact || event.mods.isPopupMenu() || ! isEnabled())
+        return;
+
+    if (onEditStart != nullptr)
+        onEditStart();
+
+    // The value the READOUT is showing, at the decimals it is showing it to, so
+    // re-typing what is already there changes nothing - and without the suffix,
+    // which is drawn beside the number and would not parse back.
+    typed.begin (typedEditBounds(), slider.getValue(), decimalPlaces, functionColour,
+                 [this] (double newValue)
+                 {
+                     slider.setValue (newValue, juce::sendNotificationSync);
+
+                     if (onEditEnd != nullptr)
+                         onEditEnd();
+                 });
+}
+
 void DewKnob::resized()
 {
     auto area = getLocalBounds();
@@ -225,6 +254,7 @@ void DewKnob::resized()
     }
 
     slider.setBounds (area);
+    typed.setBounds (typedEditBounds());
 }
 
 float DewKnob::proportionOfValue() const
@@ -258,6 +288,11 @@ void DewKnob::updateNeedle()
 
 void DewKnob::paint (juce::Graphics& g)
 {
+    // The box covers the readout and part of the rotary while it is up; drawing
+    // the knob under it would show a needle through a text field.
+    if (typed.isActive())
+        return;
+
     auto area = getLocalBounds();
 
     // Seeded here as well as on the first change, because a knob can be laid

@@ -4,6 +4,7 @@
 
 #include "ui/design/Focus.h"
 #include "ui/design/Tokens.h"
+#include "ui/primitives/TypedEdit.h"
 
 namespace dew
 {
@@ -145,7 +146,8 @@ private:
     bool hovered = false;
     double valueAtDragStart = 0.0;
 
-    std::unique_ptr<juce::TextEditor> editor;
+    /** The typed edit, shared with DewKnob - see TypedEdit. */
+    TypedEdit typed { *this };
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (DewNumberField)
 };

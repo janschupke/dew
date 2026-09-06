@@ -215,7 +215,7 @@ bool DewNumberField::keyPressed (const juce::KeyPress& key)
     // While a value is being typed the arrows belong to the caret. The editor
     // is a child and holds the focus, so it sees them first anyway - this is
     // the belt to that pair of braces, and it is what makes the rule readable.
-    if (editor != nullptr)
+    if (typed.isActive())
         return false;
 
     const auto command = keys::valueKeys::commandFor (key);
@@ -261,53 +261,24 @@ void DewNumberField::mouseExit (const juce::MouseEvent&)
 
 void DewNumberField::beginTypedEdit()
 {
-    if (editor != nullptr)
+    if (typed.isActive())
         return;
 
     if (onEditStart != nullptr)
         onEditStart();
 
-    editor = std::make_unique<juce::TextEditor>();
-    editor->setBounds (getLocalBounds().reduced (space::xxs));
-    editor->setJustification (juce::Justification::centred);
-    editor->setFont (type::font (type::body));
-    editor->setText (juce::String (value, decimalPlaces), false);
-    editor->setSelectAllWhenFocused (true);
-    editor->setColour (juce::TextEditor::backgroundColourId, colour::well);
-    editor->setColour (juce::TextEditor::textColourId, colour::textPrimary);
-    editor->setColour (juce::TextEditor::outlineColourId, functionColour);
-
-    const auto finish = [this] (bool keep)
-    {
-        if (editor == nullptr)
-            return;
-
-        const auto typed = editor->getText();
-        editor.reset();
-
-        if (keep && typed.isNotEmpty())
-            commit (typed.getDoubleValue());
-
-        repaint();
-    };
-
-    editor->onReturnKey = [finish] { finish (true); };
-    editor->onEscapeKey = [finish] { finish (false); };
-    editor->onFocusLost = [finish] { finish (true); };
-
-    addAndMakeVisible (*editor);
-    editor->grabKeyboardFocus();
+    typed.begin (getLocalBounds().reduced (space::xxs), value, decimalPlaces, functionColour,
+                 [this] (double newValue) { commit (newValue); });
 }
 
 void DewNumberField::resized()
 {
-    if (editor != nullptr)
-        editor->setBounds (getLocalBounds().reduced (space::xxs));
+    typed.setBounds (getLocalBounds().reduced (space::xxs));
 }
 
 void DewNumberField::paint (juce::Graphics& g)
 {
-    if (editor != nullptr)
+    if (typed.isActive())
         return;
 
     auto bounds = paint::bodyRect (*this);

@@ -21,6 +21,7 @@
 #include "ui/primitives/HoverTracker.h"
 
 #include "PaintProbe.h"
+#include "TestSupport.h"
 
 using namespace dew;
 using namespace dew::testing;
@@ -373,6 +374,83 @@ TEST_CASE ("a knob answers vertical travel, and only vertical travel", "[design]
 
     // And down is less, which is the half a value control cannot get wrong.
     CHECK (dragBy (0, 60) < 0.5);
+}
+
+TEST_CASE ("a knob's readout can be typed into", "[design][primitives]")
+{
+    /*  A knob's readout is DRAWN text rather than a control, so until the typed
+        edit there was no way to give a knob a number at all: the only route to
+        an exact value was to drag until the number happened to say it. The
+        number field had the gesture from the day it was written; the knob
+        beside it, showing the same kind of quantity, did not.
+
+        The box is TypedEdit, shared between the two, which is what makes the
+        three ways out of it - return keeps, escape does not, losing focus keeps
+        - one implementation rather than two that agree today.
+    */
+    const juce::ScopedJuceInitialiser_GUI juceInit;
+
+    DewKnob knob { "Level", 0.0, 1.0, 0.0001 };
+    knob.setSize (tokens::size::knob, tokens::size::knobRow);
+    knob.setValue (0.25, juce::dontSendNotification);
+    knob.resized();
+
+    const auto editorIn = [] (juce::Component& c) -> juce::TextEditor*
+    {
+        for (auto* child : c.getChildren())
+            if (auto* editor = dynamic_cast<juce::TextEditor*> (child))
+                return editor;
+
+        return nullptr;
+    };
+
+    REQUIRE (editorIn (knob) == nullptr);
+
+    knob.mouseDoubleClick (mouseEventAt (knob, { 20, tokens::size::knobRow - 6 }, {}, 2, false));
+
+    auto* editor = editorIn (knob);
+    REQUIRE (editor != nullptr);
+
+    // Seeded with a PLAIN number - what the readout shows, without the unit
+    // drawn beside it. A box holding "0.250 s" is a box whose contents do not
+    // parse back into the value they came from.
+    CHECK (editor->getText() == "0.250");
+
+    editor->setText ("0.75", false);
+    editor->onReturnKey();
+
+    CHECK_THAT (knob.getValue(), Catch::Matchers::WithinAbs (0.75, 1.0e-6));
+    CHECK (editorIn (knob) == nullptr);
+
+    // And escape leaves the value where it was, which is the half that makes
+    // the box safe to open by accident.
+    knob.mouseDoubleClick (mouseEventAt (knob, { 20, tokens::size::knobRow - 6 }, {}, 2, false));
+
+    editor = editorIn (knob);
+    REQUIRE (editor != nullptr);
+
+    editor->setText ("0.1", false);
+    editor->onEscapeKey();
+
+    CHECK_THAT (knob.getValue(), Catch::Matchers::WithinAbs (0.75, 1.0e-6));
+}
+
+TEST_CASE ("a compact knob has no readout to type into", "[design][primitives]")
+{
+    // The control case for the one above. A compact knob draws the rotary and
+    // nothing else - it is what the channel rack and the mixer put on a row -
+    // so there is no number to double-click and nowhere to put the box.
+    const juce::ScopedJuceInitialiser_GUI juceInit;
+
+    DewKnob knob { "Level", 0.0, 1.0, 0.0001 };
+    knob.setCompact (true);
+    knob.setSize (tokens::size::knobSm, tokens::size::knobSm);
+    knob.resized();
+
+    knob.mouseDoubleClick (mouseEventAt (knob, { 12, 12 }, {}, 2, false));
+
+    for (auto* child : knob.getChildren())
+        CHECK (dynamic_cast<juce::TextEditor*> (child) == nullptr);
 }
 
 TEST_CASE ("hover is tracked once, and the right way round", "[ui][design]")

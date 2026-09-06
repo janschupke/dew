@@ -36,8 +36,13 @@ namespace dew::gesture
     JUCE's default is 250 and nothing set it, which is not the same as choosing
     250: it means a knob on a dense mixer strip and a knob in a panel behaved
     identically to a slider nobody had thought about.
+
+    260 was that first choice and it was slow: a full sweep asked for most of a
+    laptop trackpad's travel, so setting a cutoff meant two or three drags. 200
+    is about a hand's comfortable pull, and shift still divides it by
+    fineMultiplier for the times the coarse one is too much.
 */
-inline constexpr int dragPixelsForFullRange = 260;
+inline constexpr int dragPixelsForFullRange = 200;
 
 /** Shift, wherever a drag changes a value. */
 inline constexpr double fineMultiplier = 0.15;
