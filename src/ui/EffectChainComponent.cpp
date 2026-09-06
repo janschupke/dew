@@ -8,6 +8,7 @@
 
 #include "engine/Effects.h"
 #include "model/Ids.h"
+#include "model/TreeWalk.h"
 #include "model/ProjectEdits.h"
 #include "model/ProjectSchema.h"
 #include "ui/design/Gestures.h"
@@ -86,13 +87,7 @@ bool EffectChainComponent::canAddEffect() const
 
 juce::ValueTree EffectChainComponent::effectAt (int index) const
 {
-    int i = 0;
-
-    for (const auto& child : chainOwner)
-        if (child.hasType (ids::EFFECT) && i++ == index)
-            return child;
-
-    return {};
+    return tree::nthChildOfType (chainOwner, ids::EFFECT, index);
 }
 
 void EffectChainComponent::selectSlot (int index)

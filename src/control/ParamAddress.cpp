@@ -2,6 +2,7 @@
 #include "control/ParamAddress.h"
 #include "model/GeneratorCatalog.h"
 #include "model/Ids.h"
+#include "model/TreeWalk.h"
 #include "model/ModuleCatalog.h"
 #include "model/ProjectEdits.h"
 
@@ -73,20 +74,6 @@ juce::ValueTree groupNode (const juce::ValueTree& channel, const ParamGroup& gro
         return direct;
 
     return find (channel.getChildWithName (ids::INSTRUMENT));
-}
-
-/** The nth EFFECT under any owner. The one walk that must agree with the
-    slotOf automation uses, which is why the channel and mixer cases below go
-    through automationNodeFor rather than repeating it. */
-juce::ValueTree effectAt (const juce::ValueTree& owner, int slot)
-{
-    auto index = 0;
-
-    for (const auto& child : owner)
-        if (child.hasType (ids::EFFECT) && index++ == slot)
-            return child;
-
-    return {};
 }
 
 juce::ValueTree channelWithId (const juce::ValueTree& project, int id)
@@ -227,7 +214,7 @@ juce::ValueTree paramNodeFor (const juce::ValueTree& project, const ParamAddress
         return automationNodeFor (project, *scope, address.id, address.slot);
 
     if (address.target == "master" && address.group == kEffects)
-        return effectAt (masterNode (project), address.slot);
+        return tree::nthChildOfType (masterNode (project), ids::EFFECT, address.slot);
 
     if (address.target != "channel")
         return {};

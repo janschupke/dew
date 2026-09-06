@@ -3,6 +3,7 @@
 #include "model/EntityColour.h"
 #include "model/GeneratorCatalog.h"
 #include "model/ProjectEdits.h"
+#include "model/TreeWalk.h"
 #include "model/ProjectSchema.h"
 
 namespace dew::demo
@@ -123,13 +124,12 @@ juce::ValueTree makeNote (int channelId, int step, int lengthSteps, int pitch, d
 juce::ValueTree patternIn (juce::ValueTree project, int id, const juce::String& name,
                            int lengthSteps)
 {
-    for (auto pattern : project)
-        if (pattern.hasType (ids::PATTERN) && (int) pattern[ids::id] == id)
-        {
-            pattern.setProperty (ids::name, name, nullptr);
-            pattern.setProperty (ids::lengthSteps, lengthSteps, nullptr);
-            return pattern;
-        }
+    if (auto pattern = tree::childWithId (project, ids::PATTERN, id); pattern.isValid())
+    {
+        pattern.setProperty (ids::name, name, nullptr);
+        pattern.setProperty (ids::lengthSteps, lengthSteps, nullptr);
+        return pattern;
+    }
 
     auto pattern = makePattern (id, name, lengthSteps);
     project.appendChild (pattern, nullptr);
@@ -223,11 +223,7 @@ juce::ValueTree scaffold (int numChannels)
 
 juce::ValueTree channelWithId (const juce::ValueTree& project, int id)
 {
-    for (const auto& channel : project)
-        if (channel.hasType (ids::CHANNEL) && (int) channel[ids::id] == id)
-            return channel;
-
-    return {};
+    return tree::childWithId (project, ids::CHANNEL, id);
 }
 
 juce::ValueTree channelNamed (const juce::ValueTree& project, const juce::String& name)

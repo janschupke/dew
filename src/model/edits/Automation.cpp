@@ -16,6 +16,7 @@
 
 #include "model/AutomationCurve.h"
 #include "model/Ids.h"
+#include "model/TreeWalk.h"
 #include "model/ProjectSchema.h"
 
 namespace dew
@@ -142,11 +143,7 @@ juce::ValueTree ProjectEdits::addAutomationWithClip (juce::ValueTree project,
 
 juce::ValueTree ProjectEdits::findAutomation (const juce::ValueTree& project, int automationId)
 {
-    for (const auto& child : project)
-        if (child.hasType (ids::AUTOMATION) && (int) child[ids::id] == automationId)
-            return child;
-
-    return {};
+    return tree::childWithId (project, ids::AUTOMATION, automationId);
 }
 
 bool ProjectEdits::removeAutomation (juce::ValueTree project, juce::ValueTree automation,

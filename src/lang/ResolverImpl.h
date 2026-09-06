@@ -153,6 +153,24 @@ private:
     */
     std::optional<int> asMemberIndex (const Statement& statement, ValueKind kind);
 
+    /** Assigns an enum-shaped value, or reports E207 with a did-you-mean.
+
+        Eight statements spelled this out - spread, motion, bass, articulation,
+        contour, strong, align, lineSource - and each of the eight was four
+        lines in which the only thing that differed was the field being written
+        and the enum being cast to. "A bad member always reports E207 with a
+        suggestion" is a property of one function here rather than a habit
+        eight sites happened to share.
+    */
+    template <typename Enum>
+    void assignMember (const Statement& statement, ValueKind kind, Enum& target)
+    {
+        if (const auto index = asMemberIndex (statement, kind); index.has_value())
+            target = (Enum) *index;
+        else
+            wrongValue (statement, kind);
+    }
+
     /** `N bars` or `N bar`. */
     std::optional<int> asBars (const Statement& statement);
 

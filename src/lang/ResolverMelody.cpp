@@ -157,78 +157,65 @@ MelodySpec Resolver::resolveMelody (const Block& block, PartSpec& part)
 {
     MelodySpec melody;
 
-    forEachStatement (
-        block, BlockKind::melody,
-        [&] (const KeySpec& spec, const Statement& statement)
-        {
-            if (statement.key == "rhythm")
-            {
-                const auto name = resolveName (statement, symbols.rhythms, "E233",
-                                               Msg::resolver_noRhythmCalled_message);
+    forEachStatement (block, BlockKind::melody,
+                      [&] (const KeySpec& spec, const Statement& statement)
+                      {
+                          if (statement.key == "rhythm")
+                          {
+                              const auto name = resolveName (statement, symbols.rhythms, "E233",
+                                                             Msg::resolver_noRhythmCalled_message);
 
-                if (! name.empty())
-                    melody.rhythm = std::string (name);
-                else if (statement.values.size() != 1)
-                    wrongValue (statement, spec.kind);
-            }
-            else if (statement.key == "articulation")
-            {
-                if (const auto index = asMemberIndex (statement, spec.kind); index.has_value())
-                    melody.articulation = (Articulation) *index;
-                else
-                    wrongValue (statement, spec.kind);
-            }
-            else if (statement.key == "contour")
-            {
-                if (const auto index = asMemberIndex (statement, spec.kind); index.has_value())
-                    melody.contour = (Contour) *index;
-                else
-                    wrongValue (statement, spec.kind);
-            }
-            else if (statement.key == "strong")
-            {
-                if (const auto index = asMemberIndex (statement, spec.kind); index.has_value())
-                    melody.strong = (StrongRule) *index;
-                else
-                    wrongValue (statement, spec.kind);
-            }
-            else if (statement.key == "variance")
-            {
-                readVariance (melody, statement, spec);
-            }
-            else if (statement.key == "mute")
-            {
-                readMuteBudget (melody, statement, spec);
-            }
-            else if (statement.key == "cadence")
-            {
-                readCadence (melody, statement, spec);
-            }
-            else if (statement.key == "leap")
-            {
-                readLeap (melody, statement, spec);
-            }
-            else if (statement.key == "align")
-            {
-                if (const auto index = asMemberIndex (statement, spec.kind); index.has_value())
-                    melody.align = (Alignment) *index;
-                else
-                    wrongValue (statement, spec.kind);
-            }
-            else if (statement.key == "range")
-            {
-                if (const auto range = asPitchRange (statement); range.has_value())
-                {
-                    melody.hasRange = true;
-                    melody.lowPitch = range->first;
-                    melody.highPitch = range->second;
-                }
-                else
-                {
-                    wrongValue (statement, spec.kind);
-                }
-            }
-        });
+                              if (! name.empty())
+                                  melody.rhythm = std::string (name);
+                              else if (statement.values.size() != 1)
+                                  wrongValue (statement, spec.kind);
+                          }
+                          else if (statement.key == "articulation")
+                          {
+                              assignMember (statement, spec.kind, melody.articulation);
+                          }
+                          else if (statement.key == "contour")
+                          {
+                              assignMember (statement, spec.kind, melody.contour);
+                          }
+                          else if (statement.key == "strong")
+                          {
+                              assignMember (statement, spec.kind, melody.strong);
+                          }
+                          else if (statement.key == "variance")
+                          {
+                              readVariance (melody, statement, spec);
+                          }
+                          else if (statement.key == "mute")
+                          {
+                              readMuteBudget (melody, statement, spec);
+                          }
+                          else if (statement.key == "cadence")
+                          {
+                              readCadence (melody, statement, spec);
+                          }
+                          else if (statement.key == "leap")
+                          {
+                              readLeap (melody, statement, spec);
+                          }
+                          else if (statement.key == "align")
+                          {
+                              assignMember (statement, spec.kind, melody.align);
+                          }
+                          else if (statement.key == "range")
+                          {
+                              if (const auto range = asPitchRange (statement); range.has_value())
+                              {
+                                  melody.hasRange = true;
+                                  melody.lowPitch = range->first;
+                                  melody.highPitch = range->second;
+                              }
+                              else
+                              {
+                                  wrongValue (statement, spec.kind);
+                              }
+                          }
+                      });
 
     for (const auto& child : block.children)
     {

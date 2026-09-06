@@ -18,6 +18,7 @@
 
 #include "model/GeneratorCatalog.h"
 #include "model/Ids.h"
+#include "model/TreeWalk.h"
 #include "model/ModuleCatalog.h"
 #include "model/ParamNames.h"
 
@@ -227,37 +228,6 @@ std::optional<AutomationTarget> automationTargetFor (const juce::ValueTree& proj
 namespace
 {
 
-/** The nth EFFECT under an owner. The inverse of slotOf, and the only thing
-    specForAutomation needs the project tree for: an effect's parameters depend
-    on its TYPE, and the clip stores a position rather than a type. */
-juce::ValueTree effectAt (const juce::ValueTree& owner, int slot)
-{
-    int index = 0;
-
-    for (const auto& child : owner)
-    {
-        if (! child.hasType (ids::EFFECT))
-            continue;
-
-        if (index == slot)
-            return child;
-
-        ++index;
-    }
-
-    return {};
-}
-
-/** A CHANNEL or a MIXER_TRACK by its id. */
-juce::ValueTree ownerWithId (const juce::ValueTree& container, const juce::Identifier& type, int id)
-{
-    for (const auto& child : container)
-        if (child.hasType (type) && (int) child[ids::id] == id)
-            return child;
-
-    return {};
-}
-
 } // namespace
 
 juce::ValueTree automationNodeFor (const juce::ValueTree& project, AutomationScope scope,
@@ -275,25 +245,27 @@ juce::ValueTree automationNodeFor (const juce::ValueTree& project, AutomationSco
     {
         case AutomationScope::project: return project;
 
-        case AutomationScope::channel: return ownerWithId (project, ids::CHANNEL, targetId);
+        case AutomationScope::channel: return tree::childWithId (project, ids::CHANNEL, targetId);
 
         case AutomationScope::channelAmp:
-            return ownerWithId (project, ids::CHANNEL, targetId)
+            return tree::childWithId (project, ids::CHANNEL, targetId)
                 .getChildWithName (ids::INSTRUMENT)
                 .getChildWithName (ids::AMP);
 
         case AutomationScope::channelSoundFont:
-            return ownerWithId (project, ids::CHANNEL, targetId).getChildWithName (ids::SOUNDFONT);
+            return tree::childWithId (project, ids::CHANNEL, targetId)
+                .getChildWithName (ids::SOUNDFONT);
 
         case AutomationScope::mixerTrack:
-            return ownerWithId (project.getChildWithName (ids::MIXER), ids::MIXER_TRACK, targetId);
+            return tree::childWithId (project.getChildWithName (ids::MIXER), ids::MIXER_TRACK,
+                                      targetId);
 
         case AutomationScope::master:
             return project.getChildWithName (ids::MIXER).getChildWithName (ids::MASTER);
 
         case AutomationScope::channelOsc:
         {
-            const auto channel = ownerWithId (project, ids::CHANNEL, targetId);
+            const auto channel = tree::childWithId (project, ids::CHANNEL, targetId);
             const auto instrument = channel.getChildWithName (ids::INSTRUMENT);
 
             // getChild, not getChildWithName: the slot is a POSITION among the
@@ -308,12 +280,13 @@ juce::ValueTree automationNodeFor (const juce::ValueTree& project, AutomationSco
         }
 
         case AutomationScope::channelEffect:
-            return effectAt (ownerWithId (project, ids::CHANNEL, targetId), slot);
+            return tree::nthChildOfType (tree::childWithId (project, ids::CHANNEL, targetId),
+                                         ids::EFFECT, slot);
 
         case AutomationScope::mixerEffect:
-            return effectAt (
-                ownerWithId (project.getChildWithName (ids::MIXER), ids::MIXER_TRACK, targetId),
-                slot);
+            return tree::nthChildOfType (tree::childWithId (project.getChildWithName (ids::MIXER),
+                                                            ids::MIXER_TRACK, targetId),
+                                         ids::EFFECT, slot);
     }
 
     return {};

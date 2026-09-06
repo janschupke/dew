@@ -9,6 +9,7 @@
 
 #include "model/EntityColour.h"
 #include "model/Ids.h"
+#include "model/TreeWalk.h"
 
 namespace dew
 {
@@ -189,9 +190,7 @@ void MixerComponent::pointChainAtSelectedTrack()
                                                      : juce::ValueTree();
 
     if (selectedId != masterTrackId)
-        for (const auto& track : mixer)
-            if (track.hasType (ids::MIXER_TRACK) && (int) track[ids::id] == selectedId)
-                selectedTrack = track;
+        selectedTrack = tree::childWithId (mixer, ids::MIXER_TRACK, selectedId);
 
     chainHost.setOwner (selectedTrack, ! selectedTrack.isValid() ? juce::String()
                                        : selectedId == masterTrackId

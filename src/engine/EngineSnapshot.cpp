@@ -9,6 +9,7 @@
 
 #include "model/GeneratorCatalog.h"
 #include "model/Ids.h"
+#include "model/TreeWalk.h"
 #include "model/InstrumentType.h"
 #include "model/Meter.h"
 #include "model/ModuleCatalog.h"
@@ -417,9 +418,9 @@ EngineSnapshot buildSnapshot (const juce::ValueTree& project, juce::StringArray*
                 {
                     resolved = false;
 
-                    for (const auto& channel : project)
-                        if (channel.hasType (ids::CHANNEL) && (int) channel[ids::id] == targetId)
-                            resolved = resolveChain (channel);
+                    if (const auto channel = tree::childWithId (project, ids::CHANNEL, targetId);
+                        channel.isValid())
+                        resolved = resolveChain (channel);
                 }
                 break;
 
@@ -435,9 +436,9 @@ EngineSnapshot buildSnapshot (const juce::ValueTree& project, juce::StringArray*
                 {
                     resolved = false;
 
-                    for (const auto& track : mixer)
-                        if (track.hasType (ids::MIXER_TRACK) && (int) track[ids::id] == targetId)
-                            resolved = resolveChain (track);
+                    if (const auto track = tree::childWithId (mixer, ids::MIXER_TRACK, targetId);
+                        track.isValid())
+                        resolved = resolveChain (track);
                 }
                 break;
         }

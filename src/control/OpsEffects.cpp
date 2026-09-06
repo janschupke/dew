@@ -1,3 +1,4 @@
+#include "model/TreeWalk.h"
 #include "control/OpsSupport.h"
 #include "model/ModuleCatalog.h"
 #include "model/PresetCategory.h"
@@ -27,20 +28,7 @@ std::vector<ArgSpec> slotFields()
 */
 int slotOfEffect (const juce::ValueTree& owner, const juce::ValueTree& effect)
 {
-    auto index = 0;
-
-    for (const auto& child : owner)
-    {
-        if (! child.hasType (ids::EFFECT))
-            continue;
-
-        if (child == effect)
-            return index;
-
-        ++index;
-    }
-
-    return -1;
+    return tree::indexOfChildOfType (owner, ids::EFFECT, effect);
 }
 
 /** The effect types, from the catalog rather than a list.

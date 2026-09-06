@@ -16,25 +16,25 @@
 #include "model/Constants.h"
 #include "model/Ids.h"
 #include "model/ProjectSchema.h"
-#include "model/edits/FindChild.h"
+#include "model/TreeWalk.h"
 
 namespace dew
 {
 
 juce::ValueTree ProjectEdits::findChannel (const juce::ValueTree& project, int channelId)
 {
-    return edits::findChildWithId (project, ids::CHANNEL, channelId);
+    return tree::childWithId (project, ids::CHANNEL, channelId);
 }
 
 juce::ValueTree ProjectEdits::findPattern (const juce::ValueTree& project, int patternId)
 {
-    return edits::findChildWithId (project, ids::PATTERN, patternId);
+    return tree::childWithId (project, ids::PATTERN, patternId);
 }
 
 juce::ValueTree ProjectEdits::findMixerTrack (const juce::ValueTree& project, int mixerTrackId)
 {
-    return edits::findChildWithId (project.getChildWithName (ids::MIXER), ids::MIXER_TRACK,
-                                   mixerTrackId);
+    return tree::childWithId (project.getChildWithName (ids::MIXER), ids::MIXER_TRACK,
+                              mixerTrackId);
 }
 
 juce::ValueTree ProjectEdits::findNote (const juce::ValueTree& pattern, int channelId, int step,
@@ -61,20 +61,7 @@ juce::ValueTree ProjectEdits::findNoteAtStep (const juce::ValueTree& pattern, in
 
 int ProjectEdits::channelIndexForId (const juce::ValueTree& project, int channelId)
 {
-    int index = 0;
-
-    for (const auto& channel : project)
-    {
-        if (! channel.hasType (ids::CHANNEL))
-            continue;
-
-        if ((int) channel[ids::id] == channelId)
-            return index;
-
-        ++index;
-    }
-
-    return -1;
+    return tree::indexOfChildWithId (project, ids::CHANNEL, channelId);
 }
 
 int ProjectEdits::nextFreeId (const juce::ValueTree& project, const juce::Identifier& childType)

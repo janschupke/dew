@@ -216,17 +216,11 @@ void Resolver::resolveVoicing (const Block& block)
             }
             else if (statement.key == "spread")
             {
-                if (const auto index = asMemberIndex (statement, spec.kind); index.has_value())
-                    voicing.spread = (Spread) *index;
-                else
-                    wrongValue (statement, spec.kind);
+                assignMember (statement, spec.kind, voicing.spread);
             }
             else if (statement.key == "motion")
             {
-                if (const auto index = asMemberIndex (statement, spec.kind); index.has_value())
-                    voicing.motion = (Motion) *index;
-                else
-                    wrongValue (statement, spec.kind);
+                assignMember (statement, spec.kind, voicing.motion);
             }
             else if (statement.key == "register")
             {
@@ -242,10 +236,7 @@ void Resolver::resolveVoicing (const Block& block)
             }
             else if (statement.key == "bass")
             {
-                if (const auto index = asMemberIndex (statement, spec.kind); index.has_value())
-                    voicing.bass = (BassRule) *index;
-                else
-                    wrongValue (statement, spec.kind);
+                assignMember (statement, spec.kind, voicing.bass);
             }
             else if (statement.key == "maxLeap")
             {

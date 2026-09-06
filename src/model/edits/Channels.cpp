@@ -17,7 +17,7 @@
 #include "model/Ids.h"
 #include "model/ModuleState.h"
 #include "model/ProjectSchema.h"
-#include "model/edits/FindChild.h"
+#include "model/TreeWalk.h"
 
 namespace dew
 {
@@ -42,7 +42,7 @@ juce::ValueTree ProjectEdits::addChannel (juce::ValueTree project, const juce::S
 
     // Route to a mixer track if one with a matching number exists, else insert 1.
     const auto mixer = project.getChildWithName (ids::MIXER);
-    auto routed = edits::findChildWithId (mixer, ids::MIXER_TRACK, id);
+    auto routed = tree::childWithId (mixer, ids::MIXER_TRACK, id);
 
     if (! routed.isValid())
         for (const auto& track : mixer)
