@@ -295,6 +295,14 @@ private:
     */
     static constexpr int lfoOpenExtra = rowGap + knobRowHeight;
 
+    /** The LFO's band: from its rule to the bottom of the section. Empty on the
+        FM face, which has no slot controls at all. */
+    juce::Rectangle<int> lfoBandBounds;
+
+    /** The break between the rate and the three depths, which paint() draws a
+        rule down. Empty while the LFO is closed. */
+    juce::Rectangle<int> lfoGroupRule;
+
     void valueTreePropertyChanged (juce::ValueTree&, const juce::Identifier&) override;
     void valueTreeChildAdded (juce::ValueTree&, juce::ValueTree&) override;
     void valueTreeChildRemoved (juce::ValueTree&, juce::ValueTree&, int) override;

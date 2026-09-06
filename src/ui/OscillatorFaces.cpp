@@ -278,6 +278,23 @@ void OscillatorSection::paintShape (juce::Graphics& g) const
 
 void OscillatorSection::paint (juce::Graphics& g)
 {
+    // Under the children, which is what paint() is for: the band is the ground
+    // its controls stand on rather than an outline drawn round them.
+    if (! lfoBandBounds.isEmpty())
+    {
+        paint::wellBackground (g, lfoBandBounds);
+
+        g.setColour (colour::dividerStrong);
+        g.drawHorizontalLine (lfoBandBounds.getY(), 0.0f, (float) getWidth());
+
+        if (! lfoGroupRule.isEmpty())
+        {
+            g.setColour (colour::divider);
+            g.drawVerticalLine (lfoGroupRule.getCentreX(), (float) lfoGroupRule.getY(),
+                                (float) lfoGroupRule.getBottom());
+        }
+    }
+
     // A switched-off oscillator still shows its settings rather than an empty
     // panel - they are what you are about to turn on - so it has to say
     // somewhere that nothing you change here is currently audible.
@@ -316,6 +333,8 @@ void OscillatorSection::resized()
         fmMatrix.setBounds (area.removeFromTop (FmMatrixPanel::preferredHeight));
         offCaptionBounds = {};
         shapeBounds = {};
+        lfoBandBounds = {};
+        lfoGroupRule = {};
         return;
     }
 
@@ -397,6 +416,15 @@ void OscillatorSection::resized()
     // controls stay where they were whether it is on or not - a block that
     // pushed them down when it opened would move every knob the hand is
     // already reaching for.
+    //
+    // Being last is also what lets it be a BAND: a region of the panel running
+    // from a rule to the bottom edge, with its own ground, rather than a box
+    // drawn around a group. That is the shape this tree uses everywhere - see
+    // the tombstone on paint::container - and the rule and the ground are what
+    // say the dropdown and the four knobs below it are one thing. The gap that
+    // was already here becomes the band's top padding, so nothing moves.
+    lfoBandBounds = { 0, area.getY(), getWidth(), getHeight() - area.getY() };
+
     area.removeFromTop (space::sm);
 
     auto lfoRow = area.removeFromTop (formRowHeight);
@@ -408,15 +436,22 @@ void OscillatorSection::resized()
     lfoWaveBox.setBounds (lfoRow);
 
     if (! showingLfo)
+    {
+        lfoGroupRule = {};
         return;
+    }
 
     area.removeFromTop (space::sm);
 
-    // Four cells whether the rate is a knob or a division box, so the three
-    // depths do not shift sideways when the sync is toggled.
-    const std::vector<int> lfoGroup { 4 };
+    // Two groups, not one: the RATE is what the LFO is doing and the three
+    // depths are what it is doing it TO, and KnobGrid puts a rule between two
+    // groups sharing a row. Four cells either way, so the depths do not shift
+    // sideways when the sync toggle swaps the knob for the division box.
+    const std::vector<int> lfoGroup { 1, 3 };
     const auto lfoCells = KnobGrid::place (area.removeFromTop (knobRowHeight),
                                            KnobGrid::planForRows (1, lfoGroup, area.getWidth()));
+
+    lfoGroupRule = lfoCells.rules.empty() ? juce::Rectangle<int> {} : lfoCells.rules.front();
 
     if (lfoCells.cells.size() == 4)
     {
