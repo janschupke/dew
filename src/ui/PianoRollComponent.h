@@ -1,5 +1,7 @@
 #pragma once
 
+#include <optional>
+
 #include <juce_gui_basics/juce_gui_basics.h>
 
 #include "engine/AudioEngine.h"
@@ -258,6 +260,27 @@ public:
     CanvasCursor cursor;
     void openRandomizeDialog();
 
+    /** Where the transport is inside the pattern this roll is showing, in that
+        pattern's own steps - or nothing, when it is not inside it at all.
+
+        In PATTERN mode the transport is the pattern, so it is the position
+        wrapped by the pattern's length. In SONG mode the roll shows a pattern
+        the arrangement may or may not be playing right now, and the roll used
+        to answer that by drawing nothing ever: the indicator was gated on
+        pattern mode outright, so following a song into the pattern being edited
+        was something you could only do by switching modes and losing your
+        place. The answer is the position inside whichever clip of THIS pattern
+        the song playhead is in, and nothing when it is in none of them.
+
+        A double rather than a step index. Every pattern-mode view truncated to
+        the integer step, which is why the line ticked in the roll and glided in
+        the playlist - the playlist was the only one that kept the fraction.
+
+        Public because a test reads it: what this answers is the whole of the
+        behaviour, and asserting it in pixels would be asserting the painter.
+    */
+    std::optional<double> playheadInPattern() const;
+
 private:
     // Scrubbing and range-selecting are not here: the ruler's whole gesture
     // lives in ruler::Gesture, which the playlist and the channel rack share.
@@ -492,7 +515,14 @@ private:
     int lastSeenChannelId = -1;
     int lastSeenPatternId = -1;
 
-    int lastPlayheadStep = -1;
+    /** Where the line was last painted, in pixels, and -1 for "nowhere".
+
+        In PIXELS because that is what the eye sees moving: the trigger used to
+        be the integer step, so at any useful zoom the line stood still for
+        several frames and then jumped a whole cell. The playlist's own timer
+        has used half a pixel since it was written, and for the same reason.
+    */
+    float lastPlayheadX = -1.0f;
     bool lastPlaying = false;
     bool didFitOnce = false;
 

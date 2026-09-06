@@ -97,9 +97,10 @@ void PianoRollComponent::paintRuler (juce::Graphics& g)
     style.totalSteps = numSteps();
     style.playing = engine.isPlaying();
 
-    if (engine.getMode() == Transport::Mode::pattern)
-        style.playheadSteps = (double) ((int) engine.getPlayheadSteps()
-                                        % juce::jmax (1, numSteps()));
+    // Asked of the roll rather than worked out here, so the ruler's head and
+    // the grid's line agree in song mode as well as in pattern mode.
+    if (const auto at = playheadInPattern())
+        style.playheadSteps = *at;
 
     if (editorState.hasStepSelection())
     {
@@ -240,11 +241,14 @@ void PianoRollComponent::paintNotes (juce::Graphics& g)
     // The moving line, and only while the transport is moving - see
     // timelinePaint::showsPlayheadLine. Where playback will begin is said by
     // the head on the ruler above, which is what a click there moves.
-    if (engine.getMode() == Transport::Mode::pattern)
+    //
+    // playheadInPattern answers song mode too: it is the position inside
+    // whichever clip of this pattern the arrangement is in, so following a song
+    // into the pattern being edited no longer means switching modes.
+    if (const auto at = playheadInPattern())
     {
         const auto playing = engine.isPlaying();
-        const auto step = (double) ((int) engine.getPlayheadSteps() % steps);
-        const auto x = (float) size::gutterKeyboard + timeline.xForStep (step);
+        const auto x = (float) size::gutterKeyboard + timeline.xForStep (*at);
 
         playhead.set (playing);
 
@@ -256,6 +260,13 @@ void PianoRollComponent::paintNotes (juce::Graphics& g)
         if (timelinePaint::showsPlayheadLine (playhead.brightness()))
             timelinePaint::playheadLine (g, x, { (float) area.getY(), (float) area.getBottom() },
                                          playhead.brightness());
+    }
+    else
+    {
+        // Nothing to draw, but the ease still has to be told - otherwise a
+        // pattern that scrolls out from under the song playhead leaves the
+        // state believing it is still running.
+        playhead.set (false);
     }
 
     // --- rubber band ---------------------------------------------------------

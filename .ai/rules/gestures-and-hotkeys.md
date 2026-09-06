@@ -308,6 +308,17 @@ that Stop also called `rewind`. Rewind clears the marker as well as the playhead
 because a marker left standing at bar nine would show one place on the ruler while the
 next press of space started at another.
 
+**The piano roll follows a song into the pattern it is showing.** Its indicator used to
+be gated on pattern mode outright, so in song mode it drew nothing at all — even while
+the arrangement was playing a clip of the very pattern on screen.
+`PianoRollComponent::playheadInPattern` answers both modes: the position wrapped by the
+pattern's length in pattern mode, and the position inside whichever clip of that pattern
+the song playhead is in — nothing when it is in none of them, which is what keeps it
+from being a line that is always somewhere. It returns a **double**: every pattern-mode
+view truncated to the integer step, which is why the line ticked in the roll and glided
+in the playlist, and why the roll's timer now triggers on half a pixel the way the
+playlist's always has.
+
 **The moving line shows only while the transport is moving.** What stays is the head on
 the ruler, which is where playback will begin — a fact about a stopped transport rather
 than about a running one, and the thing a click on the ruler moves. It used to be drawn

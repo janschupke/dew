@@ -1,5 +1,7 @@
 #include "ui/PianoRollComponent.h"
 
+#include <cmath>
+
 #include "i18n/Strings.h"
 #include "ui/PianoRollNotes.h"
 
@@ -173,6 +175,47 @@ int PianoRollComponent::numSteps() const
 {
     const auto pattern = currentPattern();
     return pattern.isValid() ? juce::jmax (1, (int) pattern[ids::lengthSteps]) : 16;
+}
+
+std::optional<double> PianoRollComponent::playheadInPattern() const
+{
+    const auto steps = (double) numSteps();
+    const auto position = juce::jmax (0.0, engine.getPlayheadSteps());
+
+    if (engine.getMode() == Transport::Mode::pattern)
+        return std::fmod (position, steps);
+
+    // Song mode: whichever clip of THIS pattern the playhead is inside, if any.
+    // A linear walk rather than an index - a playlist holds tens of clips and
+    // this runs at motion::playheadHz, which is nothing beside what the same
+    // timer already asks a repaint to do.
+    const auto patternId = editorState.getCurrentPatternId();
+    const auto stepsPerBar = (double) Meter::of (document.getState()).stepsPerBar();
+
+    for (const auto& track : document.getState().getChildWithName (ids::PLAYLIST))
+    {
+        // A muted lane is not playing, so there is nothing for the roll to
+        // follow into it.
+        if (! track.hasType (ids::PLAYLIST_TRACK) || (bool) track[ids::mute])
+            continue;
+
+        for (const auto& clip : track)
+        {
+            if (! clip.hasType (ids::CLIP) || ! ProjectEdits::isMidiClip (clip)
+                || (int) clip[ids::patternId] != patternId)
+                continue;
+
+            const auto start = (double) (int) clip[ids::startBar] * stepsPerBar;
+            const auto length = (double) juce::jmax (1, (int) clip[ids::lengthBars]) * stepsPerBar;
+
+            // Half-open, the way every other range in dew is: a clip's last
+            // step belongs to it and the bar after it does not.
+            if (position >= start && position < start + length)
+                return std::fmod (position - start, steps);
+        }
+    }
+
+    return {};
 }
 
 int PianoRollComponent::stepsPerBeat() const
@@ -376,29 +419,36 @@ bool PianoRollComponent::keyPressed (const juce::KeyPress& key)
 
 void PianoRollComponent::timerCallback()
 {
-    const auto step = (int) engine.getPlayheadSteps();
     const auto playing = engine.isPlaying();
+    const auto at = playheadInPattern();
+    const auto x = at.has_value() ? timeline.xForStep (*at) : -1.0f;
 
+    // Half a pixel, which is the playlist's test and the reason its playhead
+    // glides where this one used to tick: the trigger was the integer STEP, so
+    // at any useful zoom the line stood still for several frames and then
+    // jumped a whole cell.
+    //
     // Playing state is part of the trigger, not a filter on it: a stop that
-    // happens not to change the integer step would otherwise leave the last
-    // frame on screen.
-    if (step != lastPlayheadStep || playing != lastPlaying)
+    // happens not to move the line would otherwise leave the last frame up.
+    if (std::abs (x - lastPlayheadX) < 0.5f && playing == lastPlaying)
+        return;
+
+    lastPlayheadX = x;
+    lastPlaying = playing;
+
+    // Follows the music in song mode too, now that there is something to
+    // follow: the auto-scroll used to be gated on pattern mode with the
+    // indicator.
+    if (playing && at.has_value())
     {
-        lastPlayheadStep = step;
-        lastPlaying = playing;
+        const auto before = timeline.scrollOffsetSteps;
+        timeline.ensureVisible (*at, contentWidth());
 
-        if (playing && engine.getMode() == Transport::Mode::pattern)
-        {
-            const auto wrapped = (double) (step % juce::jmax (1, numSteps()));
-            const auto before = timeline.scrollOffsetSteps;
-            timeline.ensureVisible (wrapped, contentWidth());
-
-            if (! juce::exactlyEqual (before, timeline.scrollOffsetSteps))
-                updateScrollBars();
-        }
-
-        repaint();
+        if (! juce::exactlyEqual (before, timeline.scrollOffsetSteps))
+            updateScrollBars();
     }
+
+    repaint();
 }
 
 void PianoRollComponent::valueTreePropertyChanged (juce::ValueTree&,

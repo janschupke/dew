@@ -9,6 +9,7 @@
 #include <juce_gui_basics/juce_gui_basics.h>
 
 #include "model/EntityColour.h"
+#include "model/Meter.h"
 #include "ui/ChannelRackComponent.h"
 #include "ui/ZoomButtons.h"
 #include "ui/design/Cursors.h"
@@ -358,4 +359,57 @@ TEST_CASE ("a pinch reads the same modifiers a wheel notch does", "[ui][pianorol
 
     CHECK (h.roll.getTimeline().pixelsPerStep > timeBefore);
     CHECK (h.roll.getRowHeight() == tallerRows);
+}
+
+TEST_CASE ("the roll follows a song into the pattern it is showing", "[ui][pianoroll]")
+{
+    /*  The indicator was gated on Transport::Mode::pattern outright, so in song
+        mode the roll drew nothing at all - even while the arrangement was
+        playing a clip of the very pattern on screen. Following the music into
+        the notes being edited meant switching modes and losing your place.
+
+        The answer is the position inside whichever clip of THIS pattern the
+        song playhead is in, and nothing when it is in none of them - which is
+        the half that keeps this from being a line that is always somewhere.
+    */
+    const juce::ScopedJuceInitialiser_GUI juceInit;
+    RollHarness h;
+
+    const auto stepsPerBar = (double) Meter::of (h.document.getState()).stepsPerBar();
+
+    auto track = ProjectEdits::addPlaylistTrack (h.document.getState(), "Lane", nullptr);
+    REQUIRE (track.isValid());
+
+    // The pattern the roll is showing, placed at bar 4 and two bars long.
+    ProjectEdits::addClip (track, (int) h.pattern()[ids::id], 4, 2, nullptr);
+
+    h.engine.setMode (Transport::Mode::song);
+
+    // Before the clip: nothing to draw.
+    h.engine.setPlayheadSteps (2.0 * stepsPerBar);
+    CHECK_FALSE (h.roll.playheadInPattern().has_value());
+
+    // A third of the way into the clip's first bar, which is a fractional
+    // position on purpose: the pattern-mode views used to truncate to the
+    // integer step and this one no longer does.
+    const auto into = 4.0 * stepsPerBar + stepsPerBar / 3.0;
+    h.engine.setPlayheadSteps (into);
+
+    const auto at = h.roll.playheadInPattern();
+    REQUIRE (at.has_value());
+
+    INFO ("song step " << into << " maps to pattern step " << *at);
+    CHECK (*at > stepsPerBar / 3.0 - 0.5);
+    CHECK (*at < stepsPerBar / 3.0 + 0.5);
+
+    // Past the clip: nothing again.
+    h.engine.setPlayheadSteps (8.0 * stepsPerBar);
+    CHECK_FALSE (h.roll.playheadInPattern().has_value());
+
+    // And pattern mode is unchanged: the transport IS the pattern there, so
+    // every position is inside it.
+    h.engine.setMode (Transport::Mode::pattern);
+    h.engine.setPlayheadSteps (8.0 * stepsPerBar);
+
+    CHECK (h.roll.playheadInPattern().has_value());
 }
