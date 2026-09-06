@@ -468,20 +468,19 @@ void readSoundFont (ChannelSnapshot& c, const juce::ValueTree& channel,
 
     auto& settings = c.soundFontSettings;
 
-    const auto read = [&node] (const juce::Identifier& property)
-    {
-        const auto& spec = requireInstrumentParamSpec (property);
-        return (float) juce::jlimit (spec.minimum, spec.maximum, (double) node[property]);
-    };
-
     settings.bank = juce::jlimit (0, 128, (int) node[ids::bank]);
     settings.program = juce::jlimit (0, 127, (int) node[ids::program]);
-    settings.transposeSemitones = read (ids::transpose);
-    settings.tuneCents = read (ids::tuneCents);
-    settings.filterOffsetCents = read (ids::filterOffset);
-    settings.attackScale = read (ids::attackScale);
-    settings.releaseScale = read (ids::releaseScale);
-    settings.velocitySensitivity = read (ids::velocitySens);
+
+    // clampBySpec, not a local clamp of the same two numbers: this reader had
+    // its own, and it dropped the declared DEFAULT. A node missing attackScale
+    // read the minimum, 0.25x, where the catalog says 1x, and one missing
+    // velocitySens read 0 - a soundfont that ignores how hard a key is struck.
+    settings.transposeSemitones = clampBySpec (ids::transpose, node);
+    settings.tuneCents = clampBySpec (ids::tuneCents, node);
+    settings.filterOffsetCents = clampBySpec (ids::filterOffset, node);
+    settings.attackScale = clampBySpec (ids::attackScale, node);
+    settings.releaseScale = clampBySpec (ids::releaseScale, node);
+    settings.velocitySensitivity = clampBySpec (ids::velocitySens, node);
 
     const auto path = node[ids::file].toString();
 

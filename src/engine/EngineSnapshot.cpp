@@ -11,6 +11,7 @@
 #include "model/Ids.h"
 #include "model/InstrumentType.h"
 #include "model/Meter.h"
+#include "model/ModuleCatalog.h"
 
 namespace dew
 {
@@ -134,7 +135,12 @@ EngineSnapshot buildSnapshot (const juce::ValueTree& project, juce::StringArray*
     if (! project.isValid())
         return snapshot;
 
-    snapshot.tempoBpm = juce::jlimit (20.0, 999.0, (double) project[ids::tempoBpm]);
+    // Through the catalog, not a pair of numbers repeated here. The comment
+    // over the tempo row records that 20..999 was once a four-way disagreement;
+    // this reader was the last site still spelling it out rather than asking.
+    const auto& tempoSpec = requireProjectParamSpec (ids::tempoBpm);
+    snapshot.tempoBpm = tempoSpec.clamp (
+        (double) project.getProperty (ids::tempoBpm, tempoSpec.defaultVar()));
 
     // Through Meter rather than read here, so the engine's idea of a bar and
     // the editors' cannot drift apart - both clamp the same way and both treat
@@ -199,8 +205,8 @@ EngineSnapshot buildSnapshot (const juce::ValueTree& project, juce::StringArray*
 
         ChannelSnapshot c;
         c.id = (int) channel[ids::id];
-        c.volume = juce::jlimit (0.0f, 1.0f, (float) (double) channel[ids::volume]);
-        c.pan = juce::jlimit (-1.0f, 1.0f, (float) (double) channel[ids::pan]);
+        c.volume = snapshotRead::clampBySpec (ids::volume, channel);
+        c.pan = snapshotRead::clampBySpec (ids::pan, channel);
         c.muted = (bool) channel[ids::muted];
 
         const auto instrument = channel.getChildWithName (ids::INSTRUMENT);

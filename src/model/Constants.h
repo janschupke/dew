@@ -24,4 +24,18 @@ inline constexpr double kDefaultSampleRate = 44100.0;
 */
 inline constexpr int kDefaultBlockSize = 512;
 
+/** The quietest a written note may be.
+
+    Zero velocity is a note that exists and cannot be heard, which reads as a
+    bug rather than as an edit - so `setNoteVelocity` floored it, the piano
+    roll's audition floored it, and the drawn-note memory floored it, each with
+    its own copy of the number and one of them cross-referencing the others in
+    prose. `addNote` was the fourth site and the one that did NOT: a note added
+    with velocity 0 stayed silent and looked exactly like every other note.
+
+    Not a ParamSpec, because a note is not a parameter - there is no knob, no
+    automation lane and no catalog row for one. This is the whole declaration.
+*/
+inline constexpr double kMinNoteVelocity = 0.05;
+
 } // namespace dew

@@ -243,4 +243,10 @@ const ParamSpec& requireInstrumentParamSpec (const juce::Identifier&);
 const ParamSpec* mixerTrackParamSpec (const juce::Identifier&) noexcept;
 const ParamSpec& requireMixerTrackParamSpec (const juce::Identifier&);
 
+/** The same, for the arrangement's own. The tempo row spent a while being the
+    number every reader restated: buildSnapshot clamped it by hand twenty-five
+    lines from a mixer read that asked the catalog properly. */
+const ParamSpec* projectParamSpec (const juce::Identifier&) noexcept;
+const ParamSpec& requireProjectParamSpec (const juce::Identifier&);
+
 } // namespace dew

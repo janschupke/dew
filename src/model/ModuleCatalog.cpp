@@ -684,6 +684,24 @@ const ParamSpec& requireMixerTrackParamSpec (const juce::Identifier& property)
     return spec != nullptr ? *spec : fallback;
 }
 
+const ParamSpec* projectParamSpec (const juce::Identifier& property) noexcept
+{
+    for (const auto& spec : projectParamSpecs())
+        if (*spec.property == property)
+            return &spec;
+
+    return nullptr;
+}
+
+const ParamSpec& requireProjectParamSpec (const juce::Identifier& property)
+{
+    const auto* spec = projectParamSpec (property);
+    jassert (spec != nullptr);
+
+    static const ParamSpec fallback {};
+    return spec != nullptr ? *spec : fallback;
+}
+
 const ParamSpec& requireInstrumentParamSpec (const juce::Identifier& property)
 {
     const auto* spec = instrumentParamSpec (property);

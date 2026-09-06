@@ -296,3 +296,32 @@ TEST_CASE ("a soundfont channel takes notes and is not a clip channel", "[soundf
     REQUIRE (ProjectEdits::instrumentTypeOf (font).has_value());
     CHECK (*ProjectEdits::instrumentTypeOf (font) == InstrumentType::soundfont);
 }
+
+TEST_CASE ("a soundfont node missing a property reads the declared default", "[soundfont][engine]")
+{
+    // This reader had a local clamp of its own rather than clampBySpec, and a
+    // local clamp knows the range but not the DEFAULT. A missing attackScale
+    // read the minimum - 0.25x, four times faster than the font asked for -
+    // and a missing velocitySens read 0, which is a keyboard that ignores how
+    // hard it is struck. The schema materialises these, so only a hand-built
+    // or half-migrated tree gets here; that is exactly who cannot complain.
+    auto project = ProjectFactory::createDefault();
+    auto channel = ProjectEdits::addSoundFontChannel (project, "Font", nullptr);
+    ProjectEdits::setSoundFontSource (channel, "font.sf2", 0, 0, "Ramp", nullptr);
+
+    auto node = channel.getChildWithName (ids::SOUNDFONT);
+    REQUIRE (node.isValid());
+
+    for (const auto* property : { &ids::attackScale, &ids::releaseScale, &ids::velocitySens })
+        node.removeProperty (*property, nullptr);
+
+    OneFontProvider provider;
+    provider.font = fontFrom (SoundFontBuilder::minimal());
+
+    const auto snapshot = buildSnapshot (project, nullptr, nullptr, &provider);
+    const auto& settings = snapshot.channels[snapshot.channels.size() - 1].soundFontSettings;
+
+    CHECK (settings.attackScale == Catch::Approx (1.0f));
+    CHECK (settings.releaseScale == Catch::Approx (1.0f));
+    CHECK (settings.velocitySensitivity == Catch::Approx (1.0f));
+}

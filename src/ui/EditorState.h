@@ -4,6 +4,8 @@
 
 #include <juce_gui_basics/juce_gui_basics.h>
 
+#include "model/Constants.h"
+
 namespace dew
 {
 
@@ -230,7 +232,7 @@ public:
     void rememberNote (int lengthSteps, double velocity)
     {
         lastNoteLengthSteps = juce::jmax (1, lengthSteps);
-        lastNoteVelocity = juce::jlimit (0.05, 1.0, velocity);
+        lastNoteVelocity = juce::jlimit (kMinNoteVelocity, 1.0, velocity);
     }
 
     /** The same idea one level up: the length of the last clip sized, so the

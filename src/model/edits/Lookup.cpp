@@ -13,6 +13,7 @@
 
 #include "model/ProjectEdits.h"
 
+#include "model/Constants.h"
 #include "model/Ids.h"
 #include "model/ProjectSchema.h"
 #include "model/edits/FindChild.h"
@@ -118,7 +119,8 @@ juce::ValueTree ProjectEdits::addNote (juce::ValueTree pattern, int channelId, i
     note.setProperty (ids::step, juce::jmax (0, step), nullptr);
     note.setProperty (ids::lengthSteps, juce::jmax (1, lengthSteps), nullptr);
     note.setProperty (ids::pitch, juce::jlimit (0, 127, pitch), nullptr);
-    note.setProperty (ids::velocity, (double) juce::jlimit (0.0f, 1.0f, velocity), nullptr);
+    note.setProperty (ids::velocity, juce::jlimit (kMinNoteVelocity, 1.0, (double) velocity),
+                      nullptr);
 
     pattern.appendChild (note, undo);
     return note;
@@ -188,9 +190,7 @@ void ProjectEdits::setPropertyOnEvery (juce::ValueTree parent, const juce::Ident
 
 void ProjectEdits::setNoteVelocity (juce::ValueTree note, double velocity, juce::UndoManager* undo)
 {
-    // Zero velocity is a note that exists but cannot be heard, which reads as a
-    // bug rather than an edit; the floor keeps a quiet note audible.
-    note.setProperty (ids::velocity, juce::jlimit (0.05, 1.0, velocity), undo);
+    note.setProperty (ids::velocity, juce::jlimit (kMinNoteVelocity, 1.0, velocity), undo);
 }
 
 bool ProjectEdits::growPatternToFitNotes (juce::ValueTree pattern, juce::UndoManager* undo)

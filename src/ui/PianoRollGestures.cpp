@@ -25,6 +25,7 @@
 
 #include "ui/PianoRollNotes.h"
 
+#include "model/Constants.h"
 #include "model/Ids.h"
 #include "model/NoteTools.h"
 #include "model/ProjectEdits.h"
@@ -550,12 +551,11 @@ float PianoRollComponent::auditionVelocityForX (int x) noexcept
 {
     // Across the gutter, near edge quiet and far edge full.
     //
-    // Floored at the same 0.05 EditorState::rememberNote clamps a drawn note
-    // to, so the leftmost pixel of a key still makes a sound - a keyboard with
-    // a silent edge reads as a keyboard with a dead spot.
+    // Floored at kMinNoteVelocity, so the leftmost pixel of a key still makes
+    // a sound - a keyboard with a silent edge reads as one with a dead spot.
     const auto across = (double) x / (double) juce::jmax (1, (int) size::gutterKeyboard);
 
-    return (float) juce::jlimit (0.05, 1.0, across);
+    return (float) juce::jlimit (kMinNoteVelocity, 1.0, across);
 }
 
 void PianoRollComponent::startAudition (int pitch, float velocity)

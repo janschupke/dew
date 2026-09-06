@@ -1,5 +1,6 @@
 #include <catch2/catch_test_macros.hpp>
 
+#include "model/Constants.h"
 #include "model/Ids.h"
 #include "app/ProjectDocument.h"
 #include "model/ProjectEdits.h"
@@ -210,7 +211,17 @@ TEST_CASE ("edits refuse to produce nonsense values", "[edits]")
     REQUIRE ((int) note[ids::step] == 0);
     REQUIRE ((int) note[ids::lengthSteps] == 1);
     REQUIRE ((int) note[ids::pitch] == 127);
-    REQUIRE ((double) note[ids::velocity] <= 1.0);
+    REQUIRE (juce::exactlyEqual ((double) note[ids::velocity], 1.0));
+
+    // Both ends, and the floor is the interesting one: addNote was the only
+    // one of the four velocity writers that allowed zero, so a note added
+    // through it existed, drew, and could not be heard. setNoteVelocity, the
+    // audition and the drawn-note memory all floored it; this one did not.
+    const auto silent = ProjectEdits::addNote (pattern, 1, 0, 1, 60, 0.0f, &undo);
+    REQUIRE (juce::exactlyEqual ((double) silent[ids::velocity], kMinNoteVelocity));
+
+    ProjectEdits::setNoteVelocity (silent, 0.0, &undo);
+    REQUIRE (juce::exactlyEqual ((double) silent[ids::velocity], kMinNoteVelocity));
 
     ProjectEdits::resizeNote (note, -3, &undo);
     REQUIRE ((int) note[ids::lengthSteps] == 1);
