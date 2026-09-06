@@ -39,7 +39,7 @@ std::string canon (const std::string& imitation, const std::string& lead = "")
 
 CompileResult compileScore (const std::string& source)
 {
-    return compile (source, "t.score");
+    return compile (source);
 }
 
 Score compileOk (const std::string& source)

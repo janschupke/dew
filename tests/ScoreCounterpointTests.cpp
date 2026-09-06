@@ -46,7 +46,7 @@ std::string duet (const std::string& rules, const std::string& arrangement = "  
 
 CompileResult compileScore (const std::string& source)
 {
-    return compile (source, "t.score");
+    return compile (source);
 }
 
 Score compileOk (const std::string& source)

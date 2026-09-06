@@ -66,7 +66,7 @@ int main (int argc, char* argv[])
         return fail ("no such file: " + source.getFullPathName());
 
     const auto text = source.loadFileAsString().toStdString();
-    const auto result = dew::lang::compile (text, source.getFileName().toStdString());
+    const auto result = dew::lang::compile (text);
 
     // Diagnostics go to stderr so `--summary` and a redirect stay usable.
     if (! result.diagnostics.empty())

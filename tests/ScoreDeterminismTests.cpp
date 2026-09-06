@@ -73,7 +73,7 @@ std::string scoreWith (const std::string& verseVariance = "0.5",
 
 Score compileOk (const std::string& source)
 {
-    const auto result = compile (source, "t.score");
+    const auto result = compile (source);
     INFO (result.report (source, "t.score"));
     REQUIRE (result.ok());
     return *result.score;

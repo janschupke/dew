@@ -69,7 +69,7 @@ ControlResult read (ControlHost& host, const juce::var& args)
     // notes on the undo stack.
     if (flagArg (args, "check", true) && source.isNotEmpty())
     {
-        const auto result = lang::compile (source.toStdString(), "score");
+        const auto result = lang::compile (source.toStdString());
 
         answer.set ("compiles", result.ok()).set ("diagnostics", diagnosticsOf (result, source));
     }
@@ -92,7 +92,7 @@ ControlResult write (ControlHost& host, const juce::var& args)
     ProjectEdits::setScoreSource (project, source, textArg (args, "sourceName", "score"),
                                   host.undoManager());
 
-    const auto result = lang::compile (source.toStdString(), "score");
+    const auto result = lang::compile (source.toStdString());
 
     return ControlResult::success (Obj {}
                                        .set ("stored", true)
@@ -114,7 +114,7 @@ ControlResult compileInto (ControlHost& host, const juce::var& args)
         return ControlResult::failure (
             "there is no score to compile. Write one with score_write first.");
 
-    const auto result = lang::compile (source.toStdString(), "score");
+    const auto result = lang::compile (source.toStdString());
 
     if (! result.ok() || ! result.score.has_value())
         return ControlResult::failure (

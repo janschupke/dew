@@ -38,7 +38,7 @@ juce::ValueTree ProjectFactory::createScoreDemo()
     // is what stops the two drifting.
     const auto source = DemoLibrary::jsonFor ("amber.score");
 
-    const auto result = lang::compile (source.toStdString(), "amber.score");
+    const auto result = lang::compile (source.toStdString());
 
     if (! result.ok())
         return createDefault();
@@ -67,7 +67,7 @@ juce::ValueTree ProjectFactory::createWavetableDemo()
     // following it means this demo can show off the wavetable oscillator
     // without the score language having to grow a word for any of it.
     const auto source = DemoLibrary::jsonFor ("drift.score");
-    const auto result = lang::compile (source.toStdString(), "drift.score");
+    const auto result = lang::compile (source.toStdString());
 
     if (! result.ok())
         return createDefault();
@@ -199,7 +199,7 @@ juce::ValueTree ProjectFactory::createLayersDemo()
     // like decoration. This is the demo for the panel: four channels, three
     // slots each, and no channel whose sound is a single waveform.
     const auto source = DemoLibrary::jsonFor ("neon.score");
-    const auto result = lang::compile (source.toStdString(), "neon.score");
+    const auto result = lang::compile (source.toStdString());
 
     if (! result.ok())
         return createDefault();

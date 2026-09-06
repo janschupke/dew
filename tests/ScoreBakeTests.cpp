@@ -443,7 +443,7 @@ TEST_CASE ("the language example in the README still compiles", "[score][bake]")
     INFO (snippet);
     REQUIRE (snippet.size() > 200);
 
-    const auto result = lang::compile (snippet, "README.md");
+    const auto result = lang::compile (snippet);
     INFO (result.report (snippet, "README.md"));
     REQUIRE (result.ok());
 
@@ -456,7 +456,7 @@ TEST_CASE ("the committed example still compiles", "[score][bake]")
     // The example is what CI compiles and renders, so a language change that
     // breaks it fails here first, with a readable message.
     const auto source = exampleSource();
-    const auto result = lang::compile (source, "amber.score");
+    const auto result = lang::compile (source);
 
     INFO (result.report (source, "amber.score"));
     REQUIRE (result.ok());

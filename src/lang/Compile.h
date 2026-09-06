@@ -45,8 +45,13 @@ struct CompileResult
     are English however the machine that ran it was set. The score editor passes
     the application's locale; dew_score and the MCP endpoint do not, because
     their output is a compiler-format report read by tools and by tests.
+
+    No fileName. There was one, defaulted to "score", and the body's first
+    statement was `(void) fileName;` - so seventeen call sites computed a name
+    for it, four of them from a real document, and nothing read any of them. The
+    name belongs to `CompileResult::report`, which prints it, and that is where
+    it was already being passed a second time.
 */
-CompileResult compile (std::string_view source, std::string_view fileName = "score",
-                       Locale locale = referenceLocale);
+CompileResult compile (std::string_view source, Locale locale = referenceLocale);
 
 } // namespace dew::lang

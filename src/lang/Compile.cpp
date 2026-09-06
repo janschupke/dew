@@ -29,10 +29,8 @@ std::string CompileResult::report (std::string_view source, std::string_view fil
     return out;
 }
 
-CompileResult compile (std::string_view source, std::string_view fileName, Locale locale)
+CompileResult compile (std::string_view source, Locale locale)
 {
-    (void) fileName;
-
     CompileResult result;
     DiagnosticBag bag { source, locale };
 

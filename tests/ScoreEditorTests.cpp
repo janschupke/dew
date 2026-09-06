@@ -370,7 +370,7 @@ TEST_CASE ("a project with music in it keeps its own grid", "[score][editor][bak
     auto project = dew::testing::fixtureProject();
     const auto before = (int) project[ids::stepsPerBeat];
 
-    const auto result = lang::compile (finerGridSource(), "t.score");
+    const auto result = lang::compile (finerGridSource());
     REQUIRE (result.ok());
     REQUIRE (result.score->stepsPerBeat == 12); // or the test proves nothing
 
@@ -390,7 +390,7 @@ TEST_CASE ("a project with no score offers one that works", "[score][editor]")
 
     const auto starter = ScoreEditorComponent::starterScore().toStdString();
 
-    const auto result = lang::compile (starter, "starter.score");
+    const auto result = lang::compile (starter);
     INFO (result.report (starter, "starter.score"));
     REQUIRE (result.ok());
     REQUIRE (result.score->noteCount() > 0);

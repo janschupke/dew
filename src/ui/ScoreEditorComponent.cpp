@@ -318,8 +318,7 @@ void ScoreEditorComponent::checkNow()
     // Compile rather than parse-only: generation is microseconds for a piece
     // this size, and it is where the errors worth seeing live - an overfull
     // progression, a grid that cannot be represented. Nothing is written.
-    const auto result = lang::compile (
-        text, ProjectEdits::scoreSourceName (document.getState()).toStdString(), scoreLocale());
+    const auto result = lang::compile (text, scoreLocale());
 
     diagnostics = result.diagnostics;
 
@@ -366,8 +365,7 @@ void ScoreEditorComponent::compileIntoProject()
 
     const auto text = source.getAllContent().toStdString();
     const auto name = ProjectEdits::scoreSourceName (document.getState());
-    const auto result = lang::compile (text, name.isEmpty() ? "score" : name.toStdString(),
-                                       scoreLocale());
+    const auto result = lang::compile (text, scoreLocale());
 
     if (! result.ok())
     {

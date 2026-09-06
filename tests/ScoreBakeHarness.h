@@ -25,7 +25,7 @@ inline std::string exampleSource()
 
 inline lang::Score compileOrFail (const std::string& source)
 {
-    const auto result = lang::compile (source, "test.score");
+    const auto result = lang::compile (source);
     INFO (result.report (source, "test.score"));
     REQUIRE (result.ok());
     return *result.score;
