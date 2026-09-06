@@ -412,7 +412,18 @@ enum class AutomationParam
 
     /** The arrangement's own tempo. Not applied through an override like the
         rest: it changes how STEPS become time, which is the TempoMap's job. */
-    tempoBpm
+    tempoBpm,
+
+    /** Not a parameter: the end of the list, and it must stay last.
+
+        Here so the list can be WALKED. AutomationOverrideTests drives every
+        enumerator between `none` and this one through applyAutomation and
+        requires that something moved, which is the only way to catch the
+        failure this list invites - an enumerator the reader can produce and
+        the override ladder has no line for draws a curve on screen and moves
+        nothing. Adding one above this is enough to be covered.
+    */
+    count
 };
 
 /** One automation definition, with its target resolved to indices. */

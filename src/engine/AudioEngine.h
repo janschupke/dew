@@ -6,6 +6,7 @@
 #include <type_traits>
 #include <vector>
 
+#include "engine/AutomationOverrides.h"
 #include "engine/Metronome.h"
 #include "engine/MixerBus.h"
 #include "engine/SignalTap.h"
@@ -473,15 +474,12 @@ private:
     /** One automation's value at the current position, already in the
         parameter's own units, with its target resolved.
     */
-    struct ActiveAutomation
-    {
-        AutomationScope scope = AutomationScope::channel;
-        int targetIndex = -1;
-        int slotIndex = -1;
-        AutomationParam param = AutomationParam::none;
-        int paramIndex = -1; ///< into the effect slot's block; -1 for other scopes
-        float value = 0.0f;
-    };
+    // The three structs the automation stage works in, and the function that
+    // writes one curve into one of them, live in AutomationOverrides.h - free
+    // of the engine, so every AutomationParam can be driven through the ladder
+    // without an audio device. Aliased here because this class is where the
+    // render path names them.
+    using ActiveAutomation = dew::ActiveAutomation;
 
     /** Evaluates every automation clip covering this position, once per block.
 
@@ -549,39 +547,8 @@ private:
     */
     std::shared_ptr<const TempoMap> uiTempoMap;
 
-    struct ChannelOverrides
-    {
-        float volume = 0.0f;
-        float pan = 0.0f;
-
-        /** Whether the channel plays, which is the one such state a channel
-            has. A curve over it is a curve over a VALUE on this channel, which
-            is what made it automatable while the solo beside it was not - solo
-            being a relation between channels rather than a value on one. */
-        bool muted = false;
-
-        OscBankSnapshot osc;
-
-        /** The amplitude envelope and a soundfont channel's offsets.
-
-            Both are read at note-on rather than per sample, so a curve over one
-            moves the NEXT note - the same thing an automated oscillator gain
-            has always done, and the reason this is a plain struct copy here
-            rather than anything the voices have to learn about.
-        */
-        AmpSettings amp;
-        SoundFontSettings soundFontSettings;
-
-        EffectChainSnapshot effects;
-    };
-
-    struct MixerTrackOverrides
-    {
-        float gain = 0.0f;
-        float pan = 0.0f;
-        bool mute = false;
-        EffectChainSnapshot effects;
-    };
+    using ChannelOverrides = dew::ChannelOverrides;
+    using MixerTrackOverrides = dew::MixerTrackOverrides;
 
     /** Whatever automation points at this channel, or null if none does.
 

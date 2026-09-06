@@ -391,6 +391,7 @@ add_library(dew_engine STATIC
   engine/MixerBus.cpp
   engine/AudioEngine.cpp
   engine/AudioEngineAutomation.cpp
+  engine/AutomationOverrides.cpp
   engine/AudioEngineBlock.cpp
   engine/RenderPost.cpp
 )

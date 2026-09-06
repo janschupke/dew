@@ -56,6 +56,7 @@ add_executable(dew_tests
   AutomationTests.cpp
   AutomationDocumentTests.cpp
   AutomationTargetTests.cpp
+  AutomationOverrideTests.cpp
   AutomationRenderTests.cpp
   EffectTests.cpp
   EffectDragTests.cpp
