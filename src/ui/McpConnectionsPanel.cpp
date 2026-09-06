@@ -1,3 +1,4 @@
+#include "i18n/Strings.h"
 #include "ui/McpConnectionsPanel.h"
 #include "ui/design/Tokens.h"
 

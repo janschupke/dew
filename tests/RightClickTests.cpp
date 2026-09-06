@@ -14,7 +14,7 @@
 #include "TestSupport.h"
 #include "model/Ids.h"
 #include "ui/MainComponent.h"
-#include "ui/primitives/DewControls.h"
+#include "ui/primitives/ButtonBehaviour.h"
 
 #include "ControlWalkHarness.h"
 

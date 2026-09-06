@@ -13,7 +13,7 @@
 #include "ui/PreferencesCatalog.h"
 #include "ui/PreferencesPages.h"
 #include "ui/design/Tokens.h"
-#include "ui/primitives/DewControls.h"
+#include "ui/primitives/DewButtons.h"
 #include "ui/primitives/DewSearchField.h"
 
 namespace dew

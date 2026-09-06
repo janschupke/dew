@@ -56,14 +56,18 @@ int maxContentHeight()
                        juce::roundToInt (display->userBounds.getHeight()) - tokens::space::xxl * 2);
 }
 
-void launch (juce::Component* content, const juce::String& title, juce::Component* centreAround)
+void launch (std::unique_ptr<juce::Component> content, const juce::String& title,
+             juce::Component* centreAround)
 {
     juce::DialogWindow::LaunchOptions options;
 
+    // release() only where ownership actually changes hands, and both branches
+    // hand it to something that takes it: ScrollingContent's viewport, or
+    // setOwned itself.
     if (const auto tallest = maxContentHeight(); content->getHeight() > tallest)
-        options.content.setOwned (new ScrollingContent (content, tallest));
+        options.content.setOwned (new ScrollingContent (content.release(), tallest));
     else
-        options.content.setOwned (content);
+        options.content.setOwned (content.release());
     options.dialogTitle = title;
     options.dialogBackgroundColour = tokens::colour::background;
     options.componentToCentreAround = centreAround;

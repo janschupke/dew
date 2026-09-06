@@ -3,7 +3,7 @@
 #include <juce_gui_basics/juce_gui_basics.h>
 
 #include "ui/MenuSeam.h"
-#include "ui/primitives/DewControls.h"
+#include "ui/primitives/ButtonBehaviour.h"
 #include "ui/primitives/HoverTracker.h"
 
 namespace dew

@@ -10,7 +10,9 @@
 // first caller happened to be.
 // =============================================================================
 
-#include "ui/primitives/DewControls.h"
+#include "ui/primitives/ButtonBehaviour.h"
+#include "ui/primitives/DewButtons.h"
+#include "ui/primitives/DewPaint.h"
 
 #include <cmath>
 

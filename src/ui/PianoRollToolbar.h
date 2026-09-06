@@ -8,7 +8,7 @@
 #include "ui/VerticalZoomButtons.h"
 #include "ui/ToolbarOverflow.h"
 #include "ui/ZoomButtons.h"
-#include "ui/primitives/DewControls.h"
+#include "ui/primitives/DewButtons.h"
 
 namespace dew
 {

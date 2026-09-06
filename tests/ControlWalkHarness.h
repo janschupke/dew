@@ -6,7 +6,8 @@
 
 #include "app/Settings.h"
 #include "ui/MainComponent.h"
-#include "ui/primitives/DewControls.h"
+#include "ui/primitives/DewButtons.h"
+#include "ui/primitives/DewKnob.h"
 #include "ui/primitives/DewNumberField.h"
 
 namespace dew::testing

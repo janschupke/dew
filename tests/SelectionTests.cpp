@@ -14,7 +14,7 @@
 #include "ui/design/Tokens.h"
 #include "ui/EffectChainComponent.h"
 #include "ui/MixerComponent.h"
-#include "ui/primitives/DewControls.h"
+#include "ui/primitives/DewButtons.h"
 #include "ui/primitives/DewNumberField.h"
 #include "ConfirmSupport.h"
 #include "FixtureProject.h"

@@ -7,6 +7,7 @@
 
 #include <juce_gui_basics/juce_gui_basics.h>
 
+#include "ui/design/Icons.h"
 #include "engine/EngineSnapshot.h"
 #include "model/Ids.h"
 #include "model/ModuleCatalog.h"
@@ -14,7 +15,8 @@
 #include "ui/ParamContextMenu.h"
 #include "app/ProjectDocument.h"
 #include "ui/EditorState.h"
-#include "ui/primitives/DewControls.h"
+#include "ui/primitives/DewButtons.h"
+#include "ui/primitives/DewKnob.h"
 #include "ui/primitives/RotaryGesture.h"
 
 namespace dew

@@ -17,7 +17,7 @@
 #include "ui/AutomationLane.h"
 #include "ui/TimelineView.h"
 #include "ui/RowView.h"
-#include "ui/primitives/DewControls.h"
+#include "ui/primitives/DewButtons.h"
 
 namespace dew
 {

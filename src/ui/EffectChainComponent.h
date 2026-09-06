@@ -8,7 +8,7 @@
 #include "ui/design/Tokens.h"
 #include "ui/EditorState.h"
 #include "ui/PresetMenu.h"
-#include "ui/primitives/DewControls.h"
+#include "ui/primitives/ButtonBehaviour.h"
 #include "ui/primitives/DewNumberField.h"
 
 namespace dew

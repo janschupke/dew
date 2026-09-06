@@ -61,10 +61,10 @@ void RandomizePanel::show (NoteTools::RandomizeOptions initial, juce::String sco
                            juce::Component* parent,
                            std::function<void (const NoteTools::RandomizeOptions&)> onApply)
 {
-    auto* panel = new RandomizePanel (initial, std::move (scopeText));
+    auto panel = std::make_unique<RandomizePanel> (initial, std::move (scopeText));
     panel->onApply = std::move (onApply);
 
-    dialog::launch (panel, tr (StringId::randomize_title), parent);
+    dialog::launch (std::move (panel), tr (StringId::randomize_title), parent);
 }
 
 void RandomizePanel::paint (juce::Graphics& g)

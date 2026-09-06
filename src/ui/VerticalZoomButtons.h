@@ -5,7 +5,7 @@
 #include "ui/ZoomButtons.h"
 #include "ui/design/Icons.h"
 #include "ui/design/Tokens.h"
-#include "ui/primitives/DewControls.h"
+#include "ui/primitives/DewButtons.h"
 
 namespace dew
 {

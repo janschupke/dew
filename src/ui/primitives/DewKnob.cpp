@@ -12,7 +12,8 @@
 // handlers under the one comment that states it is what makes that readable.
 // =============================================================================
 
-#include "ui/primitives/DewControls.h"
+#include "ui/primitives/DewKnob.h"
+#include "ui/primitives/DewPaint.h"
 
 #include <cmath>
 

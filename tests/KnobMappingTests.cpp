@@ -25,7 +25,7 @@
 #include "model/Ids.h"
 #include "model/ModuleCatalog.h"
 #include "model/ParamSpec.h"
-#include "ui/primitives/DewControls.h"
+#include "ui/primitives/DewKnob.h"
 
 using namespace dew;
 

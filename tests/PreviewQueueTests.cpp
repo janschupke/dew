@@ -84,6 +84,13 @@ TEST_CASE ("the queue survives a producer and a consumer hammering it", "[previe
     std::atomic<bool> producerDone { false };
     std::atomic<int> accepted { 0 };
 
+    // What the producer got IN, in the order it got it in. Only the producer
+    // touches it, and it is not read until the join - which is what lets the
+    // two sequences be COMPARED rather than counted. Counting them was all this
+    // test did, and a count says nothing about order.
+    std::vector<int> sent;
+    sent.reserve (attempts);
+
     std::vector<int> received;
     received.reserve (attempts);
 
@@ -92,7 +99,10 @@ TEST_CASE ("the queue survives a producer and a consumer hammering it", "[previe
         {
             for (int i = 0; i < attempts; ++i)
                 if (queue.push ({ PreviewEvent::Kind::noteOn, i % 8, i % 128, 1.0f }))
+                {
+                    sent.push_back (i % 128);
                     accepted.fetch_add (1, std::memory_order_relaxed);
+                }
 
             producerDone.store (true, std::memory_order_release);
         });
@@ -120,9 +130,18 @@ TEST_CASE ("the queue survives a producer and a consumer hammering it", "[previe
                       << ", corrupt " << corrupt);
 
     REQUIRE (corrupt == 0);
-    REQUIRE ((int) received.size() == accepted.load());
 
-    // Everything the producer accepted arrived, in the order it was written -
-    // the accepted events are a subsequence of 0,1,2,... mod 128.
-    REQUIRE (accepted.load() > 1000);
+    // Everything the producer accepted arrived, exactly once and in the order
+    // it was written. The comment here used to claim that and the assertion
+    // under it counted, which is a different thing: a queue that swapped two
+    // events, or handed one back twice while dropping another, passed.
+    REQUIRE (received == sent);
+
+    // No throughput floor. There was one - accepted > 1000 of 400000 - and it
+    // measured the SCHEDULER rather than the queue: the ring is bounded, so a
+    // push fails while it is full, and on a machine busy with the rest of this
+    // suite the consumer is not woken often enough. It went red at 639, with
+    // corrupt 0 and every accepted event delivered in order - which is the
+    // queue working. What has to be asserted is that the run was not vacuous.
+    REQUIRE (accepted.load() > 0);
 }

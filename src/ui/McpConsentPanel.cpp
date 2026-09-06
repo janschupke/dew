@@ -38,7 +38,7 @@ void McpConsentPanel::answer (control::Grant grant)
 void McpConsentPanel::show (Request r, juce::Component* parent,
                             std::function<void (control::Grant)> onAnswered)
 {
-    auto* panel = new McpConsentPanel (std::move (r));
+    auto panel = std::make_unique<McpConsentPanel> (std::move (r));
 
     // A closed window is a refusal. Without this the socket thread that asked
     // would wait out its whole consent timeout for an answer that is never
@@ -54,7 +54,7 @@ void McpConsentPanel::show (Request r, juce::Component* parent,
             reply (grant);
     };
 
-    dialog::launch (panel, tr (StringId::mcp_consent_title), parent);
+    dialog::launch (std::move (panel), tr (StringId::mcp_consent_title), parent);
 }
 
 void McpConsentPanel::paint (juce::Graphics& g)

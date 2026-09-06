@@ -20,7 +20,7 @@
 #include "model/ProjectFactory.h"
 #include "ui/design/ParamPalette.h"
 #include "ui/design/Tokens.h"
-#include "ui/primitives/DewControls.h"
+#include "ui/primitives/DewKnob.h"
 
 #include "PaintProbe.h"
 

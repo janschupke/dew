@@ -12,7 +12,8 @@
 #include "ui/MainComponent.h"
 #include "ui/design/Tokens.h"
 #include "ui/StatusBar.h"
-#include "ui/primitives/DewControls.h"
+#include "ui/primitives/DewButtons.h"
+#include "ui/primitives/DewKnob.h"
 #include "ui/primitives/DewNumberField.h"
 #include "ControlWalkHarness.h"
 

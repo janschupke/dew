@@ -4,7 +4,7 @@
 
 #include "ui/design/Gestures.h"
 #include "ui/design/Keys.h"
-#include "ui/primitives/DewControls.h"
+#include "ui/primitives/DewKnob.h"
 #include "ui/primitives/DewNumberField.h"
 
 using namespace dew;

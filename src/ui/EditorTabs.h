@@ -12,7 +12,7 @@
 #include "ui/ParamContextMenu.h"
 #include "ui/PlaylistComponent.h"
 #include "ui/ScoreEditorComponent.h"
-#include "ui/primitives/DewControls.h"
+#include "ui/primitives/ButtonBehaviour.h"
 
 namespace dew
 {

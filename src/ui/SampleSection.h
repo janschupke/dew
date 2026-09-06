@@ -2,6 +2,7 @@
 
 #include <juce_gui_basics/juce_gui_basics.h>
 
+#include "ui/design/Icons.h"
 #include "i18n/Strings.h"
 
 #include "io/SamplePool.h"
@@ -9,7 +10,8 @@
 #include "model/ModuleCatalog.h"
 #include "model/Ids.h"
 #include "ui/ParamContextMenu.h"
-#include "ui/primitives/DewControls.h"
+#include "ui/primitives/DewButtons.h"
+#include "ui/primitives/DewKnob.h"
 #include "ui/primitives/RotaryGesture.h"
 
 namespace dew

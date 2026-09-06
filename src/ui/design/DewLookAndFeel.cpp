@@ -5,7 +5,10 @@
 #include "ui/design/MenuGlyph.h"
 #include "ui/design/Tokens.h"
 
-#include "ui/primitives/DewControls.h"
+#include "ui/primitives/ButtonBehaviour.h"
+#include "ui/primitives/DewButtons.h"
+#include "ui/primitives/DewKnob.h"
+#include "ui/primitives/DewPaint.h"
 #include "ui/design/Animator.h"
 
 namespace dew

@@ -5,7 +5,7 @@
 #include "app/Settings.h"
 #include "io/MidiInputHost.h"
 #include "ui/DewDialog.h"
-#include "ui/primitives/DewControls.h"
+#include "ui/primitives/DewButtons.h"
 
 namespace dew
 {

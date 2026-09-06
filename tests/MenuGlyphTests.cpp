@@ -24,7 +24,7 @@
 #include "ui/design/MenuGlyph.h"
 #include "ui/design/Theme.h"
 #include "ui/design/Tokens.h"
-#include "ui/primitives/DewControls.h"
+#include "ui/primitives/DewButtons.h"
 
 #include "FixtureProject.h"
 #include "PaintProbe.h"

@@ -235,15 +235,15 @@ void MainComponent::showMcpSettings()
     // Both fetched on demand rather than handed over: the switch on this very
     // panel stops and starts the endpoint, and asking each time is what makes
     // the panel independent of when that happens.
-    auto* panel = new McpConnectionsPanel ([this] { return mcpServer.get(); },
-                                           [this] { return mcpGrants.get(); }, mcpSettings,
-                                           [this]
-                                           {
-                                               if (mcpSettings != nullptr)
-                                                   applyMcpSettings (*mcpSettings);
-                                           });
+    auto panel = std::make_unique<McpConnectionsPanel> ([this] { return mcpServer.get(); }, [this]
+                                                        { return mcpGrants.get(); }, mcpSettings,
+                                                        [this]
+                                                        {
+                                                            if (mcpSettings != nullptr)
+                                                                applyMcpSettings (*mcpSettings);
+                                                        });
 
-    dialog::launch (panel, tr (StringId::mcp_connections_title), this);
+    dialog::launch (std::move (panel), tr (StringId::mcp_connections_title), this);
 }
 
 void MainComponent::showPreferences (Settings& settings, juce::ApplicationCommandManager& commands,

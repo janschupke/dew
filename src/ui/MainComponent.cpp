@@ -522,12 +522,12 @@ void MainComponent::updateMidiTargetChannel()
 
 void MainComponent::showMidiSettings()
 {
-    auto* panel = new MidiSettingsPanel (midiHost, nullptr);
+    auto panel = std::make_unique<MidiSettingsPanel> (midiHost, nullptr);
 
     panel->onDevicesChanged = [this]
     { statusBar.showMessage (midiHost.describeInputs(), StatusBar::Severity::info); };
 
-    dialog::launch (panel, tr (StringId::midi_title), this);
+    dialog::launch (std::move (panel), tr (StringId::midi_title), this);
 }
 
 void MainComponent::resized()

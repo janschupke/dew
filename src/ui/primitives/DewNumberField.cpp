@@ -4,7 +4,7 @@
 #include "ui/design/Cursors.h"
 #include "ui/design/Keys.h"
 #include "ui/design/Tokens.h"
-#include "ui/primitives/DewControls.h"
+#include "ui/primitives/DewPaint.h"
 
 namespace dew
 {

@@ -4,7 +4,7 @@
 #include "model/Ids.h"
 #include "model/ProjectEdits.h"
 #include "ui/design/Tokens.h"
-#include "ui/primitives/DewControls.h"
+#include "ui/primitives/ButtonBehaviour.h"
 
 namespace dew
 {

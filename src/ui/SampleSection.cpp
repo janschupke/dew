@@ -1,3 +1,4 @@
+#include "ui/primitives/DewPaint.h"
 #include "ui/SampleSection.h"
 
 #include "i18n/Strings.h"

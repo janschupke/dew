@@ -4,6 +4,7 @@
 
 #include <juce_gui_basics/juce_gui_basics.h>
 
+#include "ui/design/Icons.h"
 #include "i18n/Strings.h"
 
 #include "model/EffectType.h"
@@ -12,7 +13,9 @@
 #include "app/ProjectDocument.h"
 #include "ui/EditorState.h"
 #include "ui/KnobGrid.h"
-#include "ui/primitives/DewControls.h"
+#include "ui/primitives/ButtonBehaviour.h"
+#include "ui/primitives/DewButtons.h"
+#include "ui/primitives/DewKnob.h"
 #include "ui/primitives/RotaryGesture.h"
 #include "ui/primitives/DewNumberField.h"
 #include "ui/primitives/HoverTracker.h"

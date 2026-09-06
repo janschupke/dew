@@ -1,3 +1,4 @@
+#include "ui/primitives/DewPaint.h"
 #include "ui/PlaylistToolbar.h"
 
 #include "ui/StripLayout.h"

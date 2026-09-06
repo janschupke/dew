@@ -1,3 +1,4 @@
+#include "ui/primitives/DewPaint.h"
 #include "ui/MidiSettingsPanel.h"
 #include "i18n/Strings.h"
 #include "ui/DewDialog.h"
@@ -312,8 +313,8 @@ void MidiSettingsPanel::paint (juce::Graphics& g)
 void MidiSettingsPanel::show (MidiInputHost& hostToUse, Settings* settingsToUse,
                               juce::Component* parent)
 {
-    dialog::launch (new MidiSettingsPanel (hostToUse, settingsToUse), tr (StringId::midi_title),
-                    parent);
+    dialog::launch (std::make_unique<MidiSettingsPanel> (hostToUse, settingsToUse),
+                    tr (StringId::midi_title), parent);
 }
 
 } // namespace dew

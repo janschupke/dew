@@ -1,5 +1,7 @@
 #pragma once
 
+#include <memory>
+
 #include <juce_gui_extra/juce_gui_extra.h>
 
 namespace dew::dialog
@@ -13,10 +15,16 @@ namespace dew::dialog
     resizes, or that ignores escape, is a dialog that behaves unlike the other
     five.
 
-    Takes ownership of `content`, as LaunchOptions::content.setOwned does. The
-    dialog is modeless and deletes itself when closed.
+    Takes ownership of `content` - a unique_ptr, not a raw pointer with the
+    ownership stated only here. Nine call sites wrote `new`, and two of them
+    held the raw pointer across several statements to wire callbacks onto it
+    before handing it over, which is the window in which an early return or a
+    throw leaks a whole panel. The signature says what the comment used to.
+
+    The dialog is modeless and deletes itself when closed.
 */
-void launch (juce::Component* content, const juce::String& title, juce::Component* centreAround);
+void launch (std::unique_ptr<juce::Component> content, const juce::String& title,
+             juce::Component* centreAround);
 
 /** The tallest a dialog's content may be and still fit on this screen.
 

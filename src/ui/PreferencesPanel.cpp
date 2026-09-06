@@ -7,6 +7,7 @@
 // five files: no file is over 400 lines of code, and a gate says so.
 // =============================================================================
 
+#include "ui/primitives/DewPaint.h"
 #include "ui/PreferencesPanel.h"
 
 #include "engine/AudioEngine.h"
@@ -178,7 +179,7 @@ void PreferencesPanel::selectPage (prefs::Page page)
 
 void PreferencesPanel::show (Settings& settings, Hosts hosts, juce::Component* parent)
 {
-    dialog::launch (new PreferencesPanel (settings, std::move (hosts)),
+    dialog::launch (std::make_unique<PreferencesPanel> (settings, std::move (hosts)),
                     tr (StringId::preferences_title), parent);
 }
 

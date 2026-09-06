@@ -37,10 +37,10 @@ void ConfirmPanel::show (Request r, juce::Component* parent, std::function<void(
 {
     const auto title = r.title;
 
-    auto* panel = new ConfirmPanel (std::move (r));
+    auto panel = std::make_unique<ConfirmPanel> (std::move (r));
     panel->onConfirm = std::move (onConfirmed);
 
-    dialog::launch (panel, title, parent);
+    dialog::launch (std::move (panel), title, parent);
 }
 
 void ConfirmPanel::paint (juce::Graphics& g)

@@ -6,7 +6,7 @@
 
 #include "model/NoteTools.h"
 #include "ui/DewDialog.h"
-#include "ui/primitives/DewControls.h"
+#include "ui/primitives/DewButtons.h"
 #include "ui/primitives/DewNumberField.h"
 
 namespace dew

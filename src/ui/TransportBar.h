@@ -2,6 +2,7 @@
 
 #include <juce_gui_basics/juce_gui_basics.h>
 
+#include "ui/design/Icons.h"
 #include "i18n/Strings.h"
 
 #include "engine/AudioEngine.h"
@@ -11,7 +12,7 @@
 #include "ui/ConfirmPanel.h"
 #include "ui/EditorState.h"
 #include "ui/design/SignalScope.h"
-#include "ui/primitives/DewControls.h"
+#include "ui/primitives/DewButtons.h"
 #include "ui/ParamContextMenu.h"
 #include "ui/primitives/DewNumberField.h"
 

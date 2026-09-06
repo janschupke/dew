@@ -1,3 +1,4 @@
+#include "ui/primitives/DewPaint.h"
 #include "ui/design/DewGallery.h"
 
 #include <array>

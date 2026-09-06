@@ -378,7 +378,8 @@ void AudioSettingsPanel::paint (juce::Graphics& g)
 
 void AudioSettingsPanel::show (LiveAudioHost& host, AudioEngine& engine, juce::Component* parent)
 {
-    dialog::launch (new AudioSettingsPanel (host, engine), tr (StringId::audio_title), parent);
+    dialog::launch (std::make_unique<AudioSettingsPanel> (host, engine), tr (StringId::audio_title),
+                    parent);
 }
 
 } // namespace dew

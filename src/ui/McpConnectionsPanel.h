@@ -2,11 +2,12 @@
 
 #include <juce_gui_basics/juce_gui_basics.h>
 
+#include "i18n/Strings.h"
 #include "app/Settings.h"
 #include "control/McpServer.h"
 #include "ui/DewDialog.h"
 #include "ui/McpGrants.h"
-#include "ui/primitives/DewControls.h"
+#include "ui/primitives/DewButtons.h"
 
 namespace dew
 {

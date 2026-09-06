@@ -10,7 +10,7 @@
 #include "ui/ScoreCompletionList.h"
 #include "ui/ScoreTokeniser.h"
 #include "ui/StatusBar.h"
-#include "ui/primitives/DewControls.h"
+#include "ui/primitives/DewButtons.h"
 
 namespace dew
 {

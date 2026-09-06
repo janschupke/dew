@@ -4,6 +4,7 @@
 
 #include <juce_gui_basics/juce_gui_basics.h>
 
+#include "ui/primitives/DewPaint.h"
 #include "i18n/Strings.h"
 #include "model/ModuleCatalog.h"
 #include "ui/design/MenuGlyph.h"

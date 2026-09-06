@@ -9,7 +9,7 @@
 #include "model/ModuleCatalog.h"
 #include "ui/ParamContextMenu.h"
 #include "ui/design/Tokens.h"
-#include "ui/primitives/DewControls.h"
+#include "ui/primitives/DewKnob.h"
 #include "ui/primitives/RotaryGesture.h"
 
 namespace dew

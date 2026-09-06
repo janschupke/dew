@@ -55,7 +55,7 @@ juce::String AboutPanel::getBuildText() const
 
 void AboutPanel::show (juce::Component* parent)
 {
-    dialog::launch (new AboutPanel(), tr (StringId::about_title), parent);
+    dialog::launch (std::make_unique<AboutPanel>(), tr (StringId::about_title), parent);
 }
 
 void AboutPanel::paint (juce::Graphics& g)

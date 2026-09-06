@@ -1,3 +1,4 @@
+#include "ui/primitives/DewPaint.h"
 #include "ui/MenuSeam.h"
 #include "ui/MixerStrip.h"
 

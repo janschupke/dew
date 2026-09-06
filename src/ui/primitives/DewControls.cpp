@@ -1,4 +1,8 @@
-#include "ui/primitives/DewControls.h"
+#include "ui/design/Icons.h"
+#include "ui/primitives/ButtonBehaviour.h"
+#include "ui/primitives/DewButtons.h"
+#include "ui/primitives/DewKnob.h"
+#include "ui/primitives/DewPaint.h"
 
 #include "ui/design/Cursors.h"
 #include "ui/design/Gestures.h"
@@ -55,7 +59,7 @@ juce::Colour ButtonLift::cross (juce::Colour off, juce::Colour on) const
 // --- DewButton ---------------------------------------------------------------
 
 DewButton::DewButton (const juce::String& text, Role r)
-    : PopupSafeButton<juce::Button> (text)
+    : PaintedButton<juce::Button> (text)
     , role (r)
 {
     setButtonText (text);
@@ -164,7 +168,7 @@ void DewButton::paintButton (juce::Graphics& g, bool highlighted, bool down)
 // --- DewIconButton -----------------------------------------------------------
 
 DewIconButton::DewIconButton (juce::Path i, const juce::String& tooltipText, Role r)
-    : PopupSafeButton<juce::Button> (tooltipText)
+    : PaintedButton<juce::Button> (tooltipText)
     , icon (std::move (i))
     , onColour (onColourFor (r))
     , role (r)
@@ -266,7 +270,7 @@ void DewIconButton::paintButton (juce::Graphics& g, bool highlighted, bool down)
 
 DewLetterToggle::DewLetterToggle (const juce::String& l, juce::Colour c,
                                   const juce::String& tooltipText)
-    : PopupSafeButton<juce::Button> (tooltipText)
+    : PaintedButton<juce::Button> (tooltipText)
     , letter (l)
     , onColour (c)
 {

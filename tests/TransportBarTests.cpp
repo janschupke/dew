@@ -15,7 +15,7 @@
 #include "ui/design/DewLookAndFeel.h"
 #include "i18n/Strings.h"
 #include "ui/design/Icons.h"
-#include "ui/primitives/DewControls.h"
+#include "ui/primitives/DewButtons.h"
 #include "ui/MenuSeam.h"
 #include "app/Settings.h"
 #include "TestSupport.h"

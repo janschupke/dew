@@ -14,7 +14,7 @@
 #include "ui/design/Icons.h"
 #include "ui/design/SignalScope.h"
 #include "ui/design/Tokens.h"
-#include "ui/primitives/DewControls.h"
+#include "ui/primitives/ButtonBehaviour.h"
 #include "ui/primitives/DewNumberField.h"
 #include "ui/primitives/HoverTracker.h"
 

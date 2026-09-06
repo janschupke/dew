@@ -8,7 +8,8 @@
 #include "app/ProjectDocument.h"
 #include "ui/HeaderRow.h"
 #include "ui/design/Icons.h"
-#include "ui/primitives/DewControls.h"
+#include "ui/primitives/DewButtons.h"
+#include "ui/primitives/DewKnob.h"
 #include "ui/primitives/RotaryGesture.h"
 #include "ui/design/Tokens.h"
 

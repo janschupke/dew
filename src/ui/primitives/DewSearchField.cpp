@@ -1,6 +1,7 @@
 #include "ui/primitives/DewSearchField.h"
 
 #include "ui/design/Cursors.h"
+#include "ui/primitives/DewPaint.h"
 
 namespace dew
 {

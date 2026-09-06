@@ -324,15 +324,15 @@ void MainComponent::showRenderDialog (Settings* settingsToUpdate)
     // after an edit would otherwise use the snapshot from before it.
     flushPendingEngineUpdate();
 
-    auto* panel = new RenderPanel (document, editorState, settingsToUpdate);
+    auto panel = std::make_unique<RenderPanel> (document, editorState, settingsToUpdate);
 
     // The window owns the panel and deletes itself when its modal state ends, so
     // the panel closes itself by finding it rather than by holding a pointer to
     // something that will be gone. The deletion is deferred, which is what makes
     // this safe to call from inside one of the panel's own button callbacks.
-    const auto close = [panel]
+    const auto close = [dialogContent = panel.get()]
     {
-        if (auto* window = panel->findParentComponentOfClass<juce::DialogWindow>())
+        if (auto* window = dialogContent->findParentComponentOfClass<juce::DialogWindow>())
             window->exitModalState (0);
     };
 
@@ -344,16 +344,16 @@ void MainComponent::showRenderDialog (Settings* settingsToUpdate)
         close();
     };
 
-    dialog::launch (panel, tr (StringId::render_title), this);
+    dialog::launch (std::move (panel), tr (StringId::render_title), this);
 }
 
 void MainComponent::showAudioSettings()
 {
-    auto* panel = new AudioSettingsPanel (audioHost, engine);
+    auto panel = std::make_unique<AudioSettingsPanel> (audioHost, engine);
 
     panel->onDeviceChanged = [this]
     { statusBar.showMessage (audioHost.describeDevice(), StatusBar::Severity::info); };
 
-    dialog::launch (panel, tr (StringId::audio_title), this);
+    dialog::launch (std::move (panel), tr (StringId::audio_title), this);
 }
 } // namespace dew
