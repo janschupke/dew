@@ -155,39 +155,31 @@ void InstrumentPanel::bindRotary (juce::Slider& slider, DewKnob* knob,
     const auto& spec = requireInstrumentParamSpec (property);
 
     // One transaction per gesture, so dragging a knob is a single undo step
-    // rather than several hundred.
-    slider.onDragStart = [this]
-    {
-        inDrag = true;
-        gestureActive = false;
-    };
-    slider.onDragEnd = [this]
-    {
-        inDrag = false;
-        gestureActive = false;
-    };
+    // rather than several hundred. The protocol lives in RotaryGesture now;
+    // this function is what is left of it, which is the write.
+    gesture.attach (slider,
+                    [this, &slider, &spec, owner, property, transactionName] (bool continuing)
+                    {
+                        if (updating)
+                            return false;
 
-    slider.onValueChange = [this, &slider, &spec, owner, property, transactionName]
-    {
-        if (updating)
-            return;
+                        auto tree = owner();
 
-        auto tree = owner();
+                        if (! tree.isValid())
+                            return false;
 
-        if (! tree.isValid())
-            return;
+                        // Integer-valued properties must stay integers in the file:
+                        // writing a double would change the JSON from `0` to `0.0`
+                        // and, worse, make the schema's type coercion do the
+                        // rounding instead of this code.
+                        const juce::var value = spec.integral ? juce::var ((int) slider.getValue())
+                                                              : juce::var (slider.getValue());
 
-        // Integer-valued properties must stay integers in the file: writing a
-        // double would change the JSON from `0` to `0.0` and, worse, make the
-        // schema's type coercion do the rounding instead of this code.
-        const juce::var value = spec.integral ? juce::var ((int) slider.getValue())
-                                              : juce::var (slider.getValue());
-
-        ProjectEdits::setProperty (tree, property, value, &document.getUndoManager(),
-                                   transactionName, gestureActive);
-
-        gestureActive = inDrag;
-    };
+                        ProjectEdits::setProperty (tree, property, value,
+                                                   &document.getUndoManager(), transactionName,
+                                                   continuing);
+                        return true;
+                    });
 
     boundRotaries.push_back ({ &slider, knob, owner, property });
 }

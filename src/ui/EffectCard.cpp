@@ -501,15 +501,17 @@ void EffectCard::layOutParams (juce::Rectangle<int> area, bool visible)
 
 // --- the controls ------------------------------------------------------------
 
-void EffectCard::write (const juce::Identifier& property, double value)
+bool EffectCard::write (const juce::Identifier& property, double value, bool continuing)
 {
     if (updating)
-        return;
+        return false;
 
     ProjectEdits::setProperty (effect, property, value, &document.getUndoManager(),
-                               "Change effect parameter", gestureActive);
+                               "Change effect parameter", continuing);
 
-    gestureActive = inDrag;
+    // Whether the caller may advance its gesture. A write refused because a
+    // refresh is in progress must not leave a transaction looking open.
+    return true;
 }
 
 void EffectCard::buildChoice (const ParamSpec& spec)
@@ -610,17 +612,8 @@ void EffectCard::buildParameters()
             control->knob->setValue (value, juce::dontSendNotification);
 
             auto* knob = control->knob.get();
-            knob->onEditStart = [this]
-            {
-                inDrag = true;
-                gestureActive = false;
-            };
-            knob->onEditEnd = [this]
-            {
-                inDrag = false;
-                gestureActive = false;
-            };
-            knob->onValueChange = [this, knob, property] { write (property, knob->getValue()); };
+            gesture.attach (*knob, [this, knob, property] (bool continuing)
+                            { return write (property, knob->getValue(), continuing); });
 
             // Built from the same spec that built the knob, so what the
             // menu offers to automate is exactly what the knob turns.
@@ -640,15 +633,18 @@ void EffectCard::buildParameters()
             control->field->setValue (value, juce::dontSendNotification);
 
             auto* field = control->field.get();
-            // A number field has no edit-end, so its drag is bounded by the
-            // start of the next one - which is enough: a new gesture opens
-            // its own transaction either way.
-            field->onEditStart = [this]
+
+            // A number field has no edit-end, so its edit is bounded by the
+            // start of the next one - which is enough for a field, and was NOT
+            // enough across controls. It used to set the knobs' inDrag and
+            // never clear it, so after typing a value every later wheel notch
+            // on a knob joined the field's undo step. Its own flag now.
+            field->onEditStart = [this] { fieldEditing = false; };
+            field->onValueChange = [this, field, property]
             {
-                inDrag = true;
-                gestureActive = false;
+                if (write (property, field->getValue(), fieldEditing))
+                    fieldEditing = true;
             };
-            field->onValueChange = [this, field, property] { write (property, field->getValue()); };
 
             paramMenu::attachTo (owner.getParamMenuHost(), *field, [this] { return effect; }, spec);
 

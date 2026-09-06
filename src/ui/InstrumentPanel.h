@@ -11,6 +11,7 @@
 #include "ui/EffectChainHost.h"
 #include "ui/KnobGrid.h"
 #include "ui/ParamContextMenu.h"
+#include "ui/primitives/RotaryGesture.h"
 #include "ui/PresetMenu.h"
 #include "ui/OscillatorSection.h"
 #include "ui/SampleSection.h"
@@ -178,9 +179,8 @@ private:
     ProjectDocument& document;
     EditorState& editorState;
 
-    /** True between a knob's onDragStart and onDragEnd - see attachRotary. */
-    bool inDrag = false;
-    bool gestureActive = false;
+    /** One gesture for the panel: its knobs and its two steppers. */
+    RotaryGesture gesture;
 
     juce::Label titleLabel;
 

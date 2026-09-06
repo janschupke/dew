@@ -13,6 +13,7 @@
 #include "ui/EditorState.h"
 #include "ui/KnobGrid.h"
 #include "ui/primitives/DewControls.h"
+#include "ui/primitives/RotaryGesture.h"
 #include "ui/primitives/DewNumberField.h"
 #include "ui/primitives/HoverTracker.h"
 #include "ui/design/Tokens.h"
@@ -182,7 +183,8 @@ private:
         juce::Identifier property;
     };
 
-    void write (const juce::Identifier& property, double value);
+    /** Writes one parameter, and reports whether it did - see the gesture. */
+    bool write (const juce::Identifier& property, double value, bool continuing);
     void buildParameters();
 
     /** The dropdown for a type's one choice parameter, built from its spec. */
@@ -208,8 +210,12 @@ private:
         primitive - it is a Component with its own gesture - so it carries the
         latch itself. See PopupPress. */
     PopupPress popupPress;
-    bool inDrag = false;
-    bool gestureActive = false;
+    /** The card's knobs. */
+    RotaryGesture gesture;
+
+    /** Its number fields, which have no edit-end and so are not the same
+        gesture - see buildParameters. */
+    bool fieldEditing = false;
 
     juce::Rectangle<int> gripBounds, iconBounds, nameBounds, modeCaptionBounds;
 
