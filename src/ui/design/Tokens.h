@@ -224,10 +224,31 @@ inline constexpr float edgeLift = 0.35f;    ///< a note's border against its own
     out three times as `.withSaturation (0.1f).withMultipliedBrightness
     (0.6f)`, and a fourth idea of "inactive" - 0.3 and 0.7 - lived in the
     button primitive.
+
+    Saturation MULTIPLIED rather than set, and that is the whole difference
+    between this and what it used to be. Setting it to 0.1 landed every muted
+    clip in the arrangement on the same grey, whatever colour its lane was -
+    so an arrangement with its lanes coloured lost that colouring exactly
+    where it was doing the most work, on the lanes that had been turned off.
+    A lane's own colour has to survive being switched off. Brightness carries
+    the "off" instead, which is the direction every other surface in dew dims
+    in - see `dew::silence` in ui/RowSilence.h, which is the same statement
+    made of an alpha for the rows this one is made of a fill for.
+
+    0.85 and 0.6 are measured against `colour::channelRamp` rather than picked:
+    a drain deep enough to close the ramp's two nearest entries - the teal and
+    the green - to within PaintProbe's own "these are the same colour" tolerance
+    is a drain that has taken the identity with it. This leaves them 27 apart of
+    the 24 that tolerance asks for, and no entry below a third saturation.
+    RowSilenceTests holds all three of those.
+
+    It does not have to carry the recession alone, which is what lets it be
+    this gentle: all three call sites in PlaylistPaint.cpp also drop the alpha
+    - `strong` to `subdued`, or `subdued` to `wash` - on the same clip.
 */
 inline juce::Colour silenced (juce::Colour c)
 {
-    return c.withSaturation (0.1f).withMultipliedBrightness (0.6f);
+    return c.withMultipliedSaturation (0.85f).withMultipliedBrightness (0.6f);
 }
 
 /** A control that cannot be used. Weaker than `silenced`: a disabled button
