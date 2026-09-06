@@ -38,7 +38,7 @@ PlaylistTrackHeader::PlaylistTrackHeader (ProjectDocument& d, juce::ValueTree t)
     nameLabel.onTextChange = [this]
     {
         ProjectEdits::setProperty (track, ids::name, nameLabel.getText(),
-                                   &document.getUndoManager(), "Rename track");
+                                   &document.getUndoManager(), TransactionName { "Rename track" });
     };
     addAndMakeVisible (nameLabel);
 
@@ -67,12 +67,13 @@ PlaylistTrackHeader::PlaylistTrackHeader (ProjectDocument& d, juce::ValueTree t)
         {
             ProjectEdits::setPropertyOnEvery (
                 track.getParent(), ids::PLAYLIST_TRACK, ids::mute, muted,
-                &document.getUndoManager(), muted ? "Turn every track off" : "Turn every track on");
+                &document.getUndoManager(),
+                TransactionName { muted ? "Turn every track off" : "Turn every track on" });
             return;
         }
 
         ProjectEdits::setProperty (track, ids::mute, muted, &document.getUndoManager(),
-                                   muted ? "Turn track off" : "Turn track on");
+                                   TransactionName { muted ? "Turn track off" : "Turn track on" });
     };
     addAndMakeVisible (enabledButton);
 
@@ -94,9 +95,9 @@ PlaylistTrackHeader::PlaylistTrackHeader (ProjectDocument& d, juce::ValueTree t)
                         if (updating)
                             return false;
 
-                        ProjectEdits::setProperty (track, ids::gain, volumeKnob.getValue(),
-                                                   &document.getUndoManager(),
-                                                   "Change track volume", continuing);
+                        ProjectEdits::setProperty (
+                            track, ids::gain, volumeKnob.getValue(), &document.getUndoManager(),
+                            TransactionName { "Change track volume" }, continuing);
                         return true;
                     });
 

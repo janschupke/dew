@@ -9,6 +9,7 @@
 #include "app/ProjectDocument.h"
 #include "model/ModuleCatalog.h"
 #include "model/Ids.h"
+#include "model/TransactionName.h"
 #include "ui/ParamContextMenu.h"
 #include "ui/primitives/DewButtons.h"
 #include "ui/primitives/DewKnob.h"
@@ -93,13 +94,12 @@ private:
     void valueTreePropertyChanged (juce::ValueTree&, const juce::Identifier&) override;
 
     void write (const juce::Identifier& property, const juce::var& value,
-                const juce::String& transactionName, bool continuing);
+                TransactionName transactionName, bool continuing);
 
     /** Wires a rotary to a property on the SAMPLE node. */
     const paramMenu::Host* paramMenuHost = nullptr;
 
-    void attachKnob (DewKnob&, const juce::Identifier& property,
-                     const juce::String& transactionName);
+    void attachKnob (DewKnob&, const juce::Identifier& property, TransactionName transactionName);
 
     const SamplePool::Entry* entry() const;
 

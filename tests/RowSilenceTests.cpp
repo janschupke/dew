@@ -124,13 +124,14 @@ TEST_CASE ("a muted row dims, controls included, in all three views", "[ui][sele
         // The control case first: an unmuted row has nothing dimmed on it.
         CHECK (dimmedControlsIn (firstHeader(), "channelEnabled") == 0);
 
-        ProjectEdits::setProperty (channel, ids::muted, true, nullptr, "mute");
+        ProjectEdits::setProperty (channel, ids::muted, true, nullptr, TransactionName { "mute" });
         rack.refresh();
 
         CHECK (dimmedControlsIn (firstHeader(), "channelEnabled") > 0);
 
         // And back, so the dim is a state rather than a one-way door.
-        ProjectEdits::setProperty (channel, ids::muted, false, nullptr, "unmute");
+        ProjectEdits::setProperty (channel, ids::muted, false, nullptr,
+                                   TransactionName { "unmute" });
         rack.refresh();
 
         CHECK (dimmedControlsIn (firstHeader(), "channelEnabled") == 0);
@@ -171,11 +172,11 @@ TEST_CASE ("a muted row dims, controls included, in all three views", "[ui][sele
 
         CHECK (dimmedControlsIn (*strip, "stripEnabled") == 0);
 
-        ProjectEdits::setProperty (track, ids::mute, true, nullptr, "mute");
+        ProjectEdits::setProperty (track, ids::mute, true, nullptr, TransactionName { "mute" });
 
         CHECK (dimmedControlsIn (*strip, "stripEnabled") > 0);
 
-        ProjectEdits::setProperty (track, ids::mute, false, nullptr, "unmute");
+        ProjectEdits::setProperty (track, ids::mute, false, nullptr, TransactionName { "unmute" });
 
         CHECK (dimmedControlsIn (*strip, "stripEnabled") == 0);
     }

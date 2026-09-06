@@ -93,13 +93,13 @@ InstrumentPanel::InstrumentPanel (ProjectDocument& d, EditorState& s, SamplePool
     { return selectedChannel().getChildWithName (ids::INSTRUMENT).getChildWithName (ids::AMP); };
     const auto channelOf = [this] { return selectedChannel(); };
 
-    attachKnob (attackKnob, ampOf, ids::attack, "Change attack");
-    attachKnob (decayKnob, ampOf, ids::decay, "Change decay");
-    attachKnob (sustainKnob, ampOf, ids::sustain, "Change sustain");
-    attachKnob (releaseKnob, ampOf, ids::release, "Change release");
+    attachKnob (attackKnob, ampOf, ids::attack, TransactionName { "Change attack" });
+    attachKnob (decayKnob, ampOf, ids::decay, TransactionName { "Change decay" });
+    attachKnob (sustainKnob, ampOf, ids::sustain, TransactionName { "Change sustain" });
+    attachKnob (releaseKnob, ampOf, ids::release, TransactionName { "Change release" });
 
-    attachKnob (volumeKnob, channelOf, ids::volume, "Change volume");
-    attachKnob (panKnob, channelOf, ids::pan, "Change pan");
+    attachKnob (volumeKnob, channelOf, ids::volume, TransactionName { "Change volume" });
+    attachKnob (panKnob, channelOf, ids::pan, TransactionName { "Change pan" });
 
     editorState.addChangeListener (this);
     document.getState().addListener (this);
@@ -161,8 +161,7 @@ void InstrumentPanel::setParamMenuHost (const paramMenu::Host* host)
 
 void InstrumentPanel::bindRotary (juce::Slider& slider, DewKnob* knob,
                                   std::function<juce::ValueTree()> owner,
-                                  const juce::Identifier& property,
-                                  const juce::String& transactionName)
+                                  const juce::Identifier& property, TransactionName transactionName)
 {
     const auto& spec = requireInstrumentParamSpec (property);
 
@@ -197,8 +196,7 @@ void InstrumentPanel::bindRotary (juce::Slider& slider, DewKnob* knob,
 }
 
 void InstrumentPanel::attachKnob (DewKnob& knob, std::function<juce::ValueTree()> owner,
-                                  const juce::Identifier& property,
-                                  const juce::String& transactionName)
+                                  const juce::Identifier& property, TransactionName transactionName)
 {
     // The caption, the range, the step, the decimals, whether it is bipolar and
     // whether it sweeps logarithmically all came from the ParamSpec when the

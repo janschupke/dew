@@ -50,7 +50,8 @@ EffectCard::EffectCard (EffectChainComponent& o, ProjectDocument& d, EditorState
     {
         owner.selectSlot (index);
         ProjectEdits::setProperty (effect, ids::enabled, ! bypassButton.getToggleState(),
-                                   &document.getUndoManager(), "Turn effect off");
+                                   &document.getUndoManager(),
+                                   TransactionName { "Turn effect off" });
     };
     addAndMakeVisible (bypassButton);
 
@@ -508,7 +509,7 @@ bool EffectCard::write (const juce::Identifier& property, double value, bool con
         return false;
 
     ProjectEdits::setProperty (effect, property, value, &document.getUndoManager(),
-                               "Change effect parameter", continuing);
+                               TransactionName { "Change effect parameter" }, continuing);
 
     // Whether the caller may advance its gesture. A write refused because a
     // refresh is in progress must not leave a transaction looking open.
@@ -545,7 +546,8 @@ void EffectCard::buildChoice (const ParamSpec& spec)
                                           modeBox->getSelectedId() - 1);
 
         ProjectEdits::setProperty (effect, *modeSpec->property, modeSpec->choices[choice].id,
-                                   &document.getUndoManager(), "Change effect mode");
+                                   &document.getUndoManager(),
+                                   TransactionName { "Change effect mode" });
     };
 
     addAndMakeVisible (*modeBox);

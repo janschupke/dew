@@ -80,10 +80,13 @@ void apply (int choice, const Context& context)
         }
 
         case Item::resetToDefault:
-            undo.beginNewTransaction ("Reset " + tr (paramNameOf (*spec.property)));
-            ProjectEdits::setProperty (owner, *spec.property, spec.defaultVar(), &undo,
-                                       "Reset " + tr (paramNameOf (*spec.property)));
+        {
+            const TransactionName name { "Reset " + tr (paramNameOf (*spec.property)) };
+
+            undo.beginNewTransaction (name.name);
+            ProjectEdits::setProperty (owner, *spec.property, spec.defaultVar(), &undo, name);
             break;
+        }
     }
 }
 

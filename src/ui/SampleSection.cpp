@@ -28,15 +28,16 @@ SampleSection::SampleSection (ProjectDocument& d, SamplePool* p)
     setTitle (tr (StringId::sample_title));
     setFocusContainerType (FocusContainerType::focusContainer);
 
-    attachKnob (fadeInKnob, ids::fadeInMs, "Change fade in");
-    attachKnob (fadeOutKnob, ids::fadeOutMs, "Change fade out");
-    attachKnob (transposeKnob, ids::transpose, "Change sample pitch");
+    attachKnob (fadeInKnob, ids::fadeInMs, TransactionName { "Change fade in" });
+    attachKnob (fadeOutKnob, ids::fadeOutMs, TransactionName { "Change fade out" });
+    attachKnob (transposeKnob, ids::transpose, TransactionName { "Change sample pitch" });
 
     reverseButton.setClickingTogglesState (true);
     reverseButton.onClick = [this]
     {
         if (! updating)
-            write (ids::reverse, reverseButton.getToggleState(), "Reverse sample", false);
+            write (ids::reverse, reverseButton.getToggleState(),
+                   TransactionName { "Reverse sample" }, false);
     };
     addAndMakeVisible (reverseButton);
 
@@ -44,7 +45,8 @@ SampleSection::SampleSection (ProjectDocument& d, SamplePool* p)
     loopButton.onClick = [this]
     {
         if (! updating)
-            write (ids::loop, loopButton.getToggleState(), "Loop sample", false);
+            write (ids::loop, loopButton.getToggleState(), TransactionName { "Loop sample" },
+                   false);
     };
     addAndMakeVisible (loopButton);
 
@@ -75,7 +77,7 @@ void SampleSection::setParamMenuHost (const paramMenu::Host* host)
 }
 
 void SampleSection::attachKnob (DewKnob& knob, const juce::Identifier& property,
-                                const juce::String& transactionName)
+                                TransactionName transactionName)
 {
     gesture.attach (knob,
                     [this, &knob, property, transactionName] (bool continuing)
@@ -91,7 +93,7 @@ void SampleSection::attachKnob (DewKnob& knob, const juce::Identifier& property,
 }
 
 void SampleSection::write (const juce::Identifier& property, const juce::var& value,
-                           const juce::String& transactionName, bool continuing)
+                           TransactionName transactionName, bool continuing)
 {
     ProjectEdits::setProperty (sample, property, value, &document.getUndoManager(), transactionName,
                                continuing);
@@ -292,7 +294,7 @@ void SampleSection::mouseDrag (const juce::MouseEvent& event)
 
         ProjectEdits::setProperty (sample, ids::startSample,
                                    juce::jlimit (0, juce::jmax (0, end - 1), frame), &undo,
-                                   "Trim sample", trimming);
+                                   TransactionName { "Trim sample" }, trimming);
     }
     else
     {
@@ -302,7 +304,7 @@ void SampleSection::mouseDrag (const juce::MouseEvent& event)
         // Storing the full length as 0 keeps "untrimmed" one value rather than
         // two, so a sample replaced by a longer one still plays to its end.
         ProjectEdits::setProperty (sample, ids::endSample, clamped >= length ? 0 : clamped, &undo,
-                                   "Trim sample", trimming);
+                                   TransactionName { "Trim sample" }, trimming);
     }
 
     // The whole sweep of a handle is one undo step, the same as a knob's.

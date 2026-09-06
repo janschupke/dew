@@ -174,7 +174,8 @@ TEST_CASE ("the matrix follows the document", "[ui][fm]")
     FmHarness h;
     h.showMatrix();
 
-    ProjectEdits::setProperty (h.slot (0), ids::fmTo2, 0.4, nullptr, "test", false);
+    ProjectEdits::setProperty (h.slot (0), ids::fmTo2, 0.4, nullptr, TransactionName { "test" },
+                               false);
 
     REQUIRE (juce::exactlyEqual (h.section.getFmMatrix().cellAt (0, 1).getValue(), 0.4));
 }
@@ -288,7 +289,7 @@ TEST_CASE ("each matrix row shows the waveform of the oscillator it is", "[ui][f
     auto classic = generatorNodeFor (h.slot (0), ids::wave);
     REQUIRE (classic.isValid());
 
-    ProjectEdits::setProperty (classic, ids::wave, "square", nullptr, "wave");
+    ProjectEdits::setProperty (classic, ids::wave, "square", nullptr, TransactionName { "wave" });
 
     INFO ("gutter ink as sine: " << sine << ", as square: " << inkIn());
     CHECK (inkIn() != sine);

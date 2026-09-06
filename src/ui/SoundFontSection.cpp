@@ -43,12 +43,12 @@ SoundFontSection::SoundFontSection (ProjectDocument& d, SoundFontPool* p)
     };
     addAndMakeVisible (presetBox);
 
-    attachKnob (transposeKnob, ids::transpose, "Change soundfont pitch");
-    attachKnob (tuneKnob, ids::tuneCents, "Change soundfont tuning");
-    attachKnob (filterKnob, ids::filterOffset, "Change soundfont filter");
-    attachKnob (attackKnob, ids::attackScale, "Change soundfont attack");
-    attachKnob (releaseKnob, ids::releaseScale, "Change soundfont release");
-    attachKnob (velocityKnob, ids::velocitySens, "Change velocity sensitivity");
+    attachKnob (transposeKnob, ids::transpose, TransactionName { "Change soundfont pitch" });
+    attachKnob (tuneKnob, ids::tuneCents, TransactionName { "Change soundfont tuning" });
+    attachKnob (filterKnob, ids::filterOffset, TransactionName { "Change soundfont filter" });
+    attachKnob (attackKnob, ids::attackScale, TransactionName { "Change soundfont attack" });
+    attachKnob (releaseKnob, ids::releaseScale, TransactionName { "Change soundfont release" });
+    attachKnob (velocityKnob, ids::velocitySens, TransactionName { "Change velocity sensitivity" });
 
     document.getState().addListener (this);
 }
@@ -88,7 +88,7 @@ void SoundFontSection::setParamMenuHost (const paramMenu::Host* host)
 }
 
 void SoundFontSection::attachKnob (DewKnob& knob, const juce::Identifier& property,
-                                   const juce::String& transactionName)
+                                   TransactionName transactionName)
 {
     gesture.attach (knob,
                     [this, &knob, property, transactionName] (bool continuing)
@@ -104,7 +104,7 @@ void SoundFontSection::attachKnob (DewKnob& knob, const juce::Identifier& proper
 }
 
 void SoundFontSection::write (const juce::Identifier& property, const juce::var& value,
-                              const juce::String& transactionName, bool continuing)
+                              TransactionName transactionName, bool continuing)
 {
     ProjectEdits::setProperty (soundFont, property, value, &document.getUndoManager(),
                                transactionName, continuing);

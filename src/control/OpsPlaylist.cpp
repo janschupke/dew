@@ -65,11 +65,11 @@ ControlResult writeTracks (ControlHost& host, const juce::var& args)
 
         if (hasArg (entry, "name"))
             ProjectEdits::setProperty (track, ids::name, textArg (entry, "name"), undo,
-                                       "Rename track", true);
+                                       TransactionName { "Rename track" }, true);
 
         if (hasArg (entry, ids::mute))
             ProjectEdits::setProperty (track, ids::mute, flagArg (entry, ids::mute), undo,
-                                       "Mute track", true);
+                                       TransactionName { "Mute track" }, true);
 
         if (hasArg (entry, "colour"))
             ProjectEdits::setColour (track, textArg (entry, "colour"), undo, true);

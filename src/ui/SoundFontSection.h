@@ -8,6 +8,7 @@
 #include "app/Settings.h"
 #include "model/Ids.h"
 #include "model/ModuleCatalog.h"
+#include "model/TransactionName.h"
 #include "app/ProjectDocument.h"
 #include "ui/ParamContextMenu.h"
 #include "ui/primitives/DewButtons.h"
@@ -121,10 +122,9 @@ private:
     void mouseDown (const juce::MouseEvent&) override;
 
     void write (const juce::Identifier& property, const juce::var& value,
-                const juce::String& transactionName, bool continuing);
+                TransactionName transactionName, bool continuing);
 
-    void attachKnob (DewKnob&, const juce::Identifier& property,
-                     const juce::String& transactionName);
+    void attachKnob (DewKnob&, const juce::Identifier& property, TransactionName transactionName);
 
     void chooseFile();
 

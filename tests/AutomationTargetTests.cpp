@@ -171,19 +171,19 @@ TEST_CASE ("a slot offers its generator's parameters and not another's", "[autom
     auto osc = channel.getChildWithName (ids::INSTRUMENT).getChildWithName (ids::OSC);
     REQUIRE (osc.isValid());
 
-    ProjectEdits::setProperty (osc, ids::mode, "classic", &undo, "Classic");
+    ProjectEdits::setProperty (osc, ids::mode, "classic", &undo, TransactionName { "Classic" });
     CHECK_FALSE (automationTargetFor (project, osc, ids::wavePosition).has_value());
 
     // The slot's own, which a mode gate had no business refusing.
     CHECK (automationTargetFor (project, osc, ids::gain).has_value());
 
-    ProjectEdits::setProperty (osc, ids::mode, "wavetable", &undo, "Wavetable");
+    ProjectEdits::setProperty (osc, ids::mode, "wavetable", &undo, TransactionName { "Wavetable" });
     CHECK (automationTargetFor (project, osc, ids::wavePosition).has_value());
     CHECK (automationTargetFor (project, osc, ids::gain).has_value());
 
     // And the picker agrees with the resolver, which is the pair the whole
     // table exists to keep honest.
-    ProjectEdits::setProperty (osc, ids::mode, "classic", &undo, "Classic");
+    ProjectEdits::setProperty (osc, ids::mode, "classic", &undo, TransactionName { "Classic" });
 
     juce::StringArray offered;
 

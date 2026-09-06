@@ -204,21 +204,21 @@ ControlResult writeStructure (ControlHost& host, const juce::var& args)
     if (hasArg (args, "name"))
     {
         ProjectEdits::setProperty (project, ids::name, textArg (args, "name"), undo,
-                                   "Rename project", true);
+                                   TransactionName { "Rename project" }, true);
         ++changed;
     }
 
     if (hasArg (args, ids::tempoBpm))
     {
         ProjectEdits::setProperty (project, ids::tempoBpm, numberArg (args, ids::tempoBpm), undo,
-                                   "Set tempo", true);
+                                   TransactionName { "Set tempo" }, true);
         ++changed;
     }
 
     if (hasArg (args, "barsInSong"))
     {
         ProjectEdits::setProperty (project, ids::barsInSong, intArg (args, "barsInSong"), undo,
-                                   "Set song length", true);
+                                   TransactionName { "Set song length" }, true);
         ++changed;
     }
 

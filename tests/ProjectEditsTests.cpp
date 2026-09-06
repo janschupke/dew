@@ -533,7 +533,7 @@ TEST_CASE ("a whole gesture is one undo step", "[model][undo]")
     // and the rest join it.
     for (int i = 1; i <= 20; ++i)
         ProjectEdits::setProperty (channel, ids::volume, before * 0.5 + (double) i * 0.01, &undo,
-                                   "Change volume", i > 1);
+                                   TransactionName { "Change volume" }, i > 1);
 
     REQUIRE (! juce::exactlyEqual ((double) channel[ids::volume], before));
 
@@ -556,8 +556,10 @@ TEST_CASE ("separate gestures are separate undo steps", "[model][undo]")
 
     const auto before = (double) channel[ids::volume];
 
-    ProjectEdits::setProperty (channel, ids::volume, 0.25, &undo, "Change volume", false);
-    ProjectEdits::setProperty (channel, ids::volume, 0.75, &undo, "Change volume", false);
+    ProjectEdits::setProperty (channel, ids::volume, 0.25, &undo,
+                               TransactionName { "Change volume" }, false);
+    ProjectEdits::setProperty (channel, ids::volume, 0.75, &undo,
+                               TransactionName { "Change volume" }, false);
 
     REQUIRE (undo.undo());
     CHECK (juce::exactlyEqual ((double) channel[ids::volume], 0.25));
@@ -578,8 +580,8 @@ TEST_CASE ("writing the value that is already there records nothing", "[model][u
     auto& undo = document.getUndoManager();
     auto channel = document.getState().getChildWithName (ids::CHANNEL);
 
-    ProjectEdits::setProperty (channel, ids::volume, channel[ids::volume], &undo, "Change volume",
-                               false);
+    ProjectEdits::setProperty (channel, ids::volume, channel[ids::volume], &undo,
+                               TransactionName { "Change volume" }, false);
 
     CHECK_FALSE (undo.canUndo());
 }

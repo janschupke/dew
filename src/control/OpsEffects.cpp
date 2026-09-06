@@ -118,7 +118,7 @@ ControlResult write (ControlHost& host, const juce::var& args)
         // line, which is two spellings of one fact.
         if (hasArg (entry, ids::enabled))
             ProjectEdits::setProperty (effect, ids::enabled, flagArg (entry, ids::enabled), undo,
-                                       "Turn effect off", true);
+                                       TransactionName { "Turn effect off" }, true);
 
         if (hasArg (entry, "preset"))
         {

@@ -99,7 +99,7 @@ bool ProjectEdits::setInstrumentType (juce::ValueTree channel, InstrumentType ty
     if (channel[ids::source].toString() == wanted)
         return false;
 
-    setProperty (channel, ids::source, wanted, undo, "Change instrument");
+    setProperty (channel, ids::source, wanted, undo, TransactionName { "Change instrument" });
     return true;
 }
 

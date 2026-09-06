@@ -136,7 +136,7 @@ void ProjectEdits::resizeNote (juce::ValueTree note, int newLengthSteps, juce::U
 
 void ProjectEdits::setProperty (juce::ValueTree node, const juce::Identifier& property,
                                 const juce::var& value, juce::UndoManager* undo,
-                                const juce::String& transactionName, bool continuingTransaction)
+                                TransactionName transactionName, bool continuingTransaction)
 {
     if (! node.isValid())
         return;
@@ -148,14 +148,14 @@ void ProjectEdits::setProperty (juce::ValueTree node, const juce::Identifier& pr
         return;
 
     if (undo != nullptr && ! continuingTransaction)
-        undo->beginNewTransaction (transactionName);
+        undo->beginNewTransaction (transactionName.name);
 
     node.setProperty (property, value, undo);
 }
 
 void ProjectEdits::setPropertyOnEvery (juce::ValueTree parent, const juce::Identifier& type,
                                        const juce::Identifier& property, const juce::var& value,
-                                       juce::UndoManager* undo, const juce::String& transactionName)
+                                       juce::UndoManager* undo, TransactionName transactionName)
 {
     if (! parent.isValid())
         return;
@@ -167,7 +167,7 @@ void ProjectEdits::setPropertyOnEvery (juce::ValueTree parent, const juce::Ident
     // would leave the step named after whichever track happened to differ, and
     // opening one per write would make "silence every track" eight undo steps.
     if (undo != nullptr)
-        undo->beginNewTransaction (transactionName);
+        undo->beginNewTransaction (transactionName.name);
 
     for (auto child : parent)
         if (child.hasType (type))

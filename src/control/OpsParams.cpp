@@ -214,7 +214,7 @@ ControlResult write (ControlHost& host, const juce::var& args)
 
     for (const auto& write : pending)
         ProjectEdits::setProperty (write.node, write.property, write.value, host.undoManager(),
-                                   "Set parameter", true);
+                                   TransactionName { "Set parameter" }, true);
 
     host.flushEngine();
 

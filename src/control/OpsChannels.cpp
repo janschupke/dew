@@ -113,15 +113,15 @@ ControlResult write (ControlHost& host, const juce::var& args)
         // replace, and without it updating one field would blank the rest.
         if (hasArg (entry, "name"))
             ProjectEdits::setProperty (channel, ids::name, textArg (entry, "name"), undo,
-                                       "Rename channel", true);
+                                       TransactionName { "Rename channel" }, true);
 
         if (hasArg (entry, "mixerTrackId"))
             ProjectEdits::setProperty (channel, ids::mixerTrackId, intArg (entry, "mixerTrackId"),
-                                       undo, "Route channel", true);
+                                       undo, TransactionName { "Route channel" }, true);
 
         if (hasArg (entry, ids::muted))
             ProjectEdits::setProperty (channel, ids::muted, flagArg (entry, ids::muted), undo,
-                                       "Mute channel", true);
+                                       TransactionName { "Mute channel" }, true);
 
         if (hasArg (entry, "colour"))
             ProjectEdits::setColour (channel, textArg (entry, "colour"), undo, true);

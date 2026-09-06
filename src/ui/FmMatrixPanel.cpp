@@ -87,9 +87,9 @@ FmMatrixPanel::FmMatrixPanel (ProjectDocument& d)
                                 if (! slot.isValid())
                                     return false;
 
-                                ProjectEdits::setProperty (slot, property, raw->getValue(),
-                                                           &document.getUndoManager(),
-                                                           "Change FM routing", continuing);
+                                ProjectEdits::setProperty (
+                                    slot, property, raw->getValue(), &document.getUndoManager(),
+                                    TransactionName { "Change FM routing" }, continuing);
                                 return true;
                             });
 

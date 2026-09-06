@@ -50,7 +50,8 @@ MixerStrip::MixerStrip (ProjectDocument& d, juce::ValueTree t, bool isMasterStri
     nameLabel.onTextChange = [this]
     {
         ProjectEdits::setProperty (track, ids::name, nameLabel.getText(),
-                                   &document.getUndoManager(), "Rename mixer track");
+                                   &document.getUndoManager(),
+                                   TransactionName { "Rename mixer track" });
     };
 
     // INVISIBLE until somebody renames. The name on screen is painted, turned
@@ -98,7 +99,8 @@ MixerStrip::MixerStrip (ProjectDocument& d, juce::ValueTree t, bool isMasterStri
         [this] (bool continuing)
         {
             ProjectEdits::setProperty (track, ids::gain, gainSlider.getValue(),
-                                       &document.getUndoManager(), "Change level", continuing);
+                                       &document.getUndoManager(),
+                                       TransactionName { "Change level" }, continuing);
             return true;
         },
         [this] { select(); });
@@ -117,7 +119,8 @@ MixerStrip::MixerStrip (ProjectDocument& d, juce::ValueTree t, bool isMasterStri
             [this] (bool continuing)
             {
                 ProjectEdits::setProperty (track, ids::pan, panKnob.getValue(),
-                                           &document.getUndoManager(), "Change pan", continuing);
+                                           &document.getUndoManager(),
+                                           TransactionName { "Change pan" }, continuing);
                 return true;
             },
             [this] { select(); });
@@ -137,15 +140,16 @@ MixerStrip::MixerStrip (ProjectDocument& d, juce::ValueTree t, bool isMasterStri
             // alone by construction rather than by a special case.
             if (mods.isShiftDown())
             {
-                ProjectEdits::setPropertyOnEvery (track.getParent(), ids::MIXER_TRACK, ids::mute,
-                                                  muted, &document.getUndoManager(),
-                                                  muted ? "Turn every insert off"
-                                                        : "Turn every insert on");
+                ProjectEdits::setPropertyOnEvery (
+                    track.getParent(), ids::MIXER_TRACK, ids::mute, muted,
+                    &document.getUndoManager(),
+                    TransactionName { muted ? "Turn every insert off" : "Turn every insert on" });
                 return;
             }
 
-            ProjectEdits::setProperty (track, ids::mute, muted, &document.getUndoManager(),
-                                       muted ? "Turn insert off" : "Turn insert on");
+            ProjectEdits::setProperty (
+                track, ids::mute, muted, &document.getUndoManager(),
+                TransactionName { muted ? "Turn insert off" : "Turn insert on" });
         };
         addAndMakeVisible (enabledButton);
     }

@@ -48,7 +48,7 @@ ControlResult write (ControlHost& host, const juce::var& args)
 
         if (hasArg (entry, "name"))
             ProjectEdits::setProperty (pattern, ids::name, textArg (entry, "name"), undo,
-                                       "Rename pattern", true);
+                                       TransactionName { "Rename pattern" }, true);
 
         // No length argument, and none to add. A pattern's length is derived
         // from the notes in it - see ProjectEdits::fitPatternToNotes - so the

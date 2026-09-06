@@ -107,7 +107,8 @@ TransportBar::TransportBar (ProjectDocument& d, AudioEngine& e, EditorState& s)
     tempoField.onValueChange = [this]
     {
         ProjectEdits::setProperty (document.getState(), ids::tempoBpm, tempoField.getValue(),
-                                   &document.getUndoManager(), "Change tempo", tempoGestureActive);
+                                   &document.getUndoManager(), TransactionName { "Change tempo" },
+                                   tempoGestureActive);
 
         // A number field drag emits a value per frame, exactly as a knob does.
         tempoGestureActive = true;

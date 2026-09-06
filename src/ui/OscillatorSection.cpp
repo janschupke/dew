@@ -69,7 +69,7 @@ OscillatorSection::OscillatorSection (ProjectDocument& d, EditorState& s)
     modeBox.onChange = [this]
     {
         write (ids::mode, valueOf (choicesOf (ids::mode), modeBox.getSelectedId()),
-               "Change oscillator mode");
+               TransactionName { "Change oscillator mode" });
     };
     addAndMakeVisible (modeBox);
 
@@ -81,7 +81,7 @@ OscillatorSection::OscillatorSection (ProjectDocument& d, EditorState& s)
     waveBox.onChange = [this]
     {
         write (ids::wave, valueOf (choicesOf (ids::wave), waveBox.getSelectedId()),
-               "Change waveform");
+               TransactionName { "Change waveform" });
     };
     waveBox.setTooltip (tr (StringId::oscillator_wave_help));
     addAndMakeVisible (waveBox);
@@ -95,7 +95,8 @@ OscillatorSection::OscillatorSection (ProjectDocument& d, EditorState& s)
     tableBox.onChange = [this]
     {
         const auto index = juce::jlimit (0, wavetableCount() - 1, tableBox.getSelectedId() - 1);
-        write (ids::wavetable, wavetableAt (index).getName(), "Change wavetable");
+        write (ids::wavetable, wavetableAt (index).getName(),
+               TransactionName { "Change wavetable" });
     };
     addAndMakeVisible (tableBox);
 
@@ -105,7 +106,7 @@ OscillatorSection::OscillatorSection (ProjectDocument& d, EditorState& s)
     {
         write (ids::wavePositionSource,
                valueOf (choicesOf (ids::wavePositionSource), sourceBox.getSelectedId()),
-               "Change modulation source");
+               TransactionName { "Change modulation source" });
     };
     addAndMakeVisible (sourceBox);
 
@@ -132,32 +133,32 @@ OscillatorSection::OscillatorSection (ProjectDocument& d, EditorState& s)
                         // Integer-valued in the file: writing a double would change the
                         // JSON from `0` to `0.0` and hand the rounding to the schema's
                         // coercion.
-                        return write (ids::octave, (int) octaveSlider.getValue(), "Change octave",
-                                      continuing);
+                        return write (ids::octave, (int) octaveSlider.getValue(),
+                                      TransactionName { "Change octave" }, continuing);
                     });
     addAndMakeVisible (octaveSlider);
 
-    attachKnob (detuneKnob, ids::detuneCents, "Change detune");
+    attachKnob (detuneKnob, ids::detuneCents, TransactionName { "Change detune" });
 
-    attachKnob (gainKnob, ids::gain, "Change oscillator gain");
+    attachKnob (gainKnob, ids::gain, TransactionName { "Change oscillator gain" });
 
     positionKnob.setTooltip (tr (StringId::oscillator_position_help));
-    attachKnob (positionKnob, ids::wavePosition, "Change wavetable position");
+    attachKnob (positionKnob, ids::wavePosition, TransactionName { "Change wavetable position" });
 
     modKnob.setTooltip (tr (StringId::oscillator_mod_help));
-    attachKnob (modKnob, ids::wavePositionMod, "Change position modulation");
+    attachKnob (modKnob, ids::wavePositionMod, TransactionName { "Change position modulation" });
 
     rateKnob.setTooltip (tr (StringId::oscillator_rate_help));
-    attachKnob (rateKnob, ids::wavePositionRate, "Change modulation rate");
+    attachKnob (rateKnob, ids::wavePositionRate, TransactionName { "Change modulation rate" });
 
     unisonKnob.setTooltip (tr (StringId::oscillator_unison_help));
 
     // Integral, which is what the trailing true says: the file keeps an int,
     // the same rule the octave stepper follows and for the same reason.
-    attachKnob (unisonKnob, ids::unisonVoices, "Change unison voices", true);
+    attachKnob (unisonKnob, ids::unisonVoices, TransactionName { "Change unison voices" }, true);
 
     spreadKnob.setTooltip (tr (StringId::oscillator_spread_help));
-    attachKnob (spreadKnob, ids::unisonDetune, "Change unison spread");
+    attachKnob (spreadKnob, ids::unisonDetune, TransactionName { "Change unison spread" });
 
     // --- the slot's LFO ------------------------------------------------------
     lfoButton.setClickingTogglesState (true);
@@ -167,7 +168,8 @@ OscillatorSection::OscillatorSection (ProjectDocument& d, EditorState& s)
         // The document, not the button's own state - see enableButton above for
         // why reading the widget back is what breaks a headless test.
         const auto lfo = generatorNodeFor (selectedSlotTree(), ids::lfoOn);
-        write (ids::lfoOn, ! (bool) lfo.getProperty (ids::lfoOn, false), "Switch LFO on or off");
+        write (ids::lfoOn, ! (bool) lfo.getProperty (ids::lfoOn, false),
+               TransactionName { "Switch LFO on or off" });
     };
     addAndMakeVisible (lfoButton);
 
@@ -186,7 +188,7 @@ OscillatorSection::OscillatorSection (ProjectDocument& d, EditorState& s)
     lfoWaveBox.onChange = [this]
     {
         write (ids::lfoWave, valueOf (choicesOf (ids::lfoWave), lfoWaveBox.getSelectedId()),
-               "Change LFO shape");
+               TransactionName { "Change LFO shape" });
     };
     addAndMakeVisible (lfoWaveBox);
 
@@ -194,7 +196,8 @@ OscillatorSection::OscillatorSection (ProjectDocument& d, EditorState& s)
     lfoSyncButton.onClick = [this]
     {
         const auto lfo = generatorNodeFor (selectedSlotTree(), ids::lfoSync);
-        write (ids::lfoSync, ! (bool) lfo.getProperty (ids::lfoSync, false), "Sync the LFO");
+        write (ids::lfoSync, ! (bool) lfo.getProperty (ids::lfoSync, false),
+               TransactionName { "Sync the LFO" });
     };
     addAndMakeVisible (lfoSyncButton);
 
@@ -204,21 +207,21 @@ OscillatorSection::OscillatorSection (ProjectDocument& d, EditorState& s)
     {
         write (ids::lfoDivision,
                valueOf (choicesOf (ids::lfoDivision), lfoDivisionBox.getSelectedId()),
-               "Change LFO division");
+               TransactionName { "Change LFO division" });
     };
     addAndMakeVisible (lfoDivisionBox);
 
     lfoRateKnob.setTooltip (tr (StringId::oscillator_lfoRate_help));
-    attachKnob (lfoRateKnob, ids::lfoRate, "Change LFO rate");
+    attachKnob (lfoRateKnob, ids::lfoRate, TransactionName { "Change LFO rate" });
 
     lfoPitchKnob.setTooltip (tr (StringId::oscillator_lfoToPitch_help));
-    attachKnob (lfoPitchKnob, ids::lfoToPitch, "Change LFO pitch depth");
+    attachKnob (lfoPitchKnob, ids::lfoToPitch, TransactionName { "Change LFO pitch depth" });
 
     lfoVolumeKnob.setTooltip (tr (StringId::oscillator_lfoToVolume_help));
-    attachKnob (lfoVolumeKnob, ids::lfoToVolume, "Change LFO volume depth");
+    attachKnob (lfoVolumeKnob, ids::lfoToVolume, TransactionName { "Change LFO volume depth" });
 
     lfoPanKnob.setTooltip (tr (StringId::oscillator_lfoToPan_help));
-    attachKnob (lfoPanKnob, ids::lfoToPan, "Change LFO pan depth");
+    attachKnob (lfoPanKnob, ids::lfoToPan, TransactionName { "Change LFO pan depth" });
 
     selectedSlot = juce::jlimit (0, fmTabIndex, editorState.getSelectedOscillator());
 
@@ -302,7 +305,7 @@ void OscillatorSection::setParamMenuHost (const paramMenu::Host* host)
 }
 
 void OscillatorSection::attachKnob (DewKnob& knob, const juce::Identifier& property,
-                                    const juce::String& transactionName, bool integral)
+                                    TransactionName transactionName, bool integral)
 {
     gesture.attach (
         knob,
@@ -384,8 +387,9 @@ void OscillatorSection::setSlotEnabled (int index, bool shouldBeEnabled)
     if (! slot.isValid() || isSlotEnabled (index) == shouldBeEnabled)
         return;
 
-    ProjectEdits::setProperty (slot, ids::enabled, shouldBeEnabled, &document.getUndoManager(),
-                               shouldBeEnabled ? "Enable oscillator" : "Disable oscillator");
+    ProjectEdits::setProperty (
+        slot, ids::enabled, shouldBeEnabled, &document.getUndoManager(),
+        TransactionName { shouldBeEnabled ? "Enable oscillator" : "Disable oscillator" });
 }
 
 juce::Button& OscillatorSection::getSlotButton (int index) const
@@ -394,7 +398,7 @@ juce::Button& OscillatorSection::getSlotButton (int index) const
 }
 
 bool OscillatorSection::write (const juce::Identifier& property, const juce::var& value,
-                               const juce::String& transactionName, bool continuing)
+                               TransactionName transactionName, bool continuing)
 {
     if (updating)
         return false;

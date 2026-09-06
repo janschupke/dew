@@ -9,6 +9,7 @@
 #include "model/AutomationCurve.h"
 #include "model/AutomationTargets.h"
 #include "model/Preset.h"
+#include "model/TransactionName.h"
 
 namespace dew
 {
@@ -95,8 +96,7 @@ struct ProjectEdits
     */
     static void setProperty (juce::ValueTree node, const juce::Identifier& property,
                              const juce::var& value, juce::UndoManager*,
-                             const juce::String& transactionName,
-                             bool continuingTransaction = false);
+                             TransactionName transactionName, bool continuingTransaction = false);
 
     /** Writes one property onto every child of `parent` that has `type`, as ONE
         undo step.
@@ -117,7 +117,7 @@ struct ProjectEdits
     */
     static void setPropertyOnEvery (juce::ValueTree parent, const juce::Identifier& type,
                                     const juce::Identifier& property, const juce::var& value,
-                                    juce::UndoManager*, const juce::String& transactionName);
+                                    juce::UndoManager*, TransactionName transactionName);
 
     /** Sets a pattern's length to what the notes in it need RIGHT NOW, and
         returns true if that changed it.

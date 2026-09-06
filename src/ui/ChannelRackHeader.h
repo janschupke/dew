@@ -7,6 +7,7 @@
 
 #include "model/Ids.h"
 #include "model/ModuleCatalog.h"
+#include "model/TransactionName.h"
 
 #include "app/ProjectDocument.h"
 #include "ui/EditorState.h"
@@ -118,7 +119,7 @@ private:
         say different things about the same kind of control.
     */
     void attachKnob (DewKnob& knob, const juce::Identifier& property,
-                     const juce::String& transactionName);
+                     TransactionName transactionName);
 
     /** Wires one number field to one of the channel's integer properties.
 
@@ -129,7 +130,7 @@ private:
         upper bound is however many tracks the mixer has right now.
     */
     void attachField (DewNumberField& field, const juce::Identifier& property,
-                      const juce::String& transactionName, Translated tooltip);
+                      TransactionName transactionName, Translated tooltip);
 
     /** How many tracks the mixer has, which is the top of mixerField's range. */
     int mixerTrackCount() const;

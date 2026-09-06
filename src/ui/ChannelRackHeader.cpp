@@ -43,7 +43,8 @@ ChannelRackHeader::ChannelRackHeader (ProjectDocument& d, EditorState& s, juce::
     nameLabel.onTextChange = [this]
     {
         ProjectEdits::setProperty (channel, ids::name, nameLabel.getText(),
-                                   &document.getUndoManager(), "Rename channel");
+                                   &document.getUndoManager(),
+                                   TransactionName { "Rename channel" });
     };
     addAndMakeVisible (nameLabel);
 
@@ -68,12 +69,13 @@ ChannelRackHeader::ChannelRackHeader (ProjectDocument& d, EditorState& s, juce::
         {
             ProjectEdits::setPropertyOnEvery (
                 channel.getParent(), ids::CHANNEL, ids::muted, muted, &document.getUndoManager(),
-                muted ? "Turn every channel off" : "Turn every channel on");
+                TransactionName { muted ? "Turn every channel off" : "Turn every channel on" });
             return;
         }
 
-        ProjectEdits::setProperty (channel, ids::muted, muted, &document.getUndoManager(),
-                                   muted ? "Turn channel off" : "Turn channel on");
+        ProjectEdits::setProperty (
+            channel, ids::muted, muted, &document.getUndoManager(),
+            TransactionName { muted ? "Turn channel off" : "Turn channel on" });
     };
     addAndMakeVisible (enabledButton);
 
@@ -82,8 +84,8 @@ ChannelRackHeader::ChannelRackHeader (ProjectDocument& d, EditorState& s, juce::
     // Same ranges as the panel's VOLUME and PAN, so the two read the same
     // number, and no caption fits on a 34px row - pan is told from volume by
     // filling out from the centre.
-    attachKnob (volumeKnob, ids::volume, "Change volume");
-    attachKnob (panKnob, ids::pan, "Change pan");
+    attachKnob (volumeKnob, ids::volume, TransactionName { "Change volume" });
+    attachKnob (panKnob, ids::pan, TransactionName { "Change pan" });
 
     // Base pitch and the mixer track, as numbers on the row. Both were in the
     // instrument panel and nowhere else, which meant routing a channel - or
@@ -95,11 +97,11 @@ ChannelRackHeader::ChannelRackHeader (ProjectDocument& d, EditorState& s, juce::
     const auto& pitchSpec = requireInstrumentParamSpec (ids::basePitch);
     pitchField.setRange (pitchSpec.minimum, pitchSpec.maximum, pitchSpec.interval);
     pitchField.setNumDecimalPlaces (pitchSpec.decimals);
-    attachField (pitchField, ids::basePitch, "Change base pitch",
+    attachField (pitchField, ids::basePitch, TransactionName { "Change base pitch" },
                  tr (StringId::channelRack_pitch_help));
 
     mixerField.setNumDecimalPlaces (0);
-    attachField (mixerField, ids::mixerTrackId, "Route channel",
+    attachField (mixerField, ids::mixerTrackId, TransactionName { "Route channel" },
                  tr (StringId::channelRack_mixer_help));
 
     // Only audio channels can be armed, and only one channel at a time -
@@ -244,7 +246,7 @@ void ChannelRackHeader::applyMenuChoice (int choice)
 // --- the controls ------------------------------------------------------------
 
 void ChannelRackHeader::attachKnob (DewKnob& knob, const juce::Identifier& property,
-                                    const juce::String& transactionName)
+                                    TransactionName transactionName)
 {
     knob.setCompact (true);
     knob.setTooltip (tr (paramNameOf (property)));
@@ -271,7 +273,7 @@ void ChannelRackHeader::attachKnob (DewKnob& knob, const juce::Identifier& prope
 }
 
 void ChannelRackHeader::attachField (DewNumberField& field, const juce::Identifier& property,
-                                     const juce::String& transactionName, Translated tooltip)
+                                     TransactionName transactionName, Translated tooltip)
 {
     field.setTooltip (tooltip);
 

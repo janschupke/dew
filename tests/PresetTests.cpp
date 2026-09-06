@@ -135,7 +135,7 @@ TEST_CASE ("a preset that mentions one oscillator silences the others", "[preset
     // able to get you OUT of.
     for (int i = 0; i < kMaxOscillators; ++i)
         ProjectEdits::setProperty (ProjectEdits::oscillatorAt (channel, i), ids::enabled, true,
-                                   nullptr, "on");
+                                   nullptr, TransactionName { "on" });
 
     REQUIRE (ProjectEdits::applyInstrumentPreset (channel, subBassPreset(), nullptr));
 
@@ -149,10 +149,10 @@ TEST_CASE ("a preset leaves a channel's identity, routing and chain alone", "[pr
     auto project = ProjectFactory::createDefault();
     auto channel = firstChannel (project);
 
-    ProjectEdits::setProperty (channel, ids::name, "Bass", nullptr, "name");
-    ProjectEdits::setProperty (channel, ids::mixerTrackId, 3, nullptr, "route");
-    ProjectEdits::setProperty (channel, ids::volume, 0.42, nullptr, "level");
-    ProjectEdits::setProperty (channel, ids::basePitch, 48, nullptr, "pitch");
+    ProjectEdits::setProperty (channel, ids::name, "Bass", nullptr, TransactionName { "name" });
+    ProjectEdits::setProperty (channel, ids::mixerTrackId, 3, nullptr, TransactionName { "route" });
+    ProjectEdits::setProperty (channel, ids::volume, 0.42, nullptr, TransactionName { "level" });
+    ProjectEdits::setProperty (channel, ids::basePitch, 48, nullptr, TransactionName { "pitch" });
 
     ProjectEdits::addEffect (project, channel, "reverb", nullptr);
     ProjectEdits::addEffect (project, channel, "delay", nullptr);
@@ -310,8 +310,9 @@ TEST_CASE ("capturing a soundfont channel reads its offsets, not the defaults", 
     auto node = channel.getChildWithName (ids::SOUNDFONT);
     REQUIRE (node.isValid());
 
-    ProjectEdits::setProperty (node, ids::filterOffset, -1200.0, &undo, "Filter");
-    ProjectEdits::setProperty (node, ids::releaseScale, 3.0, &undo, "Release");
+    ProjectEdits::setProperty (node, ids::filterOffset, -1200.0, &undo,
+                               TransactionName { "Filter" });
+    ProjectEdits::setProperty (node, ids::releaseScale, 3.0, &undo, TransactionName { "Release" });
 
     const auto state = stateFor (instrumentDescriptor (InstrumentType::soundfont), channel);
     const auto* object = state.getDynamicObject();

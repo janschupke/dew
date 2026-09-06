@@ -4,6 +4,7 @@
 
 #include "i18n/Strings.h"
 
+#include "model/TransactionName.h"
 #include "app/ProjectDocument.h"
 #include "ui/EditorState.h"
 #include <memory>
@@ -170,11 +171,11 @@ private:
     /** The binding for a DewKnob, which carries its own caption and its own
         readout, so there is no label to pass and no text box to configure. */
     void attachKnob (DewKnob&, std::function<juce::ValueTree()> owner,
-                     const juce::Identifier& property, const juce::String& transactionName);
+                     const juce::Identifier& property, TransactionName transactionName);
 
     /** Shared by both: the write, the undo transaction and the param menu. */
     void bindRotary (juce::Slider&, DewKnob*, std::function<juce::ValueTree()> owner,
-                     const juce::Identifier& property, const juce::String& transactionName);
+                     const juce::Identifier& property, TransactionName transactionName);
 
     ProjectDocument& document;
     EditorState& editorState;

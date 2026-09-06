@@ -298,7 +298,8 @@ void ProjectEdits::setColour (juce::ValueTree node, const juce::String& hex,
     if (! node.isValid())
         return;
 
-    setProperty (node, ids::colour, hex, undo, "Change colour", continuingTransaction);
+    setProperty (node, ids::colour, hex, undo, TransactionName { "Change colour" },
+                 continuingTransaction);
 }
 
 void ProjectEdits::setPointStraight (juce::ValueTree point, juce::UndoManager* undo)

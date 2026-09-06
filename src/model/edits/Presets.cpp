@@ -32,7 +32,7 @@ namespace
     silently into whatever step was open.
 */
 void writeParams (juce::ValueTree node, const juce::var& values, const ParamSpec* params,
-                  int numParams, juce::UndoManager* undo, const juce::String& transactionName)
+                  int numParams, juce::UndoManager* undo, TransactionName transactionName)
 {
     auto* object = values.getDynamicObject();
 
@@ -63,10 +63,10 @@ bool ProjectEdits::applyEffectPreset (juce::ValueTree effect, const Preset& pres
     const auto& descriptor = effectDescriptor (*slotType);
     const auto values = validateState (descriptor, preset.state, warnings);
 
-    const auto transactionName = "Load preset \"" + preset.name + "\"";
+    const TransactionName transactionName { "Load preset \"" + preset.name + "\"" };
 
     if (undo != nullptr && ! continuingTransaction)
-        undo->beginNewTransaction (transactionName);
+        undo->beginNewTransaction (transactionName.name);
 
     const auto params = effectParamsFor (*slotType);
     writeParams (effect, values, params.data(), (int) params.size(), undo, transactionName);
@@ -95,10 +95,10 @@ bool ProjectEdits::applyInstrumentPreset (juce::ValueTree channel, const Preset&
     if (object == nullptr)
         return false;
 
-    const auto transactionName = "Load preset \"" + preset.name + "\"";
+    const TransactionName transactionName { "Load preset \"" + preset.name + "\"" };
 
     if (undo != nullptr && ! continuingTransaction)
-        undo->beginNewTransaction (transactionName);
+        undo->beginNewTransaction (transactionName.name);
 
     for (int g = 0; g < descriptor.numGroups; ++g)
     {

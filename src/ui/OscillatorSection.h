@@ -11,6 +11,7 @@
 #include "engine/EngineSnapshot.h"
 #include "model/Ids.h"
 #include "model/ModuleCatalog.h"
+#include "model/TransactionName.h"
 #include "ui/FmMatrixPanel.h"
 #include "ui/ParamContextMenu.h"
 #include "app/ProjectDocument.h"
@@ -321,13 +322,13 @@ private:
         is in progress, or because the slot is not there yet, must not open an
         undo transaction for the next value to join. */
     bool write (const juce::Identifier& property, const juce::var& value,
-                const juce::String& transactionName, bool continuing = false);
+                TransactionName transactionName, bool continuing = false);
 
     /** Wires one wavetable knob to a property. Five knobs of identical shape,
         which is four more than is worth spelling out by hand.
     */
-    void attachKnob (DewKnob&, const juce::Identifier& property,
-                     const juce::String& transactionName, bool integral = false);
+    void attachKnob (DewKnob&, const juce::Identifier& property, TransactionName transactionName,
+                     bool integral = false);
 
     void refreshHeader();
     void refreshControls();

@@ -180,7 +180,8 @@ void PlaylistComponent::applyClipChoice (juce::ValueTree track, int bar, int cho
                                                                      &undo);
                         fresh.isValid())
                         ProjectEdits::setProperty (clip, ids::patternId, (int) fresh[ids::id],
-                                                   &undo, "Duplicate pattern", true);
+                                                   &undo, TransactionName { "Duplicate pattern" },
+                                                   true);
                 }
             }
             break;

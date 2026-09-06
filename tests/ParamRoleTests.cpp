@@ -324,6 +324,7 @@ TEST_CASE ("an automation node resolves back to the parameter it drives",
 
     // A clip pointing at nothing resolves to nothing, rather than to whatever
     // the first table happens to hold.
-    ProjectEdits::setProperty (gain, ids::param, "notAParameter", &undo, "Point at nothing");
+    ProjectEdits::setProperty (gain, ids::param, "notAParameter", &undo,
+                               TransactionName { "Point at nothing" });
     CHECK (specForAutomation (project, gain) == nullptr);
 }

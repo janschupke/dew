@@ -61,7 +61,7 @@ ControlResult write (ControlHost& host, const juce::var& args)
 
         if (hasArg (entry, "name"))
             ProjectEdits::setProperty (track, ids::name, textArg (entry, "name"), undo,
-                                       "Rename insert", true);
+                                       TransactionName { "Rename insert" }, true);
 
         if (hasArg (entry, "colour"))
             ProjectEdits::setColour (track, textArg (entry, "colour"), undo, true);
