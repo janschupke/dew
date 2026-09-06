@@ -215,6 +215,50 @@ TEST_CASE ("re-reading the same keys sounds nothing new", "[ui][keys][typing]")
     CHECK (f.keyboard.getSoundingCount() == 3);
 }
 
+TEST_CASE ("a modified key is never a note on the RELEASE path either", "[ui][keys][typing]")
+{
+    Fixture f;
+
+    // The half handleKeyPress never saw. KeyPress::isKeyCurrentlyDown matches a
+    // letter case-insensitively and reports nothing about what is held with it,
+    // so a poll that does not compare the modifiers itself sounds semitone 0
+    // for `z` in the middle of the cmd-Z that is undoing something.
+    const juce::ModifierKeys command { juce::ModifierKeys::commandModifier };
+
+    CHECK_FALSE (f.keyboard.refreshHeldKeys (f.holding ({ 'z' }), command));
+    CHECK (f.keyboard.getSoundingCount() == 0);
+
+    // ...and the control case: the same key, bare, is a note.
+    CHECK (f.keyboard.refreshHeldKeys (f.holding ({ 'z' })));
+    CHECK (f.keyboard.getSoundingCount() == 1);
+
+    // A modifier pressed while a note is held releases it rather than leaving
+    // it hanging under the shortcut.
+    CHECK (f.keyboard.refreshHeldKeys (f.holding ({ 'z' }), command));
+    CHECK (f.keyboard.getSoundingCount() == 0);
+}
+
+TEST_CASE ("a poll that changes nothing consumes nothing", "[ui][keys][typing]")
+{
+    Fixture f;
+
+    const auto held = f.holding ({ 'z' });
+
+    // The press is ours, so the event that carried it is ours.
+    CHECK (f.keyboard.refreshHeldKeys (held));
+
+    // The next key state change - an arrow, F5, a modifier, anything at all -
+    // reaches this the same way, and finds `z` still down and nothing to do.
+    // Answering true there is what stopped ComponentPeer::handleKeyUpOrDown at
+    // this listener and hid every other key in the app behind a held letter.
+    CHECK_FALSE (f.keyboard.refreshHeldKeys (held));
+    CHECK (f.keyboard.getSoundingCount() == 1);
+
+    // The release is ours again.
+    CHECK (f.keyboard.refreshHeldKeys (f.holding ({})));
+    CHECK_FALSE (f.keyboard.refreshHeldKeys (f.holding ({})));
+}
+
 TEST_CASE ("moving the octave lets go of what is held", "[ui][keys][typing]")
 {
     Fixture f;

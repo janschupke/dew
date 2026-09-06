@@ -92,7 +92,20 @@ public:
     using KeyStateSource = std::function<bool (int keyCode)>;
 
     /** Re-reads which mapped keys are down and sounds the difference.
-        Idempotent. Returns whether anything is sounding. */
+
+        Idempotent. Returns whether it ACTED - whether this call started or
+        stopped a note - and not whether anything is sounding, because the
+        answer is what keyStateChanged consumes the event on. A poll that
+        changed nothing is a poll about somebody else's key.
+
+        `modifiers` applies the same BARE-key rule handleKeyPress applies, and
+        has to: KeyPress::isKeyCurrentlyDown matches a letter case-insensitively
+        and knows nothing about what is held with it, so without this cmd-Z
+        sounds semitone 0 underneath the undo it is performing. The overload
+        without it means "nothing held", which is what every caller that has
+        already checked wants.
+    */
+    bool refreshHeldKeys (const KeyStateSource&, const juce::ModifierKeys&);
     bool refreshHeldKeys (const KeyStateSource&);
     bool refreshHeldKeys();
 

@@ -131,27 +131,40 @@ bool TypingKeyboard::handleKeyPress (const juce::KeyPress& key)
 bool TypingKeyboard::refreshHeldKeys()
 {
     return refreshHeldKeys ([] (int keyCode)
-                            { return juce::KeyPress::isKeyCurrentlyDown (keyCode); });
+                            { return juce::KeyPress::isKeyCurrentlyDown (keyCode); },
+                            juce::ModifierKeys::getCurrentModifiers());
 }
 
 bool TypingKeyboard::refreshHeldKeys (const KeyStateSource& isDown)
 {
-    if (! enabled || textHasTheKeyboard() || isDown == nullptr)
-    {
-        releaseAll();
-        return false;
-    }
+    return refreshHeldKeys (isDown, juce::ModifierKeys());
+}
+
+bool TypingKeyboard::refreshHeldKeys (const KeyStateSource& isDown,
+                                      const juce::ModifierKeys& modifiers)
+{
+    // The bare-key rule, exactly as handleKeyPress states it: shift counts,
+    // because keys::matches ignores it and this has to compare it for itself.
+    const auto bare = modifiers.withoutMouseButtons().getRawFlags() == 0;
 
     std::bitset<128> wanted;
 
-    for (const auto& note : typingKeys::table())
+    // Anything that disqualifies the mode leaves `wanted` empty rather than
+    // returning early, so one loop below both sounds and silences and there is
+    // no second release path to keep in step with this one.
+    if (enabled && bare && ! textHasTheKeyboard() && isDown != nullptr)
     {
-        if (! isDown (note.keyCode))
-            continue;
+        for (const auto& note : typingKeys::table())
+        {
+            if (! isDown (note.keyCode))
+                continue;
 
-        if (const auto pitch = typingKeys::pitchFor (note.semitone, octave); pitch >= 0)
-            wanted.set ((size_t) pitch);
+            if (const auto pitch = typingKeys::pitchFor (note.semitone, octave); pitch >= 0)
+                wanted.set ((size_t) pitch);
+        }
     }
+
+    const auto before = sounding;
 
     for (int pitch = 0; pitch < 128; ++pitch)
     {
@@ -164,7 +177,11 @@ bool TypingKeyboard::refreshHeldKeys (const KeyStateSource& isDown)
             silenceNote (pitch);
     }
 
-    return sounding.any();
+    // What changed, not what is held. A re-read that found the same keys down
+    // has nothing to do with the event that woke it, and saying otherwise is
+    // how this mode used to swallow every hotkey in the app for as long as one
+    // letter was under a finger.
+    return sounding != before;
 }
 
 void TypingKeyboard::releaseAll()
@@ -219,9 +236,10 @@ bool TypingKeyboard::keyStateChanged (bool, juce::Component*)
 {
     // State-based, so this is safe to reach twice in one dispatch - which it
     // will be whenever the focused component is not the fallback and declines
-    // the key. Returning "something is sounding" stops the chain while notes
-    // are held and lets it continue when none are, which is what keeps a
-    // release from being swallowed by a component that wanted it.
+    // the key. Only the call that actually started or stopped a note stops the
+    // chain: ComponentPeer::handleKeyUpOrDown returns at the first listener
+    // that answers true, so a broader answer than this one hides every other
+    // key in the app behind whatever letter happens to be held.
     return enabled && refreshHeldKeys();
 }
 
