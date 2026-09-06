@@ -83,6 +83,17 @@ std::vector<juce::ValueTree> nodesFor (const juce::ValueTree& channel, const Par
 namespace
 {
 
+/** The dotted path a warning names, for one parameter of one node.
+
+    Three of the warnings below spelled `path + "." + property` themselves, and
+    the dot is not part of any sentence - it is the path's own punctuation, and
+    the path is what the message interpolates.
+*/
+juce::String propertyPath (const juce::String& path, const ParamSpec& spec)
+{
+    return path + "." + spec.property->toString();
+}
+
 /** One parameter out of a var object, coerced, clamped and reported. */
 juce::var validateParam (const juce::DynamicObject* object, const ParamSpec& spec,
                          const juce::String& path, juce::StringArray& warnings)
@@ -96,7 +107,8 @@ juce::var validateParam (const juce::DynamicObject* object, const ParamSpec& spe
 
     if (! coerceToTypeOf (fallback, object->getProperty (*spec.property), coerced))
     {
-        warnings.add (path + "." + spec.property->toString() + ": wrong type - using the default");
+        warnings.add (tr (StringId::warning_propertyWrongTypeAt,
+                          Args {}.with ("path", propertyPath (path, spec))));
         return fallback;
     }
 
@@ -109,16 +121,20 @@ juce::var validateParam (const juce::DynamicObject* object, const ParamSpec& spe
             if (coerced.toString() == spec.choices[i].id)
                 return coerced;
 
-        warnings.add (path + "." + spec.property->toString() + ": \"" + coerced.toString()
-                      + "\" is not one of its values - using the default");
+        warnings.add (tr (
+            StringId::warning_propertyNotAChoice,
+            Args {}.with ("path", propertyPath (path, spec)).with ("value", coerced.toString())));
         return fallback;
     }
 
     const auto clamped = spec.clamp ((double) coerced);
 
     if (! juce::approximatelyEqual (clamped, (double) coerced))
-        warnings.add (path + "." + spec.property->toString() + ": " + coerced.toString()
-                      + " is outside its range - clamped to " + juce::String (clamped));
+        warnings.add (
+            tr (StringId::warning_propertyClamped, Args {}
+                                                       .with ("path", propertyPath (path, spec))
+                                                       .with ("value", coerced.toString())
+                                                       .with ("clamped", clamped)));
 
     return spec.integral ? juce::var ((int) clamped) : juce::var (clamped);
 }
@@ -134,7 +150,7 @@ juce::var validateObject (const juce::var& value, const ParamSpec* params, int n
     auto* source = value.getDynamicObject();
 
     if (source == nullptr && ! value.isVoid())
-        warnings.add (path + ": expected an object - using defaults");
+        warnings.add (tr (StringId::warning_expectedObject, Args {}.with ("path", path)));
 
     auto* object = new juce::DynamicObject();
 
@@ -157,8 +173,8 @@ juce::var validateObject (const juce::var& value, const ParamSpec* params, int n
             }();
 
             if (! known)
-                warnings.add (path + "." + property.name.toString()
-                              + ": not a parameter of this type - dropped");
+                warnings.add (tr (StringId::warning_notAParameter,
+                                  Args {}.with ("path", path + "." + property.name.toString())));
         }
 
     return juce::var (object);
@@ -294,9 +310,8 @@ juce::var validateState (const InstrumentDescriptor& descriptor, const juce::var
             // volume was written against a different idea of what a preset is,
             // and loading it silently would move a fader in a finished mix.
             if (source != nullptr && source->hasProperty (key))
-                warnings.add (path
-                              + ": a preset does not carry the channel's own parameters"
-                                " - dropped");
+                warnings.add (
+                    tr (StringId::warning_presetHasNoChannelParams, Args {}.with ("path", path)));
 
             continue;
         }
@@ -318,8 +333,8 @@ juce::var validateState (const InstrumentDescriptor& descriptor, const juce::var
             {
                 if (slots.size() >= group.count)
                 {
-                    warnings.add (path + ": more than " + juce::String (group.count)
-                                  + " slots - the rest are dropped");
+                    warnings.add (tr (StringId::warning_tooManySlots,
+                                      Args {}.with ("path", path).count (group.count)));
                     break;
                 }
 
@@ -330,7 +345,7 @@ juce::var validateState (const InstrumentDescriptor& descriptor, const juce::var
         }
         else if (! value.isVoid())
         {
-            warnings.add (path + ": expected an array - using defaults");
+            warnings.add (tr (StringId::warning_expectedArray, Args {}.with ("path", path)));
         }
 
         // Every slot the preset did not mention, at its defaults. Without this a

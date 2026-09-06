@@ -28,39 +28,6 @@ namespace
     has never been red on the tree it guards - a gate landed before its subject
     is a gate somebody disables to get on with the extraction.
 */
-/** `line` with every argument NAME removed.
-
-    args ("value", rate) names the placeholder a message interpolates; it is an
-    identifier that happens to be spelled as a literal, and no translator will
-    ever see it. Without this the gate reports every formatted message as an
-    offence and the only way to quieten it is a list of files - which is the
-    ratchet the exemption rule exists to remove.
-*/
-juce::String withoutArgumentNames (const juce::String& line)
-{
-    juce::String kept;
-    auto i = 0;
-
-    while (i < line.length())
-    {
-        const auto next = line.indexOf (i, ".with (\"");
-
-        if (next < 0)
-        {
-            kept += line.substring (i);
-            break;
-        }
-
-        const auto nameStart = next + 8;
-        const auto nameEnd = line.indexOfChar (nameStart, '"');
-
-        kept += line.substring (i, nameStart - 1);
-        i = nameEnd < 0 ? line.length() : nameEnd + 1;
-    }
-
-    return kept;
-}
-
 /** `line` with every diagnostic CODE removed.
 
     "E401" is not a sentence. It is an identifier that happens to be spelled in

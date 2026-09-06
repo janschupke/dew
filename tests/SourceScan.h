@@ -80,6 +80,44 @@ struct CodeLine
     juce::String text; ///< that line with its comments removed
 };
 
+/** `line` with every argument NAME removed.
+
+    args ("value", rate) names the placeholder a message interpolates; it is an
+    identifier that happens to be spelled as a literal, and no translator will
+    ever see it. Without this the gate on English reports every formatted
+    message as an offence, and the gate on a parameter written as a literal
+    reports every message whose argument is named after one - `rate` and `depth`
+    are both. The only way to quieten either would be a list of files, which is
+    the ratchet the exemption rule exists to remove.
+
+    Shared by those two gates, which is why it lives here rather than beside
+    one of them.
+*/
+inline juce::String withoutArgumentNames (const juce::String& line)
+{
+    juce::String kept;
+    auto i = 0;
+
+    while (i < line.length())
+    {
+        const auto next = line.indexOf (i, ".with (\"");
+
+        if (next < 0)
+        {
+            kept += line.substring (i);
+            break;
+        }
+
+        const auto nameStart = next + 8;
+        const auto nameEnd = line.indexOfChar (nameStart, '"');
+
+        kept += line.substring (i, nameStart - 1);
+        i = nameEnd < 0 ? line.length() : nameEnd + 1;
+    }
+
+    return kept;
+}
+
 /** A raw string's content, requoted so the rest of the scanner reads it as an
     ordinary literal.
 

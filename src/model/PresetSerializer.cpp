@@ -1,5 +1,6 @@
 #include "model/PresetSerializer.h"
 
+#include "i18n/Strings.h"
 #include "model/ModuleCatalog.h"
 #include "model/ModuleState.h"
 #include "model/PresetCategory.h"
@@ -89,7 +90,7 @@ PresetSerializer::LoadResult PresetSerializer::fromJsonString (const juce::Strin
 
     if (juce::JSON::parse (json, parsed).failed() || parsed.getDynamicObject() == nullptr)
     {
-        out.result = juce::Result::fail ("This file is not readable as JSON.");
+        out.result = juce::Result::fail (tr (StringId::error_presetNotJson));
         return out;
     }
 
@@ -97,7 +98,7 @@ PresetSerializer::LoadResult PresetSerializer::fromJsonString (const juce::Strin
 
     if (object->getProperty (kFormat).toString() != kPresetFormatTag)
     {
-        out.result = juce::Result::fail ("This is not a dew preset file.");
+        out.result = juce::Result::fail (tr (StringId::error_presetNotAPreset));
         return out;
     }
 
@@ -105,13 +106,13 @@ PresetSerializer::LoadResult PresetSerializer::fromJsonString (const juce::Strin
 
     if (version > kPresetFormatVersion)
     {
-        out.result = juce::Result::fail ("This preset was written by a newer version of dew.");
+        out.result = juce::Result::fail (tr (StringId::error_presetNewerVersion));
         return out;
     }
 
     if (version < 1)
     {
-        out.result = juce::Result::fail ("This preset does not say which version it is.");
+        out.result = juce::Result::fail (tr (StringId::error_presetNoVersion));
         return out;
     }
 
@@ -129,8 +130,8 @@ PresetSerializer::LoadResult PresetSerializer::fromJsonString (const juce::Strin
 
     if (! validateInto (out.preset, out.warnings))
     {
-        out.result = juce::Result::fail ("This preset is for \"" + out.preset.typeId
-                                         + "\", which this version of dew does not have.");
+        out.result = juce::Result::fail (
+            tr (StringId::error_presetUnknownType, Args {}.with ("type", out.preset.typeId)));
         return out;
     }
 
@@ -149,18 +150,21 @@ juce::Result PresetSerializer::writeToFile (const Preset& preset, const juce::Fi
     if (auto stream = temp.getFile().createOutputStream())
     {
         if (! stream->writeText (toJsonString (preset), false, false, "\n"))
-            return juce::Result::fail ("Could not write to " + file.getFullPathName());
+            return juce::Result::fail (tr (StringId::error_couldNotWriteTo,
+                                           Args {}.with ("file", file.getFullPathName())));
 
         stream->flush();
         stream.reset();
 
         if (! temp.overwriteTargetFileWithTemporary())
-            return juce::Result::fail ("Could not replace " + file.getFullPathName());
+            return juce::Result::fail (tr (StringId::error_couldNotReplace,
+                                           Args {}.with ("file", file.getFullPathName())));
 
         return juce::Result::ok();
     }
 
-    return juce::Result::fail ("Could not create " + file.getFullPathName());
+    return juce::Result::fail (
+        tr (StringId::error_couldNotCreate, Args {}.with ("file", file.getFullPathName())));
 }
 
 PresetSerializer::LoadResult PresetSerializer::readFromFile (const juce::File& file)
@@ -168,7 +172,8 @@ PresetSerializer::LoadResult PresetSerializer::readFromFile (const juce::File& f
     if (! file.existsAsFile())
     {
         LoadResult out;
-        out.result = juce::Result::fail ("There is no file at " + file.getFullPathName());
+        out.result = juce::Result::fail (
+            tr (StringId::error_noFileAt, Args {}.with ("file", file.getFullPathName())));
         return out;
     }
 

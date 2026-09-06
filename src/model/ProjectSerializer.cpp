@@ -1,5 +1,6 @@
 #include "model/ProjectSerializer.h"
 
+#include "i18n/Strings.h"
 #include "model/GeneratorCatalog.h"
 
 #include "model/ProjectSchema.h"
@@ -245,8 +246,9 @@ ProjectSerializer::LoadResult ProjectSerializer::fromJsonString (const juce::Str
 
     if (parseResult.failed())
     {
-        loaded.result = juce::Result::fail ("This is not a valid .dew file: "
-                                            + parseResult.getErrorMessage());
+        loaded.result = juce::Result::fail (
+            tr (StringId::error_projectNotJson,
+                Args {}.with ("detail", parseResult.getErrorMessage())));
         return loaded;
     }
 
@@ -254,14 +256,13 @@ ProjectSerializer::LoadResult ProjectSerializer::fromJsonString (const juce::Str
 
     if (object == nullptr)
     {
-        loaded.result = juce::Result::fail ("This is not a valid .dew file: the contents are "
-                                            "not a JSON object.");
+        loaded.result = juce::Result::fail (tr (StringId::error_projectNotAnObject));
         return loaded;
     }
 
     if (object->getProperty ("format").toString() != juce::String (kFormatTag))
     {
-        loaded.result = juce::Result::fail ("This is not a dew project file.");
+        loaded.result = juce::Result::fail (tr (StringId::error_projectNotAProject));
         return loaded;
     }
 
@@ -269,19 +270,16 @@ ProjectSerializer::LoadResult ProjectSerializer::fromJsonString (const juce::Str
 
     if (version > kFormatVersion)
     {
-        loaded.result = juce::Result::fail ("This project was saved by a newer version of dew "
-                                            "(format "
-                                            + juce::String (version)
-                                            + ", this build "
-                                              "reads up to "
-                                            + juce::String (kFormatVersion) + ").");
+        loaded.result = juce::Result::fail (
+            tr (StringId::error_projectNewerFormat,
+                Args {}.with ("version", version).with ("supported", kFormatVersion)));
         return loaded;
     }
 
     if (version < 1)
     {
-        loaded.result = juce::Result::fail ("This project has an invalid format version ("
-                                            + juce::String (version) + ").");
+        loaded.result = juce::Result::fail (
+            tr (StringId::error_projectBadFormat, Args {}.with ("version", version)));
         return loaded;
     }
 
@@ -323,18 +321,21 @@ juce::Result ProjectSerializer::writeToFile (const juce::ValueTree& project, con
         const auto json = toJsonString (project);
 
         if (! stream->writeText (json, false, false, "\n"))
-            return juce::Result::fail ("Could not write to " + file.getFullPathName());
+            return juce::Result::fail (tr (StringId::error_couldNotWriteTo,
+                                           Args {}.with ("file", file.getFullPathName())));
 
         stream->flush();
         stream.reset();
 
         if (! temp.overwriteTargetFileWithTemporary())
-            return juce::Result::fail ("Could not replace " + file.getFullPathName());
+            return juce::Result::fail (tr (StringId::error_couldNotReplace,
+                                           Args {}.with ("file", file.getFullPathName())));
 
         return juce::Result::ok();
     }
 
-    return juce::Result::fail ("Could not create " + file.getFullPathName());
+    return juce::Result::fail (
+        tr (StringId::error_couldNotCreate, Args {}.with ("file", file.getFullPathName())));
 }
 
 ProjectSerializer::LoadResult ProjectSerializer::readFromFile (const juce::File& file)
@@ -343,7 +344,8 @@ ProjectSerializer::LoadResult ProjectSerializer::readFromFile (const juce::File&
 
     if (! file.existsAsFile())
     {
-        loaded.result = juce::Result::fail (file.getFullPathName() + " does not exist.");
+        loaded.result = juce::Result::fail (
+            tr (StringId::error_fileDoesNotExist, Args {}.with ("file", file.getFullPathName())));
         return loaded;
     }
 

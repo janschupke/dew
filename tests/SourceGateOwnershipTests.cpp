@@ -240,9 +240,14 @@ TEST_CASE ("no source spells an automatable parameter as a string literal", "[bu
     REQUIRE (names.contains ("cutoff"));
     REQUIRE (names.contains ("midFreq"));
 
+    // An ICU argument name is stripped first, for the reason the gate on
+    // English strips it: .with ("rate", ...) names a placeholder, and `rate`
+    // and `depth` are both parameters as well as sensible names for one.
     const auto found = dew::testing::offenders (
-        [&names] (const juce::String& line)
+        [&names] (const juce::String& raw)
         {
+            const auto line = dew::testing::withoutArgumentNames (raw);
+
             for (const auto& name : names)
                 if (line.contains ("\"" + name + "\""))
                     return true;

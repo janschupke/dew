@@ -254,8 +254,8 @@ juce::ValueTree treeFromVar (const juce::var& value, const NodeSpec& spec,
     if (object == nullptr)
     {
         if (! value.isVoid())
-            warnings.add (path + ": expected an object, got " + value.toString()
-                          + " - using defaults");
+            warnings.add (tr (StringId::warning_expectedObjectGot,
+                              Args {}.with ("path", path).with ("value", value.toString())));
 
         return defaultTreeFor (spec);
     }
@@ -314,9 +314,10 @@ juce::ValueTree treeFromVar (const juce::var& value, const NodeSpec& spec,
                 {
                     if (child.fixedCount > 0 && index >= child.fixedCount)
                     {
-                        warnings.add (path + "." + child.jsonKey + ": more than "
-                                      + juce::String (child.fixedCount)
-                                      + " entries - the rest are dropped");
+                        warnings.add (tr (StringId::warning_tooManyEntries,
+                                          Args {}
+                                              .with ("path", path + "." + child.jsonKey)
+                                              .count (child.fixedCount)));
                         break;
                     }
 
@@ -328,7 +329,8 @@ juce::ValueTree treeFromVar (const juce::var& value, const NodeSpec& spec,
             }
             else if (! childValue.isVoid())
             {
-                warnings.add (path + "." + child.jsonKey + ": expected an array - ignored");
+                warnings.add (tr (StringId::warning_expectedArrayIgnored,
+                                  Args {}.with ("path", path + "." + child.jsonKey)));
             }
 
             // Fill the slots the file did not carry. An older file, or one
@@ -359,7 +361,8 @@ juce::ValueTree treeFromVar (const juce::var& value, const NodeSpec& spec,
         // A retired property is dropped in SILENCE - see wasRetired.
         if (! isKnownProp && ! isKnownChild && ! (spec.type == ids::PROJECT && key == "format")
             && ! wasRetired (spec, property.name))
-            warnings.add (path + "." + key + ": not part of the schema - dropped");
+            warnings.add (
+                tr (StringId::warning_notInSchema, Args {}.with ("path", path + "." + key)));
     }
 
     return tree;
