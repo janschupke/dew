@@ -78,6 +78,22 @@ ParamAddress addressFrom (const juce::var& args);
 */
 juce::ValueTree paramNodeFor (const juce::ValueTree& project, const ParamAddress&);
 
+/** The node a parameter's VALUE is actually stored on.
+
+    The same as paramNodeFor everywhere except an oscillator slot, whose
+    parameters are spread over the slot, its generator's node and its LFO's.
+    paramNodeFor must keep answering the slot, because that is what an
+    automation target addresses and the two spaces are asserted equal; this
+    answers the other question, and it is the one a read or a write wants.
+
+    Getting it wrong is silent: the write lands as a property on the OSC node,
+    ValueTree accepts it, and the schema drops it on the next save.
+*/
+juce::ValueTree paramValueNodeFor (const juce::ValueTree& project, const ParamAddress& address);
+
+/** The same descent, given a node already in hand. */
+juce::ValueTree paramValueNode (const juce::ValueTree& node, const juce::Identifier& property);
+
 /** What the parameter IS, or nothing when the address names none.
 
     Read from ModuleCatalog rather than from the automation tables, so it

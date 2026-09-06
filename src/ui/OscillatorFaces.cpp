@@ -67,6 +67,18 @@ OscillatorSection::generatorControls()
              { &ids::unisonDetune, &spreadKnob } };
 }
 
+std::vector<std::pair<const juce::Identifier*, juce::Component*>> OscillatorSection::lfoControls()
+{
+    // The switch, the shape and the sync are NOT here: those three are the
+    // header row, which every slot shows whether its LFO is on or not. This is
+    // what opens below them, and what the height budget turns on.
+    return { { &ids::lfoRate, &lfoRateKnob },
+             { &ids::lfoDivision, &lfoDivisionBox },
+             { &ids::lfoToPitch, &lfoPitchKnob },
+             { &ids::lfoToVolume, &lfoVolumeKnob },
+             { &ids::lfoToPan, &lfoPanKnob } };
+}
+
 void OscillatorSection::refreshControls()
 {
     const juce::ScopedValueSetter<bool> quiet (updating, true);
@@ -77,6 +89,13 @@ void OscillatorSection::refreshControls()
     const auto wasWavetable = showingWavetable;
     const auto generator = valid ? generatorFor (slot[ids::mode].toString()).id : "";
     showingWavetable = valid && juce::String (generator) == "wavetable";
+
+    const auto lfo = valid ? generatorNodeFor (slot, ids::lfoOn) : juce::ValueTree();
+
+    const auto wasLfo = showingLfo;
+    const auto wasSync = showingSync;
+    showingLfo = valid && (bool) lfo.getProperty (ids::lfoOn, false);
+    showingSync = valid && (bool) lfo.getProperty (ids::lfoSync, false);
 
     enableButton.setEnabled (valid);
     modeBox.setEnabled (valid);
@@ -95,7 +114,22 @@ void OscillatorSection::refreshControls()
     for (const auto& [property, control] : generatorControls())
         control->setVisible (valid && ! isForeignGeneratorParam (generator, *property));
 
-    if (wasWavetable != showingWavetable)
+    lfoButton.setEnabled (valid);
+    lfoLabel.setEnabled (valid);
+    lfoWaveBox.setEnabled (valid);
+    lfoSyncButton.setEnabled (valid);
+
+    // The rate and the division share a cell and swap, so exactly one of them
+    // is ever on screen.
+    for (const auto& [property, control] : lfoControls())
+        control->setVisible (showingLfo && (*property != ids::lfoRate || ! showingSync)
+                             && (*property != ids::lfoDivision || showingSync));
+
+    // Three states, one condition. Leaving the LFO out of this was the whole
+    // failure mode: switching it on would lay its row out below the section's
+    // own bottom edge, where nothing paints it, and the controls would simply
+    // not appear.
+    if (wasWavetable != showingWavetable || wasLfo != showingLfo || wasSync != showingSync)
     {
         resized();
 
@@ -148,6 +182,21 @@ void OscillatorSection::refreshControls()
     rateKnob.setValue ((double) wavetable[ids::wavePositionRate], juce::dontSendNotification);
     unisonKnob.setValue ((double) (int) wavetable[ids::unisonVoices], juce::dontSendNotification);
     spreadKnob.setValue ((double) wavetable[ids::unisonDetune], juce::dontSendNotification);
+
+    lfoButton.setToggleState (showingLfo, juce::dontSendNotification);
+    lfoButton.setTooltip (tr (StringId::oscillator_lfoOn_help));
+    lfoSyncButton.setToggleState (showingSync, juce::dontSendNotification);
+
+    lfoWaveBox.setSelectedId (idFor (choicesOf (ids::lfoWave), lfo[ids::lfoWave].toString()),
+                              juce::dontSendNotification);
+    lfoDivisionBox.setSelectedId (
+        idFor (choicesOf (ids::lfoDivision), lfo[ids::lfoDivision].toString()),
+        juce::dontSendNotification);
+
+    lfoRateKnob.setValue ((double) lfo[ids::lfoRate], juce::dontSendNotification);
+    lfoPitchKnob.setValue ((double) lfo[ids::lfoToPitch], juce::dontSendNotification);
+    lfoVolumeKnob.setValue ((double) lfo[ids::lfoToVolume], juce::dontSendNotification);
+    lfoPanKnob.setValue ((double) lfo[ids::lfoToPan], juce::dontSendNotification);
 }
 
 void OscillatorSection::paintShape (juce::Graphics& g) const
@@ -280,19 +329,58 @@ void OscillatorSection::resized()
 
     knobRow ({ &detuneKnob, &gainKnob });
 
-    if (! showingWavetable)
+    if (showingWavetable)
+    {
+        area.removeFromTop (space::sm);
+        knobRow ({ &positionKnob, &modKnob, &rateKnob });
+
+        area.removeFromTop (space::sm);
+        knobRow ({ &unisonKnob, &spreadKnob });
+
+        area.removeFromTop (space::sm);
+        shapeBounds = area.removeFromTop (shapeHeight);
+    }
+    else
     {
         shapeBounds = {};
-        return;
     }
 
+    // The LFO goes LAST, below the shape display, so the generator's own
+    // controls stay where they were whether it is on or not - a block that
+    // pushed them down when it opened would move every knob the hand is
+    // already reaching for.
     area.removeFromTop (space::sm);
-    knobRow ({ &positionKnob, &modKnob, &rateKnob });
+
+    auto lfoRow = area.removeFromTop (formRowHeight);
+    lfoButton.setBounds (lfoRow.removeFromLeft (size::controlHeight));
+    lfoRow.removeFromLeft (space::xs);
+    lfoLabel.setBounds (lfoRow.removeFromLeft (30));
+    lfoSyncButton.setBounds (lfoRow.removeFromRight (lfoSyncButton.preferredHeight()));
+    lfoRow.removeFromRight (space::xs);
+    lfoWaveBox.setBounds (lfoRow);
+
+    if (! showingLfo)
+        return;
 
     area.removeFromTop (space::sm);
-    knobRow ({ &unisonKnob, &spreadKnob });
 
-    area.removeFromTop (space::sm);
-    shapeBounds = area.removeFromTop (shapeHeight);
+    // Four cells whether the rate is a knob or a division box, so the three
+    // depths do not shift sideways when the sync is toggled.
+    const std::vector<int> lfoGroup { 4 };
+    const auto lfoCells = KnobGrid::place (area.removeFromTop (knobRowHeight),
+                                           KnobGrid::planForRows (1, lfoGroup, area.getWidth()));
+
+    if (lfoCells.cells.size() == 4)
+    {
+        // The box is a form control in a knob-height cell, so it sits centred
+        // rather than stretched - a dropdown as tall as a knob reads as a
+        // different kind of thing entirely.
+        lfoDivisionBox.setBounds (
+            lfoCells.cells[0].withSizeKeepingCentre (lfoCells.cells[0].getWidth(), formRowHeight));
+        lfoRateKnob.setBounds (lfoCells.cells[0]);
+        lfoPitchKnob.setBounds (lfoCells.cells[1]);
+        lfoVolumeKnob.setBounds (lfoCells.cells[2]);
+        lfoPanKnob.setBounds (lfoCells.cells[3]);
+    }
 }
 } // namespace dew

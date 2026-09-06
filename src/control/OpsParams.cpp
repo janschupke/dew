@@ -128,7 +128,7 @@ ControlResult list (ControlHost& host, const juce::var& args)
     juce::Array<juce::var> rows;
 
     for (const auto& spec : paramsAt (project, address))
-        rows.add (describeSpec (spec, node[*spec.property]));
+        rows.add (describeSpec (spec, paramValueNode (node, *spec.property)[*spec.property]));
 
     return ControlResult::success (
         Obj {}.set ("node", node.getType().toString()).set ("parameters", arrayOf (rows)));
@@ -146,7 +146,7 @@ ControlResult read (ControlHost& host, const juce::var& args)
     for (const auto& entry : arrayArg (args, "entries"))
     {
         const auto address = addressFrom (entry);
-        const auto node = paramNodeFor (project, address);
+        const auto node = paramValueNodeFor (project, address);
         const auto spec = paramSpecFor (project, address);
 
         if (! node.isValid() || ! spec.has_value())
@@ -191,7 +191,7 @@ ControlResult write (ControlHost& host, const juce::var& args)
         const auto& entry = entries.getReference (i);
         const auto at = "entries[" + juce::String (i) + "] ";
         const auto address = addressFrom (entry);
-        const auto node = paramNodeFor (project, address);
+        const auto node = paramValueNodeFor (project, address);
 
         if (! node.isValid())
             return ControlResult::failure (at + "addresses nothing: " + address.describe() + ".");

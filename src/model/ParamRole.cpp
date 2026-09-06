@@ -48,6 +48,12 @@ const RoleRow roleRows[] {
     { &ids::reverse, ParamRole::generic },
     { &ids::loop, ParamRole::generic },
 
+    // The LFO's two switches. Switches, not modulation: what they carry is
+    // whether the thing runs and how its rate is spelled, and neither is a
+    // quantity the ear follows - the six things it actually MOVES are below.
+    { &ids::lfoOn, ParamRole::generic },
+    { &ids::lfoSync, ParamRole::generic },
+
     // How loud. `sustain` is here and not with the other envelope stages: it is
     // the one ADSR value that is an amplitude.
     { &ids::volume, ParamRole::level },
@@ -110,6 +116,17 @@ const RoleRow roleRows[] {
     { &ids::wavePositionRate, ParamRole::modulation },
     { &ids::unisonVoices, ParamRole::modulation },
     { &ids::unisonDetune, ParamRole::modulation },
+
+    // The slot's LFO. Every destination is here, `lfoToPitch` included: the
+    // boundary this table draws is between a fixed offset and a MOVEMENT, and
+    // an LFO to pitch is the movement by construction - it is the same
+    // distinction that puts unisonDetune here and detuneCents under pitch.
+    { &ids::lfoWave, ParamRole::modulation },
+    { &ids::lfoRate, ParamRole::modulation },
+    { &ids::lfoDivision, ParamRole::modulation },
+    { &ids::lfoToPitch, ParamRole::modulation },
+    { &ids::lfoToVolume, ParamRole::modulation },
+    { &ids::lfoToPan, ParamRole::modulation },
 
     // Which note you hear.
     { &ids::basePitch, ParamRole::pitch },

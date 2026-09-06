@@ -106,6 +106,27 @@ constexpr ParamChoice positionSources[] {
     { "lfo", StringId::choice_positionSource_lfo },
 };
 
+/** How often a synced LFO comes round, as a fraction of a WHOLE NOTE.
+
+    The ids are words rather than "1/4", and that is forced: an i18n key segment
+    must be lowerCamel, and cmake/GenStrings.cmake makes a slash or a leading
+    digit a FATAL_ERROR at configure time rather than a warning. The DISPLAY
+    text is "1/4" - see choice.lfoDivision in en.json.
+
+    The order is load-bearing twice over: an index into it is what a curve over
+    the choice would snap to, and the note value IS 1 / (1 << index) of a whole
+    note - which is why nothing anywhere holds a second table saying what each
+    row means. See syncedLfoHz in SnapshotReaders.
+*/
+constexpr ParamChoice noteDivisions[] {
+    { "whole", StringId::choice_lfoDivision_whole },
+    { "half", StringId::choice_lfoDivision_half },
+    { "quarter", StringId::choice_lfoDivision_quarter },
+    { "eighth", StringId::choice_lfoDivision_eighth },
+    { "sixteenth", StringId::choice_lfoDivision_sixteenth },
+    { "thirtySecond", StringId::choice_lfoDivision_thirtySecond },
+};
+
 const ParamSpec channelSpecs[] {
     // The ORDER is the schema's, for the reason oscSpecs' is: ProjectSchema
     // splices this block straight into the CHANNEL node between the channel's
@@ -223,6 +244,51 @@ const ParamSpec oscSpecs[] {
       ParamControl::knob, false, /*automatable*/ false,
       /*integral*/ true },
     { &ids::unisonDetune, " c", 0.0, 50.0, 0.0, 0.5, 1 },
+
+    // --- the SLOT's LFO, from here ------------------------------------------
+    //
+    // Appended, and that is the whole reason it is safe: the OSC group is a
+    // PREFIX of this table (oscSpecs, kNumSlotParams) and each generator points
+    // at a fixed offset from the front, so nothing above moves and not one
+    // committed .dew is rewritten. A row inserted anywhere else would be.
+    //
+    // One LFO per SLOT rather than per generator: pitch, level and position in
+    // the field are three things a slot has whichever generator it runs, so
+    // this is a group of its own under the slot and not a row in either
+    // generator's run. It is deliberately NOT in `generators` - see below.
+    toggleSpec (&ids::lfoOn, /*automatable*/ false),
+
+    // The SAME table the classic oscillator's shape comes from. A second
+    // four-row list would be a second place "square" is spelled.
+    //
+    // Sine by default, because that is what somebody switching an LFO on to
+    // hear it move is asking for; the classic oscillator defaults to saw
+    // because that is what somebody is asking to HEAR.
+    choiceSpec (&ids::lfoWave, waveforms, (int) std::size (waveforms), "sine", 0.0),
+
+    toggleSpec (&ids::lfoSync, /*automatable*/ false),
+
+    // The same range and curve wavePositionRate declares - it is the same
+    // question asked about a different destination, so it takes the same
+    // answer. Logarithmic because a rate is frequency-like: linearly, four
+    // fifths of the travel would sit above 4Hz.
+    { &ids::lfoRate, " Hz", 0.01, 20.0, 1.0, 0.01, 2, ParamCurve::logarithmic },
+
+    choiceSpec (&ids::lfoDivision, noteDivisions, (int) std::size (noteDivisions), "quarter", 2.0),
+
+    // Three destinations, three depths, all bipolar and all defaulting to
+    // nothing - which is what makes "any combination" mean "set the ones you
+    // want". Bipolar so two slots can be moved in antiphase against each other.
+    //
+    // Two octaves either way on the pitch, in SEMITONES rather than the cents
+    // detuneCents uses: a detune is a handful of cents by definition and an LFO
+    // to pitch is asked for in whole tones as often as in a vibrato's worth.
+    { &ids::lfoToPitch, " st", -24.0, 24.0, 0.0, 0.01, 2, ParamCurve::linear, ParamControl::knob,
+      /*bipolar*/ true },
+    { &ids::lfoToVolume, "", -1.0, 1.0, 0.0, 0.01, 2, ParamCurve::linear, ParamControl::knob,
+      /*bipolar*/ true },
+    { &ids::lfoToPan, "", -1.0, 1.0, 0.0, 0.01, 2, ParamCurve::linear, ParamControl::knob,
+      /*bipolar*/ true },
 };
 
 /** How the table above divides: the SLOT's own parameters first, then one run
@@ -237,10 +303,15 @@ const ParamSpec oscSpecs[] {
 constexpr int kNumSlotParams = 5;      ///< enabled, octave, detuneCents, gain, mode
 constexpr int kNumClassicParams = 1;   ///< wave
 constexpr int kNumWavetableParams = 7; ///< the table, its position and the unison stack
+constexpr int kNumLfoParams = 8;       ///< the slot's LFO: its shape, its rate, its three depths
 
-static_assert (kNumSlotParams + kNumClassicParams + kNumWavetableParams
-                   == (int) std::size (oscSpecs),
-               "every oscillator parameter belongs to the slot or to one generator");
+/** Where the LFO's run starts. Spelled once, because three places need it - the
+    accessor below, the synthGroups row and nothing else may recompute it. */
+constexpr int kLfoParamsOffset = kNumSlotParams + kNumClassicParams + kNumWavetableParams;
+
+static_assert (kLfoParamsOffset + kNumLfoParams == (int) std::size (oscSpecs),
+               "every oscillator parameter belongs to the slot, to one generator, or to "
+               "the slot's LFO");
 
 /** Every generator, and the run of oscSpecs each one alone reads.
 
@@ -393,6 +464,14 @@ const ParamGroup synthGroups[] {
       oscSpecs + kNumSlotParams + kNumClassicParams, kNumWavetableParams, kMaxOscillators,
       /*inPreset*/ true, &ids::OSC },
 
+    // Under the slot like the two above, and for the same reason - but NOT a
+    // generator. A generator is what a slot runs INSTEAD of another; the LFO is
+    // what it does as well, whichever it is running. Putting it in `generators`
+    // would fire the assertion tying that table to the `mode` choice, and would
+    // make isForeignGeneratorParam hide these controls for half the modes.
+    { &ids::LFO, "lfo", StringId::group_lfo_name, oscSpecs + kLfoParamsOffset, kNumLfoParams,
+      kMaxOscillators, /*inPreset*/ true, &ids::OSC },
+
     { &ids::AMP, "amp", StringId::group_amp_name, ampSpecs, (int) std::size (ampSpecs) },
 };
 
@@ -472,6 +551,13 @@ DEW_PARAM_TABLE (projectParamSpecs, projectSpecs)
 const std::vector<ParamSpec>& oscSlotParamSpecs()
 {
     static const std::vector<ParamSpec> table { oscSpecs, oscSpecs + kNumSlotParams };
+    return table;
+}
+
+const std::vector<ParamSpec>& oscLfoParamSpecs()
+{
+    static const std::vector<ParamSpec> table { oscSpecs + kLfoParamsOffset,
+                                                oscSpecs + kLfoParamsOffset + kNumLfoParams };
     return table;
 }
 

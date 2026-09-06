@@ -222,8 +222,11 @@ licence question. Without it the format reports itself unavailable and the rest 
   the whole drag, however far it travelled. Escape abandons it, and so does letting go
   outside the chain.
 - **Instrument** — three band-limited oscillators (sine/saw/square/triangle) or
-  wavetables with unison, each with its own octave, detune, gain and on/off switch. One
-  ADSR envelope behind them, and channel volume and pan.
+  wavetables with unison, each with its own octave, detune, gain and on/off switch. Each
+  slot also has an **LFO**: a shape, a rate in hertz or locked to the tempo, and three
+  independent depths — to pitch, to level and to pan — so any combination of the three
+  moves and the ones left at zero do not. One ADSR envelope behind them, and channel
+  volume and pan.
 - **Presets** — thirty-nine factory sounds: three for each effect type, five for the synth,
   two for an audio channel and two for a soundfont. **Preset** beside the instrument panel's title loads one
   onto the selected channel; each effect card has its own button, and offers only its own

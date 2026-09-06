@@ -95,6 +95,40 @@ struct OscSettings
     int octave = 0;
     float detuneCents = 0.0f;
     float gain = 0.8f;
+
+    // --- the slot's LFO ------------------------------------------------------
+    //
+    // One per slot, moving any combination of pitch, level and position in the
+    // field. Everything here is a plain value: this struct travels in the
+    // snapshot and ChannelOverrides asserts it is trivially copyable.
+    bool lfoOn = false;
+    Waveform lfoWave = Waveform::sine;
+
+    /** Whether the rate is locked to the tempo. Kept even though `lfoHz` is
+        already resolved, because automation needs it: a curve over the rate of
+        a SYNCED LFO has to be ignored rather than quietly unsync it. */
+    bool lfoSync = false;
+
+    /** The rate in Hz, ALREADY RESOLVED - the free rate, or what the division
+        works out to at the project tempo. Resolved by the reader on the message
+        thread, the way SampleSettings::pitchRatio is.
+
+        The render path must not derive this from the transport instead:
+        Transport::samplesPerStep() is the rate at the top of the current block
+        whenever the tempo map is not constant, so an increment computed from it
+        every block would make a synced LFO's phase depend on the buffer size -
+        which is exactly what the block-size-invariance render test pins. */
+    float lfoHz = 1.0f;
+
+    float lfoToPitch = 0.0f;  ///< semitones, either way
+    float lfoToVolume = 0.0f; ///< -1..1
+    float lfoToPan = 0.0f;    ///< -1..1
+
+    /** On AND actually asking for something. Precomputed, and load-bearing: a
+        voice puts only its active slots in the LFO pass, so a slot switched on
+        with all three depths at zero stays in the plain pass and renders the
+        same floats in the same order it did before there were LFOs at all. */
+    bool lfoActive = false;
 };
 
 /** A channel's oscillators, resolved.
@@ -303,6 +337,19 @@ enum class AutomationParam
         the wavetable position, so a curve here moves the NEXT note. */
     oscOctave,
     oscDetuneCents,
+
+    /** The slot's LFO: how fast it runs and how far it reaches. Latched at
+        note-on for the same reason the two above are, so a curve moves the next
+        note rather than the one sounding.
+
+        A curve over `lfoRate` is applied only while the slot is NOT synced -
+        see AudioEngineAutomation. Ignoring it is the honest answer; the
+        alternative is a curve that silently unsyncs an LFO the user locked to
+        the tempo. */
+    lfoRate,
+    lfoToPitch,
+    lfoToVolume,
+    lfoToPan,
 
     /** The amplitude envelope. Spelled apart from the compressor's attackMs and
         releaseMs because they are different parameters in different units on

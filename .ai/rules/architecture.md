@@ -97,7 +97,16 @@ its display name and its parameters; an `InstrumentDescriptor` does the same thr
 `ParamGroup`, which says which *node* a run of parameters lives on — because an effect is
 one node with a flat list and an instrument is a channel, three oscillator slots and an
 envelope. That asymmetry is named rather than flattened, and `effectGroup` presents an
-effect as the degenerate case, so one walk covers both. The schema's `oscSpec`, `ampSpec`,
+effect as the degenerate case, so one walk covers both.
+
+`ParamGroup::under` is what nests a group below a slot, and it is independent of the
+generator registry: `CLASSIC` and `WAVETABLE` are generators — one of them runs and the
+other is inert — while `LFO` is under a slot without being one, because what it moves
+belongs to the slot whichever generator is playing. `generatorNodeFor` answers "which node
+holds this property" for all three by reading the descriptor, so a fourth such node is a
+row in `ModuleCatalog` and no edit anywhere else. Getting that wrong is silent in the
+worst way: the write lands as a property on the `OSC` node, `ValueTree` accepts it, the
+panel shows it, and the schema drops it on the next save. The schema's `oscSpec`, `ampSpec`,
 `channelSpec` and `sampleSpec` are generated from those tables, and a test compares the
 committed `examples/` byte for byte against what the factory writes — `isEquivalentTo`
 does not compare property order, so without it a reshuffle would leave every example stale
@@ -161,9 +170,11 @@ drift out of step with a hand-written parser.
 - A property absent from the file takes its default, so older files load.
 - A property of the wrong type takes its default and warns, rather than failing.
 - A key the schema does not know is dropped and reported.
-- A newer `formatVersion` is refused outright instead of half-read. v12 is current: it
-  gave a playlist track and a mixer strip a `colour`, additively, with the empty string
-  as the declared default so an earlier file loads looking exactly as it did.
+- A newer `formatVersion` is refused outright instead of half-read. v18 is current: it
+  gave every oscillator slot an `lfo` node, additively, with every depth defaulting to
+  zero so an earlier file loads sounding exactly as it did. The node is declared
+  `omitWhenDefault`, so a slot nobody has dialled an LFO into still writes no key for it
+  and every committed example is byte for byte what it was.
 
 Saving writes to a temporary and swaps, so an interrupted save cannot destroy the project
 it was overwriting.

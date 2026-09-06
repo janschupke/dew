@@ -31,7 +31,8 @@ public:
     /** Releases everything, without cutting the tails. */
     void allNotesOff() noexcept;
 
-    /** Adds the channel's mono output into `buffer`.
+    /** Adds the channel's output into `mono`, and its panned oscillators into
+        the optional pair.
 
         `bendSemitones` and `modulation` are this channel's continuous
         controllers, applied to every sounding voice before the block is
@@ -43,9 +44,24 @@ public:
         from it - everything else a voice needs was latched at note-on. Null is
         allowed and means "nothing has moved", which is what every caller that
         predates automated positions passes.
+
+        `panLeft` and `panRight` take the oscillators an LFO is sweeping across
+        the field; everything else goes into `mono`. Both default to nothing, so
+        a caller that predates LFOs renders exactly what it always did - see
+        SynthVoice::renderAdd.
     */
-    void renderAdd (float* buffer, int numSamples, float bendSemitones = 0.0f,
-                    float modulation = 0.0f, const OscBankSnapshot* live = nullptr) noexcept;
+    void renderAdd (float* mono, int numSamples, float bendSemitones = 0.0f,
+                    float modulation = 0.0f, const OscBankSnapshot* live = nullptr,
+                    float* panLeft = nullptr, float* panRight = nullptr) noexcept;
+
+    /** Whether any voice sounding right now has an oscillator its LFO is
+        sweeping across the field.
+
+        Asked AFTER this block's note-ons and before its render, because a note
+        starting in this very block may be the one that needs a side - and a
+        voice that has already ended must stop asking for one.
+    */
+    bool hasPannedVoices() const noexcept;
 
     int countActiveVoices() const noexcept;
 

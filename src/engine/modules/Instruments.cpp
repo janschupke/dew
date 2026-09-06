@@ -3,8 +3,10 @@
 namespace dew
 {
 
-void SynthInstrument::prepareMono (double sampleRate, int)
+void SynthInstrument::prepare (double sampleRate, int maximumBlockSize)
 {
+    scratch.setSize (3, juce::jmax (1, maximumBlockSize));
+    scratch.clear();
     channel.prepare (sampleRate);
 }
 
@@ -13,11 +15,16 @@ void SynthInstrument::reset() noexcept
     channel.reset();
 }
 
-void SynthInstrument::processAddMono (const InstrumentContext& ctx, float* out,
-                                      int numSamples) noexcept
+void SynthInstrument::processAdd (const InstrumentContext& ctx, StereoView out) noexcept
 {
     if (ctx.osc == nullptr || ctx.amp == nullptr)
         return;
+
+    auto* mono = scratch.getWritePointer (0);
+    auto* panLeft = scratch.getWritePointer (1);
+    auto* panRight = scratch.getWritePointer (2);
+
+    const auto numSamples = juce::jmin (out.numSamples, scratch.getNumSamples());
 
     for (const auto& event : ctx.events)
     {
@@ -34,9 +41,37 @@ void SynthInstrument::processAddMono (const InstrumentContext& ctx, float* out,
         }
     }
 
+    // After the note-ons, because a note starting in this very block may be the
+    // one that needs a side - and before the render, because the answer decides
+    // whether there is a pair to clear.
+    const auto panned = channel.hasPannedVoices();
+
+    // Only numSamples, not the whole buffer: a render's last block is short, and
+    // clearing less than it renders would sum the previous block's tail.
+    juce::FloatVectorOperations::clear (mono, numSamples);
+
+    if (panned)
+    {
+        juce::FloatVectorOperations::clear (panLeft, numSamples);
+        juce::FloatVectorOperations::clear (panRight, numSamples);
+    }
+
     // One read of each controller per block, and the live bank so a wavetable
     // position reaches notes already sounding.
-    channel.renderAdd (out, numSamples, ctx.bendSemitones, ctx.modulation, ctx.osc);
+    channel.renderAdd (mono, numSamples, ctx.bendSemitones, ctx.modulation, ctx.osc,
+                       panned ? panLeft : nullptr, panned ? panRight : nullptr);
+
+    // The two adds MonoInstrumentModule makes, written out here rather than
+    // inherited - and identical to them, which is what keeps a project with no
+    // pan modulation rendering the bits it always rendered.
+    juce::FloatVectorOperations::add (out.left, mono, numSamples);
+    juce::FloatVectorOperations::add (out.right, mono, numSamples);
+
+    if (panned)
+    {
+        juce::FloatVectorOperations::add (out.left, panLeft, numSamples);
+        juce::FloatVectorOperations::add (out.right, panRight, numSamples);
+    }
 }
 
 void SampleInstrument::processAddMono (const InstrumentContext& ctx, float* out,

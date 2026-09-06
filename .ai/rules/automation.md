@@ -1,6 +1,6 @@
 # Automation
 
-Format version 11. `src/model/AutomationCurve.*`, `src/model/AutomationTargets.*`,
+Format version 18. `src/model/AutomationCurve.*`, `src/model/AutomationTargets.*`,
 `src/engine/TempoMap.*`, `src/ui/AutomationLane.*`, `src/ui/ParamContextMenu.*`.
 
 - **`curveValueAt` is THE evaluator.** `ProjectEdits::automationValueAt`,

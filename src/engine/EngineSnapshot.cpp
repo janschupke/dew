@@ -204,8 +204,9 @@ EngineSnapshot buildSnapshot (const juce::ValueTree& project, juce::StringArray*
         c.muted = (bool) channel[ids::muted];
 
         const auto instrument = channel.getChildWithName (ids::INSTRUMENT);
-        c.osc = snapshotRead::readOscBank (
-            instrument, "Channel \"" + channel[ids::name].toString() + "\"", warn);
+        c.osc = snapshotRead::readOscBank (instrument,
+                                           "Channel \"" + channel[ids::name].toString() + "\"",
+                                           snapshot.tempoBpm, snapshot.beatUnit, warn);
         c.amp = snapshotRead::readAmp (instrument.getChildWithName (ids::AMP));
 
         // Resolve the mixer routing now; the audio thread must not search.

@@ -79,6 +79,14 @@
       "highpass": "High pass",
       "lowpass": "Low pass"
     },
+    "lfoDivision": {
+      "eighth": "1/8",
+      "half": "1/2",
+      "quarter": "1/4",
+      "sixteenth": "1/16",
+      "thirtySecond": "1/32",
+      "whole": "1/1"
+    },
     "oscMode": {
       "classic": "Classic",
       "wavetable": "Wavetable"
@@ -243,14 +251,14 @@
       "name": "Shorter"
     },
     "transportKeyboardInput": {
-   "description": "Turn the letter keys into a piano keyboard for the selected channel",
-   "name": "Keyboard Input"
-  },
-  "transportMetronome": {
-   "description": "Click on every beat while the transport runs",
-   "name": "Metronome"
-  },
-  "transportPlayStop": {
+      "description": "Turn the letter keys into a piano keyboard for the selected channel",
+      "name": "Keyboard Input"
+    },
+    "transportMetronome": {
+      "description": "Click on every beat while the transport runs",
+      "name": "Metronome"
+    },
+    "transportPlayStop": {
       "description": "Start or stop playback",
       "name": "Play / Stop"
     },
@@ -479,6 +487,9 @@
     "channel": {
       "name": "Channel"
     },
+    "lfo": {
+      "name": "LFO"
+    },
     "none": {
       "name": ""
     },
@@ -582,6 +593,30 @@
   "oscillator": {
     "enabled": {
       "help": "Turn oscillator {index} on or off"
+    },
+    "lfoDivision": {
+      "help": "How often the movement comes round, as a note value. It follows the project tempo rather than a tempo curve"
+    },
+    "lfoOn": {
+      "help": "Move this oscillator on its own, without touching the others"
+    },
+    "lfoRate": {
+      "help": "How often the movement comes round, in cycles per second"
+    },
+    "lfoSync": {
+      "help": "Lock the rate to the tempo instead of setting it in hertz"
+    },
+    "lfoToPan": {
+      "help": "How far the movement swings this oscillator across the stereo field. Nothing at zero"
+    },
+    "lfoToPitch": {
+      "help": "How far the movement bends the pitch, in semitones. Nothing at zero"
+    },
+    "lfoToVolume": {
+      "help": "How far the movement swings the level. Nothing at zero"
+    },
+    "lfoWave": {
+      "help": "The shape the movement follows"
     },
     "mod": {
       "help": "How far the source moves the position, and which way"
@@ -707,6 +742,38 @@
     "highGainDb": {
       "caption": "HIGH",
       "name": "High"
+    },
+    "lfoDivision": {
+      "caption": "DIV",
+      "name": "Division"
+    },
+    "lfoOn": {
+      "caption": "LFO",
+      "name": "LFO"
+    },
+    "lfoRate": {
+      "caption": "RATE",
+      "name": "Rate"
+    },
+    "lfoSync": {
+      "caption": "SYNC",
+      "name": "Sync"
+    },
+    "lfoToPan": {
+      "caption": "PAN",
+      "name": "Pan"
+    },
+    "lfoToPitch": {
+      "caption": "PITCH",
+      "name": "Pitch"
+    },
+    "lfoToVolume": {
+      "caption": "VOL",
+      "name": "Volume"
+    },
+    "lfoWave": {
+      "caption": "SHAPE",
+      "name": "Shape"
     },
     "loop": {
       "caption": "LOOP",

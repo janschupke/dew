@@ -10,6 +10,7 @@
 #include "engine/Sequencer.h"
 #include "engine/TempoMap.h"
 #include "model/AutomationTargets.h"
+#include "model/GeneratorCatalog.h"
 #include "model/Ids.h"
 #include "model/ProjectEdits.h"
 #include "model/ProjectFactory.h"
@@ -228,6 +229,23 @@ juce::ValueTree maximalProject()
 
         for (int step = 0; step < 16; ++step)
             ProjectEdits::addNote (pattern, id, step, 4, 60, 1.0f, nullptr);
+
+        // Every slot's LFO on, and asking for all three destinations, so the
+        // voice's LFO pass and the instrument's panned stage are both INSIDE
+        // the armed window. A fixture that left them off would report a clean
+        // count for a path it had not measured - which is the failure mode
+        // every gate in this file exists to avoid.
+        for (int slotIndex = 0; slotIndex < kMaxOscillators; ++slotIndex)
+        {
+            auto slot = ProjectEdits::oscillatorAt (channel, slotIndex);
+            auto lfo = generatorNodeFor (slot, ids::lfoOn);
+
+            slot.setProperty (ids::enabled, true, nullptr);
+            lfo.setProperty (ids::lfoOn, true, nullptr);
+            lfo.setProperty (ids::lfoToPitch, 3.0, nullptr);
+            lfo.setProperty (ids::lfoToVolume, 0.5, nullptr);
+            lfo.setProperty (ids::lfoToPan, 0.8, nullptr);
+        }
     }
 
     // More automation CLIPS than the active-automation vector is reserved for,

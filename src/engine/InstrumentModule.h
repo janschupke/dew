@@ -125,19 +125,23 @@ public:
 
 /** An instrument whose DSP is mono, widened to the ABI in one place.
 
-    Both of the original instruments are mono all the way down: SynthVoice sums
-    its oscillators to one value, and SamplePlayer folds a multi-channel source
-    to mono on purpose. Neither has a second side to say anything about, and both
-    are called DIRECTLY by the tests that pin the engine sample for sample - so
-    the widening happens here, above them, and those tests keep proving what they
-    proved.
+    SamplePlayer is mono all the way down: it folds a multi-channel source to
+    mono on purpose, has no second side to say anything about, and is called
+    DIRECTLY by the tests that pin the engine sample for sample - so the widening
+    happens here, above it, and those tests keep proving what they proved.
+
+    SynthInstrument used to be the other one and no longer is: a slot's LFO can
+    sweep an oscillator across the field, so it needs a pair. It does its own
+    widening by reproducing the two adds below rather than by overriding
+    anything here, which is why processAdd stays final and this class stays the
+    single statement of how a mono module reaches a stereo ABI.
 
     The obvious shortcuts are both wrong, and both fail quietly:
 
-    - Calling the mono render twice, once per side, advances SynthVoice's phase
+    - Calling the mono render twice, once per side, advances the source's phase
       and envelope twice a block, so the right channel would hold the NEXT n
-      samples. Every existing test still passes, because they all drive
-      SynthChannel below this layer.
+      samples. Every existing test still passes, because they all drive the
+      channel below this layer.
     - Rendering into out.left and copying to out.right breaks the ADD contract
       above. It is harmless only while one module writes a freshly cleared pair,
       which is exactly why it would survive review.

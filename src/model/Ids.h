@@ -14,6 +14,7 @@
               OSC (x kMaxOscillators)  -> "oscillators": []
                 CLASSIC                -> "classic": {}
                 WAVETABLE              -> "wavetable": {}
+                LFO                    -> "lfo": {}
               AMP                      -> "amp": {}
             SAMPLE                     -> "sample": {}
             SOUNDFONT                  -> "soundfont": {}
@@ -57,6 +58,12 @@ DEW_DECLARE_ID (OSC)
     a SAMPLE and a SOUNDFONT whichever kind it is. See GeneratorCatalog.h. */
 DEW_DECLARE_ID (CLASSIC)
 DEW_DECLARE_ID (WAVETABLE)
+
+/** The slot's LFO, beside its generators and deliberately not one of them: what
+    it moves - pitch, level, position in the field - is the SLOT's whichever
+    generator is running, so gating it on the mode would be hiding it for half
+    the reasons anyone switches one on. See ModuleCatalog's synthGroups. */
+DEW_DECLARE_ID (LFO)
 
 DEW_DECLARE_ID (AMP)
 DEW_DECLARE_ID (SAMPLE)
@@ -109,6 +116,20 @@ DEW_DECLARE_ID (wavePositionSource)
 DEW_DECLARE_ID (wavePositionRate)
 DEW_DECLARE_ID (unisonVoices)
 DEW_DECLARE_ID (unisonDetune)
+
+// The slot's LFO, on its own node. Every one of these is prefixed, and that is
+// not decoration: instrumentParamSpec looks a spec up by the property ALONE,
+// across every table, so a bare `wave` or `rate` here would silently answer
+// with the classic generator's shape or the chorus's speed - and
+// generatorNodeFor would route the write to the wrong node with it.
+DEW_DECLARE_ID (lfoOn)
+DEW_DECLARE_ID (lfoWave)
+DEW_DECLARE_ID (lfoSync)
+DEW_DECLARE_ID (lfoRate)
+DEW_DECLARE_ID (lfoDivision)
+DEW_DECLARE_ID (lfoToPitch)
+DEW_DECLARE_ID (lfoToVolume)
+DEW_DECLARE_ID (lfoToPan)
 
 DEW_DECLARE_ID (attack)
 DEW_DECLARE_ID (decay)

@@ -69,9 +69,10 @@ public:
         below. EffectChainComponent::Card already varies its height with its
         mode for the same reason.
     */
-    static constexpr int heightFor (bool wavetableMode) noexcept
+    static constexpr int heightFor (bool wavetableMode, bool lfoOpen) noexcept
     {
-        return wavetableMode ? classicHeight + wavetableExtra : classicHeight;
+        return (wavetableMode ? classicHeight + wavetableExtra : classicHeight) + lfoHeaderExtra
+               + (lfoOpen ? lfoOpenExtra : 0);
     }
 
     /** Every control a GENERATOR owns, beside the property that says whose.
@@ -84,13 +85,22 @@ public:
     */
     std::vector<std::pair<const juce::Identifier*, juce::Component*>> generatorControls();
 
+    /** The same pairing for the LFO's controls.
+
+        Separate from generatorControls() and not merged into it: that list is
+        held against the GENERATOR registry by a test, and an LFO control has no
+        generator to claim it - it belongs to the slot. Merging the two would
+        make that gate either fail or stop meaning anything.
+    */
+    std::vector<std::pair<const juce::Identifier*, juce::Component*>> lfoControls();
+
     /** The height for the slot currently showing. Asked of the section rather
         than cached by the host, so there is only one copy of the answer and
         nothing for a layout and a refresh to disagree about.
     */
     int getRequiredHeight() const noexcept
     {
-        return heightFor (showingWavetable);
+        return heightFor (showingWavetable, showingLfo);
     }
 
     /** Fired when getRequiredHeight() changes - a mode edit, or selecting a
@@ -136,6 +146,34 @@ public:
     juce::Button& getEnableButton() noexcept
     {
         return enableButton;
+    }
+    juce::Button& getLfoButton() noexcept
+    {
+        return lfoButton;
+    }
+    juce::Button& getLfoSyncButton() noexcept
+    {
+        return lfoSyncButton;
+    }
+    juce::ComboBox& getLfoWaveBox() noexcept
+    {
+        return lfoWaveBox;
+    }
+    juce::ComboBox& getLfoDivisionBox() noexcept
+    {
+        return lfoDivisionBox;
+    }
+    DewKnob& getLfoRateKnob() noexcept
+    {
+        return lfoRateKnob;
+    }
+    DewKnob& getLfoPanKnob() noexcept
+    {
+        return lfoPanKnob;
+    }
+    bool isShowingLfo() const noexcept
+    {
+        return showingLfo;
     }
     juce::ComboBox& getWaveBox() noexcept
     {
@@ -211,6 +249,19 @@ private:
                                           + rowGap + knobRowHeight // unison + spread
                                           + rowGap + shapeHeight;  // the shape display
 
+    /** The LFO's switch, shape and sync, which every slot shows. Always there,
+        because a movement control nothing hints at is one nobody finds. */
+    static constexpr int lfoHeaderExtra = rowGap + formRowHeight;
+
+    /** What opens below it when the LFO is on: the rate - or the division, in
+        the same cell - and the three depths.
+
+        Conditional for the reason the wavetable rows are: reserving it in every
+        channel that never switches an LFO on spends most of a knob row out of
+        the effect chain below, for nothing.
+    */
+    static constexpr int lfoOpenExtra = rowGap + knobRowHeight;
+
     void valueTreePropertyChanged (juce::ValueTree&, const juce::Identifier&) override;
     void valueTreeChildAdded (juce::ValueTree&, juce::ValueTree&) override;
     void valueTreeChildRemoved (juce::ValueTree&, juce::ValueTree&, int) override;
@@ -276,6 +327,19 @@ private:
     */
     std::vector<std::unique_ptr<paramMenu::Trigger>> paramMenuTriggers;
 
+    /** The slot's LFO. `lfoRateKnob` and `lfoDivisionBox` share one cell and
+        swap on the sync toggle, so the block is one height either way. */
+    DewIconButton lfoButton { icons::power(), {} };
+    DewLabel lfoLabel;
+    DewDropdown lfoWaveBox, lfoDivisionBox;
+    DewLetterToggle lfoSyncButton { "S", tokens::colour::accent,
+                                    tr (StringId::oscillator_lfoSync_help) };
+
+    DewKnob lfoRateKnob { requireInstrumentParamSpec (ids::lfoRate) };
+    DewKnob lfoPitchKnob { requireInstrumentParamSpec (ids::lfoToPitch) };
+    DewKnob lfoVolumeKnob { requireInstrumentParamSpec (ids::lfoToVolume) };
+    DewKnob lfoPanKnob { requireInstrumentParamSpec (ids::lfoToPan) };
+
     juce::Rectangle<int> offCaptionBounds, shapeBounds;
 
     int selectedSlot = 0;
@@ -285,6 +349,12 @@ private:
         resized(), paint() and the height the host budgets cannot disagree.
     */
     bool showingWavetable = false;
+
+    /** Whether the selected slot's LFO is on, and whether it is synced. Cached
+        from the document for the reason showingWavetable is: resized(), paint()
+        and the height the host budgets must not be able to disagree. */
+    bool showingLfo = false;
+    bool showingSync = false;
 
     /** True between a knob's onEditStart and onEditEnd - see write(). */
     bool inDrag = false;

@@ -154,7 +154,8 @@ TEST_CASE ("choosing the wavetable mode swaps the face and the height", "[ui][wa
     REQUIRE (h.section.getRequiredHeight() > classicHeight);
     REQUIRE (h.heightChanges > 0);
 
-    REQUIRE (OscillatorSection::heightFor (true) > OscillatorSection::heightFor (false));
+    REQUIRE (OscillatorSection::heightFor (true, /*lfoOpen*/ false)
+             > OscillatorSection::heightFor (false, /*lfoOpen*/ false));
 }
 
 TEST_CASE ("switching the mode is one undo step, and undoing restores the face", "[ui][wavetable]")
@@ -217,13 +218,15 @@ TEST_CASE ("selecting a slot in the other mode moves the height with it", "[ui][
     h.select (1);
 
     REQUIRE (h.section.isShowingWavetable());
-    REQUIRE (h.section.getRequiredHeight() == OscillatorSection::heightFor (true));
+    REQUIRE (h.section.getRequiredHeight()
+             == OscillatorSection::heightFor (true, /*lfoOpen*/ false));
     REQUIRE (h.heightChanges > 0);
 
     h.select (0);
 
     REQUIRE (! h.section.isShowingWavetable());
-    REQUIRE (h.section.getRequiredHeight() == OscillatorSection::heightFor (false));
+    REQUIRE (h.section.getRequiredHeight()
+             == OscillatorSection::heightFor (false, /*lfoOpen*/ false));
 }
 
 TEST_CASE ("the wavetable face paints its shape display", "[ui][wavetable]")
@@ -266,7 +269,8 @@ TEST_CASE ("the section survives having no channel in either mode", "[ui][waveta
     h.section.resized();
 
     REQUIRE (! h.section.isShowingWavetable());
-    REQUIRE (h.section.getRequiredHeight() == OscillatorSection::heightFor (false));
+    REQUIRE (h.section.getRequiredHeight()
+             == OscillatorSection::heightFor (false, /*lfoOpen*/ false));
     REQUIRE (renderToImage (h.section).isValid());
 }
 

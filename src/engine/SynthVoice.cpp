@@ -2,6 +2,8 @@
 
 #include <cmath>
 
+#include "engine/MixerBus.h"
+
 namespace dew
 {
 
@@ -57,14 +59,46 @@ void SynthVoice::reset() noexcept
     for (auto& osc : wavetables)
         osc = {};
 
-    numOscillators = 0;
-    numWavetables = 0;
+    for (auto& lfo : lfos)
+        lfo = {};
+
+    numMonoOscillators = 0;
+    numLfoOscillators = 0;
+    numMonoWavetables = 0;
+    numLfoWavetables = 0;
+    numLfos = 0;
+    panned = false;
     vibratoPhase = 0.0;
+    bendFactor = 1.0;
     modulated = false;
     samplesSinceStart = 0;
     samplesUntilRelease = 0;
     samplesUntilStart = 0;
     adsr.reset();
+}
+
+void SynthVoice::startLfo (const OscSettings& settings, int classicIndex,
+                           int wavetableIndex) noexcept
+{
+    auto& lfo = lfos[(size_t) numLfos++];
+
+    // Phase zero, every note. Retriggering is what makes a rendered note sound
+    // the same wherever it falls in the arrangement, and it is what the one
+    // other LFO in this file already does with its wavetable position.
+    lfo.phase = 0.0;
+
+    // The rate arrives already resolved - free or synced, the reader worked it
+    // out on the message thread. See OscSettings::lfoHz.
+    lfo.increment = (double) settings.lfoHz / currentSampleRate;
+
+    lfo.wave = settings.lfoWave;
+    lfo.toPitch = settings.lfoToPitch;
+    lfo.toVolume = settings.lfoToVolume;
+    lfo.toPan = settings.lfoToPan;
+    lfo.classicIndex = classicIndex;
+    lfo.wavetableIndex = wavetableIndex;
+
+    panned = panned || ! juce::exactlyEqual (settings.lfoToPan, 0.0f);
 }
 
 void SynthVoice::start (int pitch, float velocity, const OscBankSnapshot& bank,
@@ -73,83 +107,111 @@ void SynthVoice::start (int pitch, float velocity, const OscBankSnapshot& bank,
     currentPitch = pitch;
     level = juce::jlimit (0.0f, 1.0f, velocity);
 
-    numOscillators = 0;
-    numWavetables = 0;
+    numMonoOscillators = 0;
+    numLfoOscillators = 0;
+    numMonoWavetables = 0;
+    numLfoWavetables = 0;
+    numLfos = 0;
+    panned = false;
 
-    for (int i = 0; i < bank.numSlots; ++i)
+    // Two passes over the bank, the slots with no LFO first, so each array ends
+    // up partitioned: the plain pass, then the LFO pass.
+    //
+    // The order within the first pass is therefore exactly the order the single
+    // pass produced, on any voice where no slot has an LFO asking for anything -
+    // and float addition is not associative, so an oscillator that merely moved
+    // within the run would change the last bits of every note this engine has
+    // ever rendered. That is what the whole partition is for.
+    for (const auto wantLfo : { false, true })
     {
-        const auto& settings = bank.slots[(size_t) i];
-
-        if (! settings.enabled)
-            continue;
-
-        const auto effectivePitch = juce::jlimit (0.0, 127.0,
-                                                  (double) pitch + 12.0 * (double) settings.octave);
-
-        if (settings.mode == OscMode::wavetable)
+        for (int i = 0; i < bank.numSlots; ++i)
         {
-            auto& osc = wavetables[(size_t) numWavetables++];
+            const auto& settings = bank.slots[(size_t) i];
 
-            osc.table = &wavetableAt (settings.table);
-            osc.slot = i;
-            osc.numUnison = juce::jlimit (1, kMaxUnisonVoices, settings.unisonVoices);
+            if (! settings.enabled || settings.lfoActive != wantLfo)
+                continue;
 
-            osc.basePosition = settings.position;
-            osc.positionMod = settings.positionMod;
-            osc.source = settings.positionSource;
-            osc.lfoPhase = 0.0;
-            osc.lfoIncrement = (double) settings.positionRate / currentSampleRate;
+            const auto effectivePitch = juce::jlimit (
+                0.0, 127.0, (double) pitch + 12.0 * (double) settings.octave);
 
-            // Normalised WITHIN the slot, which is the opposite of the rule
-            // across slots. Adding an oscillator is asking for a second sound
-            // and should be louder; stacking unison is asking for the SAME
-            // sound to be thicker, and one that got seven times louder as you
-            // turned it up would be unusable. sqrt rather than 1/n because the
-            // copies are detuned, so they sum closer to incoherently than not.
-            osc.gain = settings.gain / std::sqrt ((float) osc.numUnison);
-
-            for (int u = 0; u < osc.numUnison; ++u)
+            if (settings.mode == OscMode::wavetable)
             {
-                const auto spread = osc.numUnison > 1
-                                        ? (double) settings.unisonDetune
-                                              * (2.0 * (double) u / (double) (osc.numUnison - 1)
-                                                 - 1.0)
-                                        : 0.0;
+                const auto index = wantLfo ? numMonoWavetables + numLfoWavetables++
+                                           : numMonoWavetables++;
 
-                const auto frequency = midiToHz (effectivePitch,
-                                                 (double) settings.detuneCents + spread);
+                auto& osc = wavetables[(size_t) index];
 
-                osc.baseIncrement[(size_t) u] = frequency / currentSampleRate;
-                osc.phaseIncrement[(size_t) u] = juce::jlimit (0.0, 0.5,
-                                                               osc.baseIncrement[(size_t) u]);
+                osc.table = &wavetableAt (settings.table);
+                osc.slot = i;
+                osc.numUnison = juce::jlimit (1, kMaxUnisonVoices, settings.unisonVoices);
 
-                // Spread across the cycle, not all at zero. Seven copies
-                // starting together sum into a click and begin their detune in
-                // unison; spreading them is deterministic, which randomising
-                // would not be - and a render here has to be reproducible.
-                osc.phase[(size_t) u] = osc.numUnison > 1 ? (double) u / (double) osc.numUnison
-                                                          : 0.0;
+                osc.basePosition = settings.position;
+                osc.positionMod = settings.positionMod;
+                osc.source = settings.positionSource;
+                osc.lfoPhase = 0.0;
+                osc.lfoIncrement = (double) settings.positionRate / currentSampleRate;
+
+                // Normalised WITHIN the slot, which is the opposite of the rule
+                // across slots. Adding an oscillator is asking for a second sound
+                // and should be louder; stacking unison is asking for the SAME
+                // sound to be thicker, and one that got seven times louder as you
+                // turned it up would be unusable. sqrt rather than 1/n because the
+                // copies are detuned, so they sum closer to incoherently than not.
+                osc.gain = settings.gain / std::sqrt ((float) osc.numUnison);
+
+                for (int u = 0; u < osc.numUnison; ++u)
+                {
+                    const auto spread = osc.numUnison > 1
+                                            ? (double) settings.unisonDetune
+                                                  * (2.0 * (double) u / (double) (osc.numUnison - 1)
+                                                     - 1.0)
+                                            : 0.0;
+
+                    const auto frequency = midiToHz (effectivePitch,
+                                                     (double) settings.detuneCents + spread);
+
+                    osc.baseIncrement[(size_t) u] = frequency / currentSampleRate;
+                    osc.phaseIncrement[(size_t) u] = juce::jlimit (0.0, 0.5,
+                                                                   osc.baseIncrement[(size_t) u]);
+
+                    // Spread across the cycle, not all at zero. Seven copies
+                    // starting together sum into a click and begin their detune in
+                    // unison; spreading them is deterministic, which randomising
+                    // would not be - and a render here has to be reproducible.
+                    osc.phase[(size_t) u] = osc.numUnison > 1 ? (double) u / (double) osc.numUnison
+                                                              : 0.0;
+                }
+
+                osc.updateMip();
+
+                if (wantLfo)
+                    startLfo (settings, /*classicIndex*/ -1, index);
+
+                continue;
             }
 
-            osc.updateMip();
-            continue;
+            const auto index = wantLfo ? numMonoOscillators + numLfoOscillators++
+                                       : numMonoOscillators++;
+
+            auto& osc = oscillators[(size_t) index];
+
+            osc.wave = settings.wave;
+            osc.gain = settings.gain;
+
+            // Every oscillator starts at zero phase, as the single one did. Two
+            // slots set the same way therefore sum coherently, which is what makes
+            // detuning one of them audible as a beat rather than as noise.
+            osc.phase = 0.0;
+            osc.triangleState = 0.0;
+
+            const auto frequency = midiToHz (effectivePitch, (double) settings.detuneCents);
+
+            osc.baseIncrement = frequency / currentSampleRate;
+            osc.phaseIncrement = juce::jlimit (0.0, 0.5, osc.baseIncrement);
+
+            if (wantLfo)
+                startLfo (settings, index, /*wavetableIndex*/ -1);
         }
-
-        auto& osc = oscillators[(size_t) numOscillators++];
-
-        osc.wave = settings.wave;
-        osc.gain = settings.gain;
-
-        // Every oscillator starts at zero phase, as the single one did. Two
-        // slots set the same way therefore sum coherently, which is what makes
-        // detuning one of them audible as a beat rather than as noise.
-        osc.phase = 0.0;
-        osc.triangleState = 0.0;
-
-        const auto frequency = midiToHz (effectivePitch, (double) settings.detuneCents);
-
-        osc.baseIncrement = frequency / currentSampleRate;
-        osc.phaseIncrement = juce::jlimit (0.0, 0.5, osc.baseIncrement);
     }
 
     // A new note starts unbent; the next block re-applies whatever the wheel
@@ -194,16 +256,24 @@ void SynthVoice::setPitchModulation (float bendSemitones, float modulation, int 
         // Restore exactly what note-on latched, once, and then stay out of the
         // way. Assigning the same doubles back is what makes an untouched
         // controller bit-identical to no controller at all.
+        // The bend is nothing, whatever an LFO may be doing on top of it.
+        // applyLfoPitch composes with this, so it has to be right even on the
+        // path that returns early.
+        bendFactor = 1.0;
+
         if (! modulated)
             return;
 
-        for (int i = 0; i < numOscillators; ++i)
+        // EVERY oscillator, both partitions. Stopping at the plain run would
+        // leave a bend or the mod wheel silently unable to reach any slot whose
+        // LFO happened to be on.
+        for (int i = 0; i < totalOscillators(); ++i)
         {
             auto& osc = oscillators[(size_t) i];
             osc.phaseIncrement = juce::jlimit (0.0, 0.5, osc.baseIncrement);
         }
 
-        for (int w = 0; w < numWavetables; ++w)
+        for (int w = 0; w < totalWavetables(); ++w)
         {
             auto& osc = wavetables[(size_t) w];
 
@@ -232,13 +302,15 @@ void SynthVoice::setPitchModulation (float bendSemitones, float modulation, int 
     const auto semitones = (double) bendSemitones + vibrato;
     const auto factor = std::pow (2.0, semitones / 12.0);
 
-    for (int i = 0; i < numOscillators; ++i)
+    bendFactor = factor;
+
+    for (int i = 0; i < totalOscillators(); ++i)
     {
         auto& osc = oscillators[(size_t) i];
         osc.phaseIncrement = juce::jlimit (0.0, 0.5, osc.baseIncrement * factor);
     }
 
-    for (int w = 0; w < numWavetables; ++w)
+    for (int w = 0; w < totalWavetables(); ++w)
     {
         auto& osc = wavetables[(size_t) w];
 
@@ -256,10 +328,10 @@ void SynthVoice::setPitchModulation (float bendSemitones, float modulation, int 
 
 void SynthVoice::setWavetablePosition (const OscBankSnapshot& bank) noexcept
 {
-    if (! active || numWavetables == 0)
+    if (! active || totalWavetables() == 0)
         return;
 
-    for (int w = 0; w < numWavetables; ++w)
+    for (int w = 0; w < totalWavetables(); ++w)
     {
         auto& osc = wavetables[(size_t) w];
 
@@ -361,10 +433,45 @@ float SynthVoice::Oscillator::nextSample() noexcept
     return (float) value;
 }
 
-void SynthVoice::renderAdd (float* buffer, int numSamples) noexcept
+void SynthVoice::applyLfoPitch() noexcept
+{
+    for (int k = 0; k < numLfos; ++k)
+    {
+        auto& lfo = lfos[(size_t) k];
+
+        if (juce::exactlyEqual (lfo.toPitch, 0.0f))
+            continue;
+
+        // The value the previous block left, which IS this block's starting
+        // value - setPitchModulation and this both run before the sample loop
+        // advances the phase. One accumulator, so there is nothing to drift.
+        const auto factor = std::pow (2.0, (double) (lfo.toPitch * lfo.value()) / 12.0);
+
+        if (lfo.classicIndex >= 0)
+        {
+            auto& osc = oscillators[(size_t) lfo.classicIndex];
+            osc.phaseIncrement = juce::jlimit (0.0, 0.5, osc.baseIncrement * bendFactor * factor);
+            continue;
+        }
+
+        auto& osc = wavetables[(size_t) lfo.wavetableIndex];
+
+        for (int u = 0; u < osc.numUnison; ++u)
+            osc.phaseIncrement[(size_t) u] = juce::jlimit (
+                0.0, 0.5, osc.baseIncrement[(size_t) u] * bendFactor * factor);
+
+        // The increments decide which band-limited copy is safe to read, and
+        // they have just moved. Per block, like the bend's own.
+        osc.updateMip();
+    }
+}
+
+void SynthVoice::renderAdd (float* mono, int numSamples, float* panLeft, float* panRight) noexcept
 {
     if (! active)
         return;
+
+    applyLfoPitch();
 
     for (int i = 0; i < numSamples; ++i)
     {
@@ -386,17 +493,62 @@ void SynthVoice::renderAdd (float* buffer, int numSamples) noexcept
         // already playing, which is not what a second oscillator is for.
         float sum = 0.0f;
 
-        for (int o = 0; o < numOscillators; ++o)
+        for (int o = 0; o < numMonoOscillators; ++o)
             sum += oscillators[(size_t) o].nextSample() * oscillators[(size_t) o].gain;
 
         // A second, separately counted pass rather than a branch inside the
-        // first. On a voice whose slots are all classic numWavetables is zero,
+        // first. On a voice whose slots are all classic numMonoWavetables is 0,
         // so the sum above is the same float in the same order it always was -
         // which is what the pinned renders are pinned to.
-        for (int w = 0; w < numWavetables; ++w)
+        for (int w = 0; w < numMonoWavetables; ++w)
             sum += wavetables[(size_t) w].nextSample (envelope);
 
-        buffer[i] += sum * envelope * level;
+        mono[i] += sum * envelope * level;
+
+        // A THIRD, separately counted pass, for the reason the second one is
+        // separate: on a voice whose slots have no LFO numLfos is zero, so
+        // everything above is the same arithmetic in the same order it always
+        // was - which is what the pinned renders are pinned to.
+        for (int k = 0; k < numLfos; ++k)
+        {
+            auto& lfo = lfos[(size_t) k];
+
+            const auto moved = lfo.value();
+            lfo.advance();
+
+            // The wavetable form applies its own gain, because it carries the
+            // unison normalisation; the classic one does not. Mirrored from the
+            // two passes above rather than unified, for the same reason.
+            const auto raw = lfo.wavetableIndex >= 0
+                                 ? wavetables[(size_t) lfo.wavetableIndex].nextSample (envelope)
+                                 : oscillators[(size_t) lfo.classicIndex].nextSample()
+                                       * oscillators[(size_t) lfo.classicIndex].gain;
+
+            // Attenuation only, never boost, and exactly unity at depth zero:
+            //
+            //     d = +1  ->  (1 + moved) / 2      d = 0  ->  1
+            //     d = -1  ->  (1 - moved) / 2
+            //
+            // A bipolar depth against a unity centre would otherwise double the
+            // oscillator at its peak, which is six decibels nobody asked for by
+            // turning a knob marked VOL.
+            const auto swing = 1.0f - (std::abs (lfo.toVolume) - lfo.toVolume * moved) * 0.5f;
+            const auto value = raw * swing * envelope * level;
+
+            if (panLeft == nullptr)
+            {
+                // Nowhere to put a side. The pitch and the level still move;
+                // the pan has nothing to move across.
+                mono[i] += value;
+                continue;
+            }
+
+            float leftGain = 1.0f, rightGain = 1.0f;
+            MixerBus::modulationPanGains (lfo.toPan * moved, leftGain, rightGain);
+
+            panLeft[i] += value * leftGain;
+            panRight[i] += value * rightGain;
+        }
 
         ++samplesSinceStart;
 

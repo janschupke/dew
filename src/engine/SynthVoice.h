@@ -5,6 +5,7 @@
 #include <array>
 
 #include "engine/EngineSnapshot.h"
+#include "engine/OscLfo.h"
 #include "engine/Wavetable.h"
 #include "model/Constants.h"
 
@@ -89,8 +90,30 @@ public:
     */
     void setPitchModulation (float bendSemitones, float modulation, int numSamples) noexcept;
 
-    /** Adds this voice's mono output into `buffer`. */
-    void renderAdd (float* buffer, int numSamples) noexcept;
+    /** Adds this voice's output into `mono`, and any oscillator the LFO is
+        sweeping across the field into `panLeft` / `panRight` instead.
+
+        The pan pair is OPTIONAL and defaults to nothing, which is what keeps
+        every caller that predates LFOs - four test files that pin this engine
+        sample for sample among them - compiling and rendering unchanged. Pass
+        null and a panned oscillator still moves in pitch and level; it just has
+        nowhere to put a side, so it sums into the mono buffer like the rest.
+
+        Both are ADDED to, never written, exactly as the mono form always was.
+    */
+    void renderAdd (float* mono, int numSamples, float* panLeft = nullptr,
+                    float* panRight = nullptr) noexcept;
+
+    /** Whether this voice has an oscillator whose LFO is sweeping it across the
+        field, so the caller knows whether to hand renderAdd a pan pair at all.
+
+        A fact about what the voice LATCHED, not about the document: the answer
+        has to survive the bank changing under a note that is already sounding.
+    */
+    bool isPanned() const noexcept
+    {
+        return panned;
+    }
 
     /** A gentle vibrato, not a siren: the mod wheel fully up is a 50 cent
         sweep, which is about what a player expects from it.
@@ -181,15 +204,67 @@ private:
     std::array<Oscillator, kMaxOscillators> oscillators;
     std::array<WavetableOscillator, kMaxOscillators> wavetables;
 
-    /** How many of `oscillators` this note is actually running. Switched-off
-        slots are skipped once at note-on rather than tested every sample.
-    */
-    int numOscillators = 0;
+    /** Each array is PARTITIONED at note-on: the oscillators with no LFO first,
+        then the ones that have one.
 
-    /** How many of `wavetables` this note is running. Zero on a voice whose
-        slots are all classic, which is what keeps that path untouched.
+        `oscillators[0, numMonoOscillators)` is the plain pass, and it holds
+        exactly the oscillators it always held, in the order it always held
+        them, on any voice with no LFO anywhere - which is what the pinned
+        renders are pinned to. Summing is not associative, so a slot that merely
+        MOVED within the run would change the last bits of every note.
+
+        Named `mono` rather than counted from the top for the same reason the
+        wavetable pass is counted separately: the two runs are different passes
+        with different arithmetic, and a single `numOscillators` that quietly
+        came to mean one of them is a loop somebody forgets to widen. Renaming
+        made every such loop a compile error rather than a silence - see
+        setPitchModulation, which would otherwise have stopped bending half the
+        voice.
     */
-    int numWavetables = 0;
+    int numMonoOscillators = 0;
+    int numLfoOscillators = 0;
+    int numMonoWavetables = 0;
+    int numLfoWavetables = 0;
+
+    int totalOscillators() const noexcept
+    {
+        return numMonoOscillators + numLfoOscillators;
+    }
+
+    int totalWavetables() const noexcept
+    {
+        return numMonoWavetables + numLfoWavetables;
+    }
+
+    /** One per oscillator this note is running that has an LFO switched on and
+        asking for something. Zero on every voice that has none, which is what
+        keeps the third pass costing nothing.
+    */
+    std::array<OscLfo, kMaxOscillators> lfos;
+    int numLfos = 0;
+
+    /** Whether any of those is sweeping the field. Latched, so isPanned() is a
+        question about this note rather than about the document. */
+    bool panned = false;
+
+    /** What setPitchModulation last worked out, so the LFO's own pitch fold can
+        compose with the bend instead of re-deriving it - and so that a voice
+        with no bend multiplies by exactly 1.0, which changes nothing. */
+    double bendFactor = 1.0;
+
+    /** Sets the increments of the LFO-driven oscillators for the coming block.
+
+        Per block rather than per sample, like the vibrato it sits beside: the
+        factor costs a std::pow per oscillator, and thirty updates per cycle is
+        already smooth to the ear. Level and pan are per SAMPLE, in renderAdd,
+        because those the ear tracks continuously and a block step in either is
+        a zipper.
+    */
+    void applyLfoPitch() noexcept;
+
+    /** Records the LFO for the oscillator just built, at whichever index it
+        landed. Exactly one of the two indices is real; the other is -1. */
+    void startLfo (const OscSettings& settings, int classicIndex, int wavetableIndex) noexcept;
 
     float level = 1.0f;
 

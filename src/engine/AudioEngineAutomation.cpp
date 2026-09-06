@@ -171,6 +171,28 @@ const AudioEngine::ChannelOverrides* AudioEngine::overridesFor (const ChannelSna
                 slot.detuneCents = active.value;
             else if (active.param == AutomationParam::oscEnabled)
                 slot.enabled = active.value > 0.5f;
+            else if (active.param == AutomationParam::lfoToPitch)
+                slot.lfoToPitch = active.value;
+            else if (active.param == AutomationParam::lfoToVolume)
+                slot.lfoToVolume = active.value;
+            else if (active.param == AutomationParam::lfoToPan)
+                slot.lfoToPan = active.value;
+            else if (active.param == AutomationParam::lfoRate && ! slot.lfoSync)
+                // Only while the slot is free-running. A curve over the rate of
+                // an LFO somebody locked to the tempo has no honest meaning:
+                // applying it would silently unsync it, and the division would
+                // still be what the panel showed.
+                slot.lfoHz = active.value;
+
+            // Whether the LFO is MOVING follows from the depths, and three of
+            // them can have just changed - so it is recomputed here rather than
+            // left as what the reader decided. Without this a curve that lifts
+            // a depth off zero would raise a line on screen and nothing else,
+            // because the voice puts only active slots in the LFO pass.
+            slot.lfoActive = slot.lfoOn
+                             && ! (juce::exactlyEqual (slot.lfoToPitch, 0.0f)
+                                   && juce::exactlyEqual (slot.lfoToVolume, 0.0f)
+                                   && juce::exactlyEqual (slot.lfoToPan, 0.0f));
         }
         else if (active.scope == AutomationScope::channelAmp)
         {

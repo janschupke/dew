@@ -27,6 +27,29 @@ struct MixerBus
     */
     static void panGains (float pan, float& leftGain, float& rightGain) noexcept;
 
+    /** Where a MODULATED source sits, as a pair of gains.
+
+        Not the constant-power law above, and the difference is a decision
+        rather than thrift. That one costs a centred source 3dB and trackGains
+        pays it back with a sqrt2 - so a source panned through it at dead centre
+        comes out at cos(pi/4), not at 1. For a static placement that is right
+        and the compensation happens once, downstream.
+
+        Here it would be wrong, because this pan is a MODULATION around centre:
+        an oscillator whose LFO moves its pitch and not its position would be
+        quietly attenuated the moment the LFO was switched on, and a depth of
+        zero would not mean "unchanged". So:
+
+            pan  0 -> (1, 1)      pan +1 -> (0, 1)      pan -1 -> (1, 0)
+
+        Exactly 1.0f on both sides at the centre, by construction rather than by
+        an equality test. The cost is a 6dB dip at the extremes rather than 3,
+        which on a continuous sweep reads as part of the movement rather than as
+        a level jump - and the mixer keeps the constant-power law where a static
+        placement is actually being made.
+    */
+    static void modulationPanGains (float pan, float& leftGain, float& rightGain) noexcept;
+
     /** Adds a stereo source into a stereo pair, applying gain and pan.
 
         A BALANCE law, not a rotation: at pan -1 the source's right side is

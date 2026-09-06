@@ -111,14 +111,39 @@ const NodeSpec& wavetableSpec()
     return generatorSpec ("wavetable");
 }
 
+/** The slot's LFO, as a node of its own.
+
+    Built the way a generator's node is and deliberately NOT through
+    generatorSpec: an LFO is not something a slot runs INSTEAD of something
+    else, so it has no row in the generator table and nothing here should
+    pretend otherwise. What the two share is where they live - under the slot -
+    and that is ParamGroup::under's job, not the generator registry's.
+*/
+const NodeSpec& lfoSpec()
+{
+    static const NodeSpec spec = []
+    {
+        std::vector<PropSpec> props;
+        appendGroup (props, synthGroup (ids::LFO));
+
+        return NodeSpec { ids::LFO, std::move (props), {} };
+    }();
+
+    return spec;
+}
+
 const NodeSpec& oscSpec()
 {
     // The SLOT's own five - whether it is on, its octave, its detune, its gain
-    // and which generator it runs - and then a node per generator.
+    // and which generator it runs - then a node per generator, then the LFO.
     //
     // `enabled` defaults to true because a file written before there were slots
     // had exactly one oscillator and it was playing. The slots the schema
     // materialises alongside it are switched off by makeOscillatorSlot.
+    //
+    // The LFO is LAST, and that is what keeps every committed file byte for
+    // byte what it was: children are emitted in this order, and omitWhenDefault
+    // means a slot whose LFO nobody has touched writes no "lfo" key at all.
     static const NodeSpec spec = []
     {
         std::vector<PropSpec> props;
@@ -129,6 +154,8 @@ const NodeSpec& oscSpec()
                           { { "classic", &classicSpec(), false, 0, nullptr,
                               /*omitWhenDefault*/ true },
                             { "wavetable", &wavetableSpec(), false, 0, nullptr,
+                              /*omitWhenDefault*/ true },
+                            { "lfo", &lfoSpec(), false, 0, nullptr,
                               /*omitWhenDefault*/ true } } };
     }();
 

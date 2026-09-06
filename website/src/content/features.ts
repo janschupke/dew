@@ -58,7 +58,7 @@ export const features: readonly Feature[] = [
   },
   {
     name: 'Instrument',
-    body: 'Three band-limited oscillators or wavetables with unison, each with its own octave, detune, gain and switch. One ADSR behind them.',
+    body: 'Three band-limited oscillators or wavetables with unison, each with its own octave, detune, gain and switch. Each carries an LFO that moves its pitch, its level and its place in the stereo field. One ADSR behind them.',
   },
   {
     name: 'Effects',

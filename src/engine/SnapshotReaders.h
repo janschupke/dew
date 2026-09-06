@@ -27,7 +27,15 @@ namespace dew::snapshotRead
     be, so a hand-edited file cannot put the engine outside its own range. */
 float clampBySpec (const juce::Identifier& property, const juce::ValueTree& node);
 
+/** A channel's oscillator bank.
+
+    Takes the tempo and the metre's beat unit because a slot's LFO may be locked
+    to them: the rate is resolved to Hz HERE, on the message thread, so the
+    render path never divides by a tempo - the same division of labour
+    SampleSettings::pitchRatio makes. See OscSettings::lfoHz.
+*/
 OscBankSnapshot readOscBank (const juce::ValueTree& instrument, const juce::String& ownerName,
+                             double tempoBpm, int beatUnit,
                              const std::function<void (const juce::String&)>& warn);
 
 AmpSettings readAmp (const juce::ValueTree& amp);

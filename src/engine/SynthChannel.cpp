@@ -67,8 +67,8 @@ void SynthChannel::allNotesOff() noexcept
             voice.release();
 }
 
-void SynthChannel::renderAdd (float* buffer, int numSamples, float bendSemitones, float modulation,
-                              const OscBankSnapshot* live) noexcept
+void SynthChannel::renderAdd (float* mono, int numSamples, float bendSemitones, float modulation,
+                              const OscBankSnapshot* live, float* panLeft, float* panRight) noexcept
 {
     for (auto& voice : voices)
     {
@@ -77,8 +77,17 @@ void SynthChannel::renderAdd (float* buffer, int numSamples, float bendSemitones
         if (live != nullptr)
             voice.setWavetablePosition (*live);
 
-        voice.renderAdd (buffer, numSamples);
+        voice.renderAdd (mono, numSamples, panLeft, panRight);
     }
+}
+
+bool SynthChannel::hasPannedVoices() const noexcept
+{
+    for (const auto& voice : voices)
+        if (voice.isActive() && voice.isPanned())
+            return true;
+
+    return false;
 }
 
 int SynthChannel::countActiveVoices() const noexcept

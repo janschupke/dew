@@ -194,6 +194,15 @@ const std::vector<ParamSpec>& oscParamSpecs();
     it is on, its octave, its detune, its gain and which generator it runs. */
 const std::vector<ParamSpec>& oscSlotParamSpecs();
 
+/** The slot's LFO: whether it is on, its shape, whether it is synced, its rate
+    and division, and its three depths.
+
+    A run of oscParamSpecs like a generator's, and on a node under the slot like
+    a generator's - but not a generator's, because it is read whichever
+    generator the slot runs. See ids::LFO.
+*/
+const std::vector<ParamSpec>& oscLfoParamSpecs();
+
 /** The arrangement's own: the tempo, and nothing else. */
 const std::vector<ParamSpec>& projectParamSpecs();
 

@@ -161,6 +161,74 @@ OscillatorSection::OscillatorSection (ProjectDocument& d, EditorState& s)
     spreadKnob.setTooltip (tr (StringId::oscillator_spread_help));
     attachKnob (spreadKnob, ids::unisonDetune, "Change unison spread");
 
+    // --- the slot's LFO ------------------------------------------------------
+    lfoButton.setClickingTogglesState (true);
+    lfoButton.setOnColour (colour::accent);
+    lfoButton.onClick = [this]
+    {
+        // The document, not the button's own state - see enableButton above for
+        // why reading the widget back is what breaks a headless test.
+        const auto lfo = generatorNodeFor (selectedSlotTree(), ids::lfoOn);
+        write (ids::lfoOn, ! (bool) lfo.getProperty (ids::lfoOn, false), "Switch LFO on or off");
+    };
+    addAndMakeVisible (lfoButton);
+
+    // The row is otherwise a switch, a shape and a letter, sitting directly
+    // under the oscillator's own shape picker - which reads as a second one.
+    // The caption is what says whose shape it is, and the octave row above
+    // already sets the pattern.
+    lfoLabel.setText (tr (StringId::group_lfo_name), juce::dontSendNotification);
+    lfoLabel.setFont (type::font (type::caption));
+    lfoLabel.setTextColourToken (colour::textSecondary);
+    addAndMakeVisible (lfoLabel);
+
+    fill (lfoWaveBox, choicesOf (ids::lfoWave),
+          [] (const char* name) { return glyph::forWaveform (waveformFromString (name)); });
+    lfoWaveBox.setTooltip (tr (StringId::oscillator_lfoWave_help));
+    lfoWaveBox.onChange = [this]
+    {
+        write (ids::lfoWave, valueOf (choicesOf (ids::lfoWave), lfoWaveBox.getSelectedId()),
+               "Change LFO shape");
+    };
+    addAndMakeVisible (lfoWaveBox);
+
+    lfoSyncButton.setClickingTogglesState (true);
+    lfoSyncButton.onClick = [this]
+    {
+        const auto lfo = generatorNodeFor (selectedSlotTree(), ids::lfoSync);
+        write (ids::lfoSync, ! (bool) lfo.getProperty (ids::lfoSync, false), "Sync the LFO");
+    };
+    addAndMakeVisible (lfoSyncButton);
+
+    fill (lfoDivisionBox, choicesOf (ids::lfoDivision));
+    lfoDivisionBox.setTooltip (tr (StringId::oscillator_lfoDivision_help));
+    lfoDivisionBox.onChange = [this]
+    {
+        write (ids::lfoDivision,
+               valueOf (choicesOf (ids::lfoDivision), lfoDivisionBox.getSelectedId()),
+               "Change LFO division");
+    };
+    addAndMakeVisible (lfoDivisionBox);
+
+    lfoRateKnob.setNumDecimalPlaces (2);
+    lfoRateKnob.setTooltip (tr (StringId::oscillator_lfoRate_help));
+    attachKnob (lfoRateKnob, ids::lfoRate, "Change LFO rate");
+
+    lfoPitchKnob.setBipolar (true);
+    lfoPitchKnob.setNumDecimalPlaces (2);
+    lfoPitchKnob.setTooltip (tr (StringId::oscillator_lfoToPitch_help));
+    attachKnob (lfoPitchKnob, ids::lfoToPitch, "Change LFO pitch depth");
+
+    lfoVolumeKnob.setBipolar (true);
+    lfoVolumeKnob.setNumDecimalPlaces (2);
+    lfoVolumeKnob.setTooltip (tr (StringId::oscillator_lfoToVolume_help));
+    attachKnob (lfoVolumeKnob, ids::lfoToVolume, "Change LFO volume depth");
+
+    lfoPanKnob.setBipolar (true);
+    lfoPanKnob.setNumDecimalPlaces (2);
+    lfoPanKnob.setTooltip (tr (StringId::oscillator_lfoToPan_help));
+    attachKnob (lfoPanKnob, ids::lfoToPan, "Change LFO pan depth");
+
     selectedSlot = juce::jlimit (0, kMaxOscillators - 1, editorState.getSelectedOscillator());
 
     editorState.addChangeListener (this);
@@ -201,6 +269,17 @@ void OscillatorSection::setParamMenuHost (const paramMenu::Host* host)
                          requireInstrumentParamSpec (ids::unisonVoices));
     paramMenu::attachTo (host, spreadKnob, owner (ids::unisonDetune),
                          requireInstrumentParamSpec (ids::unisonDetune));
+
+    // The LFO's node is found the same way a generator's is, because
+    // generatorNodeFor answers for every node under the slot.
+    paramMenu::attachTo (host, lfoRateKnob, owner (ids::lfoRate),
+                         requireInstrumentParamSpec (ids::lfoRate));
+    paramMenu::attachTo (host, lfoPitchKnob, owner (ids::lfoToPitch),
+                         requireInstrumentParamSpec (ids::lfoToPitch));
+    paramMenu::attachTo (host, lfoVolumeKnob, owner (ids::lfoToVolume),
+                         requireInstrumentParamSpec (ids::lfoToVolume));
+    paramMenu::attachTo (host, lfoPanKnob, owner (ids::lfoToPan),
+                         requireInstrumentParamSpec (ids::lfoToPan));
 
     // The rest of the slot, which had no menu at all - so the octave stepper,
     // the on/off and the four choice boxes were the only spec-built controls in
@@ -361,7 +440,15 @@ void OscillatorSection::valueTreePropertyChanged (juce::ValueTree& tree,
 {
     // Identity, not type: the listener is on the whole document, and every
     // channel in it carries nodes of this type.
-    if (! tree.hasType (ids::OSC) || tree.getParent() != instrument)
+    //
+    // A slot's own node, or one of the nodes UNDER it - its two generators and
+    // its LFO. Accepting only the slot meant that an undo, a preset load or an
+    // MCP write to a generator's node changed the document and left the panel
+    // showing what it used to say, with nothing to notice; every control in
+    // this panel that is not one of the slot's own five was affected.
+    const auto slot = isOscChildNode (tree) ? tree.getParent() : tree;
+
+    if (! slot.hasType (ids::OSC) || slot.getParent() != instrument)
         return;
 
     // The header shows every slot's switch; the controls show one slot's
@@ -370,7 +457,7 @@ void OscillatorSection::valueTreePropertyChanged (juce::ValueTree& tree,
     if (property == ids::enabled)
         refreshHeader();
 
-    if (tree == selectedSlotTree())
+    if (slot == selectedSlotTree())
         refreshControls();
 }
 

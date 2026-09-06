@@ -67,6 +67,7 @@ add_executable(dew_tests
   MixerResizeTests.cpp
   OscillatorTests.cpp
   OscillatorEngineTests.cpp
+  OscillatorLfoTests.cpp
   OscillatorUiTests.cpp
   WavetableTests.cpp
   WavetableEngineTests.cpp

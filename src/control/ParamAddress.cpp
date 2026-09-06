@@ -1,5 +1,6 @@
 #include "control/ControlValue.h"
 #include "control/ParamAddress.h"
+#include "model/GeneratorCatalog.h"
 #include "model/Ids.h"
 #include "model/ModuleCatalog.h"
 #include "model/ProjectEdits.h"
@@ -282,10 +283,45 @@ std::vector<ParamSpec> paramsAt (const juce::ValueTree& project, const ParamAddr
 
     const auto channel = channelWithId (project, address.id);
 
+    // An oscillator slot is the one group whose parameters are not simply its
+    // own: the slot holds five, its generator holds the rest, and the LFO under
+    // it holds eight more. generatorParamSpecs is the model's single answer to
+    // "what does a slot running this generator offer", and it is what the
+    // automation picker walks - so asking it here is what keeps params_list and
+    // a right-clicked knob offering the same set.
+    //
+    // Before this, the address space returned the OSC group's five and stopped.
+    // Nothing said so: every generator-owned parameter was simply absent, and
+    // it went unnoticed because a CLASSIC slot's only extra is `wave`, which is
+    // not automatable and so was never held against this by the gate.
+    if (node.hasType (ids::OSC))
+        return generatorParamSpecs (node[ids::mode].toString());
+
     if (const auto* group = groupOf (channel, address.group))
         return { group->params, group->params + group->numParams };
 
     return {};
+}
+
+juce::ValueTree paramValueNode (const juce::ValueTree& node, const juce::Identifier& property)
+{
+    // Only an oscillator slot spreads its parameters over child nodes, and
+    // generatorNodeFor is the model's answer to which one holds what - it
+    // returns the slot itself for one of the slot's own five.
+    //
+    // Descending HERE rather than in paramNodeFor is deliberate: an automation
+    // target for a generator-owned parameter is the SLOT plus a property, so
+    // paramNodeFor has to keep answering the slot or the two address spaces
+    // stop agreeing. Where the value is actually stored is a second question.
+    if (node.hasType (ids::OSC) && property.isValid())
+        return generatorNodeFor (node, property);
+
+    return node;
+}
+
+juce::ValueTree paramValueNodeFor (const juce::ValueTree& project, const ParamAddress& address)
+{
+    return paramValueNode (paramNodeFor (project, address), address.param);
 }
 
 std::optional<ParamSpec> paramSpecFor (const juce::ValueTree& project, const ParamAddress& address)

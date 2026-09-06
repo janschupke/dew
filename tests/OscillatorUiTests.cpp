@@ -35,7 +35,7 @@ struct OscHarness
     OscHarness()
     {
         document.setState (dew::testing::fixtureProject(), true);
-        section.setSize (300, OscillatorSection::heightFor (false));
+        section.setSize (300, OscillatorSection::heightFor (false, /*lfoOpen*/ false));
         section.setVisible (true);
         section.setOwner (channel().getChildWithName (ids::INSTRUMENT));
     }

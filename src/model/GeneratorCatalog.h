@@ -69,11 +69,16 @@ std::optional<int> generatorIndexFor (juce::StringRef id);
 const GeneratorDescriptor& generatorFor (juce::StringRef id);
 
 /** Everything a slot running this generator can be automated on: the shared
-    parameters plus that generator's own.
+    parameters, that generator's own, and the slot's LFO.
 
     The mode gate this replaces cost a CLASSIC slot its `gain`, which the
     catalog has declared automatable since it was written - the whole scope
     returned nothing unless the slot was in wavetable mode.
+
+    The LFO's are here whichever generator is named, because they are the
+    SLOT's. This is what oscParams() walks, so a run left out of it is a
+    parameter the picker never offers however completely the rest of the
+    program implements it.
 */
 std::vector<ParamSpec> generatorParamSpecs (juce::StringRef id);
 
@@ -83,24 +88,33 @@ bool isForeignGeneratorParam (juce::StringRef id, const juce::Identifier& proper
 
 /** The node under `slot` that actually holds `property`.
 
-    The slot itself for one of the SLOT's own five, and the owning generator's
-    child node for anything else. One answer, asked by the engine's reader, by
-    every control the panel builds, by the demo builders and by the parameter
-    menu - so nesting a generator's parameters is not eight places that each
-    have to remember the new depth.
+    The slot itself for one of the SLOT's own five, and the owning child node -
+    a generator's, or the LFO's - for anything else. One answer, asked by the
+    engine's reader, by every control the panel builds, by the demo builders and
+    by the parameter menu - so nesting a group's parameters is not eight places
+    that each have to remember the new depth.
+
+    Which groups those are is read off the synth descriptor rather than listed,
+    so a fourth node under a slot needs no edit here. Getting that wrong is
+    SILENT in the worst way: the write lands as a property on the OSC node,
+    ValueTree accepts it, the panel shows it, and the schema drops it without a
+    warning on the next save.
 
     An invalid tree when the slot has no such child, which a caller writing
     through ProjectEdits will report rather than write into nothing.
 */
 juce::ValueTree generatorNodeFor (const juce::ValueTree& slot, const juce::Identifier& property);
 
-/** Whether `node` is a generator's own node - a CLASSIC or a WAVETABLE.
+/** Whether `node` is one of the nodes under an oscillator slot - a CLASSIC, a
+    WAVETABLE or an LFO.
 
-    The inverse of generatorNodeFor, and named here rather than spelled as a
-    pair of hasType calls wherever it is wanted: the set of generator nodes is
-    this table's fact, so a third generator must not need a caller elsewhere to
-    remember to widen an `||`.
+    The inverse of generatorNodeFor, and named here rather than spelled as a run
+    of hasType calls wherever it is wanted: which nodes hang under a slot is the
+    catalog's fact, so a fourth must not need a caller elsewhere to remember to
+    widen an `||`. It was `isGeneratorNode` while the generators were the only
+    two; the LFO is under a slot without being a generator, and a name that said
+    otherwise would have invited exactly the `||` this exists to prevent.
 */
-bool isGeneratorNode (const juce::ValueTree& node);
+bool isOscChildNode (const juce::ValueTree& node);
 
 } // namespace dew

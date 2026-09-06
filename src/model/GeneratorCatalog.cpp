@@ -1,9 +1,41 @@
 #include "model/GeneratorCatalog.h"
 
+#include "model/Ids.h"
+#include "model/InstrumentType.h"
 #include "model/ModuleCatalog.h"
 
 namespace dew
 {
+
+namespace
+{
+
+/** Every group whose node hangs UNDER an oscillator slot: the two generators,
+    and the LFO.
+
+    Read off the synth's own descriptor rather than listed here, so a fourth
+    such node is a row in ModuleCatalog and nothing at all in this file. Which
+    is the point - the alternative is that "what lives under a slot" is written
+    down twice and the two drift.
+*/
+const std::vector<const ParamGroup*>& oscChildGroups()
+{
+    static const std::vector<const ParamGroup*> groups = []
+    {
+        std::vector<const ParamGroup*> found;
+        const auto& synth = instrumentDescriptor (InstrumentType::synth);
+
+        for (int i = 0; i < synth.numGroups; ++i)
+            if (synth.groups[i].under != nullptr && *synth.groups[i].under == ids::OSC)
+                found.push_back (&synth.groups[i]);
+
+        return found;
+    }();
+
+    return groups;
+}
+
+} // namespace
 
 std::optional<int> generatorIndexFor (juce::StringRef id)
 {
@@ -36,6 +68,14 @@ std::vector<ParamSpec> generatorParamSpecs (juce::StringRef id)
     for (int i = 0; i < generator.numParams; ++i)
         all.push_back (generator.params[i]);
 
+    // The LFO's, whichever generator this is - it is the slot's, not a
+    // generator's. Leaving it out here would be silent: this is what
+    // oscParams() walks, so every LFO parameter would be declared automatable,
+    // have an enumerator and an engine that applies it, and simply never be
+    // offered by the picker.
+    const auto& lfo = oscLfoParamSpecs();
+    all.insert (all.end(), lfo.begin(), lfo.end());
+
     return all;
 }
 
@@ -56,10 +96,10 @@ bool isForeignGeneratorParam (juce::StringRef id, const juce::Identifier& proper
     return false;
 }
 
-bool isGeneratorNode (const juce::ValueTree& node)
+bool isOscChildNode (const juce::ValueTree& node)
 {
-    for (const auto& generator : generatorDescriptors())
-        if (node.hasType (*generator.node))
+    for (const auto* group : oscChildGroups())
+        if (node.hasType (*group->node))
             return true;
 
     return false;
@@ -67,10 +107,10 @@ bool isGeneratorNode (const juce::ValueTree& node)
 
 juce::ValueTree generatorNodeFor (const juce::ValueTree& slot, const juce::Identifier& property)
 {
-    for (const auto& generator : generatorDescriptors())
-        for (int i = 0; i < generator.numParams; ++i)
-            if (*generator.params[i].property == property)
-                return slot.getChildWithName (*generator.node);
+    for (const auto* group : oscChildGroups())
+        for (int i = 0; i < group->numParams; ++i)
+            if (*group->params[i].property == property)
+                return slot.getChildWithName (*group->node);
 
     // One of the slot's own - whether it is on, its octave, its detune, its
     // gain, which generator it runs.

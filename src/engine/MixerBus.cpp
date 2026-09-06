@@ -30,6 +30,14 @@ void MixerBus::panGains (float pan, float& leftGain, float& rightGain) noexcept
     rightGain = std::sin (angle);
 }
 
+void MixerBus::modulationPanGains (float pan, float& leftGain, float& rightGain) noexcept
+{
+    const auto clamped = juce::jlimit (-1.0f, 1.0f, pan);
+
+    leftGain = clamped > 0.0f ? 1.0f - clamped : 1.0f;
+    rightGain = clamped < 0.0f ? 1.0f + clamped : 1.0f;
+}
+
 MixerBus::TrackGains MixerBus::trackGains (float pan, float gain) noexcept
 {
     float leftGain = 0.0f, rightGain = 0.0f;

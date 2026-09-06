@@ -37,7 +37,53 @@ float clampBySpec (const juce::Identifier& property, const juce::ValueTree& node
     return spec.clamp ((float) (double) node.getProperty (property, spec.defaultVar()));
 }
 
+namespace
+{
+
+/** A synced LFO's rate, in Hz.
+
+    `divisionIndex` indexes ModuleCatalog's noteDivisions, whose rows ARE the
+    note values 1/1, 1/2, 1/4 ... - so the value is 1 / (1 << index) of a whole
+    note and no second table has to say so.
+
+    A whole note lasts `beatUnit` beats, because a beat IS a note of value
+    1/beatUnit; a beat lasts 60/bpm seconds, which is the one thing Transport
+    and this have to agree on. So the rate is (bpm/60) * (1 << index) /
+    beatUnit - two per second for a quarter at 120bpm in 4/4.
+
+    This is the one place beatUnit reaches the engine, and it reaches it on the
+    MESSAGE thread. It must never get near Transport::samplesPerStepFor: a metre
+    is not a tempo, and folding beatUnit into a step duration is the mistake
+    Meter.h exists to prevent.
+*/
+float syncedLfoHz (double tempoBpm, int beatUnit, int divisionIndex) noexcept
+{
+    const auto beatsPerSecond = juce::jmax (1.0, tempoBpm) / 60.0;
+    const auto notesPerWhole = (double) (1 << juce::jlimit (0, 5, divisionIndex));
+
+    return (float) (beatsPerSecond * notesPerWhole / (double) juce::jmax (1, beatUnit));
+}
+
+/** Which row of a choice parameter a node holds, by the ids the catalog
+    declares. -1 becomes the declared default's index rather than 0, so a file
+    naming a division this build does not have takes what the catalog says
+    instead of the longest one. */
+int choiceIndexOf (const juce::Identifier& property, const juce::ValueTree& node)
+{
+    const auto& spec = requireInstrumentParamSpec (property);
+    const auto stored = node.getProperty (property, spec.defaultVar()).toString();
+
+    for (int i = 0; i < spec.numChoices; ++i)
+        if (stored == spec.choices[i].id)
+            return i;
+
+    return (int) spec.defaultValue;
+}
+
+} // namespace
+
 OscBankSnapshot readOscBank (const juce::ValueTree& instrument, const juce::String& ownerName,
+                             double tempoBpm, int beatUnit,
                              const std::function<void (const juce::String&)>& warn)
 {
     OscBankSnapshot bank;
@@ -89,6 +135,32 @@ OscBankSnapshot readOscBank (const juce::ValueTree& instrument, const juce::Stri
         s.positionRate = clampBySpec (ids::wavePositionRate, wavetable);
         s.unisonVoices = (int) clampBySpec (ids::unisonVoices, wavetable);
         s.unisonDetune = clampBySpec (ids::unisonDetune, wavetable);
+
+        // The slot's LFO, on its own node beside the two generators' - and read
+        // whichever generator the slot runs, because it is the SLOT's.
+        const auto lfo = generatorNodeFor (osc, ids::lfoOn);
+
+        s.lfoOn = (bool) lfo.getProperty (ids::lfoOn, false);
+        s.lfoSync = (bool) lfo.getProperty (ids::lfoSync, false);
+        s.lfoWave = waveformFromString (lfo[ids::lfoWave].toString());
+        s.lfoToPitch = clampBySpec (ids::lfoToPitch, lfo);
+        s.lfoToVolume = clampBySpec (ids::lfoToVolume, lfo);
+        s.lfoToPan = clampBySpec (ids::lfoToPan, lfo);
+
+        // Resolved HERE, on the message thread, the way pitchRatio is - see
+        // OscSettings::lfoHz for why the render path must not work it out from
+        // the transport instead.
+        s.lfoHz = s.lfoSync
+                      ? syncedLfoHz (tempoBpm, beatUnit, choiceIndexOf (ids::lfoDivision, lfo))
+                      : clampBySpec (ids::lfoRate, lfo);
+
+        // On is not the same as moving. A slot whose LFO is switched on with
+        // every depth at zero renders through the plain pass, which is what
+        // keeps it bit-identical to a slot that has no LFO at all.
+        s.lfoActive = s.lfoOn
+                      && ! (juce::exactlyEqual (s.lfoToPitch, 0.0f)
+                            && juce::exactlyEqual (s.lfoToVolume, 0.0f)
+                            && juce::exactlyEqual (s.lfoToPan, 0.0f));
 
         bank.anyEnabled = bank.anyEnabled || s.enabled;
     }
@@ -181,6 +253,10 @@ AutomationParam automationParamFromIdentifier (AutomationScope scope,
         { &ids::wavePositionMod, AutomationParam::positionMod },
         { &ids::wavePositionRate, AutomationParam::positionRate },
         { &ids::unisonDetune, AutomationParam::unisonDetune },
+        { &ids::lfoRate, AutomationParam::lfoRate },
+        { &ids::lfoToPitch, AutomationParam::lfoToPitch },
+        { &ids::lfoToVolume, AutomationParam::lfoToVolume },
+        { &ids::lfoToPan, AutomationParam::lfoToPan },
         { &ids::resonance, AutomationParam::resonance },
         { &ids::mix, AutomationParam::mix },
         { &ids::roomSize, AutomationParam::roomSize },

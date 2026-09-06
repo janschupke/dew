@@ -133,12 +133,12 @@ std::optional<AutomationTarget> automationTargetFor (const juce::ValueTree& proj
                                      .with ("owner", channel[ids::name].toString())
                                      .with ("param", tr (StringId::automation_soundFont)));
     }
-    else if (node.hasType (ids::OSC) || isGeneratorNode (node))
+    else if (node.hasType (ids::OSC) || isOscChildNode (node))
     {
-        // A knob built for a generator-owned parameter is built from that
-        // generator's OWN node - generatorNodeFor returns the CLASSIC or
-        // WAVETABLE child - so the node arriving here is one level below the
-        // slot. Resolving against the slot rather than refusing is what keeps
+        // A knob built for a parameter one of the slot's child nodes owns is
+        // built from that node - generatorNodeFor returns the CLASSIC, the
+        // WAVETABLE or the LFO child - so the node arriving here is one level
+        // below the slot. Resolving against the slot rather than refusing is what keeps
         // this function and availableAutomationTargets one answer: the picker
         // offers those very targets from the OSC node, so a knob that could not
         // reach them was the picker/control divergence this file's header says

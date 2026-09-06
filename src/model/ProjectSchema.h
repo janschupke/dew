@@ -187,8 +187,23 @@ struct NodeSpec
     `filterOffset`, so a v16 build opening a v17 project would resolve every
     envelope and soundfont curve to nothing and drop it on the next save without
     a word. The version gate turns that into a refusal.
+
+    v18 gave every oscillator slot an LFO, on an `lfo` node beside the slot's
+    two generator nodes: a shape, a rate that is either free or locked to the
+    tempo, and three depths - to pitch, to level and to pan - so any combination
+    of the three moves and the ones left at zero do not.
+
+    Additive with declared defaults, so there is nothing to migrate: a v17 file
+    simply has no `lfo` key and takes an LFO that is switched off, which is what
+    it had. It also writes exactly the bytes it wrote before, because the node
+    is declared omitWhenDefault and a slot nobody has dialled an LFO into has
+    nothing to say.
+
+    The bump is for the other direction, as it has been since v7: a v17 build
+    would report the `lfo` node as not part of the schema, drop it on the next
+    save, and hand back a project whose movement had gone.
 */
-inline constexpr int kFormatVersion = 17;
+inline constexpr int kFormatVersion = 18;
 
 /** How many effects one channel or mixer track may carry. A document limit
     rather than an engine one: a chain longer than this cannot be saved, so it

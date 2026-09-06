@@ -227,6 +227,11 @@ ProjectSerializer::LoadResult ProjectSerializer::fromJsonString (const juce::Str
     if (version < 15)
         migrateGeneratorParamsToNodes (parsed);
 
+    // v18's `lfo` node has no entry here on purpose. It was ADDED rather than
+    // moved, every property in it has a declared default, and treeFromVar
+    // materialises a missing non-array child from those - so a v17 slot loads
+    // as one whose LFO is switched off, which is what it was.
+
     loaded.tree = treeFromVar (parsed, projectSpec(), loaded.warnings);
 
     // Anything the older file lacked has just been filled in from the schema's
