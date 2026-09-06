@@ -193,6 +193,26 @@ juce::Rectangle<float> bodyRect (const juce::Component& c)
     return c.getLocalBounds().toFloat().reduced (stroke::whisper);
 }
 
+juce::Rectangle<float> bodyRect (const juce::Component& c, float inset)
+{
+    return c.getLocalBounds().toFloat().reduced (inset + stroke::whisper);
+}
+
+void toolbarStrip (juce::Graphics& g, const juce::Component& c,
+                   const juce::Array<int>& groupDividers)
+{
+    g.fillAll (colour::surface);
+
+    g.setColour (colour::dividerStrong);
+    g.drawHorizontalLine (c.getHeight() - 1, 0.0f, (float) c.getWidth());
+
+    for (const auto x : groupDividers)
+    {
+        g.setColour (colour::divider);
+        g.drawVerticalLine (x, 7.0f, (float) c.getHeight() - 7.0f);
+    }
+}
+
 void inputBox (juce::Graphics& g, const juce::Component& c, juce::Colour fill, juce::Colour border)
 {
     const auto body = bodyRect (c);

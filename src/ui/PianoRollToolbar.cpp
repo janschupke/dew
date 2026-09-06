@@ -223,18 +223,7 @@ void PianoRollToolbar::setBeatUnit (int newBeatUnit)
 
 void PianoRollToolbar::paint (juce::Graphics& g)
 {
-    using namespace tokens;
-
-    g.fillAll (colour::surface);
-
-    g.setColour (colour::dividerStrong);
-    g.drawHorizontalLine (getHeight() - 1, 0.0f, (float) getWidth());
-
-    for (const auto x : groupDividers)
-    {
-        g.setColour (colour::divider);
-        g.drawVerticalLine (x, 7.0f, (float) getHeight() - 7.0f);
-    }
+    paint::toolbarStrip (g, *this, groupDividers);
 }
 
 namespace

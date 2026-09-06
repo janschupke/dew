@@ -161,9 +161,8 @@ bool PianoRollComponent::isOnRightEdge (const juce::ValueTree& note,
                                         juce::Point<int> position) const
 {
     const auto bounds = boundsForNote (note);
-    const auto edge = juce::jmin (8.0f, bounds.getWidth() * 0.35f);
 
-    return (float) position.x >= bounds.getRight() - edge;
+    return (float) position.x >= bounds.getRight() - gesture::rightEdgeBand (bounds.getWidth());
 }
 
 juce::ValueTree PianoRollComponent::noteAt (juce::Point<int> position) const

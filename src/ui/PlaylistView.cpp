@@ -194,9 +194,8 @@ bool PlaylistComponent::isOnRightEdge (const juce::ValueTree& clip, int trackInd
                                        juce::Point<int> position) const
 {
     const auto bounds = boundsForClip (clip, trackIndex);
-    const auto edge = juce::jmin (10.0f, bounds.getWidth() * 0.3f);
 
-    return (float) position.x >= bounds.getRight() - edge;
+    return (float) position.x >= bounds.getRight() - gesture::rightEdgeBand (bounds.getWidth());
 }
 
 float PlaylistComponent::playheadX() const

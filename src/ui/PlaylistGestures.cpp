@@ -15,6 +15,7 @@
 // the whole set is how one gets left latched.
 // =============================================================================
 
+#include "ui/MenuSeam.h"
 #include "ui/PlaylistComponent.h"
 
 #include "model/AutomationCurve.h"
@@ -132,15 +133,9 @@ void PlaylistComponent::mouseDown (const juce::MouseEvent& event)
         latchMenuContext (clip, trackIndex, event.getPosition());
 
         auto menu = buildClipMenu (track, bar);
-        menu.setLookAndFeel (&getLookAndFeel());
-        menu.showMenuAsync (
-            juce::PopupMenu::Options().withTargetScreenArea (
-                { event.getScreenX(), event.getScreenY(), 1, 1 }),
-            [safe = juce::Component::SafePointer<PlaylistComponent> (this), track, bar] (int choice)
-            {
-                if (safe != nullptr && choice > 0)
-                    safe->applyClipChoice (track, bar, choice);
-            });
+        showMenuAt<PlaylistComponent> (menu, *this, event,
+                                       [track, bar] (PlaylistComponent& playlist, int choice)
+                                       { playlist.applyClipChoice (track, bar, choice); });
         return;
     }
 

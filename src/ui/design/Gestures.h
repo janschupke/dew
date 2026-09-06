@@ -2,6 +2,8 @@
 
 #include <juce_gui_basics/juce_gui_basics.h>
 
+#include "ui/design/Tokens.h"
+
 namespace dew::gesture
 {
 
@@ -193,6 +195,29 @@ inline int dragPixelsFor (const juce::ModifierKeys& mods) noexcept
 {
     return isFine (mods) ? (int) ((double) dragPixelsForFullRange / fineMultiplier)
                          : dragPixelsForFullRange;
+}
+
+/** How far in from a block's right edge a press RESIZES it rather than moving
+    it - a note in the piano roll, a clip in the playlist.
+
+    Both views had their own pair and the pairs had drifted: 8px capped at 35%
+    of the width in the piano roll, 10px at 30% in the playlist, for the same
+    gesture on the same kind of object. Neither number was in a token, so they
+    are float literals in a .cpp and the size-ladder gate cannot see either.
+
+    8 rather than 10 because it is space::md, and the two VERTICAL resize bands
+    - a playlist lane's and the effect chain's - are both space::xs already, so
+    the horizontal one belonging to the same scale is the whole argument for
+    picking between two numbers that were each chosen once and never compared.
+
+    0.35 rather than 0.3 because the fraction is what protects a NARROW block,
+    and a one-step note is the narrowest thing either view resizes. The cap
+    decides the wide case and the fraction decides the hard one, so each is
+    taken from the view that had the better reason for it.
+*/
+inline float rightEdgeBand (float width) noexcept
+{
+    return juce::jmin ((float) tokens::space::md, width * 0.35f);
 }
 
 /** A right-drag erases in the two grids. In the playlist it opens a menu

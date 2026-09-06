@@ -2,6 +2,7 @@
 
 #include <juce_gui_basics/juce_gui_basics.h>
 
+#include "ui/MenuSeam.h"
 #include "ui/primitives/DewControls.h"
 #include "ui/primitives/HoverTracker.h"
 
@@ -80,14 +81,8 @@ private:
 
         auto menu = buildMenu();
 
-        menu.setLookAndFeel (&getLookAndFeel());
-        menu.showMenuAsync (juce::PopupMenu::Options().withTargetScreenArea (
-                                { event.getScreenX(), event.getScreenY(), 1, 1 }),
-                            [safe = juce::Component::SafePointer<HeaderRow> (this)] (int choice)
-                            {
-                                if (safe != nullptr && choice > 0)
-                                    safe->applyMenuChoice (choice);
-                            });
+        showMenuAt<HeaderRow> (menu, *this, event,
+                               [] (HeaderRow& row, int choice) { row.applyMenuChoice (choice); });
     }
 
     void mouseDoubleClick (const juce::MouseEvent& event) override

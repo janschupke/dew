@@ -1,3 +1,4 @@
+#include "ui/MenuSeam.h"
 #include "ui/EffectCard.h"
 
 #include "i18n/Strings.h"
@@ -78,14 +79,8 @@ void EffectCard::showMenu (const juce::MouseEvent& event)
 
     auto menu = buildMenu();
 
-    menu.setLookAndFeel (&getLookAndFeel());
-    menu.showMenuAsync (juce::PopupMenu::Options().withTargetScreenArea (
-                            { event.getScreenX(), event.getScreenY(), 1, 1 }),
-                        [safe = juce::Component::SafePointer<EffectCard> (this)] (int choice)
-                        {
-                            if (safe != nullptr && choice > 0)
-                                safe->applyMenuChoice (choice);
-                        });
+    showMenuAt<EffectCard> (menu, *this, event,
+                            [] (EffectCard& card, int choice) { card.applyMenuChoice (choice); });
 }
 
 } // namespace dew

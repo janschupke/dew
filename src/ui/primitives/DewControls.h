@@ -1033,6 +1033,24 @@ void emptyState (juce::Graphics&, juce::Rectangle<int>, const juce::String&,
 */
 juce::Rectangle<float> bodyRect (const juce::Component&);
 
+/** The same, inset further first - for a control that sits in a gutter.
+
+    A mixer strip leaves 2px between itself and the next one, and reached for
+    `reduced (2.0f)`, which lands its edges on whole coordinates: the outline
+    around a selected strip was the one stroke in the application still
+    straddling two pixels and coming out grey. The gutter and the half pixel are
+    different questions and both have to be answered.
+*/
+juce::Rectangle<float> bodyRect (const juce::Component&, float inset);
+
+/** A toolbar's background: the surface, the rule along the bottom, and a
+    divider between each group of controls.
+
+    The piano roll's and the playlist's paint() bodies were byte-identical. They
+    are the two toolbars there are, and a third would have copied one of them.
+*/
+void toolbarStrip (juce::Graphics&, const juce::Component&, const juce::Array<int>& groupDividers);
+
 /** What an INPUT looks like: a rounded body with a hairline edge.
 
     A number field, a search field, a dropdown and the text box inside a stepper

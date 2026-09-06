@@ -1,3 +1,4 @@
+#include "ui/MenuSeam.h"
 #include "ui/MixerStrip.h"
 
 #include <optional>
@@ -310,24 +311,15 @@ void MixerStrip::showMenu (const juce::MouseEvent& event)
     if (menu.getNumItems() == 0)
         return;
 
-    // The look and feel has to be set explicitly or DewLookAndFeel's popup
-    // overrides do not apply, and a SafePointer because a menu outlives a
-    // rebuild of the strips.
-    menu.setLookAndFeel (&getLookAndFeel());
-    menu.showMenuAsync (juce::PopupMenu::Options().withTargetScreenArea (
-                            { event.getScreenX(), event.getScreenY(), 1, 1 }),
-                        [safe = juce::Component::SafePointer<MixerStrip> (this)] (int choice)
-                        {
-                            if (safe != nullptr && choice > 0)
-                                safe->applyMenuChoice (choice);
-                        });
+    showMenuAt<MixerStrip> (menu, *this, event,
+                            [] (MixerStrip& strip, int choice) { strip.applyMenuChoice (choice); });
 }
 
 // --- painting and layout -----------------------------------------------------
 
 void MixerStrip::paint (juce::Graphics& g)
 {
-    const auto body = getLocalBounds().toFloat().reduced (2.0f);
+    const auto body = paint::bodyRect (*this, 2.0f);
 
     g.setColour (selected ? tokens::colour::surfaceRaised
                           : tokens::colour::surface.brighter (hover.lift()));

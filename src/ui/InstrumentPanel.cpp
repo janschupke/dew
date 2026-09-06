@@ -1,3 +1,4 @@
+#include "ui/MenuSeam.h"
 #include "ui/InstrumentPanel.h"
 
 #include "i18n/Strings.h"
@@ -518,14 +519,8 @@ void InstrumentPanel::showMenu (const juce::MouseEvent& event)
     if (menu.getNumItems() == 0)
         return;
 
-    menu.setLookAndFeel (&getLookAndFeel());
-    menu.showMenuAsync (juce::PopupMenu::Options().withTargetScreenArea (
-                            { event.getScreenX(), event.getScreenY(), 1, 1 }),
-                        [safe = juce::Component::SafePointer<InstrumentPanel> (this)] (int choice)
-                        {
-                            if (safe != nullptr && choice > 0)
-                                safe->applyMenuChoice (choice);
-                        });
+    showMenuAt<InstrumentPanel> (menu, *this, event, [] (InstrumentPanel& panel, int choice)
+                                 { panel.applyMenuChoice (choice); });
 }
 
 void InstrumentPanel::mouseDown (const juce::MouseEvent& event)
