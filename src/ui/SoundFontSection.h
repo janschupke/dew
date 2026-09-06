@@ -11,6 +11,7 @@
 #include "app/ProjectDocument.h"
 #include "ui/ParamContextMenu.h"
 #include "ui/primitives/DewControls.h"
+#include "ui/primitives/RotaryGesture.h"
 
 namespace dew
 {
@@ -119,7 +120,7 @@ private:
     void mouseDown (const juce::MouseEvent&) override;
 
     void write (const juce::Identifier& property, const juce::var& value,
-                const juce::String& transactionName);
+                const juce::String& transactionName, bool continuing);
 
     void attachKnob (DewKnob&, const juce::Identifier& property,
                      const juce::String& transactionName);
@@ -152,8 +153,8 @@ private:
         is 0, so this is the async form; the blocking one asserts. */
     std::unique_ptr<juce::FileChooser> chooser;
 
-    bool inDrag = false;
-    bool gestureActive = false;
+    /** One gesture for the section - see SampleSection, which says why. */
+    RotaryGesture gesture;
     bool updating = false;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (SoundFontSection)

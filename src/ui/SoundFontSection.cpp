@@ -97,37 +97,24 @@ void SoundFontSection::setParamMenuHost (const paramMenu::Host* host)
 void SoundFontSection::attachKnob (DewKnob& knob, const juce::Identifier& property,
                                    const juce::String& transactionName)
 {
-    // A drag is ONE undo step, and it is driven by the knob's own drag callbacks
-    // rather than by the mouse: the pointer reads as "not down" in every
-    // headless harness, so a guard built on it would be one no test could see.
-    knob.onEditStart = [this]
-    {
-        inDrag = true;
-        gestureActive = false;
-    };
-    knob.onEditEnd = [this]
-    {
-        inDrag = false;
-        gestureActive = false;
-    };
+    gesture.attach (knob,
+                    [this, &knob, property, transactionName] (bool continuing)
+                    {
+                        if (updating)
+                            return false;
 
-    knob.onValueChange = [this, &knob, property, transactionName]
-    {
-        if (updating)
-            return;
-
-        write (property, knob.getValue(), transactionName);
-        gestureActive = inDrag;
-    };
+                        write (property, knob.getValue(), transactionName, continuing);
+                        return true;
+                    });
 
     addAndMakeVisible (knob);
 }
 
 void SoundFontSection::write (const juce::Identifier& property, const juce::var& value,
-                              const juce::String& transactionName)
+                              const juce::String& transactionName, bool continuing)
 {
     ProjectEdits::setProperty (soundFont, property, value, &document.getUndoManager(),
-                               transactionName, gestureActive);
+                               transactionName, continuing);
 }
 
 void SoundFontSection::setOwner (juce::ValueTree soundFontNode)

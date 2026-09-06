@@ -40,7 +40,7 @@ SampleSection::SampleSection (ProjectDocument& d, SamplePool* p)
     reverseButton.onClick = [this]
     {
         if (! updating)
-            write (ids::reverse, reverseButton.getToggleState(), "Reverse sample");
+            write (ids::reverse, reverseButton.getToggleState(), "Reverse sample", false);
     };
     addAndMakeVisible (reverseButton);
 
@@ -48,7 +48,7 @@ SampleSection::SampleSection (ProjectDocument& d, SamplePool* p)
     loopButton.onClick = [this]
     {
         if (! updating)
-            write (ids::loop, loopButton.getToggleState(), "Loop sample");
+            write (ids::loop, loopButton.getToggleState(), "Loop sample", false);
     };
     addAndMakeVisible (loopButton);
 
@@ -81,45 +81,24 @@ void SampleSection::setParamMenuHost (const paramMenu::Host* host)
 void SampleSection::attachKnob (DewKnob& knob, const juce::Identifier& property,
                                 const juce::String& transactionName)
 {
-    // A drag is ONE undo step. Without these, dragging a fade or a transpose
-    // across its range made an undo step per frame, and getting back to where
-    // you started meant pressing undo a hundred times - which is the fix the
-    // README claims is done and which this panel never got.
-    //
-    // Driven by the knob's own drag callbacks rather than by the mouse: the
-    // pointer state reads as "not down" in every headless harness, so a guard
-    // built on it would be one no test could ever see working.
-    knob.onEditStart = [this]
-    {
-        inDrag = true;
-        gestureActive = false;
-    };
-    knob.onEditEnd = [this]
-    {
-        inDrag = false;
-        gestureActive = false;
-    };
+    gesture.attach (knob,
+                    [this, &knob, property, transactionName] (bool continuing)
+                    {
+                        if (updating)
+                            return false;
 
-    knob.onValueChange = [this, &knob, property, transactionName]
-    {
-        if (updating)
-            return;
-
-        write (property, knob.getValue(), transactionName);
-
-        // The first value of a drag opened the transaction; the rest join it.
-        // A change that is not part of a drag always opens its own.
-        gestureActive = inDrag;
-    };
+                        write (property, knob.getValue(), transactionName, continuing);
+                        return true;
+                    });
 
     addAndMakeVisible (knob);
 }
 
 void SampleSection::write (const juce::Identifier& property, const juce::var& value,
-                           const juce::String& transactionName)
+                           const juce::String& transactionName, bool continuing)
 {
     ProjectEdits::setProperty (sample, property, value, &document.getUndoManager(), transactionName,
-                               gestureActive);
+                               continuing);
 }
 
 void SampleSection::setOwner (juce::ValueTree sampleNode)
@@ -317,7 +296,7 @@ void SampleSection::mouseDrag (const juce::MouseEvent& event)
 
         ProjectEdits::setProperty (sample, ids::startSample,
                                    juce::jlimit (0, juce::jmax (0, end - 1), frame), &undo,
-                                   "Trim sample", gestureActive);
+                                   "Trim sample", trimming);
     }
     else
     {
@@ -327,16 +306,16 @@ void SampleSection::mouseDrag (const juce::MouseEvent& event)
         // Storing the full length as 0 keeps "untrimmed" one value rather than
         // two, so a sample replaced by a longer one still plays to its end.
         ProjectEdits::setProperty (sample, ids::endSample, clamped >= length ? 0 : clamped, &undo,
-                                   "Trim sample", gestureActive);
+                                   "Trim sample", trimming);
     }
 
     // The whole sweep of a handle is one undo step, the same as a knob's.
-    gestureActive = true;
+    trimming = true;
 }
 
 void SampleSection::mouseUp (const juce::MouseEvent&)
 {
-    gestureActive = false;
+    trimming = false;
     dragging = Handle::none;
 }
 

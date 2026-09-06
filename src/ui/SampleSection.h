@@ -10,6 +10,7 @@
 #include "model/Ids.h"
 #include "ui/ParamContextMenu.h"
 #include "ui/primitives/DewControls.h"
+#include "ui/primitives/RotaryGesture.h"
 
 namespace dew
 {
@@ -90,7 +91,7 @@ private:
     void valueTreePropertyChanged (juce::ValueTree&, const juce::Identifier&) override;
 
     void write (const juce::Identifier& property, const juce::var& value,
-                const juce::String& transactionName);
+                const juce::String& transactionName, bool continuing);
 
     /** Wires a rotary to a property on the SAMPLE node. */
     const paramMenu::Host* paramMenuHost = nullptr;
@@ -131,12 +132,15 @@ private:
 
     Handle dragging = Handle::none;
 
-    /** Between a drag's start and its end. */
-    bool inDrag = false;
+    /** One gesture for the section: only one knob can be under the pointer at
+        a time. It owns whether a transaction is already open, which is what
+        makes a whole drag one undo step rather than one per frame. */
+    RotaryGesture gesture;
 
-    /** True for every value after the first in one gesture, so the whole drag
-        is one undo step rather than one per frame. */
-    bool gestureActive = false;
+    /** The same rule for the waveform's fade handles, which are a mouse drag on
+        this component rather than a rotary - so they cannot use the gesture
+        above, and used to share its flag by accident. */
+    bool trimming = false;
     Handle hovering = Handle::none;
 
     bool updating = false;
