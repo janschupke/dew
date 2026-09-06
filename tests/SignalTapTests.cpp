@@ -121,6 +121,30 @@ TEST_CASE ("a tap with less history than asked for pads with silence", "[signalt
         REQUIRE (window[(size_t) (412 + i)] == Approx ((float) (1 + i)));
 }
 
+namespace
+{
+
+/** Stops the writer and joins it, however the scope is left.
+
+    A stress test's assertion is the one place a raw std::thread cannot be left
+    to the two lines after the loop: a failing REQUIRE never reaches them.
+*/
+struct ScopedWriter
+{
+    std::atomic<bool>& running;
+    std::thread& writer;
+
+    ~ScopedWriter()
+    {
+        running.store (false);
+
+        if (writer.joinable())
+            writer.join();
+    }
+};
+
+} // namespace
+
 TEST_CASE ("a reader never accepts a window the writer overtook", "[signaltap]")
 {
     // The property, not the timing: every window that came back accepted has to
@@ -154,6 +178,16 @@ TEST_CASE ("a reader never accepts a window the writer overtook", "[signaltap]")
                 position += 512;
             }
         });
+
+    // Stopped and joined by unwinding, not by the two lines at the end.
+    //
+    // A REQUIRE below THROWS, so those two lines do not run - and ~thread on a
+    // still-joinable thread calls std::terminate. The one test in this suite
+    // that could legitimately fail was therefore the one test that could not
+    // report it: it aborted the whole ctest process instead, taking every
+    // result that had not been written out with it, and the failure read as a
+    // crash rather than as the tear it had just found.
+    const ScopedWriter stopper { running, writer };
 
     std::vector<float> window ((size_t) SignalTap::maxWindow, 0.0f);
 
@@ -203,9 +237,6 @@ TEST_CASE ("a reader never accepts a window the writer overtook", "[signaltap]")
 
         REQUIRE (consistent);
     }
-
-    running.store (false);
-    writer.join();
 
     INFO ("accepted " << accepted.load() << ", refused " << refused.load());
 

@@ -96,11 +96,24 @@ dew_shot gallery out.png     # the design system
 
 ## Known
 
-The test `"a reader never accepts a window the writer overtook"`
-(`tests/SignalTapTests.cpp`) fails roughly four runs in five in isolation on this machine
-and occasionally passes a whole `ctest` run. It is **pre-existing** — verified against a
-clean tree — and it aborts rather than asserting, because the `REQUIRE` throws while the
-writer thread is still running. Do not spend a round diagnosing it as your change.
+Nothing, currently. `./scripts/check.sh` is expected to be green.
+
+This section used to say that `"a reader never accepts a window the writer overtook"`
+(`tests/SignalTapTests.cpp`) failed four runs in five and aborted. **That note was stale
+and is retired.** It was written at 05:39 on 2026-09-04; `5d4f202`, which gave the two
+stress tests a budget in WORK rather than wall-clock, landed at 15:29 the same day and
+nobody came back to it. Measured since: 40 isolated runs and three full `ctest --parallel
+4` runs, all green.
+
+A note like that is expensive twice over — it tells people to ignore a red gate, and it
+says which test to ignore it for. If a gate is genuinely flaky, fix it or hide it behind
+`[.]`; do not write down that it fails.
+
+The abort was real, and is fixed. A failing `REQUIRE` in that test **threw past** the two
+lines that stopped and joined the writer, so `~thread` on a still-joinable thread called
+`std::terminate`: the one test in the suite that could legitimately fail was the one test
+that could not report it, taking the whole `ctest` process down instead. The writer is
+stopped by a scope guard now, so a tear is reported as a failure naming the window.
 
 `asan`, `tsan` and `scripts/linux-check.sh` run outside the gate and are CI-only; neither
 sanitizer runtime works on this macOS. See [workflow.md](workflow.md).
