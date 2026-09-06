@@ -43,13 +43,6 @@ SoundFontSection::SoundFontSection (ProjectDocument& d, SoundFontPool* p)
     };
     addAndMakeVisible (presetBox);
 
-    transposeKnob.setNumDecimalPlaces (0);
-    transposeKnob.setBipolar (true);
-    tuneKnob.setNumDecimalPlaces (0);
-    tuneKnob.setBipolar (true);
-    filterKnob.setNumDecimalPlaces (0);
-    filterKnob.setBipolar (true);
-
     attachKnob (transposeKnob, ids::transpose, "Change soundfont pitch");
     attachKnob (tuneKnob, ids::tuneCents, "Change soundfont tuning");
     attachKnob (filterKnob, ids::filterOffset, "Change soundfont filter");

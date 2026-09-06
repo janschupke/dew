@@ -83,7 +83,6 @@ ChannelRackHeader::ChannelRackHeader (ProjectDocument& d, EditorState& s, juce::
     // filling out from the centre.
     attachKnob (volumeKnob, ids::volume, "Change volume", "Volume");
     attachKnob (panKnob, ids::pan, "Change pan", "Pan");
-    panKnob.setBipolar (true);
 
     // Base pitch and the mixer track, as numbers on the row. Both were in the
     // instrument panel and nowhere else, which meant routing a channel - or

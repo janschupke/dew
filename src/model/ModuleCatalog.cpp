@@ -657,6 +657,13 @@ const ParamSpec* instrumentParamSpec (const juce::Identifier& property) noexcept
     // oscillator's level and a mixer track's fader, and `pan` is both a
     // channel's and a track's; the instrument tables are searched first
     // because this is the INSTRUMENT lookup, and the mixer asks for its own.
+    //
+    // `transpose` is a third, and one this order does NOT distinguish: a sample
+    // and a soundfont both declare it, and sample wins - so the soundfont
+    // section's pitch knob is built from the sample's row. The two rows are
+    // identical today, which is the only reason that is harmless. They are two
+    // rows because the two nodes are, so keep them agreeing or give this lookup
+    // the node as well.
     for (const auto* table : { &channelParamSpecs(), &ampParamSpecs(), &oscParamSpecs(),
                                &sampleParamSpecs(), &soundFontParamSpecs() })
         for (const auto& spec : *table)

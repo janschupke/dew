@@ -27,11 +27,6 @@ SampleSection::SampleSection (ProjectDocument& d, SamplePool* p)
     setTitle (tr (StringId::sample_title));
     setFocusContainerType (FocusContainerType::focusContainer);
 
-    fadeInKnob.setNumDecimalPlaces (0);
-    fadeOutKnob.setNumDecimalPlaces (0);
-    transposeKnob.setNumDecimalPlaces (0);
-    transposeKnob.setBipolar (true);
-
     attachKnob (fadeInKnob, ids::fadeInMs, "Change fade in");
     attachKnob (fadeOutKnob, ids::fadeOutMs, "Change fade out");
     attachKnob (transposeKnob, ids::transpose, "Change sample pitch");

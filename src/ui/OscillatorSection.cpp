@@ -137,33 +137,25 @@ OscillatorSection::OscillatorSection (ProjectDocument& d, EditorState& s)
                     });
     addAndMakeVisible (octaveSlider);
 
-    detuneKnob.setBipolar (true);
-    detuneKnob.setNumDecimalPlaces (0);
     attachKnob (detuneKnob, ids::detuneCents, "Change detune");
 
-    gainKnob.setNumDecimalPlaces (2);
     attachKnob (gainKnob, ids::gain, "Change oscillator gain");
 
-    positionKnob.setNumDecimalPlaces (2);
     positionKnob.setTooltip (tr (StringId::oscillator_position_help));
     attachKnob (positionKnob, ids::wavePosition, "Change wavetable position");
 
-    modKnob.setBipolar (true);
-    modKnob.setNumDecimalPlaces (2);
     modKnob.setTooltip (tr (StringId::oscillator_mod_help));
     attachKnob (modKnob, ids::wavePositionMod, "Change position modulation");
 
-    rateKnob.setNumDecimalPlaces (2);
     rateKnob.setTooltip (tr (StringId::oscillator_rate_help));
     attachKnob (rateKnob, ids::wavePositionRate, "Change modulation rate");
 
-    // Integral, so the file keeps an int: the same rule the octave stepper
-    // follows, for the same reason.
-    unisonKnob.setNumDecimalPlaces (0);
     unisonKnob.setTooltip (tr (StringId::oscillator_unison_help));
+
+    // Integral, which is what the trailing true says: the file keeps an int,
+    // the same rule the octave stepper follows and for the same reason.
     attachKnob (unisonKnob, ids::unisonVoices, "Change unison voices", true);
 
-    spreadKnob.setNumDecimalPlaces (1);
     spreadKnob.setTooltip (tr (StringId::oscillator_spread_help));
     attachKnob (spreadKnob, ids::unisonDetune, "Change unison spread");
 
@@ -216,22 +208,15 @@ OscillatorSection::OscillatorSection (ProjectDocument& d, EditorState& s)
     };
     addAndMakeVisible (lfoDivisionBox);
 
-    lfoRateKnob.setNumDecimalPlaces (2);
     lfoRateKnob.setTooltip (tr (StringId::oscillator_lfoRate_help));
     attachKnob (lfoRateKnob, ids::lfoRate, "Change LFO rate");
 
-    lfoPitchKnob.setBipolar (true);
-    lfoPitchKnob.setNumDecimalPlaces (2);
     lfoPitchKnob.setTooltip (tr (StringId::oscillator_lfoToPitch_help));
     attachKnob (lfoPitchKnob, ids::lfoToPitch, "Change LFO pitch depth");
 
-    lfoVolumeKnob.setBipolar (true);
-    lfoVolumeKnob.setNumDecimalPlaces (2);
     lfoVolumeKnob.setTooltip (tr (StringId::oscillator_lfoToVolume_help));
     attachKnob (lfoVolumeKnob, ids::lfoToVolume, "Change LFO volume depth");
 
-    lfoPanKnob.setBipolar (true);
-    lfoPanKnob.setNumDecimalPlaces (2);
     lfoPanKnob.setTooltip (tr (StringId::oscillator_lfoToPan_help));
     attachKnob (lfoPanKnob, ids::lfoToPan, "Change LFO pan depth");
 

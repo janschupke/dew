@@ -381,6 +381,34 @@ TEST_CASE ("no editor writes the rotary gesture by hand", "[build][gate][undo]")
     CHECK (found.isEmpty());
 }
 
+TEST_CASE ("no knob restates what its ParamSpec declared", "[build][gate][params]")
+{
+    // DewKnob's ParamSpec constructor applies the caption, the tooltip, the
+    // range, the interval, the decimals and the bipolarity, and DewControls.h
+    // says why: six knobs and a stepper stated those a second time by hand, and
+    // every one of them had drifted from the engine's own clamp.
+    //
+    // Twenty-seven of them were still doing it - the oscillator section had
+    // sixteen - and this time none had drifted. That is worth saying plainly:
+    // they were all correct, and the reason to delete them is that being
+    // correct today is what a restated number always is.
+    //
+    // Asks about a name ending in Knob, because that is what a DewKnob is
+    // called wherever one is built from a spec. A DewNumberField takes no spec
+    // and has to be told, so the fields in the transport bar, the render panel
+    // and the rack row are not the shape this asks about.
+    const auto found = offenders (
+        [] (const juce::String& line)
+        {
+            return line.contains ("Knob.setBipolar (")
+                   || line.contains ("Knob.setNumDecimalPlaces (");
+        },
+        {});
+
+    INFO ("a knob restating its own spec:\n" << found.joinIntoString ("\n"));
+    CHECK (found.isEmpty());
+}
+
 TEST_CASE ("no source binds a key outside the hotkey registry", "[build][gate][hotkeys]")
 {
     // There used to be two key tables that could not see each other: fifteen
