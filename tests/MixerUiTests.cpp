@@ -8,6 +8,8 @@
 
 #include <juce_gui_basics/juce_gui_basics.h>
 
+#include "ControlWalkHarness.h"
+#include "TestSupport.h"
 #include "io/OfflineRenderer.h"
 #include "model/Ids.h"
 #include "app/ProjectDocument.h"
@@ -23,6 +25,7 @@
 #include "FixtureProject.h"
 
 using namespace dew;
+using namespace dew::testing;
 using Catch::Approx;
 
 TEST_CASE ("each strip lists the channels routed into it", "[mixer][ui]")
@@ -329,22 +332,6 @@ struct MixerHarness
     MixerComponent mixer { document, editorState };
 };
 
-/** Component::findChildWithID is NOT recursive, and the strips and the add
-    button live inside the viewport's holder. */
-juce::Component* findDescendantWithID (juce::Component& root, const juce::String& id)
-{
-    for (auto* child : root.getChildren())
-    {
-        if (child->getComponentID() == id)
-            return child;
-
-        if (auto* found = findDescendantWithID (*child, id))
-            return found;
-    }
-
-    return nullptr;
-}
-
 constexpr int addInsertChoice = 2;
 constexpr int removeInsertChoice = 3;
 
@@ -573,10 +560,7 @@ TEST_CASE ("a sideways notch over a fader scrolls rather than moving it", "[mixe
     fader.setValue (0.5, juce::dontSendNotification);
     fader.setSize (24, 200);
 
-    const juce::MouseEvent event (juce::Desktop::getInstance().getMainMouseSource(),
-                                  { 12.0f, 100.0f }, juce::ModifierKeys(), 1.0f, 0.0f, 0.0f, 0.0f,
-                                  0.0f, &fader, &fader, juce::Time::getCurrentTime(),
-                                  { 12.0f, 100.0f }, juce::Time::getCurrentTime(), 1, false);
+    const auto event = mouseEventAt (fader, juce::Point<float> { 12.0f, 100.0f });
 
     const auto before = fader.getValue();
 

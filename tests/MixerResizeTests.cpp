@@ -59,7 +59,7 @@ juce::MouseEvent atScreenY (EffectChainHost& host, int screenY, bool dragged)
 {
     const juce::Point<int> local { host.getWidth() / 2, screenY - host.getScreenPosition().y };
 
-    return mouseEventAt (host, local, {}, 1, dragged);
+    return mouseEventAt (host, local.toFloat(), {}, 1, dragged);
 }
 
 /** The grab band, in the host's own coordinates. */
@@ -95,11 +95,12 @@ TEST_CASE ("the band's top edge is a grip, and says so before it is pressed", "[
     CHECK (band.isOnResizeEdge (onGrip (band)));
     CHECK_FALSE (band.isOnResizeEdge ({ band.getWidth() / 2, band.getHeight() / 2 }));
 
-    band.mouseMove (mouseEventAt (band, onGrip (band), {}, 1, false));
+    band.mouseMove (mouseEventAt (band, onGrip (band).toFloat(), {}, 1, false));
     CHECK (band.getMouseCursor() == juce::MouseCursor::UpDownResizeCursor);
 
-    band.mouseMove (
-        mouseEventAt (band, { band.getWidth() / 2, band.getHeight() / 2 }, {}, 1, false));
+    band.mouseMove (mouseEventAt (
+        band, juce::Point<int> { band.getWidth() / 2, band.getHeight() / 2 }.toFloat(), {}, 1,
+        false));
     CHECK (band.getMouseCursor() == juce::MouseCursor::NormalCursor);
 }
 
@@ -289,6 +290,7 @@ TEST_CASE ("the sidebar's chain has no grip", "[mixer][ui][resize]")
 
     CHECK_FALSE (column.isOnResizeEdge ({ column.getWidth() / 2, 0 }));
 
-    column.mouseMove (mouseEventAt (column, { column.getWidth() / 2, 0 }, {}, 1, false));
+    column.mouseMove (mouseEventAt (column, juce::Point<int> { column.getWidth() / 2, 0 }.toFloat(),
+                                    {}, 1, false));
     CHECK (column.getMouseCursor() == juce::MouseCursor::NormalCursor);
 }

@@ -37,20 +37,6 @@ using namespace dew::testing;
 namespace
 {
 
-juce::Component* findDescendantWithID (juce::Component& root, const juce::String& id)
-{
-    for (auto* child : root.getChildren())
-    {
-        if (child->getComponentID() == id)
-            return child;
-
-        if (auto* found = findDescendantWithID (*child, id))
-            return found;
-    }
-
-    return nullptr;
-}
-
 } // namespace
 
 TEST_CASE ("the effect chain survives the smallest window the app can open", "[ui][reflow]")

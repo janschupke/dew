@@ -409,6 +409,42 @@ TEST_CASE ("no knob restates what its ParamSpec declared", "[build][gate][params
     CHECK (found.isEmpty());
 }
 
+TEST_CASE ("no test writes a mouse event or a component walk by hand", "[build][gate][tests]")
+{
+    // The first gate over the SUITE rather than over src/, and the two helpers
+    // it guards were the argument for having one. Sixteen places built a
+    // juce::MouseEvent from its fifteen-argument constructor, in ten files and
+    // under four names - eventAt, eventOn, clickAt, and eight anonymous
+    // lambdas - while TestSupport.h held the same body under a doc comment
+    // claiming the job was done. Nine files then wrote findDescendantWithID,
+    // byte-identical but for one parameter name.
+    //
+    // Neither was findable: one is a constructor call with no distinctive name
+    // at all, and the other is four lines too short to look like duplication.
+    // A gate is the only thing that sees either.
+    //
+    // The exemptions are the two definitions, and a harness may still wrap one
+    // in its own name - RollHarness and PlaylistHarness take a Point<int>
+    // because that is what their call sites hold. What they may not do is fill
+    // the constructor again.
+    //
+    // And this file, which is the first gate over tests/ and therefore the
+    // first that can read itself. Quoted literals are copied through whole by
+    // the scanner - deliberately, so a marker a gate quotes cannot open a
+    // comment - so the two needles below are two matches in this file.
+    const auto found = offendersIn (
+        testFiles(), juce::File { DEW_TESTS_DIR },
+        [] (const juce::String& line)
+        {
+            return line.contains ("getMainMouseSource")
+                   || line.contains ("juce::Component* findDescendantWithID (");
+        },
+        { "TestSupport.h", "ControlWalkHarness.h", "SourceGateOwnershipTests.cpp" });
+
+    INFO ("a mouse event or a component walk written out again:\n" << found.joinIntoString ("\n"));
+    CHECK (found.isEmpty());
+}
+
 TEST_CASE ("no source binds a key outside the hotkey registry", "[build][gate][hotkeys]")
 {
     // There used to be two key tables that could not see each other: fifteen

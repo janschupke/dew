@@ -10,6 +10,7 @@
 
 #include <juce_gui_basics/juce_gui_basics.h>
 
+#include "TestSupport.h"
 #include "model/ModuleCatalog.h"
 #include "model/ProjectSchema.h"
 #include "model/ProjectSerializer.h"
@@ -207,13 +208,11 @@ void pressAndRelease (EffectCard& card, juce::Component& origin, juce::Point<int
 {
     const auto position = where.toFloat();
 
+    // The event component and the ORIGINAL component differ, which is the whole
+    // point of this helper: a header button is what was hit, and the card is
+    // what is asked to handle it.
     const auto event = [&]
-    {
-        return juce::MouseEvent (juce::Desktop::getInstance().getMainMouseSource(), position,
-                                 juce::ModifierKeys(), 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, &card, &origin,
-                                 juce::Time::getCurrentTime(), position,
-                                 juce::Time::getCurrentTime(), 1, false);
-    };
+    { return mouseEventOn (&card, &origin, position, position, {}, 1, false); };
 
     card.mouseDown (event());
     card.mouseUp (event());
@@ -519,23 +518,7 @@ TEST_CASE ("a frequency field drags by ratio, not by hertz", "[effects][ui]")
         const auto end = start.translated (0.0f, (float) -pixels);
 
         const auto make = [&field] (juce::Point<float> position, juce::Point<float> down)
-        {
-            return juce::MouseEvent { juce::Desktop::getInstance().getMainMouseSource(),
-                                      position,
-                                      juce::ModifierKeys(),
-                                      1.0f,
-                                      0.0f,
-                                      0.0f,
-                                      0.0f,
-                                      0.0f,
-                                      &field,
-                                      &field,
-                                      juce::Time::getCurrentTime(),
-                                      down,
-                                      juce::Time::getCurrentTime(),
-                                      1,
-                                      false };
-        };
+        { return mouseEventOn (&field, &field, position, down, {}, 1, false); };
 
         field.mouseDown (make (start, start));
         field.mouseDrag (make (end, start));

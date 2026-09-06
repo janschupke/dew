@@ -263,57 +263,13 @@ TEST_CASE ("the number field changes by dragging, and up means more", "[design][
     const auto drag = [&field] (int dy)
     {
         const juce::Point<float> start (60.0f, 13.0f);
-        const auto source = juce::Desktop::getInstance().getMainMouseSource();
-        const auto now = juce::Time::getCurrentTime();
 
-        field.mouseDown ({ source,
-                           start,
-                           {},
-                           1.0f,
-                           0.0f,
-                           0.0f,
-                           0.0f,
-                           0.0f,
-                           &field,
-                           &field,
-                           now,
-                           start,
-                           now,
-                           1,
-                           false });
+        field.mouseDown (mouseEventAt (field, start));
 
         const juce::Point<float> moved (60.0f, 13.0f + (float) dy);
-        field.mouseDrag ({ source,
-                           moved,
-                           {},
-                           1.0f,
-                           0.0f,
-                           0.0f,
-                           0.0f,
-                           0.0f,
-                           &field,
-                           &field,
-                           now,
-                           start,
-                           now,
-                           1,
-                           true });
 
-        field.mouseUp ({ source,
-                         moved,
-                         {},
-                         1.0f,
-                         0.0f,
-                         0.0f,
-                         0.0f,
-                         0.0f,
-                         &field,
-                         &field,
-                         now,
-                         start,
-                         now,
-                         1,
-                         true });
+        field.mouseDrag (mouseDragEvent (field, start, moved));
+        field.mouseUp (mouseDragEvent (field, start, moved));
     };
 
     // Dragging UP increases, which is the convention everywhere and the opposite
@@ -363,18 +319,10 @@ TEST_CASE ("a knob answers vertical travel, and only vertical travel", "[design]
 
         const juce::Point<float> start (22.0f, 18.0f);
         const juce::Point<float> moved (start.x + (float) dx, start.y + (float) dy);
-        const auto source = juce::Desktop::getInstance().getMainMouseSource();
-        const auto now = juce::Time::getCurrentTime();
 
-        const auto at = [&] (juce::Point<float> where, bool dragged)
-        {
-            return juce::MouseEvent { source,  where,   {},  1.0f,  0.0f, 0.0f, 0.0f,   0.0f,
-                                      &slider, &slider, now, start, now,  1,    dragged };
-        };
-
-        slider.mouseDown (at (start, false));
-        slider.mouseDrag (at (moved, true));
-        slider.mouseUp (at (moved, true));
+        slider.mouseDown (mouseEventAt (slider, start));
+        slider.mouseDrag (mouseDragEvent (slider, start, moved));
+        slider.mouseUp (mouseDragEvent (slider, start, moved));
 
         return knob.getValue();
     };

@@ -1,5 +1,6 @@
 #include <catch2/catch_test_macros.hpp>
 
+#include "ControlWalkHarness.h"
 #include "model/Ids.h"
 #include "model/AutomationTargets.h"
 #include "model/GeneratorCatalog.h"
@@ -12,6 +13,7 @@
 #include "ui/ParamContextMenu.h"
 
 using namespace dew;
+using dew::testing::findDescendantWithID;
 
 namespace
 {
@@ -39,20 +41,6 @@ struct MenuHarness
     ProjectDocument document;
     paramMenu::Host host;
 };
-
-juce::Component* findDescendantWithID (juce::Component& root, const juce::String& id)
-{
-    for (auto* child : root.getChildren())
-    {
-        if (child->getComponentID() == id)
-            return child;
-
-        if (auto* found = findDescendantWithID (*child, id))
-            return found;
-    }
-
-    return nullptr;
-}
 
 } // namespace
 

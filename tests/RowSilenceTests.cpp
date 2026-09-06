@@ -9,6 +9,7 @@
 
 #include <juce_gui_basics/juce_gui_basics.h>
 
+#include "ControlWalkHarness.h"
 #include "engine/AudioEngine.h"
 #include "app/ProjectDocument.h"
 #include "model/Ids.h"
@@ -19,6 +20,7 @@
 #include "FixtureProject.h"
 
 using namespace dew;
+using dew::testing::findDescendantWithID;
 
 namespace
 {
@@ -30,20 +32,6 @@ void collect (juce::Component& root, juce::Array<juce::Component*>& out)
         out.add (child);
         collect (*child, out);
     }
-}
-
-juce::Component* findDescendantWithID (juce::Component& root, const juce::String& id)
-{
-    for (auto* child : root.getChildren())
-    {
-        if (child->getComponentID() == id)
-            return child;
-
-        if (auto* found = findDescendantWithID (*child, id))
-            return found;
-    }
-
-    return nullptr;
 }
 
 } // namespace

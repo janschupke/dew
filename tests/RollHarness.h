@@ -69,7 +69,7 @@ inline juce::MouseEvent eventAt (juce::Component& target, juce::Point<int> local
                                  juce::ModifierKeys mods = juce::ModifierKeys(), int clickCount = 1,
                                  bool wasDragged = false)
 {
-    return mouseEventAt (target, local, mods, clickCount, wasDragged);
+    return mouseEventAt (target, local.toFloat(), mods, clickCount, wasDragged);
 }
 
 inline void clickAndRelease (juce::Component& c, juce::Point<int> at,

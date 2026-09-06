@@ -6,24 +6,31 @@
 namespace dew::testing
 {
 
-/** A synthetic mouse event on a component, in its own coordinates.
+/** A synthetic mouse event, in full.
 
-    Three harnesses - the playlist's, the piano roll's and the step grid's -
-    each spelled this out, in three argument orders that suit their own call
-    sites. The ORDERS are theirs and stay theirs; the body is not, and it holds
-    two traps worth having in one place: `wasDragged` is the LAST constructor
-    argument rather than something the event works out, because
+    juce::MouseEvent has a fifteen-argument constructor, and a headless test has
+    to fill every one of them. Sixteen places did, in ten files and under four
+    different names - eventAt, eventOn, clickAt, and eight anonymous ones - which
+    is why no grep found them and why this helper's own comment could claim the
+    job was finished while eight copies stood beside it.
+
+    Two traps are worth having in one place. `wasDragged` is the LAST
+    constructor argument rather than something the event works out, because
     mouseWasDraggedSinceMouseDown asks the mouse SOURCE and no synthetic event
-    ever pressed one - and `position` is passed as mouseDownPos too, which is
-    why getDistanceFromDragStart is always zero here.
+    ever pressed one. And `mouseDownPos` is separate from `position`: pass the
+    same point for both and getDistanceFromDragStart is always zero, which is
+    correct for a click and wrong for the drag it silently turns into a click.
 
-    Each of those three now calls this. Their signatures are unchanged, so no
-    test moved.
+    Pointers rather than references for the two components, because a MouseEvent
+    with neither is a real case - it is what a handler that reads only the
+    modifiers is given.
 */
-inline juce::MouseEvent mouseEventAt (juce::Component& target, juce::Point<int> local,
+inline juce::MouseEvent mouseEventOn (juce::Component* eventComponent,
+                                      juce::Component* originalComponent,
+                                      juce::Point<float> position, juce::Point<float> mouseDownPos,
                                       juce::ModifierKeys mods, int clickCount, bool wasDragged)
 {
-    const auto position = local.toFloat();
+    const auto now = juce::Time::getCurrentTime();
 
     return { juce::Desktop::getInstance().getMainMouseSource(),
              position,
@@ -33,13 +40,38 @@ inline juce::MouseEvent mouseEventAt (juce::Component& target, juce::Point<int> 
              0.0f,
              0.0f,
              0.0f,
-             &target,
-             &target,
-             juce::Time::getCurrentTime(),
-             position,
-             juce::Time::getCurrentTime(),
+             eventComponent,
+             originalComponent,
+             now,
+             mouseDownPos,
+             now,
              clickCount,
              wasDragged };
+}
+
+/** The common case: one component, reported where it was pressed.
+
+    Float, and only float, deliberately. An int overload beside it made every
+    braced call ambiguous, and `{ 20, 40 }` is how most of these read. With a
+    juce::Point<int> in hand, say .toFloat().
+*/
+inline juce::MouseEvent mouseEventAt (juce::Component& target, juce::Point<float> local,
+                                      juce::ModifierKeys mods = juce::ModifierKeys(),
+                                      int clickCount = 1, bool wasDragged = false)
+{
+    return mouseEventOn (&target, &target, local, local, mods, clickCount, wasDragged);
+}
+
+/** A drag in progress: reported at `to`, pressed at `from`.
+
+    Separate from mouseEventAt because the difference is the point - a control
+    that reads getDistanceFromDragStart sees nothing at all when the two agree.
+*/
+inline juce::MouseEvent mouseDragEvent (juce::Component& target, juce::Point<float> from,
+                                        juce::Point<float> to,
+                                        juce::ModifierKeys mods = juce::ModifierKeys())
+{
+    return mouseEventOn (&target, &target, to, from, mods, 1, true);
 }
 
 /** A directory that deletes itself.

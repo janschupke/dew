@@ -2,6 +2,8 @@
 
 #include <juce_gui_basics/juce_gui_basics.h>
 
+#include "ControlWalkHarness.h"
+#include "TestSupport.h"
 #include "engine/AudioEngine.h"
 #include "model/Ids.h"
 #include "app/ProjectDocument.h"
@@ -18,26 +20,10 @@
 #include "FixtureProject.h"
 
 using namespace dew;
+using namespace dew::testing;
 
 namespace
 {
-
-/** findChildWithID only looks at DIRECT children, and the channel rack's list
-    lives inside a Viewport - so anything in it is two levels down.
-*/
-juce::Component* findDescendantWithID (juce::Component& root, const juce::String& id)
-{
-    for (auto* child : root.getChildren())
-    {
-        if (child->getComponentID() == id)
-            return child;
-
-        if (auto* found = findDescendantWithID (*child, id))
-            return found;
-    }
-
-    return nullptr;
-}
 
 void collect (juce::Component& root, juce::Array<juce::Component*>& out)
 {
@@ -593,10 +579,7 @@ TEST_CASE ("right-clicking a channel row selects it", "[ui][rack]")
     const juce::ModifierKeys rightButton { juce::ModifierKeys::rightButtonModifier };
     const juce::Point<float> at { 20.0f, (float) (tokens::size::rowHeight / 2) };
 
-    secondRow->mouseDown ({ juce::Desktop::getInstance().getMainMouseSource(), at, rightButton,
-                            1.0f, 0.0f, 0.0f, 0.0f, 0.0f, secondRow, secondRow,
-                            juce::Time::getCurrentTime(), at, juce::Time::getCurrentTime(), 1,
-                            false });
+    secondRow->mouseDown (mouseEventAt (*secondRow, at, rightButton));
 
     REQUIRE (editorState.getSelectedChannelId() == 2);
 }

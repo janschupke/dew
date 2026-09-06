@@ -4,6 +4,7 @@
 
 #include <juce_gui_basics/juce_gui_basics.h>
 
+#include "ControlWalkHarness.h"
 #include "engine/AudioEngine.h"
 #include "model/Ids.h"
 #include "app/ProjectDocument.h"
@@ -68,7 +69,7 @@ inline juce::MouseEvent eventAt (juce::Component& target, juce::Point<int> local
                                  int clickCount = 1, juce::ModifierKeys mods = juce::ModifierKeys(),
                                  bool wasDragged = false)
 {
-    return mouseEventAt (target, local, mods, clickCount, wasDragged);
+    return mouseEventAt (target, local.toFloat(), mods, clickCount, wasDragged);
 }
 
 /** The centre of a bar on a track, asked of the component rather than
@@ -104,23 +105,5 @@ inline juce::Point<int> rulerPointFor (PlaylistHarness& h, int bar)
 }
 
 inline const juce::ModifierKeys shift { juce::ModifierKeys::shiftModifier };
-
-/** Component::findChildWithID is NOT recursive, and the track headers and the
-    add-track button live one level down inside the playlist's header holder -
-    the component that exists to CLIP them once a lane can be scrolled.
-*/
-inline juce::Component* findDescendantWithID (juce::Component& root, const juce::String& id)
-{
-    for (auto* child : root.getChildren())
-    {
-        if (child->getComponentID() == id)
-            return child;
-
-        if (auto* found = findDescendantWithID (*child, id))
-            return found;
-    }
-
-    return nullptr;
-}
 
 } // namespace dew::testing

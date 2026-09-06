@@ -19,22 +19,6 @@ using namespace dew::testing;
 namespace
 {
 
-/** findChildWithID is NOT recursive, and every row in this window is at least
-    two levels down - inside a viewport, inside a page. */
-juce::Component* findDescendantWithID (juce::Component& parent, const juce::String& id)
-{
-    for (auto* child : parent.getChildren())
-    {
-        if (child->getComponentID() == id)
-            return child;
-
-        if (auto* found = findDescendantWithID (*child, id))
-            return found;
-    }
-
-    return nullptr;
-}
-
 /** The devices a whole window needs, kept alive beside the panel that borrows
     them. Neither is started: a test must not take over the sound card, and the
     panels are honest about there being no device, which is the case worth

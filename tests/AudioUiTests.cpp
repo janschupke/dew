@@ -20,6 +20,7 @@
 using namespace dew::testing;
 
 using namespace dew;
+using namespace dew::testing;
 
 namespace
 {
@@ -189,10 +190,7 @@ TEST_CASE ("an audio row ignores clicks that would toggle a step", "[ui][audio]"
 
     const juce::Point<float> onAudioRow (60.0f, (float) ((rows - 1) * tokens::size::rowHeight + 4));
 
-    const juce::MouseEvent event (juce::Desktop::getInstance().getMainMouseSource(), onAudioRow,
-                                  juce::ModifierKeys::leftButtonModifier, 1.0f, 0.0f, 0.0f, 0.0f,
-                                  0.0f, &grid, &grid, juce::Time::getCurrentTime(), onAudioRow,
-                                  juce::Time::getCurrentTime(), 1, false);
+    const auto event = mouseEventAt (grid, onAudioRow, juce::ModifierKeys::leftButtonModifier);
 
     grid.mouseDown (event);
 

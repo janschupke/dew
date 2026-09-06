@@ -22,6 +22,32 @@ namespace dew::testing
     in it.
 */
 
+/** The one control a test is looking for, by component ID, anywhere below.
+
+    Component::findChildWithID is NOT recursive, and almost nothing a test wants
+    is a direct child: the track headers sit inside the playlist's header
+    holder, a preferences page inside its viewport, a rack button inside the
+    content holder. So ten files wrote this out, nine of them byte-identical and
+    one differing only in what it called its first parameter, and no grep found
+    them because the shape is too short to be distinctive.
+
+    Here rather than in a harness because it is not the playlist's, the mixer's
+    or the rack's - it is how any test reaches a control it knows the ID of.
+*/
+inline juce::Component* findDescendantWithID (juce::Component& root, const juce::String& id)
+{
+    for (auto* child : root.getChildren())
+    {
+        if (child->getComponentID() == id)
+            return child;
+
+        if (auto* found = findDescendantWithID (*child, id))
+            return found;
+    }
+
+    return nullptr;
+}
+
 /** Where a control lives, as the chain of component IDs above it - so a failure
     names the panel to go and look at rather than a count.
 */

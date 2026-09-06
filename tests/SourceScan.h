@@ -52,6 +52,23 @@ inline juce::Array<juce::File> allDewFiles()
     return files;
 }
 
+/** Every .cpp and .h under DEW_TESTS_DIR, and nothing else.
+
+    Separate from allDewFiles because a gate about the SUITE is a different
+    question from a gate about the application: two helpers written out nine and
+    sixteen times are a cost the tests pay, and no rule about src/ can see them.
+*/
+inline juce::Array<juce::File> testFiles()
+{
+    juce::Array<juce::File> files;
+
+    for (const auto& entry :
+         juce::RangedDirectoryIterator (juce::File { DEW_TESTS_DIR }, true, "*.cpp;*.h"))
+        files.add (entry.getFile());
+
+    return files;
+}
+
 /** One line of code, and where in the file it came from.
 
     The number is the ORIGINAL line's, so a gate can strip the prose and still
@@ -263,9 +280,14 @@ inline juce::Array<CodeLine> statementsWithNumbersOf (const juce::File& file)
     directory, which is how src/engine/modules stayed outside a gate about the
     engine layer for as long as that directory existed.
 */
+inline juce::String relativePathOf (const juce::File& file, const juce::File& root)
+{
+    return file.getRelativePathFrom (root).replaceCharacter ('\\', '/');
+}
+
 inline juce::String relativePathOf (const juce::File& file)
 {
-    return file.getRelativePathFrom (juce::File { DEW_SOURCE_DIR }).replaceCharacter ('\\', '/');
+    return relativePathOf (file, juce::File { DEW_SOURCE_DIR });
 }
 
 /** Every line of CODE for which `matches` is true, as "ui/File.cpp:123  the line".
@@ -308,18 +330,19 @@ inline juce::String relativePathOf (const juce::File& file)
 */
 using LineReader = juce::Array<CodeLine> (*) (const juce::File&);
 
-inline juce::StringArray offenders (const std::function<bool (const juce::String&)>& matches,
-                                    std::initializer_list<const char*> exempt = {},
-                                    LineReader read = codeLinesWithNumbersOf)
+inline juce::StringArray offendersIn (const juce::Array<juce::File>& files, const juce::File& root,
+                                      const std::function<bool (const juce::String&)>& matches,
+                                      std::initializer_list<const char*> exempt = {},
+                                      LineReader read = codeLinesWithNumbersOf)
 {
     juce::StringArray found;
     juce::Array<int> suppressed;
 
     suppressed.insertMultiple (0, 0, (int) exempt.size());
 
-    for (const auto& file : sourceFiles())
+    for (const auto& file : files)
     {
-        const auto path = relativePathOf (file);
+        const auto path = relativePathOf (file, root);
 
         // Every entry that covers this file, not just the first: two entries
         // that overlap would otherwise make one of them look idle.
@@ -360,6 +383,19 @@ inline juce::StringArray offenders (const std::function<bool (const juce::String
     }
 
     return found;
+}
+
+/** The same over src/, which is what every gate about the application asks.
+
+    A wrapper rather than the other way round: paths are relative to src/ here,
+    so an exemption reads "ui/design/Tokens.h" and a gate over the suite reads
+    "TestSupport.h" without either having to say which tree it means.
+*/
+inline juce::StringArray offenders (const std::function<bool (const juce::String&)>& matches,
+                                    std::initializer_list<const char*> exempt = {},
+                                    LineReader read = codeLinesWithNumbersOf)
+{
+    return offendersIn (sourceFiles(), juce::File { DEW_SOURCE_DIR }, matches, exempt, read);
 }
 
 } // namespace dew::testing

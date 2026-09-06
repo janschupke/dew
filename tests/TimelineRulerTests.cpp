@@ -3,6 +3,7 @@
 
 #include <juce_gui_basics/juce_gui_basics.h>
 
+#include "TestSupport.h"
 #include "engine/AudioEngine.h"
 #include "model/Ids.h"
 #include "app/ProjectDocument.h"
@@ -26,26 +27,7 @@ juce::MouseEvent eventAt (juce::Component& target, juce::Point<int> local,
                           juce::ModifierKeys mods = juce::ModifierKeys(), int clickCount = 1,
                           bool wasDragged = false)
 {
-    const auto position = local.toFloat();
-
-    // wasDragged is the LAST constructor argument, and the only way a synthetic
-    // event can report as a drag: mouseWasDraggedSinceMouseDown asks the mouse
-    // source, which nothing in a headless test ever pressed.
-    return { juce::Desktop::getInstance().getMainMouseSource(),
-             position,
-             mods,
-             1.0f,
-             0.0f,
-             0.0f,
-             0.0f,
-             0.0f,
-             &target,
-             &target,
-             juce::Time::getCurrentTime(),
-             position,
-             juce::Time::getCurrentTime(),
-             clickCount,
-             wasDragged };
+    return testing::mouseEventAt (target, local.toFloat(), mods, clickCount, wasDragged);
 }
 
 const juce::ModifierKeys shift { juce::ModifierKeys::shiftModifier };

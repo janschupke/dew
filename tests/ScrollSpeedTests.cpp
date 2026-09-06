@@ -2,6 +2,7 @@
 
 #include <juce_gui_basics/juce_gui_basics.h>
 
+#include "TestSupport.h"
 #include "engine/AudioEngine.h"
 #include "app/ProjectDocument.h"
 #include "model/ProjectEdits.h"
@@ -35,23 +36,7 @@ juce::MouseWheelDetails notch (float y)
 juce::MouseEvent eventOn (juce::Component& target, juce::Point<int> local,
                           juce::ModifierKeys mods = juce::ModifierKeys())
 {
-    const auto position = local.toFloat();
-
-    return { juce::Desktop::getInstance().getMainMouseSource(),
-             position,
-             mods,
-             1.0f,
-             0.0f,
-             0.0f,
-             0.0f,
-             0.0f,
-             &target,
-             &target,
-             juce::Time::getCurrentTime(),
-             position,
-             juce::Time::getCurrentTime(),
-             1,
-             false };
+    return testing::mouseEventAt (target, local.toFloat(), mods);
 }
 
 /** How far one notch moves, whatever the view measures in, converted back to

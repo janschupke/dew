@@ -89,7 +89,7 @@ inline juce::Point<int> pointFor (GridHarness& h, int step, int row)
 inline juce::MouseEvent eventAt (juce::Component& target, juce::Point<int> local,
                                  juce::ModifierKeys mods = juce::ModifierKeys())
 {
-    return mouseEventAt (target, local, mods, 1, false);
+    return mouseEventAt (target, local.toFloat(), mods, 1, false);
 }
 
 } // namespace dew::testing

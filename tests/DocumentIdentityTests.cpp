@@ -1,5 +1,7 @@
 #include <catch2/catch_test_macros.hpp>
 
+#include "ControlWalkHarness.h"
+#include "TestSupport.h"
 #include "model/Ids.h"
 #include "app/ProjectDocument.h"
 #include "model/ProjectEdits.h"
@@ -9,6 +11,8 @@
 #include "FixtureProject.h"
 
 using namespace dew;
+using dew::testing::findDescendantWithID;
+using dew::testing::mouseEventAt;
 
 namespace
 {
@@ -54,21 +58,6 @@ private:
     void valueTreeChildOrderChanged (juce::ValueTree&, int, int) override {}
     void valueTreeParentChanged (juce::ValueTree&) override {}
 };
-
-/** Component::findChildWithID only looks at direct children. */
-juce::Component* findDescendantWithID (juce::Component& parent, const juce::String& id)
-{
-    for (auto* child : parent.getChildren())
-    {
-        if (child->getComponentID() == id)
-            return child;
-
-        if (auto* found = findDescendantWithID (*child, id))
-            return found;
-    }
-
-    return nullptr;
-}
 
 } // namespace
 
@@ -221,31 +210,6 @@ TEST_CASE ("the transport bar still tracks the project after New and Open",
 namespace
 {
 
-/** Builds a MouseEvent the way the framework would, so a component's handler
-    can be driven directly in a headless test.
-*/
-juce::MouseEvent clickAt (juce::Component& target, juce::Point<int> local, int clickCount = 1,
-                          juce::ModifierKeys mods = juce::ModifierKeys())
-{
-    const auto position = local.toFloat();
-
-    return { juce::Desktop::getInstance().getMainMouseSource(),
-             position,
-             mods,
-             1.0f,
-             0.0f,
-             0.0f,
-             0.0f,
-             0.0f,
-             &target,
-             &target,
-             juce::Time::getCurrentTime(),
-             position,
-             juce::Time::getCurrentTime(),
-             clickCount,
-             false };
-}
-
 int countNotes (const juce::ValueTree& pattern)
 {
     int n = 0;
@@ -323,9 +287,9 @@ TEST_CASE ("clicking a step writes a note, and right-clicking clears it", "[ui][
     REQUIRE (countNotes (pattern) == 0);
 
     // Row 1 (the second channel), step 5.
-    const auto local = juce::Point<int> ((int) ((5 + 0.5f) * (float) grid->getWidth() / 16.0f), 39);
+    const auto local = juce::Point<float> ((5 + 0.5f) * (float) grid->getWidth() / 16.0f, 39.0f);
 
-    grid->mouseDown (clickAt (*grid, local));
+    grid->mouseDown (mouseEventAt (*grid, local));
     REQUIRE (countNotes (pattern) == 1);
 
     const auto note = ProjectEdits::findNoteAtStep (pattern, 2, 5);
@@ -334,11 +298,11 @@ TEST_CASE ("clicking a step writes a note, and right-clicking clears it", "[ui][
     // Clicking it again leaves it alone. It used to toggle, which made the
     // ordinary way of looking at a pattern - clicking around it - delete the
     // thing that was clicked.
-    grid->mouseDown (clickAt (*grid, local));
+    grid->mouseDown (mouseEventAt (*grid, local));
     REQUIRE (countNotes (pattern) == 1);
 
     // Taking a step back is a right-click, the way it is over the piano roll.
     grid->mouseDown (
-        clickAt (*grid, local, 1, juce::ModifierKeys (juce::ModifierKeys::rightButtonModifier)));
+        mouseEventAt (*grid, local, juce::ModifierKeys (juce::ModifierKeys::rightButtonModifier)));
     REQUIRE (countNotes (pattern) == 0);
 }

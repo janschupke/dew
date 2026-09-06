@@ -11,6 +11,7 @@
 
 #include <juce_gui_basics/juce_gui_basics.h>
 
+#include "TestSupport.h"
 #include "model/Ids.h"
 #include "ui/MainComponent.h"
 #include "ui/primitives/DewControls.h"
@@ -40,12 +41,7 @@ void rightClick (juce::Component& target)
     const auto moved = centre.translated (2.0f, 2.0f);
 
     const auto event = [&] (juce::Point<float> position, bool wasDragged)
-    {
-        return juce::MouseEvent (juce::Desktop::getInstance().getMainMouseSource(), position, mods,
-                                 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, &target, &target,
-                                 juce::Time::getCurrentTime(), position,
-                                 juce::Time::getCurrentTime(), 1, wasDragged);
-    };
+    { return mouseEventAt (target, position, mods, 1, wasDragged); };
 
     target.mouseDown (event (centre, false));
     target.mouseDrag (event (moved, true));
@@ -68,10 +64,7 @@ void rightClickWithoutDragging (juce::Component& target)
     const auto mods = juce::ModifierKeys (juce::ModifierKeys::rightButtonModifier);
     const auto centre = target.getLocalBounds().getCentre().toFloat();
 
-    const auto event = juce::MouseEvent (juce::Desktop::getInstance().getMainMouseSource(), centre,
-                                         mods, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, &target, &target,
-                                         juce::Time::getCurrentTime(), centre,
-                                         juce::Time::getCurrentTime(), 1, false);
+    const auto event = mouseEventAt (target, centre, mods);
 
     target.mouseDown (event);
     target.mouseUp (event);
@@ -90,13 +83,9 @@ TEST_CASE ("a popup press is refused for the whole press, not just the press",
     // every button well behaved whether or not it was.
     //
     // What CAN be stated here is the rule itself, and the reason it is a latch.
+    // Neither component, because what is being asked reads only the modifiers.
     const auto press = [] (juce::ModifierKeys mods)
-    {
-        return juce::MouseEvent (juce::Desktop::getInstance().getMainMouseSource(), {}, mods, 1.0f,
-                                 0.0f, 0.0f, 0.0f, 0.0f, nullptr, nullptr,
-                                 juce::Time::getCurrentTime(), {}, juce::Time::getCurrentTime(), 1,
-                                 false);
-    };
+    { return mouseEventOn (nullptr, nullptr, {}, {}, mods, 1, false); };
 
     const auto right = juce::ModifierKeys (juce::ModifierKeys::rightButtonModifier);
     const auto left = juce::ModifierKeys (juce::ModifierKeys::leftButtonModifier);
@@ -222,11 +211,8 @@ TEST_CASE ("a press forwarded from a child is not a press on its parent",
     {
         const auto position = juce::Point<float> (5.0f, 5.0f);
 
-        return juce::MouseEvent (juce::Desktop::getInstance().getMainMouseSource(), position,
-                                 juce::ModifierKeys (juce::ModifierKeys::rightButtonModifier), 1.0f,
-                                 0.0f, 0.0f, 0.0f, 0.0f, &target, &target,
-                                 juce::Time::getCurrentTime(), position,
-                                 juce::Time::getCurrentTime(), 1, false);
+        return mouseEventAt (target, position,
+                             juce::ModifierKeys (juce::ModifierKeys::rightButtonModifier));
     };
 
     CHECK (isOwnPress (pressOn (parent), parent));
@@ -350,10 +336,7 @@ TEST_CASE ("the guard refuses the click, not only the gesture", "[ui][gesture][r
     // the guard and not a probe that never fires.
     const auto left = juce::ModifierKeys (juce::ModifierKeys::leftButtonModifier);
     const auto centre = probe.getLocalBounds().getCentre().toFloat();
-    const auto press = juce::MouseEvent (juce::Desktop::getInstance().getMainMouseSource(), centre,
-                                         left, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, &probe, &probe,
-                                         juce::Time::getCurrentTime(), centre,
-                                         juce::Time::getCurrentTime(), 1, false);
+    const auto press = mouseEventAt (probe, centre, left);
 
     probe.mouseDown (press);
     probe.mouseUp (press);
