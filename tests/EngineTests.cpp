@@ -213,10 +213,11 @@ TEST_CASE ("a project saved and reloaded renders identically", "[engine][render]
 
 TEST_CASE ("the committed example project is loadable and audible", "[engine][render][demo]")
 {
-    // examples/demo.dew is committed and used by CI. If it drifts from what the
-    // factory produces, or stops rendering, this catches it here rather than
-    // in a CI step that is harder to read.
-    const auto file = juce::File (DEW_EXAMPLES_DIR).getChildFile ("demo.dew");
+    // The library's first demo is committed and used by CI. If it drifts from
+    // what the factory produces, or stops rendering, this catches it here
+    // rather than in a CI step that is harder to read.
+    const auto file = juce::File (DEW_EXAMPLES_DIR)
+                          .getChildFile (ProjectFactory::demos().front().fileName);
 
     INFO ("looking for " << file.getFullPathName());
     REQUIRE (file.existsAsFile());

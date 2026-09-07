@@ -86,8 +86,17 @@ escape hatch, and `--json` golden files were cut and stay cut.
   round-trip while its JSON stays byte-identical.
 - **`std::from_chars` for doubles is unavailable below macOS 26.** Hand-roll it —
   `src/lang/Numbers.*`.
-- **A grid test needs a score with `1/16` and `1/8t`** (lcm 12). `examples/amber.score`
-  needs grid 4, so it proves nothing about the grid.
+- **A grid test needs a score with `1/16` and `1/8t`** (lcm 12). `examples/rhodes.score`
+  is the one that has both, and is therefore the one the harnesses compile; the other
+  three land on grid 4 and prove nothing about it.
+- **A tempo counts BEATS, and in a compound or odd metre a beat is an eighth.** `meter 6/8`
+  at `tempo 208` is a dotted quarter of about 69, not anything anybody taps at 208. Writing
+  a compound piece at the tempo its dotted quarter suggests makes it three times too slow,
+  which is a thing to check with `dew_score --summary` rather than by listening.
+- **A score should not clip when compiled with default sounds.** All four shipped scores
+  did, at 1.19 to 1.39, because four voices at a written velocity of 60-plus into four
+  identical saws is a hot mix. Velocities are written for the DEFAULT instrument; the demo
+  that dresses the score stages its own levels afterwards.
 
 ## Why it is this way
 

@@ -18,7 +18,7 @@ namespace dew::testing
 
 inline std::string exampleSource()
 {
-    const juce::File file { juce::String (DEW_EXAMPLES_DIR) + "/amber.score" };
+    const juce::File file { juce::String (DEW_EXAMPLES_DIR) + "/rhodes.score" };
     REQUIRE (file.existsAsFile());
     return file.loadFileAsString().toStdString();
 }

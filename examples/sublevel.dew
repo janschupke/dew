@@ -1,0 +1,1833 @@
+{
+    "formatVersion": 20,
+    "name": "Sublevel",
+    "tempoBpm": 174.0,
+    "stepsPerBeat": 4,
+    "beatsPerBar": 4,
+    "beatUnit": 4,
+    "barsInSong": 64,
+    "channels": [
+      {
+        "id": 1,
+        "name": "Kick",
+        "colour": "ffe4572e",
+        "mixerTrackId": 1,
+        "basePitch": 60,
+        "volume": 0.9,
+        "pan": 0.0,
+        "muted": false,
+        "source": "synth",
+        "genId": "",
+        "instrument": {
+          "oscillators": [
+            {
+              "enabled": true,
+              "octave": -1,
+              "detuneCents": 0.0,
+              "gain": 1.0,
+              "mode": "classic",
+              "fmTo1": 0.0,
+              "fmTo2": 0.0,
+              "fmTo3": 0.0,
+              "fmOut": 1.0,
+              "classic": {
+                "wave": "sine"
+              }
+            },
+            {
+              "enabled": false,
+              "octave": 0,
+              "detuneCents": 0.0,
+              "gain": 0.8,
+              "mode": "classic",
+              "fmTo1": 0.0,
+              "fmTo2": 0.0,
+              "fmTo3": 0.0,
+              "fmOut": 1.0
+            },
+            {
+              "enabled": false,
+              "octave": 0,
+              "detuneCents": 0.0,
+              "gain": 0.8,
+              "mode": "classic",
+              "fmTo1": 0.0,
+              "fmTo2": 0.0,
+              "fmTo3": 0.0,
+              "fmOut": 1.0
+            }
+          ],
+          "amp": {
+            "attack": 0.001,
+            "decay": 0.12,
+            "sustain": 0.0,
+            "release": 0.045
+          }
+        },
+        "sample": {
+          "file": "",
+          "sourceSampleRate": 44100,
+          "lengthSamples": 0,
+          "startSample": 0,
+          "endSample": 0,
+          "fadeInMs": 0.0,
+          "fadeOutMs": 0.0,
+          "transpose": 0.0,
+          "reverse": false,
+          "loop": false
+        },
+        "soundfont": {
+          "file": "",
+          "bank": 0,
+          "program": 0,
+          "presetName": "",
+          "transpose": 0.0,
+          "tuneCents": 0.0,
+          "filterOffset": 0.0,
+          "attackScale": 1.0,
+          "releaseScale": 1.0,
+          "velocitySens": 1.0
+        },
+        "effects": []
+      },
+      {
+        "id": 2,
+        "name": "Snare",
+        "colour": "ff29a19c",
+        "mixerTrackId": 1,
+        "basePitch": 60,
+        "volume": 0.66,
+        "pan": -0.04,
+        "muted": false,
+        "source": "synth",
+        "genId": "",
+        "instrument": {
+          "oscillators": [
+            {
+              "enabled": true,
+              "octave": 0,
+              "detuneCents": 0.0,
+              "gain": 0.48,
+              "mode": "classic",
+              "fmTo1": 0.0,
+              "fmTo2": 0.0,
+              "fmTo3": 0.0,
+              "fmOut": 1.0,
+              "classic": {
+                "wave": "square"
+              }
+            },
+            {
+              "enabled": true,
+              "octave": 1,
+              "detuneCents": 41.0,
+              "gain": 0.44,
+              "mode": "classic",
+              "fmTo1": 0.0,
+              "fmTo2": 0.0,
+              "fmTo3": 0.0,
+              "fmOut": 1.0
+            },
+            {
+              "enabled": false,
+              "octave": 0,
+              "detuneCents": 0.0,
+              "gain": 0.8,
+              "mode": "classic",
+              "fmTo1": 0.0,
+              "fmTo2": 0.0,
+              "fmTo3": 0.0,
+              "fmOut": 1.0
+            }
+          ],
+          "amp": {
+            "attack": 0.001,
+            "decay": 0.09,
+            "sustain": 0.0,
+            "release": 0.07
+          }
+        },
+        "sample": {
+          "file": "",
+          "sourceSampleRate": 44100,
+          "lengthSamples": 0,
+          "startSample": 0,
+          "endSample": 0,
+          "fadeInMs": 0.0,
+          "fadeOutMs": 0.0,
+          "transpose": 0.0,
+          "reverse": false,
+          "loop": false
+        },
+        "soundfont": {
+          "file": "",
+          "bank": 0,
+          "program": 0,
+          "presetName": "",
+          "transpose": 0.0,
+          "tuneCents": 0.0,
+          "filterOffset": 0.0,
+          "attackScale": 1.0,
+          "releaseScale": 1.0,
+          "velocitySens": 1.0
+        },
+        "effects": []
+      },
+      {
+        "id": 3,
+        "name": "Hat",
+        "colour": "ff4fa3ff",
+        "mixerTrackId": 1,
+        "basePitch": 60,
+        "volume": 0.3,
+        "pan": 0.22,
+        "muted": false,
+        "source": "synth",
+        "genId": "",
+        "instrument": {
+          "oscillators": [
+            {
+              "enabled": true,
+              "octave": 2,
+              "detuneCents": 23.0,
+              "gain": 0.36,
+              "mode": "classic",
+              "fmTo1": 0.0,
+              "fmTo2": 0.0,
+              "fmTo3": 0.0,
+              "fmOut": 1.0,
+              "classic": {
+                "wave": "square"
+              }
+            },
+            {
+              "enabled": false,
+              "octave": 0,
+              "detuneCents": 0.0,
+              "gain": 0.8,
+              "mode": "classic",
+              "fmTo1": 0.0,
+              "fmTo2": 0.0,
+              "fmTo3": 0.0,
+              "fmOut": 1.0
+            },
+            {
+              "enabled": false,
+              "octave": 0,
+              "detuneCents": 0.0,
+              "gain": 0.8,
+              "mode": "classic",
+              "fmTo1": 0.0,
+              "fmTo2": 0.0,
+              "fmTo3": 0.0,
+              "fmOut": 1.0
+            }
+          ],
+          "amp": {
+            "attack": 0.001,
+            "decay": 0.026,
+            "sustain": 0.0,
+            "release": 0.024
+          }
+        },
+        "sample": {
+          "file": "",
+          "sourceSampleRate": 44100,
+          "lengthSamples": 0,
+          "startSample": 0,
+          "endSample": 0,
+          "fadeInMs": 0.0,
+          "fadeOutMs": 0.0,
+          "transpose": 0.0,
+          "reverse": false,
+          "loop": false
+        },
+        "soundfont": {
+          "file": "",
+          "bank": 0,
+          "program": 0,
+          "presetName": "",
+          "transpose": 0.0,
+          "tuneCents": 0.0,
+          "filterOffset": 0.0,
+          "attackScale": 1.0,
+          "releaseScale": 1.0,
+          "velocitySens": 1.0
+        },
+        "effects": []
+      },
+      {
+        "id": 4,
+        "name": "Ride",
+        "colour": "fff2c14e",
+        "mixerTrackId": 1,
+        "basePitch": 60,
+        "volume": 0.24,
+        "pan": -0.26,
+        "muted": false,
+        "source": "synth",
+        "genId": "",
+        "instrument": {
+          "oscillators": [
+            {
+              "enabled": true,
+              "octave": 2,
+              "detuneCents": -31.0,
+              "gain": 0.28,
+              "mode": "classic",
+              "fmTo1": 0.0,
+              "fmTo2": 0.0,
+              "fmTo3": 0.0,
+              "fmOut": 1.0,
+              "classic": {
+                "wave": "square"
+              }
+            },
+            {
+              "enabled": true,
+              "octave": 3,
+              "detuneCents": 17.0,
+              "gain": 0.22,
+              "mode": "classic",
+              "fmTo1": 0.0,
+              "fmTo2": 0.0,
+              "fmTo3": 0.0,
+              "fmOut": 1.0,
+              "classic": {
+                "wave": "triangle"
+              }
+            },
+            {
+              "enabled": false,
+              "octave": 0,
+              "detuneCents": 0.0,
+              "gain": 0.8,
+              "mode": "classic",
+              "fmTo1": 0.0,
+              "fmTo2": 0.0,
+              "fmTo3": 0.0,
+              "fmOut": 1.0
+            }
+          ],
+          "amp": {
+            "attack": 0.002,
+            "decay": 0.18,
+            "sustain": 0.0,
+            "release": 0.16
+          }
+        },
+        "sample": {
+          "file": "",
+          "sourceSampleRate": 44100,
+          "lengthSamples": 0,
+          "startSample": 0,
+          "endSample": 0,
+          "fadeInMs": 0.0,
+          "fadeOutMs": 0.0,
+          "transpose": 0.0,
+          "reverse": false,
+          "loop": false
+        },
+        "soundfont": {
+          "file": "",
+          "bank": 0,
+          "program": 0,
+          "presetName": "",
+          "transpose": 0.0,
+          "tuneCents": 0.0,
+          "filterOffset": 0.0,
+          "attackScale": 1.0,
+          "releaseScale": 1.0,
+          "velocitySens": 1.0
+        },
+        "effects": []
+      },
+      {
+        "id": 5,
+        "name": "Reese",
+        "colour": "ffb388eb",
+        "mixerTrackId": 2,
+        "basePitch": 60,
+        "volume": 0.72,
+        "pan": 0.0,
+        "muted": false,
+        "source": "synth",
+        "genId": "",
+        "instrument": {
+          "oscillators": [
+            {
+              "enabled": true,
+              "octave": 0,
+              "detuneCents": -14.0,
+              "gain": 0.72,
+              "mode": "classic",
+              "fmTo1": 0.22,
+              "fmTo2": 0.0,
+              "fmTo3": 0.0,
+              "fmOut": 1.0
+            },
+            {
+              "enabled": true,
+              "octave": 0,
+              "detuneCents": 15.0,
+              "gain": 0.72,
+              "mode": "classic",
+              "fmTo1": 0.0,
+              "fmTo2": 0.14,
+              "fmTo3": 0.0,
+              "fmOut": 1.0
+            },
+            {
+              "enabled": true,
+              "octave": -1,
+              "detuneCents": 0.0,
+              "gain": 0.4,
+              "mode": "classic",
+              "fmTo1": 0.0,
+              "fmTo2": 0.0,
+              "fmTo3": 0.0,
+              "fmOut": 1.0
+            }
+          ],
+          "amp": {
+            "attack": 0.004,
+            "decay": 0.4,
+            "sustain": 0.85,
+            "release": 0.12
+          }
+        },
+        "sample": {
+          "file": "",
+          "sourceSampleRate": 44100,
+          "lengthSamples": 0,
+          "startSample": 0,
+          "endSample": 0,
+          "fadeInMs": 0.0,
+          "fadeOutMs": 0.0,
+          "transpose": 0.0,
+          "reverse": false,
+          "loop": false
+        },
+        "soundfont": {
+          "file": "",
+          "bank": 0,
+          "program": 0,
+          "presetName": "",
+          "transpose": 0.0,
+          "tuneCents": 0.0,
+          "filterOffset": 0.0,
+          "attackScale": 1.0,
+          "releaseScale": 1.0,
+          "velocitySens": 1.0
+        },
+        "effects": [
+          {
+            "id": 3,
+            "type": "filter",
+            "enabled": true,
+            "mix": 1.0,
+            "filterMode": "bandpass",
+            "cutoff": 420.0,
+            "resonance": 2.2,
+            "roomSize": 0.5,
+            "damping": 0.5,
+            "width": 1.0,
+            "delayMs": 250.0,
+            "feedback": 0.35,
+            "drive": 2.0,
+            "outputGain": 1.0,
+            "distortionMode": "softClip",
+            "tone": 0.5,
+            "rate": 1.2,
+            "depth": 0.3,
+            "centreFreq": 600.0,
+            "lowGainDb": 0.0,
+            "midGainDb": 0.0,
+            "midFreq": 900.0,
+            "highGainDb": 0.0,
+            "threshold": -18.0,
+            "ratio": 4.0,
+            "attackMs": 10.0,
+            "releaseMs": 100.0,
+            "makeup": 0.0,
+            "ceiling": -0.3
+          },
+          {
+            "id": 4,
+            "type": "distortion",
+            "enabled": true,
+            "mix": 0.42,
+            "filterMode": "lowpass",
+            "cutoff": 1200.0,
+            "resonance": 0.4,
+            "roomSize": 0.5,
+            "damping": 0.5,
+            "width": 1.0,
+            "delayMs": 250.0,
+            "feedback": 0.35,
+            "drive": 5.0,
+            "outputGain": 0.55,
+            "distortionMode": "crush",
+            "tone": 0.45,
+            "rate": 1.2,
+            "depth": 0.3,
+            "centreFreq": 600.0,
+            "lowGainDb": 0.0,
+            "midGainDb": 0.0,
+            "midFreq": 900.0,
+            "highGainDb": 0.0,
+            "threshold": -18.0,
+            "ratio": 4.0,
+            "attackMs": 10.0,
+            "releaseMs": 100.0,
+            "makeup": 0.0,
+            "ceiling": -0.3
+          }
+        ]
+      },
+      {
+        "id": 6,
+        "name": "Sub",
+        "colour": "ff3ecf8e",
+        "mixerTrackId": 3,
+        "basePitch": 60,
+        "volume": 0.84,
+        "pan": 0.0,
+        "muted": false,
+        "source": "synth",
+        "genId": "",
+        "instrument": {
+          "oscillators": [
+            {
+              "enabled": true,
+              "octave": -1,
+              "detuneCents": 0.0,
+              "gain": 0.95,
+              "mode": "classic",
+              "fmTo1": 0.0,
+              "fmTo2": 0.0,
+              "fmTo3": 0.0,
+              "fmOut": 1.0,
+              "classic": {
+                "wave": "sine"
+              }
+            },
+            {
+              "enabled": false,
+              "octave": 0,
+              "detuneCents": 0.0,
+              "gain": 0.8,
+              "mode": "classic",
+              "fmTo1": 0.0,
+              "fmTo2": 0.0,
+              "fmTo3": 0.0,
+              "fmOut": 1.0
+            },
+            {
+              "enabled": false,
+              "octave": 0,
+              "detuneCents": 0.0,
+              "gain": 0.8,
+              "mode": "classic",
+              "fmTo1": 0.0,
+              "fmTo2": 0.0,
+              "fmTo3": 0.0,
+              "fmOut": 1.0
+            }
+          ],
+          "amp": {
+            "attack": 0.006,
+            "decay": 0.3,
+            "sustain": 0.9,
+            "release": 0.08
+          }
+        },
+        "sample": {
+          "file": "",
+          "sourceSampleRate": 44100,
+          "lengthSamples": 0,
+          "startSample": 0,
+          "endSample": 0,
+          "fadeInMs": 0.0,
+          "fadeOutMs": 0.0,
+          "transpose": 0.0,
+          "reverse": false,
+          "loop": false
+        },
+        "soundfont": {
+          "file": "",
+          "bank": 0,
+          "program": 0,
+          "presetName": "",
+          "transpose": 0.0,
+          "tuneCents": 0.0,
+          "filterOffset": 0.0,
+          "attackScale": 1.0,
+          "releaseScale": 1.0,
+          "velocitySens": 1.0
+        },
+        "effects": []
+      },
+      {
+        "id": 7,
+        "name": "Lead",
+        "colour": "ffff7eb6",
+        "mixerTrackId": 4,
+        "basePitch": 60,
+        "volume": 0.44,
+        "pan": 0.14,
+        "muted": false,
+        "source": "synth",
+        "genId": "",
+        "instrument": {
+          "oscillators": [
+            {
+              "enabled": true,
+              "octave": 1,
+              "detuneCents": 0.0,
+              "gain": 0.6,
+              "mode": "wavetable",
+              "fmTo1": 0.0,
+              "fmTo2": 0.0,
+              "fmTo3": 0.0,
+              "fmOut": 1.0,
+              "wavetable": {
+                "wavetable": "fold",
+                "wavePosition": 0.42,
+                "wavePositionMod": 0.6,
+                "wavePositionSource": "envelope",
+                "wavePositionRate": 0.5,
+                "unisonVoices": 5,
+                "unisonDetune": 14.0
+              }
+            },
+            {
+              "enabled": false,
+              "octave": 0,
+              "detuneCents": 0.0,
+              "gain": 0.8,
+              "mode": "classic",
+              "fmTo1": 0.0,
+              "fmTo2": 0.0,
+              "fmTo3": 0.0,
+              "fmOut": 1.0
+            },
+            {
+              "enabled": false,
+              "octave": 0,
+              "detuneCents": 0.0,
+              "gain": 0.8,
+              "mode": "classic",
+              "fmTo1": 0.0,
+              "fmTo2": 0.0,
+              "fmTo3": 0.0,
+              "fmOut": 1.0
+            }
+          ],
+          "amp": {
+            "attack": 0.003,
+            "decay": 0.22,
+            "sustain": 0.3,
+            "release": 0.18
+          }
+        },
+        "sample": {
+          "file": "",
+          "sourceSampleRate": 44100,
+          "lengthSamples": 0,
+          "startSample": 0,
+          "endSample": 0,
+          "fadeInMs": 0.0,
+          "fadeOutMs": 0.0,
+          "transpose": 0.0,
+          "reverse": false,
+          "loop": false
+        },
+        "soundfont": {
+          "file": "",
+          "bank": 0,
+          "program": 0,
+          "presetName": "",
+          "transpose": 0.0,
+          "tuneCents": 0.0,
+          "filterOffset": 0.0,
+          "attackScale": 1.0,
+          "releaseScale": 1.0,
+          "velocitySens": 1.0
+        },
+        "effects": []
+      },
+      {
+        "id": 8,
+        "name": "Pad",
+        "colour": "ff76c7c0",
+        "mixerTrackId": 5,
+        "basePitch": 60,
+        "volume": 0.28,
+        "pan": -0.16,
+        "muted": false,
+        "source": "synth",
+        "genId": "",
+        "instrument": {
+          "oscillators": [
+            {
+              "enabled": true,
+              "octave": 0,
+              "detuneCents": 0.0,
+              "gain": 0.48,
+              "mode": "wavetable",
+              "fmTo1": 0.0,
+              "fmTo2": 0.0,
+              "fmTo3": 0.0,
+              "fmOut": 1.0,
+              "wavetable": {
+                "wavetable": "harmonics",
+                "wavePosition": 0.24,
+                "wavePositionMod": 0.4,
+                "wavePositionSource": "lfo",
+                "wavePositionRate": 0.13,
+                "unisonVoices": 5,
+                "unisonDetune": 12.0
+              }
+            },
+            {
+              "enabled": false,
+              "octave": 0,
+              "detuneCents": 0.0,
+              "gain": 0.8,
+              "mode": "classic",
+              "fmTo1": 0.0,
+              "fmTo2": 0.0,
+              "fmTo3": 0.0,
+              "fmOut": 1.0
+            },
+            {
+              "enabled": false,
+              "octave": 0,
+              "detuneCents": 0.0,
+              "gain": 0.8,
+              "mode": "classic",
+              "fmTo1": 0.0,
+              "fmTo2": 0.0,
+              "fmTo3": 0.0,
+              "fmOut": 1.0
+            }
+          ],
+          "amp": {
+            "attack": 0.5,
+            "decay": 1.4,
+            "sustain": 0.6,
+            "release": 1.2
+          }
+        },
+        "sample": {
+          "file": "",
+          "sourceSampleRate": 44100,
+          "lengthSamples": 0,
+          "startSample": 0,
+          "endSample": 0,
+          "fadeInMs": 0.0,
+          "fadeOutMs": 0.0,
+          "transpose": 0.0,
+          "reverse": false,
+          "loop": false
+        },
+        "soundfont": {
+          "file": "",
+          "bank": 0,
+          "program": 0,
+          "presetName": "",
+          "transpose": 0.0,
+          "tuneCents": 0.0,
+          "filterOffset": 0.0,
+          "attackScale": 1.0,
+          "releaseScale": 1.0,
+          "velocitySens": 1.0
+        },
+        "effects": []
+      }
+    ],
+    "patterns": [
+      {
+        "id": 1,
+        "name": "Intro",
+        "lengthSteps": 16,
+        "genId": "",
+        "genHash": "",
+        "notes": [
+          {
+            "ch": 3,
+            "step": 2,
+            "lengthSteps": 1,
+            "pitch": 92,
+            "velocity": 0.3
+          },
+          {
+            "ch": 3,
+            "step": 6,
+            "lengthSteps": 1,
+            "pitch": 92,
+            "velocity": 0.3
+          },
+          {
+            "ch": 3,
+            "step": 10,
+            "lengthSteps": 1,
+            "pitch": 92,
+            "velocity": 0.3
+          },
+          {
+            "ch": 3,
+            "step": 14,
+            "lengthSteps": 1,
+            "pitch": 92,
+            "velocity": 0.3
+          },
+          {
+            "ch": 4,
+            "step": 0,
+            "lengthSteps": 6,
+            "pitch": 88,
+            "velocity": 0.24
+          },
+          {
+            "ch": 4,
+            "step": 8,
+            "lengthSteps": 6,
+            "pitch": 88,
+            "velocity": 0.24
+          }
+        ]
+      },
+      {
+        "id": 2,
+        "name": "Break",
+        "lengthSteps": 16,
+        "genId": "",
+        "genHash": "",
+        "notes": [
+          {
+            "ch": 1,
+            "step": 0,
+            "lengthSteps": 5,
+            "pitch": 26,
+            "velocity": 0.95
+          },
+          {
+            "ch": 1,
+            "step": 10,
+            "lengthSteps": 5,
+            "pitch": 26,
+            "velocity": 0.95
+          },
+          {
+            "ch": 2,
+            "step": 4,
+            "lengthSteps": 3,
+            "pitch": 64,
+            "velocity": 0.85
+          },
+          {
+            "ch": 2,
+            "step": 11,
+            "lengthSteps": 3,
+            "pitch": 64,
+            "velocity": 0.4675
+          },
+          {
+            "ch": 2,
+            "step": 13,
+            "lengthSteps": 3,
+            "pitch": 64,
+            "velocity": 0.85
+          },
+          {
+            "ch": 3,
+            "step": 0,
+            "lengthSteps": 1,
+            "pitch": 92,
+            "velocity": 0.32
+          },
+          {
+            "ch": 3,
+            "step": 2,
+            "lengthSteps": 1,
+            "pitch": 92,
+            "velocity": 0.32
+          },
+          {
+            "ch": 3,
+            "step": 4,
+            "lengthSteps": 1,
+            "pitch": 92,
+            "velocity": 0.32
+          },
+          {
+            "ch": 3,
+            "step": 6,
+            "lengthSteps": 1,
+            "pitch": 92,
+            "velocity": 0.32
+          },
+          {
+            "ch": 3,
+            "step": 8,
+            "lengthSteps": 1,
+            "pitch": 92,
+            "velocity": 0.32
+          },
+          {
+            "ch": 3,
+            "step": 10,
+            "lengthSteps": 1,
+            "pitch": 92,
+            "velocity": 0.32
+          },
+          {
+            "ch": 3,
+            "step": 12,
+            "lengthSteps": 1,
+            "pitch": 92,
+            "velocity": 0.32
+          },
+          {
+            "ch": 3,
+            "step": 14,
+            "lengthSteps": 1,
+            "pitch": 92,
+            "velocity": 0.32
+          },
+          {
+            "ch": 4,
+            "step": 2,
+            "lengthSteps": 5,
+            "pitch": 88,
+            "velocity": 0.26
+          },
+          {
+            "ch": 4,
+            "step": 8,
+            "lengthSteps": 5,
+            "pitch": 88,
+            "velocity": 0.26
+          },
+          {
+            "ch": 4,
+            "step": 14,
+            "lengthSteps": 5,
+            "pitch": 88,
+            "velocity": 0.26
+          }
+        ]
+      },
+      {
+        "id": 3,
+        "name": "Break B",
+        "lengthSteps": 16,
+        "genId": "",
+        "genHash": "",
+        "notes": [
+          {
+            "ch": 1,
+            "step": 0,
+            "lengthSteps": 5,
+            "pitch": 26,
+            "velocity": 0.95
+          },
+          {
+            "ch": 1,
+            "step": 5,
+            "lengthSteps": 5,
+            "pitch": 26,
+            "velocity": 0.95
+          },
+          {
+            "ch": 1,
+            "step": 10,
+            "lengthSteps": 5,
+            "pitch": 26,
+            "velocity": 0.95
+          },
+          {
+            "ch": 2,
+            "step": 4,
+            "lengthSteps": 3,
+            "pitch": 64,
+            "velocity": 0.85
+          },
+          {
+            "ch": 2,
+            "step": 7,
+            "lengthSteps": 3,
+            "pitch": 64,
+            "velocity": 0.4675
+          },
+          {
+            "ch": 2,
+            "step": 11,
+            "lengthSteps": 3,
+            "pitch": 64,
+            "velocity": 0.85
+          },
+          {
+            "ch": 2,
+            "step": 13,
+            "lengthSteps": 3,
+            "pitch": 64,
+            "velocity": 0.85
+          },
+          {
+            "ch": 3,
+            "step": 0,
+            "lengthSteps": 1,
+            "pitch": 92,
+            "velocity": 0.34
+          },
+          {
+            "ch": 3,
+            "step": 2,
+            "lengthSteps": 1,
+            "pitch": 92,
+            "velocity": 0.34
+          },
+          {
+            "ch": 3,
+            "step": 3,
+            "lengthSteps": 1,
+            "pitch": 92,
+            "velocity": 0.187
+          },
+          {
+            "ch": 3,
+            "step": 4,
+            "lengthSteps": 1,
+            "pitch": 92,
+            "velocity": 0.34
+          },
+          {
+            "ch": 3,
+            "step": 6,
+            "lengthSteps": 1,
+            "pitch": 92,
+            "velocity": 0.34
+          },
+          {
+            "ch": 3,
+            "step": 8,
+            "lengthSteps": 1,
+            "pitch": 92,
+            "velocity": 0.34
+          },
+          {
+            "ch": 3,
+            "step": 9,
+            "lengthSteps": 1,
+            "pitch": 92,
+            "velocity": 0.187
+          },
+          {
+            "ch": 3,
+            "step": 10,
+            "lengthSteps": 1,
+            "pitch": 92,
+            "velocity": 0.34
+          },
+          {
+            "ch": 3,
+            "step": 12,
+            "lengthSteps": 1,
+            "pitch": 92,
+            "velocity": 0.34
+          },
+          {
+            "ch": 3,
+            "step": 14,
+            "lengthSteps": 1,
+            "pitch": 92,
+            "velocity": 0.34
+          },
+          {
+            "ch": 4,
+            "step": 6,
+            "lengthSteps": 5,
+            "pitch": 88,
+            "velocity": 0.28
+          },
+          {
+            "ch": 4,
+            "step": 14,
+            "lengthSteps": 5,
+            "pitch": 88,
+            "velocity": 0.28
+          }
+        ]
+      },
+      {
+        "id": 4,
+        "name": "Reese",
+        "lengthSteps": 64,
+        "genId": "",
+        "genHash": "",
+        "notes": [
+          {
+            "ch": 5,
+            "step": 0,
+            "lengthSteps": 24,
+            "pitch": 26,
+            "velocity": 0.9
+          },
+          {
+            "ch": 5,
+            "step": 26,
+            "lengthSteps": 6,
+            "pitch": 38,
+            "velocity": 0.7
+          },
+          {
+            "ch": 5,
+            "step": 32,
+            "lengthSteps": 24,
+            "pitch": 22,
+            "velocity": 0.88
+          },
+          {
+            "ch": 5,
+            "step": 58,
+            "lengthSteps": 6,
+            "pitch": 34,
+            "velocity": 0.66
+          },
+          {
+            "ch": 6,
+            "step": 0,
+            "lengthSteps": 30,
+            "pitch": 14,
+            "velocity": 0.85
+          },
+          {
+            "ch": 6,
+            "step": 32,
+            "lengthSteps": 30,
+            "pitch": 10,
+            "velocity": 0.85
+          }
+        ]
+      },
+      {
+        "id": 5,
+        "name": "Lead",
+        "lengthSteps": 64,
+        "genId": "",
+        "genHash": "",
+        "notes": [
+          {
+            "ch": 7,
+            "step": 4,
+            "lengthSteps": 4,
+            "pitch": 74,
+            "velocity": 0.72
+          },
+          {
+            "ch": 7,
+            "step": 10,
+            "lengthSteps": 2,
+            "pitch": 77,
+            "velocity": 0.6
+          },
+          {
+            "ch": 7,
+            "step": 14,
+            "lengthSteps": 6,
+            "pitch": 72,
+            "velocity": 0.68
+          },
+          {
+            "ch": 7,
+            "step": 24,
+            "lengthSteps": 8,
+            "pitch": 69,
+            "velocity": 0.7
+          },
+          {
+            "ch": 7,
+            "step": 36,
+            "lengthSteps": 4,
+            "pitch": 77,
+            "velocity": 0.74
+          },
+          {
+            "ch": 7,
+            "step": 42,
+            "lengthSteps": 2,
+            "pitch": 79,
+            "velocity": 0.62
+          },
+          {
+            "ch": 7,
+            "step": 46,
+            "lengthSteps": 10,
+            "pitch": 74,
+            "velocity": 0.7
+          },
+          {
+            "ch": 7,
+            "step": 58,
+            "lengthSteps": 6,
+            "pitch": 69,
+            "velocity": 0.6
+          }
+        ]
+      },
+      {
+        "id": 6,
+        "name": "Pad",
+        "lengthSteps": 64,
+        "genId": "",
+        "genHash": "",
+        "notes": [
+          {
+            "ch": 8,
+            "step": 0,
+            "lengthSteps": 30,
+            "pitch": 62,
+            "velocity": 0.5
+          },
+          {
+            "ch": 8,
+            "step": 0,
+            "lengthSteps": 30,
+            "pitch": 65,
+            "velocity": 0.5
+          },
+          {
+            "ch": 8,
+            "step": 0,
+            "lengthSteps": 30,
+            "pitch": 69,
+            "velocity": 0.5
+          },
+          {
+            "ch": 8,
+            "step": 32,
+            "lengthSteps": 30,
+            "pitch": 58,
+            "velocity": 0.48
+          },
+          {
+            "ch": 8,
+            "step": 32,
+            "lengthSteps": 30,
+            "pitch": 62,
+            "velocity": 0.48
+          },
+          {
+            "ch": 8,
+            "step": 32,
+            "lengthSteps": 30,
+            "pitch": 65,
+            "velocity": 0.48
+          }
+        ]
+      }
+    ],
+    "automations": [
+      {
+        "id": 1,
+        "scope": "channelEffect",
+        "targetId": 5,
+        "slot": 0,
+        "param": "cutoff",
+        "points": [
+          {
+            "step": 0.0,
+            "value": 0.371314,
+            "curve": 0.0,
+            "shape": "curve"
+          },
+          {
+            "step": 16.0,
+            "value": 0.62502,
+            "curve": -0.4,
+            "shape": "curve"
+          },
+          {
+            "step": 32.0,
+            "value": 0.44074,
+            "curve": 0.35,
+            "shape": "curve"
+          },
+          {
+            "step": 48.0,
+            "value": 0.69306,
+            "curve": -0.5,
+            "shape": "curve"
+          },
+          {
+            "step": 64.0,
+            "value": 0.39203,
+            "curve": 0.3,
+            "shape": "curve"
+          }
+        ]
+      },
+      {
+        "id": 2,
+        "scope": "mixerTrack",
+        "targetId": 1,
+        "slot": -1,
+        "param": "gain",
+        "points": [
+          {
+            "step": 0.0,
+            "value": 0.533333,
+            "curve": 0.0,
+            "shape": "curve"
+          },
+          {
+            "step": 64.0,
+            "value": 0.066667,
+            "curve": 0.0,
+            "shape": "step"
+          },
+          {
+            "step": 128.0,
+            "value": 0.533333,
+            "curve": -0.4,
+            "shape": "curve"
+          }
+        ]
+      }
+    ],
+    "playlist": {
+      "tracks": [
+        {
+          "name": "Break",
+          "mute": false,
+          "gain": 1.0,
+          "colour": "",
+          "genId": "",
+          "clips": [
+            {
+              "kind": "pattern",
+              "patternId": 1,
+              "automationId": 1,
+              "channelId": 1,
+              "startStep": 0,
+              "lengthSteps": 128,
+              "genId": ""
+            },
+            {
+              "kind": "pattern",
+              "patternId": 2,
+              "automationId": 1,
+              "channelId": 1,
+              "startStep": 128,
+              "lengthSteps": 256,
+              "genId": ""
+            },
+            {
+              "kind": "pattern",
+              "patternId": 3,
+              "automationId": 1,
+              "channelId": 1,
+              "startStep": 384,
+              "lengthSteps": 128,
+              "genId": ""
+            },
+            {
+              "kind": "pattern",
+              "patternId": 2,
+              "automationId": 1,
+              "channelId": 1,
+              "startStep": 512,
+              "lengthSteps": 128,
+              "genId": ""
+            },
+            {
+              "kind": "pattern",
+              "patternId": 3,
+              "automationId": 1,
+              "channelId": 1,
+              "startStep": 640,
+              "lengthSteps": 256,
+              "genId": ""
+            },
+            {
+              "kind": "pattern",
+              "patternId": 2,
+              "automationId": 1,
+              "channelId": 1,
+              "startStep": 896,
+              "lengthSteps": 128,
+              "genId": ""
+            }
+          ]
+        },
+        {
+          "name": "Bass",
+          "mute": false,
+          "gain": 1.0,
+          "colour": "",
+          "genId": "",
+          "clips": [
+            {
+              "kind": "pattern",
+              "patternId": 4,
+              "automationId": 1,
+              "channelId": 1,
+              "startStep": 128,
+              "lengthSteps": 384,
+              "genId": ""
+            },
+            {
+              "kind": "pattern",
+              "patternId": 4,
+              "automationId": 1,
+              "channelId": 1,
+              "startStep": 640,
+              "lengthSteps": 320,
+              "genId": ""
+            }
+          ]
+        },
+        {
+          "name": "Lead",
+          "mute": false,
+          "gain": 1.0,
+          "colour": "",
+          "genId": "",
+          "clips": [
+            {
+              "kind": "pattern",
+              "patternId": 5,
+              "automationId": 1,
+              "channelId": 1,
+              "startStep": 256,
+              "lengthSteps": 128,
+              "genId": ""
+            },
+            {
+              "kind": "pattern",
+              "patternId": 5,
+              "automationId": 1,
+              "channelId": 1,
+              "startStep": 704,
+              "lengthSteps": 192,
+              "genId": ""
+            }
+          ]
+        },
+        {
+          "name": "Pad",
+          "mute": false,
+          "gain": 1.0,
+          "colour": "",
+          "genId": "",
+          "clips": [
+            {
+              "kind": "pattern",
+              "patternId": 6,
+              "automationId": 1,
+              "channelId": 1,
+              "startStep": 0,
+              "lengthSteps": 128,
+              "genId": ""
+            },
+            {
+              "kind": "pattern",
+              "patternId": 6,
+              "automationId": 1,
+              "channelId": 1,
+              "startStep": 512,
+              "lengthSteps": 128,
+              "genId": ""
+            },
+            {
+              "kind": "pattern",
+              "patternId": 6,
+              "automationId": 1,
+              "channelId": 1,
+              "startStep": 896,
+              "lengthSteps": 128,
+              "genId": ""
+            }
+          ]
+        },
+        {
+          "name": "Sweep",
+          "mute": false,
+          "gain": 1.0,
+          "colour": "",
+          "genId": "",
+          "clips": [
+            {
+              "kind": "automation",
+              "patternId": 1,
+              "automationId": 1,
+              "channelId": 1,
+              "startStep": 128,
+              "lengthSteps": 64,
+              "genId": ""
+            },
+            {
+              "kind": "automation",
+              "patternId": 1,
+              "automationId": 1,
+              "channelId": 1,
+              "startStep": 256,
+              "lengthSteps": 64,
+              "genId": ""
+            },
+            {
+              "kind": "automation",
+              "patternId": 1,
+              "automationId": 1,
+              "channelId": 1,
+              "startStep": 640,
+              "lengthSteps": 64,
+              "genId": ""
+            },
+            {
+              "kind": "automation",
+              "patternId": 1,
+              "automationId": 1,
+              "channelId": 1,
+              "startStep": 768,
+              "lengthSteps": 64,
+              "genId": ""
+            }
+          ]
+        },
+        {
+          "name": "Drop",
+          "mute": false,
+          "gain": 1.0,
+          "colour": "",
+          "genId": "",
+          "clips": [
+            {
+              "kind": "automation",
+              "patternId": 1,
+              "automationId": 2,
+              "channelId": 1,
+              "startStep": 384,
+              "lengthSteps": 128,
+              "genId": ""
+            }
+          ]
+        }
+      ]
+    },
+    "mixer": {
+      "master": {
+        "gain": 1.0,
+        "effects": [
+          {
+            "id": 8,
+            "type": "eq",
+            "enabled": true,
+            "mix": 1.0,
+            "filterMode": "lowpass",
+            "cutoff": 1200.0,
+            "resonance": 0.4,
+            "roomSize": 0.5,
+            "damping": 0.5,
+            "width": 1.0,
+            "delayMs": 250.0,
+            "feedback": 0.35,
+            "drive": 2.0,
+            "outputGain": 1.0,
+            "distortionMode": "softClip",
+            "tone": 0.5,
+            "rate": 1.2,
+            "depth": 0.3,
+            "centreFreq": 600.0,
+            "lowGainDb": 1.0,
+            "midGainDb": -2.0,
+            "midFreq": 400.0,
+            "highGainDb": 2.0,
+            "threshold": -18.0,
+            "ratio": 4.0,
+            "attackMs": 10.0,
+            "releaseMs": 100.0,
+            "makeup": 0.0,
+            "ceiling": -0.3
+          },
+          {
+            "id": 9,
+            "type": "limiter",
+            "enabled": true,
+            "mix": 1.0,
+            "filterMode": "lowpass",
+            "cutoff": 1200.0,
+            "resonance": 0.4,
+            "roomSize": 0.5,
+            "damping": 0.5,
+            "width": 1.0,
+            "delayMs": 250.0,
+            "feedback": 0.35,
+            "drive": 2.0,
+            "outputGain": 1.0,
+            "distortionMode": "softClip",
+            "tone": 0.5,
+            "rate": 1.2,
+            "depth": 0.3,
+            "centreFreq": 600.0,
+            "lowGainDb": 0.0,
+            "midGainDb": 0.0,
+            "midFreq": 900.0,
+            "highGainDb": 0.0,
+            "threshold": -18.0,
+            "ratio": 4.0,
+            "attackMs": 10.0,
+            "releaseMs": 100.0,
+            "makeup": 0.0,
+            "ceiling": -1.0
+          }
+        ]
+      },
+      "tracks": [
+        {
+          "id": 1,
+          "name": "Break",
+          "gain": 0.8,
+          "pan": 0.0,
+          "mute": false,
+          "colour": "",
+          "effects": [
+            {
+              "id": 1,
+              "type": "compressor",
+              "enabled": true,
+              "mix": 1.0,
+              "filterMode": "lowpass",
+              "cutoff": 1200.0,
+              "resonance": 0.4,
+              "roomSize": 0.5,
+              "damping": 0.5,
+              "width": 1.0,
+              "delayMs": 250.0,
+              "feedback": 0.35,
+              "drive": 2.0,
+              "outputGain": 1.0,
+              "distortionMode": "softClip",
+              "tone": 0.5,
+              "rate": 1.2,
+              "depth": 0.3,
+              "centreFreq": 600.0,
+              "lowGainDb": 0.0,
+              "midGainDb": 0.0,
+              "midFreq": 900.0,
+              "highGainDb": 0.0,
+              "threshold": -20.0,
+              "ratio": 6.0,
+              "attackMs": 2.0,
+              "releaseMs": 70.0,
+              "makeup": 4.0,
+              "ceiling": -0.3
+            },
+            {
+              "id": 2,
+              "type": "drive",
+              "enabled": true,
+              "mix": 1.0,
+              "filterMode": "lowpass",
+              "cutoff": 1200.0,
+              "resonance": 0.4,
+              "roomSize": 0.5,
+              "damping": 0.5,
+              "width": 1.0,
+              "delayMs": 250.0,
+              "feedback": 0.35,
+              "drive": 2.8,
+              "outputGain": 0.68,
+              "distortionMode": "softClip",
+              "tone": 0.5,
+              "rate": 1.2,
+              "depth": 0.3,
+              "centreFreq": 600.0,
+              "lowGainDb": 0.0,
+              "midGainDb": 0.0,
+              "midFreq": 900.0,
+              "highGainDb": 0.0,
+              "threshold": -18.0,
+              "ratio": 4.0,
+              "attackMs": 10.0,
+              "releaseMs": 100.0,
+              "makeup": 0.0,
+              "ceiling": -0.3
+            }
+          ]
+        },
+        {
+          "id": 2,
+          "name": "Reese",
+          "gain": 0.62,
+          "pan": 0.0,
+          "mute": false,
+          "colour": "",
+          "effects": [
+            {
+              "id": 10,
+              "type": "eq",
+              "enabled": true,
+              "mix": 1.0,
+              "filterMode": "lowpass",
+              "cutoff": 1200.0,
+              "resonance": 0.4,
+              "roomSize": 0.5,
+              "damping": 0.5,
+              "width": 1.0,
+              "delayMs": 250.0,
+              "feedback": 0.35,
+              "drive": 2.0,
+              "outputGain": 1.0,
+              "distortionMode": "softClip",
+              "tone": 0.5,
+              "rate": 1.2,
+              "depth": 0.3,
+              "centreFreq": 600.0,
+              "lowGainDb": 1.5,
+              "midGainDb": -1.5,
+              "midFreq": 700.0,
+              "highGainDb": 1.0,
+              "threshold": -18.0,
+              "ratio": 4.0,
+              "attackMs": 10.0,
+              "releaseMs": 100.0,
+              "makeup": 0.0,
+              "ceiling": -0.3
+            }
+          ]
+        },
+        {
+          "id": 3,
+          "name": "Sub",
+          "gain": 0.7,
+          "pan": 0.0,
+          "mute": false,
+          "colour": "",
+          "effects": [
+            {
+              "id": 5,
+              "type": "filter",
+              "enabled": true,
+              "mix": 1.0,
+              "filterMode": "lowpass",
+              "cutoff": 180.0,
+              "resonance": 0.6,
+              "roomSize": 0.5,
+              "damping": 0.5,
+              "width": 1.0,
+              "delayMs": 250.0,
+              "feedback": 0.35,
+              "drive": 2.0,
+              "outputGain": 1.0,
+              "distortionMode": "softClip",
+              "tone": 0.5,
+              "rate": 1.2,
+              "depth": 0.3,
+              "centreFreq": 600.0,
+              "lowGainDb": 0.0,
+              "midGainDb": 0.0,
+              "midFreq": 900.0,
+              "highGainDb": 0.0,
+              "threshold": -18.0,
+              "ratio": 4.0,
+              "attackMs": 10.0,
+              "releaseMs": 100.0,
+              "makeup": 0.0,
+              "ceiling": -0.3
+            }
+          ]
+        },
+        {
+          "id": 4,
+          "name": "Lead",
+          "gain": 0.46,
+          "pan": 0.08,
+          "mute": false,
+          "colour": "",
+          "effects": [
+            {
+              "id": 6,
+              "type": "delay",
+              "enabled": true,
+              "mix": 0.26,
+              "filterMode": "lowpass",
+              "cutoff": 1200.0,
+              "resonance": 0.4,
+              "roomSize": 0.5,
+              "damping": 0.5,
+              "width": 1.0,
+              "delayMs": 259.0,
+              "feedback": 0.4,
+              "drive": 2.0,
+              "outputGain": 1.0,
+              "distortionMode": "softClip",
+              "tone": 0.5,
+              "rate": 1.2,
+              "depth": 0.3,
+              "centreFreq": 600.0,
+              "lowGainDb": 0.0,
+              "midGainDb": 0.0,
+              "midFreq": 900.0,
+              "highGainDb": 0.0,
+              "threshold": -18.0,
+              "ratio": 4.0,
+              "attackMs": 10.0,
+              "releaseMs": 100.0,
+              "makeup": 0.0,
+              "ceiling": -0.3
+            }
+          ]
+        },
+        {
+          "id": 5,
+          "name": "Pad",
+          "gain": 0.34,
+          "pan": -0.1,
+          "mute": false,
+          "colour": "",
+          "effects": [
+            {
+              "id": 7,
+              "type": "reverb",
+              "enabled": true,
+              "mix": 0.55,
+              "filterMode": "lowpass",
+              "cutoff": 1200.0,
+              "resonance": 0.4,
+              "roomSize": 0.8,
+              "damping": 0.4,
+              "width": 1.0,
+              "delayMs": 250.0,
+              "feedback": 0.35,
+              "drive": 2.0,
+              "outputGain": 1.0,
+              "distortionMode": "softClip",
+              "tone": 0.5,
+              "rate": 1.2,
+              "depth": 0.3,
+              "centreFreq": 600.0,
+              "lowGainDb": 0.0,
+              "midGainDb": 0.0,
+              "midFreq": 900.0,
+              "highGainDb": 0.0,
+              "threshold": -18.0,
+              "ratio": 4.0,
+              "attackMs": 10.0,
+              "releaseMs": 100.0,
+              "makeup": 0.0,
+              "ceiling": -0.3
+            }
+          ]
+        }
+      ]
+    },
+    "score": {
+      "name": "",
+      "lines": []
+    },
+    "format": "dew-project"
+  }

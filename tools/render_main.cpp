@@ -49,8 +49,8 @@ Other:
   --version          Print build provenance and exit
   --help             Print this message
 
-  --write-demo <f>   Write the built-in demo project to f and exit. Used to
-                     regenerate examples/demo.dew.
+  --write-demo <f>   Write the demo library's FIRST project to f and exit, for
+                     a script that wants one project with music in it.
   --write-demos <d>  Write the whole demo library into directory d and exit.
                      Used to regenerate examples/, which the app embeds.
   --write-presets <d> Write the factory presets into directory d and exit. Used

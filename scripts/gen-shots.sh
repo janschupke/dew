@@ -53,14 +53,14 @@ shoot() {
 }
 
 # Each project is chosen for what that tab has to SHOW, not for variety.
-shoot channel-rack demo.dew        channel-rack   # steps already programmed
-shoot piano-roll   melody.dew      piano-roll     # notes worth looking at in a roll
-shoot playlist     arrangement.dew playlist       # the only demo with clips across lanes
-shoot mixer        effects.dew     mixer          # the only one whose strips hold inserts
+shoot channel-rack pulse-code.dew  channel-rack   # eight channels, steps programmed
+shoot piano-roll   late-rhodes.dew piano-roll     # a swung 12-step grid, and lengths worth seeing
+shoot playlist     sublevel.dew    playlist       # lanes entering and leaving over 64 bars
+shoot mixer        pulse-code.dew  mixer          # a drum bus, five inserts and a master chain
 
-# amber.dew and no other: dew_score stores the source it compiled INSIDE the
-# project, so this is the one demo whose score tab has text in it.
-shoot score        amber.dew       score
+# A score-compiled demo and no other: dew_score stores the source it compiled
+# INSIDE the project, so these are the only demos whose Score tab has text in it.
+shoot score        nightfall-waltz.dew score
 
 # The gallery takes a width and finds its own height - it is as tall as its
 # sections need.

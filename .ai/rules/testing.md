@@ -106,7 +106,7 @@ needles and has to exempt itself.
 reported by hand were invisible in code and obvious in one render.
 
 ```sh
-dew_shot editor out.png --project examples/melody.dew --tab piano-roll
+dew_shot editor out.png --project examples/late-rhodes.dew --tab piano-roll
 dew_shot tabs out            # one PNG per tab
 dew_shot gallery out.png     # the design system
 ```

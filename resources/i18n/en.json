@@ -1400,29 +1400,35 @@
   },
   "demo": {
     "missing": "The demo \"{name}\" is missing from this build.",
-    "gettingStarted": {
-      "name": "Getting Started"
+    "pulseCode": {
+      "name": "Pulse Code"
     },
-    "pianoRoll": {
-      "name": "Piano Roll"
+    "copperWire": {
+      "name": "Copper Wire"
     },
-    "effectChain": {
-      "name": "Effect Chain"
+    "lateRhodes": {
+      "name": "Late Rhodes"
     },
-    "automation": {
-      "name": "Automation"
+    "chromeCoast": {
+      "name": "Chrome Coast"
     },
-    "wavetable": {
-      "name": "Wavetable"
+    "slowGrain": {
+      "name": "Slow Grain"
     },
-    "oscillatorStack": {
-      "name": "Oscillator Stack"
+    "sublevel": {
+      "name": "Sublevel"
     },
-    "songStructure": {
-      "name": "Song Structure"
+    "ironMeter": {
+      "name": "Iron Meter"
     },
-    "compiledScore": {
-      "name": "Compiled from a Score"
+    "tidalLock": {
+      "name": "Tidal Lock"
+    },
+    "halcyon": {
+      "name": "Halcyon"
+    },
+    "nightfallWaltz": {
+      "name": "Nightfall Waltz"
     }
   },
   "preset": {

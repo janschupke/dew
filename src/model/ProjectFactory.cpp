@@ -60,18 +60,25 @@ juce::ValueTree ProjectFactory::createDefault (juce::StringRef locale)
 const std::vector<ProjectFactory::Demo>& ProjectFactory::demos()
 {
     static const std::vector<Demo> library {
-        { "demo.dew",        StringId::demo_gettingStarted_name,   &ProjectFactory::createDemo },
-        { "melody.dew",      StringId::demo_pianoRoll_name,        &ProjectFactory::createMelodyDemo },
-        { "effects.dew",     StringId::demo_effectChain_name,      &ProjectFactory::createEffectsDemo },
-        { "automation.dew",  StringId::demo_automation_name,       &ProjectFactory::createAutomationDemo },
-        { "wavetable.dew",   StringId::demo_wavetable_name,        &ProjectFactory::createWavetableDemo },
-        { "layers.dew",      StringId::demo_oscillatorStack_name,  &ProjectFactory::createLayersDemo },
-        { "arrangement.dew", StringId::demo_songStructure_name,    &ProjectFactory::createArrangementDemo },
-        { "amber.dew",       StringId::demo_compiledScore_name,    &ProjectFactory::createScoreDemo },
+        { "pulse-code.dew",      StringId::demo_pulseCode_name,      &ProjectFactory::createPulseCode },
+        { "copper-wire.dew",     StringId::demo_copperWire_name,     &ProjectFactory::createCopperWire },
+        { "late-rhodes.dew",     StringId::demo_lateRhodes_name,     &ProjectFactory::createLateRhodes },
+        { "chrome-coast.dew",    StringId::demo_chromeCoast_name,    &ProjectFactory::createChromeCoast },
+        { "slow-grain.dew",      StringId::demo_slowGrain_name,      &ProjectFactory::createSlowGrain },
+        { "sublevel.dew",        StringId::demo_sublevel_name,       &ProjectFactory::createSublevel },
+        { "iron-meter.dew",      StringId::demo_ironMeter_name,      &ProjectFactory::createIronMeter },
+        { "tidal-lock.dew",      StringId::demo_tidalLock_name,      &ProjectFactory::createTidalLock },
+        { "halcyon.dew",         StringId::demo_halcyon_name,        &ProjectFactory::createHalcyon },
+        { "nightfall-waltz.dew", StringId::demo_nightfallWaltz_name, &ProjectFactory::createNightfallWaltz },
     };
 
     // clang-format on
     return library;
+}
+
+juce::ValueTree ProjectFactory::createDemo()
+{
+    return demos().front().build();
 }
 
 } // namespace dew

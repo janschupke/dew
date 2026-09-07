@@ -310,7 +310,7 @@ TEST_CASE ("score_compile turns text into notes as one undo step", "[control][un
     // The committed example rather than a score written here. A score invented
     // in a test proves the compiler rejects what its author guessed at; this
     // one is the language as it actually is, and CI already renders it.
-    const juce::File source { juce::String (DEW_EXAMPLES_DIR) + "/amber.score" };
+    const juce::File source { juce::String (DEW_EXAMPLES_DIR) + "/rhodes.score" };
     REQUIRE (source.existsAsFile());
 
     // An EMPTY project, because a project that already has notes refuses to

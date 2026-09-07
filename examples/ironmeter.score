@@ -1,0 +1,211 @@
+// ironmeter.score - the music behind the Iron Meter demo.
+//
+// Math rock in seven: a riff that regroups 2+2+3 against 3+2+2 over the same
+// bar, a bridge that drops from Mixolydian into Phrygian without changing key
+// centre, and a lead that has to fit its phrases into a bar that is one eighth
+// short of the one it wants. The notes are here; the SOUND is built in
+// demos/IronMeter.cpp, and so is the kit - a score writes pitched parts, and a
+// drum part is placement rather than harmony.
+//
+// The tempo counts BEATS, and in 7/8 a beat is an eighth. 294 here is a quarter
+// of about 147, which is the tempo this is played at.
+
+song {
+  title "Iron Meter"
+  tempo 294 bpm
+  meter 7/8
+  grid  auto
+  key   E mixolydian
+  seed  0x17E80FEED5
+}
+
+channel guitar {
+  mixer    1
+  range    E2..E4
+  velocity 51 +- 8 per note
+}
+
+channel bass {
+  mixer    2
+  range    E1..E3
+  velocity 53 +- 5
+}
+
+channel keys {
+  mixer    3
+  range    B3..B5
+  velocity 31 +- 7 per bar
+}
+
+channel lead {
+  mixer    4
+  range    E4..E6
+  velocity 44 +- 10 per note
+}
+
+voicing stack {
+  size     3 voices
+  spread   open
+  register E3..E5
+  motion   parallel
+  maxLeap  7
+  bass     root
+}
+
+voicing tight {
+  size     3 voices
+  spread   close
+  register B3..B5
+  motion   smooth
+  maxLeap  4
+}
+
+// A bar is seven eighths, and the two groupings the piece plays against each
+// other are both written out. `drive` is 2+2+3; `push` is 3+2+2. Nothing in the
+// language knows they are the same bar counted differently - that is the point
+// of putting both in front of the reader.
+rhythm drive { 1/4 1/4 1/4. }
+rhythm push  { 1/4. 1/4 1/4 }
+rhythm chug  { 1/8 x7 }
+rhythm split { 1/8 1/8 1/4 1/8 1/8 1/8 }
+rhythm lace  { 1/16 x6 1/8 1/8 1/4 }
+
+harmony ground {
+  I 2 bars | VII 2 bars | IV 2 bars | I 2 bars
+}
+
+harmony climb {
+  IV 2 bars | v 2 bars | VII 2 bars | I 2 bars
+}
+
+// The bridge keeps E under it and changes what the scale does above it. A local
+// key on a harmony block is how a piece modulates without the SONG's key - and
+// therefore every other section's numerals - moving with it.
+harmony dark {
+  key E phrygian
+  i 2 bars | bII 2 bars | i 2 bars | bVII 2 bars
+}
+
+section riff {
+  length 8 bars
+  harmony ground
+  part guitar {
+    chords with stack
+    rhythm drive
+  }
+  part bass {
+    line root
+    rhythm push
+  }
+}
+
+section verse {
+  length 8 bars
+  harmony ground
+  part guitar {
+    chords with stack
+    rhythm drive
+  }
+  part bass {
+    line root-fifth
+    rhythm chug
+  }
+  part keys {
+    chords with tight
+    rhythm push
+  }
+  part lead {
+    melody {
+      rhythm       split
+      articulation detached
+      contour      wave
+      strong       chord-tones
+      variance     0.35
+      mute         1 of 4
+      leap         max 9 resolve step
+      align        bar
+    }
+  }
+}
+
+section bridge {
+  length 8 bars
+  harmony dark
+  part guitar {
+    chords with stack
+    rhythm chug
+  }
+  part bass {
+    line root
+    rhythm chug
+  }
+  part keys {
+    chords with tight
+    rhythm drive
+  }
+  part lead {
+    melody {
+      rhythm   lace
+      contour  fall
+      strong   scale-tones
+      variance 0.45
+      align    bar
+    }
+  }
+}
+
+section climb {
+  length 8 bars
+  harmony climb
+  part guitar {
+    chords with stack
+    rhythm push
+  }
+  part bass {
+    line root-fifth
+    rhythm split
+  }
+  part keys {
+    chords with tight
+    rhythm chug
+  }
+  part lead {
+    melody {
+      rhythm   lace
+      contour  rise
+      strong   chord-tones
+      variance 0.3
+      align    bar
+      cadence  choose [1 5] per instance
+    }
+  }
+}
+
+section coda {
+  length 8 bars
+  harmony {
+    I 2 bars | IV 2 bars | VII 2 bars | I 2 bars
+  }
+  part guitar {
+    chords with stack
+    rhythm drive
+  }
+  part bass {
+    line root
+    rhythm drive
+  }
+  part keys {
+    chords with tight
+    rhythm drive
+  }
+}
+
+arrangement {
+  riff
+  verse
+  riff
+  bridge
+  climb
+  riff
+  coda
+}

@@ -1,0 +1,273 @@
+// nightfall.score - the music behind the Nightfall Waltz demo.
+//
+// A string quartet's worth of writing in D harmonic minor: a waltz theme, an
+// answering voice under real counterpoint rules, and a canon at the fourth. The
+// notes are here; the SOUND is built in demos/NightfallWaltz.cpp - detuned
+// triangle stacks placed across the stereo field the way an ensemble sits, and
+// nothing a dance mix would do to them.
+//
+// Every numeral below is BARE, and that is deliberate. An accidental reads
+// against the major scale while a bare numeral reads against the mode, and
+// harmonic minor already has a flat sixth - so `bVI` here would flatten it
+// twice and land a semitone under the Bb this piece is about.
+
+song {
+  title "Nightfall Waltz"
+  tempo 96 bpm
+  meter 3/4
+  grid  auto
+  key   D harmonic-minor
+  seed  0x0DE1AB0DE
+}
+
+channel violin {
+  mixer    1
+  range    D4..D6
+  velocity 40 +- 9 per note
+}
+
+channel viola {
+  mixer    2
+  range    A3..A5
+  velocity 35 +- 7 per bar
+}
+
+channel cello {
+  mixer    3
+  range    D2..D4
+  velocity 43 +- 5
+}
+
+channel clarinet {
+  mixer    4
+  range    D4..A5
+  velocity 32 +- 8 per bar
+}
+
+voicing chamber {
+  size     3 voices
+  spread   close
+  register A3..A5
+  motion   smooth
+  maxLeap  4
+  bass     root
+}
+
+voicing open {
+  size     4 voices
+  spread   drop2
+  register D3..D5
+  motion   smooth
+  maxLeap  7
+  bass     from-inversion
+}
+
+// A bar is three quarters. `turn` is the waltz figure the theme is built from;
+// `flourish` is the only thing here that needs sixteenths, and it is what puts
+// the grid at four steps to a beat rather than two.
+rhythm waltz    { 1/4 1/4 1/4 }
+rhythm hold     { 1/2. }
+rhythm lilt     { 1/2 1/4 }
+rhythm turn     { 1/4 1/8 1/8 1/4 }
+rhythm flourish { 1/16 x4 1/8 1/8 1/4 }
+
+harmony descent {
+  i 2 bars | vii 1 bar | i 1 bar | iv 2 bars | V 2 bars
+}
+
+harmony answer {
+  VI 2 bars | ii 2 bars | V 2 bars | i 2 bars
+}
+
+section theme {
+  length 8 bars
+  harmony descent
+  part cello {
+    line root
+    rhythm waltz
+  }
+  part viola {
+    chords with chamber
+    rhythm waltz
+  }
+  part violin {
+    melody {
+      rhythm       turn
+      articulation legato
+      contour      arch
+      strong       chord-tones
+      variance     0.25
+      leap         max 7 resolve step
+      align        bar
+      cadence      1
+    }
+  }
+}
+
+section reply {
+  length 8 bars
+  harmony answer
+  part cello {
+    line root-fifth
+    rhythm lilt
+  }
+  part viola {
+    chords with chamber
+    rhythm waltz
+  }
+  part violin {
+    melody {
+      rhythm   flourish
+      contour  wave
+      strong   chord-tones
+      variance 0.35
+      align    bar
+      cadence  choose [1 3] per instance
+    }
+  }
+  part clarinet {
+    counterpoint against violin {
+      rhythm               turn
+      articulation         detached
+      parallel-fifths      forbid
+      parallel-octaves     forbid
+      direct-fifths        soft 2
+      voice-crossing       forbid
+      dissonance-on-strong soft 3
+      leaps                soft 1.5
+      repeats              soft 1
+    }
+  }
+}
+
+section develop {
+  length 8 bars
+  harmony {
+    iv 2 bars | i 2 bars | VI 1 bar | ii 1 bar | V 2 bars
+  }
+  part cello {
+    line root
+    rhythm waltz
+  }
+  part viola {
+    chords with open
+    rhythm turn
+  }
+  part violin {
+    melody {
+      rhythm   flourish
+      contour  rise
+      strong   scale-tones
+      variance 0.45
+      leap     max 9 resolve step
+      align    bar
+    }
+  }
+  part clarinet {
+    counterpoint against violin {
+      rhythm               waltz
+      parallel-fifths      forbid
+      parallel-octaves     forbid
+      voice-crossing       forbid
+      dissonance-on-strong soft 2
+      leaps                soft 2
+      repeats              soft 1
+    }
+  }
+}
+
+section canon {
+  length 8 bars
+  harmony descent
+  part cello {
+    line root
+    rhythm hold
+  }
+  part violin {
+    melody {
+      rhythm   turn
+      contour  arch
+      strong   chord-tones
+      variance 0.2
+      align    bar
+    }
+  }
+  part clarinet {
+    imitate violin {
+      delay     1 bar
+      transpose -3
+      mode      diatonic
+    }
+  }
+  part viola {
+    chords with chamber
+    rhythm waltz
+  }
+}
+
+section recap {
+  length 8 bars
+  harmony descent
+  part cello {
+    line root-fifth
+    rhythm waltz
+  }
+  part viola {
+    chords with open
+    rhythm waltz
+  }
+  part violin {
+    melody {
+      rhythm   turn
+      contour  arch
+      strong   chord-tones
+      variance 0.15
+      align    bar
+      cadence  1
+    }
+  }
+  part clarinet {
+    counterpoint against violin {
+      rhythm               lilt
+      parallel-fifths      forbid
+      parallel-octaves     forbid
+      voice-crossing       forbid
+      dissonance-on-strong soft 3
+      leaps                soft 1.5
+      repeats              soft 1
+    }
+  }
+}
+
+section coda {
+  length 8 bars
+  harmony {
+    iv 2 bars | V 2 bars | i 4 bars
+  }
+  part cello {
+    line root
+    rhythm hold
+  }
+  part viola {
+    chords with chamber
+    rhythm hold
+  }
+  part violin {
+    melody {
+      rhythm   lilt
+      contour  fall
+      strong   chord-tones
+      variance 0.15
+      cadence  1
+    }
+  }
+}
+
+arrangement {
+  theme
+  reply
+  develop
+  canon
+  recap
+  coda
+}

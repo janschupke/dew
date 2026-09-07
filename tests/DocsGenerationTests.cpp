@@ -240,14 +240,15 @@ TEST_CASE ("the website's score samples are what the emitter writes", "[docs][we
 
     INFO ("file: " << file.getFullPathName());
     INFO ("regenerate: ./build/ci/tools/dew_shot_artefacts/RelWithDebInfo/dew_shot samples "
-          "website/src/generated/score-samples.json examples/amber.score examples/drift.score "
-          "examples/neon.score");
+          "website/src/generated/score-samples.json examples/halcyon.score "
+          "examples/rhodes.score examples/ironmeter.score examples/nightfall.score");
 
     REQUIRE (file.existsAsFile());
 
     juce::Array<juce::File> scores;
 
-    for (const auto* name : { "amber.score", "drift.score", "neon.score" })
+    for (const auto* name :
+         { "halcyon.score", "rhodes.score", "ironmeter.score", "nightfall.score" })
         scores.add (juce::File { juce::String (DEW_EXAMPLES_DIR) }.getChildFile (name));
 
     CHECK (file.loadFileAsString().toStdString() == docs::samplesJson (scores));
@@ -262,7 +263,7 @@ TEST_CASE ("a sample's runs reconstruct its source exactly", "[docs][website][ga
 
     const auto* samples = json.getArray();
     REQUIRE (samples != nullptr);
-    REQUIRE (samples->size() == 3);
+    REQUIRE (samples->size() == 4);
 
     for (const auto& entry : *samples)
     {

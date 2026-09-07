@@ -43,17 +43,19 @@ struct ProjectFactory
     */
     static juce::ValueTree createDefault (juce::StringRef locale = referenceLocale());
 
-    /** A four-bar demo used by the tests, by CI, and shipped as examples/demo.dew.
-        Deliberately audible: a kick pulse, an offbeat bass, and a lead line, so a
-        render that produces silence is obviously wrong.
-    */
-    static juce::ValueTree createDemo();
-
-    /** The demo library: one project per part of the app, so each feature has
-        something that already uses it rather than only a description.
+    /** The demo library: ten tracks, each a real piece of music in a real genre,
+        which between them use what the app can do because the music asks for it.
 
         Shipped as files under examples/ and embedded in the binary, so the
         Demos menu works from a build with no source tree beside it.
+
+        They are named after the tracks rather than after features on purpose.
+        A library named Piano Roll, Effect Chain, Automation reads as a checklist
+        and demonstrates each thing exactly once, which is how the FM matrix, the
+        LFO, four of the ten effects, both non-synth instruments, three
+        automation scopes and every metre but 4/4 came to be shipped with nothing
+        that used them. What holds the coverage now is not a demo per feature but
+        a test over the whole library - see tests/DemoLibraryTests.cpp.
     */
     struct Demo
     {
@@ -71,41 +73,55 @@ struct ProjectFactory
 
     static const std::vector<Demo>& demos();
 
-    /** Chords, held notes and varied velocities: what the piano roll is for. */
-    static juce::ValueTree createMelodyDemo();
+    /** The first demo in the library.
 
-    /** A pad through a filter, a delay and a reverb, plus drive on the mix. */
-    static juce::ValueTree createEffectsDemo();
-
-    /** An arpeggio under a filter sweep and a fade, both as automation clips. */
-    static juce::ValueTree createAutomationDemo();
-
-    /** Five wavetables, unison stacks and a morph position drawn as a curve.
-
-        Its notes come from examples/drift.score and its sound is built in
-        Demos.cpp: the language owns the music, the user owns the instrument,
-        and this demo is what that division looks like from both sides.
+        What a screenshot, the offline-render smoke test and the engine's own
+        pin open when they want "a project with music in it" and do not care
+        which. Reads the table rather than being an eleventh builder beside it:
+        there used to be a `createDemo` that was both the first entry AND its own
+        function, which is one fact with two homes.
     */
-    static juce::ValueTree createWavetableDemo();
+    static juce::ValueTree createDemo();
 
-    /** Three oscillators on every channel: octaves, cent detune and per-slot
-        gain, with one wavetable slot standing among classic ones.
-    */
-    static juce::ValueTree createLayersDemo();
+    /** Techno. Four drum channels on one insert, a pumping curve on the two
+        beside it, and a master chain that ends in a limiter. */
+    static juce::ValueTree createPulseCode();
 
-    /** Eight channels, six patterns and three lanes that come and go
-        independently, with four drums sharing one mixer insert.
-    */
-    static juce::ValueTree createArrangementDemo();
+    /** UK garage. A swung grid - twelve steps to a beat - and a hat that
+        breathes under an LFO locked to the tempo. */
+    static juce::ValueTree createCopperWire();
 
-    /** The score example, COMPILED rather than loaded.
+    /** Ambient in 6/8, from examples/halcyon.score. Two wavetable pads, one
+        morphing under its envelope and one under a free-running LFO. */
+    static juce::ValueTree createHalcyon();
 
-        Opening it puts real text in the Score tab, so pressing Compile
-        reproduces exactly what is already playing - and regenerating the demo
-        library rebuilds the .dew from the .score, which is what stops the two
-        drifting apart.
-    */
-    static juce::ValueTree createScoreDemo();
+    /** A neo-soul ballad, from examples/rhodes.score. The FM matrix used the way
+        an electric piano uses it: a sine folded into a sine. */
+    static juce::ValueTree createLateRhodes();
+
+    /** Math rock in 7/8, from examples/ironmeter.score - with a kit written
+        here, because a score owns harmony and a drum part is placement. */
+    static juce::ValueTree createIronMeter();
+
+    /** A waltz in 3/4, from examples/nightfall.score. Counterpoint, a canon, and
+        a ritardando drawn as a tempo curve. */
+    static juce::ValueTree createNightfallWaltz();
+
+    /** Drum and bass. A Reese bass built out of FM feedback on the matrix
+        diagonal, swept by a bandpass. */
+    static juce::ValueTree createSublevel();
+
+    /** Synthwave. A wavetable position that STEPS between two frames rather than
+        sliding, and one muted lane carrying a spare idea. */
+    static juce::ValueTree createChromeCoast();
+
+    /** Half-time trap at 140. Thirty-second hi-hat rolls, so eight steps to a
+        beat, and a riser that lands off the bar line. */
+    static juce::ValueTree createSlowGrain();
+
+    /** Berlin-school sequencer music in 5/4. FM bells, a synced vibrato, and a
+        delay whose feedback climbs on a curve. */
+    static juce::ValueTree createTidalLock();
 };
 
 } // namespace dew

@@ -375,7 +375,10 @@ TEST_CASE ("a baked clip is stored in steps, not bars", "[score][bake]")
 
     SECTION ("in the committed example")
     {
-        REQUIRE (stepsPerBarOfBake (compileOrFail (exampleSource())) == 16);
+        // Not 16, and that is the point: the shipped scores derive their grid
+        // from the durations they use, so none of them is at the four steps to
+        // a beat a bare `* 16` assumes. The tiling above is what is checked.
+        REQUIRE (stepsPerBarOfBake (compileOrFail (exampleSource())) != 16);
     }
 
     SECTION ("and in a metre whose bar is not sixteen steps")

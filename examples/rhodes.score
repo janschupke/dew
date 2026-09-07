@@ -1,0 +1,213 @@
+// rhodes.score - the music behind the Late Rhodes demo.
+//
+// A neo-soul ballad in Eb: rootless and drop-2 voicings over a walking-ish
+// bass, secondary dominants, and a tritone substitution into the last cadence.
+// The notes are here; the SOUND is built in demos/LateRhodes.cpp - and it is an
+// FM electric piano, because that is what an electric piano IS: a sine carrier
+// with a sine an octave above it folded into its phase, and a third slot for
+// the tine.
+//
+// Swung, not straight. The rhythms below are written in triplet eighths, which
+// is what puts the grid at twelve steps to a beat - the value the language
+// derives rather than one anybody chose.
+
+song {
+  title "Late Rhodes"
+  tempo 78 bpm
+  meter 4/4
+  grid  auto
+  key   Eb major
+  seed  0x5A17ED0C0A
+}
+
+channel rhodes {
+  mixer    1
+  range    Eb3..Eb5
+  velocity 38 +- 11 per note
+}
+
+channel bass {
+  mixer    2
+  range    Eb1..Eb3
+  velocity 47 +- 6 per bar
+}
+
+channel pad {
+  mixer    3
+  range    Bb3..Bb5
+  velocity 22 +- 4
+}
+
+channel horn {
+  mixer    4
+  range    Eb4..Eb5
+  velocity 39 +- 10 per note
+}
+
+voicing rootless {
+  size     4 voices
+  spread   rootless
+  register Eb3..Eb5
+  motion   smooth
+  maxLeap  5
+  bass     any
+}
+
+voicing spread {
+  size     4 voices
+  spread   drop2
+  register Bb2..Bb4
+  motion   smooth
+  maxLeap  7
+  bass     from-inversion
+}
+
+voicing upper {
+  size     3 voices
+  spread   shell
+  register Bb3..Bb5
+  motion   smooth
+  maxLeap  4
+}
+
+// Long-short: a triplet quarter against a triplet eighth is the shuffle this is
+// played with, and writing it out is the only way dew can hold it - a step grid
+// has no swing knob, so the swing has to be in the grid itself.
+rhythm swung   { 1/4t 1/8t 1/4t 1/8t 1/4t 1/8t 1/4t 1/8t }
+rhythm comp    { 1/4 - 1/8 1/8 1/4 1/4 }
+rhythm hold    { 1/1 }
+rhythm walk    { 1/4 1/4 1/4 1/8 1/8 }
+rhythm fill    { 1/8t x6 1/16 x4 1/4 }
+
+harmony head {
+  I 1 bar | vi 1 bar | ii 2 bars | V7 2 bars | I 2 bars
+}
+
+harmony turn {
+  iii 1 bar | V7/ii 1 bar | ii 2 bars | bII7 1 bar | I 1 bar | IV 1 bar | V7 1 bar
+}
+
+section head {
+  length 8 bars
+  harmony head
+  part rhodes {
+    chords with rootless
+    rhythm comp
+  }
+  part bass {
+    line root-fifth
+    rhythm walk
+  }
+}
+
+section verse {
+  length 8 bars
+  harmony head
+  part rhodes {
+    chords with rootless
+    rhythm comp
+  }
+  part bass {
+    line root-third-fifth
+    rhythm walk
+  }
+  part pad {
+    chords with upper
+    rhythm hold
+  }
+  part horn {
+    melody {
+      rhythm       swung
+      articulation legato
+      contour      arch
+      strong       chord-tones
+      variance     0.3
+      mute         1 of 3
+      leap         max 7 resolve step
+      align        bar
+      cadence      choose [1 3 5] per instance
+    }
+  }
+}
+
+section bridge {
+  length 8 bars
+  harmony turn
+  part rhodes {
+    chords with spread
+    rhythm swung
+  }
+  part bass {
+    line root-fifth
+    rhythm walk
+  }
+  part pad {
+    chords with upper
+    rhythm hold
+  }
+  part horn {
+    melody {
+      rhythm   fill
+      contour  rise
+      strong   chord-tones
+      variance 0.4
+      mute     1 of 4
+      align    bar
+    }
+  }
+}
+
+section reprise {
+  length 8 bars
+  harmony head
+  part rhodes {
+    chords with rootless
+    rhythm swung
+  }
+  part bass {
+    line root-third-fifth
+    rhythm walk
+  }
+  part pad {
+    chords with upper
+    rhythm hold
+  }
+  part horn {
+    melody {
+      rhythm   swung
+      contour  wave
+      strong   chord-tones
+      variance 0.25
+      mute     1 of 3
+      align    bar
+      cadence  1
+    }
+  }
+}
+
+section tag {
+  length 8 bars
+  harmony {
+    ii 2 bars | bII7 1 bar | I 1 bar | IV 2 bars | I 2 bars
+  }
+  part rhodes {
+    chords with spread
+    rhythm comp
+  }
+  part bass {
+    line root
+    rhythm hold
+  }
+  part pad {
+    chords with upper
+    rhythm hold
+  }
+}
+
+arrangement {
+  head
+  verse
+  bridge
+  reprise
+  tag
+}

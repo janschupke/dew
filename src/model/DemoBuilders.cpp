@@ -1,66 +1,22 @@
 #include "model/DemoBuilders.h"
 
-#include "i18n/Strings.h"
-#include "model/EntityColour.h"
+#include <cmath>
+#include <vector>
+
+#include "model/DemoSpecs.h"
 #include "model/GeneratorCatalog.h"
+#include "model/Meter.h"
 #include "model/ProjectEdits.h"
-#include "model/TreeWalk.h"
 #include "model/ProjectSchema.h"
+#include "model/TreeWalk.h"
 
 namespace dew::demo
 {
 
-namespace
+double stored (double value)
 {
-
-const NodeSpec& channelsSpec()
-{
-    return childSpecFor (projectSpec(), "channels");
+    return std::round (value * 1.0e6) / 1.0e6;
 }
-const NodeSpec& patternsSpec()
-{
-    return childSpecFor (projectSpec(), "patterns");
-}
-const NodeSpec& playlistSpec()
-{
-    return childSpecFor (projectSpec(), "playlist");
-}
-const NodeSpec& mixerSpec()
-{
-    return childSpecFor (projectSpec(), "mixer");
-}
-const NodeSpec& automationSpec()
-{
-    return childSpecFor (projectSpec(), "automations");
-}
-
-const NodeSpec& tracksSpec()
-{
-    return childSpecFor (playlistSpec(), "tracks");
-}
-const NodeSpec& clipsSpec()
-{
-    return childSpecFor (tracksSpec(), "clips");
-}
-const NodeSpec& effectsSpec()
-{
-    return childSpecFor (channelsSpec(), "effects");
-}
-const NodeSpec& notesSpec()
-{
-    return childSpecFor (patternsSpec(), "notes");
-}
-const NodeSpec& pointsSpec()
-{
-    return childSpecFor (automationSpec(), "points");
-}
-
-juce::ValueTree oscSlot (juce::ValueTree channel, int slot)
-{
-    return ProjectEdits::oscillatorAt (channel, slot);
-}
-
-} // namespace
 
 juce::ValueTree makeChannel (int id, const juce::String& name, const juce::String& colour,
                              int basePitch, const juce::String& wave, int octave, double attack,
@@ -73,7 +29,7 @@ juce::ValueTree makeChannel (int id, const juce::String& name, const juce::Strin
     channel.setProperty (ids::colour, colour, nullptr);
     channel.setProperty (ids::mixerTrackId, id, nullptr);
     channel.setProperty (ids::basePitch, basePitch, nullptr);
-    channel.setProperty (ids::volume, volume, nullptr);
+    channel.setProperty (ids::volume, stored (volume), nullptr);
 
     auto osc = ProjectEdits::oscillatorAt (channel, 0);
     generatorNodeFor (osc, ids::wave).setProperty (ids::wave, wave, nullptr);
@@ -118,7 +74,7 @@ juce::ValueTree makeNote (int channelId, int step, int lengthSteps, int pitch, d
     note.setProperty (ids::step, step, nullptr);
     note.setProperty (ids::lengthSteps, lengthSteps, nullptr);
     note.setProperty (ids::pitch, pitch, nullptr);
-    note.setProperty (ids::velocity, velocity, nullptr);
+    note.setProperty (ids::velocity, stored (velocity), nullptr);
     return note;
 }
 
@@ -137,33 +93,38 @@ juce::ValueTree patternIn (juce::ValueTree project, int id, const juce::String& 
     return pattern;
 }
 
-/** Bars into steps, for the demos alone.
+int stepsPerBar (const juce::ValueTree& project)
+{
+    return Meter::of (project).stepsPerBar();
+}
 
-    A clip is stored in steps now, but a demo is WRITTEN in bars - "the drums
-    arrive at bar 4" is the thing the call site is saying - so the conversion
-    happens here rather than turning every arrangement into arithmetic. The
-    constant is safe because no demo sets a metre: every one of them takes the
-    factory's 4/4 at four steps to a beat, which a test asserts.
-*/
-constexpr int demoStepsPerBar = 16;
-
-juce::ValueTree makeClip (int patternId, int startBar, int lengthBars)
+juce::ValueTree makeClipAtStep (int patternId, int startStep, int lengthSteps)
 {
     auto clip = defaultTreeFor (clipsSpec());
     clip.setProperty (ids::kind, "pattern", nullptr);
     clip.setProperty (ids::patternId, patternId, nullptr);
-    clip.setProperty (ids::startStep, startBar * demoStepsPerBar, nullptr);
-    clip.setProperty (ids::lengthSteps, lengthBars * demoStepsPerBar, nullptr);
+    clip.setProperty (ids::startStep, startStep, nullptr);
+    clip.setProperty (ids::lengthSteps, lengthSteps, nullptr);
     return clip;
 }
 
-juce::ValueTree makeAutomationClip (int automationId, int startBar, int lengthBars)
+juce::ValueTree makeClip (const juce::ValueTree& project, int patternId, int startBar,
+                          int lengthBars)
 {
+    const auto bar = stepsPerBar (project);
+    return makeClipAtStep (patternId, startBar * bar, lengthBars * bar);
+}
+
+juce::ValueTree makeAutomationClip (const juce::ValueTree& project, int automationId, int startBar,
+                                    int lengthBars)
+{
+    const auto bar = stepsPerBar (project);
+
     auto clip = defaultTreeFor (clipsSpec());
     clip.setProperty (ids::kind, "automation", nullptr);
     clip.setProperty (ids::automationId, automationId, nullptr);
-    clip.setProperty (ids::startStep, startBar * demoStepsPerBar, nullptr);
-    clip.setProperty (ids::lengthSteps, lengthBars * demoStepsPerBar, nullptr);
+    clip.setProperty (ids::startStep, startBar * bar, nullptr);
+    clip.setProperty (ids::lengthSteps, lengthBars * bar, nullptr);
     return clip;
 }
 
@@ -174,13 +135,35 @@ juce::ValueTree makeEffect (int id, const juce::String& type, Params params)
     effect.setProperty (ids::type, type, nullptr);
 
     for (const auto& [property, value] : params)
-        effect.setProperty (property, value, nullptr);
+        effect.setProperty (property, stored (value), nullptr);
 
     return effect;
 }
 
+juce::ValueTree makeFilter (int id, const juce::String& mode, double cutoff, double resonance,
+                            double mix)
+{
+    auto effect = makeEffect (
+        id, "filter",
+        { { ids::cutoff, cutoff }, { ids::resonance, resonance }, { ids::mix, mix } });
+    effect.setProperty (ids::filterMode, mode, nullptr);
+    return effect;
+}
+
+juce::ValueTree makeDistortion (int id, const juce::String& mode, double drive, double tone,
+                                double outputGain, double mix)
+{
+    auto effect = makeEffect (id, "distortion",
+                              { { ids::drive, drive },
+                                { ids::tone, tone },
+                                { ids::outputGain, outputGain },
+                                { ids::mix, mix } });
+    effect.setProperty (ids::distortionMode, mode, nullptr);
+    return effect;
+}
+
 juce::ValueTree makeAutomation (int id, AutomationScope scope, int targetId, int slot,
-                                const juce::Identifier& param, std::initializer_list<Point> points)
+                                const juce::Identifier& param, std::vector<Point> points)
 {
     auto automation = defaultTreeFor (automationSpec());
     automation.setProperty (ids::id, id, nullptr);
@@ -192,9 +175,9 @@ juce::ValueTree makeAutomation (int id, AutomationScope scope, int targetId, int
     for (const auto& point : points)
     {
         auto node = defaultTreeFor (pointsSpec());
-        node.setProperty (ids::step, point.step, nullptr);
-        node.setProperty (ids::value, point.value, nullptr);
-        node.setProperty (ids::curve, point.curve, nullptr);
+        node.setProperty (ids::step, stored (point.step), nullptr);
+        node.setProperty (ids::value, stored (point.value), nullptr);
+        node.setProperty (ids::curve, stored (point.curve), nullptr);
         node.setProperty (ids::shape, point.shape, nullptr);
         automation.appendChild (node, nullptr);
     }
@@ -205,236 +188,95 @@ juce::ValueTree makeAutomation (int id, AutomationScope scope, int targetId, int
 namespace
 {
 
-/** "Channel 3", from the catalogue, in the REFERENCE locale.
+/** The one place a parameter's normalised form is worked out for a demo.
 
-    A demo is compared against a committed file, so its content names have to
-    be the same bytes on every machine whatever language dew is running in -
-    which is what trIn is for, and the reason ProjectFactory::createDefault
-    takes a locale rather than reading the active one.
+    Falls back to the value unchanged when the table does not name the
+    parameter, because a demo asking for something that is not there is a
+    mistake to find in a review rather than a clamp to hide - and 0..1 is what
+    every automatable parameter's normalised form already is.
 */
-juce::String numbered (StringId id, int number)
+double normalisedIn (const std::vector<ParamSpec>& params, const juce::Identifier& param,
+                     double value)
 {
-    return trIn (referenceLocale(), id, Args {}.with ("number", number));
+    for (const auto& spec : params)
+        if (spec.property != nullptr && *spec.property == param)
+            return spec.toNormalised (value);
+
+    return value;
 }
 
 } // namespace
 
-juce::ValueTree scaffold (int numChannels)
+double curveValue (AutomationScope scope, const juce::Identifier& param, double value)
 {
-    const auto count = juce::jmax (1, numChannels);
-
-    auto project = defaultTreeFor (projectSpec());
-    project.setProperty (ids::name, trIn (referenceLocale(), StringId::project_untitled), nullptr);
-    project.setProperty (ids::tempoBpm, 128.0, nullptr);
-
-    for (int i = 1; i <= count; ++i)
-        project.appendChild (makeChannel (i, numbered (StringId::project_channelN, i),
-                                          entityColour::defaultHex (i - 1), 60, "saw", 0, 0.005,
-                                          0.120, 0.700, 0.150),
-                             nullptr);
-
-    project.appendChild (makePattern (1, "Pattern 1", 16), nullptr);
-
-    auto playlist = project.getChildWithName (ids::PLAYLIST);
-    auto mixer = project.getChildWithName (ids::MIXER);
-
-    for (int i = 1; i <= count; ++i)
+    // Every enumerator, with no default: -Wswitch-enum wants them all even when
+    // a default is present, and a scope added later should be a compile error
+    // here rather than a demo silently writing raw values into a curve.
+    switch (scope)
     {
-        playlist.appendChild (makePlaylistTrack (numbered (StringId::project_trackN, i)), nullptr);
-        mixer.appendChild (makeMixerTrack (i, numbered (StringId::project_insertN, i)), nullptr);
+        case AutomationScope::project: return normalisedIn (projectParams(), param, value);
+        case AutomationScope::channel: return normalisedIn (channelParams(), param, value);
+        case AutomationScope::channelOsc: return normalisedIn (oscParams(), param, value);
+        case AutomationScope::channelAmp: return normalisedIn (ampParams(), param, value);
+        case AutomationScope::channelSoundFont:
+            return normalisedIn (soundFontParams(), param, value);
+        case AutomationScope::mixerTrack: return normalisedIn (mixerTrackParams(), param, value);
+        case AutomationScope::master: return normalisedIn (masterParams(), param, value);
+        case AutomationScope::channelEffect:
+        case AutomationScope::mixerEffect: break;
     }
 
-    return canonicalTree (project, projectSpec());
+    // An effect's table depends on its type, which a scope does not carry.
+    return value;
 }
 
-juce::ValueTree channelWithId (const juce::ValueTree& project, int id)
+double curveValueIn (const juce::String& effectType, const juce::Identifier& param, double value)
 {
-    return tree::childWithId (project, ids::CHANNEL, id);
+    return normalisedIn (effectParams (effectType), param, value);
 }
 
-juce::ValueTree channelNamed (const juce::ValueTree& project, const juce::String& name)
+void notes (juce::ValueTree pattern, int channelId, std::initializer_list<Hit> hits)
 {
-    for (const auto& channel : project)
-        if (channel.hasType (ids::CHANNEL) && channel[ids::name].toString().equalsIgnoreCase (name))
-            return channel;
-
-    return {};
+    for (const auto& hit : hits)
+        pattern.appendChild (
+            makeNote (channelId, hit.step, hit.lengthSteps, hit.pitch, hit.velocity), nullptr);
 }
 
-void setClassicOsc (juce::ValueTree channel, int slot, const juce::String& wave, int octave,
-                    double gain, int detuneCents)
+void chord (juce::ValueTree pattern, int channelId, int step, int lengthSteps,
+            std::initializer_list<int> pitches, double velocity)
 {
-    auto osc = oscSlot (channel, slot);
-
-    if (! osc.isValid())
-        return;
-
-    osc.setProperty (ids::enabled, true, nullptr);
-    osc.setProperty (ids::mode, "classic", nullptr);
-    generatorNodeFor (osc, ids::wave).setProperty (ids::wave, wave, nullptr);
-    osc.setProperty (ids::octave, octave, nullptr);
-    osc.setProperty (ids::detuneCents, detuneCents, nullptr);
-    osc.setProperty (ids::gain, gain, nullptr);
+    for (const auto pitch : pitches)
+        pattern.appendChild (makeNote (channelId, step, lengthSteps, pitch, velocity), nullptr);
 }
 
-void setWavetableOsc (juce::ValueTree channel, int slot, const juce::String& table, double position,
-                      double mod, const juce::String& source, double rate, int unisonVoices,
-                      double unisonDetune, int octave, double gain)
+void steps (juce::ValueTree pattern, int channelId, int pitch, juce::StringRef grid,
+            double velocity, int lengthSteps, int stride, int offset)
 {
-    auto osc = oscSlot (channel, slot);
+    auto index = 0;
 
-    if (! osc.isValid())
-        return;
-
-    osc.setProperty (ids::enabled, true, nullptr);
-    osc.setProperty (ids::mode, "wavetable", nullptr);
-
-    auto wavetable = generatorNodeFor (osc, ids::wavePosition);
-    wavetable.setProperty (ids::wavetable, table, nullptr);
-    wavetable.setProperty (ids::wavePosition, position, nullptr);
-    wavetable.setProperty (ids::wavePositionMod, mod, nullptr);
-    wavetable.setProperty (ids::wavePositionSource, source, nullptr);
-    wavetable.setProperty (ids::wavePositionRate, rate, nullptr);
-    wavetable.setProperty (ids::unisonVoices, unisonVoices, nullptr);
-    wavetable.setProperty (ids::unisonDetune, unisonDetune, nullptr);
-
-    osc.setProperty (ids::octave, octave, nullptr);
-    osc.setProperty (ids::gain, gain, nullptr);
-}
-
-void disableOsc (juce::ValueTree channel, int slot)
-{
-    if (auto osc = oscSlot (channel, slot); osc.isValid())
-        osc.setProperty (ids::enabled, false, nullptr);
-}
-
-void setAmp (juce::ValueTree channel, double attack, double decay, double sustain, double release)
-{
-    auto amp = channel.getChildWithName (ids::INSTRUMENT).getChildWithName (ids::AMP);
-
-    if (! amp.isValid())
-        return;
-
-    amp.setProperty (ids::attack, attack, nullptr);
-    amp.setProperty (ids::decay, decay, nullptr);
-    amp.setProperty (ids::sustain, sustain, nullptr);
-    amp.setProperty (ids::release, release, nullptr);
-}
-
-void routeTo (juce::ValueTree channel, int mixerTrackId)
-{
-    if (channel.isValid())
-        channel.setProperty (ids::mixerTrackId, mixerTrackId, nullptr);
-}
-
-void pruneUnplayedChannels (juce::ValueTree project)
-{
-    juce::Array<int> played;
-
-    for (const auto& pattern : project)
+    for (auto character = grid.text; ! character.isEmpty(); ++character, ++index)
     {
-        if (! pattern.hasType (ids::PATTERN))
+        // An accent and a ghost rather than a second call with a second
+        // velocity: a hi-hat part is ONE line of music, and splitting it across
+        // three calls is what makes a drum pattern unreadable in source.
+        const auto scale = [&]() -> double
+        {
+            switch (*character)
+            {
+                case 'X': return 1.25;
+                case 'x': return 1.0;
+                case 'o': return 0.55;
+                default: return 0.0;
+            }
+        }();
+
+        if (scale <= 0.0)
             continue;
 
-        for (const auto& note : pattern)
-            if (note.hasType (ids::NOTE))
-                played.addIfNotAlreadyThere ((int) note[ids::ch]);
+        pattern.appendChild (makeNote (channelId, offset + index * stride, lengthSteps, pitch,
+                                       juce::jlimit (0.01, 1.0, velocity * scale)),
+                             nullptr);
     }
-
-    // Backwards: removing a child shifts every index after it.
-    for (int i = project.getNumChildren(); --i >= 0;)
-    {
-        const auto child = project.getChild (i);
-
-        if (child.hasType (ids::CHANNEL) && ! played.contains ((int) child[ids::id]))
-            project.removeChild (i, nullptr);
-
-        // The empty pattern a fresh project starts with, once a score has
-        // written its own. Left in, the piano roll opens on sixteen blank steps.
-        if (child.hasType (ids::PATTERN) && child.getNumChildren() == 0)
-        {
-            bool anyOther = false;
-
-            for (const auto& other : project)
-                if (other.hasType (ids::PATTERN) && other != child && other.getNumChildren() > 0)
-                    anyOther = true;
-
-            if (anyOther)
-                project.removeChild (i, nullptr);
-        }
-    }
-}
-
-void setInserts (juce::ValueTree project, const juce::StringArray& names)
-{
-    auto mixer = project.getChildWithName (ids::MIXER);
-
-    if (! mixer.isValid())
-        return;
-
-    // The existing tracks come out first, chains and all: a caller that put an
-    // effect on an insert before calling this would otherwise lose it, and an
-    // order of operations that mattered would be a trap rather than a rule.
-    juce::Array<juce::ValueTree> kept;
-
-    for (int i = mixer.getNumChildren(); --i >= 0;)
-        if (mixer.getChild (i).hasType (ids::MIXER_TRACK))
-        {
-            kept.insert (0, mixer.getChild (i));
-            mixer.removeChild (i, nullptr);
-        }
-
-    for (int i = 0; i < names.size(); ++i)
-    {
-        const auto id = i + 1;
-        auto track = i < kept.size() ? kept.getReference (i) : makeMixerTrack (id, names[i]);
-
-        track.setProperty (ids::id, id, nullptr);
-        track.setProperty (ids::name, names[i], nullptr);
-        mixer.appendChild (track, nullptr);
-    }
-}
-
-void setLanes (juce::ValueTree project, const juce::StringArray& names)
-{
-    auto playlist = project.getChildWithName (ids::PLAYLIST);
-
-    if (! playlist.isValid())
-        return;
-
-    juce::Array<juce::ValueTree> kept;
-
-    for (int i = playlist.getNumChildren(); --i >= 0;)
-        if (playlist.getChild (i).hasType (ids::PLAYLIST_TRACK))
-        {
-            kept.insert (0, playlist.getChild (i));
-            playlist.removeChild (i, nullptr);
-        }
-
-    for (int i = 0; i < names.size(); ++i)
-    {
-        auto lane = i < kept.size() ? kept.getReference (i) : makePlaylistTrack (names[i]);
-        lane.setProperty (ids::name, names[i], nullptr);
-        playlist.appendChild (lane, nullptr);
-    }
-}
-
-void rebuildInserts (juce::ValueTree project)
-{
-    juce::Array<juce::ValueTree> channels;
-    juce::StringArray names;
-
-    for (const auto& channel : project)
-        if (channel.hasType (ids::CHANNEL))
-        {
-            channels.add (channel);
-            names.add (channel[ids::name].toString());
-        }
-
-    setInserts (project, names);
-
-    for (int i = 0; i < channels.size(); ++i)
-        routeTo (channels.getReference (i), i + 1);
 }
 
 } // namespace dew::demo

@@ -1,9 +1,12 @@
 #include <catch2/catch_test_macros.hpp>
 
+#include <cmath>
+
 #include "engine/EngineSnapshot.h"
 #include "i18n/Strings.h"
 #include "io/OfflineRenderer.h"
 #include "model/DemoLibrary.h"
+#include "model/EffectType.h"
 #include "model/GeneratorCatalog.h"
 #include "model/Ids.h"
 #include "model/Meter.h"
@@ -253,314 +256,135 @@ TEST_CASE ("every demo's arrangement reaches the end of its song", "[demos]")
     }
 }
 
-TEST_CASE ("each demo exercises the part of the app it is named for", "[demos]")
+TEST_CASE ("the library as a whole exercises the app", "[demos]")
 {
-    // Otherwise a "demo library" is four copies of the same project.
+    // This replaced a case per demo, each asserting that the demo named after a
+    // feature used that feature. That framing was the reason large parts of the
+    // app were demonstrated by nothing at all: it proved the wavetable demo used
+    // wavetables and had no opinion about whether ANYTHING used the FM matrix,
+    // the LFO, four of the ten effect types, three automation scopes or any
+    // metre but 4/4 - and none of them did.
+    //
+    // The question worth asking is about the LIBRARY. It fails when a capability
+    // stops being demonstrated, which is the property the library exists to
+    // have, and it does not have to be edited when a track is rewritten.
     juce::StringArray warnings;
 
-    const auto countIn = [] (const juce::ValueTree& tree, const juce::Identifier& type)
-    {
-        int n = 0;
+    juce::StringArray effectTypes, filterModes, distortionModes, waveforms, wavetables,
+        positionSources, scopes, pointShapes, instrumentTypes, chainHosts;
+    juce::Array<int> stepsPerBeat;
+    juce::StringArray meters;
 
-        for (const auto& child : tree)
-            if (child.hasType (type))
-                ++n;
-
-        return n;
-    };
+    auto fmRouted = false, lfoOn = false, bentCurve = false, pannedChannel = false,
+         mutedLane = false, partialMix = false, bypassedEffect = false, sharedInsert = false,
+         subBarClip = false, laneGain = false;
 
     const auto& demos = ProjectFactory::demos();
+    REQUIRE (demos.size() == 10);
 
-    const auto indexOfFile = [&demos] (const juce::String& fileName)
+    for (int i = 0; i < (int) demos.size(); ++i)
     {
-        for (int i = 0; i < (int) demos.size(); ++i)
-            if (fileName == demos[(size_t) i].fileName)
-                return i;
+        auto project = DemoLibrary::load (i, warnings);
+        INFO ("demo: " << keyOf (demos[(size_t) i].menuName));
 
-        return -1;
-    };
+        const auto meter = Meter::of (project);
+        meters.addIfNotAlreadyThere (meter.toString());
+        stepsPerBeat.addIfNotAlreadyThere (meter.stepsPerBeat);
 
-    SECTION ("the piano roll demo has chords and varied note lengths")
-    {
-        const auto project = DemoLibrary::load (indexOfFile ("melody.dew"), warnings);
-        const auto pattern = project.getChildWithName (ids::PATTERN);
+        // Every track is a track, not a loop and not an album side.
+        const auto bars = (int) project[ids::barsInSong];
+        INFO ("bars: " << bars);
+        REQUIRE (bars >= 32);
+        REQUIRE (bars <= 64);
 
-        juce::Array<int> lengths;
-        int simultaneous = 0;
+        juce::Array<int> insertsUsed;
 
-        for (const auto& note : pattern)
+        const auto readChain = [&] (const juce::ValueTree& host, const char* where)
         {
-            if (! note.hasType (ids::NOTE))
-                continue;
-
-            lengths.addIfNotAlreadyThere ((int) note[ids::lengthSteps]);
-        }
-
-        // Three notes starting on the same step is the thing a step grid
-        // cannot express.
-        for (const auto& note : pattern)
-        {
-            if (! note.hasType (ids::NOTE))
-                continue;
-
-            int here = 0;
-
-            for (const auto& other : pattern)
-                if (other.hasType (ids::NOTE) && (int) other[ids::ch] == (int) note[ids::ch]
-                    && (int) other[ids::step] == (int) note[ids::step])
-                    ++here;
-
-            simultaneous = juce::jmax (simultaneous, here);
-        }
-
-        REQUIRE (lengths.size() >= 4);
-        REQUIRE (simultaneous >= 3);
-    }
-
-    SECTION ("the effects demo uses chains on both a channel and a mixer track")
-    {
-        const auto project = DemoLibrary::load (indexOfFile ("effects.dew"), warnings);
-
-        int channelEffects = 0, trackEffects = 0;
-        juce::StringArray types;
-
-        for (const auto& channel : project)
-            if (channel.hasType (ids::CHANNEL))
-            {
-                channelEffects += countIn (channel, ids::EFFECT);
-
-                for (const auto& effect : channel)
-                    if (effect.hasType (ids::EFFECT))
-                        types.addIfNotAlreadyThere (effect[ids::type].toString());
-            }
-
-        for (const auto& track : project.getChildWithName (ids::MIXER))
-            if (track.hasType (ids::MIXER_TRACK))
-            {
-                trackEffects += countIn (track, ids::EFFECT);
-
-                for (const auto& effect : track)
-                    if (effect.hasType (ids::EFFECT))
-                        types.addIfNotAlreadyThere (effect[ids::type].toString());
-            }
-
-        int masterEffects = 0;
-
-        for (const auto& effect :
-             project.getChildWithName (ids::MIXER).getChildWithName (ids::MASTER))
-            if (effect.hasType (ids::EFFECT))
-            {
-                ++masterEffects;
-                types.addIfNotAlreadyThere (effect[ids::type].toString());
-            }
-
-        REQUIRE (channelEffects > 0);
-        REQUIRE (trackEffects > 0);
-        REQUIRE (types.size() >= 5);
-
-        // The third place a chain can live. Implemented end to end since the
-        // master became a bus like any other, and empty in every shipped file
-        // until this demo used it.
-        REQUIRE (masterEffects > 0);
-
-        // The rest of what the chain editor can do, none of which any shipped
-        // project had ever contained: a chain at the documented maximum depth,
-        // a slot switched off rather than removed, and a filter that is not a
-        // lowpass.
-        int deepest = 0;
-        bool bypassed = false;
-        juce::StringArray filterModes;
-
-        for (const auto& channel : project)
-        {
-            if (! channel.hasType (ids::CHANNEL))
-                continue;
-
-            deepest = juce::jmax (deepest, countIn (channel, ids::EFFECT));
-
-            for (const auto& effect : channel)
+            for (const auto& effect : host)
             {
                 if (! effect.hasType (ids::EFFECT))
                     continue;
 
+                chainHosts.addIfNotAlreadyThere (where);
+                effectTypes.addIfNotAlreadyThere (effect[ids::type].toString());
+
                 if (! (bool) effect[ids::enabled])
-                    bypassed = true;
+                    bypassedEffect = true;
+
+                if ((double) effect[ids::mix] < 1.0)
+                    partialMix = true;
 
                 if (effect[ids::type].toString() == "filter")
                     filterModes.addIfNotAlreadyThere (effect[ids::filterMode].toString());
+
+                if (effect[ids::type].toString() == "distortion")
+                    distortionModes.addIfNotAlreadyThere (effect[ids::distortionMode].toString());
             }
-        }
-
-        // Four, and not "the maximum": this used to read kMaxEffectsPerChain
-        // because the two numbers happened to be equal, so raising the cap to
-        // nine failed a test about a DEMO. The demo's depth is a musical
-        // statement - filter, drive, chorus, delay, in that order, each working
-        // on what the one before it left - and inventing five more effects to
-        // keep a test true would be writing content to satisfy an assertion.
-        // What still ties it to the schema is that it has to fit.
-        REQUIRE (deepest == 4);
-        REQUIRE (deepest <= kMaxEffectsPerChain);
-        REQUIRE (bypassed);
-        REQUIRE (filterModes.size() >= 3);
-    }
-
-    SECTION ("the getting-started demo is an arrangement, not a loop")
-    {
-        const auto project = DemoLibrary::load (indexOfFile ("demo.dew"), warnings);
-
-        int clips = 0;
-
-        for (const auto& track : project.getChildWithName (ids::PLAYLIST))
-            clips += countIn (track, ids::CLIP);
-
-        REQUIRE (countIn (project, ids::PATTERN) >= 3);
-        REQUIRE (clips >= 4);
-    }
-
-    SECTION ("the wavetable demo uses the bank, unison and a position curve")
-    {
-        const auto project = DemoLibrary::load (indexOfFile ("wavetable.dew"), warnings);
-
-        juce::StringArray tables, sources;
-        int widest = 1, wavetableSlots = 0;
+        };
 
         for (const auto& channel : project)
         {
             if (! channel.hasType (ids::CHANNEL))
                 continue;
 
-            for (const auto& osc : channel.getChildWithName (ids::INSTRUMENT))
-            {
-                if (! osc.hasType (ids::OSC) || ! (bool) osc[ids::enabled])
-                    continue;
+            instrumentTypes.addIfNotAlreadyThere (channel[ids::source].toString());
+            readChain (channel, "channel");
 
-                if (osc[ids::mode].toString() != "wavetable")
-                    continue;
+            const auto insert = (int) channel[ids::mixerTrackId];
 
-                ++wavetableSlots;
+            if (insertsUsed.contains (insert))
+                sharedInsert = true;
 
-                const auto table = generatorNodeFor (osc, ids::wavePosition);
-                tables.addIfNotAlreadyThere (table[ids::wavetable].toString());
-                sources.addIfNotAlreadyThere (table[ids::wavePositionSource].toString());
-                widest = juce::jmax (widest, (int) table[ids::unisonVoices]);
-            }
-        }
+            insertsUsed.add (insert);
 
-        INFO ("tables: " << tables.joinIntoString (", "));
-        REQUIRE (wavetableSlots >= 5);
-        REQUIRE (tables.size() >= 4);
-
-        // Both ways a position can move. A demo with only one of them shows
-        // half of what the control does.
-        REQUIRE (sources.size() == 2);
-        REQUIRE (widest > 1);
-
-        // And the position is DRAWN, not just set: channelOsc is the scope this
-        // demo exists to put in front of somebody.
-        bool morphed = false;
-
-        for (const auto& automation : project)
-            if (automation.hasType (ids::AUTOMATION)
-                && automation[ids::scope].toString() == "channelOsc")
-                morphed = true;
-
-        REQUIRE (morphed);
-    }
-
-    SECTION ("the oscillator-stack demo stacks oscillators")
-    {
-        const auto project = DemoLibrary::load (indexOfFile ("layers.dew"), warnings);
-
-        int fullStacks = 0;
-        bool detuned = false, mixedModes = false;
-
-        for (const auto& channel : project)
-        {
-            if (! channel.hasType (ids::CHANNEL))
-                continue;
-
-            juce::Array<int> octaves;
-            juce::StringArray modes;
-            int enabled = 0;
+            if (std::abs ((double) channel[ids::pan]) > 0.001)
+                pannedChannel = true;
 
             for (const auto& osc : channel.getChildWithName (ids::INSTRUMENT))
             {
-                if (! osc.hasType (ids::OSC) || ! (bool) osc[ids::enabled])
+                if (! osc.hasType (ids::OSC))
                     continue;
 
-                ++enabled;
-                octaves.addIfNotAlreadyThere ((int) osc[ids::octave]);
-                modes.addIfNotAlreadyThere (osc[ids::mode].toString());
+                // The matrix reads as routed when it is not the identity: any
+                // amount above zero, or an output that is not fully open. The
+                // shipped library had every cell at its default, which is three
+                // oscillators summed in parallel.
+                for (const auto& to : { ids::fmTo1, ids::fmTo2, ids::fmTo3 })
+                    if ((double) osc[to] > 0.001)
+                        fmRouted = true;
 
-                if ((int) osc[ids::detuneCents] != 0)
-                    detuned = true;
+                if ((double) osc[ids::fmOut] < 0.999)
+                    fmRouted = true;
+
+                if (const auto lfo = osc.getChildWithName (ids::LFO);
+                    lfo.isValid() && (bool) lfo[ids::lfoOn])
+                    lfoOn = true;
+
+                if (! (bool) osc[ids::enabled])
+                    continue;
+
+                if (osc[ids::mode].toString() == "wavetable")
+                {
+                    const auto node = osc.getChildWithName (ids::WAVETABLE);
+                    wavetables.addIfNotAlreadyThere (node[ids::wavetable].toString());
+                    positionSources.addIfNotAlreadyThere (node[ids::wavePositionSource].toString());
+                }
+                else
+                {
+                    waveforms.addIfNotAlreadyThere (
+                        osc.getChildWithName (ids::CLASSIC)[ids::wave].toString());
+                }
             }
-
-            if (enabled == kMaxOscillators && octaves.size() > 1)
-                ++fullStacks;
-
-            // A slot's mode is the SLOT's, not the channel's - so a wavetable
-            // can stand beside two classic oscillators.
-            if (enabled > 1 && modes.size() > 1)
-                mixedModes = true;
         }
 
-        REQUIRE (fullStacks >= 3);
-        REQUIRE (detuned);
-        REQUIRE (mixedModes);
-    }
+        const auto mixer = project.getChildWithName (ids::MIXER);
 
-    SECTION ("the song-structure demo arranges across lanes, and shares a bus")
-    {
-        const auto project = DemoLibrary::load (indexOfFile ("arrangement.dew"), warnings);
+        for (const auto& track : mixer)
+            if (track.hasType (ids::MIXER_TRACK))
+                readChain (track, "mixerTrack");
 
-        REQUIRE ((int) project[ids::barsInSong] >= 24);
-        REQUIRE (countIn (project, ids::PATTERN) >= 5);
-
-        int lanesWithClips = 0;
-
-        for (const auto& track : project.getChildWithName (ids::PLAYLIST))
-            if (countIn (track, ids::CLIP) > 0)
-                ++lanesWithClips;
-
-        REQUIRE (lanesWithClips >= 3);
-
-        // More channels than inserts, which only happens when several of them
-        // share one - the bus routing nothing else in the library shows.
-        juce::Array<int> buses;
-        int channels = 0;
-
-        for (const auto& channel : project)
-            if (channel.hasType (ids::CHANNEL))
-            {
-                ++channels;
-                buses.addIfNotAlreadyThere ((int) channel[ids::mixerTrackId]);
-            }
-
-        INFO (channels << " channels over " << buses.size() << " inserts");
-        REQUIRE (channels > buses.size());
-    }
-
-    SECTION ("the automation demo has curves that are actually placed")
-    {
-        const auto project = DemoLibrary::load (indexOfFile ("automation.dew"), warnings);
-
-        REQUIRE (countIn (project, ids::AUTOMATION) >= 2);
-
-        int automationClips = 0;
-
-        for (const auto& track : project.getChildWithName (ids::PLAYLIST))
-            for (const auto& clip : track)
-                if (clip.hasType (ids::CLIP) && clip[ids::kind].toString() == "automation")
-                    ++automationClips;
-
-        REQUIRE (automationClips >= 2);
-
-        // Not four copies of the same curve pointed at the same kind of thing.
-        // Every scope but channelOsc, which is the wavetable demo's, and a
-        // parameter that is not `cutoff` - the only one ever automated before.
-        juce::StringArray scopes, params;
-        bool bent = false, stepped = false;
+        readChain (mixer.getChildWithName (ids::MASTER), "master");
 
         for (const auto& automation : project)
         {
@@ -568,34 +392,110 @@ TEST_CASE ("each demo exercises the part of the app it is named for", "[demos]")
                 continue;
 
             scopes.addIfNotAlreadyThere (automation[ids::scope].toString());
-            params.addIfNotAlreadyThere (automation[ids::param].toString());
 
             for (const auto& point : automation)
             {
                 if (! point.hasType (ids::POINT))
                     continue;
 
-                if (! juce::exactlyEqual ((double) point[ids::curve], 0.0))
-                    bent = true;
+                pointShapes.addIfNotAlreadyThere (point[ids::shape].toString());
 
-                if (point[ids::shape].toString() == "step")
-                    stepped = true;
+                if (std::abs ((double) point[ids::curve]) > 0.001)
+                    bentCurve = true;
             }
         }
 
-        INFO ("scopes: " << scopes.joinIntoString (", "));
-        INFO ("params: " << params.joinIntoString (", "));
-        REQUIRE (scopes.size() >= 4);
-        REQUIRE (params.size() >= 4);
+        const auto bar = meter.stepsPerBar();
 
-        // A segment has a SHAPE and a BEND, and every point in every file the
-        // library shipped was a straight line at zero.
-        REQUIRE (bent);
-        REQUIRE (stepped);
+        for (const auto& lane : project.getChildWithName (ids::PLAYLIST))
+        {
+            if (! lane.hasType (ids::PLAYLIST_TRACK))
+                continue;
 
-        // And the engine agrees they will do something.
-        const auto snapshot = buildSnapshot (project, nullptr);
-        REQUIRE (snapshot.anyAutomation);
-        REQUIRE (snapshot.anyEffects);
+            if ((bool) lane[ids::mute])
+                mutedLane = true;
+
+            if (std::abs ((double) lane[ids::gain] - 1.0) > 0.001)
+                laneGain = true;
+
+            for (const auto& clip : lane)
+                if (clip.hasType (ids::CLIP) && ((int) clip[ids::startStep]) % bar != 0)
+                    subBarClip = true;
+        }
+    }
+
+    INFO ("effects: " << effectTypes.joinIntoString (" "));
+    INFO ("scopes: " << scopes.joinIntoString (" "));
+    INFO ("wavetables: " << wavetables.joinIntoString (" "));
+    INFO ("metres: " << meters.joinIntoString (" "));
+
+    SECTION ("every effect type, filter mode and distortion mode is heard somewhere")
+    {
+        CHECK (effectTypes.size() == kNumEffectTypes);
+        CHECK (filterModes.size() == 3);
+        CHECK (distortionModes.size() == 4);
+        CHECK (chainHosts.size() == 3);
+        CHECK (bypassedEffect);
+        CHECK (partialMix);
+    }
+
+    SECTION ("every generator the synth has is played by something")
+    {
+        CHECK (waveforms.size() == 4);
+        CHECK (wavetables.size() == 5);
+        CHECK (positionSources.size() == 2);
+
+        // The two that were dead in every shipped file.
+        CHECK (fmRouted);
+        CHECK (lfoOn);
+    }
+
+    SECTION ("every automation scope but the one that needs a soundfont is drawn")
+    {
+        // channelSoundFont is the exception, and it is an honest one: reaching
+        // it needs an .sf2 committed to this repository, which is a licensing
+        // and repository-size decision rather than a musical one. When a font
+        // ships, this list grows by one and so does the library.
+        for (const auto* scope : { "project", "channel", "channelOsc", "channelAmp",
+                                   "channelEffect", "mixerTrack", "mixerEffect", "master" })
+        {
+            INFO ("scope: " << scope);
+            CHECK (scopes.contains (scope));
+        }
+
+        CHECK (! scopes.contains ("channelSoundFont"));
+
+        // Both stored shapes, and a bend that is not zero. Before this library
+        // every curve in every demo was a straight line.
+        CHECK (pointShapes.contains ("curve"));
+        CHECK (pointShapes.contains ("step"));
+        CHECK (bentCurve);
+    }
+
+    SECTION ("the mixer and the playlist are used for what they are for")
+    {
+        CHECK (sharedInsert); // several channels on one fader: a drum bus
+        CHECK (pannedChannel);
+        CHECK (mutedLane);
+        CHECK (laneGain);
+        CHECK (subBarClip); // a clip off the bar line, which v20 made sayable
+    }
+
+    SECTION ("the library is not all in one metre at one grid")
+    {
+        // The whole shipped library was 4/4 at four steps to a beat, so Meter
+        // and the grid arithmetic were demonstrated by nothing.
+        CHECK (meters.size() >= 4);
+        CHECK (stepsPerBeat.size() >= 3);
+    }
+
+    SECTION ("what is NOT covered is covered deliberately")
+    {
+        // Only the synth. `audio` needs a recording committed beside the demos
+        // and resolved from the binary the Demos menu loads from; `soundfont`
+        // needs a third-party .sf2. Both are asserted so that adding one is a
+        // deliberate edit here rather than a silent change of scope.
+        CHECK (instrumentTypes.size() == 1);
+        CHECK (instrumentTypes.contains ("synth"));
     }
 }

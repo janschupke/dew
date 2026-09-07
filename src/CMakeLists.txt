@@ -74,22 +74,26 @@ juce_add_binary_data(dew_demo_data
   HEADER_NAME DemoData.h
   NAMESPACE   DemoData
   SOURCES
-    "${CMAKE_SOURCE_DIR}/examples/demo.dew"
-    "${CMAKE_SOURCE_DIR}/examples/melody.dew"
-    "${CMAKE_SOURCE_DIR}/examples/effects.dew"
-    "${CMAKE_SOURCE_DIR}/examples/automation.dew"
-    "${CMAKE_SOURCE_DIR}/examples/wavetable.dew"
-    "${CMAKE_SOURCE_DIR}/examples/layers.dew"
-    "${CMAKE_SOURCE_DIR}/examples/arrangement.dew"
-    "${CMAKE_SOURCE_DIR}/examples/amber.dew"
+    # The SOURCES of the compiled demos come FIRST. Four of the ten compile
+    # their .score at build time through DemoLibrary::jsonFor, so those bytes
+    # have to be in the binary before the demo that reads them can be built at
+    # all. A demo that opens a score compiled is also a demo whose .dew must not
+    # drift from the text that made it, which is why the text ships too.
+    "${CMAKE_SOURCE_DIR}/examples/halcyon.score"
+    "${CMAKE_SOURCE_DIR}/examples/rhodes.score"
+    "${CMAKE_SOURCE_DIR}/examples/ironmeter.score"
+    "${CMAKE_SOURCE_DIR}/examples/nightfall.score"
 
-    # The SOURCES of the compiled ones, because a demo that opens a score
-    # compiled is a demo whose .dew must not drift from the text that made it.
-    # drift.score comes first: the wavetable demo COMPILES it at build time, so
-    # the bytes have to be in the binary before that demo can be built at all.
-    "${CMAKE_SOURCE_DIR}/examples/amber.score"
-    "${CMAKE_SOURCE_DIR}/examples/drift.score"
-    "${CMAKE_SOURCE_DIR}/examples/neon.score"
+    "${CMAKE_SOURCE_DIR}/examples/pulse-code.dew"
+    "${CMAKE_SOURCE_DIR}/examples/copper-wire.dew"
+    "${CMAKE_SOURCE_DIR}/examples/late-rhodes.dew"
+    "${CMAKE_SOURCE_DIR}/examples/chrome-coast.dew"
+    "${CMAKE_SOURCE_DIR}/examples/slow-grain.dew"
+    "${CMAKE_SOURCE_DIR}/examples/sublevel.dew"
+    "${CMAKE_SOURCE_DIR}/examples/iron-meter.dew"
+    "${CMAKE_SOURCE_DIR}/examples/tidal-lock.dew"
+    "${CMAKE_SOURCE_DIR}/examples/halcyon.dew"
+    "${CMAKE_SOURCE_DIR}/examples/nightfall-waltz.dew"
 )
 
 # The factory presets, embedded for the reason the demos are: what the picker
@@ -328,11 +332,20 @@ add_library(dew_model STATIC
   model/DemoLibrary.cpp
   model/EntityColour.cpp
   model/DemoBuilders.cpp
+  model/DemoBuilderSound.cpp
+  model/DemoBuilderLayout.cpp
   model/ProjectFactory.cpp
-  model/demos/DemosArrangement.cpp
-  model/demos/DemosCompiled.cpp
-  model/demos/DemosEffects.cpp
-  model/demos/DemosPatterns.cpp
+  model/demos/ScoreDemo.cpp
+  model/demos/PulseCode.cpp
+  model/demos/CopperWire.cpp
+  model/demos/LateRhodes.cpp
+  model/demos/ChromeCoast.cpp
+  model/demos/SlowGrain.cpp
+  model/demos/Sublevel.cpp
+  model/demos/IronMeter.cpp
+  model/demos/TidalLock.cpp
+  model/demos/Halcyon.cpp
+  model/demos/NightfallWaltz.cpp
   model/edits/Arrangement.cpp
   model/edits/Automation.cpp
   model/edits/Channels.cpp

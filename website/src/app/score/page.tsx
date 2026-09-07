@@ -21,7 +21,7 @@ export default function ScoreLanguage() {
       <PageHeader title={t('score.title')} lead={t('score.lead')} />
 
       <Container className="pb-section">
-        <Score name="amber" lines={[7, 30]} caption={t('score.exampleCaption')} />
+        <Score name="rhodes" lines={[14, 37]} caption={t('score.exampleCaption')} />
 
         <Section title="No expressions">
           <p className="text-prose leading-prose text-secondary max-w-[68ch]">
@@ -44,7 +44,7 @@ export default function ScoreLanguage() {
             shifted” into one message.
           </p>
 
-          <Score name="amber" lines={[46, 52]} />
+          <Score name="rhodes" lines={[76, 88]} />
         </Section>
 
         {/* Prose only, and both short. Durations keeps the whole column: it
