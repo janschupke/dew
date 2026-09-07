@@ -2,6 +2,7 @@
 
 #include <juce_gui_extra/juce_gui_extra.h>
 
+#include "i18n/Strings.h"
 #include "app/Settings.h"
 #include "engine/AudioEngine.h"
 #include "io/LiveAudioHost.h"
@@ -157,7 +158,7 @@ inline int shootPanel (const juce::String& mode, const juce::File& destination, 
 
     if (mode == "randomize")
     {
-        RandomizePanel panel { {}, "Applies to the 12 selected notes" };
+        RandomizePanel panel { {}, tr (StringId::randomize_scopeSelection, Args {}.count (12)) };
         return shoot (panel, destination, scale);
     }
 

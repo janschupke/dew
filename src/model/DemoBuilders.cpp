@@ -202,6 +202,9 @@ juce::ValueTree makeAutomation (int id, AutomationScope scope, int targetId, int
     return automation;
 }
 
+namespace
+{
+
 /** "Channel 3", from the catalogue, in the REFERENCE locale.
 
     A demo is compared against a committed file, so its content names have to
@@ -213,6 +216,8 @@ juce::String numbered (StringId id, int number)
 {
     return trIn (referenceLocale(), id, Args {}.with ("number", number));
 }
+
+} // namespace
 
 juce::ValueTree scaffold (int numChannels)
 {
