@@ -5,7 +5,7 @@
     "stepsPerBeat": 4,
     "beatsPerBar": 4,
     "beatUnit": 4,
-    "barsInSong": 16,
+    "barsInSong": 32,
     "channels": [
       {
         "id": 5,
@@ -3613,7 +3613,7 @@
               "automationId": 1,
               "channelId": 1,
               "startStep": 0,
-              "lengthSteps": 4,
+              "lengthSteps": 64,
               "genId": "haze#0/0"
             },
             {
@@ -3621,8 +3621,8 @@
               "patternId": 3,
               "automationId": 1,
               "channelId": 1,
-              "startStep": 4,
-              "lengthSteps": 8,
+              "startStep": 64,
+              "lengthSteps": 128,
               "genId": "gather#0/0"
             },
             {
@@ -3630,8 +3630,8 @@
               "patternId": 4,
               "automationId": 1,
               "channelId": 1,
-              "startStep": 12,
-              "lengthSteps": 8,
+              "startStep": 192,
+              "lengthSteps": 128,
               "genId": "bloom#0/0"
             },
             {
@@ -3639,8 +3639,8 @@
               "patternId": 5,
               "automationId": 1,
               "channelId": 1,
-              "startStep": 20,
-              "lengthSteps": 8,
+              "startStep": 320,
+              "lengthSteps": 128,
               "genId": "ebb#0/0"
             },
             {
@@ -3648,8 +3648,8 @@
               "patternId": 6,
               "automationId": 1,
               "channelId": 1,
-              "startStep": 28,
-              "lengthSteps": 4,
+              "startStep": 448,
+              "lengthSteps": 64,
               "genId": "fade#0/0"
             }
           ]

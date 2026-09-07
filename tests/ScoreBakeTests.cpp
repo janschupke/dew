@@ -312,6 +312,103 @@ TEST_CASE ("the song grows to fit and never shrinks", "[score][bake]")
     REQUIRE ((int) project[ids::barsInSong] == 200);
 }
 
+TEST_CASE ("a baked clip is stored in steps, not bars", "[score][bake]")
+{
+    // A ClipDesc is written in BARS; a CLIP has been stored in STEPS since
+    // format v20. The bake kept handing the bar numbers straight to addClip, so
+    // every score-baked demo shipped with its arrangement crushed into a
+    // sixteenth of the timeline - a 128-step pattern placed at step 4, for 8
+    // steps. Nothing saw it: the demo gate asks only that a clip's pattern
+    // EXISTS and that the render is audible, and four steps of a pattern are
+    // audible.
+    const auto patternWithId = [] (const juce::ValueTree& project, int id)
+    {
+        for (const auto& pattern : project)
+            if (pattern.hasType (ids::PATTERN) && (int) pattern[ids::id] == id)
+                return pattern;
+
+        return juce::ValueTree {};
+    };
+
+    const auto stepsPerBarOfBake = [&patternWithId] (const lang::Score& score)
+    {
+        BakeReport report;
+        const auto project = ScoreBake::toNewProject (score, report);
+
+        const auto stepsPerBar = Meter::of (project).stepsPerBar();
+        INFO ("steps per bar " << stepsPerBar);
+
+        const auto lane = generatedLane (project);
+        REQUIRE (lane.isValid());
+
+        auto expectedStart = 0;
+        auto clips = 0;
+
+        for (const auto& clip : lane)
+        {
+            if (! clip.hasType (ids::CLIP))
+                continue;
+
+            ++clips;
+
+            const auto start = (int) clip[ids::startStep];
+            const auto length = (int) clip[ids::lengthSteps];
+            const auto pattern = patternWithId (project, (int) clip[ids::patternId]);
+
+            INFO ("clip " << clips << " at step " << start << " for " << length);
+            REQUIRE (pattern.isValid());
+
+            // A section becomes one pattern and a clip that covers it exactly,
+            // so a clip in the wrong unit cannot hide behind a pattern that
+            // happens to repeat.
+            REQUIRE (length == (int) pattern[ids::lengthSteps]);
+
+            // And the clips tile the lane, which is what "the arrangement"
+            // means. Start alone would pass on a lane of one clip at zero.
+            REQUIRE (start == expectedStart);
+            expectedStart += length;
+        }
+
+        REQUIRE (clips >= 2);
+        return stepsPerBar;
+    };
+
+    SECTION ("in the committed example")
+    {
+        REQUIRE (stepsPerBarOfBake (compileOrFail (exampleSource())) == 16);
+    }
+
+    SECTION ("and in a metre whose bar is not sixteen steps")
+    {
+        // The case a bare `* 16` passes and this one does not. 3/4 at two steps
+        // to a beat is six steps to a bar, so a clip written in bars and a clip
+        // written in steps cannot coincide anywhere but zero.
+        const auto score = compileOrFail ("song {\n"
+                                          "  tempo 100\n"
+                                          "  meter 3/4\n"
+                                          "  key   D minor\n"
+                                          "  seed  7\n"
+                                          "}\n"
+                                          "channel pad { mixer 1 }\n"
+                                          "voicing warm { size 3 voices }\n"
+                                          "rhythm turn { 1/4 1/8 1/8 1/4 }\n"
+                                          "harmony h { i | iv | V | i }\n"
+                                          "section verse {\n"
+                                          "  length 4 bars\n"
+                                          "  harmony h\n"
+                                          "  part pad {\n"
+                                          "    chords with warm\n"
+                                          "    rhythm turn\n"
+                                          "  }\n"
+                                          "}\n"
+                                          "arrangement {\n"
+                                          "  verse x2\n"
+                                          "}\n");
+
+        REQUIRE (stepsPerBarOfBake (score) != 16);
+    }
+}
+
 TEST_CASE ("every note the bake writes is inside its pattern", "[score][bake]")
 {
     // A pattern is windowed by its clip, so a note running past the end would

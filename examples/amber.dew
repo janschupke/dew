@@ -5,7 +5,7 @@
     "stepsPerBeat": 4,
     "beatsPerBar": 4,
     "beatUnit": 4,
-    "barsInSong": 16,
+    "barsInSong": 52,
     "channels": [
       {
         "id": 3,
@@ -5517,7 +5517,7 @@
               "automationId": 1,
               "channelId": 1,
               "startStep": 0,
-              "lengthSteps": 4,
+              "lengthSteps": 64,
               "genId": "intro#0/0"
             },
             {
@@ -5525,8 +5525,8 @@
               "patternId": 3,
               "automationId": 1,
               "channelId": 1,
-              "startStep": 4,
-              "lengthSteps": 8,
+              "startStep": 64,
+              "lengthSteps": 128,
               "genId": "verse#0/0"
             },
             {
@@ -5534,8 +5534,8 @@
               "patternId": 4,
               "automationId": 1,
               "channelId": 1,
-              "startStep": 12,
-              "lengthSteps": 8,
+              "startStep": 192,
+              "lengthSteps": 128,
               "genId": "verse@verse_b/0"
             },
             {
@@ -5543,8 +5543,8 @@
               "patternId": 5,
               "automationId": 1,
               "channelId": 1,
-              "startStep": 20,
-              "lengthSteps": 8,
+              "startStep": 320,
+              "lengthSteps": 128,
               "genId": "chorus#0/0"
             },
             {
@@ -5552,8 +5552,8 @@
               "patternId": 6,
               "automationId": 1,
               "channelId": 1,
-              "startStep": 28,
-              "lengthSteps": 8,
+              "startStep": 448,
+              "lengthSteps": 128,
               "genId": "verse#2/0"
             },
             {
@@ -5561,8 +5561,8 @@
               "patternId": 7,
               "automationId": 1,
               "channelId": 1,
-              "startStep": 36,
-              "lengthSteps": 8,
+              "startStep": 576,
+              "lengthSteps": 128,
               "genId": "chorus#1/0"
             },
             {
@@ -5570,8 +5570,8 @@
               "patternId": 7,
               "automationId": 1,
               "channelId": 1,
-              "startStep": 44,
-              "lengthSteps": 8,
+              "startStep": 704,
+              "lengthSteps": 128,
               "genId": "chorus#1/1"
             }
           ]

@@ -400,13 +400,22 @@ BakeReport ScoreBake::into (juce::ValueTree project, const lang::Score& score,
     }
 
     // --- clips ----------------------------------------------------------------
+    // A ClipDesc is written in BARS - "the chorus arrives at bar 12" is what the
+    // arrangement says - and a CLIP has been stored in STEPS since format v20.
+    // This is where the unit changes, the way demo::makeClip is for the
+    // hand-built demos. It reads the SCORE's grid rather than the `meter` above,
+    // which was sampled before the empty-project branch had a chance to adopt
+    // it; by here the two agree or the bake has already returned.
+    const auto stepsPerBar = score.stepsPerBeat * score.beatsPerBar;
+
     for (const auto& clip : score.clips)
     {
         if (clip.pattern < 0 || clip.pattern >= (int) patternIds.size())
             continue;
 
         auto added = ProjectEdits::addClip (lane, patternIds[(std::size_t) clip.pattern],
-                                            clip.startBar, clip.lengthBars, undo);
+                                            clip.startBar * stepsPerBar,
+                                            clip.lengthBars * stepsPerBar, undo);
         added.setProperty (ids::genId, juce::String (clip.key), undo);
         ++report.clipsWritten;
     }

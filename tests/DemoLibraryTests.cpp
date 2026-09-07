@@ -6,6 +6,7 @@
 #include "model/DemoLibrary.h"
 #include "model/GeneratorCatalog.h"
 #include "model/Ids.h"
+#include "model/Meter.h"
 #include "model/ProjectFactory.h"
 #include "model/ProjectSchema.h"
 #include "model/ProjectSerializer.h"
@@ -212,6 +213,43 @@ TEST_CASE ("every demo clip points at something that exists", "[demos]")
                     REQUIRE (automations.contains ((int) clip[ids::automationId]));
                 }
             }
+    }
+}
+
+TEST_CASE ("every demo's arrangement reaches the end of its song", "[demos]")
+{
+    // barsInSong is the document's extent and the clips are its content, so a
+    // demo whose content stops a third of the way in has one of the two wrong.
+    //
+    // This is the assertion whose absence let a real regression ship: when
+    // clips became steps, ScoreBake went on handing addClip bar numbers, and
+    // the three score-baked demos were committed with their arrangements
+    // crushed into a sixteenth of the timeline. Every other demo test passed -
+    // the clips still pointed at patterns that existed, and four steps of a
+    // pattern are audible.
+    juce::StringArray warnings;
+
+    for (int i = 0; i < (int) ProjectFactory::demos().size(); ++i)
+    {
+        const auto project = DemoLibrary::load (i, warnings);
+        INFO ("demo: " << keyOf (ProjectFactory::demos()[(size_t) i].menuName));
+
+        const auto stepsPerBar = Meter::of (project).stepsPerBar();
+        const auto bars = (int) project[ids::barsInSong];
+        auto furthest = 0;
+
+        for (const auto& track : project.getChildWithName (ids::PLAYLIST))
+            for (const auto& clip : track)
+                if (clip.hasType (ids::CLIP))
+                    furthest = juce::jmax (furthest, (int) clip[ids::startStep]
+                                                         + (int) clip[ids::lengthSteps]);
+
+        INFO ("song " << bars << " bars of " << stepsPerBar << " steps; content reaches step "
+                      << furthest);
+
+        // Into the last bar, not exactly onto its end: trailing silence inside
+        // the final bar is a musical choice, and a whole empty bar is not.
+        REQUIRE (furthest > (bars - 1) * stepsPerBar);
     }
 }
 
