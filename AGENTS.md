@@ -25,7 +25,7 @@ these files.
 - [The score language](.ai/rules/score-language.md) — `dew_lang` links nothing, hand-written RNG keyed on the structural path, byte-identical **across processes**, the three host walls, and what is settled
 - [Rendering and export](.ai/rules/render-and-export.md) — a bar range renders from sample 0, stems mute the other tracks, LAME encodes in its writer's destructor, and the post-processing order
 - [Automation](.ai/rules/automation.md) — one evaluator, `automationTargetFor` as the primitive, `ParamSpec::automatable` as the only gate, `TempoMap::isConstant` as correctness, and what is deliberately not automatable
-- [Strings](.ai/rules/i18n.md) — every sentence a person reads is a structural key in `resources/i18n/en.json`, generated into TWO catalogues because `dew_lang` links nothing; a name written into a file is the author's data; `tr` never returns empty; what is deliberately not translated
+- [Strings](.ai/rules/i18n.md) — every sentence a person reads is a structural key in `resources/i18n/en.json`, generated into TWO catalogues because `dew_lang` links nothing; a name written into a file is the author's data; `tr` never returns empty; the three things that stop the next literal, and what is deliberately not translated
 - [C++ style](.ai/rules/cpp-style.md) — `.clang-format` is the authority; hand-grouped includes, the `juce::String` ASCII/UTF-8 trap, and the standard-library limits on this deployment target
 - [The MCP endpoint](.ai/rules/mcp.md) — one operation table read by the protocol, the permission check and the website; five fields that address every parameter; loopback and an `Origin` check; a client named to the user and approved once; one call, one undo step
 - [The website](.ai/rules/website.md) — `website/` is checked by its own gates and by nothing the C++ tree runs; the JSON it reads is generated and diffed, the screenshots are not; dark only, one palette; no tokenizer, because the samples arrive pre-scanned
@@ -65,10 +65,13 @@ Full set in [`.ai/rules/`](.ai/rules/). The ones an agent trips over first:
   `std::uniform_int_distribution` or `juce::Random` — libstdc++ and libc++ would render
   different music.
 - **No user-facing string is written in a source file.** Every sentence a person reads is
-  a key in `resources/i18n/en.json`; a gate refuses a literal at any text-setting call, and
-  looks through a `juce::String (...)` wrapper. One file, two generated catalogues:
-  `tr (StringId::x)` everywhere, and `bag.text (Msg::x)` inside `dew_lang`, which links
-  nothing and so cannot hold a `juce::String`.
+  a key in `resources/i18n/en.json`, and THREE things say so: a `Translated` parameter
+  refuses a literal at compile time, one gate refuses a literal at a named text-setting
+  call, and another refuses a literal that reads as a sentence wherever it sits — including
+  the fragments a `+` leaves behind, which is how *never assemble a sentence* is enforced.
+  One file, two generated catalogues: `tr (StringId::x)` everywhere, and
+  `bag.text (Msg::x)` inside `dew_lang`, which links nothing and so cannot hold a
+  `juce::String`.
 - **A name written into a document is the AUTHOR'S DATA, not a label.** A new project's
   channel names are translated once, at creation. Anything compared against a committed
   file — the demos, the presets, the score-language reference — is built in the REFERENCE
