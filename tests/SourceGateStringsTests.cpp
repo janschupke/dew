@@ -113,7 +113,14 @@ bool showsALiteral (const juce::String& raw)
     // translator for a key the orphan gate would then have to allow.
     for (const auto* sink : { "setTooltip (", "setButtonText (", "setText (", "setTitle (",
                               "setSuffix (", "setCaption (", "showMessage (", "notes.push_back (",
-                              "helps.push_back (", "warnings.add (", "addSectionHeader (" })
+                              "helps.push_back (", "warnings.add (", "addSectionHeader (",
+
+                              // Four the audit found, and the first two are why the prose gate
+                              // beside this one exists: setDescription and postAnnouncement are
+                              // what a screen reader SAYS, and all three canvases built theirs by
+                              // concatenation - so the fragments never reached a sink at all.
+                              // setStage names a render's current step, and setName the window.
+                              "setDescription (", "postAnnouncement (", "setStage (", "setName (" })
     {
         if (! line.contains (sink))
             continue;
@@ -194,7 +201,12 @@ bool showsALiteral (const juce::String& raw)
     for (const auto* sink :
          { "addItem (", "addSubMenu (", "drawText (", "drawFittedText (", "FileChooser> (",
            "FileBasedDocument (", "diagnostics.error (", "diagnostics.warning (",
-           "diagnostics.add (", "related.push_back (", "dialog::launch (" })
+           "diagnostics.add (", "related.push_back (", "dialog::launch (",
+
+           // A tab's name is its SECOND argument, after nothing at all - and
+           // the five editors' were raw English two lines from a translated
+           // container title, because no sink in either list could see them.
+           "addTab (" })
     {
         if (! line.contains (sink))
             continue;
