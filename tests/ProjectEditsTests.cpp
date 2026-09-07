@@ -262,7 +262,8 @@ TEST_CASE ("duplicating a pattern copies its notes under a new identity", "[edit
     REQUIRE (project.indexOf (copy) == project.indexOf (source) + 1);
 
     // An auto-named pattern gets the next auto name; a renamed one is marked.
-    REQUIRE (copy[ids::name].toString() == "Pattern " + juce::String ((int) copy[ids::id]));
+    REQUIRE (copy[ids::name].toString()
+             == tr (StringId::project_patternN, Args {}.with ("number", (int) copy[ids::id])));
 
     source.setProperty (ids::name, "Drums", &undo);
     const auto second = ProjectEdits::duplicatePattern (project, source, &undo);

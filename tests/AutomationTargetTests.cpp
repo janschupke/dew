@@ -223,19 +223,40 @@ TEST_CASE ("the target list covers channels, effects, tracks and master", "[auto
     auto channel = project.getChildWithName (ids::CHANNEL);
     ProjectEdits::addEffect (project, channel, "delay", &undo);
 
-    juce::StringArray names;
+    const auto targets = availableAutomationTargets (project);
 
-    for (const auto& target : availableAutomationTargets (project))
-        names.add (target.displayName);
+    // Asked of the target's two halves rather than of the composed string.
+    // Spelling "Kick > Delay > Time" here would be this test holding the
+    // catalogue's English against itself, and it would fail the day somebody
+    // corrected a parameter's name rather than the day the picker lost one.
+    const auto offers = [&targets] (const juce::String& owner, StringId param)
+    {
+        for (const auto& target : targets)
+            if (target.ownerName == owner && target.paramName == tr (param))
+                return true;
+
+        return false;
+    };
+
+    const auto within = [] (const juce::String& owner, StringId part)
+    {
+        return tr (StringId::automation_parameter,
+                   Args {}.with ("owner", owner).with ("param", tr (part)));
+    };
 
     const auto name = channel[ids::name].toString();
 
-    REQUIRE (names.contains (name + " > Volume"));
-    REQUIRE (names.contains (name + " > Pan"));
-    REQUIRE (names.contains (name + " > Delay > Time"));
-    REQUIRE (names.contains (name + " > Delay > Feedback"));
-    REQUIRE (names.contains ("Insert 1 > Gain"));
-    REQUIRE (names.contains ("Master > Gain"));
+    REQUIRE (offers (name, StringId::param_volume_name));
+    REQUIRE (offers (name, StringId::param_pan_name));
+    REQUIRE (offers (within (name, StringId::effect_delay_name), StringId::param_delayMs_name));
+    REQUIRE (offers (within (name, StringId::effect_delay_name), StringId::param_feedback_name));
+    REQUIRE (offers ("Insert 1", StringId::param_gain_name));
+    REQUIRE (offers (tr (StringId::automation_master), StringId::param_gain_name));
+
+    juce::StringArray names;
+
+    for (const auto& target : targets)
+        names.add (target.displayName);
 
     // Nothing that is not a continuous quantity: no names, no lengths, no ids.
     for (const auto& target : availableAutomationTargets (project))
