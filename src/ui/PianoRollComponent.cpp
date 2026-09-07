@@ -307,14 +307,20 @@ void PianoRollComponent::announceCursor()
     const auto meter = Meter::of (document.getState());
     const auto perBar = juce::jmax (1, meter.stepsPerBar());
 
-    auto description = noteName (at.y) + ", bar " + juce::String (at.x / perBar + 1) + " step "
-                       + juce::String (at.x % perBar + 1);
+    // Two WHOLE messages rather than one frame with a clause appended. A cell
+    // with a note in it and an empty one are two things to say, and the order
+    // of what they say is not English's to fix.
+    auto arguments = Args {}
+                         .with ("note", noteName (at.y))
+                         .with ("bar", at.x / perBar + 1)
+                         .with ("step", at.x % perBar + 1);
 
     if (note.isValid())
-        description += ", note of " + juce::String ((int) note[ids::lengthSteps])
-                       + " steps, velocity " + juce::String ((int) note[ids::velocity]);
-    else
-        description += ", empty";
+        arguments.with ("length", (int) note[ids::lengthSteps])
+            .with ("velocity", (int) note[ids::velocity]);
+
+    const auto description = tr (
+        note.isValid() ? StringId::a11y_noteFilled : StringId::a11y_noteCell, arguments);
 
     setDescription (description);
     juce::AccessibilityHandler::postAnnouncement (

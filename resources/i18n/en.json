@@ -12,6 +12,7 @@
     "input": {
       "monoLeft": "Mono - left",
       "monoRight": "Mono - right",
+      "none": "None",
       "stereo": "Stereo"
     },
     "inputLevel": "INPUT LEVEL",
@@ -21,6 +22,13 @@
     "title": "Audio settings",
     "testTone": {
       "label": "Test tone"
+    },
+    "output": {
+      "systemDefault": "System default"
+    },
+    "summary": {
+      "closed": "No audio device is open.",
+      "open": "{rate} Hz  -  {samples} samples  -  {latency} ms"
     }
   },
   "automation": {
@@ -544,6 +552,7 @@
       "enable": "Let programs on this machine control dew",
       "enableHelp": "dew listens on this machine only, and asks before it lets anything in.",
       "grantRead": "Reading only",
+      "grantRow": "{client} - {grant}",
       "grantWrite": "Reading and changing",
       "granted": "Allowed",
       "offline": "Not running",
@@ -576,13 +585,24 @@
   },
   "midi": {
     "channel": "Channel {number}",
+    "deviceNotConnected": "{name} (not connected)",
     "empty": "No MIDI inputs were found",
+    "hint": {
+      "noInput": "Connect a controller to play.",
+      "notEnabled": "Tick an input to play it.",
+      "waiting": "{inputs}  -  waiting"
+    },
     "inputs": {
       "caption": "INPUTS"
     },
+    "lastNote": "Note {pitch}  ·  vel {velocity}  ·  ch {channel}",
     "notConnected": "not connected",
     "omni": "Omni (all channels)",
-    "title": "MIDI settings"
+    "title": "MIDI settings",
+    "transpose": {
+      "none": "None",
+      "semitones": "{sign}{semitones} semitones"
+    }
   },
   "mixer": {
     "addInsert": {
@@ -1208,6 +1228,11 @@
     "fade": {
       "label": "Fade in and out"
     },
+    "mp3Missing": "MP3 needs the lame encoder. Install it with `brew install lame`.",
+    "name": {
+      "bars": "{name} bars {from}-{to}",
+      "pattern": "{name} pattern {id}"
+    },
     "normalize": {
       "label": "Normalize"
     },
@@ -1225,6 +1250,12 @@
     "stemProgress": "Stem {index} of {count}",
     "stems": {
       "label": "One file per mixer track"
+    },
+    "summary": {
+      "audio": "{duration}  ·  {format}  ·  {rate} Hz",
+      "depth": "{depth}-bit",
+      "midi": "{duration} of notes, as one MIDI file",
+      "stems": "up to {count, plural, one {# file} other {# files}}"
     },
     "tail": {
       "help": "Time rendered after the music ends, so release tails are not cut off"
@@ -1252,7 +1283,10 @@
     "errors": "Score has {count, plural, one {# error} other {# errors}} - nothing was written",
     "position": "{line}:{column}",
     "heading": "Score   ⌃Space completes",
-    "title": "Score"
+    "title": "Score",
+    "starter": {
+      "intro": "// A score describes a whole song as text: its key, its chords, its sections,\n// and a rule per instrument for what to play over them. Press Compile, or\n// Command-R, and it becomes patterns and clips you can edit like any others.\n//\n// This one plays. Change a chord, change `variance`, compile again.\n"
+    }
   },
   "soundFont": {
     "load": {
@@ -1293,7 +1327,11 @@
     "audioDevice": "{device}  ·  {rate} Hz  ·  {samples} samples",
     "noAudioDevice": "no audio device",
     "noMidiInput": "no MIDI input",
-    "midiNotConnected": "MIDI input not connected"
+    "midiNotConnected": "MIDI input not connected",
+    "armAudioChannel": "Arm an audio channel first: add one with + Audio, then click its R button.",
+    "noAudioDeviceRunning": "No audio device is running.",
+    "patternSteps": "{count, plural, one {# step} other {# steps}}",
+    "dspLoad": "DSP {percent}%"
   },
   "transport": {
     "grid": {
@@ -2441,6 +2479,20 @@
     "stemsAreAudio": "Stems are audio; MIDI is one file."
   },
   "shared": {
-    "listSeparator": ", "
+    "fieldSeparator": "  -  ",
+    "listSeparator": ", ",
+    "separator": "  ·  "
+  },
+  "a11y": {
+    "clipKind": {
+      "audio": "audio",
+      "automation": "automation",
+      "pattern": "pattern"
+    },
+    "noteCell": "{note}, bar {bar} step {step}, empty",
+    "noteFilled": "{note}, bar {bar} step {step}, note of {length, plural, one {# step} other {# steps}}, velocity {velocity}",
+    "step": "{channel}, bar {bar} step {step}, {lit, select, on {on} other {off}}",
+    "trackCell": "{track}, bar {bar}, empty",
+    "trackClipSteps": "{track}, bar {bar}, {kind} clip of {length, plural, one {# step} other {# steps}}"
   }
 }

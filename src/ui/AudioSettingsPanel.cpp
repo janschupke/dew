@@ -198,9 +198,9 @@ void AudioSettingsPanel::rebuildLists()
     };
 
     fill (outputBox, type != nullptr ? type->getDeviceNames (false) : juce::StringArray(),
-          setup.outputDeviceName, "System default");
+          setup.outputDeviceName, tr (StringId::audio_output_systemDefault));
     fill (inputBox, type != nullptr ? type->getDeviceNames (true) : juce::StringArray(),
-          setup.inputDeviceName, "None");
+          setup.inputDeviceName, tr (StringId::audio_input_none));
 
     rateBox.clear (juce::dontSendNotification);
     bufferBox.clear (juce::dontSendNotification);
@@ -243,7 +243,7 @@ void AudioSettingsPanel::updateSummary()
 
     if (device == nullptr)
     {
-        summaryText = "No audio device is open.";
+        summaryText = tr (StringId::audio_summary_closed);
         return;
     }
 
@@ -253,8 +253,11 @@ void AudioSettingsPanel::updateSummary()
 
     // Latency in milliseconds, because that is the number a buffer size is
     // actually chosen for.
-    summaryText = juce::String (juce::roundToInt (rate)) + " Hz  -  " + juce::String (block)
-                  + " samples  -  " + juce::String (latencyMs, 1) + " ms";
+    summaryText = tr (StringId::audio_summary_open,
+                      Args {}
+                          .with ("rate", juce::roundToInt (rate))
+                          .with ("samples", block)
+                          .with ("latency", juce::String (latencyMs, 1)));
 }
 
 void AudioSettingsPanel::changeListenerCallback (juce::ChangeBroadcaster*)

@@ -261,9 +261,12 @@ void StepGridComponent::announceCursor()
     const auto meter = Meter::of (document.getState());
     const auto perBar = juce::jmax (1, meter.stepsPerBar());
 
-    const auto description = channel[ids::name].toString() + ", bar "
-                             + juce::String (step / perBar + 1) + " step "
-                             + juce::String (step % perBar + 1) + ", " + (lit ? "on" : "off");
+    const auto description = tr (StringId::a11y_step,
+                                 Args {}
+                                     .with ("channel", channel[ids::name].toString())
+                                     .with ("bar", step / perBar + 1)
+                                     .with ("step", step % perBar + 1)
+                                     .with ("lit", lit ? "on" : "off"));
 
     setDescription (description);
     juce::AccessibilityHandler::postAnnouncement (

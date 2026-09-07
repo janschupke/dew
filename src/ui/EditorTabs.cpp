@@ -1,5 +1,7 @@
 #include "ui/EditorTabs.h"
 
+#include "i18n/Strings.h"
+
 #include "ui/design/DewLookAndFeel.h"
 
 namespace dew
@@ -37,13 +39,13 @@ EditorTabs::EditorTabs (ProjectDocument& document, AudioEngine& engine, EditorSt
             content->setAlpha (arrival.get());
     };
 
-    addTab ("Channel Rack", tokens::colour::background, &channelRack, false);
+    addTab (tr (StringId::channelRack_title), tokens::colour::background, &channelRack, false);
 
     // The piano roll used to live in a Viewport, which meant a ruler would have
     // scrolled away vertically and there was no way to scroll or zoom in time at
     // all. It scrolls itself now, in both directions, so the ruler, the keyboard
     // and the velocity lane stay pinned to the edges they belong to.
-    addTab ("Piano Roll", tokens::colour::background, &pianoRoll, false);
+    addTab (tr (StringId::pianoRoll_title), tokens::colour::background, &pianoRoll, false);
 
     // Double-clicking a clip is the obvious way to go and edit its pattern.
     // The playlist does not know about tabs, so the wiring lives here.
@@ -52,14 +54,14 @@ EditorTabs::EditorTabs (ProjectDocument& document, AudioEngine& engine, EditorSt
     // A routing entry in the mixer is a way to reach the channel it names.
     mixer.onShowChannelRack = [this] { setCurrentTabIndex (0); };
 
-    addTab ("Playlist", tokens::colour::background, &playlist, false);
-    addTab ("Mixer", tokens::colour::background, &mixer, false);
+    addTab (tr (StringId::playlist_title), tokens::colour::background, &playlist, false);
+    addTab (tr (StringId::mixer_title), tokens::colour::background, &mixer, false);
 
     // APPENDED, never inserted. The two setCurrentTabIndex calls above are
     // written as literals and Settings persists the raw index, so a tab added
     // anywhere but the end would silently reopen somebody on a different
     // editor than the one they left.
-    addTab ("Score", tokens::colour::background, &scoreEditor, false);
+    addTab (tr (StringId::score_title), tokens::colour::background, &scoreEditor, false);
 }
 
 juce::TabBarButton* EditorTabs::createTabButton (const juce::String& tabName, int)

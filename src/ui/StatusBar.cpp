@@ -101,7 +101,8 @@ void StatusBar::updateContext()
     if (pattern.isValid())
     {
         parts.add (pattern[ids::name].toString());
-        parts.add (pattern[ids::lengthSteps].toString() + " steps");
+        parts.add (
+            tr (StringId::status_patternSteps, Args {}.count ((int) pattern[ids::lengthSteps])));
 
         int notes = 0;
 
@@ -113,7 +114,7 @@ void StatusBar::updateContext()
         parts.add (tr (StringId::status_notes, Args {}.count (notes)));
     }
 
-    const auto wanted = parts.joinIntoString ("  -  ");
+    const auto wanted = parts.joinIntoString (tr (StringId::shared_fieldSeparator));
 
     if (wanted != contextText)
     {
@@ -245,11 +246,13 @@ void StatusBar::paint (juce::Graphics& g)
     // --- load and dropouts ---------------------------------------------------
     const auto percent = juce::roundToInt (dspLoad * 100.0);
 
-    juce::String right;
-    right << "DSP " << percent << "%";
+    auto right = tr (StringId::status_dspLoad, Args {}.with ("percent", percent));
 
     if (dropouts >= 0)
-        right << "  -  " << tr (StringId::status_dropouts, Args {}.count (dropouts));
+    {
+        right << tr (StringId::shared_fieldSeparator);
+        right << tr (StringId::status_dropouts, Args {}.count (dropouts));
+    }
 
     g.setColour (dropoutFlashMs > 0 ? colour::danger
                  : percent > 80     ? colour::warning

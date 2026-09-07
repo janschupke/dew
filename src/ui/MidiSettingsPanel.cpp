@@ -15,10 +15,14 @@ namespace
 juce::String transposeLabel (int semitones)
 {
     if (semitones == 0)
-        return "None";
+        return tr (StringId::midi_transpose_none);
 
-    const auto sign = semitones > 0 ? "+" : "";
-    return juce::String (sign) + juce::String (semitones) + " semitones";
+    // The sign is an argument rather than a prefix built onto the number: the
+    // whole label is one message, and a language that puts the unit first has
+    // somewhere to put it.
+    return tr (
+        StringId::midi_transpose_semitones,
+        Args {}.with ("sign", semitones > 0 ? "+" : "").with ("semitones", std::abs (semitones)));
 }
 } // namespace
 
@@ -177,13 +181,13 @@ void MidiSettingsPanel::updateSummary()
     // spend the one live line in the panel on something already on screen.
     if (rows.isEmpty())
     {
-        summaryText = "Connect a controller to play.";
+        summaryText = tr (StringId::midi_hint_noInput);
         return;
     }
 
     if (host.getNumWantedDevices() == 0)
     {
-        summaryText = "Tick an input to play it.";
+        summaryText = tr (StringId::midi_hint_notEnabled);
         return;
     }
 
@@ -197,7 +201,8 @@ void MidiSettingsPanel::updateSummary()
 
     if (packed < 0)
     {
-        summaryText = host.describeInputs() + "  -  waiting";
+        summaryText = tr (StringId::midi_hint_waiting,
+                          Args {}.with ("inputs", host.describeInputs()));
         return;
     }
 
@@ -205,8 +210,9 @@ void MidiSettingsPanel::updateSummary()
     const auto velocity = (packed >> 8) & 0xff;
     const auto channel = (packed >> 16) & 0xff;
 
-    summaryText = "Note " + juce::String (pitch) + "  ·  vel " + juce::String (velocity)
-                  + "  ·  ch " + juce::String (channel);
+    summaryText = tr (
+        StringId::midi_lastNote,
+        Args {}.with ("pitch", pitch).with ("velocity", velocity).with ("channel", channel));
 }
 
 void MidiSettingsPanel::timerCallback()
@@ -226,8 +232,12 @@ void MidiSettingsPanel::timerCallback()
 juce::String MidiSettingsPanel::getDeviceRowText (int index) const
 {
     if (auto* row = rows[index])
-        return (row->info.name.isNotEmpty() ? row->info.name : row->info.identifier)
-               + (row->connected ? juce::String() : juce::String (" (not connected)"));
+    {
+        const auto name = row->info.name.isNotEmpty() ? row->info.name : row->info.identifier;
+
+        return row->connected ? name
+                              : tr (StringId::midi_deviceNotConnected, Args {}.with ("name", name));
+    }
 
     return {};
 }

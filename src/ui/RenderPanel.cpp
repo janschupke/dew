@@ -221,7 +221,7 @@ void RenderPanel::rebuildFormats()
         if (! OfflineRenderer::isAvailable (format))
         {
             formatBox.setItemEnabled (id, false);
-            unavailableNote = "MP3 needs the lame encoder. Install it with `brew install lame`.";
+            unavailableNote = tr (StringId::render_mp3Missing);
         }
     }
 
@@ -339,32 +339,36 @@ void RenderPanel::updateSummary()
 
     if (request.options.format == RenderFormat::midi)
     {
-        summaryText = timeText::duration (seconds) + " of notes, as one MIDI file";
+        summaryText = tr (StringId::render_summary_midi,
+                          Args {}.with ("duration", timeText::duration (seconds)));
         return;
     }
 
-    summaryText = timeText::duration (seconds) + "  ·  "
-                  + OfflineRenderer::nameFor (request.options.format) + "  ·  "
-                  + juce::String (request.options.sampleRate, 0) + " Hz";
+    // A LIST of facts joined by the catalogue's separator, rather than a
+    // sentence appended to piece by piece. Each chip is a whole message, so
+    // "24-bit" and "up to 5 files" can be said in an order English does not
+    // choose, and the separator is a row rather than punctuation in a source
+    // file.
+    juce::StringArray parts;
 
-    // Note the shape of these appends. juce::String's constructor from a
-    // const char* reads it as ASCII, while operator+= reads it as UTF-8 - so
-    // `someString + "  ·  "` is right and `"  ·  " + someString` turns the
-    // separator into two mojibake characters. Always append to a String.
+    parts.add (tr (StringId::render_summary_audio,
+                   Args {}
+                       .with ("duration", timeText::duration (seconds))
+                       .with ("format", OfflineRenderer::nameFor (request.options.format))
+                       .with ("rate", juce::String (request.options.sampleRate, 0))));
+
     if (request.options.format == RenderFormat::wav || request.options.format == RenderFormat::flac)
-    {
-        summaryText += "  ·  ";
-        summaryText += request.options.floatingPoint
-                           ? juce::String ("32-bit float")
-                           : juce::String (request.options.bitDepth) + "-bit";
-    }
+        parts.add (request.options.floatingPoint
+                       ? tr (StringId::render_depth_float32)
+                       : tr (StringId::render_summary_depth,
+                             Args {}.with ("depth", request.options.bitDepth)));
 
+    // Worth saying out loud: this is N renders, not one.
     if (request.stems)
-    {
-        // Worth saying out loud: this is N renders, not one.
-        summaryText += "  ·  up to ";
-        summaryText += juce::String ((int) snapshot.mixerTracks.size()) + " files";
-    }
+        parts.add (
+            tr (StringId::render_summary_stems, Args {}.count ((int) snapshot.mixerTracks.size())));
+
+    summaryText = parts.joinIntoString (tr (StringId::shared_separator));
 }
 
 RenderPanel::Request RenderPanel::getRequest() const
@@ -423,10 +427,14 @@ RenderPanel::Request RenderPanel::getRequest() const
         name = "dew";
 
     if (request.options.mode == Transport::Mode::pattern)
-        name += " pattern " + juce::String (request.options.patternId);
+        name = tr (StringId::render_name_pattern,
+                   Args {}.with ("name", name).with ("id", request.options.patternId));
     else if (! request.options.barRange.isEmpty())
-        name += " bars " + juce::String (request.options.barRange.firstBar + 1) + "-"
-                + juce::String (request.options.barRange.lastBar);
+        name = tr (StringId::render_name_bars,
+                   Args {}
+                       .with ("name", name)
+                       .with ("from", request.options.barRange.firstBar + 1)
+                       .with ("to", request.options.barRange.lastBar));
 
     request.suggestedName = juce::File::createLegalFileName (name);
 

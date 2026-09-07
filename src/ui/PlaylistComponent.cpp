@@ -253,18 +253,19 @@ bool PlaylistComponent::keyPressed (const juce::KeyPress& key)
 namespace
 {
 
-/** What kind of thing a clip is, in a word. The three kinds are already spelled
-    out as strings in the schema and read back in four places; this is the one
-    that says them to a person rather than to a switch. */
-juce::String clipKindName (const juce::ValueTree& clip)
+/** What kind of thing a clip is, in a word - as a KEY. The three kinds are
+    already spelled out as strings in the schema and read back in four places;
+    this is the one that says them to a person rather than to a switch, so what
+    it answers is a row in the catalogue rather than the schema's own id. */
+StringId clipKindName (const juce::ValueTree& clip)
 {
     if (ProjectEdits::isAutomationClip (clip))
-        return "automation";
+        return StringId::a11y_clipKind_automation;
 
     if (ProjectEdits::isAudioClip (clip))
-        return "audio";
+        return StringId::a11y_clipKind_audio;
 
-    return "pattern";
+    return StringId::a11y_clipKind_pattern;
 }
 
 } // namespace
@@ -319,14 +320,18 @@ void PlaylistComponent::announceCursor()
     if (! track.isValid())
         return;
 
-    auto description = track[ids::name].toString() + ", bar " + juce::String (at.x + 1);
+    // Two whole messages, as the piano roll's cursor says: a bar with a clip
+    // on it and an empty one are two things to say.
+    const auto clip = ProjectEdits::findClipAtStep (track, at.x * stepsPerBar());
 
-    if (const auto clip = ProjectEdits::findClipAtStep (track, at.x * stepsPerBar());
-        clip.isValid())
-        description += ", " + clipKindName (clip) + " clip of "
-                       + juce::String ((int) clip[ids::lengthSteps]) + " steps";
-    else
-        description += ", empty";
+    auto arguments = Args {}.with ("track", track[ids::name].toString()).with ("bar", at.x + 1);
+
+    if (clip.isValid())
+        arguments.with ("kind", tr (clipKindName (clip)))
+            .with ("length", (int) clip[ids::lengthSteps]);
+
+    const auto description = tr (
+        clip.isValid() ? StringId::a11y_trackClipSteps : StringId::a11y_trackCell, arguments);
 
     setDescription (description);
     juce::AccessibilityHandler::postAnnouncement (

@@ -248,7 +248,11 @@ void ScoreEditorComponent::resized()
 
 juce::String ScoreEditorComponent::starterScore()
 {
-    return starterScoreText;
+    // The introduction and the score, not one literal: the first is four
+    // sentences a person reads and the second is a program dew compiles.
+    auto starter = tr (StringId::score_starter_intro);
+    starter += starterScoreBody;
+    return starter;
 }
 
 void ScoreEditorComponent::refresh()

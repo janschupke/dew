@@ -49,7 +49,7 @@ juce::String MainComponent::toggleRecording()
                                                     editorState.getArmedChannelId());
 
     if (! channel.isValid() || ! ProjectEdits::playsClips (channel))
-        return "Arm an audio channel first: add one with + Audio, then click its R button.";
+        return tr (StringId::status_armAudioChannel);
 
     // Asked for here rather than at startup, so the microphone prompt arrives
     // attached to the thing that needs it.
@@ -59,7 +59,7 @@ juce::String MainComponent::toggleRecording()
     auto* device = audioHost.getDeviceManager().getCurrentAudioDevice();
 
     if (device == nullptr)
-        return "No audio device is running.";
+        return tr (StringId::status_noAudioDeviceRunning);
 
     // Staging until the project has a file of its own; saving gathers it into
     // the sidecar folder. Recording into an unsaved project has to work - it is

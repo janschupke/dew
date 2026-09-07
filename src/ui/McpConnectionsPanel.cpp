@@ -107,7 +107,14 @@ juce::String McpConnectionsPanel::getCommandText() const
     // Spelled out rather than described. The port is not fixed - dew takes the
     // next free one when its own is busy - so telling somebody to "add the URL
     // above" means them reading a number off a dialog and typing it correctly.
-    return "claude mcp add --transport http dew " + running->getUrl();
+    //
+    // NOT a catalogue row. It is a command typed into a terminal, and it is the
+    // same characters in every language - translating it would break it. Named
+    // shellCommand because that is what the gate on English strips on: a shape,
+    // rather than this file's name in an exemption list.
+    constexpr const char* shellCommand = "claude mcp add --transport http dew ";
+
+    return shellCommand + running->getUrl();
 }
 
 juce::String McpConnectionsPanel::getGrantRowText (int index) const
@@ -117,7 +124,10 @@ juce::String McpConnectionsPanel::getGrantRowText (int index) const
 
     const auto& row = rows[(size_t) index];
 
-    return row.entry.clientName + " - " + tr (nameOfGrant (row.entry.grant));
+    return tr (StringId::mcp_connections_grantRow,
+               Args {}
+                   .with ("client", row.entry.clientName)
+                   .with ("grant", tr (nameOfGrant (row.entry.grant))));
 }
 
 McpGrants* McpConnectionsPanel::grantsNow() const

@@ -47,7 +47,8 @@ static_assert (fontSteps[0] < fontSteps[1] && fontSteps[1] < fontSteps[2]
 static_assert (juce::exactlyEqual (fontSteps[bodyStep], tokens::type::codeBody),
                "the default step has to be the rung it is named after");
 
-/** What the Score tab shows when a project has no score in it.
+/** What the Score tab shows when a project has no score in it, below the
+    sentences that introduce it.
 
     A blank rectangle is indistinguishable from a feature that is not there, and
     a language nobody can see the shape of is a language nobody writes. This one
@@ -56,14 +57,15 @@ static_assert (juce::exactlyEqual (fontSteps[bodyStep], tokens::type::codeBody),
 
     It is NOT written into the project until it is edited or compiled, so
     opening the tab does not dirty a project nobody has touched.
-*/
-const char* const starterScoreText =
-    R"SCORE(// A score describes a whole song as text: its key, its chords, its sections,
-// and a rule per instrument for what to play over them. Press Compile, or
-// Command-R, and it becomes patterns and clips you can edit like any others.
-//
-// This one plays. Change a chord, change `variance`, compile again.
 
+    The BODY only. What a person reads first - four lines of English saying what
+    a score is - is score.starter.intro in the catalogue, because it is prose
+    that happens to be shipped as a comment. What is left is dew's own language:
+    `channel pad` and `rhythm pulse` are syntax the compiler reads back, and a
+    translated keyword would not compile.
+*/
+const char* const starterScoreBody =
+    R"SCORE(
 song {
   title "Untitled"
   tempo 110 bpm
