@@ -5,6 +5,7 @@
 #include "model/Ids.h"
 #include "model/ProjectFactory.h"
 #include "model/ProjectEdits.h"
+#include "model/ProjectSchema.h"
 
 using namespace dew;
 using namespace dew::control;
@@ -12,6 +13,24 @@ using namespace dew::testing;
 
 namespace
 {
+
+/** Where every clip in the arrangement sits, as "start:length" per clip.
+
+    The whole arrangement rather than one clip: what is being asserted is that
+    NOTHING moved, and a check on one clip passes while the rest are rescaled.
+*/
+juce::StringArray clipSpans (const juce::ValueTree& project)
+{
+    juce::StringArray spans;
+
+    for (const auto& track : project.getChildWithName (ids::PLAYLIST))
+        for (const auto& clip : track)
+            if (clip.hasType (ids::CLIP))
+                spans.add (clip[ids::startStep].toString() + ":"
+                           + clip[ids::lengthSteps].toString());
+
+    return spans;
+}
 
 int noteCount (const juce::ValueTree& pattern)
 {
@@ -241,9 +260,30 @@ TEST_CASE ("clips and lanes are placed as one undo step and grow the song", "[co
     REQUIRE ((int) result.value[juce::Identifier ("barsInSong")] >= 28);
 }
 
-TEST_CASE ("the metre rescales the arrangement and reports whether it was exact", "[control][undo]")
+TEST_CASE ("the metre moves the bar lines and leaves the music where it is", "[control][undo]")
 {
+    // This test used to be called "the metre rescales the arrangement and
+    // reports whether it was exact", and it asserted that a key EXISTED. It
+    // could not fail, which is how structure_write went on documenting a clip
+    // rescale for however long it has been since format v20 deleted one.
     FakeHost host;
+
+    REQUIRE (call (host, "playlist_tracks_write",
+                   Fields {}.with ("entries", list ({ Fields {}.with ("name", "Agent lane") })))
+                 .ok);
+
+    REQUIRE (call (host, "clips_write",
+                   Fields {}.with ("clips", list ({ Fields {}
+                                                        .with ("track", 0)
+                                                        .with ("startStep", 32)
+                                                        .with ("lengthSteps", 16)
+                                                        .with ("patternId", 1) })))
+                 .ok);
+
+    const auto before = clipSpans (host.project());
+
+    REQUIRE_FALSE (before.isEmpty());
+    REQUIRE (before.contains ("32:16"));
 
     const auto result = call (host, "structure_write",
                               Fields {}.with ("beatsPerBar", 3).with ("beatUnit", 4));
@@ -251,9 +291,181 @@ TEST_CASE ("the metre rescales the arrangement and reports whether it was exact"
     REQUIRE (result.ok);
     REQUIRE (host.project()[ids::beatsPerBar] == juce::var (3));
 
-    // A clip is stored in BARS, so redefining a bar moves every clip - and the
-    // rescale is exact only when the ratio divides. The caller is told which.
-    REQUIRE (result.value.hasProperty (juce::Identifier ("clipsLandedOnWholeBars")));
+    // The point of the change, and what a rescale would break: a clip is stored
+    // in STEPS, so it sounds at the same instant in 3/4 as it did in 4/4. Only
+    // the bar lines drawn over it moved.
+    CHECK (clipSpans (host.project()) == before);
+
+    // And no rounding answer, because there is no rounding left to report.
+    CHECK_FALSE (result.value.hasProperty (juce::Identifier ("clipsLandedOnWholeBars")));
+}
+
+TEST_CASE ("notes_transform quantizes to the division it was NAMED", "[control][snap]")
+{
+    // The defect this replaced: `snap` was an index into allSnapDivisions and
+    // the doc mapped every value to a different division from the one it
+    // selected - 0 said "sixteenth" and meant `off`, 4 said "bar" and meant
+    // eighth-note triplets. Both produced plausible, wrong music and reported
+    // every note applied. Asserting on the NOTES is the only check that can
+    // tell the difference.
+    FakeHost host;
+
+    REQUIRE (
+        call (
+            host, "notes_write",
+            Fields {}
+                .with ("patternId", 1)
+                .with (
+                    "notes",
+                    list ({ Fields {}.with ("channelId", 1).with ("step", 5).with ("pitch", 60) })))
+            .ok);
+
+    const auto quantize = [&host] (const juce::var& snap)
+    {
+        return call (host, "notes_transform",
+                     Fields {}
+                         .with ("patternId", 1)
+                         .with ("channelId", 1)
+                         .with ("verb", "quantize")
+                         .with ("snap", snap));
+    };
+
+    // A bar at the default four steps to a beat in 4/4 is 16 steps, so the note
+    // written at step 5 rounds to 0. Under the old index this argument selected
+    // eighthTriplet, which at this grid is one step - the identity.
+    const auto result = quantize ("bar");
+
+    REQUIRE (result.ok);
+    CHECK (result.value[juce::Identifier ("snap")].toString() == "bar");
+
+    // Channel 1's notes only: the transform's scope is one channel, and the
+    // starter pattern has notes on the others that it must not have touched.
+    const auto pattern = ProjectEdits::findPattern (host.project(), 1);
+    auto seen = 0;
+
+    for (const auto& note : pattern)
+        if (note.hasType (ids::NOTE) && (int) note[ids::ch] == 1)
+        {
+            // ON the bar grid, not at zero: a note already on a bar line stays
+            // where it is, which is what quantizing to a bar means.
+            CHECK ((int) note[ids::step] % 16 == 0);
+            ++seen;
+        }
+
+    CHECK (seen > 0);
+}
+
+TEST_CASE ("notes_transform refuses a snap division that is not one", "[control][snap]")
+{
+    FakeHost host;
+
+    const auto bad = call (host, "notes_transform",
+                           Fields {}
+                               .with ("patternId", 1)
+                               .with ("channelId", 1)
+                               .with ("verb", "quantize")
+                               .with ("snap", "1/16"));
+
+    CHECK_FALSE (bad.ok);
+    CHECK (bad.error.contains ("sixteenth"));
+
+    // And one the project's grid cannot place. A default project is four steps
+    // to a beat, where a triplet falls between two steps - stepsForSnap answers
+    // one step for it, so quantizing would report every note applied and move
+    // none. That is the same silent nothing, wearing a valid name.
+    const auto unplaceable = call (host, "notes_transform",
+                                   Fields {}
+                                       .with ("patternId", 1)
+                                       .with ("channelId", 1)
+                                       .with ("verb", "quantize")
+                                       .with ("snap", "eighthTriplet"));
+
+    CHECK_FALSE (unplaceable.ok);
+    CHECK (unplaceable.error.contains ("grid"));
+}
+
+TEST_CASE ("effects_write refuses a preset it cannot apply", "[control]")
+{
+    // presets_list has always promised that a preset of the wrong type is
+    // refused. The handler called applyEffectPreset and DROPPED its bool, so a
+    // wrong-type preset - and a name that matched nothing at all - changed
+    // nothing and still answered `applied`.
+    FakeHost host;
+
+    REQUIRE (call (host, "effects_write",
+                   Fields {}.with ("entries", list ({ Fields {}
+                                                          .with ("target", "channel")
+                                                          .with ("id", 1)
+                                                          .with ("type", "reverb") })))
+                 .ok);
+
+    const auto unknown = call (
+        host, "effects_write",
+        Fields {}.with ("entries", list ({ Fields {}
+                                               .with ("target", "channel")
+                                               .with ("id", 1)
+                                               .with ("slot", 0)
+                                               .with ("preset", "no such preset") })));
+
+    CHECK_FALSE (unknown.ok);
+    CHECK (unknown.error.contains ("presets_list"));
+}
+
+TEST_CASE ("a mode that is not one is refused rather than taken as song", "[control]")
+{
+    // Every other closed vocabulary in the table refuses and lists what it
+    // accepts. This one read `text == "pattern"` and took song for everything
+    // else, so a typo silently exported the whole arrangement.
+    //
+    // Driven through export_midi rather than transport_write, which needs an
+    // engine a FakeHost does not have and so never reaches the parse.
+    FakeHost host;
+
+    const auto out = juce::File::getSpecialLocation (juce::File::tempDirectory)
+                         .getChildFile ("dew-mode-test.mid");
+
+    const auto bad = call (host, "export_midi",
+                           Fields {}.with ("path", out.getFullPathName()).with ("mode", "sng"));
+
+    CHECK_FALSE (bad.ok);
+    CHECK (bad.error.contains ("song"));
+    CHECK (bad.error.contains ("pattern"));
+
+    // And the file was not written, because the refusal happens before the work.
+    CHECK_FALSE (out.existsAsFile());
+
+    CHECK (call (host, "export_midi",
+                 Fields {}.with ("path", out.getFullPathName()).with ("mode", "song"))
+               .ok);
+
+    out.deleteFile();
+}
+
+TEST_CASE ("channels_write refuses the batch that would outrun the engine", "[control]")
+{
+    // kMaxChannels was an ENGINE bound alone, so a 65th channel could be
+    // created and then simply not rendered - a row in the rack, a strip on the
+    // mixer, and no sound. Effects chains and mixer inserts both refuse at the
+    // document; channels never did.
+    FakeHost host;
+
+    const auto room = kMaxChannels - ProjectEdits::countChannels (host.project());
+
+    REQUIRE (room > 0);
+
+    juce::Array<juce::var> tooMany;
+
+    for (int i = 0; i < room + 1; ++i)
+        tooMany.add (Fields {}.with ("kind", "synth"));
+
+    const auto refused = call (host, "channels_write",
+                               Fields {}.with ("entries", juce::var (tooMany)));
+
+    CHECK_FALSE (refused.ok);
+    CHECK (refused.error.contains (juce::String (kMaxChannels)));
+
+    // Whole, not partly: none of the batch was written.
+    CHECK (ProjectEdits::countChannels (host.project()) == kMaxChannels - room);
 }
 
 TEST_CASE ("automation_write answers with the automation's id, not the clip's", "[control]")

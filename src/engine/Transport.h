@@ -1,5 +1,7 @@
 #pragma once
 
+#include <optional>
+
 #include <juce_core/juce_core.h>
 #include "engine/TempoMap.h"
 #include "model/Constants.h"
@@ -21,6 +23,36 @@ public:
         pattern,
         song
     };
+
+    /** The mode's name on a wire, and the parse back.
+
+        A std::optional rather than a defaulted parse, and that is the whole
+        reason this pair exists: the control layer read `text == "pattern"` and
+        took song for everything else, so `sng` and `patern` were both accepted
+        as song without a word to the caller. Every other closed vocabulary the
+        operation table has refuses and lists the alternatives.
+    */
+    static juce::String modeToString (Mode mode)
+    {
+        return mode == Mode::pattern ? "pattern" : "song";
+    }
+
+    static std::optional<Mode> modeFromString (const juce::String& name)
+    {
+        if (name == "pattern")
+            return Mode::pattern;
+
+        if (name == "song")
+            return Mode::song;
+
+        return std::nullopt;
+    }
+
+    /** What a caller may name, for the sentence that refuses one that is not. */
+    static juce::StringArray modeNames()
+    {
+        return { "pattern", "song" };
+    }
 
     void prepare (double newSampleRate);
 

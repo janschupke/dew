@@ -60,27 +60,32 @@ const std::vector<GuideSection>& guide()
           "Steps and bars, and why a pattern is not an instrument.",
           { "Time inside a pattern is whole STEPS. A step is one over stepsPerBeat of a "
             "beat - at the default of 4, a step is a sixteenth note. There is no "
-            "fractional step, so a rhythm the grid does not divide cannot be written; "
-            "raising stepsPerBeat is how you get triplets and finer values.",
+            "fractional step, so a rhythm the grid does not divide cannot be written. "
+            "stepsPerBeat is the project's own grid and no operation here changes it: "
+            "project_describe reports it, and a score compiled into an empty project is "
+            "the one thing that sets it.",
 
             "A PATTERN holds every channel's notes for its span. It is a section of the "
             "song rather than one instrument's part, which is the thing most likely to "
             "surprise you: a drum pattern and a bass pattern covering the same four bars "
             "are usually one pattern, not two.",
 
-            "The PLAYLIST is measured in BARS, and a bar is beatsPerBar steps. Placing two "
+            "The PLAYLIST is measured in BARS, and a bar is stepsPerBeat * beatsPerBar "
+            "steps - 16 in a default 4/4 project, not 4. Placing two "
             "clips of one pattern is how a section repeats identically. Duplicating the "
             "pattern first, with patterns_write and duplicateOf, is how it repeats with "
             "variation. A lane can carry a clip of any pattern; lanes are not instruments "
             "either.",
 
-            "Changing the metre redefines what a bar IS, so every clip's start and length "
-            "is rescaled in the same undo step to hold its position in time. The answer "
-            "says whether every clip landed on a whole bar.",
+            "Changing the metre redefines what a bar IS, so the bar lines move - and "
+            "nothing you have written moves with them. Notes and clips are stored in "
+            "STEPS, so every one of them stays exactly where it sounded; what moves is "
+            "the song's length in bars, which is rounded up to cover what was there.",
 
-            "Patterns and the song both GROW to fit what you write and never shrink. "
-            "Trailing empty bars and a pattern longer than its notes are a deliberate "
-            "silence, and nothing trims one behind your back." } },
+            "A pattern's LENGTH follows its notes, in both directions: writing a note "
+            "further in lengthens it, and removing the notes at the end shortens it "
+            "again. The SONG only grows - trailing empty bars are a deliberate silence, "
+            "and nothing trims those behind your back." } },
 
         { "score",
           "The score language",
@@ -133,9 +138,12 @@ const std::vector<GuideSection>& guide()
             "it runs. project_command can undo and redo, so a client can take back its own "
             "work - and so can the person at the keyboard.",
 
-            "Nothing here can approve itself, change a grant, or reach outside the open "
-            "project except by writing the files that render_audio and export_midi are "
-            "asked for." } }
+            "Nothing here can approve itself or change a grant. What a write grant DOES "
+            "reach outside the open project is worth knowing before you give one: "
+            "render_audio and export_midi write the file they are asked for, "
+            "project_command saves to a path you give it and opens one, and source_write "
+            "reads a sample or a soundfont from anywhere on disk. Every one of those "
+            "takes the path from the caller." } }
     };
 
     return pages;

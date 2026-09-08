@@ -229,9 +229,9 @@ BakeReport ScoreBake::into (juce::ValueTree project, const lang::Score& score,
         return report;
     }
 
-    // Same for the meter: ProjectEdits::setMeter rescales every clip and rounds,
-    // so a score that could set it is a score that can silently move an
-    // arrangement it did not write.
+    // The meter refuses for its own reason. It moves no note - those are steps
+    // - but it moves every BAR LINE under them, so a score that could set it is
+    // a score that can re-bar an arrangement it did not write.
     if (! empty && (meter.beatsPerBar != score.beatsPerBar || meter.beatUnit != score.beatUnit))
     {
         report.warnings.add (tr (StringId::warning_scoreMeterMismatch,

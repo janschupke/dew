@@ -50,7 +50,7 @@ inline void writeArgs (JsonWriter& json, const std::vector<control::ArgSpec>& ar
         json.key ("required");
         json.value (arg.required);
         json.key ("doc");
-        json.value (arg.doc);
+        json.value (arg.doc.toStdString());
 
         // The convention an array of bare values uses: one field, unnamed. Told
         // to the page as a flag rather than left for it to re-derive, because
@@ -117,7 +117,7 @@ inline std::string mcpJson()
         json.key ("summary");
         json.value (op.summary);
         json.key ("doc");
-        json.value (op.doc);
+        json.value (op.doc.toStdString());
         json.key ("args");
         writeArgs (json, op.args);
         json.endObject();

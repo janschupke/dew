@@ -249,9 +249,10 @@ void setSong (juce::ValueTree project, const juce::String& name, double tempoBpm
 
 /** The grid and the metre, written straight onto a project that has no music yet.
 
-    Deliberately NOT ProjectEdits::setMeter, which rescales every clip to hold
-    its position in steps. There is nothing here to hold: this runs before a
-    demo has a clip, and a demo states its metre rather than changing it.
+    Deliberately NOT ProjectEdits::setMeter or setGridResolution, which exist to
+    CHANGE a project that already has music - one re-bars it, the other rescales
+    every clip and note. A demo states its grid and metre rather than changing
+    them, and this runs before it has a note to move.
 */
 void setGrid (juce::ValueTree project, int stepsPerBeat, int beatsPerBar, int beatUnit);
 

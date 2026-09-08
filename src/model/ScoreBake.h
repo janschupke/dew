@@ -69,9 +69,12 @@ struct ScoreBake
         in the piano roll since is visible and can be respected.
 
         Refuses, changing nothing, when the score's grid or meter disagrees with
-        the project's - `stepsPerBeat` owns how long a step is, and
-        ProjectEdits::setMeter rescales every clip and rounds, so applying
-        either silently would move the user's existing arrangement.
+        the project's. The two refuse for different reasons: `stepsPerBeat` owns
+        how long a step is and ProjectEdits::setGridResolution rescales every
+        clip and note to hold its instant, so adopting it silently would rewrite
+        the arrangement; the meter leaves everything where it is but moves every
+        bar line under it, so a score that set it would re-bar music it did not
+        write.
 
         Unless the project holds no music at all, in which case it takes both:
         there is nothing there whose meaning they could change, and a fresh

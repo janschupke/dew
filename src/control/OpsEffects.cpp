@@ -123,10 +123,25 @@ ControlResult write (ControlHost& host, const juce::var& args)
         if (hasArg (entry, "preset"))
         {
             const auto wanted = textArg (entry, "preset");
+            const Preset* found = nullptr;
 
             for (const auto& preset : PresetLibrary::all())
                 if (preset.isEffect() && preset.name == wanted)
-                    ProjectEdits::applyEffectPreset (effect, preset, undo, true);
+                    found = &preset;
+
+            if (found == nullptr)
+                return ControlResult::failure ("there is no effect preset called '" + wanted
+                                               + "'. presets_list says what there is.");
+
+            // The RETURN, which this used to drop. applyEffectPreset answers
+            // false when the preset is not for this slot's type, and a loop
+            // that ignored it reported `applied` for a call that changed
+            // nothing - while presets_list promised the wrong type would be
+            // refused. The doc was right and this was wrong.
+            if (! ProjectEdits::applyEffectPreset (effect, *found, undo, true))
+                return ControlResult::failure (
+                    "'" + wanted + "' is not a preset for that slot: " + "it is a " + found->typeId
+                    + " preset and the " + "slot holds a " + effect[ids::type].toString() + ".");
         }
 
         touched.add (Obj {}
@@ -242,12 +257,14 @@ void appendEffectOps (std::vector<OpSpec>& all)
           "Add effects to a channel, mixer insert or the master, or bypass and preset existing "
           "ones.",
           "An entry with a `slot` changes the effect already there; an entry without one "
-          "appends an effect of `type` to the end of the chain. A chain holds four, and "
-          "a fifth is refused rather than silently dropped - an effect the engine does "
-          "not render is an effect that appears to have stopped working.\n\n"
-          "The effect's own parameters are params_write's, addressed with group "
-          "'effects' and the same slot. `preset` here is a shorthand for the whole set "
-          "of them at once; presets_list says what is available.",
+          "appends an effect of `type` to the end of the chain. A chain holds "
+              + juce::String (kMaxEffectsPerChain)
+              + ", and one past that is refused rather than silently dropped - an effect the "
+                "engine does "
+                "not render is an effect that appears to have stopped working.\n\n"
+                "The effect's own parameters are params_write's, addressed with group "
+                "'effects' and the same slot. `preset` here is a shorthand for the whole set "
+                "of them at once; presets_list says what is available.",
           { { "entries",
               ValueKind::array,
               true,

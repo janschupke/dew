@@ -69,21 +69,21 @@ struct ArgSpec
         constructor rather than a defaulted parameter so that a shape passed by
         mistake to a leaf kind does not compile.
     */
-    ArgSpec (juce::String argName, ValueKind argKind, bool isRequired, const char* argDoc)
+    ArgSpec (juce::String argName, ValueKind argKind, bool isRequired, juce::String argDoc)
         : name (std::move (argName))
         , kind (argKind)
         , required (isRequired)
-        , doc (argDoc)
+        , doc (std::move (argDoc))
     {
     }
 
     /** An object or an array, and the shape of what it holds. */
-    ArgSpec (juce::String argName, ValueKind argKind, bool isRequired, const char* argDoc,
+    ArgSpec (juce::String argName, ValueKind argKind, bool isRequired, juce::String argDoc,
              std::vector<ArgSpec> shape)
         : name (std::move (argName))
         , kind (argKind)
         , required (isRequired)
-        , doc (argDoc)
+        , doc (std::move (argDoc))
         , fields (std::move (shape))
     {
     }
@@ -104,8 +104,13 @@ struct ArgSpec
 
     /** One sentence, in the imperative, addressed to whoever is calling. It
         reaches both the tool's JSON schema and the website, so it is the only
-        description of this argument that exists. */
-    const char* doc = "";
+        description of this argument that exists.
+
+        A juce::String rather than a literal, so an argument taking a CLOSED SET
+        of values can list them from the table that defines them. `snap` listed
+        five names against nine divisions and named a different one from the one
+        it selected, in every case, because the list was typed out by hand. */
+    juce::String doc;
 
     /** For `object` and `array`. Empty for every other kind.
 

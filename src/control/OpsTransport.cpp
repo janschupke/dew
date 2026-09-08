@@ -23,8 +23,15 @@ ControlResult write (ControlHost& host, const juce::var& args)
     host.flushEngine();
 
     if (hasArg (args, "mode"))
-        engine->setMode (textArg (args, "mode") == "pattern" ? Transport::Mode::pattern
-                                                             : Transport::Mode::song);
+    {
+        const auto wantedMode = textArg (args, "mode");
+        const auto mode = Transport::modeFromString (wantedMode);
+
+        if (! mode.has_value())
+            return ControlResult::failure (noSuchMode (wantedMode));
+
+        engine->setMode (*mode);
+    }
 
     if (hasArg (args, "playheadSteps"))
         engine->setPlayheadSteps (numberArg (args, "playheadSteps"));
@@ -49,7 +56,7 @@ ControlResult write (ControlHost& host, const juce::var& args)
     return ControlResult::success (
         Obj {}
             .set ("playing", engine->isPlaying())
-            .set ("mode", engine->getMode() == Transport::Mode::pattern ? "pattern" : "song")
+            .set ("mode", Transport::modeToString (engine->getMode()))
             .set ("startMarkerSteps", engine->getStartMarkerSteps())
             .set (ids::tempoBpm, project.isValid() ? (double) project[ids::tempoBpm] : 0.0));
 }
@@ -61,12 +68,11 @@ ControlResult read (ControlHost& host, const juce::var&)
     if (engine == nullptr)
         return ControlResult::failure ("this build has no transport.");
 
-    return ControlResult::success (
-        Obj {}
-            .set ("playing", engine->isPlaying())
-            .set ("mode", engine->getMode() == Transport::Mode::pattern ? "pattern" : "song")
-            .set ("playheadSteps", engine->getPlayheadSteps())
-            .set ("startMarkerSteps", engine->getStartMarkerSteps()));
+    return ControlResult::success (Obj {}
+                                       .set ("playing", engine->isPlaying())
+                                       .set ("mode", Transport::modeToString (engine->getMode()))
+                                       .set ("playheadSteps", engine->getPlayheadSteps())
+                                       .set ("startMarkerSteps", engine->getStartMarkerSteps()));
 }
 
 } // namespace

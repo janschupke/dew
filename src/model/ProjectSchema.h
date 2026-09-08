@@ -246,6 +246,17 @@ inline constexpr int kFormatVersion = 20;
 */
 inline constexpr int kMaxEffectsPerChain = 9;
 
+/** How many channels a project may hold.
+
+    A document limit for the reason kMaxMixerTracks is one. It lived in
+    engine/EngineSnapshot.h alone, so the engine clamped and warned while
+    nothing stopped a 65th channel being CREATED - a channel in the rack, on the
+    mixer and in the piano roll that made no sound. The engine still sizes its
+    pools from it and still warns, for a file written by hand; this is what
+    stops an edit reaching that state in the first place.
+*/
+inline constexpr int kMaxChannels = 64;
+
 /** How many inserts the mixer may hold, master excluded.
 
     A document limit for the same reason the chain length is one - now that

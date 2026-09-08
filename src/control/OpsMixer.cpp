@@ -119,7 +119,11 @@ void appendMixerOps (std::vector<OpSpec>& all)
           "one without adds a new one.\n\n"
           "A fader and a pan are parameters, not fields here - reach them with "
           "params_write, target 'mixerTrack'. The master is addressed as target "
-          "'master' and has a fader and nothing else.",
+          "'master' and has a fader and nothing else.\n\n"
+          "The mixer holds "
+              + juce::String (kMaxMixerTracks)
+              + " inserts, which is as many as the engine renders. A batch that would take "
+                "it past that is refused whole rather than adding the ones that fit.",
           { { "entries",
               ValueKind::array,
               true,

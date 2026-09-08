@@ -1,5 +1,7 @@
 #pragma once
 
+#include <optional>
+
 #include <juce_data_structures/juce_data_structures.h>
 
 namespace dew
@@ -144,9 +146,37 @@ struct NoteTools
 
     /** The division's ordinal, for persisting it. Out-of-range reads fall back
         to `sixteenth` rather than restoring a grid that does not exist.
+
+        An ORDINAL, and only for a combo box and a settings file. It is not a
+        wire value: it means whatever position a division currently holds in
+        allSnapDivisions, so inserting one re-points every stored number. Use
+        the name pair below where a caller outside this process chooses one.
     */
     static SnapDivision snapFromIndex (int index) noexcept;
     static int indexOfSnap (SnapDivision) noexcept;
+
+    /** The division's stable NAME: what an agent writes, and what survives a
+        division being inserted before it.
+
+        Not nameForSnap, which is a label for a person: that one is relative to
+        the beat, so `quarter` reads "1/4" in 4/4 and "1/8" in 6/8, and a wire
+        value that moved with the metre would name a different division in a
+        different project.
+
+        The spelling is the enum's own, which is what makes the pair impossible
+        to get subtly wrong.
+    */
+    static juce::String snapToString (SnapDivision) noexcept;
+
+    /** Nothing, rather than a fallback, for an unknown name.
+
+        snapFromIndex falls back to `sixteenth` because a settings file with a
+        stale ordinal still has to open. A caller naming a division it made up
+        is a different case: quantizing to something other than what was asked
+        for is exactly the failure this pair exists to stop, so the caller is
+        told instead.
+    */
+    static std::optional<SnapDivision> snapFromString (juce::StringRef) noexcept;
 
     /** Down to the start of the cell this step is in - where a drawn note goes,
         because clicking anywhere in a cell means that cell.

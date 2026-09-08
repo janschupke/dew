@@ -27,11 +27,11 @@ enum class AutomationScope
 {
     /** The arrangement itself: the tempo, and nothing else.
 
-        Not the meter: a clip is stored in BARS, and ProjectEdits::setMeter
-        rescales every clip's start and length to hold its position in steps -
-        which a per-block curve cannot do. And not barsInSong, which is a
-        document extent rather than a quantity. Saying so here is what stops the
-        scope accreting.
+        Not the meter: it redefines what a bar IS, which moves every bar line,
+        the readout and what "Bar" snaps to. That is a structural edit, not a
+        quantity a per-block curve can hold a value of. And not barsInSong,
+        which is a document extent rather than a quantity. Saying so here is
+        what stops the scope accreting.
     */
     project,
 

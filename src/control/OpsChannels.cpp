@@ -1,5 +1,6 @@
 #include "control/OpsSupport.h"
 #include "model/ModuleCatalog.h"
+#include "model/ProjectSchema.h"
 
 namespace dew::control
 {
@@ -73,6 +74,7 @@ ControlResult write (ControlHost& host, const juce::var& args)
 
     const auto& entries = arrayArg (args, "entries");
     const auto kinds = channelKinds();
+    auto adding = 0;
 
     // Resolved before written, so a batch with one bad entry changes nothing.
     for (int i = 0; i < entries.size(); ++i)
@@ -91,7 +93,19 @@ ControlResult write (ControlHost& host, const juce::var& args)
                                            + "' is not a kind of channel. Use "
                                            + kinds.joinIntoString (", ") + ".");
         }
+
+        if (! hasArg (entry, "id"))
+            ++adding;
     }
+
+    // Counted across the whole batch, like mixer_write's. addChannel refuses
+    // one past the cap and answers an invalid tree, and the loop below skips an
+    // invalid tree - so without this the call would report the entries it
+    // managed and say nothing about the ones it did not.
+    if (ProjectEdits::countChannels (project) + adding > kMaxChannels)
+        return ControlResult::failure ("that would take the project past "
+                                       + juce::String (kMaxChannels)
+                                       + " channels, which is as many as the engine renders.");
 
     auto* undo = host.undoManager();
 
@@ -247,7 +261,11 @@ void appendChannelOps (std::vector<OpSpec>& all)
           "so changing a name does not blank a colour.\n\n"
           "The sound a channel makes is not here - that is params_write, which reaches "
           "every oscillator, envelope and effect parameter it has. This is the channel "
-          "as an object in the rack.",
+          "as an object in the rack.\n\n"
+          "A project holds "
+              + juce::String (kMaxChannels)
+              + " channels, which is as many as the engine renders. A batch that would take "
+                "it past that is refused whole rather than adding the ones that fit.",
           { { "entries", ValueKind::array, true, "The channels to add or change.",
               channelFields() } },
           write });

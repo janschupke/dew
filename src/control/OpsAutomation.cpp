@@ -284,9 +284,9 @@ void appendAutomationOps (std::vector<OpSpec>& all)
           OpEdits::no,
           "List every parameter in this project that a curve can be pointed at.",
           "Automation is a curated set, not every property: whether a parameter is worth "
-          "a curve is declared beside the parameter itself. A relation between tracks "
-          "(solo), a read-pointer discontinuity (a sample's reverse and loop) and a "
-          "pattern's length are all deliberately absent, each for its own reason.\n\n"
+          "a curve is declared beside the parameter itself. A read-pointer discontinuity "
+          "(a sample's reverse and loop), a soundfont's tuning offsets and a pattern's "
+          "length are all deliberately absent, each for its own reason.\n\n"
           "Answers in the same five-field address params_write takes, so a parameter you "
           "have just set can be automated without translating anything.",
           { { "contains", ValueKind::text, false,
@@ -302,13 +302,17 @@ void appendAutomationOps (std::vector<OpSpec>& all)
           "a curve with nowhere to play is a curve nothing hears. The clip lands on the "
           "first lane with room at `startBar`, and a lane is added if every one is "
           "occupied there.\n\n"
-          "A fresh curve has two points, so it is a line rather than an empty box. Shape "
+          "A fresh curve has two points rather than none, so it is something you can "
+          "hear before you shape it - a line for a continuous parameter, and a pair of "
+          "steps for a discrete one, because half-on is not a state a toggle has. Shape "
           "it with automation_points_write.\n\n"
           "Refuses a parameter that is not automatable, and says so - which is a "
           "different answer from a parameter that does not exist.",
           { { "target", ValueKind::text, true, "project, channel, mixerTrack or master." },
             { "id", ValueKind::integer, false, "The channel or mixer track id." },
-            { "group", ValueKind::text, false, "oscillators or effects, or omit." },
+            { "group", ValueKind::text, false,
+              "oscillators, amp, soundfont or effects. Omit for the target's own "
+              "parameters." },
             { "slot", ValueKind::integer, false, "Which oscillator or effect slot." },
             { "param", ValueKind::text, true, "The parameter to automate." },
             { "placeClip", ValueKind::flag, false, "Place a clip for it. True if absent." },
@@ -321,9 +325,10 @@ void appendAutomationOps (std::vector<OpSpec>& all)
           OpScope::read,
           OpEdits::no,
           "Read one automation curve's points.",
-          "Values are 0 to 1 and are mapped onto the parameter's own units when they are "
-          "read - a discrete parameter is snapped, because half-on is not a state a "
-          "toggle has.\n\n"
+          "Points come back exactly as they are stored: a value from 0 to 1, a bend and "
+          "a segment shape. The mapping onto the parameter's own units happens where the "
+          "curve is PLAYED, not here, so what this answers is what "
+          "automation_points_write took.\n\n"
           "`stale` is true when the curve points at something that no longer applies - "
           "an effect slot that changed type, an oscillator switched out of wavetable "
           "mode. A stale curve is inert rather than misapplied.",

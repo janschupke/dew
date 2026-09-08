@@ -185,6 +185,38 @@ int NoteTools::indexOfSnap (SnapDivision division) noexcept
     return 0;
 }
 
+juce::String NoteTools::snapToString (SnapDivision division) noexcept
+{
+    // The enum's own spelling, one arm per case and no default: adding a
+    // division is then a compiler error here rather than a name that silently
+    // comes back empty.
+    switch (division)
+    {
+        case SnapDivision::off: return "off";
+        case SnapDivision::thirtysecond: return "thirtysecond";
+        case SnapDivision::sixteenthTriplet: return "sixteenthTriplet";
+        case SnapDivision::sixteenth: return "sixteenth";
+        case SnapDivision::eighthTriplet: return "eighthTriplet";
+        case SnapDivision::eighth: return "eighth";
+        case SnapDivision::quarter: return "quarter";
+        case SnapDivision::half: return "half";
+        case SnapDivision::bar: return "bar";
+    }
+
+    return "sixteenth";
+}
+
+std::optional<SnapDivision> NoteTools::snapFromString (juce::StringRef name) noexcept
+{
+    // Over the same table snapToString spells, so the two cannot disagree about
+    // what is accepted.
+    for (const auto division : allSnapDivisions)
+        if (snapToString (division) == name)
+            return division;
+
+    return std::nullopt;
+}
+
 int NoteTools::snapFloor (int step, int snapSteps) noexcept
 {
     const auto snap = juce::jmax (1, snapSteps);

@@ -22,9 +22,27 @@
 namespace dew
 {
 
+int ProjectEdits::countChannels (const juce::ValueTree& project)
+{
+    int n = 0;
+
+    for (const auto& child : project)
+        if (child.hasType (ids::CHANNEL))
+            ++n;
+
+    return n;
+}
+
 juce::ValueTree ProjectEdits::addChannel (juce::ValueTree project, const juce::String& name,
                                           juce::UndoManager* undo)
 {
+    // Refused here rather than clamped at snapshot time, which is what
+    // addMixerTrack does and for the same reason: past the cap the engine
+    // renders nothing for it, so a channel that could be created but not heard
+    // is a channel that looks broken.
+    if (countChannels (project) >= kMaxChannels)
+        return {};
+
     auto channel = defaultTreeFor (childSpecFor (projectSpec(), "channels"));
 
     const auto id = nextFreeId (project, ids::CHANNEL);

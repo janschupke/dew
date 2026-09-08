@@ -38,8 +38,13 @@ struct OpSpec
 
     /** The paragraphs the website prints and the guide resource quotes:
         when to reach for it, what it refuses, and what it costs in undo steps.
-        Written as plain prose with blank lines between paragraphs. */
-    const char* doc = "";
+        Written as plain prose with blank lines between paragraphs.
+
+        A juce::String rather than a literal, so a doc can be BUILT from the
+        thing it describes - the effect chain's limit comes from
+        kMaxEffectsPerChain rather than being spelled again. It was a literal,
+        and the number in it said four while the constant said nine. */
+    juce::String doc;
 
     std::vector<ArgSpec> args;
 

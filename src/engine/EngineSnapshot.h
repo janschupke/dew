@@ -27,12 +27,12 @@ namespace dew
     anything a prototype project reaches; buildSnapshot() clamps to them and
     reports what it dropped rather than silently truncating.
 */
-inline constexpr int kMaxChannels = 64;
 inline constexpr int kMaxVoicesPerChannel = 16;
 
-// kMaxMixerTracks is in model/ProjectSchema.h, included above: once inserts
-// could be added and removed it became a rule about what a DOCUMENT may hold,
-// and the engine is one of its readers rather than its owner.
+// kMaxChannels and kMaxMixerTracks are in model/ProjectSchema.h, included
+// above: once either could be added and removed it became a rule about what a
+// DOCUMENT may hold, and the engine is one of its readers rather than its
+// owner. The clamps here stay, for a file that was written by hand.
 
 /** How many effect slots in the whole project can hold live DSP state.
 

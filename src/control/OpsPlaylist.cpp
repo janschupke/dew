@@ -264,7 +264,7 @@ void appendPlaylistOps (std::vector<OpSpec>& all)
         { "playlist_tracks_write",
           OpScope::write,
           OpEdits::yes,
-          "Add arrangement lanes, or rename, mute, solo and recolour existing ones.",
+          "Add arrangement lanes, or rename, mute and recolour existing ones.",
           "A lane carries no id: lanes are positional, unlike channels and mixer "
           "inserts, so an index is the whole address. An entry with an `index` changes "
           "that lane and one without appends a new one.\n\n"
@@ -296,14 +296,15 @@ void appendPlaylistOps (std::vector<OpSpec>& all)
           OpScope::write,
           OpEdits::yes,
           "Place clips on the arrangement: patterns, audio takes or automation curves.",
-          "A clip is measured in BARS, and a bar is beatsPerBar steps - so a clip's "
-          "length in time follows the metre. Placing two clips of one pattern is how a "
-          "section repeats identically; duplicating the pattern first is how it repeats "
-          "with variation.\n\n"
+          "A clip is measured in BARS, and a bar is stepsPerBeat * beatsPerBar steps - "
+          "16 in a default 4/4 project, which project_describe reports. Placing two "
+          "clips of one pattern is how a section repeats identically; duplicating the "
+          "pattern first is how it repeats with variation.\n\n"
           "The song grows to fit what you place, and never shrinks: trailing empty bars "
           "are a deliberate silence.\n\n"
-          "Refuses the whole batch on a bad lane, pattern, channel or automation rather "
-          "than placing some of it.",
+          "Refuses the whole batch rather than placing some of it: on a bad lane, "
+          "pattern, channel or automation, on a negative start, and on an audio clip "
+          "aimed at a channel that has no recording to play.",
           { { "clips",
               ValueKind::array,
               true,

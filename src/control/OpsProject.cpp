@@ -183,12 +183,15 @@ ControlResult command (ControlHost& host, const juce::var& args)
 
 /** The song's own numbers.
 
-    setMeter rather than two property writes, because a bar is a unit the whole
-    arrangement is measured in: a clip is stored in BARS, so redefining one moves
-    every clip, and ProjectEdits rescales them in the same transaction. Writing
-    beatsPerBar by hand would leave a one-bar clip of a sixteen-step pattern
-    spanning twelve steps in 3/4, with the pattern's last four steps silently
-    not sounding.
+    setMeter rather than two property writes: redefining a bar changes how many
+    steps one holds, so barsInSong no longer counts the same span. setMeter
+    ceilings it to cover what was there and regrows the song to fit the clips.
+    Writing beatsPerBar by hand would leave the song shorter than its own
+    arrangement.
+
+    It does NOT move the clips, and has not since format v20 - a clip is stored
+    in STEPS, so its position in time is already preserved exactly. See
+    ProjectEdits::setMeter, whose comment argues the deletion.
 */
 ControlResult writeStructure (ControlHost& host, const juce::var& args)
 {
@@ -222,21 +225,22 @@ ControlResult writeStructure (ControlHost& host, const juce::var& args)
         ++changed;
     }
 
-    auto exact = true;
-
     if (hasArg (args, "beatsPerBar") || hasArg (args, "beatUnit"))
     {
         const auto beats = intArg (args, "beatsPerBar", (int) project[ids::beatsPerBar]);
         const auto unit = intArg (args, "beatUnit", (int) project[ids::beatUnit]);
 
-        ProjectEdits::setMeter (project, beats, unit, undo, &exact);
+        // No `wasExact`. It reported whether the clip rescale had to round, and
+        // there is no rescale to round since clips became steps - so the field
+        // was always true, which is a wire answer that cannot tell a caller
+        // anything. ProjectEdits::setMeter says the same about its out-param.
+        ProjectEdits::setMeter (project, beats, unit, undo);
         ++changed;
     }
 
     host.flushEngine();
 
-    return ControlResult::success (
-        Obj {}.set ("applied", changed).set ("clipsLandedOnWholeBars", exact));
+    return ControlResult::success (Obj {}.set ("applied", changed));
 }
 
 } // namespace
@@ -291,10 +295,11 @@ void appendProjectOps (std::vector<OpSpec>& all)
           OpScope::write,
           OpEdits::yes,
           "Set the project's name, tempo, metre or length in bars.",
-          "The metre is not a tempo. Changing beatsPerBar redefines what a bar IS, and "
-          "a clip is stored in bars - so every clip's start and length is rescaled in "
-          "the same undo step to hold its position in time. The answer says whether "
-          "every clip landed on a whole bar; when it did not, some were rounded.\n\n"
+          "The metre is not a tempo. Changing beatsPerBar redefines what a bar IS, so "
+          "the bar lines move - but nothing you have written moves with them: a clip is "
+          "stored in STEPS, so every note and every clip stays exactly where it sounded. "
+          "What does change is the song's LENGTH, which is counted in bars: it is "
+          "rounded up to cover what was already there, in the same undo step.\n\n"
           "beatUnit is notational: it names the metre and labels the snap divisions, "
           "and does not change how long anything sounds for.",
           { { "name", ValueKind::text, false, "The project's title." },

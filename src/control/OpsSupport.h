@@ -2,6 +2,7 @@
 
 #include "control/ControlOps.h"
 #include "control/ControlValue.h"
+#include "engine/Transport.h"
 #include "model/Ids.h"
 #include "model/ProjectEdits.h"
 
@@ -74,6 +75,17 @@ inline juce::String noSuchPattern (int id)
 inline juce::String noSuchMixerTrack (int id)
 {
     return "no mixer track with id " + juce::String (id) + ".";
+}
+
+/** The sentence for a transport mode that is not one.
+
+    The vocabulary itself is Transport::modeNames(), beside the enum - this is
+    only how it is said. Both render_audio and transport_write refuse with it.
+*/
+inline juce::String noSuchMode (const juce::String& text)
+{
+    return "'" + text + "' is not a mode. Use " + Transport::modeNames().joinIntoString (" or ")
+           + ".";
 }
 
 inline juce::String noSuchTrack (int index)

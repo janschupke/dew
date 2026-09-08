@@ -28,11 +28,11 @@
       "title": "Notes, patterns and the arrangement",
       "summary": "Steps and bars, and why a pattern is not an instrument.",
       "paragraphs": [
-        "Time inside a pattern is whole STEPS. A step is one over stepsPerBeat of a beat - at the default of 4, a step is a sixteenth note. There is no fractional step, so a rhythm the grid does not divide cannot be written; raising stepsPerBeat is how you get triplets and finer values.",
+        "Time inside a pattern is whole STEPS. A step is one over stepsPerBeat of a beat - at the default of 4, a step is a sixteenth note. There is no fractional step, so a rhythm the grid does not divide cannot be written. stepsPerBeat is the project's own grid and no operation here changes it: project_describe reports it, and a score compiled into an empty project is the one thing that sets it.",
         "A PATTERN holds every channel's notes for its span. It is a section of the song rather than one instrument's part, which is the thing most likely to surprise you: a drum pattern and a bass pattern covering the same four bars are usually one pattern, not two.",
-        "The PLAYLIST is measured in BARS, and a bar is beatsPerBar steps. Placing two clips of one pattern is how a section repeats identically. Duplicating the pattern first, with patterns_write and duplicateOf, is how it repeats with variation. A lane can carry a clip of any pattern; lanes are not instruments either.",
-        "Changing the metre redefines what a bar IS, so every clip's start and length is rescaled in the same undo step to hold its position in time. The answer says whether every clip landed on a whole bar.",
-        "Patterns and the song both GROW to fit what you write and never shrink. Trailing empty bars and a pattern longer than its notes are a deliberate silence, and nothing trims one behind your back."
+        "The PLAYLIST is measured in BARS, and a bar is stepsPerBeat * beatsPerBar steps - 16 in a default 4/4 project, not 4. Placing two clips of one pattern is how a section repeats identically. Duplicating the pattern first, with patterns_write and duplicateOf, is how it repeats with variation. A lane can carry a clip of any pattern; lanes are not instruments either.",
+        "Changing the metre redefines what a bar IS, so the bar lines move - and nothing you have written moves with them. Notes and clips are stored in STEPS, so every one of them stays exactly where it sounded; what moves is the song's length in bars, which is rounded up to cover what was there.",
+        "A pattern's LENGTH follows its notes, in both directions: writing a note further in lengthens it, and removing the notes at the end shortens it again. The SONG only grows - trailing empty bars are a deliberate silence, and nothing trims those behind your back."
       ]
     },
     {
@@ -56,7 +56,7 @@
         "Prefer one batched call over many small ones for the same reason, and not only for speed. Ten separate calls are ten undo steps and ten chances to leave the document half-changed.",
         "A batch is checked before any of it is written. An entry naming a channel that does not exist fails the whole call and changes nothing, rather than applying the entries it understood - half a batch is the worst answer available, because the caller is told it failed and the document has moved anyway.",
         "A grant is read-only or read-and-write, chosen by the user when they approved the client. Under a read-only grant every writing operation is refused before it runs. project_command can undo and redo, so a client can take back its own work - and so can the person at the keyboard.",
-        "Nothing here can approve itself, change a grant, or reach outside the open project except by writing the files that render_audio and export_midi are asked for."
+        "Nothing here can approve itself or change a grant. What a write grant DOES reach outside the open project is worth knowing before you give one: render_audio and export_midi write the file they are asked for, project_command saves to a path you give it and opens one, and source_write reads a sample or a soundfont from anywhere on disk. Every one of those takes the path from the caller."
       ]
     }
   ],
@@ -112,7 +112,7 @@
       "name": "structure_write",
       "scope": "write",
       "summary": "Set the project's name, tempo, metre or length in bars.",
-      "doc": "The metre is not a tempo. Changing beatsPerBar redefines what a bar IS, and a clip is stored in bars - so every clip's start and length is rescaled in the same undo step to hold its position in time. The answer says whether every clip landed on a whole bar; when it did not, some were rounded.\n\nbeatUnit is notational: it names the metre and labels the snap divisions, and does not change how long anything sounds for.",
+      "doc": "The metre is not a tempo. Changing beatsPerBar redefines what a bar IS, so the bar lines move - but nothing you have written moves with them: a clip is stored in STEPS, so every note and every clip stays exactly where it sounded. What does change is the song's LENGTH, which is counted in bars: it is rounded up to cover what was already there, in the same undo step.\n\nbeatUnit is notational: it names the metre and labels the snap divisions, and does not change how long anything sounds for.",
       "args": [
         {
           "name": "name",
@@ -330,7 +330,7 @@
       "name": "channels_write",
       "scope": "write",
       "summary": "Add channels, or change the name, colour, routing or mute of existing ones, as one undo step.",
-      "doc": "An upsert: an entry with an `id` changes that channel, an entry without one adds a channel of `kind`. A field an entry does not mention is left alone, so changing a name does not blank a colour.\n\nThe sound a channel makes is not here - that is params_write, which reaches every oscillator, envelope and effect parameter it has. This is the channel as an object in the rack.",
+      "doc": "An upsert: an entry with an `id` changes that channel, an entry without one adds a channel of `kind`. A field an entry does not mention is left alone, so changing a name does not blank a colour.\n\nThe sound a channel makes is not here - that is params_write, which reaches every oscillator, envelope and effect parameter it has. This is the channel as an object in the rack.\n\nA project holds 64 channels, which is as many as the engine renders. A batch that would take it past that is refused whole rather than adding the ones that fit.",
       "args": [
         {
           "name": "entries",
@@ -484,7 +484,7 @@
       "name": "effects_write",
       "scope": "write",
       "summary": "Add effects to a channel, mixer insert or the master, or bypass and preset existing ones.",
-      "doc": "An entry with a `slot` changes the effect already there; an entry without one appends an effect of `type` to the end of the chain. A chain holds four, and a fifth is refused rather than silently dropped - an effect the engine does not render is an effect that appears to have stopped working.\n\nThe effect's own parameters are params_write's, addressed with group 'effects' and the same slot. `preset` here is a shorthand for the whole set of them at once; presets_list says what is available.",
+      "doc": "An entry with a `slot` changes the effect already there; an entry without one appends an effect of `type` to the end of the chain. A chain holds 9, and one past that is refused rather than silently dropped - an effect the engine does not render is an effect that appears to have stopped working.\n\nThe effect's own parameters are params_write's, addressed with group 'effects' and the same slot. `preset` here is a shorthand for the whole set of them at once; presets_list says what is available.",
       "args": [
         {
           "name": "entries",
@@ -654,7 +654,7 @@
       "name": "mixer_write",
       "scope": "write",
       "summary": "Add mixer inserts, or rename and recolour existing ones.",
-      "doc": "An upsert, like channels_write: an entry with an `id` changes that insert, one without adds a new one.\n\nA fader and a pan are parameters, not fields here - reach them with params_write, target 'mixerTrack'. The master is addressed as target 'master' and has a fader and nothing else.",
+      "doc": "An upsert, like channels_write: an entry with an `id` changes that insert, one without adds a new one.\n\nA fader and a pan are parameters, not fields here - reach them with params_write, target 'mixerTrack'. The master is addressed as target 'master' and has a fader and nothing else.\n\nThe mixer holds 32 inserts, which is as many as the engine renders. A batch that would take it past that is refused whole rather than adding the ones that fit.",
       "args": [
         {
           "name": "entries",
@@ -810,7 +810,7 @@
       "name": "notes_write",
       "scope": "write",
       "summary": "Write notes into a pattern, as one undo step.",
-      "doc": "An upsert on the three fields that identify a note - channel, step and pitch - so sending the same bar twice does not double it.\n\nTime is whole steps. A step is 1/stepsPerBeat of a beat, which project_describe reports; at the default 4 a step is a sixteenth note. There is no fractional step and no tuplet that the grid does not divide.\n\nThe pattern grows to fit what you write, and never shrinks - a pattern longer than its notes is a deliberate rest at the end. Refuses the whole batch on a bad channel or an out-of-range pitch rather than writing half of it.\n\nFor anything longer than a few bars, prefer score_write and score_compile: the language says what the music IS, and this says where every note goes.",
+      "doc": "An upsert on the three fields that identify a note - channel, step and pitch - so sending the same bar twice does not double it.\n\nTime is whole steps. A step is 1/stepsPerBeat of a beat, which project_describe reports; at the default 4 a step is a sixteenth note. There is no fractional step and no tuplet that the grid does not divide.\n\nThe pattern's length FOLLOWS its notes and is not set directly: writing a note further in is what makes a pattern longer, and removing the notes at the end is what makes it shorter again. Refuses the whole batch on a bad channel or an out-of-range pitch rather than writing half of it.\n\nFor anything longer than a few bars, prefer score_write and score_compile: the language says what the music IS, and this says where every note goes.",
       "args": [
         {
           "name": "patternId",
@@ -964,7 +964,7 @@
       "name": "notes_transform",
       "scope": "write",
       "summary": "Quantize or transpose every note on one channel of a pattern.",
-      "doc": "Quantizing rounds each note's START to the grid and deliberately leaves lengths alone: quantizing length as well turns an eighth-note line into a legato blur. Two notes that land on the same step and pitch are collapsed into one, keeping the longer - they retrigger one voice at one instant, so the second was never audible.\n\nTransposing clamps the notes as a GROUP, so a chord against the top of the range keeps its intervals rather than compressing. The answer says how many semitones were actually applied, which is zero when the group is already against a limit.",
+      "doc": "Quantizing rounds each note's START to the grid and deliberately leaves lengths alone: quantizing length as well turns an eighth-note line into a legato blur. Two notes that land on the same step and pitch are collapsed into one, keeping the longer - they retrigger one voice at one instant, so the second was never audible.\n\nTransposing clamps the notes as a GROUP, so a chord against the top of the range keeps its intervals rather than compressing. The answer says how many semitones were actually applied, which is zero when the group is already against a limit.\n\nA snap division is named, not numbered. The answer repeats the name it used, so a caller can see it got the division it asked for.",
       "args": [
         {
           "name": "patternId",
@@ -992,9 +992,9 @@
         },
         {
           "name": "snap",
-          "kind": "integer",
+          "kind": "text",
           "required": false,
-          "doc": "For quantize: 0 sixteenth, 1 eighth, 2 quarter, 3 half, 4 bar.",
+          "doc": "For quantize, one of: off, thirtysecond, sixteenthTriplet, sixteenth, eighthTriplet, eighth, quarter, half, bar. `sixteenth` if absent. `off` is the identity, because a step is already the finest position a note holds; a division this project's grid cannot place is refused rather than quietly doing nothing.",
           "holdsBareElements": false,
           "fields": []
         },
@@ -1011,7 +1011,7 @@
     {
       "name": "playlist_tracks_write",
       "scope": "write",
-      "summary": "Add arrangement lanes, or rename, mute, solo and recolour existing ones.",
+      "summary": "Add arrangement lanes, or rename, mute and recolour existing ones.",
       "doc": "A lane carries no id: lanes are positional, unlike channels and mixer inserts, so an index is the whole address. An entry with an `index` changes that lane and one without appends a new one.\n\nA lane is not a channel. Any lane can carry a clip of any pattern, and a pattern holds every channel's notes - so lanes are sections of the song, not instruments.",
       "args": [
         {
@@ -1086,7 +1086,7 @@
       "name": "clips_write",
       "scope": "write",
       "summary": "Place clips on the arrangement: patterns, audio takes or automation curves.",
-      "doc": "A clip is measured in BARS, and a bar is beatsPerBar steps - so a clip's length in time follows the metre. Placing two clips of one pattern is how a section repeats identically; duplicating the pattern first is how it repeats with variation.\n\nThe song grows to fit what you place, and never shrinks: trailing empty bars are a deliberate silence.\n\nRefuses the whole batch on a bad lane, pattern, channel or automation rather than placing some of it.",
+      "doc": "A clip is measured in BARS, and a bar is stepsPerBeat * beatsPerBar steps - 16 in a default 4/4 project, which project_describe reports. Placing two clips of one pattern is how a section repeats identically; duplicating the pattern first is how it repeats with variation.\n\nThe song grows to fit what you place, and never shrinks: trailing empty bars are a deliberate silence.\n\nRefuses the whole batch rather than placing some of it: on a bad lane, pattern, channel or automation, on a negative start, and on an audio clip aimed at a channel that has no recording to play.",
       "args": [
         {
           "name": "clips",
@@ -1216,7 +1216,7 @@
       "name": "automation_targets_list",
       "scope": "read",
       "summary": "List every parameter in this project that a curve can be pointed at.",
-      "doc": "Automation is a curated set, not every property: whether a parameter is worth a curve is declared beside the parameter itself. A relation between tracks (solo), a read-pointer discontinuity (a sample's reverse and loop) and a pattern's length are all deliberately absent, each for its own reason.\n\nAnswers in the same five-field address params_write takes, so a parameter you have just set can be automated without translating anything.",
+      "doc": "Automation is a curated set, not every property: whether a parameter is worth a curve is declared beside the parameter itself. A read-pointer discontinuity (a sample's reverse and loop), a soundfont's tuning offsets and a pattern's length are all deliberately absent, each for its own reason.\n\nAnswers in the same five-field address params_write takes, so a parameter you have just set can be automated without translating anything.",
       "args": [
         {
           "name": "contains",
@@ -1232,7 +1232,7 @@
       "name": "automation_write",
       "scope": "write",
       "summary": "Create an automation curve for a parameter, and place a clip for it.",
-      "doc": "Creating the curve and placing its clip is one call because it is one action: a curve with nowhere to play is a curve nothing hears. The clip lands on the first lane with room at `startBar`, and a lane is added if every one is occupied there.\n\nA fresh curve has two points, so it is a line rather than an empty box. Shape it with automation_points_write.\n\nRefuses a parameter that is not automatable, and says so - which is a different answer from a parameter that does not exist.",
+      "doc": "Creating the curve and placing its clip is one call because it is one action: a curve with nowhere to play is a curve nothing hears. The clip lands on the first lane with room at `startBar`, and a lane is added if every one is occupied there.\n\nA fresh curve has two points rather than none, so it is something you can hear before you shape it - a line for a continuous parameter, and a pair of steps for a discrete one, because half-on is not a state a toggle has. Shape it with automation_points_write.\n\nRefuses a parameter that is not automatable, and says so - which is a different answer from a parameter that does not exist.",
       "args": [
         {
           "name": "target",
@@ -1254,7 +1254,7 @@
           "name": "group",
           "kind": "text",
           "required": false,
-          "doc": "oscillators or effects, or omit.",
+          "doc": "oscillators, amp, soundfont or effects. Omit for the target's own parameters.",
           "holdsBareElements": false,
           "fields": []
         },
@@ -1304,7 +1304,7 @@
       "name": "automation_read",
       "scope": "read",
       "summary": "Read one automation curve's points.",
-      "doc": "Values are 0 to 1 and are mapped onto the parameter's own units when they are read - a discrete parameter is snapped, because half-on is not a state a toggle has.\n\n`stale` is true when the curve points at something that no longer applies - an effect slot that changed type, an oscillator switched out of wavetable mode. A stale curve is inert rather than misapplied.",
+      "doc": "Points come back exactly as they are stored: a value from 0 to 1, a bend and a segment shape. The mapping onto the parameter's own units happens where the curve is PLAYED, not here, so what this answers is what automation_points_write took.\n\n`stale` is true when the curve points at something that no longer applies - an effect slot that changed type, an oscillator switched out of wavetable mode. A stale curve is inert rather than misapplied.",
       "args": [
         {
           "name": "id",
@@ -1536,8 +1536,8 @@
     {
       "name": "render_audio",
       "scope": "write",
-      "summary": "Start rendering the project to an audio file, or to one file per channel.",
-      "doc": "Answers as soon as the render STARTS, because a render is seconds to minutes of work. Poll render_status for progress, and do not start a second one while one is going.\n\nThe format follows the extension. MP3 needs the lame binary to be installed and reports itself unavailable when it is not.\n\nStems mute rather than solo, so a stem carries the effects and the routing it has in the mix.",
+      "summary": "Start rendering the project to an audio file, or to one file per mixer insert.",
+      "doc": "Answers as soon as the render STARTS, because a render is seconds to minutes of work. Poll render_status for progress, and do not start a second one while one is going.\n\nThe format follows the extension. MP3 needs the lame binary to be installed and reports itself unavailable when it is not.\n\nA stem is a full render with the other inserts muted, so it carries the effects and the routing it has in the mix. That also means stems do not sum back to the mix when the master chain holds a non-linear effect.",
       "args": [
         {
           "name": "path",
@@ -1567,7 +1567,7 @@
           "name": "stems",
           "kind": "flag",
           "required": false,
-          "doc": "Write one file per channel instead of one mix.",
+          "doc": "Write one file per MIXER INSERT instead of one mix. Not one per channel - a new project has twenty inserts and usually fewer channels than that.",
           "holdsBareElements": false,
           "fields": []
         },

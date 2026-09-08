@@ -477,6 +477,9 @@ struct ProjectEdits
     static bool removeMixerTrack (juce::ValueTree project, juce::ValueTree track,
                                   juce::UndoManager*);
 
+    /** How many channels the project holds. */
+    static int countChannels (const juce::ValueTree& project);
+
     /** How many inserts the mixer holds, master excluded. */
     static int countMixerTracks (const juce::ValueTree& project);
 

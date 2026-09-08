@@ -8,11 +8,6 @@ namespace dew::control
 namespace
 {
 
-Transport::Mode modeFrom (const juce::String& text)
-{
-    return text == "pattern" ? Transport::Mode::pattern : Transport::Mode::song;
-}
-
 ControlResult renderAudio (ControlHost& host, const juce::var& args)
 {
     auto* job = host.renderJob();
@@ -51,7 +46,13 @@ ControlResult renderAudio (ControlHost& host, const juce::var& args)
     // comment exists to warn about.
     request.options.samplePool = host.samplePool();
     request.options.soundFontPool = host.soundFontPool();
-    request.options.mode = modeFrom (textArg (args, "mode", "song"));
+    const auto wantedMode = textArg (args, "mode", "song");
+    const auto mode = Transport::modeFromString (wantedMode);
+
+    if (! mode.has_value())
+        return ControlResult::failure (noSuchMode (wantedMode));
+
+    request.options.mode = *mode;
     request.options.patternId = intArg (args, "patternId", 1);
     request.options.seconds = numberArg (args, "seconds");
 
@@ -93,8 +94,14 @@ ControlResult exportMidi (ControlHost& host, const juce::var& args)
         return ControlResult::failure ("there is no folder at "
                                        + destination.getParentDirectory().getFullPathName() + ".");
 
+    const auto wantedMode = textArg (args, "mode", "song");
+    const auto mode = Transport::modeFromString (wantedMode);
+
+    if (! mode.has_value())
+        return ControlResult::failure (noSuchMode (wantedMode));
+
     MidiExportOptions options;
-    options.mode = modeFrom (textArg (args, "mode", "song"));
+    options.mode = *mode;
     options.patternId = intArg (args, "patternId", 1);
 
     // Synchronous, unlike an audio render, and legitimately so: writing a MIDI
@@ -131,7 +138,9 @@ void appendOutputOps (std::vector<OpSpec>& all)
                        { "path", ValueKind::text, true,
                          "Where to write. A file, or the folder to fill when stems is set." });
     renderArgs.push_back (
-        { "stems", ValueKind::flag, false, "Write one file per channel instead of one mix." });
+        { "stems", ValueKind::flag, false,
+          "Write one file per MIXER INSERT instead of one mix. Not one per channel - a "
+          "new project has twenty inserts and usually fewer channels than that." });
     renderArgs.push_back ({ "seconds", ValueKind::number, false,
                             "Render exactly this long, letting the material loop. 0, or absent, "
                             "renders it once." });
@@ -142,14 +151,15 @@ void appendOutputOps (std::vector<OpSpec>& all)
 
     all.push_back (
         { "render_audio", OpScope::write, OpEdits::no,
-          "Start rendering the project to an audio file, or to one file per channel.",
+          "Start rendering the project to an audio file, or to one file per mixer insert.",
           "Answers as soon as the render STARTS, because a render is seconds to minutes "
           "of work. Poll render_status for progress, and do not start a second one while "
           "one is going.\n\n"
           "The format follows the extension. MP3 needs the lame binary to be installed "
           "and reports itself unavailable when it is not.\n\n"
-          "Stems mute rather than solo, so a stem carries the effects and the routing it "
-          "has in the mix.",
+          "A stem is a full render with the other inserts muted, so it carries the "
+          "effects and the routing it has in the mix. That also means stems do not sum "
+          "back to the mix when the master chain holds a non-linear effect.",
           renderArgs, renderAudio });
 
     all.push_back (

@@ -24,6 +24,27 @@ juce::StringArray noteTransformVerbs()
 namespace
 {
 
+/** Every division a caller may name, in the order the ladder runs.
+
+    Built from allSnapDivisions rather than written out, which is the whole
+    point: this argument used to document five names against nine divisions and
+    name a different one from the one it selected, in every case.
+*/
+juce::StringArray snapNames()
+{
+    juce::StringArray names;
+
+    for (const auto division : NoteTools::allSnapDivisions)
+        names.add (NoteTools::snapToString (division));
+
+    return names;
+}
+
+} // namespace
+
+namespace
+{
+
 /** The pattern an operation names, or the invalid tree plus the sentence. */
 juce::ValueTree patternFor (const juce::ValueTree& project, const juce::var& args)
 {
@@ -218,18 +239,42 @@ ControlResult transform (ControlHost& host, const juce::var& args)
     {
         const auto stepsPerBeat = (int) project[ids::stepsPerBeat];
         const auto beatsPerBar = (int) project[ids::beatsPerBar];
-        const auto snap = NoteTools::snapFromIndex (intArg (args, "snap"));
-        const auto snapSteps = NoteTools::stepsForSnap (snap, stepsPerBeat, beatsPerBar);
+
+        // ABSENT and WRONG are different answers. The argument is optional
+        // because transpose shares this operation and has no use for it, so an
+        // absent one takes the default a person's piano roll opens on; a name
+        // that is not a division is a caller asking for something specific,
+        // and quantizing to something else instead is the failure this
+        // argument exists to avoid.
+        const auto wanted = textArg (args, "snap");
+        const auto snap = wanted.isEmpty() ? std::optional { SnapDivision::sixteenth }
+                                           : NoteTools::snapFromString (wanted);
+
+        if (! snap.has_value())
+            return ControlResult::failure ("'" + wanted + "' is not a snap division. Use "
+                                           + snapNames().joinIntoString (", ") + ".");
+
+        // A division finer than the grid can place lands between two steps, and
+        // stepsForSnap answers 1 for it - the identity. Quantizing to it would
+        // report every note applied and move none, which is the same silent
+        // nothing an out-of-range index used to produce. fitsGrid is the
+        // question the piano roll already asks to grey one out.
+        if (! NoteTools::fitsGrid (*snap, stepsPerBeat, beatsPerBar))
+            return ControlResult::failure (
+                "this project's grid cannot place a " + NoteTools::snapToString (*snap)
+                + ": it has " + juce::String (stepsPerBeat)
+                + " steps to a beat, and that division falls between two of them.");
+
+        const auto snapSteps = NoteTools::stepsForSnap (*snap, stepsPerBeat, beatsPerBar);
 
         const auto collapsed = NoteTools::quantize (pattern, scope, snapSteps,
                                                     Meter::of (project).stepsPerBar(), undo);
         host.flushEngine();
 
-        return ControlResult::success (
-            Obj {}
-                .set ("applied", scope.size())
-                .set ("collapsedDuplicates", collapsed)
-                .set ("snap", NoteTools::nameForSnap (snap, (int) project[ids::beatUnit])));
+        return ControlResult::success (Obj {}
+                                           .set ("applied", scope.size())
+                                           .set ("collapsedDuplicates", collapsed)
+                                           .set ("snap", NoteTools::snapToString (*snap)));
     }
 
     if (verb == kTranspose)
@@ -272,9 +317,10 @@ void appendNoteOps (std::vector<OpSpec>& all)
           "Time is whole steps. A step is 1/stepsPerBeat of a beat, which "
           "project_describe reports; at the default 4 a step is a sixteenth note. There "
           "is no fractional step and no tuplet that the grid does not divide.\n\n"
-          "The pattern grows to fit what you write, and never shrinks - a pattern longer "
-          "than its notes is a deliberate rest at the end. Refuses the whole batch on a "
-          "bad channel or an out-of-range pitch rather than writing half of it.\n\n"
+          "The pattern's length FOLLOWS its notes and is not set directly: writing a note "
+          "further in is what makes a pattern longer, and removing the notes at the end "
+          "is what makes it shorter again. Refuses the whole batch on a bad channel or an "
+          "out-of-range pitch rather than writing half of it.\n\n"
           "For anything longer than a few bars, prefer score_write and score_compile: "
           "the language says what the music IS, and this says where every note goes.",
           { { "patternId", ValueKind::integer, true, "The pattern to write into." },
@@ -310,12 +356,17 @@ void appendNoteOps (std::vector<OpSpec>& all)
           "Transposing clamps the notes as a GROUP, so a chord against the top of the "
           "range keeps its intervals rather than compressing. The answer says how many "
           "semitones were actually applied, which is zero when the group is already "
-          "against a limit.",
+          "against a limit.\n\n"
+          "A snap division is named, not numbered. The answer repeats the name it used, "
+          "so a caller can see it got the division it asked for.",
           { { "patternId", ValueKind::integer, true, "The pattern to transform." },
             { "channelId", ValueKind::integer, true, "Which channel's notes." },
             { "verb", ValueKind::text, true, "quantize or transpose." },
-            { "snap", ValueKind::integer, false,
-              "For quantize: 0 sixteenth, 1 eighth, 2 quarter, 3 half, 4 bar." },
+            { "snap", ValueKind::text, false,
+              "For quantize, one of: " + snapNames().joinIntoString (", ")
+                  + ". `sixteenth` if absent. `off` is the identity, because a step is "
+                    "already the finest position a note holds; a division this project's "
+                    "grid cannot place is refused rather than quietly doing nothing." },
             { "semitones", ValueKind::integer, false, "For transpose: how far, and which way." } },
           transform });
 }

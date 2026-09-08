@@ -165,6 +165,42 @@ TEST_CASE ("the snap ladder runs finest to coarsest, with off at the top", "[gri
                > NoteTools::stepsForSnap (NoteTools::allSnapDivisions[i - 1], 24));
 }
 
+TEST_CASE ("a snap division round-trips through its name", "[grid][snap]")
+{
+    // The NAME, not the ordinal. An agent used to choose a division by its
+    // index into allSnapDivisions, and the argument documenting that mapping
+    // named a different division from the one every index selected - so
+    // quantizing to "a bar" produced eighth-note triplets. A name cannot come
+    // to mean a different division when one is inserted before it.
+    for (const auto division : NoteTools::allSnapDivisions)
+    {
+        const auto name = NoteTools::snapToString (division);
+
+        INFO ("division: " << name);
+
+        CHECK (name.isNotEmpty());
+        CHECK (NoteTools::snapFromString (name) == division);
+    }
+
+    // Every name distinct, or two divisions answer to one word.
+    juce::StringArray names;
+
+    for (const auto division : NoteTools::allSnapDivisions)
+        names.add (NoteTools::snapToString (division));
+
+    names.removeDuplicates (false);
+    CHECK (names.size() == NoteTools::numSnapDivisions);
+
+    // Nothing, rather than a fallback. snapFromIndex answers `sixteenth` for a
+    // number it does not know, because a settings file with a stale ordinal
+    // still has to open; a caller naming a division that does not exist is
+    // asking for something specific and has to be told.
+    CHECK_FALSE (NoteTools::snapFromString ("sixteenths").has_value());
+    CHECK_FALSE (NoteTools::snapFromString ("1/16").has_value());
+    CHECK_FALSE (NoteTools::snapFromString ("").has_value());
+    CHECK (NoteTools::snapFromIndex (999) == SnapDivision::sixteenth);
+}
+
 TEST_CASE ("a clip can start off a bar line", "[playlist][edits]")
 {
     // The whole point of moving a clip from bars into steps. A fill that begins
