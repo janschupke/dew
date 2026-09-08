@@ -1,9 +1,9 @@
 import type { Metadata } from 'next';
 
-import { Container } from '@/ui/Surface';
-import { Doc, Lead } from '@/ui/Prose';
+import { Doc, PageHeader } from '@/ui/Prose';
 import { Toc } from '@/ui/Toc';
 import { anchorForGuide, mcp } from '@/lib/mcp';
+import { mcpPages } from '@/content/sections';
 import { t } from '@/lib/strings';
 
 export const metadata: Metadata = {
@@ -35,14 +35,9 @@ export default function McpResources() {
 
   return (
     <>
-      <Container className="pt-stack">
-        <h1 className="text-h1 text-primary leading-tight font-semibold tracking-tight">
-          {t('mcpResources.title')}
-        </h1>
-        <Lead>{t('mcpResources.lead')}</Lead>
-      </Container>
+      <PageHeader title={t('mcpResources.title')} lead={t('mcpResources.lead')} />
 
-      <Toc label={t('mcpResources.onThisPage')} groups={toc}>
+      <Toc label={t('mcpResources.onThisPage')} pages={mcpPages('/mcp/resources/')} groups={toc}>
         {mcp.guide.map((section) => (
           <section
             key={section.id}

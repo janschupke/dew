@@ -1,10 +1,10 @@
 import type { Metadata } from 'next';
 
 import { Cell, Row, Table, Tag } from '@/ui/Table';
-import { Container } from '@/ui/Surface';
-import { Doc, Lead } from '@/ui/Prose';
+import { Doc, PageHeader } from '@/ui/Prose';
 import { Toc, type TocGroup } from '@/ui/Toc';
 import { anchorForBlock, anchorForKey, anchorForValueKind, schema } from '@/lib/schema';
+import { scorePages } from '@/content/sections';
 import { t } from '@/lib/strings';
 
 export const metadata: Metadata = { title: `${t('reference.title')} — ${t('site.name')}` };
@@ -45,14 +45,9 @@ export default function Reference() {
 
   return (
     <>
-      <Container className="pt-stack">
-        <h1 className="text-h1 text-primary leading-tight font-semibold tracking-tight">
-          {t('reference.title')}
-        </h1>
-        <Lead>{t('reference.lead')}</Lead>
-      </Container>
+      <PageHeader title={t('reference.title')} lead={t('reference.lead')} />
 
-      <Toc label={t('reference.onThisPage')} groups={toc}>
+      <Toc label={t('reference.onThisPage')} pages={scorePages('/score/reference/')} groups={toc}>
         <section className="scroll-mt-section">
           <h2 className="text-h2 text-primary font-semibold">{t('reference.blocksTitle')}</h2>
 
@@ -173,8 +168,6 @@ export default function Reference() {
             {t('reference.romanNumeralNote')}
           </p>
         </section>
-
-        <p className="mt-section text-fine text-disabled">{t('reference.generatedFrom')}</p>
       </Toc>
     </>
   );

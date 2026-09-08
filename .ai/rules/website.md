@@ -1,9 +1,13 @@
 # The website
 
-`website/` is a Next.js + TypeScript site: what dew is, what it does, and the score
-language's reference. It is checked by `./scripts/check-website.sh`, which
-`./scripts/check.sh` runs. [Why it is this way](#why-it-is-this-way), below, is the
-argument.
+`website/` is a Next.js + TypeScript site: what dew is, what it does, and the generated
+references for the score language and the MCP endpoint. It is checked by
+`./scripts/check-website.sh`, which `./scripts/check.sh` runs.
+
+**It is a product site.** What it may not carry is internal reasoning: no page says which
+tool emitted it or which header a table came from, and nothing links into `.ai/rules/`.
+The argument for a decision lives beside the code, not in front of a reader deciding
+whether to try a DAW.
 
 **No C++ gate looks at it.** The formatting step reads `find src tests tools`, and every
 source gate walks `DEW_SOURCE_DIR`. So the site carries its own, in `website/tests/`, and
@@ -101,8 +105,8 @@ each decodes, is the size it was asked for, and is not one flat colour.
 - **`Button`'s prop is `variant`, not `role`.** The vocabulary is `DewButton`'s, but `role`
   is a real ARIA attribute on an anchor. It renders `next/link` for an internal href and
   an anchor for an external one.
-- **A shot opens full-screen, in a native `<dialog>`.** `ShotViewer` is the site's second
-  and last `'use client'` component, after the nav. `showModal()` buys the top layer — so
+- **A shot opens full-screen, in a native `<dialog>`.** `ShotViewer` is one of the site's
+  three `'use client'` components, with `Nav` and `TocNav`. `showModal()` buys the top layer — so
   it cannot lose to the pinned header's `z-10` — plus Escape, a focus trap and an inert
   background, all of which hand-rolled would be a second implementation of something the
   platform has. Its box and its `::backdrop` are plain rules in `globals.css`, because
@@ -110,13 +114,23 @@ each decodes, is the size it was asked for, and is not one flat colour.
   `showModal` nor `close`**, so `tests/setup.ts` supplies both and `tests/shot.test.tsx`
   asserts that shim is in place before asserting anything else — the wiring is covered on
   this side and the top-layer behaviour is not.
-- **A reference page's sidebar is generated from the same table its sections are.** `Toc`
-  is the shell both wear, and both used to carry their own flat wrapping list of every
-  anchor — a pile you read rather than a place you navigate from, which scrolled away the
-  moment you used it. Each group carries a `data-toc-group`, and the tests assert **both
+- **A sectioned page's sidebar is generated from the same table its sections are.** `Toc`
+  is the shell — `/features/`, `/score/`, `/mcp/` and the three generated reference pages
+  all wear it. Each group carries a `data-toc-group`, and the tests assert **both
   directions per group**: every section has an entry, and every entry names a section that
   exists. A count over the whole nav would go green the day a block was dropped and a
   table added.
+- **`TocNav` is the sidebar's client half, and marks what is on screen.** It takes the
+  LAST anchor whose top has passed `--spacing-section` — the rung every `scroll-mt-section`
+  clears — and falls back to the first when none has. The offset is read from the
+  stylesheet rather than written in the component, so the two cannot drift.
+  `tests/toc.test.tsx` stubs `getBoundingClientRect`, because jsdom has no layout.
+- **A multi-page section carries a `pages` group.** `/score/` and `/mcp/` are sections, not
+  loose pages: the header marks the section by longest prefix and the sidebar's first group
+  says which page of it you are on. `src/content/sections.ts` holds those lists.
+- **The nav is `src/content/nav.ts`, once.** The header and the footer read the same array;
+  they used to hold it twice, by hand. Home is matched EXACTLY and everything else by
+  prefix, because `/` is a prefix of every other href.
 - **`docked` is the sidebar's sticky, and `pinned` the header's.** Same reason for both:
   the numeric offset a `sticky top-<n>` needs reads the scale `--spacing: initial`
   deletes, and emits nothing. `docked` sits at `--spacing-section`, which is the rung
@@ -147,9 +161,28 @@ therefore be cheap.
 fact in two homes, and the exception is argued rather than assumed: a reader who has not
 cloned anything cannot be sent to a file inside the clone. What holds it is
 `tests/setup.test.ts`, which reads `../README.md` and fails if a command in
-`src/content/setup.ts` is not in it character for character — and reads `CMakePresets.json`
-and the `Brewfile` for the same reason. Change a command in one place and the suite names
-the other.
+`src/content/setup.ts` is not in it character for character. Change a command in one place
+and the suite names the other.
+
+**All three platforms, each complete on its own.** `src/content/setup.ts` is a list of
+`Platform` records — requirements, build, run — keyed off the same closed
+`'macos' | 'windows' | 'linux'` union `/download/` uses for its marks. A Linux reader must
+never have to read the macOS block to know what to run.
+
+The rest of the same file is held against the repository too: the preset table against
+`CMakePresets.json`, `brewedTools` against the `Brewfile`, and the Linux apt line against
+the list in `.github/workflows/ci.yml` — because a list CI runs is a list that is true.
+
+## The legal page
+
+`/terms/` is `src/content/terms.ts`, and `tests/terms.test.ts` holds it against `LICENSE`
+and `THIRD_PARTY.md`: the licence it names has to be the one in the repository, and every
+library the build resolved has to be mentioned. A dependency added to `cpm-package-lock.cmake`
+appears in the generated `THIRD_PARTY.md` and fails that test until the page says so.
+
+**dew is AGPLv3, which is copyleft and not permissive.** The page says both halves — free
+for any purpose including commercially, and an offer of corresponding source owed to
+anybody given a binary or reached over a network. Half of that is worse than neither.
 
 ## The gate skips without node
 
@@ -157,61 +190,3 @@ the other.
 project and somebody who never opens the site should not be stopped by a missing runtime.
 CI sets `DEW_REQUIRE_NODE=1`, where a silent skip would be invisible. `npm ci`, never
 `npm install` — the second rewrites `package-lock.json` and dirties the tree.
-
-## Why it is this way
-
-`website/` is a Next.js site: what dew is, what it does, and the score language's
-reference. `./scripts/check-website.sh` checks it and `./scripts/check.sh` runs that.
-
-**The reference is generated, and that is the point.** `src/lang/Schema.h` has always
-declared the whole language as one table, and its own comment says the reference manual
-reads it — "so a key cannot exist without being completable and cannot be documented
-differently from how it is checked". Until now nothing read it but the completion popup and
-the editor's highlighter. `dew_docs` is the reader that was missing: it walks `schema()`
-and writes JSON, and the site renders every block, key, value kind and mode from it. A key
-added to `Schema.cpp` appears on the page with no page edit, and a page that stopped
-rendering one fails a test naming it.
-
-**The JSON is committed, not built.** So the site needs no C++ toolchain: its CI job runs
-on a Linux runner in about a minute instead of waiting behind a JUCE build, and a host that
-has never heard of CMake can serve the export. The cost is that the files can go stale,
-which is what the freshness test and CI's second-process `cmp` are for. Freshness is a test
-rather than `git diff --exit-code` because the manifest's trick — regenerate, then diff —
-would mean `check.sh` writing into the working tree before judging it.
-
-**Three emitters rather than one, because of the link line.** `dew_docs` links `dew_lang` and
-nothing else, JUCE included, so it is a second place that library's zero-dependency claim is
-proved rather than asserted. The design tokens live in `dew_design`, which publicly links
-`dew_engine` — one tool emitting both would have put `juce_gui_basics` on the score
-compiler's link line, which is the mistake `dew_render` already made once. So `dew_shot`
-emits the tokens, beside the picture of them it already renders. `dew_mcp` is the third and
-takes the argument further: it links `dew_control` alone, so the operation table's claim to
-need no interface is proved by a tool that builds without one.
-
-**It takes its colours from the application, not from a copy of them.** `dew_shot tokens`
-reads `darkPalette()` and `scripts/gen-theme.mjs` turns that into Tailwind's `@theme` block.
-The lifts are the interesting part: `juce::Colour::brighter` is per sRGB channel and
-truncates where CSS `color-mix` rounds, so the composed colours are computed by that same
-call and emitted, rather than re-derived in a browser. It also settles a trap — a hovered
-button is `surfaceRaised` lifted by `controlLift`, which is *not* `colour::surfaceHover`.
-
-The theme's namespace resets do the work a source gate does in the C++ tree:
-`--color-*: initial` deletes Tailwind's own palette and `--spacing: initial` its dynamic
-scale, so `bg-blue-500` and `p-7` are not wrong — they do not exist. That is a build that
-cannot express an off-vocabulary class, rather than a test that catches one.
-
-**It is dark, one palette.** Both of dew's palettes are dark for a stated reason, and the
-site inherits it: there is no `dark:` variant anywhere and a gate refuses one.
-
-**Nothing highlights anything.** The rule that the highlighter is not a second grammar is
-absolute, and a TypeScript tokenizer would have been a genuine third implementation. The
-site renders committed samples and never user input, so it does not need one: `dew_shot
-samples` scans with `lang::tokenize` and classifies with `ScoreTokeniser::colourFor`, and
-the page paints spans. A test asserts the rendered text is byte-identical to the source.
-
-**The screenshots are committed and are not gated on their bytes.** dew paints with the
-system typeface, so a shot depends on the macOS version and the installed fonts — a `cmp`
-would fail on somebody else's machine for a reason with nothing to do with dew. They are
-regenerated deliberately with `./scripts/gen-shots.sh`; a test holds that each decodes, is
-the size it was asked for, and is not one flat colour.
-

@@ -1,43 +1,49 @@
 import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
 
-import {
-  buildCommands,
-  checkCommands,
-  presets,
-  repositoryUrl,
-  requirements,
-  runCommands,
-} from '@/content/setup';
+import { brewedTools, checkCommands, platforms, presets, repositoryUrl } from '@/content/setup';
 
-/*  The setup page and the README are the same instructions twice.
+/*  The setup page and the repository are the same instructions twice.
  *
- *  That is the arrangement the repository's own rule about one fact and one
- *  home would normally forbid - and the exception is argued rather than
- *  assumed: a reader who has not cloned anything cannot be sent to a file
- *  inside the clone, so the site has to carry the commands. What must not
- *  happen is the two drifting, because the copy a stranger runs is the one
- *  nobody who works on this repository ever reads.
- *
- *  So the second copy is held against the first, character for character. This
- *  is the same answer the C++ tree gives when documentation has to stay true:
- *  ScoreBakeTests compiles the language example out of the README rather than
- *  trusting it.
+ *  A reader who has not cloned anything cannot be sent to a file inside the
+ *  clone, so the site has to carry the commands. What must not happen is the
+ *  two drifting, because the copy a stranger runs is the one nobody who works
+ *  on this repository ever reads. So the second copy is held against the
+ *  first, character for character.
  */
-
 const readme = readFileSync('../README.md', 'utf8');
 const brewfile = readFileSync('../Brewfile', 'utf8');
+const ci = readFileSync('../.github/workflows/ci.yml', 'utf8');
 const presetsJson = JSON.parse(readFileSync('../CMakePresets.json', 'utf8')) as {
   configurePresets: { name: string; hidden?: boolean }[];
 };
 
+const commands = [
+  ...platforms.flatMap((platform) => [...platform.build, ...platform.run]),
+  ...checkCommands,
+];
+
 describe('the setup page says what the repository says', () => {
   it('quotes every command out of README.md verbatim', () => {
-    const commands = [...buildCommands, ...runCommands, ...checkCommands];
-
-    expect(commands.length).toBeGreaterThan(4);
+    expect(commands.length).toBeGreaterThan(8);
 
     for (const command of commands) expect(readme, command).toContain(command);
+  });
+
+  it('covers all three platforms', () => {
+    // dew is built and its suite is run on all three in CI, and the page said
+    // "macOS 11 or newer" and left the other two to a parenthetical.
+    expect(platforms.map((platform) => platform.system).sort()).toEqual([
+      'linux',
+      'macos',
+      'windows',
+    ]);
+
+    for (const platform of platforms) {
+      expect(platform.build.length, platform.system).toBeGreaterThan(0);
+      expect(platform.run.length, platform.system).toBe(1);
+      expect(platform.requirements.length, platform.system).toBeGreaterThan(2);
+    }
   });
 
   it('names every configure preset the repository has, and no other', () => {
@@ -53,15 +59,26 @@ describe('the setup page says what the repository says', () => {
   });
 
   it('names only tools the Brewfile installs', () => {
-    // The four that come from brew. The first three requirements are the
-    // machine rather than a package, so they are not expected here.
-    const brewed = requirements
-      .map((requirement) => requirement.name)
-      .filter((name) => /^[a-z]+$/.test(name));
+    expect(brewedTools.length).toBeGreaterThan(2);
 
-    expect(brewed.length).toBeGreaterThan(2);
+    for (const name of brewedTools) expect(brewfile, name).toContain(`brew "${name}"`);
+  });
 
-    for (const name of brewed) expect(brewfile, name).toContain(`brew "${name}"`);
+  it('asks for the Linux packages CI installs, and no others', () => {
+    // The README's own argument for pointing at this file: a list CI runs is a
+    // list that is true. A package here that CI does not install is one nobody
+    // has ever proved is enough.
+    const linux = platforms.find((platform) => platform.system === 'linux');
+    const install = linux?.build.find((line) => line.includes('apt install')) ?? '';
+
+    const packages = install
+      .replace(/^sudo apt install /, '')
+      .split(/[\s\\]+/)
+      .filter((name) => name !== '');
+
+    expect(packages.length).toBeGreaterThan(10);
+
+    for (const name of packages) expect(ci, `${name} is not in ci.yml`).toContain(name);
   });
 
   it('points at the repository the README points at', () => {

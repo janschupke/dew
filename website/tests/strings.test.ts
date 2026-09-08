@@ -66,8 +66,8 @@ describe('strings', () => {
     // long as it had been there, which is how a catalogue starts carrying
     // sentences nobody has read.
     //
-    // This is tests/SourceGateStringsTests.cpp's "every string the catalogue
-    // declares is one the app asks for", on this side of the tree.
+    // The mirror of the type: a key that is NAMED certainly EXISTS, and
+    // nothing at all held the other direction.
     const asked = new Set<string>();
 
     for (const file of sourceFiles()) {
@@ -85,8 +85,7 @@ describe('strings', () => {
   });
 
   it('an unknown key returns its own path, never empty', () => {
-    // The rule src/i18n/Strings.h follows, so a gap is visible on the page
-    // rather than a blank nobody notices.
+    // A gap is visible on the page rather than a blank nobody notices.
     const missing = 'nav.nothingLikeThis' as Parameters<typeof t>[0];
 
     expect(t(missing)).toBe('nav.nothingLikeThis');

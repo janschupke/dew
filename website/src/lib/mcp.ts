@@ -1,12 +1,9 @@
 import raw from '@/generated/mcp-tools.json';
 
-/** dew's MCP surface, as dew_mcp wrote it from control::ops() and
- *  control::guide().
+/** dew's MCP surface, generated from the application's own operation table.
  *
- *  Typed here rather than imported as `any`, for the reason schema.ts is: every
- *  page reads it through this module, so a shape change in the emitter is a type
- *  error in one place instead of a blank table in several.
- */
+ *  Typed here rather than imported as `any`: every page reads it through this
+ *  module, so a shape change is a type error in one place. */
 export interface ArgSpec {
   readonly name: string;
   readonly kind: string;

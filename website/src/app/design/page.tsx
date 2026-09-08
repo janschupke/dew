@@ -8,13 +8,9 @@ import { t } from '@/lib/strings';
 
 export const metadata: Metadata = { title: `${t('design.title')} — ${t('site.name')}` };
 
-/*  The design system showing itself.
-
-    Every value on this page is read out of design-tokens.json, which
-    `dew_shot tokens` wrote from darkPalette() - so this page cannot claim a
-    colour the application does not paint. It is the web analogue of
-    `dew_shot gallery`, and the gallery render sits at the bottom of it.
-*/
+/*  The design system showing itself. Every value here is read out of the
+    application's own tokens, so the page cannot claim a colour it does not
+    paint. */
 function Swatch({ name, value }: { name: string; value: string }) {
   return (
     <li className="gap-md flex items-center">
@@ -25,7 +21,7 @@ function Swatch({ name, value }: { name: string; value: string }) {
           backgroundColor: `var(--color-${name.replace(/[A-Z]/g, (c) => `-${c.toLowerCase()}`)})`,
         }}
       />
-      <span className="min-w-0">
+      <span className="shrinkable">
         <span className="text-body text-primary block font-mono">{name}</span>
         <span className="text-caption text-disabled block font-mono">{value}</span>
       </span>

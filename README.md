@@ -11,9 +11,9 @@ the next. It is developed on macOS; CI builds and tests all three systems on eve
 
 - **Source** — <https://github.com/janschupke/dew>
 - **Download** — <https://github.com/janschupke/dew/releases/latest>
-- **The site** — what it does, the design system, and the score language's generated
-  reference. Built from `website/`; `/setup/` there is this page's Build section, kept in
-  step by a test.
+- **The site** — what it does, how to build it on all three systems, the terms, and the
+  generated references for the score language and the MCP endpoint. Built from `website/`;
+  `/setup/` there is this page's Build section, kept in step by a test.
 
 ## Download
 
@@ -41,18 +41,47 @@ Old versions stay on [the releases page](https://github.com/janschupke/dew/relea
 
 ## Build
 
+The same two CMake commands on all three systems, once the toolchain is there. `/setup/`
+on the site carries these, and `website/tests/setup.test.ts` fails if a command there is
+not one of these character for character.
+
+**macOS 11 or newer**, Apple Silicon or Intel:
+
 ```sh
 brew bundle                    # cmake >= 3.25, ninja, ccache, lame
 cmake --preset release
 cmake --build --preset release
+open build/release/src/dew_artefacts/RelWithDebInfo/dew.app
 ```
 
-That is macOS. On Linux the same two CMake commands work once the distribution has a
-compiler, CMake 3.25 or newer, Ninja, and the ALSA, X11, freetype and fontconfig
-development packages — `.github/workflows/ci.yml` names the exact apt list, because a list
-CI runs is a list that is true. On Windows, `cmake --preset dist-windows` builds with the
-Visual Studio generator, which finds its own toolchain; the Ninja presets would need a
-developer command prompt.
+**Linux**, x86_64, glibc 2.35 or newer. The package list is the one
+`.github/workflows/ci.yml` installs, minus what only a headless runner needs, because a
+list CI runs is a list that is true. Ubuntu 22.04 ships CMake 3.22 and CMakePresets v6
+needs 3.25, so take a newer one from cmake.org:
+
+```sh
+sudo apt install build-essential ninja-build git pkg-config \
+  libasound2-dev libfreetype-dev libfontconfig1-dev \
+  libx11-dev libxext-dev libxinerama-dev libxrandr-dev libxcursor-dev \
+  libxcomposite-dev libxrender-dev libxi-dev \
+  libgl1-mesa-dev libglu1-mesa-dev mesa-common-dev
+cmake --preset release
+cmake --build --preset release
+./build/release/src/dew_artefacts/RelWithDebInfo/dew
+```
+
+`webkit2gtk` and `libcurl` are deliberately absent: dew builds with `JUCE_WEB_BROWSER=0`
+and `JUCE_USE_CURL=0`, so JUCE finds them missing at configure time and carries on.
+
+**Windows 10 or 11**, x64, with Visual Studio 2022 and its *Desktop development with C++*
+workload. The Visual Studio generator finds its own toolchain; the Ninja presets would
+need a developer command prompt:
+
+```sh
+cmake --preset dist-windows
+cmake --build --preset dist-windows
+build\dist-windows\src\dew_artefacts\RelWithDebInfo\dew.exe
+```
 
 Presets, not raw flags:
 
@@ -227,7 +256,7 @@ licence question. Without it the format reports itself unavailable and the rest 
   undo step. The master is neither renamed nor removed — it is a different node type, so
   that is structural rather than a check.
 - **Effects** — reverb, filter, delay, drive, distortion, chorus, phaser, a 3-band EQ,
-  a compressor and a limiter, chained up to four
+  a compressor and a limiter, chained up to nine
   deep on any channel, mixer track or the master. One editor pointed either way round: an
   accordion down the instrument panel, a row of open cards across the mixer. Drag a card
   by its grip to reorder: it lifts and follows the pointer, the rest of the chain parts to
@@ -240,7 +269,7 @@ licence question. Without it the format reports itself unavailable and the rest 
   independent depths — to pitch, to level and to pan — so any combination of the three
   moves and the ones left at zero do not. One ADSR envelope behind them, and channel
   volume and pan.
-- **Presets** — forty factory sounds: three for each effect type, five for the synth,
+- **Presets** — forty factory sounds: three for each effect type, six for the synth,
   two for an audio channel and two for a soundfont. **Preset** beside the instrument panel's title loads one
   onto the selected channel; each effect card has its own button, and offers only its own
   type. Loading one is a single undo step. A preset carries the *sound* and nothing else —
@@ -390,9 +419,13 @@ direction. The rules, the gates and the argument for each are in
 
 ## The website
 
-`website/` is a Next.js site: what dew is, what it does, how to build it, and the score
-language's generated reference. `./scripts/check-website.sh` checks it and
-`./scripts/check.sh` runs that; `vercel.json` at the root is how it deploys.
+`website/` is a Next.js site: what dew is, what it does, how to build it, the licence, and
+the generated references for the score language and the MCP endpoint.
+`./scripts/check-website.sh` checks it and `./scripts/check.sh` runs that; `vercel.json` at
+the root is how it deploys.
+
+It is a product site, so it carries no internal reasoning: no page says which tool emitted
+it, and nothing links into `.ai/rules/`.
 
 Four of its inputs — the score schema, the design tokens, the highlighted samples and the
 MCP reference — are JSON written by `dew_docs`, `dew_shot` and `dew_mcp` and committed, so

@@ -1,14 +1,8 @@
 import raw from '@/generated/score-samples.json';
 
-/** Example scores, with the token runs that colour them.
- *
- *  Written by `dew_shot samples`, which scans with the compiler's own
- *  lang::tokenize and classifies with the editor's own
- *  ScoreTokeniser::colourFor. So this site is a VIEWER, not a highlighter:
- *  there is no second grammar here, which is what
- *  .ai/rules/score-language.md requires and what a TypeScript tokenizer could
- *  only have approximated.
- */
+/** Example scores, with the token runs that colour them — produced by the
+ *  compiler's own tokeniser and the editor's own colour map. The site is a
+ *  viewer, not a highlighter: there is no second grammar here. */
 export interface Run {
   readonly offset: number;
   readonly length: number;

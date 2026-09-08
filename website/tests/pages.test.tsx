@@ -6,13 +6,16 @@ import { describe, expect, it } from 'vitest';
 
 import Features from '@/app/features/page';
 import Home from '@/app/page';
+import Mcp from '@/app/mcp/page';
+import Score from '@/app/score/page';
 import Setup from '@/app/setup/page';
-import { buildCommands, presets, runCommands } from '@/content/setup';
-import { anchorForFeature, features } from '@/content/features';
+import Terms from '@/app/terms/page';
+import { anchorForFeature, anchorForGroup, featureGroups, features } from '@/content/features';
+import { checkCommands, platforms, presets } from '@/content/setup';
 
-/*  Every page here is a plain synchronous component and stays one.
-    Testing Library cannot render an async server component, so a page that
-    reached for `await` would be a page nothing on this side could see.
+/*  Every page here is a plain synchronous component and stays one: Testing
+    Library cannot render an async server component, so a page that reached for
+    `await` would be a page nothing on this side could see.
 */
 describe('pages', () => {
   it('the home page states what dew is, and that it is a prototype', () => {
@@ -22,24 +25,94 @@ describe('pages', () => {
     expect(screen.getByText(/working prototype/i)).toBeInTheDocument();
   });
 
-  it('the features page renders every feature', () => {
-    render(<Features />);
+  it('the home page says it is open source and where the terms are', () => {
+    const { container } = render(<Home />);
 
-    // The coverage half: a feature added to the content module and not to the
-    // page is exactly the omission nobody notices.
+    expect(container.textContent).toMatch(/open source/i);
+    expect(container.querySelector('a[href^="/terms"]')).not.toBeNull();
+  });
+
+  it('every page opens on the same rung', () => {
+    // PageHeader is `pt-section` and carries no bottom padding, because what
+    // follows normally brings its own top rung. Three pages used to hand-roll
+    // a header at `pt-stack` instead, and the MCP page put a Band straight
+    // after one - a Band's padding is INSIDE its border, so the rule landed on
+    // the lead paragraph with no gap at all.
+    for (const page of [
+      <Home key="home" />,
+      <Features key="features" />,
+      <Score key="score" />,
+      <Mcp key="mcp" />,
+      <Setup key="setup" />,
+      <Terms key="terms" />,
+    ]) {
+      const view = render(page);
+      const heading = view.container.querySelector('h1');
+
+      expect(heading?.parentElement?.className, heading?.textContent ?? '').toMatch(/\bpt-/);
+      view.unmount();
+    }
+  });
+
+  it('the MCP page opens without a band against its lead', () => {
+    // The reported defect, named: the element after the header must not be the
+    // full-bleed band, whose top border would sit on the lead's baseline box.
+    const { container } = render(<Mcp />);
+    const header = container.querySelector('h1')?.parentElement;
+
+    expect(header?.nextElementSibling?.className ?? '').not.toContain('border-y-hairline');
+  });
+});
+
+describe('the features page', () => {
+  it('renders every group and every feature in it', () => {
+    const { container } = render(<Features />);
+
+    expect(featureGroups.length).toBeGreaterThan(4);
+    expect(features.length).toBeGreaterThan(15);
+
+    for (const group of featureGroups) {
+      const section = container.querySelector(`#${CSS.escape(anchorForGroup(group.id))}`);
+
+      expect(section, `group ${group.id} has no section`).not.toBeNull();
+      expect(section?.textContent).toContain(group.title);
+    }
+
     for (const feature of features)
-      expect(screen.getByRole('heading', { name: feature.name })).toBeInTheDocument();
+      expect(
+        container.querySelector(`#${CSS.escape(anchorForFeature(feature.name))}`),
+        feature.name,
+      ).not.toBeNull();
+  });
 
-    expect(features.length).toBeGreaterThan(8);
+  it('every feature belongs to a group the page renders', () => {
+    // The coverage half: a feature filed under a group id that no longer
+    // exists would render nowhere and fail nothing.
+    const ids = new Set(featureGroups.map((group) => group.id));
+
+    for (const feature of features) expect(ids, feature.name).toContain(feature.group);
+  });
+
+  it('every group has a link in the sidebar', () => {
+    // A gate over the sections is not a gate over the list of them.
+    const { container } = render(<Features />);
+
+    const targets = new Set(
+      [...container.querySelectorAll('[data-toc-group="groups"] a')].map((a) =>
+        a.getAttribute('href'),
+      ),
+    );
+
+    expect(targets.size).toBe(featureGroups.length);
+
+    for (const group of featureGroups)
+      expect(targets, group.id).toContain(`#${anchorForGroup(group.id)}`);
   });
 
   it('a feature with a shot puts the sentence beside the picture', () => {
-    // The page used to stack them: one sentence, then a 16:10 render tall
-    // enough that the next feature started below the fold. The two are columns
-    // now, which is a structure rather than a class - the section holds the
-    // prose block and the figure as its only two children, in that order.
+    // The section holds the prose block and the figure as its only two
+    // children, in that order - a structure rather than a class.
     const { container } = render(<Features />);
-
     const withShot = features.filter((feature) => feature.shot !== undefined);
 
     expect(withShot.length).toBeGreaterThan(3);
@@ -49,7 +122,7 @@ describe('pages', () => {
       const children = [...(section?.children ?? [])];
 
       expect(children, feature.name).toHaveLength(2);
-      expect(children[0]?.querySelector('h2')?.textContent).toBe(feature.name);
+      expect(children[0]?.querySelector('h3')?.textContent).toBe(feature.name);
       expect(children[1]?.tagName).toBe('FIGURE');
     }
   });
@@ -58,71 +131,127 @@ describe('pages', () => {
     for (const feature of features) expect(feature.body.length).toBeGreaterThan(40);
   });
 
-  it('every card on the home page goes somewhere the features page has', () => {
-    // The cards used to be divs that lifted under the pointer and did nothing
-    // when clicked. They are links now, and the destination is derived on both
-    // sides from the same name - so what can still break is a feature renamed
-    // on one side of a list the two pages split differently. The home page
-    // shows the first six, which straddles that split.
-    const anchors = features.slice(0, 6).map((feature) => anchorForFeature(feature.name));
+  it('names the things the site never used to mention', () => {
+    // The rewrite exists because wavetables, the FM matrix and SoundFont
+    // playback were not on the site at all.
+    const { container } = render(<Features />);
 
+    for (const claim of ['wavetable', 'FM matrix', 'SF2', 'unison'])
+      expect(container.textContent, claim).toContain(claim);
+  });
+
+  it('does not repeat the chain depth the code has outgrown', () => {
+    // src/model/ProjectSchema.h: kMaxEffectsPerChain = 9. The site and the
+    // README both said four for as long as they had said anything.
+    const { container } = render(<Features />);
+
+    expect(container.textContent).toContain('nine deep');
+    expect(container.textContent).not.toMatch(/four deep/i);
+  });
+});
+
+describe('the home page', () => {
+  it('every group card goes somewhere the features page has', () => {
     const home = render(<Home />);
 
-    // Matched on the FRAGMENT, not the whole href. next/link normalises the
+    // Matched on the FRAGMENT, not the whole href: next/link normalises the
     // trailing slash and `trailingSlash: true` is a next.config setting nothing
-    // here applies, so the path half differs between this and the export - and
-    // the half that carries the meaning is the same in both.
-    for (const [i, anchor] of anchors.entries()) {
-      const card = home.container.querySelector(`a[href$="#${anchor}"]`);
+    // here applies.
+    for (const group of featureGroups) {
+      const card = home.container.querySelector(`a[href$="#${anchorForGroup(group.id)}"]`);
 
-      expect(card, anchor).not.toBeNull();
+      expect(card, group.id).not.toBeNull();
       expect(card?.getAttribute('href')).toContain('/features');
-      expect(card?.textContent).toContain(features[i]?.name ?? '');
+      expect(card?.textContent).toContain(group.title);
     }
 
     home.unmount();
 
     const { container } = render(<Features />);
 
-    for (const anchor of anchors)
-      expect(container.querySelector(`#${anchor}`), anchor).not.toBeNull();
+    for (const group of featureGroups)
+      expect(container.querySelector(`#${anchorForGroup(group.id)}`), group.id).not.toBeNull();
   });
 
   it('no card without a destination answers the pointer', () => {
-    // The other half of the rule. The features page's leftover cards and the
-    // MCP page's four have nowhere to go, so they are flat panels: a surface
-    // that lights up and does nothing is a promise the page cannot keep.
-    const { container } = render(<Features />);
+    // A surface that lights up and does nothing is a promise the page cannot
+    // keep.
+    const { container } = render(<Home />);
     const flat = container.querySelectorAll('div.bg-surface');
 
     // It cannot pass by finding none.
-    expect(flat.length).toBeGreaterThan(3);
+    expect(flat.length).toBeGreaterThan(2);
 
     for (const card of flat) expect(card.className, card.textContent).not.toContain('hover:');
   });
+});
 
-  it('the setup page shows the commands and every preset', () => {
-    // The page a reader is sent to from the home page's first button, and the
-    // only place on the site that says how to get dew at all.
+describe('the setup page', () => {
+  it('shows all three platforms, each complete on its own', () => {
+    // A Linux reader must never have to read the macOS block to know what to
+    // run. Every platform carries its own dependencies, build and run.
     const { container } = render(<Setup />);
 
-    // textContent rather than getByText: the brew line carries the column of
-    // spaces that lines its comment up in the README, and getByText collapses
-    // runs of whitespace - so it would pass against a command that had been
-    // reformatted, which is one of the two things this is guarding.
-    for (const command of [...buildCommands, ...runCommands])
-      expect(container.textContent, command).toContain(command);
+    expect(platforms.map((platform) => platform.system).sort()).toEqual([
+      'linux',
+      'macos',
+      'windows',
+    ]);
+
+    for (const platform of platforms) {
+      const section = container.querySelector(`#${platform.system}`);
+
+      expect(section, platform.system).not.toBeNull();
+      expect(section?.textContent).toContain(platform.name);
+
+      // textContent rather than getByText: the brew line carries the run of
+      // spaces that lines its comment up in the README, and getByText collapses
+      // whitespace - so it would pass against a reformatted command.
+      for (const command of [...platform.build, ...platform.run])
+        expect(section?.textContent, `${platform.system}: ${command}`).toContain(command);
+
+      expect(platform.requirements.length).toBeGreaterThan(2);
+
+      for (const requirement of platform.requirements)
+        expect(section?.textContent, requirement.name).toContain(requirement.name);
+    }
+  });
+
+  it('shows the gate and every preset', () => {
+    const { container } = render(<Setup />);
+
+    for (const command of checkCommands) expect(container.textContent).toContain(command);
 
     for (const preset of presets)
       expect(screen.getByText(preset.name), preset.name).toBeInTheDocument();
   });
 });
 
+describe('the terms page', () => {
+  it('says what the licence allows and what it does not promise', () => {
+    const { container } = render(<Terms />);
+    const text = container.textContent;
+
+    expect(text).toContain('GNU Affero General Public License');
+    expect(text).toMatch(/without warranty of any kind/i);
+    expect(text).toMatch(/as is/i);
+    expect(text).toContain('JUCE');
+  });
+
+  it('does not call a copyleft licence permissive', () => {
+    // The AGPL grants use for any purpose and obliges an offer of source. A
+    // legal page that called it permissive would be wrong in the one place
+    // being wrong matters.
+    const { container } = render(<Terms />);
+
+    expect(container.textContent).not.toMatch(/permissive/i);
+    expect(container.textContent).toMatch(/corresponding source/i);
+  });
+});
+
 describe('screenshots', () => {
   it('every shot a feature names exists on disk', () => {
-    // A missing PNG is a 404 nobody sees until a reader does - `public/` is
-    // fetched at runtime, unlike the generated JSON, which a build would refuse.
-    // This is what stands in for that.
+    // A missing PNG is a 404 nobody sees until a reader does.
     const named = features.filter((f) => f.shot).map((f) => f.shot);
 
     expect(named.length).toBeGreaterThan(3);
@@ -134,8 +263,8 @@ describe('screenshots', () => {
   });
 
   it('every shot on disk is one something names', () => {
-    // The other direction: a PNG nothing references is 200KB of committed
-    // binary nobody will ever look at again.
+    // The other direction: a PNG nothing references is committed binary nobody
+    // will look at again.
     const referenced = new Set([...features.map((f) => f.shot), 'gallery']);
 
     for (const file of readdirSync(join('public', 'shots')))

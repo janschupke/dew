@@ -1,19 +1,11 @@
-/*  The four marks the site draws, and nothing else.
+/*  The four marks the site draws, inline rather than through an asset pipeline.
+    `currentColor`, so each takes the colour of the link it sits in, and
+    `aria-hidden`, because the words are always beside it.
 
-    Inline rather than a sprite, a font or a dependency: four paths do not need
-    an asset pipeline in front of them, and every alternative would have put one
-    there.
-
-    `currentColor`, so each takes the colour of the link or the button it sits
-    in - which is also why the hex gate has nothing to say about them.
-    `aria-hidden`, because every place one appears the words are already beside
-    it.
-
-    The three platform marks say which system a download is for. They are the
-    trademarks of their owners and stand here as labels rather than as anybody's
-    endorsement. Apple and Windows are Bootstrap Icons (MIT), drawn on the same
-    16 viewBox as the GitHub mark; Tux is simple-icons (CC0) and is drawn on 24,
-    which is why the box is a prop rather than a constant.
+    The three platform marks are the trademarks of their owners and stand here
+    as labels rather than as anybody's endorsement. Apple and Windows are
+    Bootstrap Icons (MIT) on a 16 viewBox; Tux is simple-icons (CC0) on 24,
+    which is why the box is a prop.
 */
 function Mark({
   path,

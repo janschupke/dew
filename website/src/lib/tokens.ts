@@ -1,12 +1,9 @@
 import raw from '@/generated/design-tokens.json';
 
-/** dew::tokens, as `dew_shot tokens` wrote them from darkPalette().
+/** The application's design tokens, generated from the palette it paints with.
  *
- *  Read by the /design page to show the vocabulary, and by nothing else - every
- *  component takes its colours from the CSS custom properties that
- *  scripts/gen-theme.mjs generates from this same file. A component reading a
- *  hex out of here would be the one place a colour could be written by hand.
- */
+ *  Read by /design to show the vocabulary and by nothing else: every component
+ *  takes its colours from the CSS custom properties generated from this file. */
 export interface DesignTokens {
   readonly palette: string;
   readonly colour: Readonly<Record<string, string>>;

@@ -1,83 +1,85 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 
-import { Container } from '@/ui/Surface';
-import { PageHeader, Section, SectionPair } from '@/ui/Prose';
+import { P, PageHeader, Section } from '@/ui/Prose';
 import { Score } from '@/ui/Score';
+import { Toc, type TocGroup } from '@/ui/Toc';
+import { scorePages } from '@/content/sections';
 import { t } from '@/lib/strings';
 
 export const metadata: Metadata = { title: `${t('score.title')} — ${t('site.name')}` };
 
-/*  The narrative. The REFERENCE is generated and lives next door.
+const code = 'text-code-small font-mono';
 
-    This is deliberately a shorter, user-facing telling than README.md's own
-    section: per .ai/rules/README.md the README owns the reasoning - why the
-    parser is hand-written, why the RNG is written out, what was cut - and this
-    owns the claim. Where a reader wants the argument, it links.
-*/
+const sections = [
+  { id: 'what-it-is', title: t('score.whatTitle') },
+  { id: 'no-expressions', title: t('score.noExpressionsTitle') },
+  { id: 'durations', title: t('score.durationsTitle') },
+  { id: 'chords', title: t('score.chordsTitle') },
+  { id: 'limits', title: t('score.limitsTitle') },
+] as const;
+
+/*  The narrative. The reference is generated and lives next door. */
 export default function ScoreLanguage() {
+  const toc: readonly TocGroup[] = [
+    {
+      id: 'score',
+      title: t('score.onThisPage'),
+      items: sections.map((section) => ({ href: `#${section.id}`, label: section.title })),
+    },
+  ];
+
   return (
     <>
       <PageHeader title={t('score.title')} lead={t('score.lead')} />
 
-      <Container className="pb-section">
-        <Score name="rhodes" lines={[14, 37]} caption={t('score.exampleCaption')} />
-
-        <Section title="No expressions">
-          <p className="text-prose leading-prose text-secondary max-w-[68ch]">
-            {t('score.noExpressions')}
-          </p>
+      <Toc label={t('score.onThisPage')} pages={scorePages('/score/')} groups={toc}>
+        <Section id="what-it-is" title={t('score.whatTitle')}>
+          <P>{t('score.whatBody')}</P>
+          <Score name="rhodes" lines={[14, 37]} caption={t('score.exampleCaption')} />
         </Section>
 
-        <Section title="Durations">
-          <p className="text-prose leading-prose text-secondary max-w-[68ch]">
-            <code className="text-code-small font-mono">p/q</code> is always a note value.{' '}
-            <code className="text-code-small font-mono">1/8t</code> is an eighth-note triplet,{' '}
-            <code className="text-code-small font-mono">1/4.</code> a dotted quarter.{' '}
-            <code className="text-code-small font-mono">xN</code> is a share of what is left over
-            and anything else is an exact length.
-          </p>
+        <Section id="no-expressions" title={t('score.noExpressionsTitle')}>
+          <P>{t('score.noExpressions')}</P>
+        </Section>
 
-          <p className="mt-stack text-prose leading-prose text-secondary max-w-[68ch]">
-            <code className="text-code-small font-mono">|</code> is a bar-line <em>assertion</em>,
-            checked once the shares are known. It turns “the section length changed and everything
-            shifted” into one message.
-          </p>
+        <Section id="durations" title={t('score.durationsTitle')}>
+          <P>
+            <code className={code}>p/q</code> is always a note value.{' '}
+            <code className={code}>1/8t</code> is an eighth-note triplet,{' '}
+            <code className={code}>1/4.</code> a dotted quarter. <code className={code}>xN</code> is
+            a share of what is left over and anything else is an exact length.
+          </P>
+
+          <P className="mt-stack">
+            <code className={code}>|</code> is a bar-line <em>assertion</em>, checked once the
+            shares are known. It turns “the section length changed and everything shifted” into one
+            message.
+          </P>
 
           <Score name="rhodes" lines={[76, 88]} />
         </Section>
 
-        {/* Prose only, and both short. Durations keeps the whole column: it
-            carries a sample, and half a column is not enough for one. */}
-        <SectionPair>
-          <Section title="Chords">
-            <p className="text-prose leading-prose text-secondary max-w-[68ch]">
-              Case carries quality, <code className="text-code-small font-mono">^</code> carries
-              inversion and <code className="text-code-small font-mono">/</code> carries
-              tonicisation, as in <code className="text-code-small font-mono">V7/iv</code>. An
-              uppercase A–G starts an absolute chord; a{' '}
-              <code className="text-code-small font-mono">b</code>,{' '}
-              <code className="text-code-small font-mono">#</code> or roman letter starts a numeral.
-            </p>
-          </Section>
+        <Section id="chords" title={t('score.chordsTitle')}>
+          <P>
+            Case carries quality, <code className={code}>^</code> carries inversion and{' '}
+            <code className={code}>/</code> carries tonicisation, as in{' '}
+            <code className={code}>V7/iv</code>. An uppercase A–G starts an absolute chord; a{' '}
+            <code className={code}>b</code>, <code className={code}>#</code> or roman letter starts
+            a numeral.
+          </P>
+        </Section>
 
-          <Section title="What it cannot say">
-            <p className="text-prose leading-prose text-secondary max-w-[68ch]">
-              dew stores one tempo and one meter for a whole project, so a section in 3/4 inside a
-              4/4 project is not expressible. A note’s position is a whole number of steps, so the
-              grid is the least common multiple of what the durations need: sixteenths and
-              eighth-note triplets meet at twelve, and a thirty-second against any triplet is
-              refused.
-            </p>
-          </Section>
-        </SectionPair>
+        <Section id="limits" title={t('score.limitsTitle')}>
+          <P>{t('score.limitsBody')}</P>
+        </Section>
 
-        <p className="mt-stack text-prose">
+        <p className="mt-section text-prose">
           <Link href="/score/reference/" className="text-accent hover:underline">
             {t('score.referenceLink')}
           </Link>
         </p>
-      </Container>
+      </Toc>
     </>
   );
 }

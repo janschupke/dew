@@ -2,10 +2,10 @@ import { Fragment } from 'react';
 import type { Metadata } from 'next';
 
 import { Cell, Row, Table, Tag } from '@/ui/Table';
-import { Container } from '@/ui/Surface';
-import { Doc, Lead } from '@/ui/Prose';
+import { Doc, PageHeader } from '@/ui/Prose';
 import { Toc, type TocGroup } from '@/ui/Toc';
 import { type ArgSpec, anchorForTool, describeKind, mcp, readTools, writeTools } from '@/lib/mcp';
+import { mcpPages } from '@/content/sections';
 import { t } from '@/lib/strings';
 
 export const metadata: Metadata = {
@@ -127,19 +127,14 @@ export default function McpReference() {
 
   return (
     <>
-      <Container className="pt-stack">
-        <h1 className="text-h1 text-primary leading-tight font-semibold tracking-tight">
-          {t('mcpReference.title')}
-        </h1>
-        <Lead>{t('mcpReference.lead')}</Lead>
+      <PageHeader title={t('mcpReference.title')} lead={t('mcpReference.lead')} />
 
-        <p className="mt-stack text-fine text-secondary">
+      <Toc label={t('mcpReference.onThisPage')} pages={mcpPages('/mcp/reference/')} groups={toc}>
+        <p className="text-prose text-secondary max-w-[68ch]">{t('mcpReference.undoNote')}</p>
+
+        <p className="mt-sm text-fine text-secondary">
           {t('mcpReference.protocol')}: <span className="font-mono">{mcp.protocolVersion}</span>
         </p>
-      </Container>
-
-      <Toc label={t('mcpReference.onThisPage')} groups={toc}>
-        <p className="text-prose text-secondary max-w-[68ch]">{t('mcpReference.undoNote')}</p>
 
         {groups.map((group) => (
           <section key={group.id} className="pt-section">

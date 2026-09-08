@@ -8,8 +8,7 @@ const keyCount = schema.blocks.reduce((n, b) => n + b.keys.length, 0);
 
 describe('the generated reference', () => {
   // Control case. Every assertion below walks the schema, and a walk over an
-  // empty table passes while proving nothing - the failure tests/SourceGateTests.cpp
-  // guards against by checking its own scan.
+  // empty table passes while proving nothing.
   it('has a schema to be a gate over', () => {
     expect(schema.blocks.length).toBeGreaterThan(10);
     expect(keyCount).toBeGreaterThan(40);
@@ -66,7 +65,11 @@ describe('the generated reference', () => {
     // entry the browser mentions only to whoever clicked it.
     const { container } = render(<Reference />);
 
-    const links = [...(container.querySelector('nav')?.querySelectorAll('a') ?? [])];
+    // The section's OTHER pages are in the sidebar too, and they are whole
+    // paths rather than fragments. This is about the in-page anchors.
+    const links = [
+      ...container.querySelectorAll('nav [data-toc-group]:not([data-toc-group="pages"]) a'),
+    ];
 
     expect(links.length).toBeGreaterThan(schema.blocks.length);
 

@@ -2,27 +2,15 @@ import Link from 'next/link';
 
 import { Container } from '@/ui/Surface';
 import { GitHubMark } from '@/ui/Icon';
+import { footerLinks } from '@/content/nav';
 import { repositoryUrl } from '@/content/setup';
 import { t } from '@/lib/strings';
 
-const docs = [
-  { href: '/download/', label: t('nav.download') },
-  { href: '/features/', label: t('nav.features') },
-  { href: '/score/', label: t('nav.score') },
-  { href: '/score/reference/', label: t('nav.reference') },
-  { href: '/mcp/', label: t('nav.mcp') },
-  { href: '/design/', label: t('nav.design') },
-  { href: '/setup/', label: t('nav.setup') },
-] as const;
-
-/*  The mark goes on the repository itself and not on the two links under it.
-    Those point at a file and a directory inside it, not at the project. Three
-    identical marks in a column of three would be a texture, not a signal.
-*/
+/*  The mark goes on the repository itself and not on the file under it. Two
+    identical marks in a column of two would be a texture, not a signal. */
 const project = [
   { href: repositoryUrl, label: t('footer.sourceLabel'), mark: true },
   { href: `${repositoryUrl}/blob/master/README.md`, label: t('footer.readmeLabel'), mark: false },
-  { href: `${repositoryUrl}/tree/master/.ai/rules`, label: t('footer.rulesLabel'), mark: false },
 ] as const;
 
 const columnHeading = 'text-fine text-primary mb-md font-semibold tracking-wide uppercase';
@@ -30,17 +18,8 @@ const columnLink =
   'text-prose text-secondary hover:text-primary gap-sm inline-flex items-center ' +
   'transition-colors duration-[--motion-quick-ms]';
 
-/** Two columns of links and the two sentences that were the whole of it.
- *
- *  No top margin. It carries its own surface and its own rule, and a margin as
- *  well left a band of dead background between the last section's bottom edge
- *  and the footer's top one - two horizontal rules with nothing between them,
- *  which reads as a mistake rather than as space.
- *
- *  It used to be those sentences alone, set at the app's 12px `small` rung -
- *  the end of the page saying nothing and offering nowhere to go next, which on
- *  a site of six pages is most of the navigation missing.
- */
+/** No top margin: it carries its own surface and its own rule, and a margin as
+ *  well leaves a band of dead background above it. */
 export function Footer() {
   return (
     <footer className="border-t-hairline border-divider bg-well">
@@ -49,7 +28,7 @@ export function Footer() {
           <nav>
             <h2 className={columnHeading}>{t('footer.docsTitle')}</h2>
             <ul className="gap-sm flex flex-col">
-              {docs.map((link) => (
+              {footerLinks.map((link) => (
                 <li key={link.href}>
                   <Link href={link.href} className={columnLink}>
                     {link.label}
@@ -74,8 +53,11 @@ export function Footer() {
           </nav>
         </div>
 
-        <div className="border-t-hairline border-divider mt-stack pt-stack text-fine text-secondary">
+        <div className="border-t-hairline border-divider mt-stack pt-stack text-fine text-secondary gap-x-md flex flex-wrap">
           <p>{t('footer.licence')}</p>
+          <Link href="/terms/" className="text-accent hover:underline">
+            {t('footer.licenceLink')}
+          </Link>
         </div>
       </Container>
     </footer>

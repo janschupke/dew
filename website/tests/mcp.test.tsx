@@ -95,7 +95,11 @@ describe('the generated MCP reference', () => {
     for (const page of [<McpReference key="reference" />, <McpResources key="resources" />]) {
       const { container } = render(page);
 
-      const links = [...(container.querySelector('nav')?.querySelectorAll('a') ?? [])];
+      // The section's OTHER pages are in the sidebar too, and they are whole
+      // paths rather than fragments. This is about the in-page anchors.
+      const links = [
+        ...container.querySelectorAll('nav [data-toc-group]:not([data-toc-group="pages"]) a'),
+      ];
 
       expect(links.length).toBeGreaterThan(4);
 

@@ -1,47 +1,51 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 
-import { Band, Card, Container } from '@/ui/Surface';
 import { P, PageHeader, Section } from '@/ui/Prose';
+import { Toc, type TocGroup } from '@/ui/Toc';
 import { anchorForGuide, mcp } from '@/lib/mcp';
+import { mcpPages } from '@/content/sections';
 import { t } from '@/lib/strings';
 
 export const metadata: Metadata = { title: `${t('mcp.title')} — ${t('site.name')}` };
 
 /*  What the endpoint is and how to reach it. The tool-by-tool detail is the
-    reference next door, which is generated; this page is the argument for it,
-    and is written by hand for the reason features.ts is - a claim about what
-    something is FOR cannot be derived from the table that implements it.
-*/
+    reference next door, which is generated; this page is the claim, and is
+    written by hand because what something is FOR cannot be derived from the
+    table that implements it. */
+const sections = [
+  { id: 'how-it-works', title: t('mcp.howTitle'), body: t('mcp.howBody') },
+  { id: 'connecting', title: t('mcp.connectTitle'), body: t('mcp.connectBody') },
+  { id: 'what-it-reaches', title: t('mcp.surfaceTitle'), body: t('mcp.surfaceBody') },
+  { id: 'writing-a-score', title: t('mcp.scoreTitle'), body: t('mcp.scoreBody') },
+] as const;
+
 export default function Mcp() {
-  const sections = [
-    { title: t('mcp.howTitle'), body: t('mcp.howBody') },
-    { title: t('mcp.connectTitle'), body: t('mcp.connectBody') },
-    { title: t('mcp.surfaceTitle'), body: t('mcp.surfaceBody') },
-    { title: t('mcp.scoreTitle'), body: t('mcp.scoreBody') },
-  ] as const;
+  const toc: readonly TocGroup[] = [
+    {
+      id: 'mcp',
+      title: t('mcp.onThisPage'),
+      items: [
+        ...sections.map((section) => ({ href: `#${section.id}`, label: section.title })),
+        { href: '#resources', label: t('mcpResources.title') },
+      ],
+    },
+  ];
 
   return (
     <>
       <PageHeader title={t('mcp.title')} lead={t('mcp.lead')} />
 
-      <Band>
-        <div className="gap-stack grid sm:grid-cols-2">
-          {sections.map((section) => (
-            <Card key={section.title}>
-              <h2 className="text-h3 text-primary font-semibold tracking-tight">{section.title}</h2>
-              <P className="mt-sm">{section.body}</P>
-            </Card>
-          ))}
-        </div>
-      </Band>
+      <Toc label={t('mcp.onThisPage')} pages={mcpPages('/mcp/')} groups={toc}>
+        {sections.map((section) => (
+          <Section key={section.id} id={section.id} title={section.title}>
+            <P>{section.body}</P>
+          </Section>
+        ))}
 
-      <Container className="pb-section">
         {/* The anchor comes from anchorForGuide rather than from `guide-` typed
-            out here. It was typed out here, and the resources have since moved
-            to a page of their own - which is the edit that turns a hand-written
-            fragment into five dead links. */}
-        <Section title={t('mcpResources.title')}>
+            out here: the resources live on a page of their own. */}
+        <Section id="resources" title={t('mcpResources.title')}>
           <P>{t('mcpResources.lead')}</P>
 
           <ul className="mt-stack gap-sm flex flex-col">
@@ -64,7 +68,7 @@ export default function Mcp() {
             </Link>
           </P>
         </Section>
-      </Container>
+      </Toc>
     </>
   );
 }

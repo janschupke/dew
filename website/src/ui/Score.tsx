@@ -1,13 +1,8 @@
 import { sample, type Run, type Sample } from '@/lib/samples';
 
-/*  The seven roles, in the editor's own colours.
-
-    ScoreTokeniser::scheme maps each to a token: plain->textPrimary,
-    keyword->accent, literal->playhead, string->success, comment->textDisabled,
-    punctuation->textSecondary, invalid->danger. Written here as the same token
-    names, so the mapping is visible in one place rather than being a fact you
-    have to know.
-*/
+/*  The seven roles, in the editor's own colours and by the editor's own token
+    names — the site has no highlighter of its own, and paints spans over text
+    the compiler already tokenised. */
 const roles: Record<string, string> = {
   plain: 'text-primary',
   keyword: 'text-accent',
@@ -18,12 +13,9 @@ const roles: Record<string, string> = {
   invalid: 'text-danger',
 };
 
-/** The source split into runs and the gaps between them.
- *
- *  The gaps - whitespace - are emitted verbatim and unstyled, which is what
- *  makes the rendered text byte-identical to `source`. A test asserts exactly
- *  that, and it is the assertion that would catch a run with a wrong offset.
- */
+/** The source split into runs and the gaps between them. The gaps are emitted
+ *  verbatim, which is what keeps the rendered text byte-identical to `source` —
+ *  the assertion that catches a run with a wrong offset. */
 function pieces(source: string, runs: readonly Run[]): { text: string; role: string | null }[] {
   const out: { text: string; role: string | null }[] = [];
   let at = 0;

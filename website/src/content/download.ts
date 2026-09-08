@@ -1,39 +1,25 @@
 /*  What a stranger downloads, and what they will see the first time they run it.
  *
- *  Per .ai/rules/README.md, website/src/content/ owns the CLAIM and never the
- *  argument: which file each platform takes, not why the release workflow is
- *  shaped the way it is. That is .ai/rules/release.md's job.
- *
- *  THE LINKS CARRY NO VERSION. GitHub resolves
- *  /releases/latest/download/<asset> server-side to the newest non-prerelease
- *  holding an asset of that name, so this page needs no API call - which it
- *  could not make anyway, since the site fetches nothing at runtime and
- *  api.github.com rate-limits by IP - and no generated file. It also cannot
- *  advertise a version whose build has not finished: the site deploys on a
- *  push and the three builds land after it.
+ *  The links carry no version: GitHub resolves /releases/latest/download/<asset>
+ *  to the newest release holding an asset of that name, so this page needs no
+ *  API call and cannot advertise a version whose build has not finished.
  *
  *  The asset names are asserted against .github/workflows/release.yml by
- *  tests/download.test.ts, so a renamed artefact fails a test naming the file
- *  rather than leaving a button that 404s.
+ *  tests/download.test.ts, so a renamed artefact fails a test rather than
+ *  leaving a button that 404s.
  */
 import type { PlatformSystem } from '@/ui/Icon';
 import { repositoryUrl } from '@/content/setup';
 
 export interface Download {
-  /** Which of the three systems this is for.
-   *
-   *  A closed key rather than a match against `platform`, which is free text a
-   *  reader is meant to read - "Windows, portable" is two entries under one
-   *  system, and a mark chosen by string search would be a mark that goes wrong
-   *  the first time that text is edited. The page keys the platform mark, the
-   *  per-system button and the grouping off this. */
+  /** Which of the three systems this is for. A closed key rather than a match
+   *  against `platform`, which is free text a reader is meant to read. */
   readonly system: PlatformSystem;
   readonly platform: string;
   readonly asset: string;
   readonly what: string;
   /** What the operating system says the first time. None of these builds is
-   *  signed, so every entry has something to say here; tests/download.test.ts
-   *  refuses one that does not. */
+   *  signed, so every entry has something to say here. */
   readonly firstLaunch: string;
 }
 
@@ -87,12 +73,8 @@ export const downloadUrl = (asset: string) => `${repositoryUrl}/releases/latest/
 /** Every release, which is the archive of old versions. */
 export const releasesUrl = `${repositoryUrl}/releases`;
 
-/** The first entry for each system, in the order the list declares them: what a
- *  reader on that system should press.
- *
- *  Derived rather than written out. The page used to hard-code `downloads[0]`
- *  as its one primary button, which offered a macOS DMG to everybody and left
- *  two thirds of its readers to find their own row in the table. */
+/** The first entry for each system: what a reader on that system should press.
+ *  Derived rather than written out, so a new system gets a button for free. */
 export const primaryDownloads: readonly Download[] = downloads.filter(
   (download, i) => downloads.findIndex((other) => other.system === download.system) === i,
 );

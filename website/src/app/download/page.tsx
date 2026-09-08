@@ -20,23 +20,13 @@ export const metadata: Metadata = { title: `${t('download.title')} — ${t('site
 
 /*  Where a stranger gets a build.
 
-    Every link is a static /releases/latest/download/<asset> URL. There is no
-    fetch here and there is no generated file: the site fetches nothing at
-    runtime by design (next.config.ts says why), api.github.com allows sixty
-    requests an hour per IP so one office behind one address would exhaust it
-    for everybody in it, and a version baked in at build time would be wrong
-    between a version bump deploying and its builds landing.
-
-    The page therefore names no version at all. The releases page has them, the
-    DMG's volume has one, and so does the running program.
+    Every link is a static /releases/latest/download/<asset> URL, so the page
+    names no version at all — the releases page has them, and so does the
+    running program.
 
     The first-launch section is here because none of these builds is signed and
-    both desktop systems block one on first run.
-
-    The platform mark is on the row, on the first-launch heading and on the
-    button, all keyed off `Download.system`. It is aria-hidden everywhere: the
-    words are beside it in all three places, and a reader who cannot see it has
-    lost nothing.
+    both desktop systems block one on first run. The platform mark is keyed off
+    `Download.system` in all three places it appears.
 */
 function Commands({ lines }: { lines: readonly string[] }) {
   return (

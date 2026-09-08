@@ -7,37 +7,15 @@ import { t } from '@/lib/strings';
 
 /*  A shot, and the same shot filling the screen.
 
-    The second client component on this site, after the nav, and for the reason
-    the nav is one: this needs a ref and a handler, and there is no way to open
-    a dialog from a server component.
+    A native <dialog> opened with showModal(): that one call buys the top layer,
+    Escape, a focus trap and an inert background, all of which hand-rolled would
+    be a second implementation of something the platform has.
 
-    A NATIVE <dialog>, opened with showModal(), rather than a div with a high
-    z-index. That one call buys the top layer - so it cannot lose to the pinned
-    header's z-10 - plus Escape, a focus trap, and the rest of the page marked
-    inert. Every one of those hand-rolled is a second implementation of
-    something the platform already has, which is the trade this repository
-    refuses everywhere else.
+    The whole viewer is one button, so clicking anywhere in it closes and the
+    visible Close is a label on the same control rather than a second one.
 
-    THE WHOLE VIEWER IS ONE BUTTON, and clicking anywhere in it closes. The
-    first version put the handler on the <dialog> and compared the click target
-    against it, so that a click on the backdrop closed and a click on the
-    picture did not - which is a mouse interaction on a non-interactive element,
-    has no keyboard equivalent, and jsx-a11y refuses both. A picture that fills
-    the screen leaves almost no backdrop to aim at anyway. So: click anywhere,
-    or Escape, and the visible Close is a label on the same control rather than
-    a second one.
-
-    The picture is rendered twice, once in the button and once in the dialog. It
-    is the same URL, so the second costs a cache hit and no request, and the
-    alternative - moving one node between two parents - is a portal and a
-    lifetime to go with it. The copy inside carries `alt=""`: it is the picture
-    the reader just opened BY its description, and the dialog is labelled with
-    that description, so announcing it twice would say nothing new.
-
-    The sizing and the backdrop are in globals.css. They cannot be Tailwind
-    classes: `fixed inset-0` is refused by tests/gates.test.ts, and refused for
-    a good reason - `--spacing: initial` deletes the scale every numeric offset
-    reads, so `inset-0` would emit nothing at all.
+    Its sizing and backdrop are plain rules in globals.css: `fixed inset-0` is a
+    numeric offset, which emits nothing under `--spacing: initial`.
 */
 export function ShotViewer({
   src,
@@ -82,7 +60,7 @@ export function ShotViewer({
             {t('shot.close')}
           </span>
 
-          <span className="flex min-h-0 w-full flex-1 items-center justify-center">
+          <span className="shrinkable flex w-full flex-1 items-center justify-center">
             <Image
               src={src}
               alt=""

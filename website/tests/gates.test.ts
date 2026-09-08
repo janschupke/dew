@@ -5,8 +5,7 @@ import { arbitraryValues, offenders, report, sourceFiles, unownedMeasurement } f
 describe('source gates', () => {
   // Control case, first and separately. Every gate below passes silently when
   // it finds nothing, which is indistinguishable from finding nothing because
-  // the walk broke - the exact argument tests/SourceGateTests.cpp makes about
-  // checking its own scan.
+  // the walk broke.
   it('has sources to be a gate over', () => {
     const files = sourceFiles();
 
@@ -89,6 +88,28 @@ describe('source gates', () => {
     // which is why this reads the source for the CLASS of mistake instead.
     // theme.site.css declares `pinned` for the one place that needs it.
     expect(report(offenders(/\b(?:top|bottom|left|right|inset(?:-[xy])?)-\d/))).toBe('');
+  });
+
+  it('no numeric sizing utility, which reads the same deleted scale', () => {
+    // `min-w-0` is the one that cost something: it emitted nothing, so the
+    // sidebar column kept `min-width: auto`, sized itself to the longest tool
+    // name and pushed the whole page sideways on a phone. `shrinkable` in
+    // theme.site.css is the named utility that cannot half-apply.
+    expect(report(offenders(/\b(?:min-|max-)?(?:w|h|size|basis)-\d/))).toBe('');
+  });
+
+  it('sees a numeric sizing utility when there is one', () => {
+    const pattern = /\b(?:min-|max-)?(?:w|h|size|basis)-\d/;
+
+    expect(pattern.test('className="min-w-0"')).toBe(true);
+    expect(pattern.test('className="flex min-h-0 w-full"')).toBe(true);
+    expect(pattern.test('className="basis-1"')).toBe(true);
+
+    // Named rungs and keywords are the vocabulary and stay.
+    expect(pattern.test('className="size-xxl"')).toBe(false);
+    expect(pattern.test('className="h-auto w-full"')).toBe(false);
+    expect(pattern.test('className="shrinkable"')).toBe(false);
+    expect(pattern.test('className="max-w-[72rem]"')).toBe(false);
   });
 
   it('sees a positional offset when there is one', () => {

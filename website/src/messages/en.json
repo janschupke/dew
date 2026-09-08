@@ -1,7 +1,7 @@
 {
   "design": {
     "title": "Design system",
-    "lead": "Every value on this page is read out of the application’s own tokens.",
+    "lead": "The colours, scales and surfaces dew paints with.",
     "coloursTitle": "Colour roles",
     "coloursBody": "Each name says what a colour is for, not what it looks like.",
     "rampTitle": "Channel ramp",
@@ -13,28 +13,40 @@
   },
   "features": {
     "title": "What it does",
-    "lead": "The tabs, the instrument, the effects and the export — what each one does."
+    "lead": "Six groups, and what is in each of them.",
+    "onThisPage": "On this page"
   },
   "footer": {
-    "licence": "JUCE 9 is dual-licensed; dew is a personal prototype used under the AGPLv3 terms.",
-    "docsTitle": "Documentation",
+    "licence": "dew is free software under the AGPLv3, and so is every part of it.",
+    "licenceLink": "Terms and licences",
+    "docsTitle": "The site",
     "projectTitle": "Project",
     "sourceLabel": "Source on GitHub",
-    "readmeLabel": "README",
-    "rulesLabel": "Rules and reasoning"
+    "readmeLabel": "README"
   },
   "home": {
-    "intro": "A channel rack with a step grid, a piano roll, a playlist of clips and a mixer, driven by a three-oscillator synth per channel — or by a recording, or by a song written as text and compiled to notes.",
+    "intro": "A channel rack, a piano roll, a playlist and a mixer, and one path from an oscillator through its effect chain to a mixer insert and out the master. Five tabs, ten effects already in the box, and nothing to scan or install before the first note.",
     "readFeatures": "What it does",
-    "readScore": "The score language",
-    "tabsTitle": "Five tabs",
-    "tabsBody": "The same notes, seen four ways, and a fifth tab that writes them for you.",
     "readSetup": "Build it",
-    "readDownload": "Download"
+    "readDownload": "Download",
+    "workflowTitle": "Built to stay out of the way",
+    "workflowBody": "Most of what makes a DAW hard to start is not the music. It is forty panels that move, a plugin scan, and a feature set you have to learn before you can hear anything. dew is the other shape: a small, fixed set of screens that always hold the same controls, so the second session works like the first.",
+    "predictableTitle": "Nothing moves",
+    "predictableBody": "Five tabs and one instrument panel, in the same places every time. A channel row carries its own volume, pan and on/off; a mixer strip carries its own chain. No modes, no floating windows to lose.",
+    "signalTitle": "One signal path",
+    "signalBody": "Three oscillators into an amp envelope, into the channel's effect chain, into a mixer insert, into the master. That is the whole graph, and every knob on it is automatable from its own right-click menu.",
+    "completeTitle": "Already in the box",
+    "completeBody": "Ten effects, forty factory presets, wavetables, an FM matrix, SoundFont playback and a renderer. Two dependencies in the whole build, no plugin format, and nothing to install per sound.",
+    "groupsTitle": "What is in it",
+    "groupsBody": "Enough to finish a track, and deliberately not more.",
+    "openTitle": "Open source, all of it",
+    "openBody": "Every line is on GitHub under the AGPLv3 — the application, the audio engine, the score compiler, the tests and this site. Free to use for any purpose, with no warranty of any kind.",
+    "openLink": "Terms and licences"
   },
   "mcp": {
     "title": "Control dew from an agent",
     "lead": "dew runs a Model Context Protocol server inside the application, so a coding agent can read and change the project you have open: instruments, effects, the mixer, the notes and the arrangement.",
+    "onThisPage": "On this page",
     "howTitle": "How it works",
     "howBody": "Turn it on under Audio → MCP. dew listens on the loopback interface only. The first time a client connects, dew asks whether to allow it, and whether it may only read or change things too. Every change it makes is one step of your undo history.",
     "connectTitle": "Connecting a client",
@@ -52,7 +64,7 @@
   },
   "mcpReference": {
     "title": "MCP reference",
-    "lead": "Generated from the same table the server dispatches on and the permission check reads.",
+    "lead": "Every tool an agent can call, what it takes, and whether it changes your project.",
     "onThisPage": "On this page",
     "protocol": "Protocol",
     "readTitle": "Reading",
@@ -67,12 +79,17 @@
     "undoNote": "Every call that changes the project is exactly one undo step."
   },
   "nav": {
+    "home": "Home",
     "features": "Features",
     "design": "Design system",
-    "score": "Score language",
+    "score": "Score",
     "reference": "Reference",
+    "resources": "Resources",
+    "overview": "Overview",
+    "inThisSection": "In this section",
     "source": "Source",
     "setup": "Setup",
+    "terms": "Terms",
     "mcp": "MCP",
     "download": "Download"
   },
@@ -83,7 +100,7 @@
   },
   "reference": {
     "title": "Score language reference",
-    "lead": "Generated from the same table the compiler validates against and the editor completes from.",
+    "lead": "Every block, key and value the language accepts.",
     "blocksTitle": "Blocks",
     "valuesTitle": "Values",
     "modesTitle": "Modes",
@@ -101,33 +118,37 @@
     "degrees": "Degrees",
     "romanNumerals": "Takes roman numerals",
     "romanNumeralNote": "A roman numeral names a scale degree, so a pentatonic or a blues scale cannot carry one.",
-    "generatedFrom": "Generated from src/lang/Schema.h by dew_docs.",
     "kindsCount": "{count, plural, one {# value kind} other {# value kinds}}"
   },
   "score": {
     "title": "The score language",
-    "lead": "A song written as text and compiled to patterns, notes and clips. Twelve blocks, seven of them at the top level.",
-    "exampleCaption": "examples/amber.score",
-    "referenceLink": "Every block and key",
-    "noExpressions": "There is no expression language: no arithmetic, no variables, no conditionals."
+    "lead": "One of the two ways to write a song in dew: a text description of the whole piece, compiled to real patterns, notes and clips.",
+    "onThisPage": "On this page",
+    "whatTitle": "What it is for",
+    "whatBody": "Sketching a whole arrangement faster than you can draw it. You say what the music is — a key, a metre, a progression, a rhythm, a voicing, a melody, a counterpoint answering another voice — and the compiler works out the notes. It is the fifth tab, checked as you type, compiled with ⌘R. The text is stored in the project, so recompiling updates what it wrote last time and leaves anything you have since edited by hand alone.",
+    "exampleCaption": "examples/rhodes.score",
+    "noExpressionsTitle": "No expressions",
+    "noExpressions": "There is no expression language: no arithmetic, no variables, no conditionals. That single restriction is what makes completion a table lookup and lets the grid be worked out before a note is generated.",
+    "durationsTitle": "Durations",
+    "chordsTitle": "Chords",
+    "limitsTitle": "What it cannot say",
+    "limitsBody": "dew stores one tempo and one metre for a whole project, so a section in 3/4 inside a 4/4 project is not expressible. A note’s position is a whole number of steps, so the grid is the least common multiple of what the durations need: sixteenths and eighth-note triplets meet at twelve, and a thirty-second against any triplet is refused.",
+    "referenceLink": "Every block and key"
   },
   "setup": {
     "title": "Setup",
-    "lead": "dew builds from source in three commands.",
-    "requirementsTitle": "What you need",
-    "requirementsBody": "brew bundle installs these from the Brewfile in the repository root.",
+    "lead": "dew builds from source on macOS, Windows and Linux. Two CMake commands on all three, once the toolchain is there.",
     "buildTitle": "Build it",
-    "buildBody": "The first configure fetches JUCE and Catch2 from source, cached per machine under ~/.cache/CPM.",
-    "presetsTitle": "The presets",
     "runTitle": "Run it",
-    "runBody": "Then Demos → Getting Started in the menu bar.",
+    "needsTitle": "What you need",
+    "presetsTitle": "The presets",
+    "presetsBody": "release is the one to build for normal use. The first configure fetches JUCE and Catch2 from source, cached per machine under ~/.cache/CPM, so one build is slow and the rest are not.",
     "checkTitle": "The gate",
     "checkBody": "One command, running everything CI runs.",
     "sourceCta": "The repository",
+    "mp3Note": "MP3 export needs lame installed separately, in any build: the option stays greyed out until lame is on your PATH. WAV, FLAC and MIDI need nothing.",
     "nameHeading": "Preset",
-    "whatHeading": "What it is",
-    "toolHeading": "Tool",
-    "needHeading": "What it is for"
+    "whatHeading": "What it is"
   },
   "shot": {
     "expand": "Show full size",
@@ -135,9 +156,14 @@
   },
   "site": {
     "name": "dew",
-    "tagline": "A desktop synth DAW where the song can be written as text.",
+    "tagline": "A lightweight desktop DAW with an opinionated workflow.",
     "status": "Working prototype, on macOS, Windows and Linux.",
     "skipToContent": "Skip to content"
+  },
+  "terms": {
+    "title": "Terms and licences",
+    "lead": "What you may do with dew, what it does not promise, and what is inside it.",
+    "sourceCta": "The licence, in full"
   },
   "download": {
     "title": "Download",
@@ -157,7 +183,7 @@
     "checksumsLabel": "SHA256SUMS.txt",
     "allReleases": "All releases",
     "buildTitle": "Or build it yourself",
-    "buildBody": "Three commands on macOS, and the same CMake presets on Windows and Linux. A binary you build yourself is subject to none of the warnings above.",
+    "buildBody": "Two CMake commands on macOS, Windows and Linux alike. A binary you build yourself is subject to none of the warnings above.",
     "buildCta": "How to build it",
     "mp3Note": "MP3 export needs lame installed separately: the option stays greyed out until lame is on your PATH. WAV and FLAC need nothing."
   }

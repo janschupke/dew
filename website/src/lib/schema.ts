@@ -1,11 +1,9 @@
 import raw from '@/generated/score-schema.json';
 
-/** The score language, as dew_docs wrote it from lang::schema().
+/** The score language, generated from the table the compiler validates against.
  *
- *  Typed here rather than imported as `any`: every page reads the schema
- *  through this module, so a shape change in the emitter is a type error in one
- *  place instead of a blank table in several.
- */
+ *  Typed here rather than imported as `any`: every page reads it through this
+ *  module, so a shape change is a type error in one place. */
 export interface KeySpec {
   readonly name: string;
   readonly kind: string;
