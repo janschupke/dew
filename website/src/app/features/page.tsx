@@ -1,10 +1,9 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 
-import { Card } from '@/ui/Surface';
+import { Container } from '@/ui/Surface';
 import { PageHeader } from '@/ui/Prose';
 import { Shot } from '@/ui/Shot';
-import { Toc, type TocGroup } from '@/ui/Toc';
 import {
   type Feature,
   anchorForFeature,
@@ -18,14 +17,14 @@ export const metadata: Metadata = { title: `${t('features.title')} — ${t('site
 
 /** One feature with a picture: the sentence and the screenshot side by side.
  *
- *  `xl` rather than `lg`, because there is a sidebar taking a column now — two
- *  halves of what is left at 1024px are 358px each, which is a thumbnail
- *  beside forty characters. */
+ *  `Shot` is given an empty className to drop its default `my-stack`, which in
+ *  a two-column grid pushes the picture a rung below its own heading. The
+ *  grid's `gap-y-stack` is what separates them once the columns stack. */
 function Illustrated({ feature }: { feature: Feature }) {
   return (
     <section
       id={anchorForFeature(feature.name)}
-      className="scroll-mt-section pt-stack gap-x-gutter gap-y-stack grid items-start xl:grid-cols-2"
+      className="scroll-mt-section pt-stack gap-x-gutter gap-y-stack grid items-start lg:grid-cols-2"
     >
       <div>
         <h3 className="text-h3 text-primary leading-snug font-semibold">{feature.name}</h3>
@@ -33,7 +32,11 @@ function Illustrated({ feature }: { feature: Feature }) {
         <FeatureLink feature={feature} />
       </div>
 
-      <Shot name={feature.shot ?? 'channel-rack'} alt={`dew's ${feature.name.toLowerCase()}`} />
+      <Shot
+        name={feature.shot ?? 'channel-rack'}
+        alt={`dew's ${feature.name.toLowerCase()}`}
+        className=""
+      />
     </section>
   );
 }
@@ -51,22 +54,14 @@ function FeatureLink({ feature }: { feature: Feature }) {
 }
 
 export default function Features() {
-  const toc: readonly TocGroup[] = [
-    {
-      id: 'groups',
-      title: t('features.onThisPage'),
-      items: featureGroups.map((group) => ({
-        href: `#${anchorForGroup(group.id)}`,
-        label: group.title,
-      })),
-    },
-  ];
-
   return (
     <>
       <PageHeader title={t('features.title')} lead={t('features.lead')} />
 
-      <Toc label={t('features.onThisPage')} groups={toc}>
+      {/* One column. A Card at the full measure is a rectangle with a border
+          around a paragraph, so a feature without a picture is a heading and
+          its sentence, the same as the half of one that has a picture. */}
+      <Container className="pb-section">
         {featureGroups.map((group) => {
           const shown = featuresIn(group.id).filter((feature) => feature.shot !== undefined);
           const rest = featuresIn(group.id).filter((feature) => feature.shot === undefined);
@@ -90,22 +85,20 @@ export default function Features() {
               ))}
 
               {rest.length > 0 ? (
-                <ul className="mt-stack gap-stack grid md:grid-cols-2">
+                <ul className="mt-stack gap-stack grid">
                   {rest.map((feature) => (
                     <li
                       key={feature.name}
                       id={anchorForFeature(feature.name)}
                       className="scroll-mt-section"
                     >
-                      <Card className="h-full">
-                        <h3 className="text-h3 text-primary leading-snug font-semibold">
-                          {feature.name}
-                        </h3>
-                        <p className="mt-md text-prose leading-prose text-secondary">
-                          {feature.body}
-                        </p>
-                        <FeatureLink feature={feature} />
-                      </Card>
+                      <h3 className="text-h3 text-primary leading-snug font-semibold">
+                        {feature.name}
+                      </h3>
+                      <p className="mt-md text-prose leading-prose text-secondary max-w-[68ch]">
+                        {feature.body}
+                      </p>
+                      <FeatureLink feature={feature} />
                     </li>
                   ))}
                 </ul>
@@ -113,7 +106,7 @@ export default function Features() {
             </section>
           );
         })}
-      </Toc>
+      </Container>
     </>
   );
 }

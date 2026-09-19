@@ -1,8 +1,8 @@
 import raw from '@/generated/score-samples.json';
 
 /** Example scores, with the token runs that colour them — produced by the
- *  compiler's own tokeniser and the editor's own colour map. The site is a
- *  viewer, not a highlighter: there is no second grammar here. */
+ *  compiler's own tokeniser and the editor's own colour map, so the site holds
+ *  no grammar of its own. */
 export interface Run {
   readonly offset: number;
   readonly length: number;

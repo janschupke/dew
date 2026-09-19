@@ -7,9 +7,8 @@ import { brewedTools, checkCommands, platforms, presets, repositoryUrl } from '@
  *
  *  A reader who has not cloned anything cannot be sent to a file inside the
  *  clone, so the site has to carry the commands. What must not happen is the
- *  two drifting, because the copy a stranger runs is the one nobody who works
- *  on this repository ever reads. So the second copy is held against the
- *  first, character for character.
+ *  two drifting, so the second copy is held against the first, character for
+ *  character.
  */
 const readme = readFileSync('../README.md', 'utf8');
 const brewfile = readFileSync('../Brewfile', 'utf8');
@@ -65,9 +64,8 @@ describe('the setup page says what the repository says', () => {
   });
 
   it('asks for the Linux packages CI installs, and no others', () => {
-    // The README's own argument for pointing at this file: a list CI runs is a
-    // list that is true. A package here that CI does not install is one nobody
-    // has ever proved is enough.
+    // A package here that CI does not install is one nobody has ever proved
+    // is enough.
     const linux = platforms.find((platform) => platform.system === 'linux');
     const install = linux?.build.find((line) => line.includes('apt install')) ?? '';
 

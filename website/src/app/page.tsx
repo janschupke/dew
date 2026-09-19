@@ -30,7 +30,6 @@ export default function Home() {
 
         <Lead>{t('home.intro')}</Lead>
 
-        {/* Said plainly and early. README.md leads with it too. */}
         <P className="mt-stack">{t('site.status')}</P>
 
         <div className="mt-stack gap-md flex flex-wrap">

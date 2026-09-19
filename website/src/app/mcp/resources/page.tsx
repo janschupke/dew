@@ -15,8 +15,7 @@ export const metadata: Metadata = {
     These are the documents dew serves as MCP resources, in the same words the
     server sends - so a client acting on a paragraph and a person reading one
     are reading the same text. They were the middle third of /mcp/reference/,
-    between the tool index and the tools themselves, which put five essays
-    nobody was looking for in front of the table everybody was.
+    between the tool index and the tools themselves.
 
     Their anchors are unchanged, so a link written against the old page still
     names the section it always did; only the path in front of it moved.

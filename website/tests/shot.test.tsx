@@ -8,8 +8,7 @@ import { t } from '@/lib/strings';
 
     jsdom has no showModal, so tests/setup.ts supplies one and the first test
     here asserts that it did. Without that control this file would be green
-    against a dialog that never opened, which is the shape of a gate that
-    passes because it is blind.
+    against a dialog that never opened.
 */
 describe('a shot opens full-screen', () => {
   const open = (name: keyof typeof shotSizes = 'channel-rack') => {

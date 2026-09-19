@@ -1,8 +1,7 @@
 /*  How to build dew, for a reader who has not cloned it.
  *
- *  Two copies of a build command is the shape of thing that rots, so
- *  tests/setup.test.ts reads ../README.md and fails if a command here is not in
- *  it, character for character.
+ *  tests/setup.test.ts reads ../README.md and fails if a command here is not
+ *  in it, character for character, so the two copies cannot drift.
  */
 import type { PlatformSystem } from '@/ui/Icon';
 
@@ -75,7 +74,7 @@ export const platforms: readonly Platform[] = [
       },
       { name: 'lame', need: 'Optional, and only for MP3 export.' },
     ],
-    note: 'The package list is the one CI installs, so it is a list that is true. webkit2gtk and libcurl are deliberately absent: dew builds with JUCE_WEB_BROWSER=0 and JUCE_USE_CURL=0.',
+    note: 'The package list is the one CI installs. webkit2gtk and libcurl are absent because dew builds with JUCE_WEB_BROWSER=0 and JUCE_USE_CURL=0.',
     build: [linuxPackages, 'cmake --preset release', 'cmake --build --preset release'],
     run: ['./build/release/src/dew_artefacts/RelWithDebInfo/dew'],
   },

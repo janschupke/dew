@@ -40,14 +40,19 @@ export function Toc({
     <Container className="pb-section">
       {/* `auto` rather than a width: the column is as wide as the longest name
           in it. NO `items-start` — that sizes the aside to its own contents, and
-          a sticky box can only travel inside its containing block. */}
-      <div className="gap-gutter pt-section grid lg:grid-cols-[auto_1fr]">
+          a sticky box can only travel inside its containing block.
+
+          The top rung is on the aside and NOT here. It was on this grid, and
+          the first section of the page carries `pt-section` too, so the content
+          column started a whole rung below the sidebar. Each column brings its
+          own, and the first block of `children` has to have one. */}
+      <div className="gap-gutter grid lg:grid-cols-[auto_1fr]">
         {/* `shrinkable`, because a grid item's default `min-width: auto` stops
             it shrinking: below `lg` this column is the whole grid, and the aside
             sized itself to the longest tool name and pushed the page sideways.
             `min-w-0` is the obvious spelling and emits nothing - see
             theme.site.css. */}
-        <aside className="shrinkable">
+        <aside className="shrinkable pt-section">
           <TocNav label={label} groups={groups} {...(pages ? { pages } : {})} />
         </aside>
 

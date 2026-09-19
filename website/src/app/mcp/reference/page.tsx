@@ -130,11 +130,15 @@ export default function McpReference() {
       <PageHeader title={t('mcpReference.title')} lead={t('mcpReference.lead')} />
 
       <Toc label={t('mcpReference.onThisPage')} pages={mcpPages('/mcp/reference/')} groups={toc}>
-        <p className="text-prose text-secondary max-w-[68ch]">{t('mcpReference.undoNote')}</p>
+        {/* The rung the sidebar beside this one also carries. Toc puts none on
+            the content column, so the first block brings its own. */}
+        <div className="pt-section">
+          <p className="text-prose text-secondary max-w-[68ch]">{t('mcpReference.undoNote')}</p>
 
-        <p className="mt-sm text-fine text-secondary">
-          {t('mcpReference.protocol')}: <span className="font-mono">{mcp.protocolVersion}</span>
-        </p>
+          <p className="mt-sm text-fine text-secondary">
+            {t('mcpReference.protocol')}: <span className="font-mono">{mcp.protocolVersion}</span>
+          </p>
+        </div>
 
         {groups.map((group) => (
           <section key={group.id} className="pt-section">

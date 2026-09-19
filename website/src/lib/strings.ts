@@ -22,8 +22,7 @@ function format(raw: string, args: Args): string {
 
     if (typeof count !== 'number') return whole;
 
-    // `one` and `other` only. English has no `few`, and inventing categories a
-    // locale does not use is how a plural rule starts lying.
+    // `one` and `other` only. English has no `few`.
     const wanted = count === 1 ? 'one' : 'other';
     const found = new RegExp(`${wanted}\\s*\\{([^}]*)\\}`).exec(branches);
 

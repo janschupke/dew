@@ -48,7 +48,7 @@ export default function Reference() {
       <PageHeader title={t('reference.title')} lead={t('reference.lead')} />
 
       <Toc label={t('reference.onThisPage')} pages={scorePages('/score/reference/')} groups={toc}>
-        <section className="scroll-mt-section">
+        <section className="pt-section scroll-mt-section">
           <h2 className="text-h2 text-primary font-semibold">{t('reference.blocksTitle')}</h2>
 
           {schema.blocks.map((block) => (

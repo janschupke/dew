@@ -7,7 +7,10 @@ import { describe, expect, it } from 'vitest';
 import Features from '@/app/features/page';
 import Home from '@/app/page';
 import Mcp from '@/app/mcp/page';
+import McpReference from '@/app/mcp/reference/page';
+import McpResources from '@/app/mcp/resources/page';
 import Score from '@/app/score/page';
+import ScoreReference from '@/app/score/reference/page';
 import Setup from '@/app/setup/page';
 import Terms from '@/app/terms/page';
 import { anchorForFeature, anchorForGroup, featureGroups, features } from '@/content/features';
@@ -54,6 +57,28 @@ describe('pages', () => {
     }
   });
 
+  it('a sidebar page starts both its columns on the same rung', () => {
+    // Toc used to put `pt-section` on the grid, and the first section of the
+    // page carries one too - so the content column began a whole rung below
+    // the sidebar. The rung is the aside's now, and the content column's first
+    // block has to bring its own.
+    for (const page of [
+      <Score key="score" />,
+      <ScoreReference key="score-reference" />,
+      <Mcp key="mcp" />,
+      <McpReference key="mcp-reference" />,
+      <McpResources key="mcp-resources" />,
+    ]) {
+      const view = render(page);
+      const aside = view.container.querySelector('aside');
+      const first = aside?.nextElementSibling?.firstElementChild;
+
+      expect(aside?.className, page.key ?? '').toMatch(/\bpt-section\b/);
+      expect(first?.className ?? '', page.key ?? '').toMatch(/\bpt-section\b/);
+      view.unmount();
+    }
+  });
+
   it('the MCP page opens without a band against its lead', () => {
     // The reported defect, named: the element after the header must not be the
     // full-bleed band, whose top border would sit on the lead's baseline box.
@@ -93,20 +118,18 @@ describe('the features page', () => {
     for (const feature of features) expect(ids, feature.name).toContain(feature.group);
   });
 
-  it('every group has a link in the sidebar', () => {
-    // A gate over the sections is not a gate over the list of them.
+  it('is one column, with no sidebar of its own', () => {
+    // The page had a Toc, which took a column off a measure that was already
+    // narrow and pushed the picture blocks from lg: to xl: to fit. The home
+    // page's cards still link to every group anchor, which the test above
+    // asserts exist.
     const { container } = render(<Features />);
 
-    const targets = new Set(
-      [...container.querySelectorAll('[data-toc-group="groups"] a')].map((a) =>
-        a.getAttribute('href'),
-      ),
-    );
+    expect(container.querySelector('[data-toc-group]')).toBeNull();
+    expect(container.querySelector('nav')).toBeNull();
 
-    expect(targets.size).toBe(featureGroups.length);
-
-    for (const group of featureGroups)
-      expect(targets, group.id).toContain(`#${anchorForGroup(group.id)}`);
+    for (const list of container.querySelectorAll('ul'))
+      expect(list.className, list.className).not.toMatch(/grid-cols/);
   });
 
   it('a feature with a shot puts the sentence beside the picture', () => {
@@ -174,8 +197,7 @@ describe('the home page', () => {
   });
 
   it('no card without a destination answers the pointer', () => {
-    // A surface that lights up and does nothing is a promise the page cannot
-    // keep.
+    // A card with nowhere to go does not answer the pointer at all.
     const { container } = render(<Home />);
     const flat = container.querySelectorAll('div.bg-surface');
 
@@ -239,9 +261,8 @@ describe('the terms page', () => {
   });
 
   it('does not call a copyleft licence permissive', () => {
-    // The AGPL grants use for any purpose and obliges an offer of source. A
-    // legal page that called it permissive would be wrong in the one place
-    // being wrong matters.
+    // The AGPL grants use for any purpose AND obliges an offer of source, so
+    // "permissive" would be the wrong word for it.
     const { container } = render(<Terms />);
 
     expect(container.textContent).not.toMatch(/permissive/i);

@@ -36,8 +36,8 @@ export function sourceFiles(root = 'src'): string[] {
  *
  *  Line-leading markers are not enough, which is not a hypothetical: the first
  *  version of this matched `^\s*(//|\*)` and the continuation lines of a CSS
- *  block comment - which start with ordinary prose - sailed straight past it.
- *  A gate reporting its own explanation of itself is a gate somebody deletes.
+ *  block comment - which start with ordinary prose - sailed straight past it,
+ *  so the gate reported its own explanation of itself.
  *
  *  String literals are deliberately NOT stripped. In TSX an offending colour
  *  would BE inside a string, so blanking those would blind every gate here.
@@ -87,8 +87,7 @@ export interface Offence {
 
 /** Lines matching `pattern`, reported with where they are.
  *
- *  Reports the file and the line rather than a count, because a gate that says
- *  only "something is wrong" is one somebody turns off.
+ *  Reports the file and the line rather than a count.
  */
 export function offenders(pattern: RegExp, files = sourceFiles()): Offence[] {
   const found: Offence[] = [];
@@ -112,9 +111,9 @@ export const report = (found: Offence[]): string =>
 /** True when a Tailwind arbitrary value encodes something the design system
  *  should have owned.
  *
- *  Exported so the gate and its control case share ONE implementation. Two
- *  copies of a predicate is two things that can disagree, and the one that
- *  disagrees silently is the gate.
+ *  Exported so the gate and its control case share ONE implementation: two
+ *  copies of the predicate can disagree, and the gate's copy disagrees
+ *  silently.
  *
  *  Refused: a colour literal, and a length in px/rem/em. Those are exactly what
  *  `tokens::colour`, `tokens::space`, `tokens::radius` and `tokens::type`

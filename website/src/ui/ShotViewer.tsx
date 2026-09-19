@@ -8,8 +8,7 @@ import { t } from '@/lib/strings';
 /*  A shot, and the same shot filling the screen.
 
     A native <dialog> opened with showModal(): that one call buys the top layer,
-    Escape, a focus trap and an inert background, all of which hand-rolled would
-    be a second implementation of something the platform has.
+    Escape, a focus trap and an inert background.
 
     The whole viewer is one button, so clicking anywhere in it closes and the
     visible Close is a label on the same control rather than a second one.

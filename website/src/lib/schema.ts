@@ -48,11 +48,10 @@ export const schema: Schema = raw;
  *  pairs cannot mangle to one anchor. The same argument GenStrings.cmake makes
  *  for '.' -> '_', and it rests on the block half only - key names DO contain
  *  hyphens (parallel-fifths, voice-crossing, dissonance-on-strong). A test
- *  asserts it over the whole schema rather than trusting the sentence.
+ *  asserts it over the whole schema.
  *
  *  Permanent because the README, a diagnostic's help text and the app's Score
- *  tab can all link one, and a reference whose anchors move is a reference full
- *  of dead links.
+ *  tab can all link one.
  */
 export const anchorForBlock = (kind: string): string => kind;
 export const anchorForKey = (block: string, key: string): string => `${block}-${key}`;

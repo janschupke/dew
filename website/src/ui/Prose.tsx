@@ -35,8 +35,7 @@ export function Lead({ children }: { children: ReactNode }) {
   return <p className="text-lead text-secondary mt-stack max-w-[68ch] leading-snug">{children}</p>;
 }
 
-/** A page's opening: the h1 and its lead. Every page on the site uses this, so
- *  they all start on the same rung.
+/** A page's opening: the h1 and its lead, used by every page on the site.
  *
  *  No bottom padding — whatever follows carries its own top rung. A `Band` does
  *  not, because its padding sits inside its border, so nothing may follow this

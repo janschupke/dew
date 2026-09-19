@@ -24,8 +24,7 @@ function headerOffset(): number {
 }
 
 /** The sidebar. A client component so it can say which section you are looking
- *  at: a list of thirty-nine anchors with nothing marked is a list you read
- *  rather than a place you navigate from. */
+ *  at: the score reference lists thirty-nine anchors. */
 export function TocNav({
   label,
   pages,

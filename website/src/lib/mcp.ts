@@ -43,15 +43,13 @@ export const mcp: McpReference = raw as McpReference;
 
 /** The anchor a tool and a guide page are permanently addressable by.
  *
- *  Permanent because a tool's own documentation links another's, the guide
- *  resources name each other, and a reference whose anchors move is a reference
- *  full of dead links. The same argument schema.ts makes for the score
+ *  Permanent because a tool's own documentation links another's and the guide
+ *  resources name each other. The same argument schema.ts makes for the score
  *  language's.
  *
  *  Injective without needing an argument about separators: operation names and
  *  guide ids are both drawn from a single flat namespace of snake_case words,
- *  and the two are prefixed apart. A test asserts it over the whole file rather
- *  than trusting this sentence.
+ *  and the two are prefixed apart. A test asserts it over the whole file.
  */
 export const anchorForTool = (name: string): string => `tool-${name}`;
 export const anchorForGuide = (id: string): string => `guide-${id}`;

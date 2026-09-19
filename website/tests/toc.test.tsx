@@ -97,8 +97,7 @@ describe('the sidebar', () => {
   });
 
   it('marks exactly one entry', () => {
-    // Two marked entries is the same as none: the accent stops meaning "you
-    // are here".
+    // Two marked entries is the same as none.
     render(<Harness count={4} />);
     place([-500, -400, -300, 200]);
 

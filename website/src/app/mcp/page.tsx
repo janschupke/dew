@@ -10,9 +10,7 @@ import { t } from '@/lib/strings';
 export const metadata: Metadata = { title: `${t('mcp.title')} — ${t('site.name')}` };
 
 /*  What the endpoint is and how to reach it. The tool-by-tool detail is the
-    reference next door, which is generated; this page is the claim, and is
-    written by hand because what something is FOR cannot be derived from the
-    table that implements it. */
+    reference next door, which is generated; this page is written by hand. */
 const sections = [
   { id: 'how-it-works', title: t('mcp.howTitle'), body: t('mcp.howBody') },
   { id: 'connecting', title: t('mcp.connectTitle'), body: t('mcp.connectBody') },

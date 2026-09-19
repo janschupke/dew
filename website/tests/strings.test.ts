@@ -63,11 +63,7 @@ describe('strings', () => {
     // The mirror of the type. `t('nav.referrence')` is a compile error, so a
     // key that is NAMED is certainly a key that EXISTS - and nothing at all
     // held the other direction. `nav.source` sat in this file unused for as
-    // long as it had been there, which is how a catalogue starts carrying
-    // sentences nobody has read.
-    //
-    // The mirror of the type: a key that is NAMED certainly EXISTS, and
-    // nothing at all held the other direction.
+    // long as it had been there.
     const asked = new Set<string>();
 
     for (const file of sourceFiles()) {

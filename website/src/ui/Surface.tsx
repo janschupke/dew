@@ -50,8 +50,7 @@ export function Band({
 }
 
 /** A card. WITH an href it is a real link and lifts; without one it is a flat
- *  panel and does not move at all — a surface that answers the pointer and not
- *  the click is a promise the page cannot keep.
+ *  panel and does not move at all.
  *
  *  `block` is load-bearing: next/link renders an inline anchor, and the
  *  `h-full` the grid call sites pass has nothing to stretch inside one. */

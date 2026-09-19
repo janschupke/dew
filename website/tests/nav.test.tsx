@@ -2,8 +2,7 @@ import { render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 /*  The active tab. Nav.tsx's doc comment claimed an accent underline for as
-    long as the file existed and there was no active state in it at all, which
-    is the failure mode a comment has and a test does not.
+    long as the file existed and there was no active state in it at all.
 */
 let pathname = '/';
 
@@ -89,7 +88,6 @@ describe('the nav', () => {
 describe('the footer', () => {
   it('carries every tab the header does', () => {
     // The two lists were written out by hand, twice, and are one list now.
-    // This is what stops them being two again.
     const { container } = render(<Footer />);
 
     // Trailing slashes stripped on both sides: next/link normalises `/a/` to
@@ -114,8 +112,8 @@ describe('the footer', () => {
   });
 
   it('does not send a reader into the repository rules', () => {
-    // `.ai/rules/` is where the project argues with itself. It is not a page on
-    // a product site, and it was linked from every one of them.
+    // `.ai/rules/` is not a page on a product site, and it was linked from
+    // every one of them.
     const { container } = render(<Footer />);
 
     expect(container.innerHTML).not.toContain('.ai/rules');

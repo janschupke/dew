@@ -67,7 +67,7 @@ export const featureGroups: readonly FeatureGroup[] = [
   {
     id: 'writing',
     title: 'Two other ways to write a song',
-    body: 'Text you compile, and an agent you let in.',
+    body: 'The score language, and the MCP server an agent connects to.',
   },
 ];
 
@@ -100,7 +100,7 @@ export const features: readonly Feature[] = [
   {
     group: 'sound',
     name: 'Presets',
-    body: 'Forty factory sounds in seven categories: three for each effect type, six for the synth, two for an audio channel and two for a soundfont. A preset carries the sound and nothing else — not a channel’s name, colour, routing, level or effect chain — so loading one mid-mix cannot move a fader or retune a part you have already written.',
+    body: 'Forty factory sounds in seven categories: three for each effect type, six for the synth, two for an audio channel and two for a soundfont. A preset carries the sound, and not a channel’s name, colour, routing, level or effect chain, so loading one mid-mix cannot move a fader or retune a part you have already written.',
   },
 
   {
@@ -118,7 +118,7 @@ export const features: readonly Feature[] = [
   {
     group: 'notes',
     name: 'Time signature',
-    body: '3/4, 5/4, 6/8, 7/8 and the rest, driving bar lines, beat shading, the bars:beats:ticks readout, what “Bar” snaps to and exported MIDI. It is a metre, not a tempo: a step is the same length in 3/4 as in 4/4.',
+    body: '3/4, 5/4, 6/8, 7/8 and the rest, driving bar lines, beat shading, the bars:beats:ticks readout, what “Bar” snaps to and exported MIDI. A step is the same length in 3/4 as in 4/4.',
   },
 
   {
@@ -178,7 +178,7 @@ export const features: readonly Feature[] = [
   {
     group: 'working',
     name: 'Session state',
-    body: 'Window geometry, interface scale, active tab, selections, the piano roll’s zoom, scroll, row height and snap, the playlist’s lane height and the score’s text size all come back as you left them. The piano roll’s tool deliberately does not.',
+    body: 'Window geometry, interface scale, active tab, selections, the piano roll’s zoom, scroll, row height and snap, the playlist’s lane height and the score’s text size all come back as you left them. The piano roll’s tool does not.',
   },
 
   {

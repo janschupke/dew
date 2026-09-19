@@ -24,8 +24,7 @@ describe('source gates', () => {
   });
 
   it('sees a colour when there is one', () => {
-    // The gate can see. Without this it is green because it is blind, which is
-    // how a source gate fails in practice.
+    // The gate can see. Without this it is green because it is blind.
     const pattern = /#[0-9a-fA-F]{3,8}\b|\b(?:rgba?|hsla?|oklch)\s*\(/;
 
     expect(pattern.test('className="bg-[#ff0000]"')).toBe(true);
@@ -34,10 +33,8 @@ describe('source gates', () => {
   });
 
   it('no dark: variant anywhere', () => {
-    // dew is dark, one palette, and that is a decision rather than an
-    // omission: the emphasis transforms and all four lift rungs encode "less
-    // is darker", which inverts on a light ground. A dark: variant here would
-    // be the beginning of a light theme nothing else supports.
+    // dew is dark, one palette: the emphasis transforms and all four lift
+    // rungs encode "less is darker", which inverts on a light ground.
     expect(report(offenders(/\bdark:/))).toBe('');
   });
 

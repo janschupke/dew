@@ -67,7 +67,7 @@ describe('the Vercel deployment', () => {
     // `website/out` is the same mistake as the `cd` above, spelled as a path.
     expect(config.outputDirectory).toBe('out');
 
-    // And the export still writes it. Two halves of one fact, in two files.
+    // And the export still writes it.
     expect(readFileSync('next.config.ts', 'utf8')).toMatch(/output:\s*'export'/);
   });
 

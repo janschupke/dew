@@ -61,9 +61,8 @@ describe('the generated MCP reference', () => {
   });
 
   it('every tool has a link in the sidebar, in the group its scope puts it in', () => {
-    // The lesson the score reference already learned: a gate over the sections
-    // is not a gate over the list of them, and the first attempt at one shipped
-    // an index that silently omitted a block.
+    // The lesson the score reference already learned: its first section gate
+    // shipped an index that silently omitted a block.
     //
     // Asked per GROUP, not over the whole nav. The sidebar's whole claim is
     // that a reader can see which tools change their project before reading a
@@ -90,8 +89,7 @@ describe('the generated MCP reference', () => {
 
   it('the sidebar names nothing the page does not carry', () => {
     // The other direction, which is the half a link check cannot do: an entry
-    // pointing at an id nothing renders is a dead anchor, and the browser
-    // reports one only to whoever clicked it.
+    // pointing at an id nothing renders is a dead anchor.
     for (const page of [<McpReference key="reference" />, <McpResources key="resources" />]) {
       const { container } = render(page);
 
@@ -117,12 +115,10 @@ describe('the generated MCP reference', () => {
 
   it('renders every guide page, whole', () => {
     // These ship as MCP resources, so the page and the resource are the same
-    // words. A paragraph that reached one and not the other would be advice a
-    // client acts on and a reader cannot check.
+    // words, and a paragraph can reach one without reaching the other.
     //
     // They are a page of their own now. They used to sit between the tool index
-    // and the tools, which put five documents nobody had come for in front of
-    // the table everybody had.
+    // and the tools.
     const { container } = render(<McpResources />);
 
     for (const section of mcp.guide) {

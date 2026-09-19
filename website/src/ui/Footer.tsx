@@ -6,8 +6,7 @@ import { footerLinks } from '@/content/nav';
 import { repositoryUrl } from '@/content/setup';
 import { t } from '@/lib/strings';
 
-/*  The mark goes on the repository itself and not on the file under it. Two
-    identical marks in a column of two would be a texture, not a signal. */
+/*  The mark goes on the repository itself and not on the file under it. */
 const project = [
   { href: repositoryUrl, label: t('footer.sourceLabel'), mark: true },
   { href: `${repositoryUrl}/blob/master/README.md`, label: t('footer.readmeLabel'), mark: false },

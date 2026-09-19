@@ -17,7 +17,6 @@ describe('score samples', () => {
   });
 
   it('renders each sample byte for byte', () => {
-    // The assertion that makes this site a viewer rather than a highlighter.
     // The runs come from the compiler's own lang::tokenize and the gaps between
     // them are emitted verbatim, so the rendered text must equal the source
     // exactly - a run with a wrong offset or length shows up here and nowhere

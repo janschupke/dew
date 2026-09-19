@@ -35,8 +35,7 @@ describe('the generated reference', () => {
   it('every block has a link in the sidebar', () => {
     // Found by trying to break the section gate above and watching it pass: the
     // first attempt dropped a block from the NAV, every assertion stayed green,
-    // and the page shipped an index that silently omitted one. A gate over the
-    // sections is not a gate over the list of them.
+    // and the page shipped an index that silently omitted one.
     //
     // Asked of the BLOCKS group rather than of the whole sidebar, which also
     // carries the value and mode tables now. A count over everything in the nav
@@ -122,8 +121,7 @@ describe('the generated reference', () => {
   });
 
   it('every value-kind link on a key row resolves to a row on the page', () => {
-    // A cross-reference the browser would only report as a dead anchor, and
-    // only to whoever clicked it.
+    // A cross-reference that fails as a dead anchor in the browser.
     const { container } = render(<Reference />);
 
     for (const block of schema.blocks)

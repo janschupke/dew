@@ -13,8 +13,7 @@
   },
   "features": {
     "title": "What it does",
-    "lead": "Six groups, and what is in each of them.",
-    "onThisPage": "On this page"
+    "lead": "Six groups, and what is in each of them."
   },
   "footer": {
     "licence": "dew is free software under the AGPLv3, and so is every part of it.",
@@ -29,17 +28,17 @@
     "readFeatures": "What it does",
     "readSetup": "Build it",
     "readDownload": "Download",
-    "workflowTitle": "Built to stay out of the way",
-    "workflowBody": "Most of what makes a DAW hard to start is not the music. It is forty panels that move, a plugin scan, and a feature set you have to learn before you can hear anything. dew is the other shape: a small, fixed set of screens that always hold the same controls, so the second session works like the first.",
-    "predictableTitle": "Nothing moves",
+    "workflowTitle": "The same screens every session",
+    "workflowBody": "dew has five tabs and one instrument panel. There are no floating windows, no layouts to arrange and no plugin scan at startup, so the controls are where they were the last time and the second session works like the first.",
+    "predictableTitle": "Five tabs, fixed",
     "predictableBody": "Five tabs and one instrument panel, in the same places every time. A channel row carries its own volume, pan and on/off; a mixer strip carries its own chain. No modes, no floating windows to lose.",
     "signalTitle": "One signal path",
-    "signalBody": "Three oscillators into an amp envelope, into the channel's effect chain, into a mixer insert, into the master. That is the whole graph, and every knob on it is automatable from its own right-click menu.",
+    "signalBody": "Three oscillators into an amp envelope, into the channel's effect chain, into a mixer insert, into the master. Every knob on that path is automatable from its own right-click menu.",
     "completeTitle": "Already in the box",
     "completeBody": "Ten effects, forty factory presets, wavetables, an FM matrix, SoundFont playback and a renderer. Two dependencies in the whole build, no plugin format, and nothing to install per sound.",
     "groupsTitle": "What is in it",
-    "groupsBody": "Enough to finish a track, and deliberately not more.",
-    "openTitle": "Open source, all of it",
+    "groupsBody": "Six groups: the sound, writing notes, arranging, mixing, working with files and devices, and the two other ways to write a song.",
+    "openTitle": "Open source",
     "openBody": "Every line is on GitHub under the AGPLv3 — the application, the audio engine, the score compiler, the tests and this site. Free to use for any purpose, with no warranty of any kind.",
     "openLink": "Terms and licences"
   },
@@ -54,7 +53,7 @@
     "surfaceTitle": "What it can reach",
     "surfaceBody": "One address space covers every value in the document. A target, an id, a group and a slot name any parameter of any oscillator, envelope, sample, soundfont, effect, mixer insert or the master. The same four fields say what a curve can be pointed at.",
     "scoreTitle": "Writing a score",
-    "scoreBody": "For anything longer than a few bars, an agent writes dew’s arrangement language and compiles it. The language says what the music is — a key, a progression, rhythms, voicings, a counterpoint — and the compiler works out the notes.",
+    "scoreBody": "For anything longer than a few bars, an agent writes dew’s arrangement language and compiles it, which takes one call rather than one per note.",
     "referenceLink": "Every tool, in the reference"
   },
   "mcpResources": {
@@ -128,7 +127,7 @@
     "whatBody": "Sketching a whole arrangement faster than you can draw it. You say what the music is — a key, a metre, a progression, a rhythm, a voicing, a melody, a counterpoint answering another voice — and the compiler works out the notes. It is the fifth tab, checked as you type, compiled with ⌘R. The text is stored in the project, so recompiling updates what it wrote last time and leaves anything you have since edited by hand alone.",
     "exampleCaption": "examples/rhodes.score",
     "noExpressionsTitle": "No expressions",
-    "noExpressions": "There is no expression language: no arithmetic, no variables, no conditionals. That single restriction is what makes completion a table lookup and lets the grid be worked out before a note is generated.",
+    "noExpressions": "There is no expression language: no arithmetic, no variables, no conditionals. Completion is therefore a table lookup, and the grid is worked out before a note is generated.",
     "durationsTitle": "Durations",
     "chordsTitle": "Chords",
     "limitsTitle": "What it cannot say",
@@ -162,7 +161,7 @@
   },
   "terms": {
     "title": "Terms and licences",
-    "lead": "What you may do with dew, what it does not promise, and what is inside it.",
+    "lead": "What you may do with dew, what warranty it carries, and what is inside it.",
     "sourceCta": "The licence, in full"
   },
   "download": {

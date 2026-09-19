@@ -6,8 +6,8 @@ channel — three that can also route into each other, through an FM matrix — 
 audio channel, by a recording.
 
 Status: **working prototype**. New, open, edit, save and playback work end to end, with
-effects and automation on top. It is not a product, but every layer is real and wired to
-the next. It is developed on macOS; CI builds and tests all three systems on every push.
+effects and automation on top, and every layer is wired to the next. It is developed on
+macOS; CI builds and tests all three systems on every push.
 
 - **Source** — <https://github.com/janschupke/dew>
 - **Download** — <https://github.com/janschupke/dew/releases/latest>

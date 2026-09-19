@@ -49,7 +49,7 @@ describe('the download page offers what the release workflow uploads', () => {
 
   it('says what the first launch does, for every download', () => {
     // The page exists to stop somebody meeting an unsigned-binary dialog cold.
-    // An entry with nothing to say here is one that would.
+
     for (const download of downloads)
       expect(download.firstLaunch.length, download.asset).toBeGreaterThan(20);
   });

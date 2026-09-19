@@ -45,8 +45,7 @@ describe('the terms page', () => {
   });
 
   it('describes the AGPL as what it is', () => {
-    // It grants use for any purpose AND obliges an offer of source. Calling it
-    // permissive would be wrong in the one place being wrong matters.
+    // It grants use for any purpose AND obliges an offer of source.
     expect(prose).not.toMatch(/permissive/i);
     expect(prose).toMatch(/corresponding source/i);
     expect(prose).toMatch(/network/i);
