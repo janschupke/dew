@@ -190,3 +190,28 @@ anybody given a binary or reached over a network. Half of that is worse than nei
 project and somebody who never opens the site should not be stopped by a missing runtime.
 CI sets `DEW_REQUIRE_NODE=1`, where a silent skip would be invisible. `npm ci`, never
 `npm install` — the second rewrites `package-lock.json` and dirties the tree.
+
+## Deploying, and the setting no file can hold
+
+`website/vercel.json` is the deployment: `npm ci`, `npm run build`, publish `out/`. It sits
+in `website/` and not at the repository root because **the Vercel project's Root Directory
+is `website`**, and Vercel reads `vercel.json` from the root directory — a file above it is
+never opened.
+
+That one setting lives in the dashboard and nowhere else, because it cannot live anywhere
+else: Vercel has to resolve the root directory before it can find a config file inside it.
+It is written down here and in the README instead, which is the closest a repository gets
+to owning it.
+
+It has already cost a deployment. A `vercel.json` at the root carrying
+`cd website && npm ci` looked right and was never read; what ran was the dashboard's copy
+of the same string, from a working directory that was **already** `website/`, so it looked
+for `website/website` and the install failed. Nothing was ever published, so every path
+including `/` served Vercel's own 404 — which is why the site appeared to have neither an
+index nor a not-found page when it has always had both.
+
+`tests/deploy.test.ts` refuses a `cd` in any of those commands and refuses a `vercel.json`
+at the repository root, and `check-website.sh` fails if a build does not leave
+`out/index.html` and `out/404.html` behind. `framework` is `null` rather than `"nextjs"`
+for the reason `next.config.ts` gives at length: the export needs no server, and naming a
+framework invites one.

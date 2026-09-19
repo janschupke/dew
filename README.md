@@ -421,8 +421,15 @@ direction. The rules, the gates and the argument for each are in
 
 `website/` is a Next.js site: what dew is, what it does, how to build it, the licence, and
 the generated references for the score language and the MCP endpoint.
-`./scripts/check-website.sh` checks it and `./scripts/check.sh` runs that; `vercel.json` at
-the root is how it deploys.
+`./scripts/check-website.sh` checks it and `./scripts/check.sh` runs that.
+
+It deploys to Vercel from [`website/vercel.json`](website/vercel.json), which is inside
+`website/` rather than at the repo root because the Vercel project's **Root Directory is
+`website`** — Vercel reads `vercel.json` from the root directory, so a file above it is
+never opened. That setting is the one part of this deployment no file can declare: Vercel
+has to resolve the root directory before it can find a config file inside it. Everything
+else — the install and build commands, the output directory — is in `website/vercel.json`
+and overrides whatever the dashboard says.
 
 It is a product site, so it carries no internal reasoning: no page says which tool emitted
 it, and nothing links into `.ai/rules/`.

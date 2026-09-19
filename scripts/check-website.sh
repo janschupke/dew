@@ -70,6 +70,20 @@ npm run test
 
 if (( build )); then
   npm run build
+
+  # What the deployment actually serves, checked where it can be: out/ does not
+  # exist until the line above, so no vitest test can see this.
+  #
+  # out/index.html is `/`, and Vercel serves out/404.html for every unmatched
+  # path. An export that stopped emitting either would publish a site whose own
+  # pages are the platform's 404 - which is what a broken install already did
+  # once, and is impossible to tell apart from a site that never had them.
+  for page in index.html 404.html; do
+    if [[ ! -s "out/${page}" ]]; then
+      echo "FAIL  next build left no out/${page} - the deployment has no ${page%%.*} page"
+      exit 1
+    fi
+  done
 fi
 
 echo "ok    website theme, formatting, lint, types and tests pass"
