@@ -117,9 +117,9 @@ void appendMixerOps (std::vector<OpSpec>& all)
           "Add mixer inserts, or rename and recolour existing ones.",
           "An upsert, like channels_write: an entry with an `id` changes that insert, "
           "one without adds a new one.\n\n"
-          "A fader and a pan are parameters, not fields here - reach them with "
+          "A fader and a pan are parameters rather than fields here: reach them with "
           "params_write, target 'mixerTrack'. The master is addressed as target "
-          "'master' and has a fader and nothing else.\n\n"
+          "'master', and carries a fader only.\n\n"
           "The mixer holds "
               + juce::String (kMaxMixerTracks)
               + " inserts, which is as many as the engine renders. A batch that would take "

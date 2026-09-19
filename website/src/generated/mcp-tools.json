@@ -7,7 +7,7 @@
       "summary": "What dew is, and which tool answers which question.",
       "paragraphs": [
         "dew is a desktop DAW in the FL Studio shape. A project holds CHANNELS, each carrying one instrument - a three-oscillator synth, a recording, or a soundfont - and its own chain of effects. PATTERNS hold notes. The PLAYLIST arranges clips of those patterns into a song. A MIXER routes channels through inserts to a master.",
-        "Start with project_describe. It is the cheap read: the tempo, the metre, and every channel, pattern, lane, insert and automation by name and id, with not one note in it. Everything else is addressed by the ids it gives you.",
+        "Start with project_describe. It returns the tempo, the metre, and every channel, pattern, lane, insert and automation by name and id, with not one note in it. Everything else is addressed by the ids it gives you.",
         "Then: params_list and params_write reach every value in the document - a volume, an oscillator's detune, an envelope, any effect's anything, a fader, the tempo. channels_write, effects_write and mixer_write add and arrange the objects those values live on. notes_write and clips_write are the piano roll and the arrangement. score_compile is the fast way to write a lot of music at once.",
         "Read dew://guide/addressing before writing anything, and dew://guide/undo before writing a lot of it."
       ]
@@ -52,9 +52,9 @@
       "title": "Changes, undo and consent",
       "summary": "What a grant covers, and what protects the user.",
       "paragraphs": [
-        "Every operation that writes is exactly ONE undo step, however many entries its batch carried. Two hundred notes in one notes_write call is one press of Cmd-Z. That is deliberate, and it is the user's real protection: they approved a client, not each of its actions, so being able to take back an action whole is what makes the approval reasonable.",
+        "Every operation that writes is exactly ONE undo step, however many entries its batch carried. Two hundred notes in one notes_write call is one press of Cmd-Z. The user approved a client, not each of its actions, so an action they can take back whole is what the approval rests on.",
         "Prefer one batched call over many small ones for the same reason, and not only for speed. Ten separate calls are ten undo steps and ten chances to leave the document half-changed.",
-        "A batch is checked before any of it is written. An entry naming a channel that does not exist fails the whole call and changes nothing, rather than applying the entries it understood - half a batch is the worst answer available, because the caller is told it failed and the document has moved anyway.",
+        "A batch is checked before any of it is written. An entry naming a channel that does not exist fails the whole call and changes nothing, rather than applying the entries it understood: a half-applied batch tells the caller it failed and moves the document anyway.",
         "A grant is read-only or read-and-write, chosen by the user when they approved the client. Under a read-only grant every writing operation is refused before it runs. project_command can undo and redo, so a client can take back its own work - and so can the person at the keyboard.",
         "Nothing here can approve itself or change a grant. What a write grant DOES reach outside the open project is worth knowing before you give one: render_audio and export_midi write the file they are asked for, project_command saves to a path you give it and opens one, and source_write reads a sample or a soundfont from anywhere on disk. Every one of those takes the path from the caller."
       ]
@@ -65,7 +65,7 @@
       "name": "project_describe",
       "scope": "read",
       "summary": "Summarise the open project: tempo, meter, and every channel, pattern, playlist track, mixer insert and automation by name and id.",
-      "doc": "Start here. It is the cheap read - counts and names, and not one note, clip or automation point - so it costs a few hundred tokens whatever the size of the arrangement.\n\nUse the ids it returns to address everything else. Reach for project_read only when you need the contents of something this named.",
+      "doc": "Start here. It returns counts and names, and not one note, clip or automation point, so it costs a few hundred tokens whatever the size of the arrangement.\n\nUse the ids it returns to address everything else. Reach for project_read only when you need the contents of something this named.",
       "args": []
     },
     {
@@ -330,7 +330,7 @@
       "name": "channels_write",
       "scope": "write",
       "summary": "Add channels, or change the name, colour, routing or mute of existing ones, as one undo step.",
-      "doc": "An upsert: an entry with an `id` changes that channel, an entry without one adds a channel of `kind`. A field an entry does not mention is left alone, so changing a name does not blank a colour.\n\nThe sound a channel makes is not here - that is params_write, which reaches every oscillator, envelope and effect parameter it has. This is the channel as an object in the rack.\n\nA project holds 64 channels, which is as many as the engine renders. A batch that would take it past that is refused whole rather than adding the ones that fit.",
+      "doc": "An upsert: an entry with an `id` changes that channel, an entry without one adds a channel of `kind`. A field an entry does not mention is left alone, so changing a name does not blank a colour.\n\nThis is the channel as an object in the rack. For the sound it makes, use params_write, which reaches every oscillator, envelope and effect parameter it has.\n\nA project holds 64 channels, which is as many as the engine renders. A batch that would take it past that is refused whole rather than adding the ones that fit.",
       "args": [
         {
           "name": "entries",
@@ -654,7 +654,7 @@
       "name": "mixer_write",
       "scope": "write",
       "summary": "Add mixer inserts, or rename and recolour existing ones.",
-      "doc": "An upsert, like channels_write: an entry with an `id` changes that insert, one without adds a new one.\n\nA fader and a pan are parameters, not fields here - reach them with params_write, target 'mixerTrack'. The master is addressed as target 'master' and has a fader and nothing else.\n\nThe mixer holds 32 inserts, which is as many as the engine renders. A batch that would take it past that is refused whole rather than adding the ones that fit.",
+      "doc": "An upsert, like channels_write: an entry with an `id` changes that insert, one without adds a new one.\n\nA fader and a pan are parameters rather than fields here: reach them with params_write, target 'mixerTrack'. The master is addressed as target 'master', and carries a fader only.\n\nThe mixer holds 32 inserts, which is as many as the engine renders. A batch that would take it past that is refused whole rather than adding the ones that fit.",
       "args": [
         {
           "name": "entries",
@@ -720,7 +720,7 @@
       "name": "patterns_write",
       "scope": "write",
       "summary": "Add, duplicate or rename patterns, as one undo step.",
-      "doc": "A pattern holds every channel's notes for its span, which is why a section of an arrangement is one pattern rather than one per instrument.\n\n`duplicateOf` deep-copies a pattern, notes and all, under a new id - which is what a repeat that will be varied wants. A repeat that is identical wants one pattern and two clips instead.\n\nA pattern's LENGTH is not settable, here or anywhere. It is derived from the notes the pattern holds, rounded up to a whole bar and never less than one - so writing a note further in is what makes a pattern longer, and removing the notes at the end is what makes it shorter. `lengthSteps` is reported back for reference and is not an argument.",
+      "doc": "A pattern holds every channel's notes for its span, which is why a section of an arrangement is one pattern rather than one per instrument.\n\n`duplicateOf` deep-copies a pattern, notes and all, under a new id - which is what a repeat that will be varied wants. A repeat that is identical wants one pattern and two clips instead.\n\nA pattern's LENGTH is not settable, here or anywhere. It is derived from the notes the pattern holds, rounded up to a whole bar and never less than one. `lengthSteps` is reported back for reference and is not an argument.",
       "args": [
         {
           "name": "entries",
@@ -810,7 +810,7 @@
       "name": "notes_write",
       "scope": "write",
       "summary": "Write notes into a pattern, as one undo step.",
-      "doc": "An upsert on the three fields that identify a note - channel, step and pitch - so sending the same bar twice does not double it.\n\nTime is whole steps. A step is 1/stepsPerBeat of a beat, which project_describe reports; at the default 4 a step is a sixteenth note. There is no fractional step and no tuplet that the grid does not divide.\n\nThe pattern's length FOLLOWS its notes and is not set directly: writing a note further in is what makes a pattern longer, and removing the notes at the end is what makes it shorter again. Refuses the whole batch on a bad channel or an out-of-range pitch rather than writing half of it.\n\nFor anything longer than a few bars, prefer score_write and score_compile: the language says what the music IS, and this says where every note goes.",
+      "doc": "An upsert on the three fields that identify a note - channel, step and pitch - so sending the same bar twice does not double it.\n\nTime is whole steps. A step is 1/stepsPerBeat of a beat, which project_describe reports; at the default 4 a step is a sixteenth note. There is no fractional step and no tuplet that the grid does not divide.\n\nThe pattern's length FOLLOWS its notes and is not set directly: writing a note further in lengthens the pattern, and removing the notes at the end shortens it again. Refuses the whole batch on a bad channel or an out-of-range pitch rather than writing half of it.\n\nFor anything longer than a few bars, prefer score_write and score_compile: the language says what the music IS, and this says where every note goes.",
       "args": [
         {
           "name": "patternId",
@@ -1216,7 +1216,7 @@
       "name": "automation_targets_list",
       "scope": "read",
       "summary": "List every parameter in this project that a curve can be pointed at.",
-      "doc": "Automation is a curated set, not every property: whether a parameter is worth a curve is declared beside the parameter itself. A read-pointer discontinuity (a sample's reverse and loop), a soundfont's tuning offsets and a pattern's length are all deliberately absent, each for its own reason.\n\nAnswers in the same five-field address params_write takes, so a parameter you have just set can be automated without translating anything.",
+      "doc": "Whether a parameter can carry a curve is declared beside the parameter itself, so this is a curated set. A read-pointer discontinuity (a sample's reverse and loop), a soundfont's tuning offsets and a pattern's length are absent from it.\n\nAnswers in the same five-field address params_write takes, so a parameter you have just set can be automated without translating anything.",
       "args": [
         {
           "name": "contains",
@@ -1450,7 +1450,7 @@
       "name": "score_compile",
       "scope": "write",
       "summary": "Compile the score into real patterns, notes and clips, as one undo step.",
-      "doc": "This is the high-leverage way to arrange. The language says what the music IS - key, harmony, rhythm, voicing, counterpoint - and the compiler works out the notes, which is worth far more per call than placing them one at a time with notes_write.\n\nThe language owns notes, patterns and clips; you own channels, instruments, effects and the mixer. Recompiling is an UPDATE rather than a second copy, and hand edits are kept unless you say otherwise.\n\nRefuses outright if the score has errors, rather than baking half of it. Note that the same source always compiles to the same notes, on any machine.",
+      "doc": "The language says what the music IS - key, harmony, rhythm, voicing, counterpoint - and the compiler works out the notes. One call arranges a whole section; notes_write places one note at a time.\n\nThe language owns notes, patterns and clips; you own channels, instruments, effects and the mixer. Recompiling is an UPDATE rather than a second copy, and hand edits are kept unless you say otherwise.\n\nRefuses outright if the score has errors, rather than baking half of it. Note that the same source always compiles to the same notes, on any machine.",
       "args": [
         {
           "name": "source",

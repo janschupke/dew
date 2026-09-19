@@ -150,10 +150,8 @@ void appendPatternOps (std::vector<OpSpec>& all)
           "what a repeat that will be varied wants. A repeat that is identical wants one "
           "pattern and two clips instead.\n\n"
           "A pattern's LENGTH is not settable, here or anywhere. It is derived from the "
-          "notes the pattern holds, rounded up to a whole bar and never less than one - so "
-          "writing a note further in is what makes a pattern longer, and removing the "
-          "notes at the end is what makes it shorter. `lengthSteps` is reported back for "
-          "reference and is not an argument.",
+          "notes the pattern holds, rounded up to a whole bar and never less than one. "
+          "`lengthSteps` is reported back for reference and is not an argument.",
           { { "entries",
               ValueKind::array,
               true,

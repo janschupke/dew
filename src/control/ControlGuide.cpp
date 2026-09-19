@@ -15,9 +15,9 @@ const std::vector<GuideSection>& guide()
             "arranges clips of those patterns into a song. A MIXER routes channels "
             "through inserts to a master.",
 
-            "Start with project_describe. It is the cheap read: the tempo, the metre, and "
-            "every channel, pattern, lane, insert and automation by name and id, with not "
-            "one note in it. Everything else is addressed by the ids it gives you.",
+            "Start with project_describe. It returns the tempo, the metre, and every "
+            "channel, pattern, lane, insert and automation by name and id, with not one "
+            "note in it. Everything else is addressed by the ids it gives you.",
 
             "Then: params_list and params_write reach every value in the document - a "
             "volume, an oscillator's detune, an envelope, any effect's anything, a fader, "
@@ -120,9 +120,8 @@ const std::vector<GuideSection>& guide()
           "What a grant covers, and what protects the user.",
           { "Every operation that writes is exactly ONE undo step, however many entries its "
             "batch carried. Two hundred notes in one notes_write call is one press of "
-            "Cmd-Z. That is deliberate, and it is the user's real protection: they approved "
-            "a client, not each of its actions, so being able to take back an action whole "
-            "is what makes the approval reasonable.",
+            "Cmd-Z. The user approved a client, not each of its actions, so an action they "
+            "can take back whole is what the approval rests on.",
 
             "Prefer one batched call over many small ones for the same reason, and not only "
             "for speed. Ten separate calls are ten undo steps and ten chances to leave the "
@@ -130,8 +129,8 @@ const std::vector<GuideSection>& guide()
 
             "A batch is checked before any of it is written. An entry naming a channel that "
             "does not exist fails the whole call and changes nothing, rather than applying "
-            "the entries it understood - half a batch is the worst answer available, "
-            "because the caller is told it failed and the document has moved anyway.",
+            "the entries it understood: a half-applied batch tells the caller it failed "
+            "and moves the document anyway.",
 
             "A grant is read-only or read-and-write, chosen by the user when they approved "
             "the client. Under a read-only grant every writing operation is refused before "

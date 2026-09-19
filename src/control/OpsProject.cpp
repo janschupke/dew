@@ -252,9 +252,9 @@ void appendProjectOps (std::vector<OpSpec>& all)
                      OpEdits::no,
                      "Summarise the open project: tempo, meter, and every channel, pattern, "
                      "playlist track, mixer insert and automation by name and id.",
-                     "Start here. It is the cheap read - counts and names, and not one note, "
-                     "clip or automation point - so it costs a few hundred tokens whatever the "
-                     "size of the arrangement.\n\n"
+                     "Start here. It returns counts and names, and not one note, clip or "
+                     "automation point, so it costs a few hundred tokens whatever the size "
+                     "of the arrangement.\n\n"
                      "Use the ids it returns to address everything else. Reach for project_read "
                      "only when you need the contents of something this named.",
                      {},

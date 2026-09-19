@@ -259,9 +259,9 @@ void appendChannelOps (std::vector<OpSpec>& all)
           "An upsert: an entry with an `id` changes that channel, an entry without one "
           "adds a channel of `kind`. A field an entry does not mention is left alone, "
           "so changing a name does not blank a colour.\n\n"
-          "The sound a channel makes is not here - that is params_write, which reaches "
-          "every oscillator, envelope and effect parameter it has. This is the channel "
-          "as an object in the rack.\n\n"
+          "This is the channel as an object in the rack. For the sound it makes, use "
+          "params_write, which reaches every oscillator, envelope and effect parameter "
+          "it has.\n\n"
           "A project holds "
               + juce::String (kMaxChannels)
               + " channels, which is as many as the engine renders. A batch that would take "

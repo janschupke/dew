@@ -190,10 +190,9 @@ void appendScoreOps (std::vector<OpSpec>& all)
           OpScope::write,
           OpEdits::yes,
           "Compile the score into real patterns, notes and clips, as one undo step.",
-          "This is the high-leverage way to arrange. The language says what the music IS "
-          "- key, harmony, rhythm, voicing, counterpoint - and the compiler works out "
-          "the notes, which is worth far more per call than placing them one at a time "
-          "with notes_write.\n\n"
+          "The language says what the music IS - key, harmony, rhythm, voicing, "
+          "counterpoint - and the compiler works out the notes. One call arranges a "
+          "whole section; notes_write places one note at a time.\n\n"
           "The language owns notes, patterns and clips; you own channels, instruments, "
           "effects and the mixer. Recompiling is an UPDATE rather than a second copy, "
           "and hand edits are kept unless you say otherwise.\n\n"

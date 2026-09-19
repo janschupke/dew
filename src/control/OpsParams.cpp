@@ -175,8 +175,8 @@ ControlResult write (ControlHost& host, const juce::var& args)
 
     // Every address is resolved BEFORE anything is written, so a batch with a
     // typo in its last entry changes nothing rather than half of what it said.
-    // Half a batch is the worst answer available: the caller is told it failed
-    // and the document has moved anyway.
+    // A half-applied batch tells the caller it failed and moves the document
+    // anyway.
     struct Pending
     {
         juce::ValueTree node;

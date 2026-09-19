@@ -318,9 +318,9 @@ void appendNoteOps (std::vector<OpSpec>& all)
           "project_describe reports; at the default 4 a step is a sixteenth note. There "
           "is no fractional step and no tuplet that the grid does not divide.\n\n"
           "The pattern's length FOLLOWS its notes and is not set directly: writing a note "
-          "further in is what makes a pattern longer, and removing the notes at the end "
-          "is what makes it shorter again. Refuses the whole batch on a bad channel or an "
-          "out-of-range pitch rather than writing half of it.\n\n"
+          "further in lengthens the pattern, and removing the notes at the end shortens "
+          "it again. Refuses the whole batch on a bad channel or an out-of-range pitch "
+          "rather than writing half of it.\n\n"
           "For anything longer than a few bars, prefer score_write and score_compile: "
           "the language says what the music IS, and this says where every note goes.",
           { { "patternId", ValueKind::integer, true, "The pattern to write into." },

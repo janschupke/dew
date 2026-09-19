@@ -283,10 +283,10 @@ void appendAutomationOps (std::vector<OpSpec>& all)
           OpScope::read,
           OpEdits::no,
           "List every parameter in this project that a curve can be pointed at.",
-          "Automation is a curated set, not every property: whether a parameter is worth "
-          "a curve is declared beside the parameter itself. A read-pointer discontinuity "
-          "(a sample's reverse and loop), a soundfont's tuning offsets and a pattern's "
-          "length are all deliberately absent, each for its own reason.\n\n"
+          "Whether a parameter can carry a curve is declared beside the parameter "
+          "itself, so this is a curated set. A read-pointer discontinuity (a sample's "
+          "reverse and loop), a soundfont's tuning offsets and a pattern's length are "
+          "absent from it.\n\n"
           "Answers in the same five-field address params_write takes, so a parameter you "
           "have just set can be automated without translating anything.",
           { { "contains", ValueKind::text, false,
