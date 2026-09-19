@@ -1,9 +1,9 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 
-import { Container } from '@/ui/Surface';
 import { PageHeader } from '@/ui/Prose';
 import { Shot } from '@/ui/Shot';
+import { Toc, type TocGroup } from '@/ui/Toc';
 import {
   type Feature,
   anchorForFeature,
@@ -17,6 +17,10 @@ export const metadata: Metadata = { title: `${t('features.title')} — ${t('site
 
 /** One feature with a picture: the sentence and the screenshot side by side.
  *
+ *  `xl` rather than `lg`, because the sidebar is taking a column: two halves of
+ *  what is left at 1024px are 358px each, which is a thumbnail beside forty
+ *  characters.
+ *
  *  `Shot` is given an empty className to drop its default `my-stack`, which in
  *  a two-column grid pushes the picture a rung below its own heading. The
  *  grid's `gap-y-stack` is what separates them once the columns stack. */
@@ -24,7 +28,7 @@ function Illustrated({ feature }: { feature: Feature }) {
   return (
     <section
       id={anchorForFeature(feature.name)}
-      className="scroll-mt-section pt-stack gap-x-gutter gap-y-stack grid items-start lg:grid-cols-2"
+      className="scroll-mt-section pt-stack gap-x-gutter gap-y-stack grid items-start xl:grid-cols-2"
     >
       <div>
         <h3 className="text-h3 text-primary leading-snug font-semibold">{feature.name}</h3>
@@ -54,14 +58,26 @@ function FeatureLink({ feature }: { feature: Feature }) {
 }
 
 export default function Features() {
+  const toc: readonly TocGroup[] = [
+    {
+      id: 'groups',
+      title: t('features.onThisPage'),
+      items: featureGroups.map((group) => ({
+        href: `#${anchorForGroup(group.id)}`,
+        label: group.title,
+      })),
+    },
+  ];
+
   return (
     <>
       <PageHeader title={t('features.title')} lead={t('features.lead')} />
 
-      {/* One column. A Card at the full measure is a rectangle with a border
-          around a paragraph, so a feature without a picture is a heading and
-          its sentence, the same as the half of one that has a picture. */}
-      <Container className="pb-section">
+      {/* ONE column of blocks, because the sidebar has taken the other one.
+          The features without a picture were a two-up grid of Cards inside
+          what is left, which is a bordered rectangle around a paragraph at
+          half of half the page. */}
+      <Toc label={t('features.onThisPage')} groups={toc}>
         {featureGroups.map((group) => {
           const shown = featuresIn(group.id).filter((feature) => feature.shot !== undefined);
           const rest = featuresIn(group.id).filter((feature) => feature.shot === undefined);
@@ -106,7 +122,7 @@ export default function Features() {
             </section>
           );
         })}
-      </Container>
+      </Toc>
     </>
   );
 }

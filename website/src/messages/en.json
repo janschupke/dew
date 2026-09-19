@@ -13,7 +13,8 @@
   },
   "features": {
     "title": "What it does",
-    "lead": "Six groups, and what is in each of them."
+    "lead": "Six groups, and what is in each of them.",
+    "onThisPage": "On this page"
   },
   "footer": {
     "licence": "dew is free software under the AGPLv3, and so is every part of it.",

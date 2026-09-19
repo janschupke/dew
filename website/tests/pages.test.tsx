@@ -63,6 +63,7 @@ describe('pages', () => {
     // the sidebar. The rung is the aside's now, and the content column's first
     // block has to bring its own.
     for (const page of [
+      <Features key="features" />,
       <Score key="score" />,
       <ScoreReference key="score-reference" />,
       <Mcp key="mcp" />,
@@ -118,18 +119,33 @@ describe('the features page', () => {
     for (const feature of features) expect(ids, feature.name).toContain(feature.group);
   });
 
-  it('is one column, with no sidebar of its own', () => {
-    // The page had a Toc, which took a column off a measure that was already
-    // narrow and pushed the picture blocks from lg: to xl: to fit. The home
-    // page's cards still link to every group anchor, which the test above
-    // asserts exist.
+  it('every group has a link in the sidebar', () => {
     const { container } = render(<Features />);
 
-    expect(container.querySelector('[data-toc-group]')).toBeNull();
-    expect(container.querySelector('nav')).toBeNull();
+    const targets = new Set(
+      [...container.querySelectorAll('[data-toc-group="groups"] a')].map((a) =>
+        a.getAttribute('href'),
+      ),
+    );
 
-    for (const list of container.querySelectorAll('ul'))
-      expect(list.className, list.className).not.toMatch(/grid-cols/);
+    expect(targets.size).toBe(featureGroups.length);
+
+    for (const group of featureGroups)
+      expect(targets, group.id).toContain(`#${anchorForGroup(group.id)}`);
+  });
+
+  it('stacks the features without a picture in one column', () => {
+    // The sidebar takes a column, so what is left is half the page - and the
+    // features without a picture were a two-up grid of Cards inside THAT,
+    // which is a bordered rectangle around a paragraph at a quarter of the
+    // width. The picture blocks are the only two-column thing on the page.
+    const { container } = render(<Features />);
+
+    const lists = [...container.querySelectorAll('ul')];
+
+    expect(lists.length).toBeGreaterThan(3);
+
+    for (const list of lists) expect(list.className, list.className).not.toMatch(/grid-cols/);
   });
 
   it('a feature with a shot puts the sentence beside the picture', () => {
