@@ -135,7 +135,7 @@ export default function Reference() {
                         {kind.members.map((member) => (
                           <code
                             key={member}
-                            className="bg-well px-xs text-code-small text-playhead rounded-xs font-mono"
+                            className="bg-well-deep px-xs text-code-small text-playhead rounded-xs font-mono"
                           >
                             {member}
                           </code>

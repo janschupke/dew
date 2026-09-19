@@ -41,7 +41,7 @@ Old versions stay on [the releases page](https://github.com/janschupke/dew/relea
 
 ## Build
 
-The same two CMake commands on all three systems, once the toolchain is there. `/setup/`
+The same two CMake commands on all three systems, once that system's tools are installed. `/setup/`
 on the site carries these, and `website/tests/setup.test.ts` fails if a command there is
 not one of these character for character.
 

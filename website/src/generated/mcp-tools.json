@@ -6,7 +6,7 @@
       "title": "Driving dew",
       "summary": "What dew is, and which tool answers which question.",
       "paragraphs": [
-        "dew is a desktop DAW in the FL Studio shape. A project holds CHANNELS, each carrying one instrument - a three-oscillator synth, a recording, or a soundfont - and its own chain of effects. PATTERNS hold notes. The PLAYLIST arranges clips of those patterns into a song. A MIXER routes channels through inserts to a master.",
+        "dew is a desktop DAW in the FL Studio shape. A project holds CHANNELS. Each channel carries one instrument - a three-oscillator synth, a recording or a soundfont - and its own chain of effects. PATTERNS hold notes. The PLAYLIST arranges clips of those patterns into a song. A MIXER routes channels through inserts to a master.",
         "Start with project_describe. It returns the tempo, the metre, and every channel, pattern, lane, insert and automation by name and id, with not one note in it. Everything else is addressed by the ids it gives you.",
         "Then: params_list and params_write reach every value in the document - a volume, an oscillator's detune, an envelope, any effect's anything, a fader, the tempo. channels_write, effects_write and mixer_write add and arrange the objects those values live on. notes_write and clips_write are the piano roll and the arrangement. score_compile is the fast way to write a lot of music at once.",
         "Read dew://guide/addressing before writing anything, and dew://guide/undo before writing a lot of it."
@@ -32,7 +32,7 @@
         "A PATTERN holds every channel's notes for its span. It is a section of the song rather than one instrument's part, which is the thing most likely to surprise you: a drum pattern and a bass pattern covering the same four bars are usually one pattern, not two.",
         "The PLAYLIST is measured in BARS, and a bar is stepsPerBeat * beatsPerBar steps - 16 in a default 4/4 project, not 4. Placing two clips of one pattern is how a section repeats identically. Duplicating the pattern first, with patterns_write and duplicateOf, is how it repeats with variation. A lane can carry a clip of any pattern; lanes are not instruments either.",
         "Changing the metre redefines what a bar IS, so the bar lines move - and nothing you have written moves with them. Notes and clips are stored in STEPS, so every one of them stays exactly where it sounded; what moves is the song's length in bars, which is rounded up to cover what was there.",
-        "A pattern's LENGTH follows its notes, in both directions: writing a note further in lengthens it, and removing the notes at the end shortens it again. The SONG only grows - trailing empty bars are a deliberate silence, and nothing trims those behind your back."
+        "A pattern's LENGTH follows its notes, in both directions: writing a note further in lengthens it, and removing the notes at the end shortens it again. The SONG only grows. Trailing empty bars are kept, because a silence at the end of a song is something somebody wrote."
       ]
     },
     {
@@ -40,7 +40,7 @@
       "title": "The score language",
       "summary": "When to write music as text instead of as notes.",
       "paragraphs": [
-        "dew carries a declarative language for arrangement. You say what the music IS - a key, a harmonic progression, rhythms, voicings, a counterpoint - and the compiler works out the notes, the patterns and the clips. For anything longer than a few bars this is worth far more per call than placing notes one at a time.",
+        "dew carries a declarative language for arrangement. The text names a key, a harmonic progression, rhythms, voicings and counterpoint; the compiler works out the notes, the patterns and the clips. For anything longer than a few bars this is worth far more per call than placing notes one at a time.",
         "score_write stores the text and compiles nothing; score_compile turns it into real notes as one undo step. They are separate because a compile writes notes, and text being worked on should not fill the undo stack with them. Both report diagnostics with a code, a line and a column.",
         "The language owns notes, patterns and clips. You own channels, instruments, effects and the mixer - so set up the sounds with the other tools, and let the score put the music on them. Recompiling is an update rather than a second copy, and edits made by hand are kept unless you ask for them to be discarded.",
         "Three things it cannot say, because the host cannot hold them: time is whole steps, so a rhythm needing a finer grid than the project has is an error naming both offenders; there is one tempo and one metre for the whole project, so a section in another metre is not expressible; and a pattern holds every channel's notes for its span.",
@@ -52,7 +52,7 @@
       "title": "Changes, undo and consent",
       "summary": "What a grant covers, and what protects the user.",
       "paragraphs": [
-        "Every operation that writes is exactly ONE undo step, however many entries its batch carried. Two hundred notes in one notes_write call is one press of Cmd-Z. The user approved a client, not each of its actions, so an action they can take back whole is what the approval rests on.",
+        "Every operation that writes is exactly ONE undo step, however many entries its batch carried. Two hundred notes in one notes_write call is one press of Cmd-Z. The user approved the client, not its individual actions, so every action has to be one the user can take back in a single press.",
         "Prefer one batched call over many small ones for the same reason, and not only for speed. Ten separate calls are ten undo steps and ten chances to leave the document half-changed.",
         "A batch is checked before any of it is written. An entry naming a channel that does not exist fails the whole call and changes nothing, rather than applying the entries it understood: a half-applied batch tells the caller it failed and moves the document anyway.",
         "A grant is read-only or read-and-write, chosen by the user when they approved the client. Under a read-only grant every writing operation is refused before it runs. project_command can undo and redo, so a client can take back its own work - and so can the person at the keyboard.",
@@ -720,7 +720,7 @@
       "name": "patterns_write",
       "scope": "write",
       "summary": "Add, duplicate or rename patterns, as one undo step.",
-      "doc": "A pattern holds every channel's notes for its span, which is why a section of an arrangement is one pattern rather than one per instrument.\n\n`duplicateOf` deep-copies a pattern, notes and all, under a new id - which is what a repeat that will be varied wants. A repeat that is identical wants one pattern and two clips instead.\n\nA pattern's LENGTH is not settable, here or anywhere. It is derived from the notes the pattern holds, rounded up to a whole bar and never less than one. `lengthSteps` is reported back for reference and is not an argument.",
+      "doc": "A pattern holds every channel's notes for its span, which is why a section of an arrangement is one pattern rather than one per instrument.\n\n`duplicateOf` deep-copies a pattern, notes and all, under a new id. Use it for a repeat that will then be varied; an identical repeat is one pattern and two clips instead.\n\nA pattern's LENGTH is not settable, here or anywhere. It is derived from the notes the pattern holds, rounded up to a whole bar and never less than one. `lengthSteps` is reported back for reference and is not an argument.",
       "args": [
         {
           "name": "entries",
@@ -1232,7 +1232,7 @@
       "name": "automation_write",
       "scope": "write",
       "summary": "Create an automation curve for a parameter, and place a clip for it.",
-      "doc": "Creating the curve and placing its clip is one call because it is one action: a curve with nowhere to play is a curve nothing hears. The clip lands on the first lane with room at `startBar`, and a lane is added if every one is occupied there.\n\nA fresh curve has two points rather than none, so it is something you can hear before you shape it - a line for a continuous parameter, and a pair of steps for a discrete one, because half-on is not a state a toggle has. Shape it with automation_points_write.\n\nRefuses a parameter that is not automatable, and says so - which is a different answer from a parameter that does not exist.",
+      "doc": "Creating the curve and placing its clip is one call because it is one action: a curve with nowhere to play is a curve nothing hears. The clip lands on the first lane with room at `startBar`, and a lane is added if every one is occupied there.\n\nA fresh curve has two points rather than none, so it does something before you shape it: a line for a continuous parameter, and a pair of steps for a discrete one, which has no value between its states. Shape it with automation_points_write.\n\nRefuses a parameter that is not automatable, and says so - which is a different answer from a parameter that does not exist.",
       "args": [
         {
           "name": "target",
@@ -1320,7 +1320,7 @@
       "name": "automation_points_write",
       "scope": "write",
       "summary": "Add or move points on an automation curve, as one undo step.",
-      "doc": "A point is a step and a value from 0 to 1. Two points on one step is a curve with no defined value there, so a point written where one already sits moves it rather than duplicating it.\n\nThree shapes are offered and two are stored: 'line' is a curve with no bend, so switching to 'step' and back returns the curve you had. A stepped segment ignores its bend rather than losing it.\n\n`replace` removes whatever was there that you did not write, which is how you redraw a curve rather than add to it. A curve always keeps at least two points - one with fewer has no shape to evaluate - so replacing with a single point leaves one of the old ones behind, and the answer's `points` count says so.",
+      "doc": "A point is a step and a value from 0 to 1. Two points on one step is a curve with no defined value there, so a point written where one already sits moves it rather than duplicating it.\n\nThree shapes are offered and two are stored: 'line' is a curve with no bend, so switching to 'step' and back returns the curve you had. A stepped segment ignores its bend rather than losing it.\n\n`replace` removes whatever was there that you did not write, which is how you redraw a curve rather than add to it. A curve always keeps at least two points, so replacing with a single point leaves one of the old ones behind. The answer's `points` count is what it actually holds.",
       "args": [
         {
           "name": "id",

@@ -8,51 +8,51 @@
     "rampBody": "Not themeable. These eight are document data, written into every project file.",
     "scalesTitle": "Scales",
     "liftTitle": "Lifts",
-    "liftBody": "How much lighter a surface gets when touched. There are two rungs.",
-    "galleryCaption": "The whole design system on one page."
+    "liftBody": "How much lighter a surface gets when touched.",
+    "galleryCaption": "dew’s design gallery, drawn by the application itself."
   },
   "features": {
     "title": "What it does",
-    "lead": "Six groups, and what is in each of them.",
+    "lead": "Grouped by what you are trying to do, not by which tab it happens in.",
     "onThisPage": "On this page"
   },
   "footer": {
-    "licence": "dew is free software under the AGPLv3, and so is every part of it.",
+    "licence": "dew is free software, under version 3 of the GNU Affero General Public License.",
     "licenceLink": "Terms and licences",
-    "docsTitle": "The site",
+    "productTitle": "Product",
+    "referenceTitle": "Reference",
     "projectTitle": "Project",
     "sourceLabel": "Source on GitHub",
     "readmeLabel": "README"
   },
   "home": {
-    "intro": "A channel rack, a piano roll, a playlist and a mixer, and one path from an oscillator through its effect chain to a mixer insert and out the master. Five tabs, ten effects already in the box, and nothing to scan or install before the first note.",
+    "intro": "A channel rack, a piano roll, a playlist and a mixer, with one signal path from an oscillator through its effect chain to a mixer insert and out the master.",
     "readFeatures": "What it does",
     "readSetup": "Build it",
     "readDownload": "Download",
     "workflowTitle": "The same screens every session",
-    "workflowBody": "dew has five tabs and one instrument panel. There are no floating windows, no layouts to arrange and no plugin scan at startup, so the controls are where they were the last time and the second session works like the first.",
+    "workflowBody": "There are no floating windows, no layouts to arrange and no plugin scan at startup, so a session opens where the last one ended.",
     "predictableTitle": "Five tabs, fixed",
-    "predictableBody": "Five tabs and one instrument panel, in the same places every time. A channel row carries its own volume, pan and on/off; a mixer strip carries its own chain. No modes, no floating windows to lose.",
+    "predictableBody": "Channel rack, piano roll, playlist, mixer and score, always in that order, beside one instrument panel. A channel row carries its own volume, pan and on/off switch; a mixer strip carries its own effect chain.",
     "signalTitle": "One signal path",
-    "signalBody": "Three oscillators into an amp envelope, into the channel's effect chain, into a mixer insert, into the master. Every knob on that path is automatable from its own right-click menu.",
+    "signalBody": "Three oscillators into an amp envelope, into the channel’s effect chain, into a mixer insert, into the master. Every knob on that path is automatable from its own right-click menu.",
     "completeTitle": "Already in the box",
-    "completeBody": "Ten effects, forty factory presets, wavetables, an FM matrix, SoundFont playback and a renderer. Two dependencies in the whole build, no plugin format, and nothing to install per sound.",
+    "completeBody": "Ten effects, forty factory presets, wavetables, an FM matrix, SoundFont playback and a renderer. Two dependencies in the whole build, and no plugin format to scan.",
     "groupsTitle": "What is in it",
-    "groupsBody": "Six groups: the sound, writing notes, arranging, mixing, working with files and devices, and the two other ways to write a song.",
     "openTitle": "Open source",
-    "openBody": "Every line is on GitHub under the AGPLv3 — the application, the audio engine, the score compiler, the tests and this site. Free to use for any purpose, with no warranty of any kind.",
+    "openBody": "Every line is on GitHub under the AGPLv3, this site included. Free to use for any purpose, with no warranty of any kind.",
     "openLink": "Terms and licences"
   },
   "mcp": {
     "title": "Control dew from an agent",
-    "lead": "dew runs a Model Context Protocol server inside the application, so a coding agent can read and change the project you have open: instruments, effects, the mixer, the notes and the arrangement.",
+    "lead": "dew runs a Model Context Protocol server inside the application, so a coding agent can read and change the project you have open.",
     "onThisPage": "On this page",
     "howTitle": "How it works",
     "howBody": "Turn it on under Audio → MCP. dew listens on the loopback interface only. The first time a client connects, dew asks whether to allow it, and whether it may only read or change things too. Every change it makes is one step of your undo history.",
     "connectTitle": "Connecting a client",
     "connectBody": "The MCP settings panel shows the address and the exact command. The port is not fixed, so copy the command rather than typing it.",
     "surfaceTitle": "What it can reach",
-    "surfaceBody": "One address space covers every value in the document. A target, an id, a group and a slot name any parameter of any oscillator, envelope, sample, soundfont, effect, mixer insert or the master. The same four fields say what a curve can be pointed at.",
+    "surfaceBody": "One address space covers every value in the document. Five fields — target, id, group, slot and param — name any parameter of any oscillator, envelope, sample, soundfont, effect, mixer insert or the master, and the same five say what an automation curve is pointed at.",
     "scoreTitle": "Writing a score",
     "scoreBody": "For anything longer than a few bars, an agent writes dew’s arrangement language and compiles it, which takes one call rather than one per note.",
     "referenceLink": "Every tool, in the reference"
@@ -95,7 +95,7 @@
   },
   "notFound": {
     "title": "Not here",
-    "body": "That page does not exist. Everything the site has is in the header above.",
+    "body": "That page does not exist. The header has the main pages and the footer has the rest.",
     "home": "Back to the start"
   },
   "reference": {
@@ -122,31 +122,30 @@
   },
   "score": {
     "title": "The score language",
-    "lead": "One of the two ways to write a song in dew: a text description of the whole piece, compiled to real patterns, notes and clips.",
+    "lead": "A text description of a whole piece, compiled into patterns, notes and playlist clips.",
     "onThisPage": "On this page",
     "whatTitle": "What it is for",
-    "whatBody": "Sketching a whole arrangement faster than you can draw it. You say what the music is — a key, a metre, a progression, a rhythm, a voicing, a melody, a counterpoint answering another voice — and the compiler works out the notes. It is the fifth tab, checked as you type, compiled with ⌘R. The text is stored in the project, so recompiling updates what it wrote last time and leaves anything you have since edited by hand alone.",
+    "whatBody": "Sketching a whole arrangement faster than you can draw it. You write a key, a metre, a harmonic progression, rhythms, voicings and melody shapes; the compiler works out the notes. It is the fifth tab, checked as you type and compiled with ⌘R. The text is stored in the project, so recompiling updates what it wrote last time and leaves anything you have since edited by hand alone.",
     "exampleCaption": "examples/rhodes.score",
     "noExpressionsTitle": "No expressions",
-    "noExpressions": "There is no expression language: no arithmetic, no variables, no conditionals. Completion is therefore a table lookup, and the grid is worked out before a note is generated.",
+    "noExpressions": "There is no expression language: no arithmetic, no variables, no conditionals. Every value is a literal, so completion is a table lookup and the compiler reads the step grid off the durations the text names before it generates anything.",
     "durationsTitle": "Durations",
     "chordsTitle": "Chords",
     "limitsTitle": "What it cannot say",
-    "limitsBody": "dew stores one tempo and one metre for a whole project, so a section in 3/4 inside a 4/4 project is not expressible. A note’s position is a whole number of steps, so the grid is the least common multiple of what the durations need: sixteenths and eighth-note triplets meet at twelve, and a thirty-second against any triplet is refused.",
+    "limitsBody": "dew stores one tempo and one metre for a whole project, so a section in 3/4 inside a 4/4 project is not expressible. A note’s position is a whole number of steps, so the grid is the least common multiple of what the durations need: sixteenths and eighth-note triplets meet at twelve. The grid stops at sixteen steps to a beat, so a thirty-second alongside any triplet would need twenty-four, and the compiler refuses it and names the two durations that collide.",
     "referenceLink": "Every block and key"
   },
   "setup": {
     "title": "Setup",
-    "lead": "dew builds from source on macOS, Windows and Linux. Two CMake commands on all three, once the toolchain is there.",
+    "lead": "dew builds from source on macOS, Windows and Linux. Two CMake commands on each, once that platform’s tools are installed.",
     "buildTitle": "Build it",
     "runTitle": "Run it",
     "needsTitle": "What you need",
     "presetsTitle": "The presets",
-    "presetsBody": "release is the one to build for normal use. The first configure fetches JUCE and Catch2 from source, cached per machine under ~/.cache/CPM, so one build is slow and the rest are not.",
-    "checkTitle": "The gate",
-    "checkBody": "One command, running everything CI runs.",
+    "presetsBody": "release is the one to build for normal use. The first configure fetches JUCE and Catch2 from source and caches them per machine under `~/.cache/CPM`; every configure after that reads the cache.",
+    "checkTitle": "Checking a change",
+    "checkBody": "One command, and it runs what CI runs: the dependency pins, the formatting, a warnings-as-errors build, the tests, and a check that every generated file matches what produces it.",
     "sourceCta": "The repository",
-    "mp3Note": "MP3 export needs lame installed separately, in any build: the option stays greyed out until lame is on your PATH. WAV, FLAC and MIDI need nothing.",
     "nameHeading": "Preset",
     "whatHeading": "What it is"
   },
@@ -158,11 +157,12 @@
     "name": "dew",
     "tagline": "A lightweight desktop DAW with an opinionated workflow.",
     "status": "Working prototype, on macOS, Windows and Linux.",
-    "skipToContent": "Skip to content"
+    "skipToContent": "Skip to content",
+    "mp3Note": "MP3 export needs lame installed separately: the option stays greyed out until lame is on your PATH. WAV, FLAC and MIDI need nothing."
   },
   "terms": {
     "title": "Terms and licences",
-    "lead": "What you may do with dew, what warranty it carries, and what is inside it.",
+    "lead": "dew is under the AGPLv3. What that allows, what it obliges, and what else is in the build.",
     "sourceCta": "The licence, in full"
   },
   "download": {
@@ -177,14 +177,13 @@
     "fileHeading": "File",
     "whatHeading": "What it is",
     "firstRunTitle": "The first time you run it",
-    "firstRunBody": "None of these builds is signed. macOS and Windows each block an unsigned application the first time it runs.",
+    "firstRunBody": "None of these builds is signed, so macOS and Windows each block the first launch.",
     "verifyTitle": "Checking what you downloaded",
     "verifyBody": "Every release carries SHA256SUMS.txt, and every asset is covered by a Sigstore build attestation. The attestation records the repository, the workflow and the commit the file was built from.",
     "checksumsLabel": "SHA256SUMS.txt",
     "allReleases": "All releases",
     "buildTitle": "Or build it yourself",
-    "buildBody": "Two CMake commands on macOS, Windows and Linux alike. A binary you build yourself is subject to none of the warnings above.",
-    "buildCta": "How to build it",
-    "mp3Note": "MP3 export needs lame installed separately: the option stays greyed out until lame is on your PATH. WAV and FLAC need nothing."
+    "buildBody": "Two CMake commands on any of the three. A binary you build yourself is not blocked on first launch.",
+    "buildCta": "How to build it"
   }
 }

@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import Link from 'next/link';
 
 import type { TocGroup, TocPages } from '@/ui/Toc';
 
@@ -108,16 +109,21 @@ export function TocNav({
         <div data-toc-group="pages">
           <h2 className={groupHeading}>{pages.title}</h2>
 
+          {/*  The one group whose items are PAGES, so the one that takes a
+               next/link. A plain anchor here reloaded the document: no
+               prefetch, and the route fade never ran because there was no
+               route change for the router to see. The groups below stay
+               anchors - a fragment is not a navigation. */}
           <ul className={list}>
             {pages.items.map((item) => (
               <li key={item.href}>
-                <a
+                <Link
                   href={item.href}
                   aria-current={item.current ? 'page' : undefined}
                   className={`${linkBase} ${item.current ? linkOn : linkOff}`}
                 >
                   {item.label}
-                </a>
+                </Link>
               </li>
             ))}
           </ul>

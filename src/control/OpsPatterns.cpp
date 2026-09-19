@@ -146,9 +146,9 @@ void appendPatternOps (std::vector<OpSpec>& all)
           "Add, duplicate or rename patterns, as one undo step.",
           "A pattern holds every channel's notes for its span, which is why a section of "
           "an arrangement is one pattern rather than one per instrument.\n\n"
-          "`duplicateOf` deep-copies a pattern, notes and all, under a new id - which is "
-          "what a repeat that will be varied wants. A repeat that is identical wants one "
-          "pattern and two clips instead.\n\n"
+          "`duplicateOf` deep-copies a pattern, notes and all, under a new id. Use it for "
+          "a repeat that will then be varied; an identical repeat is one pattern and two "
+          "clips instead.\n\n"
           "A pattern's LENGTH is not settable, here or anywhere. It is derived from the "
           "notes the pattern holds, rounded up to a whole bar and never less than one. "
           "`lengthSteps` is reported back for reference and is not an argument.",

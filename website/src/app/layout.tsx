@@ -3,6 +3,7 @@ import type { ReactNode } from 'react';
 
 import { Footer } from '@/ui/Footer';
 import { Nav } from '@/ui/Nav';
+import { RouteFade } from '@/ui/Transition';
 import { t } from '@/lib/strings';
 import './globals.css';
 
@@ -39,7 +40,9 @@ export default function RootLayout({ children }: { children: ReactNode }) {
 
         <Nav />
 
-        <main id="content">{children}</main>
+        <main id="content">
+          <RouteFade>{children}</RouteFade>
+        </main>
 
         <Footer />
       </body>

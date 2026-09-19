@@ -51,7 +51,7 @@ export const downloads: readonly Download[] = [
     system: 'linux',
     platform: 'Linux, x86_64',
     asset: 'dew-linux-x86_64.AppImage',
-    what: 'One file, with its libraries inside it. chmod +x it and run it. Built against glibc 2.35, so it wants Ubuntu 22.04 or newer.',
+    what: 'One file, with its libraries inside it. chmod +x it and run it. Built against glibc 2.35, so it needs Ubuntu 22.04 or newer.',
     firstLaunch:
       'Nothing to get past. If it exits without a window, it is missing a library the AppImage did not bundle; run it from a terminal and the loader will name the file.',
   },
@@ -61,7 +61,7 @@ export const downloads: readonly Download[] = [
     asset: 'dew-linux-x86_64.tar.gz',
     what: 'The binary and its licences, unbundled. Needs ALSA, X11, freetype and fontconfig from your distribution.',
     firstLaunch:
-      'Nothing to get past, and nothing bundled: if it will not start, your distribution is missing one of the libraries above. Run it from a terminal to be told which.',
+      'Nothing to get past. Nothing is bundled either, so if it will not start, run it from a terminal and the loader will name the library your distribution is missing.',
   },
 ] as const;
 

@@ -136,7 +136,7 @@ export default function Download() {
       <Band>
         <Section title={t('download.buildTitle')}>
           <P>{t('download.buildBody')}</P>
-          <P className="mt-stack">{t('download.mp3Note')}</P>
+          <P className="mt-stack">{t('site.mp3Note')}</P>
 
           <div className="mt-section">
             <Button href="/setup/">{t('download.buildCta')}</Button>

@@ -17,12 +17,18 @@ import type { NextConfig } from 'next';
     would make `npm run check` a slower way of running eslint. There is no
     eslint key - Next 16 removed `next lint`, so eslint is its own step in
     package.json rather than something the build runs.
+
+    agentRules is off because it is on by default and WRITES: `next dev` drops
+    a generated AGENTS.md and CLAUDE.md into website/, which are two untracked
+    files in a repository that has its own at the root, and a tool that dirties
+    the tree it is run in cannot be run before a gate that reads the tree.
 */
 const config: NextConfig = {
   output: 'export',
   trailingSlash: true,
   images: { unoptimized: true },
   typescript: { ignoreBuildErrors: false },
+  agentRules: false,
 };
 
 export default config;

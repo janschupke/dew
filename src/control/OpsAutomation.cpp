@@ -302,10 +302,10 @@ void appendAutomationOps (std::vector<OpSpec>& all)
           "a curve with nowhere to play is a curve nothing hears. The clip lands on the "
           "first lane with room at `startBar`, and a lane is added if every one is "
           "occupied there.\n\n"
-          "A fresh curve has two points rather than none, so it is something you can "
-          "hear before you shape it - a line for a continuous parameter, and a pair of "
-          "steps for a discrete one, because half-on is not a state a toggle has. Shape "
-          "it with automation_points_write.\n\n"
+          "A fresh curve has two points rather than none, so it does something before "
+          "you shape it: a line for a continuous parameter, and a pair of steps for a "
+          "discrete one, which has no value between its states. Shape it with "
+          "automation_points_write.\n\n"
           "Refuses a parameter that is not automatable, and says so - which is a "
           "different answer from a parameter that does not exist.",
           { { "target", ValueKind::text, true, "project, channel, mixerTrack or master." },
@@ -347,9 +347,9 @@ void appendAutomationOps (std::vector<OpSpec>& all)
           "so switching to 'step' and back returns the curve you had. A stepped segment "
           "ignores its bend rather than losing it.\n\n"
           "`replace` removes whatever was there that you did not write, which is how you "
-          "redraw a curve rather than add to it. A curve always keeps at least two points "
-          "- one with fewer has no shape to evaluate - so replacing with a single point "
-          "leaves one of the old ones behind, and the answer's `points` count says so.",
+          "redraw a curve rather than add to it. A curve always keeps at least two "
+          "points, so replacing with a single point leaves one of the old ones behind. "
+          "The answer's `points` count is what it actually holds.",
           { { "id", ValueKind::integer, true, "The automation to shape." },
             { "replace", ValueKind::flag, false, "Clear the existing points first." },
             { "points",

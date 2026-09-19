@@ -41,15 +41,18 @@ export const platforms: readonly Platform[] = [
     requirements: [
       {
         name: 'Xcode command line tools',
-        need: 'The compiler, and the clang-format the gate runs.',
+        need: 'The C++ compiler, and the clang-format that ./scripts/check.sh runs.',
       },
-      { name: 'Homebrew', need: 'How the rest arrive, from the Brewfile in the repository root.' },
+      {
+        name: 'Homebrew',
+        need: 'Installs the four tools below, from the Brewfile in the repository root.',
+      },
       { name: 'cmake ≥ 3.25', need: 'JUCE 9 needs 3.22; CMakePresets v6 needs 3.25.' },
-      { name: 'ninja', need: 'The generator every preset uses.' },
+      { name: 'ninja', need: 'The generator the macOS and Linux presets use.' },
       { name: 'ccache', need: 'Optional. Caches compiled objects between builds.' },
-      { name: 'lame', need: 'Optional, and only for MP3 export.' },
+      { name: 'lame', need: 'Optional. Only for MP3 export.' },
     ],
-    note: 'brew bundle reads the Brewfile in the repository root and installs the four tools below the first two.',
+    note: 'brew bundle reads the Brewfile in the repository root and installs cmake, ninja, ccache and lame.',
     build: [
       'brew bundle                    # cmake >= 3.25, ninja, ccache, lame',
       'cmake --preset release',
@@ -67,12 +70,12 @@ export const platforms: readonly Platform[] = [
         name: 'cmake ≥ 3.25',
         need: 'Ubuntu 22.04 ships 3.22, which is too old for CMakePresets v6 — take a newer one from cmake.org.',
       },
-      { name: 'ninja', need: 'The generator every preset uses.' },
+      { name: 'ninja', need: 'The generator the macOS and Linux presets use.' },
       {
         name: 'ALSA, X11, freetype, fontconfig, mesa',
         need: 'The development packages JUCE links against, installed by the command below.',
       },
-      { name: 'lame', need: 'Optional, and only for MP3 export.' },
+      { name: 'lame', need: 'Optional. Only for MP3 export.' },
     ],
     note: 'The package list is the one CI installs. webkit2gtk and libcurl are absent because dew builds with JUCE_WEB_BROWSER=0 and JUCE_USE_CURL=0.',
     build: [linuxPackages, 'cmake --preset release', 'cmake --build --preset release'],
@@ -85,12 +88,12 @@ export const platforms: readonly Platform[] = [
     requirements: [
       {
         name: 'Visual Studio 2022',
-        need: 'With the Desktop development with C++ workload. The generator finds this toolchain itself.',
+        need: 'With the Desktop development with C++ workload, which carries the MSVC compiler and the Windows SDK.',
       },
       { name: 'cmake ≥ 3.25', need: 'The installer offers it; Visual Studio also ships one.' },
-      { name: 'lame.exe', need: 'Optional, and only for MP3 export. It has to be on PATH.' },
+      { name: 'lame.exe', need: 'Optional. Only for MP3 export, and it has to be on PATH.' },
     ],
-    note: 'The Visual Studio generator rather than Ninja, which would need a developer command prompt to find cl.exe.',
+    note: 'dist-windows uses the Visual Studio generator, which locates MSVC itself. The Ninja presets do not: they need cl.exe already on PATH, which only a Developer Command Prompt arranges.',
     build: ['cmake --preset dist-windows', 'cmake --build --preset dist-windows'],
     run: ['build\\dist-windows\\src\\dew_artefacts\\RelWithDebInfo\\dew.exe'],
   },
@@ -109,7 +112,10 @@ export const presets: readonly Preset[] = [
   { name: 'tsan', what: 'ci plus ThreadSanitizer' },
   { name: 'dist', what: 'What a release is built from: no tests, universal on Apple' },
   { name: 'dist-windows', what: 'dist, built by the Visual Studio generator' },
-  { name: 'offline', what: 'release from a warm dependency cache, no network' },
+  {
+    name: 'offline',
+    what: 'release built from the already-fetched dependencies, with no network access',
+  },
 ];
 
 /** Every line here is asserted to appear in README.md. */

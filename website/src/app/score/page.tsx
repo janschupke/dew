@@ -53,8 +53,8 @@ export default function ScoreLanguage() {
 
           <P className="mt-stack">
             <code className={code}>|</code> is a bar-line <em>assertion</em>, checked once the
-            shares are known. It turns “the section length changed and everything shifted” into one
-            message.
+            shares are known. A section whose length has drifted is reported at the bar it first
+            went wrong, rather than as every bar after it.
           </P>
 
           <Score name="rhodes" lines={[76, 88]} />

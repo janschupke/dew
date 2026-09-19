@@ -10,7 +10,7 @@ vi.mock('next/navigation', () => ({ usePathname: () => pathname }));
 
 const { Nav } = await import('@/ui/Nav');
 const { Footer } = await import('@/ui/Footer');
-const { navLinks, footerLinks } = await import('@/content/nav');
+const { navLinks, footerColumns, footerLinks } = await import('@/content/nav');
 
 const currentTab = () => {
   const marked = screen
@@ -109,6 +109,36 @@ describe('the footer', () => {
     expect(hrefs).toContain('/design/');
     expect(hrefs).toContain('/terms/');
     expect(hrefs).not.toContain('/');
+  });
+
+  it('is grouped into columns rather than one long list', () => {
+    // It was a seven-row list beside a two-row one, which is a shape and not a
+    // menu. Each column is a nav with a heading of its own, and the flattened
+    // list the tests above read is DERIVED from these - so a link added to a
+    // column cannot go missing from the parity check.
+    const { container } = render(<Footer />);
+
+    const navs = [...container.querySelectorAll('nav')];
+
+    expect(navs).toHaveLength(footerColumns.length);
+    expect(footerColumns.length).toBeGreaterThan(2);
+
+    for (const [i, column] of footerColumns.entries()) {
+      expect(navs[i]?.querySelector('h2')?.textContent, column.title).toBe(column.title);
+      expect(navs[i]?.querySelectorAll('li'), column.title).toHaveLength(column.links.length);
+    }
+
+    // No column is a dumping ground: the shape this replaces had seven in one.
+    for (const column of footerColumns) expect(column.links.length, column.title).toBeLessThan(5);
+  });
+
+  it('flattens to exactly the internal pages its columns name', () => {
+    const fromColumns = footerColumns
+      .flatMap((column) => column.links)
+      .filter((link) => link.href.startsWith('/'))
+      .map((link) => link.href);
+
+    expect(footerLinks.map((link) => link.href)).toEqual(fromColumns);
   });
 
   it('does not send a reader into the repository rules', () => {

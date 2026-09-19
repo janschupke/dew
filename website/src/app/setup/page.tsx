@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 
 import { Band, Container } from '@/ui/Surface';
 import { GitHubMark, PlatformMark } from '@/ui/Icon';
-import { P, PageHeader, Section } from '@/ui/Prose';
+import { Doc, P, PageHeader, Section } from '@/ui/Prose';
 import { Cell, Row, Table } from '@/ui/Table';
 import { type Platform, checkCommands, platforms, presets, repositoryUrl } from '@/content/setup';
 import { t } from '@/lib/strings';
@@ -85,7 +85,9 @@ export default function Setup() {
         <h2 className="text-h2 text-primary leading-snug font-semibold tracking-tight">
           {t('setup.presetsTitle')}
         </h2>
-        <P className="mt-stack">{t('setup.presetsBody')}</P>
+        <P className="mt-stack">
+          <Doc>{t('setup.presetsBody')}</Doc>
+        </P>
 
         <div className="mt-stack">
           <Table head={[t('setup.nameHeading'), t('setup.whatHeading')]}>
@@ -106,7 +108,7 @@ export default function Setup() {
         </Section>
 
         <Section title={t('setup.sourceCta')}>
-          <P>{t('setup.mp3Note')}</P>
+          <P>{t('site.mp3Note')}</P>
 
           <p className="mt-stack">
             <a

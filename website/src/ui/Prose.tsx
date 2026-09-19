@@ -11,7 +11,7 @@ export function Doc({ children }: { children: string }) {
     <>
       {parts.map((part, i) =>
         i % 2 === 1 ? (
-          <code key={i} className="bg-well px-xs text-code-small rounded-xs font-mono">
+          <code key={i} className="bg-well-deep px-xs text-code-small rounded-xs font-mono">
             {part}
           </code>
         ) : (

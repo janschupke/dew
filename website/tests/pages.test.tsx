@@ -52,7 +52,15 @@ describe('pages', () => {
       const view = render(page);
       const heading = view.container.querySelector('h1');
 
-      expect(heading?.parentElement?.className, heading?.textContent ?? '').toMatch(/\bpt-/);
+      // Climbed rather than read off the parent: the home page's h1 is one
+      // cell of a two-column hero now, and the rung belongs to the section
+      // holding both columns. What is asserted is that SOMETHING between the
+      // heading and the top of the page brings one.
+      let box = heading?.parentElement ?? null;
+
+      while (box !== null && !/\bpt-/.test(box.className)) box = box.parentElement;
+
+      expect(box?.className ?? '', heading?.textContent ?? '').toMatch(/\bpt-/);
       view.unmount();
     }
   });
@@ -221,6 +229,30 @@ describe('the home page', () => {
     expect(flat.length).toBeGreaterThan(2);
 
     for (const card of flat) expect(card.className, card.textContent).not.toContain('hover:');
+  });
+
+  it('tells a destination from a panel STANDING STILL', () => {
+    // The hover was the only difference for as long as both existed, so the
+    // nine boxes on this page were one shape until the pointer was on one.
+    // A link sits a rung higher on the surface ladder and wears an arrow.
+    const { container } = render(<Home />);
+
+    const links = [...container.querySelectorAll('li > a')];
+    const panels = [...container.querySelectorAll('li > div')];
+
+    // Neither half can pass by finding none.
+    expect(links.length).toBeGreaterThan(4);
+    expect(panels.length).toBeGreaterThan(2);
+
+    for (const card of links) {
+      expect(card.className, card.textContent).toContain('bg-surface-raised');
+      expect(card.querySelector('svg'), card.textContent).not.toBeNull();
+    }
+
+    for (const card of panels) {
+      expect(card.className, card.textContent).not.toContain('bg-surface-raised');
+      expect(card.querySelector('svg'), card.textContent).toBeNull();
+    }
   });
 });
 

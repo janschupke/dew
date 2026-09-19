@@ -89,12 +89,44 @@ each decodes, is the size it was asked for, and is not one flat colour.
   on a sticky box scrolls away like a static one. `theme.site.css` declares
   `pinned` for the one place that needs it, and `tests/gates.test.ts` refuses a
   numeric offset anywhere.
-- **A `Card` with an `href` is a link and lifts; one without is a flat panel and
-  does not move.** Every card on the site used to hover and go nowhere: a pointer
-  answered by a colour change and a click answered by nothing. Where there is a
-  destination the card is a real `next/link`, which is also how it gets the focus
-  ring for free; where there is none — the MCP page's four, the features page's
-  leftovers — the hover is gone rather than pointing somewhere invented.
+- **A `Card` with an `href` is a link and looks like one STANDING STILL.** Every card
+  on the site used to hover and go nowhere: a pointer answered by a colour change and
+  a click answered by nothing. Where there is a destination the card is a real
+  `next/link`, which is also how it gets the focus ring for free; where there is none
+  — the MCP page's four, the features page's leftovers — the hover is gone rather than
+  pointing somewhere invented. The hover alone was not enough: the two were the same
+  box until you pointed at one, so a link now sits at `surface-raised` with the strong
+  divider and an accent arrow, and a panel at `surface` with the whisper stroke and no
+  arrow. `tests/pages.test.tsx` asserts both directions over the home page.
+
+- **The home page hero is a rule, `.hero` in `theme.site.css`, not a `Container`.** The
+  text column wants the page's centred 72rem column and the picture wants the space
+  outside it, running off the right edge of the window; one element cannot be both.
+  The rule reproduces the column's left edge with
+  `max(gutter, (100vw - 72rem) / 2 + gutter)` — the arithmetic
+  `mx-auto max-w-[72rem] px-gutter` performs — and its two columns are `68ch` and what
+  is left, which are the only two lengths `tests/scan.ts` allows written out. `Shot`
+  takes a `flush` prop for it: a frame closed on four sides would put a rounded corner
+  half off screen. It is a plain rule because Tailwind v4 cannot nest an `@utility`
+  in a media query.
+
+- **The two state changes a reader sees are animated, and nothing else is.** A shot's
+  dialog fades and rises on `--motion-panel-ms`, and its `::backdrop` dims AND blurs.
+  The EXIT animates without moving `close()` out of the click handler:
+  `transition-behavior: allow-discrete` on `display` and `overlay` keeps the dialog in
+  the top layer for the length of the transition, and `@starting-style` supplies the
+  "before" a dialog otherwise has none of. A route change is `RouteFade` — a
+  `'use client'` wrapper keyed on `usePathname()`, so a navigation remounts it and
+  restarts one keyframe animation. Next's `experimental.viewTransition` is an unstable
+  flag over a React API this tree is not on, and a bare `@view-transition` never fires
+  because the App Router navigates without swapping the document. Both are dropped
+  under `prefers-reduced-motion: reduce`, which is a query about MOTION and not the
+  `prefers-color-scheme` branch the gate refuses.
+
+- **Blur is the site's own rung.** `--blur-veil` in `theme.site.css`, beside the type
+  and rhythm ladders and for the same reason: the application paints panels on an
+  opaque ground and has nothing behind one to defocus, so `Tokens.h` has no opinion
+  and the generated file must not grow a value nothing in dew paints.
 - **A custom `@utility` has no directional family.** `@utility border-hairline` defines
   that one class and nothing else: Tailwind derives `border-b-2` from `border-2` and
   derives nothing from a custom utility, so `border-b-hairline` emitted no CSS at all and
@@ -106,7 +138,7 @@ each decodes, is the size it was asked for, and is not one flat colour.
   is a real ARIA attribute on an anchor. It renders `next/link` for an internal href and
   an anchor for an external one.
 - **A shot opens full-screen, in a native `<dialog>`.** `ShotViewer` is one of the site's
-  three `'use client'` components, with `Nav` and `TocNav`. `showModal()` buys the top layer — so
+  four `'use client'` components, with `Nav`, `TocNav` and `RouteFade`. `showModal()` buys the top layer — so
   it cannot lose to the pinned header's `z-10` — plus Escape, a focus trap and an inert
   background, all of which hand-rolled would be a second implementation of something the
   platform has. Its box and its `::backdrop` are plain rules in `globals.css`, because
@@ -129,7 +161,9 @@ each decodes, is the size it was asked for, and is not one flat colour.
   loose pages: the header marks the section by longest prefix and the sidebar's first group
   says which page of it you are on. `src/content/sections.ts` holds those lists.
 - **The nav is `src/content/nav.ts`, once.** The header and the footer read the same array;
-  they used to hold it twice, by hand. Home is matched EXACTLY and everything else by
+  they used to hold it twice, by hand. The footer's four columns are `footerColumns` there,
+  and the flat `footerLinks` the tests read is DERIVED from them — one seven-row list beside
+  a two-row one is a shape, not a menu. Home is matched EXACTLY and everything else by
   prefix, because `/` is a prefix of every other href.
 - **`docked` is the sidebar's sticky, and `pinned` the header's.** Same reason for both:
   the numeric offset a `sticky top-<n>` needs reads the scale `--spacing: initial`

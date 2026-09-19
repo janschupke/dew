@@ -9,8 +9,8 @@ const std::vector<GuideSection>& guide()
         { "index",
           "Driving dew",
           "What dew is, and which tool answers which question.",
-          { "dew is a desktop DAW in the FL Studio shape. A project holds CHANNELS, each "
-            "carrying one instrument - a three-oscillator synth, a recording, or a "
+          { "dew is a desktop DAW in the FL Studio shape. A project holds CHANNELS. Each "
+            "channel carries one instrument - a three-oscillator synth, a recording or a "
             "soundfont - and its own chain of effects. PATTERNS hold notes. The PLAYLIST "
             "arranges clips of those patterns into a song. A MIXER routes channels "
             "through inserts to a master.",
@@ -84,17 +84,16 @@ const std::vector<GuideSection>& guide()
 
             "A pattern's LENGTH follows its notes, in both directions: writing a note "
             "further in lengthens it, and removing the notes at the end shortens it "
-            "again. The SONG only grows - trailing empty bars are a deliberate silence, "
-            "and nothing trims those behind your back." } },
+            "again. The SONG only grows. Trailing empty bars are kept, because a silence "
+            "at the end of a song is something somebody wrote." } },
 
         { "score",
           "The score language",
           "When to write music as text instead of as notes.",
-          { "dew carries a declarative language for arrangement. You say what the music IS "
-            "- a key, a harmonic progression, rhythms, voicings, a counterpoint - and the "
-            "compiler works out the notes, the patterns and the clips. For anything longer "
-            "than a few bars this is worth far more per call than placing notes one at a "
-            "time.",
+          { "dew carries a declarative language for arrangement. The text names a key, a "
+            "harmonic progression, rhythms, voicings and counterpoint; the compiler works "
+            "out the notes, the patterns and the clips. For anything longer than a few "
+            "bars this is worth far more per call than placing notes one at a time.",
 
             "score_write stores the text and compiles nothing; score_compile turns it into "
             "real notes as one undo step. They are separate because a compile writes notes, "
@@ -120,8 +119,8 @@ const std::vector<GuideSection>& guide()
           "What a grant covers, and what protects the user.",
           { "Every operation that writes is exactly ONE undo step, however many entries its "
             "batch carried. Two hundred notes in one notes_write call is one press of "
-            "Cmd-Z. The user approved a client, not each of its actions, so an action they "
-            "can take back whole is what the approval rests on.",
+            "Cmd-Z. The user approved the client, not its individual actions, so every "
+            "action has to be one the user can take back in a single press.",
 
             "Prefer one batched call over many small ones for the same reason, and not only "
             "for speed. Ten separate calls are ten undo steps and ten chances to leave the "

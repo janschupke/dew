@@ -92,3 +92,73 @@
   min-width: 0;
   min-height: 0;
 }
+
+/*  BLUR. The application has none: JUCE paints a panel on an opaque ground and
+    there is nothing behind it to defocus. A page has a shot laid over it and a
+    route changing under it, so the site owns one rung and says so here rather
+    than smuggling it into the generated file.
+*/
+:root {
+  --blur-veil: 8px;
+}
+
+/*  The home page's hero, and why it is a rule rather than a Container.
+
+    The text column wants the page's centred column; the picture wants the
+    space OUTSIDE it, running off the right edge of the window. One element
+    cannot be both, so the hero is full width and reproduces the column itself:
+    `max(gutter, (100vw - 72rem) / 2 + gutter)` is exactly what
+    `mx-auto max-w-[72rem] px-gutter` computes for the left edge, so the h1
+    lands on the same line as every other page's.
+
+    The columns are the MEASURE and what is left. 68ch and 72rem are the two
+    lengths tests/scan.ts allows to be written out - the text column and the
+    page - because neither is something Tokens.h has an opinion about, and
+    those are the only two this rule needs.
+
+    Not an @utility: Tailwind v4 cannot nest one in a media query, and the
+    single-column form has to be the default rather than a breakpoint.
+*/
+.hero {
+  display: grid;
+  gap: var(--spacing-section);
+  padding-inline: var(--spacing-gutter);
+}
+
+@media (width >= 64rem) {
+  .hero {
+    grid-template-columns: minmax(0, 68ch) minmax(0, 1fr);
+    padding-inline-start: max(var(--spacing-gutter), (100vw - 72rem) / 2 + var(--spacing-gutter));
+    padding-inline-end: 0;
+    align-items: center;
+
+    /*  `clip` rather than `hidden`: it crops without making a scroll container,
+        so nothing inside the hero starts scrolling and nothing outside it
+        changes what `position: sticky` is measured against. */
+    overflow: clip;
+  }
+
+  /*  The picture is wider than the column it sits in, and the window takes the
+      rest. Ending it exactly at the edge is not a bleed - it is a thumbnail
+      that happens to touch the side: dew's window is 2880px of dense panel
+      chrome, and at the width of a half column none of it can be read. Shown
+      half again as wide and cut off, the part that IS on screen is at a scale
+      somebody can see a step grid in.
+
+      A ratio, not a length. There is no rung for "how far past its column a
+      picture runs", and a px value here would be a measurement with no owner. */
+  .hero > figure {
+    width: 150%;
+  }
+
+  /*  The frame opens on the side the picture leaves by. A box closed on four
+      sides would put a rounded corner and a hairline rule half off screen,
+      which reads as a picture that failed to load rather than one that carries
+      on. Below this width there is no bleed and the frame is closed, which is
+      why this is here rather than a prop on Shot. */
+  .hero > figure > div {
+    border-right: none;
+    border-start-end-radius: 0;
+    border-end-end-radius: 0;
+  }
+}

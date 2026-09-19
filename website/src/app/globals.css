@@ -51,9 +51,63 @@ dialog.shot-viewer {
   color: var(--color-text-primary);
 }
 
+/*  Opening and closing, without moving the close out of the click handler.
+
+    `close()` is synchronous and stays that way - ShotViewer calls it and the
+    test asserts `open === false` on the next line. What animates the EXIT is
+    `transition-behavior: allow-discrete` on `display` and `overlay`: the
+    browser keeps the dialog in the top layer for the length of the transition
+    after the close, rather than dropping it on the frame the attribute goes.
+
+    `@starting-style` is the other half. A dialog has no rendered "before" to
+    transition from, so without it the entry is a cut and only the exit fades.
+
+    The rise is `--motion-popup-rise-px`, which is what the application's own
+    popups rise by. The site had never used it.
+*/
+dialog.shot-viewer {
+  opacity: 0;
+  transform: translateY(var(--motion-popup-rise-px));
+  transition:
+    opacity var(--motion-panel-ms) ease-out,
+    transform var(--motion-panel-ms) ease-out,
+    display var(--motion-panel-ms) allow-discrete,
+    overlay var(--motion-panel-ms) allow-discrete;
+}
+
+dialog.shot-viewer[open] {
+  opacity: 1;
+  transform: none;
+}
+
+@starting-style {
+  dialog.shot-viewer[open] {
+    opacity: 0;
+    transform: translateY(var(--motion-popup-rise-px));
+  }
+}
+
+/*  The backdrop dims AND defocuses. Dimming alone left the page behind a shot
+    legible enough to read, which is the one thing a reader looking at a
+    full-screen picture is not doing. */
 dialog.shot-viewer::backdrop {
   background-color: var(--color-background);
+  opacity: 0;
+  backdrop-filter: blur(var(--blur-veil));
+  transition:
+    opacity var(--motion-panel-ms) ease-out,
+    display var(--motion-panel-ms) allow-discrete,
+    overlay var(--motion-panel-ms) allow-discrete;
+}
+
+dialog.shot-viewer[open]::backdrop {
   opacity: 0.94;
+}
+
+@starting-style {
+  dialog.shot-viewer[open]::backdrop {
+    opacity: 0;
+  }
 }
 
 /*  showModal makes the page inert; it does not stop it scrolling behind the
@@ -61,4 +115,45 @@ dialog.shot-viewer::backdrop {
     to a stray wheel event. */
 html:has(dialog.shot-viewer[open]) {
   overflow: hidden;
+}
+
+/*  A route change, which is otherwise a cut.
+
+    The App Router navigates without a document swap, so `@view-transition`
+    never fires and there is nothing for the browser to cross-fade. `RouteFade`
+    keys a wrapper on the pathname instead: a navigation remounts it, and a
+    remount restarts this animation. No experimental flag, and the wrapper is a
+    plain block, so a Band still paints edge to edge through it.
+*/
+@keyframes route-enter {
+  from {
+    opacity: 0;
+    filter: blur(var(--blur-veil));
+    transform: translateY(var(--motion-popup-rise-px));
+  }
+}
+
+.route-enter {
+  animation: route-enter var(--motion-panel-ms) ease-out;
+}
+
+/*  Somebody who has asked for less motion gets the state change and not the
+    move. The dialog still opens and closes; the page still arrives.
+
+    This is a feature query about MOTION, not about colour: the site is dark on
+    one palette and a gate refuses prefers-color-scheme.
+*/
+@media (prefers-reduced-motion: reduce) {
+  .route-enter {
+    animation: none;
+  }
+
+  dialog.shot-viewer,
+  dialog.shot-viewer::backdrop {
+    transition: none;
+  }
+
+  dialog.shot-viewer {
+    transform: none;
+  }
 }

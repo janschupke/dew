@@ -42,32 +42,32 @@ export const featureGroups: readonly FeatureGroup[] = [
   {
     id: 'sound',
     title: 'Sound',
-    body: 'Three oscillators on every channel, and everything that drives them.',
+    body: 'Three oscillator slots on every channel, sixteen voices deep, with an envelope and an LFO on each.',
   },
   {
     id: 'notes',
     title: 'Writing notes',
-    body: 'Two views of the same notes, and the metre they sit in.',
+    body: 'The step grid and the piano roll, over the same notes, in any time signature.',
   },
   {
     id: 'arranging',
     title: 'Arranging',
-    body: 'Patterns as clips on a timeline, and curves that move things while it plays.',
+    body: 'Pattern clips on a bar timeline, automation over nine scopes, and the transport.',
   },
   {
     id: 'mixing',
     title: 'Mixing',
-    body: 'Inserts, effect chains, and what you can see of the signal.',
+    body: 'Up to thirty-two inserts, ten effects chained nine deep, and a meter on every strip.',
   },
   {
     id: 'working',
     title: 'Working with it',
-    body: 'Getting audio in, getting a file out, and coming back to where you were.',
+    body: 'Recording, rendering to WAV, FLAC, MP3 or MIDI, device setup, files and undo.',
   },
   {
     id: 'writing',
     title: 'Two other ways to write a song',
-    body: 'The score language, and the MCP server an agent connects to.',
+    body: 'The score language in the fifth tab, and the MCP server.',
   },
 ];
 
@@ -85,46 +85,46 @@ export const features: readonly Feature[] = [
   {
     group: 'sound',
     name: 'FM matrix',
-    body: 'A fourth segment on the oscillator selector: a full three-by-three matrix routing each oscillator into the others, its own diagonal included, with a per-slot output column. The default is the identity, so the three simply sum until you say otherwise.',
+    body: 'A fourth segment on the oscillator selector: a full three-by-three matrix routing each oscillator into the others, its own diagonal included, with a per-slot output column. The default is the identity matrix: the three sum until you route one into another.',
   },
   {
     group: 'sound',
     name: 'SoundFonts',
-    body: 'A channel can play an SF2 file instead of its oscillators — key and velocity zones, root keys, tuning, pan, loop modes and the font’s own volume and modulation envelopes. Six offsets sit on top, so nothing overwrites what the font’s author decided.',
+    body: 'A channel can play an SF2 file instead of its oscillators — key and velocity zones, root keys, tuning, pan, loop modes and the font’s own volume and modulation envelopes. Transpose, fine tuning, filter, attack, release and velocity sensitivity sit on top as offsets, so a knob bends the font rather than replacing what its author chose.',
   },
   {
     group: 'sound',
     name: 'Envelope and LFOs',
-    body: 'One ADSR behind the three slots, and an LFO on each of them. A shape, a rate in hertz or locked to the tempo, and three independent depths — to pitch, to level and to pan — so any combination of the three moves and the ones left at zero do not.',
+    body: 'One ADSR behind the three slots, and an LFO on each of them. A shape, a rate in hertz or locked to the tempo, and three independent depths: to pitch, to level and to pan.',
   },
   {
     group: 'sound',
     name: 'Presets',
-    body: 'Forty factory sounds in seven categories: three for each effect type, six for the synth, two for an audio channel and two for a soundfont. A preset carries the sound, and not a channel’s name, colour, routing, level or effect chain, so loading one mid-mix cannot move a fader or retune a part you have already written.',
+    body: 'Forty factory sounds in seven categories: three for each effect type, six for the synth, two for an audio channel and two for a soundfont. A preset carries the sound, and not a channel’s name, colour, routing, level or effect chain, so loading one mid-mix moves no fader and retunes nothing already written.',
   },
 
   {
     group: 'notes',
     name: 'Channel rack',
-    body: 'A step grid, one row per channel. Click or drag to write steps. Volume, pan and an on/off indicator sit on the row itself, so a pattern is balanced where it is written.',
+    body: 'A step grid, one row per channel. Click or drag to write steps. Volume, pan and an on/off indicator sit on the row itself.',
     shot: 'channel-rack',
   },
   {
     group: 'notes',
     name: 'Piano roll',
-    body: 'The same notes as the step grid, in a second view. Rubber-band select, move a chord without losing its shape, drag velocity bars in the lane below, click the keys to hear them. Select, paint and slice tools, a snap grid from 1/16 to a bar, and quantize, transpose and randomize over the selection or the whole channel.',
+    body: 'The same notes as the step grid, in a second view. Rubber-band select, move a chord as a block, drag velocity bars in the lane below, click the keys to hear them. Select, paint and slice tools, a snap grid from 1/16 to a bar, and quantize, transpose and randomize over the selection or the whole channel.',
     shot: 'piano-roll',
   },
   {
     group: 'notes',
     name: 'Time signature',
-    body: '3/4, 5/4, 6/8, 7/8 and the rest, driving bar lines, beat shading, the bars:beats:ticks readout, what “Bar” snaps to and exported MIDI. A step is the same length in 3/4 as in 4/4.',
+    body: 'Any metre — 3/4, 5/4, 6/8, 7/8 — driving bar lines, beat shading, the bars:beats:ticks readout, what “Bar” snaps to and exported MIDI. A step is the same length in 3/4 as in 4/4.',
   },
 
   {
     group: 'arranging',
     name: 'Playlist',
-    body: 'Pattern clips on lanes along a bar timeline; a clip longer than its pattern repeats it. Drag clips between lanes, double-click to open a pattern, switch a lane off. Lanes stretch, for a curve that needs the height.',
+    body: 'Pattern clips on lanes along a bar timeline; a clip longer than its pattern repeats it. Drag clips between lanes, double-click to open a pattern, switch a lane off. A lane can be made taller, for a curve that needs the room.',
     shot: 'playlist',
   },
   {
@@ -141,7 +141,7 @@ export const features: readonly Feature[] = [
   {
     group: 'mixing',
     name: 'Mixer',
-    body: 'A fader, pan, an on/off indicator and a peak meter per insert, plus master — twenty inserts in a new project and up to thirty-two. Each strip lists the channels routed into it, and clicking one goes there.',
+    body: 'A fader, pan, an on/off indicator and a peak meter per insert, plus master — twenty inserts in a new project and up to thirty-two. Each strip lists the channels routed into it, and clicking one opens that channel.',
     shot: 'mixer',
   },
   {
@@ -158,22 +158,22 @@ export const features: readonly Feature[] = [
   {
     group: 'working',
     name: 'Recording',
-    body: 'An audio channel plays a recording instead of its oscillators. Arm with R, press record, and the take lands on the playlist at the bar the playhead was on, with a count-in that starts the file on the downbeat. The microphone is asked for when you arm a channel, never at startup.',
+    body: 'An audio channel plays a recording instead of its oscillators. Arm with R, press record, and the take lands on the playlist at the bar the playhead was on, with a count-in that starts the file on the downbeat. The microphone is asked for when you arm a channel, not at startup.',
   },
   {
     group: 'working',
     name: 'Render and export',
-    body: 'The song, one pattern or a span of bars, as WAV, FLAC, MP3 or MIDI, with sample rate, bit depth, release tail, normalize, fades, dither and stems. A bar range renders from the start and throws the head away, so reverb tails and automation arrive at the in-point in the state playing there would leave them.',
+    body: 'The song, one pattern or a span of bars, as WAV, FLAC, MP3 or MIDI, with sample rate, bit depth, release tail, normalize, fades, dither and stems. A bar range renders from the start of the song and discards the head, so reverb tails and automation are already where playing to that point would have put them.',
   },
   {
     group: 'working',
     name: 'Audio and MIDI devices',
-    body: 'Driver, output, input, input channels, sample rate and buffer size, with the resulting latency, an input meter and a test tone. MIDI in carries velocity, pitch bend, the mod wheel and the sustain pedal, and a controller survives being unplugged and put back.',
+    body: 'Driver, output, input, input channels, sample rate and buffer size, with the resulting latency, an input meter and a test tone. MIDI in carries velocity, pitch bend, the mod wheel and the sustain pedal, and a controller unplugged and plugged back in is picked up again.',
   },
   {
     group: 'working',
     name: 'Files and undo',
-    body: 'New, open, save, save as, dirty tracking and a save-before-closing prompt, with undo and redo over every edit — a whole drag, a preset load and a batch written by an agent each being one step.',
+    body: 'Open, save, save as, dirty tracking and a save-before-closing prompt, with undo and redo over every edit: a whole drag, a preset load and a batch written by an agent are each one step.',
   },
   {
     group: 'working',
@@ -184,7 +184,7 @@ export const features: readonly Feature[] = [
   {
     group: 'writing',
     name: 'Score',
-    body: 'A fifth tab holding the whole song as text: key, metre, chord progression, sections, and per channel a voicing, a melody or a counterpoint answering another voice. Checked as you type and compiled to real patterns and clips on demand. The text lives in the project, so recompiling leaves anything you have edited by hand alone.',
+    body: 'A fifth tab holding the whole song as text: key, metre, chord progression, sections, and per channel a voicing, a melody or a counterpoint answering another voice. Checked as you type and compiled to patterns and clips on demand. The text lives in the project, so recompiling leaves anything you have edited by hand alone.',
     shot: 'score',
     href: '/score/',
     hrefLabel: 'The score language',
@@ -192,7 +192,7 @@ export const features: readonly Feature[] = [
   {
     group: 'writing',
     name: 'Agent control',
-    body: 'dew runs a Model Context Protocol server inside the application, so a coding agent can read and change the project you have open. It is off until you turn it on, listens on the loopback interface only, and names each client and asks before letting it in. Every call that changes the project is exactly one undo step.',
+    body: 'dew runs a Model Context Protocol server inside the application, so a coding agent can read and change the project you have open. It ships switched off, listens on the loopback interface only, and names each client and asks before letting it in. Every call that changes the project is exactly one undo step.',
     href: '/mcp/',
     hrefLabel: 'Control dew from an agent',
   },
